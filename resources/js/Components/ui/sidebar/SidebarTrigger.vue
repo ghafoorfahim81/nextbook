@@ -1,15 +1,17 @@
-<script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import Button from '@/lib/registry/default/ui/button/Button.vue'
-import { cn } from '@/lib/utils'
-import { PanelLeft } from 'lucide-vue-next'
-import { useSidebar } from './utils'
+<script setup>
+import { h } from 'vue';
+import Button from '@/Components/ui/button/Button.vue';
+import { cn } from '@/lib/utils';
+import { PanelLeft } from 'lucide-vue-next';
+import { useSidebar } from './utils';
 
-const props = defineProps<{
-  class?: HTMLAttributes['class']
-}>()
+// Props
+const props = defineProps({
+  class: String,
+});
 
-const { toggleSidebar } = useSidebar()
+// Sidebar utility
+const { toggleSidebar } = useSidebar();
 </script>
 
 <template>

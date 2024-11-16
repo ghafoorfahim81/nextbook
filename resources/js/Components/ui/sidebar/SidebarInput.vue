@@ -1,11 +1,11 @@
-<script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import Input from '@/lib/registry/default/ui/input/Input.vue'
-import { cn } from '@/lib/utils'
+<script setup>
+import Input from '@/Components/ui/input/Input.vue';
+import { cn } from '@/lib/utils';
 
-const props = defineProps<{
-  class?: HTMLAttributes['class']
-}>()
+// Props
+const props = defineProps({
+  class: { type: String, default: '' },
+});
 </script>
 
 <template>
