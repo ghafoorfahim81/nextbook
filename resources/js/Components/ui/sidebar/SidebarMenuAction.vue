@@ -1,14 +1,13 @@
-<script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-import { cn } from '@/lib/utils'
-import { Primitive, type PrimitiveProps } from 'radix-vue'
+<script setup>
+import { cn } from '@/lib/utils';
+import { Primitive } from 'radix-vue';
 
-const props = withDefaults(defineProps<PrimitiveProps & {
-  showOnHover?: boolean
-  class?: HTMLAttributes['class']
-}>(), {
-  as: 'button',
-})
+// Props
+const props = defineProps({
+  showOnHover: { type: Boolean, default: false },
+  class: { type: String, default: '' },
+  as: { type: String, default: 'button' },
+});
 </script>
 
 <template>
@@ -23,7 +22,8 @@ const props = withDefaults(defineProps<PrimitiveProps & {
       'peer-data-[size=lg]/menu-button:top-2.5',
       'group-data-[collapsible=icon]:hidden',
       showOnHover
-        && 'group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 peer-data-[active=true]/menu-button:text-sidebar-accent-foreground md:opacity-0',
+        ? 'group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 peer-data-[active=true]/menu-button:text-sidebar-accent-foreground md:opacity-0'
+        : '',
       props.class,
     )"
     :as="as"

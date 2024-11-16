@@ -1,12 +1,12 @@
 <script setup>
-const props = defineProps({
-  class: String,
-})
+import { ref } from 'vue';
+
+// Importing UI components
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from '@/components/ui/avatar'
+} from '@/components/ui/avatar';
 
 import {
   Breadcrumb,
@@ -15,13 +15,14 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
+} from '@/components/ui/breadcrumb';
 
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible'
+} from '@/components/ui/collapsible';
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,8 +32,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Separator } from '@/components/ui/separator'
+} from '@/components/ui/dropdown-menu';
+
+import { Separator } from '@/components/ui/separator';
+
 import {
   Sidebar,
   SidebarContent,
@@ -51,7 +54,8 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
-} from '@/components/ui/sidebar'
+} from '@/components/ui/sidebar';
+
 import {
   AudioWaveform,
   BadgeCheck,
@@ -75,10 +79,9 @@ import {
   Sparkles,
   SquareTerminal,
   Trash2,
-} from 'lucide-vue-next'
-import { ref } from 'vue'
+} from 'lucide-vue-next';
 
-// This is sample data.
+// Sample data
 const data = {
   user: {
     name: 'shadcn',
@@ -86,21 +89,9 @@ const data = {
     avatar: '/avatars/shadcn.jpg',
   },
   teams: [
-    {
-      name: 'Acme Inc',
-      logo: GalleryVerticalEnd,
-      plan: 'Enterprise',
-    },
-    {
-      name: 'Acme Corp.',
-      logo: AudioWaveform,
-      plan: 'Startup',
-    },
-    {
-      name: 'Evil Corp.',
-      logo: Command,
-      plan: 'Free',
-    },
+    { name: 'Acme Inc', logo: GalleryVerticalEnd, plan: 'Enterprise' },
+    { name: 'Acme Corp.', logo: AudioWaveform, plan: 'Startup' },
+    { name: 'Evil Corp.', logo: Command, plan: 'Free' },
   ],
   navMain: [
     {
@@ -109,18 +100,9 @@ const data = {
       icon: SquareTerminal,
       isActive: true,
       items: [
-        {
-          title: 'History',
-          url: '#',
-        },
-        {
-          title: 'Starred',
-          url: '#',
-        },
-        {
-          title: 'Settings',
-          url: '#',
-        },
+        { title: 'History', url: '#' },
+        { title: 'Starred', url: '#' },
+        { title: 'Settings', url: '#' },
       ],
     },
     {
@@ -128,18 +110,9 @@ const data = {
       url: '#',
       icon: Bot,
       items: [
-        {
-          title: 'Genesis',
-          url: '#',
-        },
-        {
-          title: 'Explorer',
-          url: '#',
-        },
-        {
-          title: 'Quantum',
-          url: '#',
-        },
+        { title: 'Genesis', url: '#' },
+        { title: 'Explorer', url: '#' },
+        { title: 'Quantum', url: '#' },
       ],
     },
     {
@@ -147,22 +120,10 @@ const data = {
       url: '#',
       icon: BookOpen,
       items: [
-        {
-          title: 'Introduction',
-          url: '#',
-        },
-        {
-          title: 'Get Started',
-          url: '#',
-        },
-        {
-          title: 'Tutorials',
-          url: '#',
-        },
-        {
-          title: 'Changelog',
-          url: '#',
-        },
+        { title: 'Introduction', url: '#' },
+        { title: 'Get Started', url: '#' },
+        { title: 'Tutorials', url: '#' },
+        { title: 'Changelog', url: '#' },
       ],
     },
     {
@@ -170,48 +131,24 @@ const data = {
       url: '#',
       icon: Settings2,
       items: [
-        {
-          title: 'General',
-          url: '#',
-        },
-        {
-          title: 'Team',
-          url: '#',
-        },
-        {
-          title: 'Billing',
-          url: '#',
-        },
-        {
-          title: 'Limits',
-          url: '#',
-        },
+        { title: 'General', url: '#' },
+        { title: 'Team', url: '#' },
+        { title: 'Billing', url: '#' },
+        { title: 'Limits', url: '#' },
       ],
     },
   ],
   projects: [
-    {
-      name: 'Design Engineering',
-      url: '#',
-      icon: Frame,
-    },
-    {
-      name: 'Sales & Marketing',
-      url: '#',
-      icon: PieChart,
-    },
-    {
-      name: 'Travel',
-      url: '#',
-      icon: Map,
-    },
+    { name: 'Design Engineering', url: '#', icon: Frame },
+    { name: 'Sales & Marketing', url: '#', icon: PieChart },
+    { name: 'Travel', url: '#', icon: Map },
   ],
-}
+};
 
-const activeTeam = ref(data.teams[0])
+const activeTeam = ref(data.teams[0]);
 
-function setActiveTeam(team: typeof data.teams[number]) {
-  activeTeam.value = team
+function setActiveTeam(team) {
+  activeTeam.value = team;
 }
 </script>
 

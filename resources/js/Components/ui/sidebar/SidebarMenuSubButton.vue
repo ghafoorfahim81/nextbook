@@ -1,17 +1,14 @@
-<script setup lang="ts">
-import type { PrimitiveProps } from 'radix-vue'
-import type { HTMLAttributes } from 'vue'
-import { cn } from '@/lib/utils'
-import { Primitive } from 'radix-vue'
+<script setup>
+import { Primitive } from 'radix-vue';
+import { cn } from '@/lib/utils';
 
-const props = withDefaults(defineProps<PrimitiveProps & {
-  size?: 'sm' | 'md'
-  isActive?: boolean
-  class?: HTMLAttributes['class']
-}>(), {
-  as: 'a',
-  size: 'md',
-})
+// Props
+const props = defineProps({
+  as: { type: String, default: 'a' },
+  size: { type: String, default: 'md' },
+  isActive: { type: Boolean, default: false },
+  class: { type: String, default: '' },
+});
 </script>
 
 <template>
@@ -24,10 +21,10 @@ const props = withDefaults(defineProps<PrimitiveProps & {
     :class="cn(
       'flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-none ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground',
       'data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground',
-      size === 'sm' && 'text-xs',
-      size === 'md' && 'text-sm',
+      size === 'sm' ? 'text-xs' : '',
+      size === 'md' ? 'text-sm' : '',
       'group-data-[collapsible=icon]:hidden',
-      props.class,
+      props.class
     )"
   >
     <slot />
