@@ -76,6 +76,10 @@ import {
 import { ref } from 'vue'
 import { useColorMode } from '@vueuse/core'
 
+const logout = () => {
+    router.post(route('logout'));
+};
+
 // This is sample data.
 const data = {
   user: {
@@ -346,10 +350,12 @@ const mode = useColorMode()
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
+                <form method="POST" @submit.prevent="logout">
                 <DropdownMenuItem>
-                  <LogOut />
+                  <LogOut/>
                   Log out
                 </DropdownMenuItem>
+            </form>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
