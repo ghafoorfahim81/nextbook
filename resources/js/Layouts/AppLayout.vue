@@ -52,7 +52,7 @@ import {
 import {
   AudioWaveform,
   BadgeCheck,
-  Bell, 
+  Bell,
   ChevronRight,
   ChevronsUpDown,
   Command,
@@ -100,21 +100,46 @@ const data = {
   ],
   navMain: [
     {
+      title: 'Dashboard',
+      url: '#',
+      icon: BookOpenCheck,
+    },
+    {
       title: 'Control panel',
       url: '#',
       icon: MonitorCog,
       isActive: false,
       items: [
         {
-          title: 'History',
+          title: 'Warehouse',
           url: '#',
         },
         {
-          title: 'Starred',
+          title: 'User',
           url: '#',
         },
         {
-          title: 'Settings',
+          title: 'Department',
+          url: '#',
+        },
+        {
+          title: 'Financial Year',
+          url: '#',
+        },
+        {
+          title: 'Currency',
+          url: '#',
+        },
+        {
+          title: 'SalesMan',
+          url: '#',
+        },
+        {
+          title: 'Barcode',
+          url: '#',
+        },
+        {
+          title: 'Measure',
           url: '#',
         },
       ],
@@ -125,15 +150,19 @@ const data = {
       icon: BookOpenCheck,
       items: [
         {
-          title: 'Genesis',
+          title: 'Customer',
           url: '#',
         },
         {
-          title: 'Explorer',
+          title: 'Supplier',
           url: '#',
         },
         {
-          title: 'Quantum',
+          title: 'Account',
+          url: '#',
+        },
+        {
+          title: 'Inventory',
           url: '#',
         },
       ],
@@ -144,19 +173,19 @@ const data = {
       icon: ShoppingCart,
       items: [
         {
-          title: 'Introduction',
+          title: 'Bill',
           url: '#',
         },
         {
-          title: 'Get Started',
+          title: 'Order',
           url: '#',
         },
         {
-          title: 'Tutorials',
+          title: 'Return',
           url: '#',
         },
         {
-          title: 'Changelog',
+          title: 'Quotation',
           url: '#',
         },
       ],
@@ -167,19 +196,19 @@ const data = {
       icon: ShoppingBasket,
       items: [
         {
-          title: 'Introduction',
+          title: 'Bill',
           url: '#',
         },
         {
-          title: 'Get Started',
+          title: 'Order',
           url: '#',
         },
         {
-          title: 'Tutorials',
+          title: 'Return',
           url: '#',
         },
         {
-          title: 'Changelog',
+          title: 'Quotation',
           url: '#',
         },
       ],
@@ -190,19 +219,15 @@ const data = {
       icon: DatabaseZap,
       items: [
         {
-          title: 'Introduction',
+          title: 'Store Transfer',
           url: '#',
         },
         {
-          title: 'Get Started',
+          title: 'Stock Recieve',
           url: '#',
         },
         {
-          title: 'Tutorials',
-          url: '#',
-        },
-        {
-          title: 'Changelog',
+          title: 'Stock Issue',
           url: '#',
         },
       ],
@@ -213,19 +238,16 @@ const data = {
       icon: Wallet,
       items: [
         {
-          title: 'General',
+          title: 'Receipt',
+          url: '#',
+          icon: Wallet,
+        },
+        {
+          title: 'Payment',
           url: '#',
         },
         {
-          title: 'Team',
-          url: '#',
-        },
-        {
-          title: 'Billing',
-          url: '#',
-        },
-        {
-          title: 'Limits',
+          title: 'Contra',
           url: '#',
         },
       ],
@@ -262,10 +284,10 @@ const mode = useColorMode()
                   <SidebarMenuButton :tooltip="item.title">
                     <component :is="item.icon" />
                     <span>{{ item.title }}</span>
-                    <ChevronRight class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                    <ChevronRight v-if="item.items" class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent>
+                <CollapsibleContent >
                   <SidebarMenuSub>
                     <SidebarMenuSubItem
                       v-for="subItem in item.items"
