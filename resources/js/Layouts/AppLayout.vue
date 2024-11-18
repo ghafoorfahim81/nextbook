@@ -66,12 +66,17 @@ import {
   LogOut,
   Map,
   MoreHorizontal,
-  PieChart,
-  Plus,
+  PieChart, 
+  MonitorCog,
   Settings2,
   Sparkles,
   SquareTerminal,
   Trash2,
+  ShoppingCart,
+  ShoppingBasket,
+  DatabaseZap,
+BookOpenCheck,
+Wallet,
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useColorMode } from '@vueuse/core'
@@ -108,7 +113,7 @@ const data = {
     {
       title: 'Control panel',
       url: '#',
-      icon: SquareTerminal,
+      icon: MonitorCog,
       isActive: false,
       items: [
         {
@@ -128,7 +133,7 @@ const data = {
     {
       title: 'Master',
       url: '#',
-      icon: Bot,
+      icon: BookOpenCheck,
       items: [
         {
           title: 'Genesis',
@@ -147,7 +152,7 @@ const data = {
     {
       title: 'Sale',
       url: '#',
-      icon: BookOpen,
+      icon: ShoppingCart,
       items: [
         {
           title: 'Introduction',
@@ -170,7 +175,7 @@ const data = {
     {
       title: 'Purchase',
       url: '#',
-      icon: BookOpen,
+      icon: ShoppingBasket,
       items: [
         {
           title: 'Introduction',
@@ -193,7 +198,7 @@ const data = {
     {
       title: 'Stock Management',
       url: '#',
-      icon: BookOpen,
+      icon: DatabaseZap,
       items: [
         {
           title: 'Introduction',
@@ -216,7 +221,7 @@ const data = {
     {
       title: 'Account',
       url: '#',
-      icon: Settings2,
+      icon: Wallet,
       items: [
         {
           title: 'General',
