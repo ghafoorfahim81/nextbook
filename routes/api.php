@@ -10,5 +10,3 @@ Route::get('/user', function (Request $request) {
 
 Route::apiResource('designations', App\Http\Controllers\ControlPanel\DesignationController::class);
 
-
-Route::apiResource('designations', App\Http\Controllers\ControlPanel\DesignationController::class);
