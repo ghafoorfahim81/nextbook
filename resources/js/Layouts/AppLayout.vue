@@ -66,6 +66,7 @@ import {
   DatabaseZap,
 BookOpenCheck,
 Wallet,
+HousePlug,
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useColorMode } from '@vueuse/core'
@@ -102,7 +103,7 @@ const data = {
     {
       title: 'Dashboard',
       url: '#',
-      icon: BookOpenCheck,
+      icon: HousePlug,
     },
     {
       title: 'Control panel',
