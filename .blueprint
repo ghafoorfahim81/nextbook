@@ -1,0 +1,16 @@
+created:
+    - app/Http/Controllers/ControlPanel/DesignationController.php
+    - database/factories/ControlPanel/DesignationFactory.php
+    - database/migrations/2024_11_19_091600_create_designations_table.php
+    - app/Models/ControlPanel/Designation.php
+    - database/seeders/ControlPanel/DesignationSeeder.php
+    - tests/Feature/Http/Controllers/ControlPanel/DesignationControllerTest.php
+    - app/Http/Requests/ControlPanel/DesignationStoreRequest.php
+    - app/Http/Requests/ControlPanel/DesignationUpdateRequest.php
+    - app/Http/Resources/ControlPanel/DesignationCollection.php
+    - app/Http/Resources/ControlPanel/DesignationResource.php
+updated:
+    - routes/api.php
+models:
+    User: { name: string, email: string, email_verified_at: 'timestamp nullable', password: string, remember_token: 'string:100 nullable', current_team_id: 'biginteger nullable', profile_photo_path: 'string:2048 nullable', two_factor_secret: 'text nullable', two_factor_recovery_codes: 'text nullable', two_factor_confirmed_at: 'timestamp nullable' }
+    ControlPanel/Designation: { id: uuid, name: 'string unique', remark: 'text nullable', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', deleted_by: 'id foreign:users nullable', softdeletes: softDeletes, timestamps: tru }
