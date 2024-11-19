@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::disableForeignKeyConstraints();
 
         Schema::create('designations', function (Blueprint $table) {
-            $table->binary($column, 16)->primary();
+            $table->uuid('id')->primary();
             $table->string('name')->unique();
             $table->text('remark')->nullable();
             $table->foreignId('created_by')->constrained('users');

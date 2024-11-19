@@ -22,6 +22,7 @@ class DesignationFactory extends Factory
     public function definition(): array
     {
         return [
+            'id' => Str::uuid()->toString(),
             'name' => $this->faker->name(),
             'remark' => $this->faker->text(),
             'created_by' => User::factory(),
