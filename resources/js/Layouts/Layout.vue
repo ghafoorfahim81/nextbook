@@ -1,4 +1,4 @@
-<script setup lang=ts>
+<script setup>
 import {
   Avatar,
   AvatarFallback,
@@ -70,10 +70,11 @@ HousePlug,
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useColorMode } from '@vueuse/core'
+// import { route } from 'ziggy';
 
-const logout = () => {
-    router.post(route('logout'));
-};
+// const logout = () => {
+//     router.post(route('logout'));
+// };
 
 // This is sample data.
 const data = {
@@ -102,7 +103,7 @@ const data = {
   navMain: [
     {
       title: 'Dashboard',
-      url: '#',
+      url: '/dashboard',
       icon: HousePlug,
     },
     {
@@ -118,6 +119,10 @@ const data = {
         {
           title: 'User',
           url: '#',
+        },
+        {
+          title: 'Designation',
+          url: '/designations',
         },
         {
           title: 'Department',
@@ -256,6 +261,9 @@ const data = {
   ],
 
 }
+const isActive = (url) => {
+  return route().current(url.replace('/', ''));
+};
 
 const mode = useColorMode()
 
@@ -274,35 +282,34 @@ const mode = useColorMode()
           <SidebarGroupLabel>Platform</SidebarGroupLabel>
           <SidebarMenu>
             <Collapsible
-              v-for="item in data.navMain"
-              :key="item.title"
-              as-child
-              :default-open="item.isActive"
-              class="group/collapsible"
+            v-for="item in data.navMain"
+            :key="item.title"
+            as-child 
+            class="group/collapsible"
             >
-              <SidebarMenuItem>
+            <SidebarMenuItem>
                 <CollapsibleTrigger as-child>
-                  <SidebarMenuButton :tooltip="item.title">
+                <SidebarMenuButton :tooltip="item.title">
                     <component :is="item.icon" />
                     <span>{{ item.title }}</span>
-                    <ChevronRight v-if="item.items" class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                  </SidebarMenuButton>
+                    <ChevronRight
+                    v-if="item.items"
+                    class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90"
+                    />
+                </SidebarMenuButton>
                 </CollapsibleTrigger>
-                <CollapsibleContent >
-                  <SidebarMenuSub>
-                    <SidebarMenuSubItem
-                      v-for="subItem in item.items"
-                      :key="subItem.title"
-                    >
-                      <SidebarMenuSubButton as-child>
-                        <a :href="subItem.url">
-                          <span>{{ subItem.title }}</span>
-                        </a>
-                      </SidebarMenuSubButton>
+                <CollapsibleContent>
+                <SidebarMenuSub>
+                    <SidebarMenuSubItem v-for="subItem in item.items" :key="subItem.title">
+                    <SidebarMenuSubButton as-child>
+                        <Link :href="subItem.url">
+                        <span>{{ subItem.title }}</span>
+                        </Link>
+                    </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
-                  </SidebarMenuSub>
+                </SidebarMenuSub>
                 </CollapsibleContent>
-              </SidebarMenuItem>
+            </SidebarMenuItem>
             </Collapsible>
           </SidebarMenu>
         </SidebarGroup>
