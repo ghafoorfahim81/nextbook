@@ -10,16 +10,17 @@ use App\Http\Resources\ControlPanel\DesignationResource;
 use App\Models\ControlPanel\Designation;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-
+use Inertia\Inertia;
 class DesignationController extends Controller
 {
-    public function index(Request $request): DesignationCollection
+    public function index(Request $request)
     {
         $designations = Designation::all();
 
-        return new DesignationCollection($designations);
+        return Inertia::render('Designations/Index', ['designations' => $designations]);
+        // return new DesignationCollection($designations);
     }
-    
+
     public function store(DesignationStoreRequest $request): DesignationResource
     {
         $designation = Designation::create($request->validated());
