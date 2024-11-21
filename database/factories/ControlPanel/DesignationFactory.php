@@ -25,9 +25,9 @@ class DesignationFactory extends Factory
             'id' => Str::uuid()->toString(),
             'name' => $this->faker->name(),
             'remark' => $this->faker->text(),
-            'created_by' => User::factory(),
-            'updated_by' => User::factory(),
-            'deleted_by' => User::factory(),
+            'created_by' => 1,
+            'updated_by' => 1,
+            'deleted_by' => 1,
         ];
     }
 }
