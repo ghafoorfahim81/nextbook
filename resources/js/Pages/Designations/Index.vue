@@ -1,48 +1,87 @@
-<script setup>
-import Layout from '@/Layouts/Layout.vue';
-import { Link} from '@inertiajs/vue3';
-defineProps({
-  designations: Array
-});
-</script>
-
 <template>
-    <Head title="Designation" />
+    <div class="p-4">
+      <!-- Search Bar -->
+      <div class="flex justify-between items-center mb-4">
+        <input
+          type="text"
+          v-model="filters.search"
+          placeholder="Search designations..."
+          class="input"
+          @input="debouncedSearch"
+        />
+        <button class="button">Add Designation</button>
+      </div>
 
-    <Layout title="| Designation">
-        <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                Designation
-            </h2>
-        </template>
+      <!-- Data Table -->
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableCell><strong>#</strong></TableCell>
+            <TableCell><strong>Title</strong></TableCell>
+            <TableCell><strong>Description</strong></TableCell>
+            <TableCell><strong>Actions</strong></TableCell>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow v-for="(designation, index) in designations.data" :key="designation.id">
+            <TableCell>{{ index + 1 + (designations.current_page - 1) * designations.per_page }}</TableCell>
+            <TableCell>{{ designation.title }}</TableCell>
+            <TableCell>{{ designation.description }}</TableCell>
+            <TableCell>
+              <button @click="editDesignation(designation)" class="text-blue-500">Edit</button>
+              <button @click="deleteDesignation(designation.id)" class="text-red-500">Delete</button>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
-                    <table class="table-auto w-full mt-4 border-collapse border border-gray-300">
-                        <thead>
-                          <tr>
-                            <th class="border border-gray-300 px-4 py-2">Name</th>
-                            <th class="border border-gray-300 px-4 py-2">remark</th>
-                            <th class="border border-gray-300 px-4 py-2">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr v-for="designation in designations" :key="designation.id">
-                            <td class="border border-gray-300 px-4 py-2">{{ designation.name }}</td>
-                            <td class="border border-gray-300 px-4 py-2">{{ designation.remark }}</td>
-                            <td class="border border-gray-300 px-4 py-2">
-                              <Link :href="`/designations/${designation.id}/edit`" class="text-blue-500">Edit</Link> |
-                              <form :action="`/designations/${designation.id}`" method="POST" class="inline">
-                                <input type="hidden" name="_method" value="DELETE">
-                                <button type="submit" class="text-red-500">Delete</button>
-                              </form>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                </div>
-            </div>
-        </div>
-    </Layout>
-</template>
+      <!-- Pagination -->
+      <Pagination
+        :current-page="designations.current_page"
+        :total-pages="designations.last_page"
+        @page-change="goToPage"
+      />
+    </div>
+  </template>
+
+  <script>
+  import { reactive } from "vue";
+  import { debounce } from "lodash";
+  import { Inertia } from "@inertiajs/inertia";
+  import { Table, TableHeader, TableBody, TableRow, TableCell, Pagination } from "@shadcn/vue";
+
+  export default {
+    components: { Table, TableHeader, TableBody, TableRow, TableCell, Pagination },
+    props: {
+      designations: Object,
+      filters: Object,
+    },
+    setup(props) {
+      const filters = reactive({ ...props.filters });
+
+      const debouncedSearch = debounce(() => {
+        Inertia.get(route("designations.index"), filters, { preserveState: true });
+      }, 300);
+
+      const goToPage = (page) => {
+        Inertia.get(route("designations.index"), { ...filters, page }, { preserveState: true });
+      };
+
+      return {
+        filters,
+        debouncedSearch,
+        goToPage,
+      };
+    },
+    methods: {
+      editDesignation(designation) {
+        // Handle edit action
+        console.log("Edit designation", designation);
+      },
+      deleteDesignation(id) {
+        // Handle delete action
+        console.log("Delete designation", id);
+      },
+    },
+  };
+  </script>
