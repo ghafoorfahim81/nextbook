@@ -15,10 +15,19 @@ class DesignationController extends Controller
 {
     public function index(Request $request)
     {
-        $designations = Designation::all();
+        $search = $request->input('search');
 
-        return Inertia::render('Designations/Index', ['designations' => $designations]);
-        // return new DesignationCollection($designations);
+        $designations = Designation::query()
+            ->when($search, function ($query, $search) {
+                $query->where('title', 'like', '%' . $search . '%');
+            })
+            ->paginate(10)
+            ->withQueryString();
+
+        return Inertia::render('Designations/Index', [
+            'designations' => $designations,
+            'filters' => ['search' => $search],
+        ]);
     }
 
     public function store(DesignationStoreRequest $request): DesignationResource
