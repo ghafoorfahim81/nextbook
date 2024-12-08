@@ -46,25 +46,26 @@
 
   <script>
   import { reactive } from "vue";
-  import { debounce } from "lodash";
-  import { Inertia } from "@inertiajs/inertia";
-  import { Table, TableHeader, TableBody, TableRow, TableCell, Pagination } from "@shadcn/vue";
-
+  import { debounce } from "lodash"; 
+  import { router } from '@inertiajs/vue3'
+  import { Table, TableHeader, TableBody, TableRow, TableCell } from "@/Components/ui/table";
+  import { Pagination } from "@/Components/ui/pagination";
   export default {
     components: { Table, TableHeader, TableBody, TableRow, TableCell, Pagination },
     props: {
       designations: Object,
       filters: Object,
     },
+
     setup(props) {
       const filters = reactive({ ...props.filters });
 
       const debouncedSearch = debounce(() => {
-        Inertia.get(route("designations.index"), filters, { preserveState: true });
+        router.get(route("designations.index"), filters, { preserveState: true });
       }, 300);
 
       const goToPage = (page) => {
-        Inertia.get(route("designations.index"), { ...filters, page }, { preserveState: true });
+        router.get(route("designations.index"), { ...filters, page }, { preserveState: true });
       };
 
       return {
