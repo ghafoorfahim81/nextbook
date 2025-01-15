@@ -1,88 +1,27 @@
+<script setup>
+import AppLayout from '@/Layouts/Layout.vue';
+import Welcome from '@/Components/Welcome.vue';
+</script>
+
 <template>
-    <div class="p-4">
-      <!-- Search Bar -->
-      <div class="flex justify-between items-center mb-4">
-        <input
-          type="text"
-          v-model="filters.search"
-          placeholder="Search designations..."
-          class="input"
-          @input="debouncedSearch"
-        />
-        <button class="button">Add Designation</button>
-      </div>
-
-      <!-- Data Table -->
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableCell><strong>#</strong></TableCell>
-            <TableCell><strong>Title</strong></TableCell>
-            <TableCell><strong>Description</strong></TableCell>
-            <TableCell><strong>Actions</strong></TableCell>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          <TableRow v-for="(designation, index) in designations.data" :key="designation.id">
-            <TableCell>{{ index + 1 + (designations.current_page - 1) * designations.per_page }}</TableCell>
-            <TableCell>{{ designation.title }}</TableCell>
-            <TableCell>{{ designation.description }}</TableCell>
-            <TableCell>
-              <button @click="editDesignation(designation)" class="text-blue-500">Edit</button>
-              <button @click="deleteDesignation(designation.id)" class="text-red-500">Delete</button>
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-
-      <!-- Pagination -->
-      <Pagination
-        :current-page="designations.current_page"
-        :total-pages="designations.last_page"
-        @page-change="goToPage"
-      />
-    </div>
-  </template>
-
-  <script>
-  import { reactive } from "vue";
-  import { debounce } from "lodash"; 
-  import { router } from '@inertiajs/vue3'
-  import { Table, TableHeader, TableBody, TableRow, TableCell } from "@/Components/ui/table";
-  import { Pagination } from "@/Components/ui/pagination";
-  export default {
-    components: { Table, TableHeader, TableBody, TableRow, TableCell, Pagination },
-    props: {
-      designations: Object,
-      filters: Object,
-    },
-
-    setup(props) {
-      const filters = reactive({ ...props.filters });
-
-      const debouncedSearch = debounce(() => {
-        router.get(route("designations.index"), filters, { preserveState: true });
-      }, 300);
-
-      const goToPage = (page) => {
-        router.get(route("designations.index"), { ...filters, page }, { preserveState: true });
-      };
-
-      return {
-        filters,
-        debouncedSearch,
-        goToPage,
-      };
-    },
-    methods: {
-      editDesignation(designation) {
-        // Handle edit action
-        console.log("Edit designation", designation);
-      },
-      deleteDesignation(id) {
-        // Handle delete action
-        console.log("Delete designation", id);
-      },
-    },
-  };
-  </script>
+    <AppLayout title="Dashboard">
+        <div class="flex items-center">
+            <h1 class="text-lg font-semibold md:text-2xl">
+            Designations
+            </h1>
+        </div>
+        <div class="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
+            <div class="flex flex-col items-center gap-1 text-center">
+            <h3 class="text-2xl font-bold tracking-tight">
+                You have no products
+            </h3>
+            <p class="text-sm text-muted-foreground">
+                You can start selling as soon as you add a product.
+            </p>
+            <Button class="mt-4">
+                Add Product
+            </Button>
+            </div>
+        </div>
+    </AppLayout>
+</template>
