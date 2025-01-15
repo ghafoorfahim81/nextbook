@@ -5,17 +5,22 @@ import Welcome from '@/Components/Welcome.vue';
 
 <template>
     <AppLayout title="Dashboard">
-        <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                Dashboard
-            </h2>
-        </template>
-
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
-                    <Welcome />
-                </div>
+        <div class="flex items-center">
+            <h1 class="text-lg font-semibold md:text-2xl">
+            Inventory
+            </h1>
+        </div>
+        <div class="flex flex-1 items-center justify-center rounded-lg border border-dashed shadow-sm">
+            <div class="flex flex-col items-center gap-1 text-center">
+            <h3 class="text-2xl font-bold tracking-tight">
+                You have no products
+            </h3>
+            <p class="text-sm text-muted-foreground">
+                You can start selling as soon as you add a product.
+            </p>
+            <Button class="mt-4">
+                Add Product
+            </Button>
             </div>
         </div>
     </AppLayout>
