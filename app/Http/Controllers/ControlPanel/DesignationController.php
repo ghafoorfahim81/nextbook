@@ -17,15 +17,15 @@ class DesignationController extends Controller
     {
         $search = $request->input('search');
 
-        $designations = Designation::query()
-            ->when($search, function ($query, $search) {
-                $query->where('title', 'like', '%' . $search . '%');
-            })
-            ->paginate(10)
-            ->withQueryString();
-
+//        $designations = Designation::query()
+//            ->when($search, function ($query, $search) {
+//                $query->where('title', 'like', '%' . $search . '%');
+//            })
+//            ->paginate(10)
+//            ->withQueryString();
+        $designations = Designation::get();
         return Inertia::render('Designations/Index', [
-            'designations' => $designations,
+            'data' => $designations,
             'filters' => ['search' => $search],
         ]);
     }
