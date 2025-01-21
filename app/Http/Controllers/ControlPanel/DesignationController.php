@@ -17,18 +17,45 @@ class DesignationController extends Controller
     {
         $search = $request->input('search');
 
-//        $designations = Designation::query()
-//            ->when($search, function ($query, $search) {
-//                $query->where('title', 'like', '%' . $search . '%');
-//            })
-//            ->paginate(10)
-//            ->withQueryString();
-        $designations = Designation::get();
+        $designations = Designation::query()
+            ->when($search, function ($query, $search) {
+                return $query->where('name', 'like', "%{$search}%")
+                             ->orWhere('remark', 'like', "%{$search}%");
+            })
+            ->paginate(10); // Adjust pagination
         return Inertia::render('Designations/Index', [
             'data' => $designations,
+            'pagination' => [
+                'current_page' => $designations->currentPage(),
+                'last_page' => $designations->lastPage(),
+                'total' => $designations->total(),
+            ],
+
             'filters' => ['search' => $search],
         ]);
     }
+
+    // public function index(Request $request)
+    // {
+    //     $search = $request->input('search');
+
+    //     $designations = Designation::query()
+    //         ->when($search, function ($query, $search) {
+    //             return $query->where('name', 'like', "%{$search}%")
+    //                          ->orWhere('remark', 'like', "%{$search}%");
+    //         })
+    //         ->paginate(10); // Adjust pagination as needed
+
+    //     return response()->json([
+    //         'data' => $designations->items(),
+    //         'pagination' => [
+    //             'current_page' => $designations->currentPage(),
+    //             'last_page' => $designations->lastPage(),
+    //             'total' => $designations->total(),
+    //         ],
+    //     ]);
+    // }
+
 
     public function store(DesignationStoreRequest $request): DesignationResource
     {

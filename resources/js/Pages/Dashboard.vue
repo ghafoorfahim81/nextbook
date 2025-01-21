@@ -1,262 +1,342 @@
 <script setup lang="ts">
-import type {
-    ColumnDef,
-    ColumnFiltersState,
-    ExpandedState,
-    SortingState,
-    VisibilityState,
-} from '@tanstack/vue-table'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/avatar'
+import { Badge } from '@/Components/ui/badge'
+import { Button } from '@/Components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/Components/ui/dropdown-menu'
+import { Input } from '@/Components/ui/input'
+import { Sheet, SheetContent, SheetTrigger } from '@/Components/ui/sheet'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table'
+import { Activity, ArrowUpRight, CircleUser, CreditCard, DollarSign, Menu, Package2, Search, Users } from 'lucide-vue-next'
+import AppLayout from '@/Layouts/Layout.vue';
 
-import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
-import { valueUpdater } from '@/utils'
-import {
-    FlexRender,
-    getCoreRowModel,
-    getExpandedRowModel,
-    getFilteredRowModel,
-    getPaginationRowModel,
-    getSortedRowModel,
-    useVueTable,
-} from '@tanstack/vue-table'
-import { ArrowUpDown, ChevronDown } from 'lucide-vue-next'
-import { h, ref } from 'vue'
-import DropdownAction from './DataTableDemoColumn.vue'
-
-export interface Payment {
-    id: string
-    amount: number
-    status: 'pending' | 'processing' | 'success' | 'failed'
-    email: string
-}
-
-const data: Payment[] = [
-    {
-        id: 'm5gr84i9',
-        amount: 316,
-        status: 'success',
-        email: 'ken99@yahoo.com',
-    },
-    {
-        id: '3u1reuv4',
-        amount: 242,
-        status: 'success',
-        email: 'Abe45@gmail.com',
-    },
-    {
-        id: 'derv1ws0',
-        amount: 837,
-        status: 'processing',
-        email: 'Monserrat44@gmail.com',
-    },
-    {
-        id: '5kma53ae',
-        amount: 874,
-        status: 'success',
-        email: 'Silas22@gmail.com',
-    },
-    {
-        id: 'bhqecj4p',
-        amount: 721,
-        status: 'failed',
-        email: 'carmella@hotmail.com',
-    },
-]
-
-const columns: ColumnDef<Payment>[] = [
-    {
-        id: 'select',
-        header: ({ table }) => h(Checkbox, {
-            'checked': table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate'),
-            'onUpdate:checked': value => table.toggleAllPageRowsSelected(!!value),
-            'ariaLabel': 'Select all',
-        }),
-        cell: ({ row }) => h(Checkbox, {
-            'checked': row.getIsSelected(),
-            'onUpdate:checked': value => row.toggleSelected(!!value),
-            'ariaLabel': 'Select row',
-        }),
-        enableSorting: false,
-        enableHiding: false,
-    },
-    {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }) => h('div', { class: 'capitalize' }, row.getValue('status')),
-    },
-    {
-        accessorKey: 'email',
-        header: ({ column }) => {
-            return h(Button, {
-                variant: 'ghost',
-                onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
-            }, () => ['Email', h(ArrowUpDown, { class: 'ml-2 h-4 w-4' })])
-        },
-        cell: ({ row }) => h('div', { class: 'lowercase' }, row.getValue('email')),
-    },
-    {
-        accessorKey: 'amount',
-        header: () => h('div', { class: 'text-right' }, 'Amount'),
-        cell: ({ row }) => {
-            const amount = Number.parseFloat(row.getValue('amount'))
-
-            // Format the amount as a dollar amount
-            const formatted = new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: 'USD',
-            }).format(amount)
-
-            return h('div', { class: 'text-right font-medium' }, formatted)
-        },
-    },
-    {
-        id: 'actions',
-        enableHiding: false,
-        cell: ({ row }) => {
-            const payment = row.original
-
-            return h('div', { class: 'relative' }, h(DropdownAction, {
-                payment,
-                onExpand: row.toggleExpanded,
-            }))
-        },
-    },
-]
-
-const sorting = ref<SortingState>([])
-const columnFilters = ref<ColumnFiltersState>([])
-const columnVisibility = ref<VisibilityState>({})
-const rowSelection = ref({})
-const expanded = ref<ExpandedState>({})
-
-const table = useVueTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
-    onSortingChange: updaterOrValue => valueUpdater(updaterOrValue, sorting),
-    onColumnFiltersChange: updaterOrValue => valueUpdater(updaterOrValue, columnFilters),
-    onColumnVisibilityChange: updaterOrValue => valueUpdater(updaterOrValue, columnVisibility),
-    onRowSelectionChange: updaterOrValue => valueUpdater(updaterOrValue, rowSelection),
-    onExpandedChange: updaterOrValue => valueUpdater(updaterOrValue, expanded),
-    state: {
-        get sorting() { return sorting.value },
-        get columnFilters() { return columnFilters.value },
-        get columnVisibility() { return columnVisibility.value },
-        get rowSelection() { return rowSelection.value },
-        get expanded() { return expanded.value },
-    },
-})
 </script>
 
 <template>
-    <div class="w-full">
-        <div class="flex gap-2 items-center py-4">
-            <Input
-                class="max-w-sm"
-                placeholder="Filter emails..."
-                :model-value="table.getColumn('email')?.getFilterValue() as string"
-                @update:model-value=" table.getColumn('email')?.setFilterValue($event)"
-            />
-            <DropdownMenu>
-                <DropdownMenuTrigger as-child>
-                    <Button variant="outline" class="ml-auto">
-                        Columns <ChevronDown class="ml-2 h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuCheckboxItem
-                        v-for="column in table.getAllColumns().filter((column) => column.getCanHide())"
-                        :key="column.id"
-                        class="capitalize"
-                        :checked="column.getIsVisible()"
-                        @update:checked="(value) => {
-              column.toggleVisibility(!!value)
-            }"
-                    >
-                        {{ column.id }}
-                    </DropdownMenuCheckboxItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </div>
-        <div class="rounded-md border">
+    <AppLayout>
+  <div class="flex min-h-screen w-full flex-col">
+
+    <main class="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+      <div class="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle class="text-sm font-medium">
+              Total Revenue
+            </CardTitle>
+            <DollarSign class="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div class="text-2xl font-bold">
+              $45,231.89
+            </div>
+            <p class="text-xs text-muted-foreground">
+              +20.1% from last month
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle class="text-sm font-medium">
+              Subscriptions
+            </CardTitle>
+            <Users class="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div class="text-2xl font-bold">
+              +2350
+            </div>
+            <p class="text-xs text-muted-foreground">
+              +180.1% from last month
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle class="text-sm font-medium">
+              Sales
+            </CardTitle>
+            <CreditCard class="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div class="text-2xl font-bold">
+              +12,234
+            </div>
+            <p class="text-xs text-muted-foreground">
+              +19% from last month
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle class="text-sm font-medium">
+              Active Now
+            </CardTitle>
+            <Activity class="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div class="text-2xl font-bold">
+              +573
+            </div>
+            <p class="text-xs text-muted-foreground">
+              +201 since last hour
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+      <div class="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
+        <Card class="xl:col-span-2">
+          <CardHeader class="flex flex-row items-center">
+            <div class="grid gap-2">
+              <CardTitle>Transactions</CardTitle>
+              <CardDescription>
+                Recent transactions from your store.
+              </CardDescription>
+            </div>
+            <Button as-child size="sm" class="ml-auto gap-1">
+              <a href="#">
+                View All
+                <ArrowUpRight class="h-4 w-4" />
+              </a>
+            </Button>
+          </CardHeader>
+          <CardContent>
             <Table>
-                <TableHeader>
-                    <TableRow v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
-                        <TableHead v-for="header in headerGroup.headers" :key="header.id">
-                            <FlexRender v-if="!header.isPlaceholder" :render="header.column.columnDef.header" :props="header.getContext()" />
-                        </TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    <template v-if="table.getRowModel().rows?.length">
-                        <template v-for="row in table.getRowModel().rows" :key="row.id">
-                            <TableRow :data-state="row.getIsSelected() && 'selected'">
-                                <TableCell v-for="cell in row.getVisibleCells()" :key="cell.id">
-                                    <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
-                                </TableCell>
-                            </TableRow>
-                            <TableRow v-if="row.getIsExpanded()">
-                                <TableCell :colspan="row.getAllCells().length">
-                                    {{ JSON.stringify(row.original) }}
-                                </TableCell>
-                            </TableRow>
-                        </template>
-                    </template>
-
-                    <TableRow v-else>
-                        <TableCell
-                            :colspan="columns.length"
-                            class="h-24 text-center"
-                        >
-                            No results.
-                        </TableCell>
-                    </TableRow>
-                </TableBody>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Customer</TableHead>
+                  <TableHead class="hidden xl:table-column">
+                    Type
+                  </TableHead>
+                  <TableHead class="hidden xl:table-column">
+                    Status
+                  </TableHead>
+                  <TableHead class="hidden xl:table-column">
+                    Date
+                  </TableHead>
+                  <TableHead class="text-right">
+                    Amount
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell>
+                    <div class="font-medium">
+                      Liam Johnson
+                    </div>
+                    <div class="hidden text-sm text-muted-foreground md:inline">
+                      liam@example.com
+                    </div>
+                  </TableCell>
+                  <TableCell class="hidden xl:table-column">
+                    Sale
+                  </TableCell>
+                  <TableCell class="hidden xl:table-column">
+                    <Badge class="text-xs" variant="outline">
+                      Approved
+                    </Badge>
+                  </TableCell>
+                  <TableCell class="hidden md:table-cell lg:hidden xl:table-column">
+                    2023-06-23
+                  </TableCell>
+                  <TableCell class="text-right">
+                    $250.00
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>
+                    <div class="font-medium">
+                      Olivia Smith
+                    </div>
+                    <div class="hidden text-sm text-muted-foreground md:inline">
+                      olivia@example.com
+                    </div>
+                  </TableCell>
+                  <TableCell class="hidden xl:table-column">
+                    Refund
+                  </TableCell>
+                  <TableCell class="hidden xl:table-column">
+                    <Badge class="text-xs" variant="outline">
+                      Declined
+                    </Badge>
+                  </TableCell>
+                  <TableCell class="hidden md:table-cell lg:hidden xl:table-column">
+                    2023-06-24
+                  </TableCell>
+                  <TableCell class="text-right">
+                    $150.00
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>
+                    <div class="font-medium">
+                      Noah Williams
+                    </div>
+                    <div class="hidden text-sm text-muted-foreground md:inline">
+                      noah@example.com
+                    </div>
+                  </TableCell>
+                  <TableCell class="hidden xl:table-column">
+                    Subscription
+                  </TableCell>
+                  <TableCell class="hidden xl:table-column">
+                    <Badge class="text-xs" variant="outline">
+                      Approved
+                    </Badge>
+                  </TableCell>
+                  <TableCell class="hidden md:table-cell lg:hidden xl:table-column">
+                    2023-06-25
+                  </TableCell>
+                  <TableCell class="text-right">
+                    $350.00
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>
+                    <div class="font-medium">
+                      Emma Brown
+                    </div>
+                    <div class="hidden text-sm text-muted-foreground md:inline">
+                      emma@example.com
+                    </div>
+                  </TableCell>
+                  <TableCell class="hidden xl:table-column">
+                    Sale
+                  </TableCell>
+                  <TableCell class="hidden xl:table-column">
+                    <Badge class="text-xs" variant="outline">
+                      Approved
+                    </Badge>
+                  </TableCell>
+                  <TableCell class="hidden md:table-cell lg:hidden xl:table-column">
+                    2023-06-26
+                  </TableCell>
+                  <TableCell class="text-right">
+                    $450.00
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>
+                    <div class="font-medium">
+                      Liam Johnson
+                    </div>
+                    <div class="hidden text-sm text-muted-foreground md:inline">
+                      liam@example.com
+                    </div>
+                  </TableCell>
+                  <TableCell class="hidden xl:table-column">
+                    Sale
+                  </TableCell>
+                  <TableCell class="hidden xl:table-column">
+                    <Badge class="text-xs" variant="outline">
+                      Approved
+                    </Badge>
+                  </TableCell>
+                  <TableCell class="hidden md:table-cell lg:hidden xl:table-column">
+                    2023-06-27
+                  </TableCell>
+                  <TableCell class="text-right">
+                    $550.00
+                  </TableCell>
+                </TableRow>
+              </TableBody>
             </Table>
-        </div>
-
-        <div class="flex items-center justify-end space-x-2 py-4">
-            <div class="flex-1 text-sm text-muted-foreground">
-                {{ table.getFilteredSelectedRowModel().rows.length }} of
-                {{ table.getFilteredRowModel().rows.length }} row(s) selected.
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Sales</CardTitle>
+          </CardHeader>
+          <CardContent class="grid gap-8">
+            <div class="flex items-center gap-4">
+              <Avatar class="hidden h-9 w-9 sm:flex">
+                <AvatarImage src="/avatars/01.png" alt="Avatar" />
+                <AvatarFallback>OM</AvatarFallback>
+              </Avatar>
+              <div class="grid gap-1">
+                <p class="text-sm font-medium leading-none">
+                  Olivia Martin
+                </p>
+                <p class="text-sm text-muted-foreground">
+                  olivia.martin@email.com
+                </p>
+              </div>
+              <div class="ml-auto font-medium">
+                +$1,999.00
+              </div>
             </div>
-            <div class="space-x-2">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    :disabled="!table.getCanPreviousPage()"
-                    @click="table.previousPage()"
-                >
-                    Previous
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    :disabled="!table.getCanNextPage()"
-                    @click="table.nextPage()"
-                >
-                    Next
-                </Button>
+            <div class="flex items-center gap-4">
+              <Avatar class="hidden h-9 w-9 sm:flex">
+                <AvatarImage src="/avatars/02.png" alt="Avatar" />
+                <AvatarFallback>JL</AvatarFallback>
+              </Avatar>
+              <div class="grid gap-1">
+                <p class="text-sm font-medium leading-none">
+                  Jackson Lee
+                </p>
+                <p class="text-sm text-muted-foreground">
+                  jackson.lee@email.com
+                </p>
+              </div>
+              <div class="ml-auto font-medium">
+                +$39.00
+              </div>
             </div>
-        </div>
-    </div>
+            <div class="flex items-center gap-4">
+              <Avatar class="hidden h-9 w-9 sm:flex">
+                <AvatarImage src="/avatars/03.png" alt="Avatar" />
+                <AvatarFallback>IN</AvatarFallback>
+              </Avatar>
+              <div class="grid gap-1">
+                <p class="text-sm font-medium leading-none">
+                  Isabella Nguyen
+                </p>
+                <p class="text-sm text-muted-foreground">
+                  isabella.nguyen@email.com
+                </p>
+              </div>
+              <div class="ml-auto font-medium">
+                +$299.00
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <Avatar class="hidden h-9 w-9 sm:flex">
+                <AvatarImage src="/avatars/04.png" alt="Avatar" />
+                <AvatarFallback>WK</AvatarFallback>
+              </Avatar>
+              <div class="grid gap-1">
+                <p class="text-sm font-medium leading-none">
+                  William Kim
+                </p>
+                <p class="text-sm text-muted-foreground">
+                  will@email.com
+                </p>
+              </div>
+              <div class="ml-auto font-medium">
+                +$99.00
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <Avatar class="hidden h-9 w-9 sm:flex">
+                <AvatarImage src="/avatars/05.png" alt="Avatar" />
+                <AvatarFallback>SD</AvatarFallback>
+              </Avatar>
+              <div class="grid gap-1">
+                <p class="text-sm font-medium leading-none">
+                  Sofia Davis
+                </p>
+                <p class="text-sm text-muted-foreground">
+                  sofia.davis@email.com
+                </p>
+              </div>
+              <div class="ml-auto font-medium">
+                +$39.00
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </main>
+  </div>
+</AppLayout>
 </template>
