@@ -66,6 +66,6 @@ const columns = [
                 <CreateEditModal v-model:show="showModal" />
            </div>
         </div>
-        <DataTable :data="data" :columns="columns" />
+        <DataTable :data="data" :columns="columns" api-endpoint="/designations" />
     </AppLayout>
 </template>

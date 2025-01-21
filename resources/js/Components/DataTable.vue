@@ -30,6 +30,7 @@ import {
 
 import { h, ref,watch } from 'vue';
 import { valueUpdater } from '@/Lib/utils.js';
+import { useDebounceFn } from "@vueuse/core";
 
 const props = defineProps({
     data: {
@@ -40,6 +41,7 @@ const props = defineProps({
         type: Array,
         required: true,
     },
+    apiEndpoint: { type: String, required: true }
 });
 
 const sorting = ref([]);
@@ -80,10 +82,30 @@ const table = useVueTable({
     },
 });
 
+const fetchData = useDebounceFn(async () => {
+  try {
+    const response = await fetch(`${props.apiEndpoint}?search=${encodeURIComponent(searchQuery.value)}`);
+    const result = await response.json();
+
+    // Update table data
+    tableData.value = result.data || [];
+  } catch (error) {
+    console.error("Error fetching data:", error);
+  }
+}, 300);
+
+const tableData = ref([]); // Table data
+const searchQuery = ref(""); // Search query
+
+
 const pageSizes = ref([5, 10, 20, 50, 100]);
-watch(pageSizes, (newSize) => {
+watch(pageSizes, (newSize,searchQuery, fetchData) => {
     table.setPageSize(newSize); // Dynamically update the page size
 });
+
+fetchData();
+
+
 
 </script>
 
@@ -94,8 +116,7 @@ watch(pageSizes, (newSize) => {
             <Input
                 class="max-w-sm"
                 placeholder="Filter..."
-                :model-value="table.getColumn('name')?.getFilterValue()"
-                @update:model-value="table.getColumn('name')?.setFilterValue($event)"
+                v-model="searchQuery"
             />
 
             <!-- Column Visibility Dropdown -->
