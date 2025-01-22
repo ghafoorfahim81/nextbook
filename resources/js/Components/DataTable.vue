@@ -31,7 +31,7 @@ import {
 import { h, ref,watch } from 'vue';
 import { valueUpdater } from '@/Lib/utils.js';
 import { useDebounceFn } from "@vueuse/core";
-
+import { Inertia } from "@inertiajs/vue3";
 const props = defineProps({
     data: {
         type: Array,
@@ -49,7 +49,7 @@ const columnFilters = ref([]);
 const columnVisibility = ref({});
 const rowSelection = ref({});
 const expanded = ref({});
-
+const isLoading = ref(false);
 const table = useVueTable({
     data: props.data,
     columns: props.columns,
@@ -82,15 +82,39 @@ const table = useVueTable({
     },
 });
 
-const fetchData = useDebounceFn(async () => {
-  try {
-    const response = await fetch(`${props.apiEndpoint}?search=${encodeURIComponent(searchQuery.value)}`);
-    const result = await response.json();
+// const fetchData = useDebounceFn(async () => {
+//   try {
+//     const response = await fetch(`${props.apiEndpoint}?search=${encodeURIComponent(searchQuery.value)}`);
+//     const result = await response.json();
 
-    // Update table data
-    tableData.value = result.data || [];
+//     // Update table data
+//     tableData.value = result.data || [];
+//   } catch (error) {
+//     console.error("Error fetching data:", error);
+//   }
+// }, 300);
+
+const fetchData = useDebounceFn(async () => {
+  isLoading.value = true;
+
+  try {
+    // Use Inertia to fetch data from the backend
+    Inertia.get(
+      props.apiEndpoint,
+      { search: searchQuery.value }, // Pass search query to the server
+      {
+        preserveState: true, // Don't reload the page
+        preserveScroll: true, // Keep scroll position
+        onSuccess: ({ props }) => {
+          // Update table data from the response
+          tableData.value = props.data; // Ensure your backend response contains `data`
+        },
+      }
+    );
   } catch (error) {
     console.error("Error fetching data:", error);
+  } finally {
+    isLoading.value = false;
   }
 }, 300);
 
@@ -99,12 +123,9 @@ const searchQuery = ref(""); // Search query
 
 
 const pageSizes = ref([5, 10, 20, 50, 100]);
-watch(pageSizes, (newSize,searchQuery, fetchData) => {
+watch(pageSizes, (newSize) => {
     table.setPageSize(newSize); // Dynamically update the page size
 });
-
-fetchData();
-
 
 
 </script>
@@ -117,6 +138,7 @@ fetchData();
                 class="max-w-sm"
                 placeholder="Filter..."
                 v-model="searchQuery"
+                @input="fetchData"
             />
 
             <!-- Column Visibility Dropdown -->
