@@ -10,17 +10,15 @@ import  DropdownAction  from '@/Components/DataTableDropdown.vue';
 import CreateEditModal from '@/Pages/Designations/CreateEditModal.vue';
 const showModal = ref(false);
 
-const openModal = () => {
-    console.log('Opening modal...');
+const openModal = () => { 
     showModal.value = true;
 };
 
 const closeModal = () => {
-    console.log('Closing modal...');
     showModal.value = false;
 };
 const props = defineProps({
-    data: Array
+    data: Object
 })
 
 const  data = props.data
