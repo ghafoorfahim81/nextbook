@@ -10,7 +10,7 @@ import  DropdownAction  from '@/Components/DataTableDropdown.vue';
 import CreateEditModal from '@/Pages/Designations/CreateEditModal.vue';
 const showModal = ref(false);
 
-const openModal = () => { 
+const openModal = () => {
     showModal.value = true;
 };
 
@@ -64,6 +64,6 @@ const columns = [
                 <CreateEditModal v-model:show="showModal" />
            </div>
         </div>
-        <DataTable :data="data" :columns="columns" api-endpoint="/designations" />
+        <DataTable :data="data" :columns="columns" api-endpoint="/designations" :key="data.length" />
     </AppLayout>
 </template>

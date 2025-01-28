@@ -13,6 +13,8 @@ use Illuminate\Http\Response;
 use Inertia\Inertia;
 class DesignationController extends Controller
 {
+
+
     public function index(Request $request)
     {
         $search = $request->input('search');
@@ -22,18 +24,20 @@ class DesignationController extends Controller
                 return $query->where('name', 'like', "%{$search}%")
                              ->orWhere('remark', 'like', "%{$search}%");
             })
-            ->paginate(10); // Adjust pagination
-        return Inertia::render('Designations/Index', [
-            'data' => $designations,
+            ->paginate(10);
+
+        return inertia('Designations/Index', [
+            'data' => $designations->items(), // Make sure `data` is correct
             'pagination' => [
                 'current_page' => $designations->currentPage(),
                 'last_page' => $designations->lastPage(),
                 'total' => $designations->total(),
             ],
-
-            'filters' => ['search' => $search],
         ]);
     }
+
+
+
 
     // public function index(Request $request)
     // {
