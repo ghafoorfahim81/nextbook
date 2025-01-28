@@ -28,30 +28,30 @@ import {
     useVueTable,
 } from '@tanstack/vue-table';
 
-import { h, ref,watch } from 'vue';
+import { h, ref,watch,onMounted,computed  } from 'vue';
 import { valueUpdater } from '@/Lib/utils.js';
 import { useDebounceFn } from "@vueuse/core";
-import { Inertia } from "@inertiajs/vue3";
+import { router } from "@inertiajs/vue3";
 const props = defineProps({
-    data: {
-        type: Array,
-        required: true,
-    },
-    columns: {
-        type: Array,
-        required: true,
-    },
+    data: { type: Array, required: true },
+    columns: { type: Array, required: true },
     apiEndpoint: { type: String, required: true }
 });
+
+const tableData = ref([...props.data]); // Store table data
+
+watch(() => props.data, (newData) => {
+    console.log("🔄 Data updated:", newData);
+    tableData.value = [...newData]; // ✅ Ensure reactivity
+}, { deep: true, immediate: true });
 
 const sorting = ref([]);
 const columnFilters = ref([]);
 const columnVisibility = ref({});
 const rowSelection = ref({});
 const expanded = ref({});
-const isLoading = ref(false);
 const table = useVueTable({
-    data: props.data,
+    data: computed(() => tableData.value),
     columns: props.columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -82,51 +82,43 @@ const table = useVueTable({
     },
 });
 
-// const fetchData = useDebounceFn(async () => {
-//   try {
-//     const response = await fetch(`${props.apiEndpoint}?search=${encodeURIComponent(searchQuery.value)}`);
-//     const result = await response.json();
 
-//     // Update table data
-//     tableData.value = result.data || [];
-//   } catch (error) {
-//     console.error("Error fetching data:", error);
-//   }
-// }, 300);
+    const searchQuery = ref(""); // Store search input
+    const isLoading = ref(false);
 
-const fetchData = useDebounceFn(async () => {
-  isLoading.value = true;
+    onMounted(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        searchQuery.value = urlParams.get("search") || ""; // Preserve search value
+    });
 
-  try {
-    // Use Inertia to fetch data from the backend
-    Inertia.get(
-      props.apiEndpoint,
-      { search: searchQuery.value }, // Pass search query to the server
-      {
-        preserveState: true, // Don't reload the page
-        preserveScroll: true, // Keep scroll position
-        onSuccess: ({ props }) => {
-          // Update table data from the response
-          tableData.value = props.data; // Ensure your backend response contains `data`
-        },
-      }
-    );
-  } catch (error) {
-    console.error("Error fetching data:", error);
-  } finally {
-    isLoading.value = false;
-  }
-}, 300);
+// 🔎 Debounced function to fetch data
+    const fetchData = useDebounceFn(async () => {
+        isLoading.value = true;
 
-const tableData = ref([]); // Table data
-const searchQuery = ref(""); // Search query
+        try {
+            router.replace(props.apiEndpoint, {
+                data: { search: searchQuery.value },
+                preserveState: true,
+                preserveScroll: true,
+                only: ["data"], // ✅ Ensure only data updates
+                onSuccess: ({ props }) => {
+                    tableData.value = [...props.data]; // ✅ Ensure reactivity
+                },
+            });
+        } catch (error) {
+            console.error("❌ Error fetching data:", error);
+        } finally {
+            isLoading.value = false;
+        }
+    }, 300);
+    watch(searchQuery, () => {
+        fetchData();
+    });
 
-
-const pageSizes = ref([5, 10, 20, 50, 100]);
-watch(pageSizes, (newSize) => {
-    table.setPageSize(newSize); // Dynamically update the page size
-});
-
+    const pageSizes = ref([5, 10, 20, 50, 100]);
+    watch(pageSizes, (newSize) => {
+        table.setPageSize(newSize); // Dynamically update the page size
+    });
 
 </script>
 
@@ -138,7 +130,6 @@ watch(pageSizes, (newSize) => {
                 class="max-w-sm"
                 placeholder="Filter..."
                 v-model="searchQuery"
-                @input="fetchData"
             />
 
             <!-- Column Visibility Dropdown -->
@@ -146,7 +137,7 @@ watch(pageSizes, (newSize) => {
                 <DropdownMenu>
                     <DropdownMenuTrigger as-child>
                         <Button variant="outline">
-                            Page Size <ChevronDown class="ml-2 h-4 w-4" />
+                            Page Size   <ChevronDown class="ml-2 h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -196,7 +187,7 @@ watch(pageSizes, (newSize) => {
                         </TableHead>
                     </TableRow>
                 </TableHeader>
-                <TableBody>
+                    <TableBody>
                     <template v-if="table.getRowModel().rows?.length">
                         <template v-for="row in table.getRowModel().rows" :key="row.id">
                             <TableRow :data-state="row.getIsSelected() && 'selected'">
@@ -205,11 +196,6 @@ watch(pageSizes, (newSize) => {
                                         :render="cell.column.columnDef.cell"
                                         :props="cell.getContext()"
                                     />
-                                </TableCell>
-                            </TableRow>
-                            <TableRow v-if="row.getIsExpanded()">
-                                <TableCell :colspan="row.getAllCells().length">
-                                    {{ JSON.stringify(row.original) }}
                                 </TableCell>
                             </TableRow>
                         </template>
