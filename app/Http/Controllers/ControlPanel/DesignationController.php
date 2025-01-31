@@ -15,19 +15,42 @@ class DesignationController extends Controller
 {
 
 
+    // public function index(Request $request)
+    // {
+    //     $search = $request->input('search');
+
+    //     $designations = Designation::query()
+    //         ->when($search, function ($query, $search) {
+    //             return $query->where('name', 'like', "%{$search}%")
+    //                          ->orWhere('remark', 'like', "%{$search}%");
+    //         })
+    //         ->paginate(10);
+
+    //     return inertia('Designations/Index', [
+    //         'data' => $designations->items(), // Make sure `data` is correct
+    //         'pagination' => [
+    //             'current_page' => $designations->currentPage(),
+    //             'last_page' => $designations->lastPage(),
+    //             'total' => $designations->total(),
+    //         ],
+    //     ]);
+    // }
+
     public function index(Request $request)
     {
         $search = $request->input('search');
+        $page = $request->input('page', 1);
+        $perPage = $request->input('perPage', 10); // Default to 10 per page
 
         $designations = Designation::query()
             ->when($search, function ($query, $search) {
                 return $query->where('name', 'like', "%{$search}%")
-                             ->orWhere('remark', 'like', "%{$search}%");
+                            ->orWhere('remark', 'like', "%{$search}%");
             })
-            ->paginate(10);
+            ->paginate($perPage);
 
         return inertia('Designations/Index', [
-            'data' => $designations->items(), // Make sure `data` is correct
+            'data' => $designations->items(), // Table data
             'pagination' => [
                 'current_page' => $designations->currentPage(),
                 'last_page' => $designations->lastPage(),
@@ -35,6 +58,7 @@ class DesignationController extends Controller
             ],
         ]);
     }
+
 
 
 

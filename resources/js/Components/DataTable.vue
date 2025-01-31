@@ -35,13 +35,15 @@ import { router } from "@inertiajs/vue3";
 const props = defineProps({
     data: { type: Array, required: true },
     columns: { type: Array, required: true },
-    apiEndpoint: { type: String, required: true }
+    apiEndpoint: { type: String, required: true },
+    pagination: { type: Object, required: true }
 });
 
 const tableData = ref([...props.data]); // Store table data
 
 watch(() => props.data, (newData) => {
     console.log("🔄 Data updated:", newData);
+    console.log('this is pagination props data',props.pagination)
     tableData.value = [...newData]; // ✅ Ensure reactivity
 }, { deep: true, immediate: true });
 
@@ -50,6 +52,16 @@ const columnFilters = ref([]);
 const columnVisibility = ref({});
 const rowSelection = ref({});
 const expanded = ref({});
+
+const currentPage = ref(props.pagination.current_page || 1);
+const totalPages = ref(props.pagination.last_page || 1);
+const perPage = ref(10); // Default page size
+
+// 🔄 Watch for page changes and fetch new data
+watch([currentPage, perPage], () => {
+    fetchData();
+});
+
 const table = useVueTable({
     data: computed(() => tableData.value),
     columns: props.columns,
@@ -86,6 +98,7 @@ const table = useVueTable({
     const searchQuery = ref(""); // Store search input
     const isLoading = ref(false);
 
+
     onMounted(() => {
         const urlParams = new URLSearchParams(window.location.search);
         searchQuery.value = urlParams.get("search") || ""; // Preserve search value
@@ -97,12 +110,18 @@ const table = useVueTable({
 
         try {
             router.replace(props.apiEndpoint, {
-                data: { search: searchQuery.value },
+                data: {
+                    search: searchQuery.value,
+                    page: currentPage.value,  // ✅ Send current page
+                    perPage: perPage.value // ✅ Send perPage size
+            },
                 preserveState: true,
                 preserveScroll: true,
-                only: ["data"], // ✅ Ensure only data updates
+                only: ["data", "pagination"], // ✅ Ensure only data updates
                 onSuccess: ({ props }) => {
                     tableData.value = [...props.data]; // ✅ Ensure reactivity
+                    currentPage.value = props.pagination.current_page; // ✅ Sync current page
+                    totalPages.value = props.pagination.last_page;
                 },
             });
         } catch (error) {
@@ -212,27 +231,27 @@ const table = useVueTable({
         <!-- Pagination -->
         <div class="flex items-center justify-end space-x-2 py-4">
             <div class="flex-1 text-sm text-muted-foreground">
-                {{ table.getFilteredSelectedRowModel().rows.length }} of
-                {{ table.getFilteredRowModel().rows.length }} row(s) selected.
+                Page {{ currentPage }} of {{ totalPages }}
             </div>
             <div class="space-x-2">
                 <Button
                     variant="outline"
                     size="sm"
-                    :disabled="!table.getCanPreviousPage()"
-                    @click="table.previousPage()"
+                    :disabled="currentPage <= 1"
+                    @click="currentPage--"
                 >
                     Previous
                 </Button>
                 <Button
                     variant="outline"
                     size="sm"
-                    :disabled="!table.getCanNextPage()"
-                    @click="table.nextPage()"
+                    :disabled="currentPage >= totalPages"
+                    @click="currentPage++"
                 >
                     Next
                 </Button>
             </div>
         </div>
+
     </div>
 </template>
