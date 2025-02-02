@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\ControlPanel;
+namespace App\Http\Requests\Administration;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class DesignationStoreRequest extends FormRequest
+class DepartmentStoreRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -20,11 +20,10 @@ class DesignationStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:designations,name'],
+            'name' => ['required', 'string', 'unique:departments,name'],
             'remark' => ['nullable', 'string'],
             'created_by' => ['required'],
             'updated_by' => ['nullable'],
-            'deleted_by' => ['nullable'],
         ];
     }
 }

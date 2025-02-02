@@ -35,7 +35,8 @@ import { router } from "@inertiajs/vue3";
 const props = defineProps({
     data: { type: Array, required: true },
     columns: { type: Array, required: true },
-    apiEndpoint: { type: String, required: true }
+    apiEndpoint: { type: String, required: true },
+    pagination: { type: Object, default: () => ({ current_page: 1, last_page: 1, total: 0 }) } // ✅ Default value
 });
 
 const tableData = ref([...props.data]); // Store table data
@@ -53,6 +54,7 @@ const expanded = ref({});
 const table = useVueTable({
     data: computed(() => tableData.value),
     columns: props.columns,
+
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -92,28 +94,49 @@ const table = useVueTable({
     });
 
 // 🔎 Debounced function to fetch data
-    const fetchData = useDebounceFn(async () => {
-        isLoading.value = true;
+const currentPage = ref(props.pagination.current_page || 1);
+const totalPages = ref(props.pagination.last_page || 1);
+const perPage = ref(10); // Default page size
+watch(() => props.pagination, (newPagination) => {
+    console.log("📌 Pagination updated:", newPagination);
+    currentPage.value = newPagination.current_page;
+    totalPages.value = newPagination.last_page;
+}, { deep: true, immediate: true });
 
-        try {
-            router.replace(props.apiEndpoint, {
-                data: { search: searchQuery.value },
-                preserveState: true,
-                preserveScroll: true,
-                only: ["data"], // ✅ Ensure only data updates
-                onSuccess: ({ props }) => {
-                    tableData.value = [...props.data]; // ✅ Ensure reactivity
-                },
-            });
-        } catch (error) {
-            console.error("❌ Error fetching data:", error);
-        } finally {
-            isLoading.value = false;
-        }
-    }, 300);
-    watch(searchQuery, () => {
-        fetchData();
-    });
+// 🔄 Watch for page changes and fetch new data
+watch([currentPage, perPage], () => {
+    fetchData();
+});
+
+// 🔎 Update API call to include pagination
+const fetchData = useDebounceFn(async () => {
+    isLoading.value = true;
+
+    try {
+        router.replace(props.apiEndpoint, {
+            data: {
+                search: searchQuery.value,
+                page: currentPage.value,  // ✅ Send current page
+                perPage: perPage.value // ✅ Send perPage size
+            },
+            preserveState: true,
+            preserveScroll: true,
+            only: ["data", "pagination"], // ✅ Fetch both data & pagination
+            onSuccess: ({ props }) => {
+                console.log("✅ New data received:", props.data);
+                tableData.value = [...props.data]; // ✅ Ensure reactivity
+                currentPage.value = props.pagination.current_page; // ✅ Sync current page
+                totalPages.value = props.pagination.last_page; // ✅ Sync total pages
+            },
+        });
+    } catch (error) {
+        console.error("❌ Error fetching data:", error);
+    } finally {
+        isLoading.value = false;
+    }
+}, 300);
+
+
 
     const pageSizes = ref([5, 10, 20, 50, 100]);
     watch(pageSizes, (newSize) => {
@@ -212,27 +235,27 @@ const table = useVueTable({
         <!-- Pagination -->
         <div class="flex items-center justify-end space-x-2 py-4">
             <div class="flex-1 text-sm text-muted-foreground">
-                {{ table.getFilteredSelectedRowModel().rows.length }} of
-                {{ table.getFilteredRowModel().rows.length }} row(s) selected.
+                Page {{ currentPage }} of {{ totalPages }}
             </div>
             <div class="space-x-2">
                 <Button
                     variant="outline"
                     size="sm"
-                    :disabled="!table.getCanPreviousPage()"
-                    @click="table.previousPage()"
+                    :disabled="currentPage <= 1"
+                    @click="currentPage--"
                 >
                     Previous
                 </Button>
                 <Button
                     variant="outline"
                     size="sm"
-                    :disabled="!table.getCanNextPage()"
-                    @click="table.nextPage()"
+                    :disabled="currentPage >= totalPages"
+                    @click="currentPage++"
                 >
                     Next
                 </Button>
             </div>
         </div>
+
     </div>
 </template>

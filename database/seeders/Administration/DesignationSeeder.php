@@ -1,8 +1,8 @@
 <?php
 
-namespace Database\Seeders\ControlPanel;
+namespace Database\Seeders;
 
-use App\Models\ControlPanel\Designation;
+use App\Models\Designation;
 use Illuminate\Database\Seeder;
 
 class DesignationSeeder extends Seeder
@@ -12,6 +12,6 @@ class DesignationSeeder extends Seeder
      */
     public function run(): void
     {
-        Designation::factory()->count(50)->create();
+        Designation::factory()->count(5)->create();
     }
 }

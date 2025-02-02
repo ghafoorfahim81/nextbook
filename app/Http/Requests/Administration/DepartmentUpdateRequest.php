@@ -1,11 +1,10 @@
 <?php
 
-namespace App\Http\Requests\ControlPanel;
+namespace App\Http\Requests\Administration;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
-class DesignationUpdateRequest extends FormRequest
+class DepartmentUpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -21,13 +20,10 @@ class DesignationUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string',
-                Rule::unique('designations')->ignore($this->route('designation')),
-            ],
+            'name' => ['required', 'string', 'unique:departments,name'],
             'remark' => ['nullable', 'string'],
-            'created_by' => ['nullable'],
+            'created_by' => ['required'],
             'updated_by' => ['nullable'],
-            'deleted_by' => ['nullable'],
         ];
     }
 }

@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Resources\ControlPanel;
+namespace App\Http\Resources\Administration;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 
-class DesignationCollection extends ResourceCollection
+class DepartmentCollection extends ResourceCollection
 {
     /**
      * Transform the resource collection into an array.
