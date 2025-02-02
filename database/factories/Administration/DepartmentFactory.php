@@ -24,6 +24,7 @@ class DepartmentFactory extends Factory
         return [
             'name' => $this->faker->name(),
             'remark' => $this->faker->text(),
+            'parent_id' => Department::factory(),
             'created_by' => User::factory()->create()->created_by,
             'updated_by' => User::factory()->create()->updated_by,
         ];

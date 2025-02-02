@@ -22,6 +22,7 @@ class DepartmentUpdateRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'unique:departments,name'],
             'remark' => ['nullable', 'string'],
+            'parent_id' => ['nullable', 'exists:departments,id'],
             'created_by' => ['required'],
             'updated_by' => ['nullable'],
         ];
