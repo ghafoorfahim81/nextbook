@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Resources\ControlPanel;
+namespace App\Http\Resources\Administration;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class DesignationResource extends JsonResource
+class DepartmentResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -18,7 +18,6 @@ class DesignationResource extends JsonResource
             'remark' => $this->remark,
             'created_by' => $this->created_by,
             'updated_by' => $this->updated_by,
-            'deleted_by' => $this->deleted_by,
         ];
     }
 }
