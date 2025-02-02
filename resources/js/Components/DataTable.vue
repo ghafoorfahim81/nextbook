@@ -36,13 +36,14 @@ const props = defineProps({
     data: { type: Array, required: true },
     columns: { type: Array, required: true },
     apiEndpoint: { type: String, required: true },
-    pagination: { type: Object, default: () => ({ current_page: 1, last_page: 1, total: 0 }) } // ✅ Default value
+    pagination: { type: Object, required: true }
 });
 
 const tableData = ref([...props.data]); // Store table data
 
 watch(() => props.data, (newData) => {
     console.log("🔄 Data updated:", newData);
+    console.log('this is pagination props data',props.pagination)
     tableData.value = [...newData]; // ✅ Ensure reactivity
 }, { deep: true, immediate: true });
 
@@ -51,6 +52,16 @@ const columnFilters = ref([]);
 const columnVisibility = ref({});
 const rowSelection = ref({});
 const expanded = ref({});
+
+const currentPage = ref(props.pagination.current_page || 1);
+const totalPages = ref(props.pagination.last_page || 1);
+const perPage = ref(10); // Default page size
+
+// 🔄 Watch for page changes and fetch new data
+watch([currentPage, perPage], () => {
+    fetchData();
+});
+
 const table = useVueTable({
     data: computed(() => tableData.value),
     columns: props.columns,
@@ -87,6 +98,7 @@ const table = useVueTable({
 
     const searchQuery = ref(""); // Store search input
     const isLoading = ref(false);
+
 
     onMounted(() => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -137,6 +149,31 @@ const fetchData = useDebounceFn(async () => {
 }, 300);
 
 
+        try {
+            router.replace(props.apiEndpoint, {
+                data: {
+                    search: searchQuery.value,
+                    page: currentPage.value,  // ✅ Send current page
+                    perPage: perPage.value // ✅ Send perPage size
+            },
+                preserveState: true,
+                preserveScroll: true,
+                only: ["data", "pagination"], // ✅ Ensure only data updates
+                onSuccess: ({ props }) => {
+                    tableData.value = [...props.data]; // ✅ Ensure reactivity
+                    currentPage.value = props.pagination.current_page; // ✅ Sync current page
+                    totalPages.value = props.pagination.last_page;
+                },
+            });
+        } catch (error) {
+            console.error("❌ Error fetching data:", error);
+        } finally {
+            isLoading.value = false;
+        }
+    }, 300);
+    watch(searchQuery, () => {
+        fetchData();
+    });
 
     const pageSizes = ref([5, 10, 20, 50, 100]);
     watch(pageSizes, (newSize) => {
