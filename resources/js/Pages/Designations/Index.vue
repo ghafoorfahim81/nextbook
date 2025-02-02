@@ -18,12 +18,18 @@ const closeModal = () => {
     showModal.value = false;
 };
 const props = defineProps({
-    data: Object
+    data: Object,
+    pagination:Object
 })
 
 const  data = props.data
 
 const columns = [
+    {
+        accessorKey: 'number',
+        header: '#',
+        cell: ({ row }) => h('div', { class: 'lowercase' }, 1),
+    },
     {
         accessorKey: 'name',
         header: ({ column }) => {
@@ -64,6 +70,6 @@ const columns = [
                 <CreateEditModal v-model:show="showModal" />
            </div>
         </div>
-        <DataTable :data="data" :columns="columns" :pagination="pagination || { current_page: 1, last_page: 1, total: 0 }" api-endpoint="/designations" :key="data.length" />
+        <DataTable :data="data" :columns="columns" :pagination="pagination" api-endpoint="/designations" :key="data.length" />
     </AppLayout>
 </template>

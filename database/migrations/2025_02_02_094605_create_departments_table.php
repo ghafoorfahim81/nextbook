@@ -17,8 +17,9 @@ return new class extends Migration
             $table->uuid('id');
             $table->string('name')->unique();
             $table->text('remark')->nullable();
-            $table->foreignUuid('created_by')->constrained('users', 'by');
-            $table->foreignUuid('updated_by')->nullable()->constrained('users', 'by');
+            $table->foreignUuid('parent_id')->nullable()->constrained('departments', 'id');
+            $table->foreignUuid('created_by')->constrained('users');
+            $table->foreignUuid('updated_by')->nullable()->constrained('users');
             $table->timestamps();
         });
 
