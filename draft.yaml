@@ -1,0 +1,16 @@
+models:
+  Administration/Department:
+    id: uuid
+    name: string unique
+    parent_id: uuid foreign:departments nullable
+    remark: text nullable
+    created_by: uuid foreign:users
+    updated_by: uuid foreign:users nullable
+    timestamps: true
+
+
+controllers:
+  Administration/Department:
+    resource: api
+
+seeders: Administration/Department
