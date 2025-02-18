@@ -4,8 +4,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use App\Http\Controllers\ControlPanel\DesignationController;
-use App\Http\Controllers\ControlPanel\DepartmentController;
+use App\Http\Controllers\Administration\DesignationController;
+use App\Http\Controllers\Administration\DepartmentController;
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -24,7 +24,7 @@ Route::middleware([
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
-    Route::resource('designations', DesignationController::class);
+//    Route::resource('designations', DesignationController::class);
     Route::resource('departments', DepartmentController::class);
 
 

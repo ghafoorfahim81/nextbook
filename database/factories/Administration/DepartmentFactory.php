@@ -21,11 +21,17 @@ class DepartmentFactory extends Factory
      */
     public function definition(): array
     {
+        $user = User::where('name', 'admin')->first();
+
+        // If the admin user doesn't exist, create it
+
+//    dd($user->name);
+    \Log::info($user);
         return [
+            'id' => Str::uuid(), // Generate a UUID for the department ID
             'name' => $this->faker->name(),
             'remark' => $this->faker->text(),
-            'created_by' => User::factory()->create()->created_by,
-            'updated_by' => User::factory()->create()->updated_by,
+            'created_by' => $user['id'] // Use the UUID of the admin user
         ];
     }
 }

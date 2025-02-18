@@ -2,9 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\Administration\Department;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,14 +15,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
         User::create([
+            'id' => Str::uuid(),
             'name' => 'admin',
             'email' => 'admin@gmail.com',
             'password' => bcrypt('password'),
 
         ]);
-        $this->call(ControlPanel\DesignationSeeder::class);
+
+        Department::factory()->count(5)->create();
     }
 }

@@ -2,14 +2,15 @@
 
 namespace App\Models\Administration;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use App\Traits\HasUserAuditable;
+use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Department extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUserAuditable;
 
     /**
      * The attributes that are mass assignable.
@@ -17,19 +18,18 @@ class Department extends Model
      * @var array
      */
     protected $fillable = [
+        'id',
         'name',
         'remark',
         'created_by',
         'updated_by',
     ];
 
-    public function createdBy(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class);
-    }
+    protected $casts = [
+        'id' => 'string',
+        'created_by' => 'string',
+        'updated_by' => 'string',
+    ];
 
-    public function updatedBy(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class);
-    }
+
 }
