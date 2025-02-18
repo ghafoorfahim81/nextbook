@@ -1,9 +1,11 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\Seeders\Administration;
 
 use App\Models\Administration\Department;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Symfony\Component\Uid\Ulid;
 
 class DepartmentSeeder extends Seeder
 {
@@ -12,6 +14,11 @@ class DepartmentSeeder extends Seeder
      */
     public function run(): void
     {
-        Department::factory()->count(5)->create();
+        Department::create([
+            'id'  => Ulid::generate(),
+            'name' => 'Main Department',
+            'code' => 'DEP-1',
+            'remark' => 'This is default Department',
+        ]);
     }
 }
