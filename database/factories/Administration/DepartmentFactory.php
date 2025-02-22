@@ -22,10 +22,11 @@ class DepartmentFactory extends Factory
     public function definition(): array
     {
         return [
-            'id' => Str::uuid(), // Generate a UUID for the department ID
+            'id' => Str::ulid(), // Generate a UUID for the department ID
             'name' => $this->faker->name(),
-            'code' => $this->faker->unique()->randomNumber(),
+            'code' => 'Dep-'.$this->faker->unique()->randomNumber(),
             'remark' => $this->faker->text(),
+            'parent_id' => null,
         ];
     }
 }

@@ -25,8 +25,9 @@ class DatabaseSeeder extends Seeder
 //        ]);
         // dd($x);
         $this->call(UserSeeder::class);
+
 //        $this->call(DepartmentSeeder::class);
 
-        Department::factory()->count(5)->create();
+        Department::factory()->count(20)->create();
     }
 }

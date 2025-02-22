@@ -13,11 +13,14 @@ use Illuminate\Http\Response;
 
 class DepartmentController extends Controller
 {
-    public function index(Request $request): DepartmentCollection
+    public function index(Request $request)
     {
-        $departments = Department::all();
-
-        return new DepartmentCollection($departments);
+        $departments = Department::with('parent')
+            ->paginate()
+            ->withQueryString();
+        return inertia('Administration/Departments/Index', [
+            'data' => DepartmentResource::collection($departments),
+        ]);
     }
 
     public function store(DepartmentStoreRequest $request): DepartmentResource
