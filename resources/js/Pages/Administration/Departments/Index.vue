@@ -17,69 +17,21 @@ const openModal = () => {
 const closeModal = () => {
     showModal.value = false;
 };
-const props = defineProps({
-    data: Object,
-    pagination:Object
+defineProps({
+    items: Object,
+    filters: Object,
 })
-const  data = props.data.data
-const links = props.data.links;
-console.log('this is data',props.data.links)
+// const  data = props.data.data
+// const links = props.data.links;
+// console.log('this is data',props.data.links)
 
-const columns = [
-    {
-        accessorKey: 'number',
-        header: '#',
-        cell: ({ row }) => h('div', { class: 'lowercase' }, 1),
-    },
-    {
-        accessorKey: 'name',
-        header: ({ column }) => {
-            return h(Button, {
-                variant: 'ghost',
-                onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
-            }, () => ['Name', h(ArrowUpDown, { class: 'ml-2 h-4 w-4' })])
-        },
-        cell: ({ row }) => h('div', { class: 'lowercase' }, row.getValue('name')),
-    },
-    {
-        accessorKey: 'code',
-        header: ({ column }) => {
-            return h(Button, {
-                variant: 'ghost',
-                onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
-            }, () => ['Code', h(ArrowUpDown, { class: 'ml-2 h-4 w-4' })])
-        },
-        cell: ({ row }) => h('div', { class: 'lowercase' }, row.getValue('code')),
-    },
-    {
-        accessorKey: 'parent',
-        header: ({ column }) => {
-            return h(Button, {
-                variant: 'ghost',
-                onClick: () => column.toggleSorting(column.getIsSorted() === 'asc'),
-            }, () => ['Parent', h(ArrowUpDown, { class: 'ml-2 h-4 w-4' })])
-        },
-        cell: ({ row }) => h('div', { class: 'lowercase' }, row.getValue('parent')),
-    },
-
-    {
-        accessorKey: 'remark',
-        header: 'Remark',
-        cell: ({ row }) => h('div', { class: 'lowercase' }, row.getValue('remark')),
-    },
-    {
-        id: 'actions',
-        header:'Action',
-        cell: ({ row }) => {
-            const payment = row.original
-
-            return h('div', { class: 'relative' }, h(DropdownAction, {
-                payment,
-                onExpand: row.toggleExpanded,
-            }))
-        },
-    },
-];
+const columns = ref([
+    { key: 'id', label: 'ID' },
+    { key: 'name', label: 'Name' },
+    { key: 'code', label: 'Code' },
+    { key: 'parent', label: 'Parent' },
+    // Add more columns as needed
+])
 </script>
 
 <template>
@@ -91,6 +43,7 @@ const columns = [
                 <CreateEditModal v-model:show="showModal" />
             </div>
         </div>
-        <DataTable :data="data" :columns="columns" :pagination="links" api-endpoint="/departments" :key="data.length" />
+        <DataTable :items="items" :columns="columns" :filters="filters" />
+
     </AppLayout>
 </template>

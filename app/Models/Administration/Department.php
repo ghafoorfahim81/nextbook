@@ -2,6 +2,8 @@
 
 namespace App\Models\Administration;
 
+use App\Traits\HasSearch;
+use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 
@@ -12,7 +14,7 @@ use Symfony\Component\Uid\Ulid;
 
 class Department extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting;
 
     /**
      * The attributes that are mass assignable.
@@ -29,6 +31,7 @@ class Department extends Model
             $model->id = (string) new Ulid(); // Generate ULID
         });
     }
+
     protected $fillable = [
         'id',
         'name',
@@ -45,6 +48,16 @@ class Department extends Model
         'updated_by' => 'string',
         'parent_id' => 'string',
     ];
+
+    protected static function searchableColumns(): array
+    {
+        return [
+            'name',
+            'code',
+            'remark',
+            'parent.name'
+        ];
+    }
 
     public function parent(): BelongsTo
     {
