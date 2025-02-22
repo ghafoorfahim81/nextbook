@@ -103,7 +103,7 @@ const data = {
             title: 'Master',
             url: '#',
             icon: SquareTerminal,
-            isActive: true,
+                isActive: true,
             items: [
                 {
                     title: 'Designation',

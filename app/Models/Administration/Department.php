@@ -25,7 +25,6 @@ class Department extends Model
     protected static function boot()
     {
         parent::boot();
-
         static::creating(function ($model) {
             $model->id = (string) new Ulid(); // Generate ULID
         });
@@ -33,7 +32,9 @@ class Department extends Model
     protected $fillable = [
         'id',
         'name',
+        'code',
         'remark',
+        'parent_id',
         'created_by',
         'updated_by',
     ];
@@ -42,7 +43,12 @@ class Department extends Model
         'id' => 'string',
         'created_by' => 'string',
         'updated_by' => 'string',
+        'parent_id' => 'string',
     ];
 
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'parent_id');
+    }
 
 }

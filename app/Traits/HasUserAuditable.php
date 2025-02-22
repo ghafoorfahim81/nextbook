@@ -14,7 +14,7 @@ trait HasUserAuditable
         $firstUser = \App\Models\User::first();
         if(!$firstUser){
             $firstUser = User::create([
-                'id' => (string) new Ulid(), // Generate ULID
+                'id' => (string) new Ulid(),
                 'name' => 'admin',
                 'email' => 'admin@gmail.com',
                 'password' => bcrypt('password'),

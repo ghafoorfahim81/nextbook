@@ -25,6 +25,6 @@ Route::middleware([
     })->name('dashboard');
 
     Route::resource('designations', DesignationController::class);
-    Route::resource('departments', DepartmentController::class);
+    Route::resource('/departments', DepartmentController::class);
 
 });

@@ -52,12 +52,14 @@ const columnFilters = ref([]);
 const columnVisibility = ref({});
 const rowSelection = ref({});
 const expanded = ref({});
-
+const currentPage = ref(props.pagination.current_page || 1);
+const totalPages = ref(props.pagination.last_page || 1);
+const perPage = ref(10); // Default page size
 
 // 🔄 Watch for page changes and fetch new data
-watch([currentPage, perPage], () => {
-    fetchData();
-});
+// watch([currentPage, perPage], () => {
+//     fetchData();
+// });
 
 const table = useVueTable({
     data: computed(() => tableData.value),
@@ -103,9 +105,7 @@ const table = useVueTable({
     });
 
 // 🔎 Debounced function to fetch data
-const currentPage = ref(props.pagination.current_page || 1);
-const totalPages = ref(props.pagination.last_page || 1);
-const perPage = ref(10); // Default page size
+
 watch(() => props.pagination, (newPagination) => {
     console.log("📌 Pagination updated:", newPagination);
     currentPage.value = newPagination.current_page;
@@ -113,9 +113,9 @@ watch(() => props.pagination, (newPagination) => {
 }, { deep: true, immediate: true });
 
 // 🔄 Watch for page changes and fetch new data
-watch([currentPage, perPage], () => {
-    fetchData();
-});
+// watch([currentPage, perPage], () => {
+//     fetchData();
+// });
 
 // 🔎 Update API call to include pagination
 const fetchData = useDebounceFn(async () => {
@@ -132,8 +132,7 @@ const fetchData = useDebounceFn(async () => {
             preserveScroll: true,
             only: ["data", "pagination"], // ✅ Fetch both data & pagination
             onSuccess: ({ props }) => {
-                console.log("✅ New data received:", props.data);
-                tableData.value = [...props.data]; // ✅ Ensure reactivity
+                tableData.value = [props.data]; // ✅ Ensure reactivity
                 currentPage.value = props.pagination.current_page; // ✅ Sync current page
                 totalPages.value = props.pagination.last_page; // ✅ Sync total pages
             },
@@ -146,31 +145,8 @@ const fetchData = useDebounceFn(async () => {
 }, 300);
 
 
-        try {
-            router.replace(props.apiEndpoint, {
-                data: {
-                    search: searchQuery.value,
-                    page: currentPage.value,  // ✅ Send current page
-                    perPage: perPage.value // ✅ Send perPage size
-            },
-                preserveState: true,
-                preserveScroll: true,
-                only: ["data", "pagination"], // ✅ Ensure only data updates
-                onSuccess: ({ props }) => {
-                    tableData.value = [...props.data]; // ✅ Ensure reactivity
-                    currentPage.value = props.pagination.current_page; // ✅ Sync current page
-                    totalPages.value = props.pagination.last_page;
-                },
-            });
-        } catch (error) {
-            console.error("❌ Error fetching data:", error);
-        } finally {
-            isLoading.value = false;
-        }
-    }, 300);
-    watch(searchQuery, () => {
-        fetchData();
-    });
+
+
 
     const pageSizes = ref([5, 10, 20, 50, 100]);
     watch(pageSizes, (newSize) => {
