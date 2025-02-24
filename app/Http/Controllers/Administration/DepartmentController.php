@@ -20,27 +20,23 @@ class DepartmentController extends Controller
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'asc');
 
-//        $query = Department::with('parent')
-//            ->when($search, function ($query, $search) {
-//                return $query->where('name', 'like', "%{$search}%")
-//                    ->orWhere('code', 'like', "%{$search}%");
-//            })
-//            ->orderBy($sortField, $sortDirection);
-//
-//        $data = $query->paginate($perPage)->withQueryString();
+        $query = Department::with('parent')
+            ->when($search, function ($query, $search) {
+                return $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            })
+            ->orderBy($sortField, $sortDirection);
+        dd($query->get();
+        $data = $query->paginate($perPage)->withQueryString();
 
         $departments = Department::with('parent')
             ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
-            ->paginate()
+            ->paginate($perPage)
             ->withQueryString();
-
-//        return inertia('Categories/Index', [
-//            'categories' => CategoryResource::collection($categories),
-//        ]);
-
         return inertia('Administration/Departments/Index', [
-            'items' => DepartmentResource::collection($departments),
+//            'items' => DepartmentResource::collection($departments),
+            'items' => DepartmentResource::collection($data),
             'filters' => [
                 'search' => $search,
                 'perPage' => $perPage,

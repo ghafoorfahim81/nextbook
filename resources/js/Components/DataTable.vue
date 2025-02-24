@@ -2,16 +2,28 @@
 <template>
     <div class="space-y-4">
         <!-- Search and Per Page Controls -->
-        <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
+        <div class="flex items-center justify-between">
+            <div class="flex relative w-full max-w-sm items-center">
                 <Input
+                    id="search"
                     v-model="search"
-                    placeholder="Search..."
-                    class="max-w-sm"
                     @input="debouncedSearch"
+                    type="text"
+                    placeholder="Search..."
+                    class="pl-8 pr-10"
                 />
+                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                <Search class="size-4 text-muted-foreground" />
+                </span>
+                <button
+                    v-if="search"
+                    class="absolute end-0 inset-y-0 flex items-center justify-center px-2 text-muted-foreground hover:text-foreground"
+                    @click="clearSearch"
+                >
+                    <X class="size-5" />
+                </button>
             </div>
-            <div className="flex items-center space-x-2">
+            <div class="flex items-center space-x-2">
                                 <Select v-model="perPage" @update:modelValue="updatePerPage">
                                     <SelectTrigger class="w-[100px]">
                                         <SelectValue placeholder="Per page" />
@@ -78,6 +90,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
+import { Search, X } from 'lucide-vue-next'
 import { router } from "@inertiajs/vue3";
 import { debounce } from 'lodash'
 import {
@@ -161,5 +174,10 @@ const changePage = (page) => {
         },
         { preserveState: true, preserveScroll: true }
     )
+}
+
+const clearSearch = () => {
+    search.value = ''
+    updateFilters()
 }
 </script>
