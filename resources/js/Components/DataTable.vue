@@ -3,25 +3,37 @@
     <div class="space-y-4">
         <!-- Search and Per Page Controls -->
         <div class="flex items-center justify-between">
-            <div class="flex relative w-full max-w-sm items-center">
-                <Input
-                    id="search"
-                    v-model="search"
-                    @input="debouncedSearch"
-                    type="text"
-                    placeholder="Search..."
-                    class="pl-8 pr-10"
-                />
-                <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-          <Search class="size-4 text-muted-foreground" />
-        </span>
-                <button
-                    v-if="search"
-                    class="absolute end-0 inset-y-0 flex items-center justify-center px-2 text-muted-foreground hover:text-foreground"
-                    @click="clearSearch"
-                >
-                    <CircleX class="size-4 mr-2" />
-                </button>
+            <div class="flex relative w-full max-w-sm">
+               <div class="flex justify-items-start">
+                   <h1 class="text-lg font-semibold mr-4">Designations</h1>
+               </div>
+
+                <div class="flex relative gap-4">
+                    <Input
+                        id="search"
+                        v-model="search"
+                        @input="debouncedSearch"
+                        type="text"
+                        placeholder="Search..."
+                        class="pl-8 pr-32"
+                    />
+                    <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
+                      <Search class="size-4 text-muted-foreground" />
+                    </span>
+                    <button
+                        v-if="search"
+                        class="absolute end-0 inset-y-0 flex items-center justify-center px-2 text-muted-foreground hover:text-foreground"
+                        @click="clearSearch"
+                    >
+                        <CircleX class="size-4 mr-9" />
+                    </button>
+                    <button
+                        class="absolute end-0 inset-y-0 flex items-center justify-center px-2 text-muted-foreground hover:text-foreground"
+                        @click="clearSearch"
+                    >
+                        <SlidersHorizontal class="size-4 mr-2" />
+                    </button>
+                </div>
             </div>
             <div class="flex items-center space-x-2">
                 <Select v-model="perPage" @update:modelValue="updatePerPage">
@@ -78,18 +90,18 @@
         <!-- Pagination -->
         <div class="flex items-center justify-between">
             <div class="text-sm text-muted-foreground">
-                Showing {{ items.from }} to {{ items.to }} of {{ items.total }} entries
+                Showing {{ items.meta.from }} to {{ items.meta.to }} of {{ items.total }} entries
             </div>
             <div class="flex space-x-2">
                 <Button
-                    :disabled="!items.prev_page_url"
-                    @click="changePage(items.current_page - 1)"
+                    :disabled="!items.links.prev"
+                    @click="changePage(items.meta.current_page - 1)"
                 >
                     Previous
                 </Button>
                 <Button
-                    :disabled="!items.next_page_url"
-                    @click="changePage(items.current_page + 1)"
+                    :disabled="!items.links.next"
+                    @click="changePage(items.meta.current_page + 1)"
                 >
                     Next
                 </Button>
@@ -119,7 +131,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { Search, CircleX, ChevronUp, ChevronDown } from 'lucide-vue-next'
+import { Search, CircleX, ChevronUp, ChevronDown, SlidersHorizontal } from 'lucide-vue-next'
+import {SliderRange} from "reka-ui";
 
 // Helper function to get nested values
 const getNestedValue = (obj, path) => {
@@ -132,13 +145,8 @@ const getNestedValue = (obj, path) => {
 
 const props = defineProps({
     items: Object,
-    columns: Array, // Changed from Object to Array to match usage in v-for
-    filters: Object, // Changed from Array to Object to match usage (search, perPage, etc.)
-})
-
-console.log('props data is:', {
-    columns: props.columns,
-    filters: props.filters,
+    columns: Array,
+    url:String,
 })
 
 // Default values with fallbacks
@@ -147,21 +155,15 @@ const search = ref(props.filters?.search || '')
 const perPage = ref(props.filters?.perPage || 10)
 const sortField = ref(props.filters?.sortField || 'id')
 const sortDirection = ref(props.filters?.sortDirection || 'asc')
-console.log('sort direction is ',sortDirection)
+const url = (props.url)
+console.log('url issss ',props.url)
 const debouncedSearch = debounce(() => {
     updateFilters()
 }, 300)
 
 const updateFilters = () => {
-    console.log('Updating filters:', {
-        search: search.value,
-        perPage: perPage.value,
-        sortField: sortField.value,
-        sortDirection: sortDirection.value,
-    })
-
     router.get(
-        route('departments.index'),
+        route(url),
         {
             search: search.value,
             perPage: perPage.value,
@@ -178,22 +180,18 @@ const updatePerPage = (value) => {
 }
 
 const sort = (field) => {
-    console.log('Sorting:', { field, currentSortField: sortField.value, currentDirection: sortDirection.value })
-
     if (sortField.value === field) {
         sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
     } else {
         sortField.value = field
         sortDirection.value = 'asc'
     }
-
-    console.log('After sort - sortField:', sortField.value, 'sortDirection:', sortDirection.value)
     updateFilters()
 }
 
 const changePage = (page) => {
     router.get(
-        route('departments.index'),
+        route(url),
         {
             page,
             search: search.value,
