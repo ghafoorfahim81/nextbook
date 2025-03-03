@@ -17,16 +17,18 @@ const openModal = () => {
 const closeModal = () => {
     showModal.value = false;
 };
+
+const showFilter = () => {
+    showFilter.value = true;
+}
+
 const props = defineProps({
     items: Object,
-    filters: Object,
 })
 // const  data = props.data.data
 // const links = props.data.links;
 // console.log('this is data',props.data.links)
-console.log(
-    'this is props data',props.items.data
-)
+
 const columns = ref([
     { key: 'id', label: 'ID' },
     { key: 'name', label: 'Name' },
@@ -40,13 +42,12 @@ const columns = ref([
 <template>
     <AppLayout title="Designations">
         <div class="flex gap-2 items-center">
-            <h1 class="text-lg font-semibold">Designations</h1>
             <div class="ml-auto gap-3">
                 <PlusButton :onClick="openModal"/>
                 <CreateEditModal v-model:show="showModal" />
             </div>
         </div>
-        <DataTable :items="items" :columns="columns" :filters="filters" />
+        <DataTable :items="items" :columns="columns" :url="`departments.index`" />
 
     </AppLayout>
 </template>

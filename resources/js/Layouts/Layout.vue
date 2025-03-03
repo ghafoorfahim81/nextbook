@@ -72,6 +72,7 @@ import {
     Sparkles,
     SquareTerminal,
     Trash2,
+    Moon, Sun
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 
@@ -209,6 +210,17 @@ const activeTeam = ref(data.teams[0])
 function setActiveTeam(team: typeof data.teams[number]) {
     activeTeam.value = team
 }
+import { useColorMode, useCycleList } from '@vueuse/core'
+
+const mode = useColorMode({
+    emitAuto: true,
+    modes: {
+        contrast: 'dark contrast',
+        cafe: 'cafe',
+    },
+})
+
+
 </script>
 
 <template>
@@ -421,27 +433,25 @@ function setActiveTeam(team: typeof data.teams[number]) {
             <SidebarRail />
         </Sidebar>
         <SidebarInset>
-            <header class="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+            <header class="flex h-16 shrink-0 items-center justify-between gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+                <!-- Left side: Sidebar trigger and breadcrumb -->
                 <div class="flex items-center gap-2 px-4">
                     <SidebarTrigger class="-ml-1"/>
                     <Separator orientation="vertical" class="mr-2 h-4" />
-                    <Breadcrumb>
-                        <BreadcrumbList>
-                            <BreadcrumbItem class="hidden md:block">
-                                <BreadcrumbLink href="#">
-                                    Building Your Application
-                                </BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator class="hidden md:block" />
-                            <BreadcrumbItem>
-                                <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-                            </BreadcrumbItem>
-                        </BreadcrumbList>
-                    </Breadcrumb>
                 </div>
+                    <div class="flex items-center gap-2 pr-4">
+                        <button
+                            @click="mode = mode === 'dark' ? 'light' : 'dark'"
+                            class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                        >
+                            <Moon v-if="mode === 'dark'" class="size-5 text-gray-800 dark:text-gray-200" />
+                            <Sun v-else class="size-5 text-gray-800 dark:text-gray-200" />
+                        </button>
+                    </div>
+<!--                </div>-->
             </header>
             <div class="flex flex-1 flex-col gap-4 p-4 pt-0">
-               <slot/>
+                <slot/>
             </div>
         </SidebarInset>
     </SidebarProvider>
