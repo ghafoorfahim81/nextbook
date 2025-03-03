@@ -26,7 +26,7 @@ class DepartmentController extends Controller
                     ->orWhere('code', 'like', "%{$search}%");
             })
             ->orderBy($sortField, $sortDirection);
-        dd($query->get();
+//        dd($query->get());
         $data = $query->paginate($perPage)->withQueryString();
 
         $departments = Department::with('parent')

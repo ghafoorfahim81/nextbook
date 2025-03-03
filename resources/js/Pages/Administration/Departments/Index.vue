@@ -17,19 +17,22 @@ const openModal = () => {
 const closeModal = () => {
     showModal.value = false;
 };
-defineProps({
+const props = defineProps({
     items: Object,
     filters: Object,
 })
 // const  data = props.data.data
 // const links = props.data.links;
 // console.log('this is data',props.data.links)
-
+console.log(
+    'this is props data',props.items.data
+)
 const columns = ref([
     { key: 'id', label: 'ID' },
     { key: 'name', label: 'Name' },
     { key: 'code', label: 'Code' },
-    { key: 'parent', label: 'Parent' },
+    { key: `parent.name`, label: 'Parent',
+        render: (row) => row.parent?.name,},
     // Add more columns as needed
 ])
 </script>

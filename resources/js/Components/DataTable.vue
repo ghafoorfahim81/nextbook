@@ -13,27 +13,27 @@
                     class="pl-8 pr-10"
                 />
                 <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                <Search class="size-4 text-muted-foreground" />
-                </span>
+          <Search class="size-4 text-muted-foreground" />
+        </span>
                 <button
                     v-if="search"
                     class="absolute end-0 inset-y-0 flex items-center justify-center px-2 text-muted-foreground hover:text-foreground"
                     @click="clearSearch"
                 >
-                    <X class="size-5" />
+                    <CircleX class="size-4 mr-2" />
                 </button>
             </div>
             <div class="flex items-center space-x-2">
-                                <Select v-model="perPage" @update:modelValue="updatePerPage">
-                                    <SelectTrigger class="w-[100px]">
-                                        <SelectValue placeholder="Per page" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem v-for="option in pageOptions" :key="option" :value="option">
-                                            {{ option }}
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
+                <Select v-model="perPage" @update:modelValue="updatePerPage">
+                    <SelectTrigger class="w-[100px]">
+                        <SelectValue placeholder="Per page" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem v-for="option in pageOptions" :key="option" :value="option">
+                            {{ option }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
         </div>
 
@@ -49,7 +49,18 @@
                                 size="sm"
                                 @click="sort(column.key)"
                             >
-                                <ArrowUpDown class="h-4 w-4" />
+                                <ChevronUp
+                                    v-if="sortField === column.key && sortDirection === 'asc'"
+                                    class="h-4 w-4"
+                                />
+                                <ChevronDown
+                                    v-else-if="sortField === column.key && sortDirection === 'desc'"
+                                    class="h-4 w-4"
+                                />
+                                <ChevronDown
+                                    v-else
+                                    class="h-4 w-4 opacity-50"
+                                />
                             </Button>
                         </div>
                     </TableHead>
@@ -58,7 +69,7 @@
             <TableBody>
                 <TableRow v-for="item in items.data" :key="item.id">
                     <TableCell v-for="column in columns" :key="column.key">
-                        {{ item[column.key] }}
+                        {{ getNestedValue(item, column.key) }}
                     </TableCell>
                 </TableRow>
             </TableBody>
@@ -88,10 +99,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { usePage } from '@inertiajs/vue3'
-import { Search, X } from 'lucide-vue-next'
-import { router } from "@inertiajs/vue3";
+import { ref } from 'vue'
+import { router } from '@inertiajs/vue3'
 import { debounce } from 'lodash'
 import {
     Table,
@@ -103,7 +112,6 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-
 import {
     Select,
     SelectContent,
@@ -111,30 +119,47 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
+import { Search, CircleX, ChevronUp, ChevronDown } from 'lucide-vue-next'
 
-import { ArrowUpDown } from 'lucide-vue-next'
+// Helper function to get nested values
+const getNestedValue = (obj, path) => {
+    if (!obj || !path) return ''
+
+    return path.split('.').reduce((acc, part) => {
+        return acc ? acc[part] : ''
+    }, obj)
+}
 
 const props = defineProps({
     items: Object,
-    columns:Object,
-    filters: Array,
+    columns: Array, // Changed from Object to Array to match usage in v-for
+    filters: Object, // Changed from Array to Object to match usage (search, perPage, etc.)
 })
 
-console.log('props data is ',props.columns)
+console.log('props data is:', {
+    columns: props.columns,
+    filters: props.filters,
+})
 
-
-
+// Default values with fallbacks
 const pageOptions = [5, 10, 20, 50]
-const search = ref(props.filters.search)
-const perPage = ref(props.filters.perPage)
-const sortField = ref(props.filters.sortField)
-const sortDirection = ref(props.filters.sortDirection)
-
+const search = ref(props.filters?.search || '')
+const perPage = ref(props.filters?.perPage || 10)
+const sortField = ref(props.filters?.sortField || 'id')
+const sortDirection = ref(props.filters?.sortDirection || 'asc')
+console.log('sort direction is ',sortDirection)
 const debouncedSearch = debounce(() => {
     updateFilters()
 }, 300)
 
 const updateFilters = () => {
+    console.log('Updating filters:', {
+        search: search.value,
+        perPage: perPage.value,
+        sortField: sortField.value,
+        sortDirection: sortDirection.value,
+    })
+
     router.get(
         route('departments.index'),
         {
@@ -153,12 +178,16 @@ const updatePerPage = (value) => {
 }
 
 const sort = (field) => {
+    console.log('Sorting:', { field, currentSortField: sortField.value, currentDirection: sortDirection.value })
+
     if (sortField.value === field) {
         sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
     } else {
         sortField.value = field
         sortDirection.value = 'asc'
     }
+
+    console.log('After sort - sortField:', sortField.value, 'sortDirection:', sortDirection.value)
     updateFilters()
 }
 
