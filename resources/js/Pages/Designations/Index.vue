@@ -7,7 +7,7 @@ import PlusButton from '@/Components/ui/button/PlusButton.vue';
 import { ArrowUpDown } from 'lucide-vue-next'
 import  DropdownAction  from '@/Components/DataTableDropdown.vue';
 
-import CreateEditModal from '@/Pages/Designations/CreateEditModal.vue';
+import CreateEditModal from '@/Pages/Administration/Departments/CreateEditModal.vue';
 const showModal = ref(false);
 
 const openModal = () => {

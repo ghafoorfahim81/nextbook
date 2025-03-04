@@ -26,5 +26,5 @@ Route::middleware([
 
     Route::resource('designations', DesignationController::class);
     Route::resource('/departments', DepartmentController::class);
-
+    Route::get('/departments/parents', [DepartmentController::class, 'getParents'])->name('departments.parents');
 });

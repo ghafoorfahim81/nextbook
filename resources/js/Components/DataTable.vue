@@ -5,7 +5,7 @@
         <div class="flex items-center justify-between">
             <div class="flex relative w-full max-w-sm">
                <div class="flex justify-items-start">
-                   <h1 class="text-lg font-semibold mr-4">Designations</h1>
+                   <h1 class="text-lg font-semibold mr-4">{{props.title}}</h1>
                </div>
 
                 <div class="flex relative gap-4">
@@ -14,8 +14,8 @@
                         v-model="search"
                         @input="debouncedSearch"
                         type="text"
-                        placeholder="Search..."
-                        class="pl-8 pr-32"
+                        :placeholder="'Search ' + (props.title ? props.title.charAt(0).toLowerCase() + props.title.slice(1).toLowerCase() : 'items')"
+                        class="pl-8 w-72"
                     />
                     <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
                       <Search class="size-4 text-muted-foreground" />
@@ -147,6 +147,7 @@ const props = defineProps({
     items: Object,
     columns: Array,
     url:String,
+    title:String
 })
 
 // Default values with fallbacks
