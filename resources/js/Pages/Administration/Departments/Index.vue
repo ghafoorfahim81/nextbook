@@ -7,16 +7,27 @@ import PlusButton from '@/Components/ui/button/PlusButton.vue';
 import { ArrowUpDown } from 'lucide-vue-next'
 import  DropdownAction  from '@/Components/DataTableDropdown.vue';
 
-import CreateEditModal from '@/Pages/Designations/CreateEditModal.vue';
-const showModal = ref(false);
+import CreateEditModal from '@/Pages/Administration/Departments/CreateEditModal.vue';
 
-const openModal = () => {
-    showModal.value = true;
-};
+const isModalOpen = ref(false)
+const selectedDepartment = ref(null)
+
+const openCreateModal = () => {
+    isModalOpen.value = true
+}
+
+const openEditModal = (department) => {
+    isModalOpen.value = true
+}
 
 const closeModal = () => {
-    showModal.value = false;
-};
+    isModalOpen.value = false
+    selectedDepartment.value = null
+}
+
+const fetchDepartments = () => {
+    router.reload({ only: ['items'] }) // Refresh the department list
+}
 
 const showFilter = () => {
     showFilter.value = true;
@@ -25,9 +36,6 @@ const showFilter = () => {
 const props = defineProps({
     items: Object,
 })
-// const  data = props.data.data
-// const links = props.data.links;
-// console.log('this is data',props.data.links)
 
 const columns = ref([
     { key: 'id', label: 'ID' },
@@ -35,7 +43,6 @@ const columns = ref([
     { key: 'code', label: 'Code' },
     { key: `parent.name`, label: 'Parent',
         render: (row) => row.parent?.name,},
-    // Add more columns as needed
 ])
 </script>
 
@@ -43,11 +50,16 @@ const columns = ref([
     <AppLayout title="Designations">
         <div class="flex gap-2 items-center">
             <div class="ml-auto gap-3">
-                <PlusButton :onClick="openModal"/>
-                <CreateEditModal v-model:show="showModal" />
+                <Button @click="openCreateModal">Add New</Button>
+                <CreateEditModal
+                    :open="isModalOpen"
+                    :departments="items"
+                    @close="closeModal"
+                    @saved="fetchDepartments"
+                />
             </div>
         </div>
-        <DataTable :items="items" :columns="columns" :url="`departments.index`" />
+        <DataTable :items="items" :columns="columns" :title="`Departments`" :url="`departments.index`" />
 
     </AppLayout>
 </template>

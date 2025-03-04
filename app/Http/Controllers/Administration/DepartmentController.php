@@ -54,4 +54,10 @@ class DepartmentController extends Controller
 
         return response()->noContent();
     }
+
+    public function getParents()
+    {
+        $parents = Department::whereNull('parent_id')->orWhereNotNull('parent_id')->get(['id', 'name']);
+        return response()->json($parents);
+    }
 }
