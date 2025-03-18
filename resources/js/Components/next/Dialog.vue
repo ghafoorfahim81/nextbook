@@ -45,7 +45,6 @@ const emit = defineEmits(["update:open", "confirm", "cancel"]);
                     Close
                 </Button>
                 <Button
-                    v-if="showConfirm"
                     variant="outline"
                     @click="$emit('confirm'); $emit('update:open', false)"
                 >
