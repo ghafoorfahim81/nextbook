@@ -8,22 +8,31 @@ import { ArrowUpDown } from 'lucide-vue-next'
 import  DropdownAction  from '@/Components/DataTableDropdown.vue';
 
 import CreateEditModal from '@/Pages/Administration/Departments/CreateEditModal.vue';
-
+import Dialog from "@/Components/next/Dialog.vue";
 const isModalOpen = ref(false)
 const selectedDepartment = ref(null)
 
-const openCreateModal = () => {
-    isModalOpen.value = true
-}
+const isDialogOpen = ref(false);
 
-const openEditModal = (department) => {
-    isModalOpen.value = true
-}
+const handleConfirm = () => {
+    console.log("Confirmed!");
+};
 
-const closeModal = () => {
-    isModalOpen.value = false
-    selectedDepartment.value = null
-}
+const handleCancel = () => {
+    console.log("Cancelled!");
+};
+// const openCreateModal = () => {
+//     isModalOpen.value = true
+// }
+//
+// const openEditModal = (department) => {
+//     isModalOpen.value = true
+// }
+//
+// const closeModal = () => {
+//     isModalOpen.value = false
+//     selectedDepartment.value = null
+// }
 
 const fetchDepartments = () => {
     router.reload({ only: ['items'] }) // Refresh the department list
@@ -50,12 +59,10 @@ const columns = ref([
     <AppLayout title="Designations">
         <div class="flex gap-2 items-center">
             <div class="ml-auto gap-3">
-                <Button @click="openCreateModal">Add New</Button>
+                <Button  @click="isDialogOpen = true">Add New</Button>
                 <CreateEditModal
-                    :open="isModalOpen"
+                    :isDialogOpen="isDialogOpen"
                     :departments="items"
-                    @close="closeModal"
-                    @saved="fetchDepartments"
                 />
             </div>
         </div>
