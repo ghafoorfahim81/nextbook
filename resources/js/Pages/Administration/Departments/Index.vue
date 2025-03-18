@@ -13,27 +13,6 @@ const isModalOpen = ref(false)
 const selectedDepartment = ref(null)
 
 const isDialogOpen = ref(false);
-
-const handleConfirm = () => {
-    console.log("Confirmed!");
-};
-
-const handleCancel = () => {
-    console.log("Cancelled!");
-};
-// const openCreateModal = () => {
-//     isModalOpen.value = true
-// }
-//
-// const openEditModal = (department) => {
-//     isModalOpen.value = true
-// }
-//
-// const closeModal = () => {
-//     isModalOpen.value = false
-//     selectedDepartment.value = null
-// }
-
 const fetchDepartments = () => {
     router.reload({ only: ['items'] }) // Refresh the department list
 }
@@ -63,6 +42,7 @@ const columns = ref([
                 <CreateEditModal
                     :isDialogOpen="isDialogOpen"
                     :departments="items"
+                    @update:isDialogOpen="isDialogOpen = $event"
                 />
             </div>
         </div>
