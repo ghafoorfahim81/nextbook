@@ -6,7 +6,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle
-} from "@/components/ui/dialog";
+} from "@/Components/ui/dialog";
 import { Separator } from "@/Components/ui/separator";
 import { Button } from "@/Components/ui/button";
 
@@ -28,7 +28,7 @@ const emit = defineEmits(["update:open", "confirm", "cancel"]);
 </script>
 
 <template>
-  <Dialog :open="open">
+  <Dialog :open="open" >
     <!-- ✅ Lighter background (more transparency) -->
     <div v-if="open" class="fixed inset-0 bg-white/5" />
 
@@ -48,7 +48,7 @@ const emit = defineEmits(["update:open", "confirm", "cancel"]);
                 @click="$emit('cancel'); $emit('update:open', false)">
           Close
         </Button>
-        <Button 
+        <Button
             variant="outline"
             @click="$emit('confirm'); $emit('update:open', false)"
         >
