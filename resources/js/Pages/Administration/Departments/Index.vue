@@ -38,7 +38,8 @@ const columns = ref([
     <AppLayout title="Designations">
         <div class="flex gap-2 items-center">
             <div class="ml-auto gap-3">
-                <Button  @click="isDialogOpen = true">Add New</Button>
+                <Button  @click="isDialogOpen = true" variant="outline" class="bg-gray-100
+                hover:bg-gray-200 dark:border-gray-50 dark:text-green-300">Add New</Button>
                 <CreateEditModal
                     :isDialogOpen="isDialogOpen"
                     :departments="items"
