@@ -101,7 +101,7 @@ const data = {
     ],
     navMain: [
         {
-            title: 'Master',
+            title: 'Administration',
             url: '#',
             icon: SquareTerminal,
                 isActive: true,
@@ -121,7 +121,7 @@ const data = {
             ],
         },
         {
-            title: 'Models',
+            title: 'Master',
             url: '#',
             icon: Bot,
             items: [
@@ -139,70 +139,24 @@ const data = {
                 },
             ],
         },
-        {
-            title: 'Documentation',
-            url: '#',
-            icon: BookOpen,
-            items: [
-                {
-                    title: 'Introduction',
-                    url: '#',
-                },
-                {
-                    title: 'Get Started',
-                    url: '#',
-                },
-                {
-                    title: 'Tutorials',
-                    url: '#',
-                },
-                {
-                    title: 'Changelog',
-                    url: '#',
-                },
-            ],
-        },
-        {
-            title: 'Settings',
-            url: '#',
-            icon: Settings2,
-            items: [
-                {
-                    title: 'General',
-                    url: '#',
-                },
-                {
-                    title: 'Team',
-                    url: '#',
-                },
-                {
-                    title: 'Billing',
-                    url: '#',
-                },
-                {
-                    title: 'Limits',
-                    url: '#',
-                },
-            ],
-        },
     ],
-    projects: [
-        {
-            name: 'Design Engineering',
-            url: '#',
-            icon: Frame,
-        },
-        {
-            name: 'Sales & Marketing',
-            url: '#',
-            icon: PieChart,
-        },
-        {
-            name: 'Travel',
-            url: '#',
-            icon: Map,
-        },
-    ],
+    // projects: [
+    //     {
+    //         name: 'Design Engineering',
+    //         url: '#',
+    //         icon: Frame,
+    //     },
+    //     {
+    //         name: 'Sales & Marketing',
+    //         url: '#',
+    //         icon: PieChart,
+    //     },
+    //     {
+    //         name: 'Travel',
+    //         url: '#',
+    //         icon: Map,
+    //     },
+    // ],
 }
 
 const activeTeam = ref(data.teams[0])
@@ -316,7 +270,7 @@ const mode = useColorMode({
                     </SidebarMenu>
                 </SidebarGroup>
                 <SidebarGroup class="group-data-[collapsible=icon]:hidden">
-                    <SidebarGroupLabel>Projects</SidebarGroupLabel>
+<!--                    <SidebarGroupLabel>Projects</SidebarGroupLabel>-->
                     <SidebarMenu>
                         <SidebarMenuItem
                             v-for="item in data.projects"
@@ -352,12 +306,12 @@ const mode = useColorMode({
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </SidebarMenuItem>
-                        <SidebarMenuItem>
-                            <SidebarMenuButton class="text-sidebar-foreground/70">
-                                <MoreHorizontal class="text-sidebar-foreground/70" />
-                                <span>More</span>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
+<!--                        <SidebarMenuItem>-->
+<!--                            <SidebarMenuButton class="text-sidebar-foreground/70">-->
+<!--                                <MoreHorizontal class="text-sidebar-foreground/70" />-->
+<!--                                <span>More</span>-->
+<!--                            </SidebarMenuButton>-->
+<!--                        </SidebarMenuItem>-->
                     </SidebarMenu>
                 </SidebarGroup>
             </SidebarContent>
