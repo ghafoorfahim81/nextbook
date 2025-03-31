@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { Textarea } from '@/Components/ui/textarea'
 import { Label } from "@/Components/ui/label/index.js";
 import ModalDialog from "@/Components/next/Dialog.vue";
 
