@@ -1,16 +1,15 @@
 models:
-  Administration/Department:
-    id: uuid
+  Administration/Category:
+    id: string char(26) primary
     name: string unique
-    parent_id: uuid foreign:departments nullable
+    parent_id: char(26) foreign:categories,id nullable
     remark: text nullable
-    created_by: uuid foreign:users
-    updated_by: uuid foreign:users nullable
+    created_by: char(26) foreign:users,id
+    updated_by: char(26) foreign:users,id nullable
     timestamps: true
 
-
 controllers:
-  Administration/Department:
+  Administration/Category:
     resource: api
 
-seeders: Administration/Department
+seeders: Administration/Category

@@ -1,17 +1,18 @@
 created:
-    - app/Http/Controllers/Administration/DepartmentController.php
-    - database/factories/Administration/DepartmentFactory.php
-    - database/migrations/2025_02_02_094605_create_departments_table.php
-    - app/Models/Administration/Department.php
-    - database/seeders/Administration/DepartmentSeeder.php
-    - tests/Feature/Http/Controllers/Administration/DepartmentControllerTest.php
-    - app/Http/Requests/Administration/DepartmentStoreRequest.php
-    - app/Http/Requests/Administration/DepartmentUpdateRequest.php
-    - app/Http/Resources/Administration/DepartmentCollection.php
-    - app/Http/Resources/Administration/DepartmentResource.php
+    - app/Http/Controllers/Administration/CategoryController.php
+    - database/factories/Administration/CategoryFactory.php
+    - database/migrations/2025_04_02_131903_create_categories_table.php
+    - app/Models/Administration/Category.php
+    - database/seeders/Administration/CategorySeeder.php
+    - tests/Feature/Http/Controllers/Administration/CategoryControllerTest.php
+    - app/Http/Requests/Administration/CategoryStoreRequest.php
+    - app/Http/Requests/Administration/CategoryUpdateRequest.php
+    - app/Http/Resources/Administration/CategoryCollection.php
+    - app/Http/Resources/Administration/CategoryResource.php
 updated:
     - routes/api.php
 models:
     Administration\Designation: { id: uuid, name: string, remark: 'text nullable', created_by: biginteger, updated_by: 'biginteger nullable', deleted_by: 'biginteger nullable' }
     User: { name: string, email: string, email_verified_at: 'timestamp nullable', password: string, remember_token: 'string:100 nullable', profile_photo_path: 'string:2048 nullable', two_factor_secret: 'text nullable', two_factor_recovery_codes: 'text nullable', two_factor_confirmed_at: 'timestamp nullable' }
     Administration\\Department: { id: uuid, name: 'string unique', remark: 'text nullable', created_by: 'uuid foreign:users', updated_by: 'uuid foreign:users nullable', timestamps: timestamps }
+    Administration/Category: { id: 'string char(26) primary', name: 'string unique', parent_id: 'char(26) foreign:categories,id nullable', remark: 'text nullable', created_by: 'char(26) foreign:users,id', updated_by: 'char(26) foreign:users,id nullable', timestamps: timestamps }
