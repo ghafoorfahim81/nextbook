@@ -2,9 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\Administration\Category;
 use App\Models\Administration\Department;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Database\Seeders\Administration\CategorySeeder;
 use Database\Seeders\Administration\DepartmentSeeder;
 use Database\Seeders\Administration\UserSeeder;
 use Illuminate\Database\Seeder;
@@ -26,8 +28,9 @@ class DatabaseSeeder extends Seeder
         // dd($x);
         $this->call(UserSeeder::class);
 
-//        $this->call(DepartmentSeeder::class);
+        $this->call(CategorySeeder::class);
 
-        Department::factory()->count(20)->create();
+//        Department::factory()->count(20)->create();
+//        Category::factory()->count(20)->create();
     }
 }

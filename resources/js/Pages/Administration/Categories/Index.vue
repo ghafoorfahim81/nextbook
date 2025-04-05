@@ -29,7 +29,6 @@ const props = defineProps({
 const columns = ref([
     { key: 'id', label: 'ID' },
     { key: 'name', label: 'Name' },
-    { key: 'code', label: 'Code' },
     { key: `parent.name`, label: 'Parent',
         render: (row) => row.parent?.name,},
 ])
@@ -43,12 +42,12 @@ const columns = ref([
                 hover:bg-gray-200 dark:border-gray-50 dark:text-green-300">Add New</Button>
                 <CreateEditModal
                     :isDialogOpen="isDialogOpen"
-                    :departments="items"
+                    :categories="items"
                     @update:isDialogOpen="isDialogOpen = $event"
                 />
             </div>
         </div>
-        <DataTable :items="items" :columns="columns" :title="`Departments`" :url="`departments.index`" />
+        <DataTable :items="items" :columns="columns" :title="`Categories`" :url="`categories.index`" />
 
     </AppLayout>
 </template>

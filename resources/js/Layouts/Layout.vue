@@ -107,8 +107,8 @@ const data = {
                 isActive: true,
             items: [
                 {
-                    title: 'Designation',
-                    url: '/designations',
+                    title: 'Category',
+                    url: '/categories',
                 },
                 {
                     title: 'Department',

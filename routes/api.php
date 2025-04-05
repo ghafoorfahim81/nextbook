@@ -16,3 +16,6 @@ Route::apiResource('designations', App\Http\Controllers\Administration\Designati
 
 
 Route::apiResource('departments', App\Http\Controllers\Administration\DepartmentController::class);
+
+
+Route::apiResource('categories', App\Http\Controllers\Administration\CategoryController::class);
