@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background Clouds -->
+    <path d="M50,100 Q80,80 110,100 T170,100 T230,100" fill="white" opacity="0.2"/>
+    <path d="M400,200 Q430,180 460,200 T520,200 T580,200" fill="white" opacity="0.2"/>
+    <path d="M100,400 Q130,380 160,400 T220,400 T280,400" fill="white" opacity="0.2"/>
+    <path d="M450,500 Q480,480 510,500 T570,500 T630,500" fill="white" opacity="0.2"/>
+
+    <!-- Phone -->
+    <g transform="translate(150,100)">
+        <!-- Phone Frame -->
+        <rect x="0" y="0" width="300" height="500" rx="30" fill="#2D1B69" filter="drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))"/>
+        <rect x="10" y="10" width="280" height="480" rx="25" fill="#8B5CF6"/>
+
+        <!-- Fingerprint UI -->
+        <circle cx="150" cy="250" r="80" stroke="white" stroke-width="2" fill="none" opacity="0.3"/>
+        <circle cx="150" cy="250" r="60" stroke="white" stroke-width="2" fill="none" opacity="0.5"/>
+        <path d="M120,250 Q150,220 180,250 Q150,280 120,250" stroke="white" stroke-width="2" fill="none"/>
+        <path d="M110,250 Q150,200 190,250" stroke="white" stroke-width="2" fill="none" opacity="0.5"/>
+        <path d="M130,250 Q150,230 170,250" stroke="white" stroke-width="2" fill="none" opacity="0.7"/>
+
+        <!-- Text -->
+        <text x="150" y="350" text-anchor="middle" fill="white" opacity="0.7" font-size="12">
+            Please tap your finger to your phone
+        </text>
+    </g>
+
+    <!-- Character -->
+    <g transform="translate(200,200)">
+        <!-- Body -->
+        <path d="M60,80 L90,150 L120,80" stroke="#1a1a1a" stroke-width="8" fill="none"/>
+        <!-- Yellow Jacket -->
+        <path d="M60,40 L120,40 L130,120 L50,120 Z" fill="#FCD34D"/>
+        <!-- Head -->
+        <circle cx="90" cy="30" r="20" fill="#1a1a1a"/>
+        <!-- Bag -->
+        <path d="M120,60 L140,90 L130,120 L110,90 Z" fill="#1a1a1a"/>
+        <!-- Legs -->
+        <path d="M90,150 L70,200" stroke="#1a1a1a" stroke-width="8" fill="white"/>
+        <path d="M90,150 L110,200" stroke="#1a1a1a" stroke-width="8" fill="white"/>
+        <!-- Shoes -->
+        <path d="M65,195 L75,205 L85,195" stroke="#1a1a1a" stroke-width="4" fill="none"/>
+        <path d="M105,195 L115,205 L125,195" stroke="#1a1a1a" stroke-width="4" fill="none"/>
+    </g>
+
+    <!-- Lock Icon -->
+    <g transform="translate(450,250)">
+        <rect x="0" y="15" width="40" height="35" rx="5" fill="white" filter="drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.1))"/>
+        <path d="M10,15 V10 C10,0 30,0 30,10 V15" stroke="white" stroke-width="4" fill="none"/>
+    </g>
+
+    <!-- Checkmark Bubble -->
+    <g transform="translate(100,150)">
+        <circle cx="25" cy="25" r="20" fill="white" filter="drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.1))"/>
+        <path d="M15,25 L22,32 L35,18" stroke="#7C3AED" stroke-width="3" fill="none"/>
+    </g>
+</svg>

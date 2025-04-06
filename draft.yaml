@@ -1,15 +1,17 @@
 models:
-  Administration/Category:
-    id: string char(26) primary
-    name: string unique
-    parent_id: char(26) foreign:categories,id nullable
+  Administration/Branch:
+    id: id
+    name: string
+    is_main: boolean default:false
+    parent_id: id foreign:branches,id nullable
+    sub_domain: string nullable
     remark: text nullable
-    created_by: char(26) foreign:users,id
-    updated_by: char(26) foreign:users,id nullable
+    created_by: id foreign:users,id
+    updated_by: id foreign:users,id nullable
     timestamps: true
 
 controllers:
-  Administration/Category:
+  Administration/Branch:
     resource: api
 
-seeders: Administration/Category
+seeders: Administration/Branch
