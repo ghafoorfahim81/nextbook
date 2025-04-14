@@ -16,6 +16,26 @@ class AccountTypeSeeder extends Seeder
     {
         $accountTypes = [
             [
+                'name' => "Cost of Goods Sold",
+                'remark' => 'Cost of Goods Sold Account Type',
+            ],
+            [
+                'name' => "Accounts Receivable",
+                'remark' => 'Accounts Receivable Account Type',
+            ],
+            [
+                'name' => "Accounts Payable",
+                'remark' => 'Accounts Payable Account Type',
+            ],
+            [
+                'name' => "Gains/Losses",
+                'remark' => 'Gains/Losses Account Type',
+            ],
+            [
+                'name' => "Equity",
+                'remark' => 'Equity Account Type',
+            ],
+            [
                 'name' => "Store",
                 'remark' => 'Store Account Type',
             ],
@@ -173,14 +193,15 @@ class AccountTypeSeeder extends Seeder
                 'remark' => 'Income Indirect Account Type',
             ],
 
-        ]; 
+
+        ];
 
         foreach ($accountTypes as $accountType) {
             AccountType::create([
                 'id' => Str::uuid(),
                 'name' => $accountType['name'],
                 'remark' => $accountType['remark'],
-                'created_by' => User::first()->id, 
+                'created_by' => User::first()->id,
             ]);
         }
     }

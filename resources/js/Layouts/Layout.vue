@@ -106,8 +106,7 @@ const data = {
         {
             title: 'Administration',
             url: '#',
-            icon: Cog,
-            isActive: true,
+            icon: Cog, 
             items: [
                 {
                     title: 'Category',
