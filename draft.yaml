@@ -1,17 +1,14 @@
 models:
-  Administration/Branch:
+  Account/AccountType:
     id: id
-    name: string
-    is_main: boolean default:false
-    parent_id: id foreign:branches,id nullable
-    sub_domain: string nullable
-    remark: text nullable
-    created_by: id foreign:users,id
-    updated_by: id foreign:users,id nullable
+    name: string unique
+    remark: text nullable 
+    created_by: id foreign:users
+    updated_by: id foreign:users nullable
     timestamps: true
 
 controllers:
-  Administration/Branch:
-    resource: api
+  Account/AccountType:
+    resource: web
 
-seeders: Administration/Branch
+seeders: Account/AccountType
