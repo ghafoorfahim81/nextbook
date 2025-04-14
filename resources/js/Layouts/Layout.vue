@@ -115,6 +115,10 @@ const data = {
                     url: '/departments',
                 },
                 {
+                    title: 'Branch',
+                    url: '/branches',
+                },
+                {
                     title: 'Settings',
                     url: '#',
                 },

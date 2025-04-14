@@ -17,6 +17,7 @@ return new class extends Migration
             $table->text('remark')->nullable();
             $table->string('location')->nullable();
             $table->boolean('is_main')->default(false);
+            $table->string('sub_domain')->nullable();
             $table->char('parent_id',26)->nullable();
             $table->char('created_by',26);
             $table->char('updated_by',26)->nullable();

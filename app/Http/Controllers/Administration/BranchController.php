@@ -13,18 +13,27 @@ use Illuminate\Http\Response;
 
 class BranchController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
-        $branches = Branch::all();
+        $perPage = $request->input('perPage', 10);
+        $sortField = $request->input('sortField', 'id');
+        $sortDirection = $request->input('sortDirection', 'asc');
 
-        return new BranchCollection($branches);
+        $branches = Branch::with('parent')
+            ->search($request->query('search'))
+            ->orderBy($sortField, $sortDirection)
+            ->paginate($perPage)
+            ->withQueryString();
+        return inertia('Administration/Branches/Index', [
+            'items' => BranchResource::collection($branches),
+        ]);
     }
 
-    public function store(BranchStoreRequest $request): Response
+    public function store(BranchStoreRequest $request)
     {
         $branch = Branch::create($request->validated());
 
-        return new BranchResource($branch);
+        
     }
 
     public function show(Request $request, Branch $branch): Response

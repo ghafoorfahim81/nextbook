@@ -43,6 +43,17 @@ class Branch extends Model
         'updated_by',
     ];
 
+    protected static function searchableColumns(): array
+    {
+        return [
+            'name',
+            'location',
+            'sub_domain',
+            'remark',
+            'parent.name'
+        ];
+    }
+
     /**
      * The attributes that should be cast to native types.
      *
@@ -59,5 +70,4 @@ class Branch extends Model
     {
         return $this->belongsTo(Branch::class);
     }
-
 }
