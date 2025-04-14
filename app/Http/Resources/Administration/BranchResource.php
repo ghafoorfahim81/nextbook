@@ -17,6 +17,8 @@ class BranchResource extends JsonResource
             'name' => $this->name,
             'is_main' => $this->is_main,
             'parent_id' => $this->parent_id,
+            'parent' => $this->parent,
+            'location' => $this->location,
             'sub_domain' => $this->sub_domain,
             'remark' => $this->remark,
             'created_by' => $this->created_by,

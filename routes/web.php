@@ -28,4 +28,5 @@ Route::middleware([
     Route::resource('/departments', DepartmentController::class);
     Route::resource('/categories', \App\Http\Controllers\Administration\CategoryController::class);
     Route::get('/departments/parents', [DepartmentController::class, 'getParents'])->name('departments.parents');
+    Route::resource('/branches', \App\Http\Controllers\Administration\BranchController::class);
 });
