@@ -72,7 +72,10 @@ import {
     Sparkles,
     SquareTerminal,
     Trash2,
-    Moon, Sun
+    Moon, Sun,
+    ChartColumn,
+    Cog,
+    Layers
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 
@@ -103,8 +106,8 @@ const data = {
         {
             title: 'Administration',
             url: '#',
-            icon: SquareTerminal,
-                isActive: true,
+            icon: Cog,
+            isActive: true,
             items: [
                 {
                     title: 'Category',
@@ -127,7 +130,7 @@ const data = {
         {
             title: 'Master',
             url: '#',
-            icon: Bot,
+            icon: Layers,
             items: [
                 {
                     title: 'Genesis',
@@ -146,7 +149,7 @@ const data = {
         {
             title: 'Account',
             url: '#',
-            icon: Bot,
+            icon: ChartColumn,
             items: [
                 {
                     title: 'Account Type',
