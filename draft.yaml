@@ -1,14 +1,19 @@
 models:
-  Account/AccountType:
+  Account/Account:
     id: id
     name: string unique
+    number: string unique
+    account_type_id: id foreign:account_types
+    parent_id: id foreign:accounts nullable
+    branch_id: id foreign:branches
+    tenant_id: id 
     remark: text nullable 
     created_by: id foreign:users
     updated_by: id foreign:users nullable
     timestamps: true
 
 controllers:
-  Account/AccountType:
-    resource: web
+  Account/Account:
+    resource: api
 
-seeders: Account/AccountType
+seeders: Account/Account
