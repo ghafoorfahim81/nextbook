@@ -143,6 +143,21 @@ const data = {
                 },
             ],
         },
+        {
+            title: 'Account',
+            url: '#',
+            icon: Bot,
+            items: [
+                {
+                    title: 'Account Type',
+                    url: '/account-types',
+                },
+                {
+                    title: 'Chart of Account',
+                    url: '/chart-of-accounts',
+                }, 
+            ],
+        },
     ],
     // projects: [
     //     {

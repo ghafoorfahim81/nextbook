@@ -1,19 +1,22 @@
 created:
-    - app/Http/Controllers/Administration/BranchController.php
-    - database/factories/Administration/BranchFactory.php
-    - database/migrations/2025_04_06_164116_create_branches_table.php
-    - app/Models/Administration/Branch.php
-    - database/seeders/Administration/BranchSeeder.php
-    - tests/Feature/Http/Controllers/Administration/BranchControllerTest.php
-    - app/Http/Requests/Administration/BranchStoreRequest.php
-    - app/Http/Requests/Administration/BranchUpdateRequest.php
-    - app/Http/Resources/Administration/BranchCollection.php
-    - app/Http/Resources/Administration/BranchResource.php
+    - app/Http/Controllers/Account/AccountTypeController.php
+    - database/factories/Account/AccountTypeFactory.php
+    - database/migrations/2025_04_14_065601_create_account_types_table.php
+    - app/Models/Account/AccountType.php
+    - database/seeders/Account/AccountTypeSeeder.php
+    - tests/Feature/Http/Controllers/Account/AccountTypeControllerTest.php
+    - app/Http/Requests/Account/AccountTypeStoreRequest.php
+    - app/Http/Requests/Account/AccountTypeUpdateRequest.php
+    - resources/views/accountType/index.blade.php
+    - resources/views/accountType/create.blade.php
+    - resources/views/accountType/show.blade.php
+    - resources/views/accountType/edit.blade.php
 updated:
-    - routes/api.php
+    - routes/web.php
 models:
     Administration\Designation: { id: uuid, name: string, remark: 'text nullable', created_by: biginteger, updated_by: 'biginteger nullable', deleted_by: 'biginteger nullable' }
     User: { name: string, email: string, email_verified_at: 'timestamp nullable', password: string, remember_token: 'string:100 nullable', profile_photo_path: 'string:2048 nullable', two_factor_secret: 'text nullable', two_factor_recovery_codes: 'text nullable', two_factor_confirmed_at: 'timestamp nullable' }
     Administration\\Department: { id: uuid, name: 'string unique', remark: 'text nullable', created_by: 'uuid foreign:users', updated_by: 'uuid foreign:users nullable', timestamps: timestamps }
     Administration/Category: { id: 'string char(26) primary', name: 'string unique', parent_id: 'char(26) foreign:categories,id nullable', remark: 'text nullable', created_by: 'char(26) foreign:users,id', updated_by: 'char(26) foreign:users,id nullable', timestamps: timestamps }
     Administration/Branch: { id: id, name: string, is_main: 'boolean default:false', parent_id: 'id foreign:branches,id nullable', sub_domain: 'string nullable', remark: 'text nullable', created_by: 'id foreign:users,id', updated_by: 'id foreign:users,id nullable', timestamps: timestamps }
+    Account/AccountType: { id: id, name: 'string unique', remark: 'text nullable', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
