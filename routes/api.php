@@ -22,3 +22,9 @@ Route::apiResource('categories', App\Http\Controllers\Administration\CategoryCon
 
 
 Route::apiResource('branches', App\Http\Controllers\Administration\BranchController::class);
+
+
+Route::apiResource('accounts', App\Http\Controllers\Account\AccountController::class);
+
+
+Route::apiResource('accounts', App\Http\Controllers\Account\AccountController::class);
