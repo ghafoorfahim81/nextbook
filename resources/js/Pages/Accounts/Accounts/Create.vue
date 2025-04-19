@@ -1,29 +1,31 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
-import DataTable from '@/Components/DataTable.vue';
-import { h, ref } from 'vue';
+import { reactive } from 'vue';
 import { Button } from '@/Components/ui/button';
-import PlusButton from '@/Components/ui/button/PlusButton.vue';
+import InputField from '@/Components/next/InputField.vue';
 
-import { ArrowUpDown } from 'lucide-vue-next'
-import  DropdownAction  from '@/Components/DataTableDropdown.vue';
+const form = reactive({
+    name: '',
+    number: '',
+    remark: '',
+});
 
-import CreateEditModal from '@/Pages/Administration/Departments/CreateEditModal.vue';
-import Dialog from "@/Components/next/Dialog.vue";
-const isModalOpen = ref(false)
-const selectedBranch = ref(null)
-
+function handleSubmit() {
+    console.log(form)
+}
 </script>
 
 <template>
-    <AppLayout title="Designations">
-        <div class="flex gap-2 items-center">
-            <div class="grid grid-cols-3 gap-4">
-                <Input  placeholder="Name" />
-                <Input  placeholder="Code" />
-                <Input  placeholder="Remark" />
-                <Button @click="isModalOpen = true" variant="outline" class="bg-gray-100 hover:bg-gray-200 dark:border-gray-50 dark:text-green-300">Add New</Button>
+    <AppLayout title="Chart of Accounts">
+        <div className="mb-5">
+            <div className="grid grid-cols-3 mb-3 gap-x-2 gap-y-5">
+                <InputField placeholder="Name" v-model="form.name" />
+                <InputField placeholder="Number" v-model="form.number" />
+                <InputField placeholder="Remark" v-model="form.remark" />
             </div>
+        </div>
+        <div>
+            <Button type="submit" class="bg-blue-500 text-white">Submit</Button>
         </div>
     </AppLayout>
 </template>
