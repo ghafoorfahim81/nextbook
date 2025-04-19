@@ -21,6 +21,7 @@ class AccountResource extends JsonResource
             'parent_id' => $this->parent_id,
             'parent'    => $this->parent,
             'branch_id' => $this->branch_id,
+            
             'branch'    => $this->branch,
             'tenant_id' => $this->tenant_id,
             'remark' => $this->remark,
