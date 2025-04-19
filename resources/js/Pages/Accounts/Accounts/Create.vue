@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
-import { reactive } from 'vue';
+import { reactive, computed } from 'vue';
 import { Button } from '@/Components/ui/button';
 import InputField from '@/Components/next/InputField.vue';
 
@@ -9,6 +9,13 @@ const form = reactive({
     number: '',
     remark: '',
 });
+
+const { accounts } = defineProps({
+    accounts: {
+        type: Array,
+        required: true,
+    },
+}); 
 
 function handleSubmit() {
     console.log(form)
