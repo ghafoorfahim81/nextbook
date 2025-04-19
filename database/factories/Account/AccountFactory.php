@@ -24,8 +24,8 @@ class AccountFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->name(),
-            'number' => $this->faker->word(),
+            'name' => fake()->unique()->word(),
+            'number' => 'Ac-'.$this->faker->unique()->randomNumber(),
             'account_type_id' => AccountType::factory(),
             'parent_id' => Account::factory(),
             'branch_id' => Branch::factory(),
