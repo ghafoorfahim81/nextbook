@@ -21,7 +21,7 @@
   import { Label } from '@/Components/ui/label'
   import { ref, computed } from 'vue'
   
-  defineProps({
+  const props = defineProps({
     label: {
       type: String,
       required: true

@@ -6,6 +6,8 @@ use App\Http\Resources\Administration\CategoryResource;
 use App\Models\Administration\Category; 
 use App\Http\Resources\Account\AccountResource;
 use App\Models\Account\Account;
+use App\Http\Resources\Account\AccountTypeResource;
+use App\Models\Account\AccountType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
@@ -57,7 +59,11 @@ class HandleInertiaRequests extends Middleware
             fn () => AccountResource::collection(
                 Account::latest()->take(10)->get()
             ));
-  
+            
+        $accountTypes = Cache::remember('accountTypes', $cacheDuration,
+            fn () => AccountTypeResource::collection(
+                AccountType::latest()->take(10)->get()
+            ));
 
         return [
             ...parent::share($request),
@@ -66,6 +72,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'categories' => $categories,
             'accounts' => $accounts,
+            'accountTypes' => $accountTypes,
         ];
 
     }
