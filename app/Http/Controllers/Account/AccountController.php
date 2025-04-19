@@ -18,7 +18,7 @@ class AccountController extends Controller
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'asc');
-        
+
         $accounts = Account::search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -26,6 +26,11 @@ class AccountController extends Controller
         return inertia('Accounts/Accounts/Index', [
             'items' => AccountResource::collection($accounts),
         ]);
+    }
+
+    public function create()
+    {
+        return inertia('Accounts/Accounts/Create');
     }
 
     public function store(AccountStoreRequest $request): Response
