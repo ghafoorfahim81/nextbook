@@ -36,8 +36,6 @@ class DatabaseSeeder extends Seeder
         $this->call(CategorySeeder::class);
         $this->call(BranchSeeder::class);
         $this->call(AccountTypeSeeder::class);
-        // $this->call(AccountSeeder::class);
-        Account::factory()->count(20)->create();
-        Branch::factory()->count(20)->create();
+        $this->call(AccountSeeder::class);
     }
 }
