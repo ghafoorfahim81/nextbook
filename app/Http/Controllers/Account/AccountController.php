@@ -18,7 +18,7 @@ class AccountController extends Controller
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'asc');
-
+        
         $accounts = Account::search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
