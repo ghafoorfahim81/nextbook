@@ -50,6 +50,10 @@
     step: {
       type: Number,
       default: 1
+    },
+    error: {
+      type: String,
+      default: ''
     }
   })
   
