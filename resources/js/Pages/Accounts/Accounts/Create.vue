@@ -24,6 +24,7 @@ const { accounts, accountTypes } = defineProps({
     },
 }); 
 
+
 function handleSubmit() {
     console.log(form)
 }
@@ -33,15 +34,15 @@ function handleSubmit() {
     <AppLayout title="Chart of Accounts">
         <div className="mb-5">
             <form @submit.prevent="handleSubmit" class="grid grid-cols-3 mb-3 gap-x-2 gap-y-5">
-                <NextInput placeholder="Name" type="text" v-model="form.name" label="Name" />
-                <NextInput placeholder="Number" type="text" v-model="form.number" label="Number" />
+                <NextInput placeholder="Name" :error="form.errors?.name" type="text" v-model="form.name" label="Name" />
+                <NextInput placeholder="Number" :error="form.errors?.number" type="text" v-model="form.number" label="Number" />
                 <NextSelect :options="accounts.data" v-model="form.parent_id" labelText="Parent"  />
                 <NextSelect :options="accountTypes.data" v-model="form.account_type_id" labelText="Account Type" @input="form.account_type_id = $event" />
-                <NextInput placeholder="Remark" type="text" v-model="form.remark" label="Remark" />
+                <NextInput placeholder="Remark" :error="form.errors?.remark" type="text" v-model="form.remark" label="Remark" />
             </form>
         </div> 
         <div>
-            <Button type="submit" class="bg-blue-500 text-white">Submit</Button>
+            <Button type="submit" @click="handleSubmit" class="bg-blue-500 text-white">Submit</Button>
         </div>
     </AppLayout>
 </template>
