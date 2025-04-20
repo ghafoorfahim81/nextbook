@@ -2,7 +2,7 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import { reactive } from 'vue';
 import { Button } from '@/Components/ui/button';
-import InputField from '@/Components/next/InputField.vue';
+import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 
 const form = reactive({
@@ -33,11 +33,11 @@ function handleSubmit() {
     <AppLayout title="Chart of Accounts">
         <div className="mb-5">
             <form @submit.prevent="handleSubmit" class="grid grid-cols-3 mb-3 gap-x-2 gap-y-5">
-                <InputField placeholder="Name" v-model="form.name" label="Name" />
-                <InputField placeholder="Number" v-model="form.number" label="Number" />
+                <NextInput placeholder="Name" type="text" v-model="form.name" label="Name" />
+                <NextInput placeholder="Number" type="text" v-model="form.number" label="Number" />
                 <NextSelect :options="accounts.data" v-model="form.parent_id" labelText="Parent"  />
                 <NextSelect :options="accountTypes.data" v-model="form.account_type_id" labelText="Account Type" @input="form.account_type_id = $event" />
-                <InputField placeholder="Remark" v-model="form.remark" label="Remark" />
+                <NextInput placeholder="Remark" type="text" v-model="form.remark" label="Remark" />
             </form>
         </div> 
         <div>

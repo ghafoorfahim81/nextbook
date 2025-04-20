@@ -6,7 +6,7 @@
         :type="type"
         :placeholder="placeholder"
         :value="modelValue"
-        @input="handleInput"
+        @update:modelValue="handleInput" 
         :min="type === 'number' ? min : undefined"
         :max="type === 'number' ? max : undefined"
         :step="type === 'number' ? step : undefined"
@@ -19,7 +19,7 @@
   <script setup>
   import { Input } from '@/Components/ui/input'
   import { Label } from '@/Components/ui/label'
-  import { ref, computed } from 'vue'
+  import { ref } from 'vue'
   
   const props = defineProps({
     label: {
@@ -55,11 +55,10 @@
   
   const emit = defineEmits(['update:modelValue'])
   
-  const inputId = ref(`input-${Math.random().toString(36).substr(2, 9)}`)
+  const inputId = ref(`input-${Math.random().toString(36).substring(2, 9)}`)
   const error = ref('')
   
-  const handleInput = (event) => {
-    let value = event.target.value
+  const handleInput = (value) => {
   
     if (props.type === 'number') {
       // Convert to number and validate
