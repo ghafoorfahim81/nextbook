@@ -13,6 +13,7 @@ use Database\Seeders\Administration\CategorySeeder;
 use Database\Seeders\Administration\DepartmentSeeder;
 use Database\Seeders\Administration\UserSeeder;
 use Database\Seeders\Account\AccountTypeSeeder;
+use Database\Seeders\Administration\CurrencySeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use App\Models\Account\Account;
@@ -37,5 +38,6 @@ class DatabaseSeeder extends Seeder
         $this->call(BranchSeeder::class);
         $this->call(AccountTypeSeeder::class);
         $this->call(AccountSeeder::class);
+        $this->call(CurrencySeeder::class);
     }
 }
