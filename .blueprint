@@ -1,21 +1,22 @@
 created:
-    - app/Http/Controllers/Account/AccountController.php
-    - database/factories/Account/AccountFactory.php
-    - database/migrations/2025_04_14_111016_create_accounts_table.php
-    - app/Models/Account/Account.php
-    - database/seeders/Account/AccountSeeder.php
-    - tests/Feature/Http/Controllers/Account/AccountControllerTest.php
-    - app/Http/Requests/Account/AccountStoreRequest.php
-    - app/Http/Requests/Account/AccountUpdateRequest.php
-    - app/Http/Resources/Account/AccountCollection.php
-    - app/Http/Resources/Account/AccountResource.php
+    - app/Http/Controllers/Administration/CurrencyController.php
+    - database/factories/Administration/CurrencyFactory.php
+    - database/migrations/2025_04_20_085234_create_currencies_table.php
+    - app/Models/Administration/Currency.php
+    - database/seeders/Administration/CurrencySeeder.php
+    - tests/Feature/Http/Controllers/Administration/CurrencyControllerTest.php
+    - app/Http/Requests/Administration/CurrencyStoreRequest.php
+    - app/Http/Requests/Administration/CurrencyUpdateRequest.php
+    - app/Http/Resources/Administration/CurrencyCollection.php
+    - app/Http/Resources/Administration/CurrencyResource.php
 updated:
     - routes/api.php
 models:
+    Account\Account: { id: 'char:26', name: string, number: string, account_type_id: 'char:26', parent_id: 'char:26 nullable', branch_id: 'char:26', tenant_id: 'char:26 nullable', remark: 'text nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
     Account\AccountType: { id: 'char:26', name: string, remark: 'text nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
     Administration\Branch: { id: 'char:26', name: string, remark: 'text nullable', location: 'string nullable', is_main: 'boolean default:false', sub_domain: 'string nullable', parent_id: 'char:26 nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
     Administration\Category: { id: 'char:26', name: string, remark: 'text nullable', parent_id: 'char:26 nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
     Administration\Department: { id: 'char:26', name: string, code: string, remark: 'text nullable', parent_id: 'char:26 nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
     Administration\Designation: { id: uuid }
     User: { id: 'char:26', name: string, email: string, email_verified_at: 'timestamp nullable', password: string, remember_token: 'string:100 nullable', profile_photo_path: 'string:2048 nullable', two_factor_secret: 'text nullable', two_factor_recovery_codes: 'text nullable', two_factor_confirmed_at: 'timestamp nullable' }
-    Account/Account: { id: id, name: 'string unique', number: 'string unique', account_type_id: 'id foreign:account_types', parent_id: 'id foreign:accounts nullable', branch_id: 'id foreign:branches', tenant_id: id, remark: 'text nullable', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
+    Administration/Currency: { id: id, name: 'string unique', code: 'string unique', symbol: 'string unique', format: 'string unique', exchange_rate: decimal, is_active: boolean, flag: 'string unique', branch_id: 'id foreign:branches', tenant_id: 'id  nullable', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }

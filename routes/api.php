@@ -28,3 +28,12 @@ Route::apiResource('accounts', App\Http\Controllers\Account\AccountController::c
 
 
 Route::apiResource('accounts', App\Http\Controllers\Account\AccountController::class);
+
+
+Route::apiResource('currencies', App\Http\Controllers\Currency\CurrencyController::class);
+
+
+Route::apiResource('currencies', App\Http\Controllers\Adminstration\CurrencyController::class);
+
+
+Route::apiResource('currencies', App\Http\Controllers\Administration\CurrencyController::class);

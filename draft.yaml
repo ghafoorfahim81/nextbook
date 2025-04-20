@@ -1,19 +1,21 @@
 models:
-  Account/Account:
+  Administration/Currency:
     id: id
     name: string unique
-    number: string unique
-    account_type_id: id foreign:account_types
-    parent_id: id foreign:accounts nullable
+    code: string unique  
+    symbol: string unique
+    format: string unique
+    exchange_rate: decimal
+    is_active: boolean
+    flag: string unique
     branch_id: id foreign:branches
-    tenant_id: id 
-    remark: text nullable 
+    tenant_id: id  nullable
     created_by: id foreign:users
     updated_by: id foreign:users nullable
     timestamps: true
 
 controllers:
-  Account/Account:
+  Administration/Currency:
     resource: api
 
-seeders: Account/Account
+seeders: Administration/Currency
