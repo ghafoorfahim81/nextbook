@@ -106,11 +106,15 @@ const data = {
         {
             title: 'Administration',
             url: '#',
-            icon: Cog, 
+            icon: Cog,
             items: [
                 {
                     title: 'Category',
                     url: '/categories',
+                },
+                {
+                    title: 'Currency',
+                    url: '/currencies',
                 },
                 {
                     title: 'Department',
@@ -157,7 +161,7 @@ const data = {
                 {
                     title: 'Chart of Account',
                     url: '/chart-of-accounts',
-                }, 
+                },
             ],
         },
     ],
