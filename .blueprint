@@ -1,14 +1,14 @@
 created:
-    - app/Http/Controllers/Administration/BranchController.php
-    - database/factories/Administration/BranchFactory.php
-    - database/migrations/2025_04_06_164116_create_branches_table.php
-    - app/Models/Administration/Branch.php
-    - database/seeders/Administration/BranchSeeder.php
-    - tests/Feature/Http/Controllers/Administration/BranchControllerTest.php
-    - app/Http/Requests/Administration/BranchStoreRequest.php
-    - app/Http/Requests/Administration/BranchUpdateRequest.php
-    - app/Http/Resources/Administration/BranchCollection.php
-    - app/Http/Resources/Administration/BranchResource.php
+    - app/Http/Controllers/Administration/StoreController.php
+    - database/factories/Administration/StoreFactory.php
+    - database/migrations/2025_07_15_094511_create_stores_table.php
+    - app/Models/Administration/Store.php
+    - database/seeders/Administration/StoreSeeder.php
+    - tests/Feature/Http/Controllers/Administration/StoreControllerTest.php
+    - app/Http/Requests/Administration/StoreStoreRequest.php
+    - app/Http/Requests/Administration/StoreUpdateRequest.php
+    - app/Http/Resources/Administration/StoreCollection.php
+    - app/Http/Resources/Administration/StoreResource.php
 updated:
     - routes/api.php
 models:
@@ -17,3 +17,4 @@ models:
     Administration\\Department: { id: uuid, name: 'string unique', remark: 'text nullable', created_by: 'uuid foreign:users', updated_by: 'uuid foreign:users nullable', timestamps: timestamps }
     Administration/Category: { id: 'string char(26) primary', name: 'string unique', parent_id: 'char(26) foreign:categories,id nullable', remark: 'text nullable', created_by: 'char(26) foreign:users,id', updated_by: 'char(26) foreign:users,id nullable', timestamps: timestamps }
     Administration/Branch: { id: id, name: string, is_main: 'boolean default:false', parent_id: 'id foreign:branches,id nullable', sub_domain: 'string nullable', remark: 'text nullable', created_by: 'id foreign:users,id', updated_by: 'id foreign:users,id nullable', timestamps: timestamps }
+    Administration/Store: { id: id, name: 'string unique', address: 'string nullable', is_main: boolean, branch_id: 'id foreign:branches', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }

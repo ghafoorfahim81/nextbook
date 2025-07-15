@@ -1,17 +1,16 @@
 models:
-  Administration/Branch:
+  Administration/Store:
     id: id
-    name: string
-    is_main: boolean default:false
-    parent_id: id foreign:branches,id nullable
-    sub_domain: string nullable
-    remark: text nullable
-    created_by: id foreign:users,id
-    updated_by: id foreign:users,id nullable
+    name: string unique
+    address: string nullable
+    is_main: boolean
+    branch_id: id foreign:branches
+    created_by: id foreign:users
+    updated_by: id foreign:users nullable
     timestamps: true
 
 controllers:
-  Administration/Branch:
+  Administration/Store:
     resource: api
 
-seeders: Administration/Branch
+seeders: Administration/Store

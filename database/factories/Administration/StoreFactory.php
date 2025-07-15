@@ -2,19 +2,20 @@
 
 namespace Database\Factories\Administration;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
-use App\Models\Administration\Category;
+use App\Models\Administration\Branch;
+use App\Models\Administration\Store;
+use App\Models\User;
 
-class CategoryFactory extends Factory
+class StoreFactory extends Factory
 {
     /**
      * The name of the factory's corresponding model.
      *
      * @var string
      */
-    protected $model = Category::class;
+    protected $model = Store::class;
 
     /**
      * Define the model's default state.
@@ -23,9 +24,10 @@ class CategoryFactory extends Factory
     {
         return [
             'id' => Str::ulid(), // Generate a UUID for the department ID
-            'name' => $this->faker->name(),
-            'remark' => $this->faker->sentence(),
-            'parent_id' => null,
+            'name' => fake()->name(),
+            'address' => fake()->word(),
+            'is_main' => fake()->boolean(),
+            'branch_id' => Branch::factory(),
         ];
     }
 }
