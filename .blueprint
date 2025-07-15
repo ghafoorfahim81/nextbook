@@ -1,20 +1,24 @@
 created:
-    - app/Http/Controllers/Administration/StoreController.php
-    - database/factories/Administration/StoreFactory.php
-    - database/migrations/2025_07_15_094511_create_stores_table.php
-    - app/Models/Administration/Store.php
-    - database/seeders/Administration/StoreSeeder.php
-    - tests/Feature/Http/Controllers/Administration/StoreControllerTest.php
-    - app/Http/Requests/Administration/StoreStoreRequest.php
-    - app/Http/Requests/Administration/StoreUpdateRequest.php
-    - app/Http/Resources/Administration/StoreCollection.php
-    - app/Http/Resources/Administration/StoreResource.php
+    - app/Http/Controllers/Administration/QuantityController.php
+    - database/factories/Administration/QuantityFactory.php
+    - database/migrations/2025_07_15_104453_create_quantities_table.php
+    - app/Models/Administration/Quantity.php
+    - database/seeders/Administration/QuantitySeeder.php
+    - tests/Feature/Http/Controllers/Administration/QuantityControllerTest.php
+    - app/Http/Requests/Administration/QuantityStoreRequest.php
+    - app/Http/Requests/Administration/QuantityUpdateRequest.php
+    - app/Http/Resources/Administration/QuantityCollection.php
+    - app/Http/Resources/Administration/QuantityResource.php
 updated:
     - routes/api.php
 models:
-    Administration\Designation: { id: uuid, name: string, remark: 'text nullable', created_by: biginteger, updated_by: 'biginteger nullable', deleted_by: 'biginteger nullable' }
-    User: { name: string, email: string, email_verified_at: 'timestamp nullable', password: string, remember_token: 'string:100 nullable', profile_photo_path: 'string:2048 nullable', two_factor_secret: 'text nullable', two_factor_recovery_codes: 'text nullable', two_factor_confirmed_at: 'timestamp nullable' }
-    Administration\\Department: { id: uuid, name: 'string unique', remark: 'text nullable', created_by: 'uuid foreign:users', updated_by: 'uuid foreign:users nullable', timestamps: timestamps }
-    Administration/Category: { id: 'string char(26) primary', name: 'string unique', parent_id: 'char(26) foreign:categories,id nullable', remark: 'text nullable', created_by: 'char(26) foreign:users,id', updated_by: 'char(26) foreign:users,id nullable', timestamps: timestamps }
-    Administration/Branch: { id: id, name: string, is_main: 'boolean default:false', parent_id: 'id foreign:branches,id nullable', sub_domain: 'string nullable', remark: 'text nullable', created_by: 'id foreign:users,id', updated_by: 'id foreign:users,id nullable', timestamps: timestamps }
-    Administration/Store: { id: id, name: 'string unique', address: 'string nullable', is_main: boolean, branch_id: 'id foreign:branches', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
+    Account\Account: {  }
+    Account\AccountType: {  }
+    Administration\Branch: { id: 'char:26', name: string, remark: 'text nullable', location: 'string nullable', is_main: 'boolean default:false', sub_domain: 'string nullable', parent_id: 'char:26 nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
+    Administration\Category: { id: 'char:26', name: string, remark: 'text nullable', parent_id: 'char:26 nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
+    Administration\Currency: {  }
+    Administration\Department: { id: 'char:26', name: string, code: string, remark: 'text nullable', parent_id: 'char:26 nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
+    Administration\Designation: { id: uuid }
+    Administration\Store: { id: 'char:26', name: string, address: 'string nullable', is_main: boolean, branch_id: 'char:26', created_by: 'char:26', updated_by: 'char:26 nullable' }
+    User: { id: 'char:26', name: string, email: string, email_verified_at: 'timestamp nullable', password: string, remember_token: 'string:100 nullable', profile_photo_path: 'string:2048 nullable', two_factor_secret: 'text nullable', two_factor_recovery_codes: 'text nullable', two_factor_confirmed_at: 'timestamp nullable' }
+    Administration/Quantity: { id: id, quantity: 'string index', unit: string, symbol: string, description: 'text nullable', branch_id: 'id foreign:branches', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
