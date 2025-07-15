@@ -29,4 +29,9 @@ Route::middleware([
     Route::resource('/categories', \App\Http\Controllers\Administration\CategoryController::class);
     Route::get('/departments/parents', [DepartmentController::class, 'getParents'])->name('departments.parents');
     Route::resource('/branches', \App\Http\Controllers\Administration\BranchController::class);
+    Route::resource('account-types', \App\Http\Controllers\Account\AccountTypeController::class);
+    Route::resource('chart-of-accounts', \App\Http\Controllers\Account\AccountController::class);
+    Route::resource('/currencies', \App\Http\Controllers\Administration\CurrencyController::class);
 });
+
+

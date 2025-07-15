@@ -5,7 +5,7 @@
         <div class="flex items-center justify-between">
             <div class="flex relative w-full max-w-sm">
                <div class="flex justify-items-start">
-                   <h1 class="text-lg font-semibold mr-4">{{props.title}}</h1>
+                   <h1 class="text-lg font-semibold mr-2 text-nowrap mt-1">{{props.title}}</h1>
                </div>
 
                 <div class="flex relative gap-4">
