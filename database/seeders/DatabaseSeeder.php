@@ -11,6 +11,7 @@ use Database\Seeders\Administration\BranchSeeder;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Database\Seeders\Administration\CategorySeeder;
 use Database\Seeders\Administration\DepartmentSeeder;
+use Database\Seeders\Administration\QuantitySeeder;
 use Database\Seeders\Administration\StoreSeeder;
 use Database\Seeders\Administration\UserSeeder;
 use Database\Seeders\Account\AccountTypeSeeder;
@@ -38,6 +39,7 @@ class DatabaseSeeder extends Seeder
         $this->call(CategorySeeder::class);
         $this->call(BranchSeeder::class);
         $this->call(StoreSeeder::class);
+        $this->call(QuantitySeeder::class);
         Branch::factory()->count(20)->create();
 //        Category::factory()->count(20)->create();
     }

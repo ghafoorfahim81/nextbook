@@ -25,3 +25,9 @@ Route::apiResource('branches', App\Http\Controllers\Administration\BranchControl
 
 
 Route::apiResource('stores', App\Http\Controllers\Administration\StoreController::class);
+
+
+Route::apiResource('quantities', App\Http\Controllers\Administration\QuantityController::class);
+
+
+Route::apiResource('quantities', App\Http\Controllers\Administration\QuantityController::class);
