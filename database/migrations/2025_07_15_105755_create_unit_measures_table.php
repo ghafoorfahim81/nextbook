@@ -13,11 +13,13 @@ return new class extends Migration
     {
         Schema::disableForeignKeyConstraints();
 
-        Schema::create('quantities', function (Blueprint $table) {
+        Schema::create('unit_measures', function (Blueprint $table) {
             $table->char('id', 26)->primary();
-            $table->string('quantity')->index();
-            $table->string('unit');
-            $table->string('symbol');
+            $table->string('name')->unique();
+            $table->string('unit')->index();
+            $table->string('symbol')->index();
+            $table->double('value')->nullable();
+            $table->char('quantity_id',26);
             $table->char('branch_id',26);
             $table->char('created_by',26);
             $table->char('updated_by',26)->nullable();
@@ -25,15 +27,18 @@ return new class extends Migration
         });
 
         Schema::enableForeignKeyConstraints();
-        Schema::table('quantities', function (Blueprint $table) {
+
+        Schema::table('unit_measures', function (Blueprint $table) {
             $table->foreign('branch_id')
                 ->references('id')
                 ->on('branches')
                 ->onDelete('CASCADE');
 
+            $table->foreign('quantity_id')->references('id')->on('quantities');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
         });
+
     }
 
     /**
@@ -41,6 +46,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('quantities');
+        Schema::dropIfExists('unit_measures');
     }
 };

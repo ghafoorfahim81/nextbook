@@ -1,14 +1,14 @@
 created:
-    - app/Http/Controllers/Administration/QuantityController.php
-    - database/factories/Administration/QuantityFactory.php
-    - database/migrations/2025_07_15_104453_create_quantities_table.php
-    - app/Models/Administration/Quantity.php
-    - database/seeders/Administration/QuantitySeeder.php
-    - tests/Feature/Http/Controllers/Administration/QuantityControllerTest.php
-    - app/Http/Requests/Administration/QuantityStoreRequest.php
-    - app/Http/Requests/Administration/QuantityUpdateRequest.php
-    - app/Http/Resources/Administration/QuantityCollection.php
-    - app/Http/Resources/Administration/QuantityResource.php
+    - app/Http/Controllers/Administration/UnitMeasureController.php
+    - database/factories/Administration/UnitMeasureFactory.php
+    - database/migrations/2025_07_15_105755_create_unit_measures_table.php
+    - app/Models/Administration/UnitMeasure.php
+    - database/seeders/Administration/UnitMeasureSeeder.php
+    - tests/Feature/Http/Controllers/Administration/UnitMeasureControllerTest.php
+    - app/Http/Requests/Administration/UnitMeasureStoreRequest.php
+    - app/Http/Requests/Administration/UnitMeasureUpdateRequest.php
+    - app/Http/Resources/Administration/UnitMeasureCollection.php
+    - app/Http/Resources/Administration/UnitMeasureResource.php
 updated:
     - routes/api.php
 models:
@@ -22,3 +22,4 @@ models:
     Administration\Store: { id: 'char:26', name: string, address: 'string nullable', is_main: boolean, branch_id: 'char:26', created_by: 'char:26', updated_by: 'char:26 nullable' }
     User: { id: 'char:26', name: string, email: string, email_verified_at: 'timestamp nullable', password: string, remember_token: 'string:100 nullable', profile_photo_path: 'string:2048 nullable', two_factor_secret: 'text nullable', two_factor_recovery_codes: 'text nullable', two_factor_confirmed_at: 'timestamp nullable' }
     Administration/Quantity: { id: id, quantity: 'string index', unit: string, symbol: string, description: 'text nullable', branch_id: 'id foreign:branches', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
+    Administration/UnitMeasure: { id: id, name: 'string unique', unit: string, symbol: string, branch_id: 'id foreign:branches', quantity_id: 'id foreign:quantities', value: 'double nullable', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }

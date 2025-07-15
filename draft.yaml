@@ -1,35 +1,36 @@
+models:
+  Administration/UnitMeasure:
+    id: id
+    name: string unique
+    unit: string
+    symbol: string
+    branch_id: id foreign:branches
+    quantity_id: id foreign:quantities
+    value: double nullable
+    created_by: id foreign:users
+    updated_by: id foreign:users nullable
+    timestamps: true
+
+controllers:
+  Administration/UnitMeasure:
+    resource: api
+
+seeders: Administration/UnitMeasure
+
 #models:
-#  Administration/UnitMeasure:
+#  Administration/Quantity:
 #    id: id
-#    name: string unique
+#    quantity: string index
 #    unit: string
 #    symbol: string
-#    is_main: boolean
+#    description: text nullable
 #    branch_id: id foreign:branches
 #    created_by: id foreign:users
 #    updated_by: id foreign:users nullable
 #    timestamps: true
 #
 #controllers:
-#  Administration/UnitMeasure:
+#  Administration/Quantity:
 #    resource: api
 #
-#seeders: Administration/Store
-
-models:
-  Administration/Quantity:
-    id: id
-    quantity: string index
-    unit: string
-    symbol: string
-    description: text nullable
-    branch_id: id foreign:branches
-    created_by: id foreign:users
-    updated_by: id foreign:users nullable
-    timestamps: true
-
-controllers:
-  Administration/Quantity:
-    resource: api
-
-seeders: Administration/Quantity
+#seeders: Administration/Quantity
