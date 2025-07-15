@@ -36,7 +36,6 @@ class Quantity extends Model
         'quantity',
         'unit',
         'symbol',
-        'description',
         'branch_id',
         'created_by',
         'updated_by',

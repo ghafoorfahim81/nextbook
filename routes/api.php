@@ -31,3 +31,6 @@ Route::apiResource('quantities', App\Http\Controllers\Administration\QuantityCon
 
 
 Route::apiResource('quantities', App\Http\Controllers\Administration\QuantityController::class);
+
+
+Route::apiResource('unit-measures', App\Http\Controllers\Administration\UnitMeasureController::class);
