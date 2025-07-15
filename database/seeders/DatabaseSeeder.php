@@ -10,6 +10,7 @@ use Database\Seeders\Administration\BranchSeeder;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Database\Seeders\Administration\CategorySeeder;
 use Database\Seeders\Administration\DepartmentSeeder;
+use Database\Seeders\Administration\StoreSeeder;
 use Database\Seeders\Administration\UserSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -32,7 +33,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call(CategorySeeder::class);
         $this->call(BranchSeeder::class);
-
+        $this->call(StoreSeeder::class);
         Branch::factory()->count(20)->create();
 //        Category::factory()->count(20)->create();
     }

@@ -24,7 +24,7 @@ class CategoryFactory extends Factory
         return [
             'id' => Str::ulid(), // Generate a UUID for the department ID
             'name' => $this->faker->name(),
-            'remark' => $this->faker->text(),
+            'remark' => $this->faker->sentence(),
             'parent_id' => null,
         ];
     }

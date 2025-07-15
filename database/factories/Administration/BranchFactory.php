@@ -26,8 +26,8 @@ class BranchFactory extends Factory
             'name' => $this->faker->name(),
             'is_main' => $this->faker->boolean(),
             'sub_domain' => $this->faker->domainName(),
-            'remark' => $this->faker->text(),
-            'location' => $this->faker->text(),
+            'remark' => $this->faker->sentence(),
+            'location' => $this->faker->sentence(),
             'parent_id' => null,
 
         ];

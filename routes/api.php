@@ -22,3 +22,6 @@ Route::apiResource('categories', App\Http\Controllers\Administration\CategoryCon
 
 
 Route::apiResource('branches', App\Http\Controllers\Administration\BranchController::class);
+
+
+Route::apiResource('stores', App\Http\Controllers\Administration\StoreController::class);
