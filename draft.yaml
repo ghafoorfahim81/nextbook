@@ -1,21 +1,28 @@
 models:
-  Administration/UnitMeasure:
+  Administration/Company:
     id: id
     name: string unique
-    unit: string
-    symbol: string
+    legal_name: string nullable
+    registration_number: string nullable
+    logo: string nullable
+    email: string nullable
+    phone: string nullable
+    website: string nullable
+    industry: string nullable
+    type: string nullable
+    address: string nullable
+    city: string nullable
+    country: string nullable
     branch_id: id foreign:branches
-    quantity_id: id foreign:quantities
-    value: double nullable
     created_by: id foreign:users
     updated_by: id foreign:users nullable
     timestamps: true
 
 controllers:
-  Administration/UnitMeasure:
+  Administration/Company:
     resource: api
 
-seeders: Administration/UnitMeasure
+seeders: Administration/Company
 
 #models:
 #  Administration/Quantity:
