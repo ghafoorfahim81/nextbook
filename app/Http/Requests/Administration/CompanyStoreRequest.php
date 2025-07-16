@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Http\Requests\Administration;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class CompanyStoreRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     */
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     */
+    public function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'unique:companies,name'],
+            'legal_name' => ['nullable', 'string'],
+            'registration_number' => ['nullable', 'string'],
+            'logo' => ['nullable', 'string'],
+            'email' => ['nullable', 'email'],
+            'phone' => ['nullable', 'string'],
+            'website' => ['nullable', 'string'],
+            'industry' => ['nullable', 'string'],
+            'type' => ['nullable', 'string'],
+            'address' => ['nullable', 'string'],
+            'city' => ['nullable', 'string'],
+            'country' => ['nullable', 'string'],
+            'branch_id' => ['required', 'integer', 'exists:branches,id'],
+            'created_by' => ['required'],
+            'updated_by' => ['nullable'],
+        ];
+    }
+}
