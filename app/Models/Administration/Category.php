@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Symfony\Component\Uid\Ulid;
 
 class Category extends Model
@@ -16,22 +17,33 @@ class Category extends Model
     use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting;
 
     /**
-     * The attributes that are mass assignable.
+     * The table associated with the model.
      *
-     * @var array
+     * @var string
      */
-
     protected $table = 'categories';
-    protected $keyType = 'string'; // Set key type to string
-    public $incrementing = false; // Disable auto-incrementing
 
-    protected static function boot()
-    {
-        parent::boot();
-        static::creating(function ($model) {
-            $model->id = (string) new Ulid(); // Generate ULID
-        });
-    }
+    /**
+     * The primary key for the model.
+     *
+     * @var string
+     */
+    protected $primaryKey = 'id';
+
+    /**
+     * Indicates if the IDs are auto-incrementing.
+     *
+     * @var bool
+     */
+    public $incrementing = false;
+
+    /**
+     * The "type" of the auto-incrementing ID.
+     *
+     * @var string
+     */
+    protected $keyType = 'string';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -51,14 +63,52 @@ class Category extends Model
      * @var array
      */
     protected $casts = [
-        'parent_id' => 'integer',
+        'id' => 'string',
+        'parent_id' => 'string',
         'created_by' => 'integer',
         'updated_by' => 'integer',
     ];
 
-    public function parent(): BelongsTo
+    /**
+     * Boot the model and assign ULID to id on creating.
+     */
+    protected static function boot()
     {
-        return $this->belongsTo(Category::class);
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->id)) {
+                $model->id = (string) new Ulid(); // Generate ULID if not already set
+            }
+        });
     }
 
+    /**
+     * Columns used for searchable queries.
+     *
+     * @return array
+     */
+    protected static function searchableColumns(): array
+    {
+        return [
+            'name',
+            'parent.name',
+        ];
+    }
+
+    /**
+     * Get the parent category.
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'parent_id');
+    }
+
+    /**
+     * Get the child categories.
+     */
+    public function children(): HasMany
+    {
+        return $this->hasMany(Category::class, 'parent_id');
+    }
 }

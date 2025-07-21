@@ -23,8 +23,6 @@ class CategoryStoreRequest extends FormRequest
             'name' => ['required', 'string', 'unique:categories,name'],
             'parent_id' => ['nullable', 'integer', 'exists:categories,id'],
             'remark' => ['nullable', 'string'],
-            'created_by' => ['required'],
-            'updated_by' => ['nullable'],
         ];
     }
 }

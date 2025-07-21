@@ -17,7 +17,7 @@ class CategoryController extends Controller
     {
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
-        $sortDirection = $request->input('sortDirection', 'asc');
+        $sortDirection = $request->input('sortDirection', 'desc');
 
         $categories = Category::with('parent')
             ->search($request->query('search'))
@@ -25,21 +25,22 @@ class CategoryController extends Controller
             ->paginate($perPage)
             ->withQueryString();
         return inertia('Administration/Categories/Index', [
-            'items' => CategoryResource::collection($categories),
+            'categories' => CategoryResource::collection($categories),
         ]);
     }
 
-    public function store(CategoryStoreRequest $request): Response
+    public function store(CategoryStoreRequest $request)
     {
         $category = Category::create($request->validated());
-
-        return new CategoryResource($category);
+        return redirect()->route('categories.index')->with('success', 'Category created successfully.');
     }
 
     public function show(Request $request, Category $category): Response
     {
+        $category->load('parent');
         return new CategoryResource($category);
     }
+
 
     public function update(CategoryUpdateRequest $request, Category $category): Response
     {

@@ -30,7 +30,7 @@
         "lodash": "^4.17.21",
         "lucide-vue-next": "^0.456.0",
         "radix-vue": "^1.9.9",
-        "reka-ui": "^2.2.0",
+        "reka-ui": "^2.3.2",
         "tailwind-merge": "^2.6.0",
         "tailwindcss-animate": "^1.0.7",
         "vue-select": "^4.0.0-beta.6"

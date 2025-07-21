@@ -21,15 +21,15 @@ trait HasUserAuditable
             ]);
         }
         static::creating(function ($model) use($firstUser) {
-            $model->created_by = Auth::id() ?? $firstUser->id;
+            $model->created_by =  $firstUser->id;
         });
 
         static::updating(function ($model) use($firstUser) {
-            $model->updated_by = Auth::id() ?? $firstUser->id;
+            $model->updated_by =  $firstUser->id;
         });
 
         static::deleting(function ($model) use($firstUser) {
-            $model->deleted_by = Auth::id() ?? $firstUser->id;
+            $model->deleted_by =  $firstUser->id;
             $model->save();
         });
 

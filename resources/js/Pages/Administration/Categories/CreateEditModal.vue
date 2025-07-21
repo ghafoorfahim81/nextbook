@@ -5,19 +5,20 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/Components/ui/textarea'
 import { Label } from "@/Components/ui/label/index.js";
 import ModalDialog from "@/Components/next/Dialog.vue";
+import { reactive } from 'vue'
+import { router } from '@inertiajs/vue3'
 
 const props = defineProps({
     isDialogOpen: Boolean,
-    departments: {
+    categories: {
         type: Array,
         default: () => [],
     },
-    department: {
-        type: Object,
-        default: null,
-    },
+    errors: Object,
 });
 
+const categories = computed(() => props.categories.data);
+console.log('this is department', props.categories);
 const emit = defineEmits(['update:isDialogOpen', 'saved']);
 
 // ✅ Local reactive state to track dialog open status
@@ -32,12 +33,13 @@ watch(() => props.isDialogOpen, (newValue) => {
 const closeModal = () => {
     localDialogOpen.value = false;
     emit('update:isDialogOpen', false);
-    form.reset();
+    // form.reset();
 };
+
 
 const isEditing = computed(() => !!props.department);
 
-const form = useForm({
+const form = reactive({
     name: '',
     remark: '',
     parent_id: null,
@@ -49,14 +51,19 @@ if (isEditing.value) {
     form.parent_id = props.department.parent_id;
 }
 
+
+function submit() {
+    router.post('/users', form)
+}
+
 const handleSubmit = async () => {
     if (isEditing.value) {
-        await form.patch(route('departments.update', props.department.id));
+        await router.patch(route('categories.update', props.department.id));
     } else {
-        await form.post(route('departments.store'));
+        await router.post(route('categories.store'));
     }
     emit('saved');
-    closeModal(); // ✅ Properly close the modal
+    // closeModal(); // ✅ Properly close the modal
 };
 </script>
 
@@ -77,12 +84,13 @@ const handleSubmit = async () => {
                         Name
                     </Label>
                     <Input id="name" autocomplete="false" v-model="form.name" placeholder="Enter name" class="col-span-3" />
+                    <div v-if="errors?.name">{{ errors.name }}</div>
                 </div>
                 <div class="grid items-center grid-cols-4 gap-4">
                     <Label for="parent" class="text-nowrap">
                         Parent
                     </Label>
-                    <v-select :options="[1,2,3]" class="col-span-3"></v-select>
+                    <v-select :options="categories" label="name" class="col-span-3"></v-select>
                 </div>
 
                 <div class="grid items-center grid-cols-4 gap-4">
