@@ -121,12 +121,24 @@ const data = {
                     url: '/departments',
                 },
                 {
+                    title: 'Unit Measure',
+                    url: '/unit_measures',
+                },
+                {
                     title: 'Branch',
                     url: '/branches',
                 },
                 {
-                    title: 'Settings',
-                    url: '#',
+                    title: 'Company',
+                    url: '/companies',
+                },
+                {
+                    title: 'Account Type',
+                    url: '/account-types',
+                },
+                {
+                    title: 'Store',
+                    url: '/stores',
                 },
             ],
         },
