@@ -2,17 +2,6 @@ models:
   Administration/Company:
     id: id
     name: string unique
-    legal_name: string nullable
-    registration_number: string nullable
-    logo: string nullable
-    email: string nullable
-    phone: string nullable
-    website: string nullable
-    industry: string nullable
-    type: string nullable
-    address: string nullable
-    city: string nullable
-    country: string nullable
     branch_id: id foreign:branches
     created_by: id foreign:users
     updated_by: id foreign:users nullable
