@@ -43,11 +43,10 @@ class CategoryController extends Controller
     }
 
 
-    public function update(CategoryUpdateRequest $request, Category $category): Response
+    public function update(CategoryUpdateRequest $request, Category $category)
     {
         $category->update($request->validated());
-
-        return new CategoryResource($category);
+        return redirect()->back();
     }
 
     public function destroy(Request $request, Category $category): Response

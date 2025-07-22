@@ -63,6 +63,7 @@ const handleSubmit = async () => {
             },
         })
     } else {
+        console.log('this is form', form)
         form.post('/categories', {
             onSuccess: () => {
                 emit('saved')
