@@ -4,29 +4,17 @@ import DataTable from '@/Components/DataTable.vue';
 import { h, ref } from 'vue';
 import { Button } from '@/Components/ui/button';
 import CreateEditModal from '@/Pages/Administration/Categories/CreateEditModal.vue';
-import { MoreHorizontal } from 'lucide-vue-next'
 
 import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from '@/components/ui/command'
-import {
     DropdownMenu,
+    DropdownMenuTrigger,
     DropdownMenuContent,
-    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuShortcut,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { EllipsisVertical } from 'lucide-vue-next'
+
+
 
 const labels = [
     'feature',
@@ -49,79 +37,32 @@ const props = defineProps({
 
 const columns = ref([
     { key: 'id', label: 'ID' },
-    { key: 'name', label: 'Name' },
+    { key: 'name', label: 'Name',sortable: true },
     {
         key: 'parent.name',
         label: 'Parent',
+        sortable: true,
         render: (row) => row.parent?.name ?? '-',
     },
+    { key: 'actions', label: 'Actions' },
 ]);
+
+const editItem = (item) => {
+    // isDialogOpen.value = true;
+    console.log('hiiiiiiii eidit')
+};
+
+const deleteItem = (item) => {
+    $inertia.delete(route('categories.destroy', item.id));
+    console.log('hiiiiiiii eidit')
+
+};
 </script>
 
 <template>
     <AppLayout title="Categories">
 
-        <div class="flex w-full flex-col items-start justify-between rounded-md border px-4 py-3 sm:flex-row sm:items-center">
-            <p class="text-sm font-medium leading-none">
-      <span class="mr-2 rounded-lg bg-primary px-2 py-1 text-xs text-primary-foreground">
-        {{ labelRef }}
-      </span>
-                <span class="text-muted-foreground">Create a new project</span>
-            </p>
-            <DropdownMenu v-model:open="open">
-                <DropdownMenuTrigger as-child>
-                    <Button variant="ghost" size="sm">
-                        <MoreHorizontal />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" class="w-[200px]">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuGroup>
-                        <DropdownMenuItem>
-                            Assign to...
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                            Set due date...
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>
-                                Apply label
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent class="p-0">
-                                <Command>
-                                    <CommandInput
-                                        placeholder="Filter label..."
-                                        auto-focus
-                                    />
-                                    <CommandList>
-                                        <CommandEmpty>No label found.</CommandEmpty>
-                                        <CommandGroup>
-                                            <CommandItem
-                                                v-for="label in labels"
-                                                :key="label"
-                                                :value="label"
-                                                @select="(ev) => {
-                        labelRef = ev.detail.value as string
-                        open = false
-                      }"
-                                            >
-                                                {{ label }}
-                                            </CommandItem>
-                                        </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                            </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem class="text-red-600">
-                            Delete
-                            <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
-                        </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                </DropdownMenuContent>
-            </DropdownMenu>
-        </div>
+ 
 
         <div class="flex gap-2 items-center mb-4">
             <div class="ml-auto gap-3">
@@ -142,6 +83,8 @@ const columns = ref([
         <DataTable
             :items="categories"
             :columns="columns"
+            @edit="editItem"
+            @delete="deleteItem"
             :title="`Categories`"
             :url="`categories.index`"
         />
