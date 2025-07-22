@@ -1,102 +1,117 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
-import { useForm } from '@inertiajs/vue3'
+import { computed, ref, reactive, watch } from 'vue'
+import { useForm, router } from '@inertiajs/vue3'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/Components/ui/textarea'
-import { Label } from "@/Components/ui/label/index.js";
-import ModalDialog from "@/Components/next/Dialog.vue";
-import { reactive } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import ModalDialog from '@/Components/next/Dialog.vue'
+import vSelect from 'vue-select'
 
 const props = defineProps({
     isDialogOpen: Boolean,
+    editingItem: Object, // ✅ this is passed from Index.vue
     categories: {
         type: Array,
         default: () => [],
     },
     errors: Object,
-});
+})
 
-const categories = computed(() => props.categories.data);
-console.log('this is department', props.categories);
-const emit = defineEmits(['update:isDialogOpen', 'saved']);
+const emit = defineEmits(['update:isDialogOpen', 'saved'])
 
-// ✅ Local reactive state to track dialog open status
-const localDialogOpen = ref(props.isDialogOpen);
+const categories = computed(() => props.categories.data ?? props.categories)
 
-// ✅ Watch for changes in the prop and update the local state
-watch(() => props.isDialogOpen, (newValue) => {
-    localDialogOpen.value = newValue;
-});
+const localDialogOpen = ref(props.isDialogOpen)
 
-// ✅ When closing the modal, emit the event to the parent
-const closeModal = () => {
-    localDialogOpen.value = false;
-    emit('update:isDialogOpen', false);
-    // form.reset();
-};
+watch(() => props.isDialogOpen, (val) => {
+    localDialogOpen.value = val
+})
 
+watch(() => localDialogOpen.value, (val) => {
+    emit('update:isDialogOpen', val)
+})
 
-const isEditing = computed(() => !!props.department);
+const isEditing = computed(() => !!props.editingItem?.id)
 
-const form = reactive({
+const form = useForm({
     name: '',
     remark: '',
     parent_id: null,
-});
-
-if (isEditing.value) {
-    form.name = props.department.name;
-    form.remark = props.department.remark;
-    form.parent_id = props.department.parent_id;
-}
+})
 
 
-function submit() {
-    router.post('/users', form)
+watch(() => props.editingItem, (item) => {
+    if (item) {
+        form.name = item.name || ''
+        form.remark = item.remark || ''
+        form.parent_id = item.parent_id || null
+    } else {
+        form.reset() // ✅ reset when switching from edit to create
+    }
+}, { immediate: true })
+
+const closeModal = () => {
+    localDialogOpen.value = false
 }
 
 const handleSubmit = async () => {
     if (isEditing.value) {
-        await router.patch(route('categories.update', props.department.id));
+        form.patch(route('categories.update', props.editingItem.id), {
+            onSuccess: () => {
+                emit('saved')
+                closeModal()
+            },
+        })
     } else {
-        await router.post(route('categories.store'));
+        form.post('/categories', {
+            onSuccess: () => {
+                emit('saved')
+                form.reset();
+                closeModal()
+            },
+        })
     }
-    emit('saved');
-    // closeModal(); // ✅ Properly close the modal
-};
+}
+
+
 </script>
 
 <template>
     <ModalDialog
         :open="localDialogOpen"
-        :title="isEditing ? 'Edit Department' : 'Create Department'"
+        :title="isEditing ? 'Edit Category' : 'Create Category'"
         :confirmText="isEditing ? 'Update' : 'Create'"
         :closeable="true"
-        @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
         @confirm="handleSubmit"
         @cancel="closeModal"
     >
-        <form @submit.prevent="handleSubmit">
+        <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid gap-4 py-4">
+                <!-- Name -->
                 <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="name" class="text-nowrap">
-                        Name
-                    </Label>
-                    <Input id="name" autocomplete="false" v-model="form.name" placeholder="Enter name" class="col-span-3" />
-                    <div v-if="errors?.name">{{ errors.name }}</div>
-                </div>
-                <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="parent" class="text-nowrap">
-                        Parent
-                    </Label>
-                    <v-select :options="categories" label="name" class="col-span-3"></v-select>
+                    <Label for="name" class="text-nowrap">Name</Label>
+                    <Input id="name" v-model="form.name" placeholder="Enter name" class="col-span-3" />
+                    <div v-if="form.errors.name" class="text-red-500 text-sm col-span-4">
+                        {{ form.errors.name }}
+                    </div>
+
                 </div>
 
+                <!-- Parent -->
                 <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="remark" class="text-nowrap">
-                        Remark
-                    </Label>
+                    <Label for="parent_id" class="text-nowrap">Parent</Label>
+                    <v-select
+                        :options="categories"
+                        v-model="form.parent_id"
+                        :reduce="category => category.id"
+                        label="name"
+                        class="col-span-3"
+                    />
+                </div>
+
+                <!-- Remark -->
+                <div class="grid items-center grid-cols-4 gap-4">
+                    <Label for="remark" class="text-nowrap">Remark</Label>
                     <Textarea id="remark" v-model="form.remark" rows="3" class="col-span-3" />
                 </div>
             </div>
