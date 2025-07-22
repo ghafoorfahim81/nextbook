@@ -5,35 +5,13 @@ import { h, ref } from 'vue';
 import { Button } from '@/Components/ui/button';
 import CreateEditModal from '@/Pages/Administration/Categories/CreateEditModal.vue';
 
-import {
-    DropdownMenu,
-    DropdownMenuTrigger,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-} from '@/components/ui/dropdown-menu'
-import { EllipsisVertical } from 'lucide-vue-next'
-
-
-
-const labels = [
-    'feature',
-    'bug',
-    'enhancement',
-    'documentation',
-    'design',
-    'question',
-    'maintenance',
-]
-
-const labelRef = ref('feature')
-const open = ref(false)
-
-const isDialogOpen = ref(false);
 
 const props = defineProps({
     categories: Object,
 });
+const isDialogOpen = ref(false)
+const editingCategory = ref(null)
+
 
 const columns = ref([
     { key: 'id', label: 'ID' },
@@ -44,26 +22,25 @@ const columns = ref([
         sortable: true,
         render: (row) => row.parent?.name ?? '-',
     },
+    { key: 'remark', label: 'Remark' },
     { key: 'actions', label: 'Actions' },
 ]);
 
 const editItem = (item) => {
-    // isDialogOpen.value = true;
-    console.log('hiiiiiiii eidit')
-};
+    editingCategory.value = item
+    isDialogOpen.value = true
+}
 
 const deleteItem = (item) => {
     $inertia.delete(route('categories.destroy', item.id));
     console.log('hiiiiiiii eidit')
 
 };
+
 </script>
 
 <template>
     <AppLayout title="Categories">
-
- 
-
         <div class="flex gap-2 items-center mb-4">
             <div class="ml-auto gap-3">
                 <Button
@@ -75,6 +52,8 @@ const deleteItem = (item) => {
                 </Button>
                 <CreateEditModal
                     :isDialogOpen="isDialogOpen"
+                    :editingItem="editingCategory"
+                    :categories="categories"
                     @update:isDialogOpen="isDialogOpen = $event"
                     @saved="() => $inertia.reload()"
                 />

@@ -48,12 +48,15 @@ const emit = defineEmits(["update:open", "confirm", "cancel"]);
                 @click="$emit('cancel'); $emit('update:open', false)">
           Close
         </Button>
-        <Button
-            variant="outline"
-            @click="$emit('confirm'); $emit('update:open', false)"
-        >
-          {{ confirmText || "Submit" }}
-        </Button>
+          <Button
+              variant="outline"
+              :disabled="submitting"
+              @click="$emit('confirm')"
+          >
+              <span v-if="submitting">Saving...</span>
+              <span v-else>{{ confirmText || "Submit" }}</span>
+          </Button>
+
       </DialogFooter>
     </DialogContent>
   </Dialog>
