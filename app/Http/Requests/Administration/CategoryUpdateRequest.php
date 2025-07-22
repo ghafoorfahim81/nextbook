@@ -20,11 +20,9 @@ class CategoryUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:categories,name'],
-            'parent_id' => ['nullable', 'integer', 'exists:categories,id,id'],
+            'name' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('categories')->ignore($this->route('category'))],
+            'parent_id' => ['nullable', 'string', 'exists:categories,id'],
             'remark' => ['nullable', 'string'],
-            'created_by' => ['required'],
-            'updated_by' => ['nullable'],
         ];
     }
 }
