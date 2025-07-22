@@ -14,6 +14,10 @@ const props = defineProps({
   open: Boolean,
   title: String,
   description: String,
+    submitting: {
+        type: Boolean,
+        default: false,
+    },
   confirmText: String,
   cancelText: String,
   showCancel: Boolean,

@@ -4,6 +4,7 @@ import DataTable from '@/Components/DataTable.vue';
 import { h, ref } from 'vue';
 import { Button } from '@/Components/ui/button';
 import CreateEditModal from '@/Pages/Administration/Categories/CreateEditModal.vue';
+import { useDeleteResource } from '@/composables/useDeleteResource'
 
 
 const props = defineProps({
@@ -31,12 +32,16 @@ const editItem = (item) => {
     isDialogOpen.value = true
 }
 
-const deleteItem = (item) => {
-    $inertia.delete(route('categories.destroy', item.id));
-    console.log('hiiiiiiii eidit')
+const { deleteResource, loading } = useDeleteResource()
 
-};
 
+const deleteItem = (id) => {
+    deleteResource('categories.destroy', id, {
+        title: 'Delete Category',
+        description: 'This will permanently delete this category.',
+        onSuccess: () => $inertia.reload()
+    })
+}
 </script>
 
 <template>

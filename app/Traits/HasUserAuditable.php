@@ -28,10 +28,10 @@ trait HasUserAuditable
             $model->updated_by =  $firstUser->id;
         });
 
-        static::deleting(function ($model) use($firstUser) {
-            $model->deleted_by =  $firstUser->id;
-            $model->save();
-        });
+//        static::deleting(function ($model) use($firstUser) {
+//            $model->deleted_by =  $firstUser->id;
+//            $model->save();
+//        });
 
 //        static::restoring(function ($model) {
 //            $model->deleted_by = null;
