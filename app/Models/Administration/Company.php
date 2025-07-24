@@ -1,61 +1,49 @@
 <?php
-
 namespace App\Models\Administration;
 
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
-use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Symfony\Component\Uid\Ulid;
 
 class Company extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting;
+    use HasFactory, HasUlids, HasUserAuditable, HasSearch, HasSorting;
 
+    protected $table = 'companies';
+    protected $primaryKey = 'id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
     protected $fillable = [
-        'name',
-        'legal_name',
-        'registration_number',
-        'logo',
-        'email',
-        'phone',
-        'website',
-        'industry',
-        'type',
-        'address',
-        'city',
-        'country',
-        'branch_id',
-        'created_by',
-        'updated_by',
+        'name', 'legal_name', 'registration_number', 'logo', 'email', 'phone',
+        'website', 'industry', 'type', 'address', 'city', 'country', 'branch_id',
+        'created_by', 'updated_by',
     ];
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-
 
     protected $casts = [
         'id' => 'string',
-        'parent_id' => 'string',
+        'branch_id' => 'string',
         'created_by' => 'string',
         'updated_by' => 'string',
     ];
 
-    public function branch(): BelongsTo
+    protected static function boot()
     {
-        return $this->belongsTo(Branch::class);
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->id)) {
+                $model->id = (string) new Ulid();
+            }
+        });
     }
 
-
+    protected static function searchableColumns(): array
+    {
+        return ['name', 'legal_name', 'registration_number', 'email', 'phone'];
+    }
 }
