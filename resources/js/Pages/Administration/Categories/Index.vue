@@ -32,7 +32,6 @@ const editItem = (item) => {
     isDialogOpen.value = true
 }
 const { deleteResource } = useDeleteResource()
-// const { toast } = useToast()
 const deleteItem = (id) => {
     deleteResource('categories.destroy', id, {
         title: 'Delete Category',
