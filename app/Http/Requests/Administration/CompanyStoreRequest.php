@@ -6,17 +6,11 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class CompanyStoreRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     */
     public function rules(): array
     {
         return [
@@ -26,15 +20,14 @@ class CompanyStoreRequest extends FormRequest
             'logo' => ['nullable', 'string'],
             'email' => ['nullable', 'email'],
             'phone' => ['nullable', 'string'],
-            'website' => ['nullable', 'string'],
+            'website' => ['nullable', 'url'],
             'industry' => ['nullable', 'string'],
             'type' => ['nullable', 'string'],
             'address' => ['nullable', 'string'],
             'city' => ['nullable', 'string'],
             'country' => ['nullable', 'string'],
-            'branch_id' => ['required', 'integer', 'exists:branches,id'],
-            'created_by' => ['required'],
-            'updated_by' => ['nullable'],
+            'branch_id' => ['required', 'string'],
         ];
     }
 }
+

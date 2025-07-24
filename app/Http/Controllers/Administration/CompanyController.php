@@ -1,48 +1,51 @@
 <?php
-
 namespace App\Http\Controllers\Administration;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Administration\CompanyStoreRequest;
 use App\Http\Requests\Administration\CompanyUpdateRequest;
-use App\Http\Resources\Administration\CompanyCollection;
 use App\Http\Resources\Administration\CompanyResource;
 use App\Models\Administration\Company;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class CompanyController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
-        $companies = Company::all();
+        $perPage = $request->input('perPage', 10);
+        $sortField = $request->input('sortField', 'id');
+        $sortDirection = $request->input('sortDirection', 'desc');
 
-        return new CompanyCollection($companies);
+        $companies = Company::search($request->query('search'))
+            ->orderBy($sortField, $sortDirection)
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return inertia('Administration/Companies/Index', [
+            'companies' => CompanyResource::collection($companies),
+        ]);
     }
 
-    public function store(CompanyStoreRequest $request): Response
+    public function store(CompanyStoreRequest $request)
     {
-        $company = Company::create($request->validated());
+        Company::create($request->validated());
+        return redirect()->route('companies.index')->with('success', 'Company created successfully.');
+    }
 
+    public function show(Request $request, Company $company)
+    {
         return new CompanyResource($company);
     }
 
-    public function show(Request $request, Company $company): Response
-    {
-        return new CompanyResource($company);
-    }
-
-    public function update(CompanyUpdateRequest $request, Company $company): Response
+    public function update(CompanyUpdateRequest $request, Company $company)
     {
         $company->update($request->validated());
-
-        return new CompanyResource($company);
+        return redirect()->back();
     }
 
-    public function destroy(Request $request, Company $company): Response
+    public function destroy(Request $request, Company $company)
     {
         $company->delete();
-
-        return response()->noContent();
+        return back();
     }
 }
