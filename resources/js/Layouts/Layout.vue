@@ -3,7 +3,7 @@ import {
     Avatar,
     AvatarFallback,
     AvatarImage,
-} from '@/components/ui/avatar'
+} from '@/Components/ui/avatar'
 
 import {
     Breadcrumb,
@@ -12,13 +12,13 @@ import {
     BreadcrumbList,
     BreadcrumbPage,
     BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
+} from '@/Components/ui/breadcrumb'
 
 import {
     Collapsible,
     CollapsibleContent,
     CollapsibleTrigger,
-} from '@/components/ui/collapsible'
+} from '@/Components/ui/collapsible'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -28,8 +28,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuShortcut,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Separator } from '@/components/ui/separator'
+} from '@/Components/ui/dropdown-menu'
+import { Separator } from '@/Components/ui/separator'
 import {
     Sidebar,
     SidebarContent,
@@ -48,7 +48,7 @@ import {
     SidebarProvider,
     SidebarRail,
     SidebarTrigger,
-} from '@/components/ui/sidebar'
+} from '@/Components/ui/sidebar'
 import {
     AudioWaveform,
     BadgeCheck,
@@ -78,6 +78,7 @@ import {
     Layers
 } from 'lucide-vue-next'
 import { ref } from 'vue'
+import Toaster from '@/components/ui/toast/Toaster.vue'
 
 // This is sample data.
 const data = {
@@ -215,6 +216,7 @@ const mode = useColorMode({
 </script>
 
 <template>
+    <Toaster />
     <SidebarProvider>
         <Sidebar collapsible="icon">
             <SidebarHeader>
