@@ -49,10 +49,10 @@ class CategoryController extends Controller
         return redirect()->back();
     }
 
-    public function destroy(Request $request, Category $category): Response
+    public function destroy(Request $request, Category $category)
     {
-        $category->delete();
 
-        return response()->noContent();
+        $category->delete();
+        return back();
     }
 }

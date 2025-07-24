@@ -6,6 +6,7 @@ import { createInertiaApp, Head, Link } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import vSelect from 'vue-select'; // ✅ Import v-select
+import Toaster from '@/components/ui/toast/Toaster.vue'
 
 const appName = import.meta.env.VITE_APP_NAME || 'Nextbook';
 

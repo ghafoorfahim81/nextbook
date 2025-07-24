@@ -3,8 +3,9 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref } from 'vue';
 import { Button } from '@/Components/ui/button';
+import { useDeleteResource } from '@/composables/useDeleteResource';
 import CreateEditModal from '@/Pages/Administration/Categories/CreateEditModal.vue';
-
+import { router } from '@inertiajs/vue3';
 
 const props = defineProps({
     categories: Object,
@@ -30,10 +31,14 @@ const editItem = (item) => {
     editingCategory.value = item
     isDialogOpen.value = true
 }
-
-const deleteItem = (item) => {
-    $inertia.delete(route('categories.destroy', item.id));
-    console.log('hiiiiiiii eidit')
+const { deleteResource } = useDeleteResource()
+// const { toast } = useToast()
+const deleteItem = (id) => {
+    deleteResource('categories.destroy', id, {
+        title: 'Delete Category',
+        description: 'This will permanently delete this category.',
+        successMessage: 'Category deleted successfully.',
+    })
 
 };
 
