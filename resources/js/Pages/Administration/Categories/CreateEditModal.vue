@@ -59,11 +59,12 @@ const handleSubmit = async () => {
         form.patch(route('categories.update', props.editingItem.id), {
             onSuccess: () => {
                 emit('saved')
+                form.reset();
+                this.isEditing.value = false
                 closeModal()
             },
         })
     } else {
-        console.log('this is form', form)
         form.post('/categories', {
             onSuccess: () => {
                 emit('saved')
