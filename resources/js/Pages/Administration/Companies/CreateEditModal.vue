@@ -1,87 +1,81 @@
 <script setup>
-import { computed, ref, reactive, watch } from 'vue'
-import { useForm, router } from '@inertiajs/vue3'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import ModalDialog from '@/Components/next/Dialog.vue'
-import vSelect from 'vue-select'
+import { computed, ref, watch } from 'vue';
+import { useForm } from '@inertiajs/vue3';
+import { Input } from '@/Components/ui/input';
+import { Label } from '@/Components/ui/label';
+import ModalDialog from '@/Components/next/Dialog.vue';
+import Textarea from '@/Components/ui/textarea/textarea.vue';
 
 const props = defineProps({
     isDialogOpen: Boolean,
-    editingItem: Object, // ✅ this is passed from Index.vue
-    categories: {
-        type: Array,
-        default: () => [],
-    },
+    editingItem: Object,
     errors: Object,
-})
+});
 
-const emit = defineEmits(['update:isDialogOpen', 'saved'])
+const emit = defineEmits(['update:isDialogOpen', 'saved']);
 
-const categories = computed(() => props.categories.data ?? props.categories)
+const isEditing = computed(() => !!props.editingItem?.id);
+const localDialogOpen = ref(props.isDialogOpen);
 
-const localDialogOpen = ref(props.isDialogOpen)
-
-watch(() => props.isDialogOpen, (val) => {
-    localDialogOpen.value = val
-})
-
-watch(() => localDialogOpen.value, (val) => {
-    emit('update:isDialogOpen', val)
-})
-
-const isEditing = computed(() => !!props.editingItem?.id)
+watch(() => props.isDialogOpen, (val) => localDialogOpen.value = val);
+watch(() => localDialogOpen.value, (val) => emit('update:isDialogOpen', val));
 
 const form = useForm({
     name: '',
-    remark: '',
-    parent_id: null,
-})
-
+    legal_name: '',
+    registration_number: '',
+    logo: '',
+    email: '',
+    phone: '',
+    website: '',
+    industry: '',
+    type: '',
+    address: '',
+    city: '',
+    country: '',
+});
 
 watch(() => props.editingItem, (item) => {
     if (item) {
-        form.name = item.name || ''
-        form.remark = item.remark || ''
-        form.parent_id = item.parent_id || null
+        Object.assign(form, {
+            name: item.name ?? '',
+            legal_name: item.legal_name ?? '',
+            registration_number: item.registration_number ?? '',
+            logo: item.logo ?? '',
+            email: item.email ?? '',
+            phone: item.phone ?? '',
+            website: item.website ?? '',
+            industry: item.industry ?? '',
+            type: item.type ?? '',
+            address: item.address ?? '',
+            city: item.city ?? '',
+            country: item.country ?? '',
+        });
     } else {
-        form.reset() // ✅ reset when switching from edit to create
+        form.reset();
     }
-}, { immediate: true })
+}, { immediate: true });
 
-const closeModal = () => {
-    localDialogOpen.value = false
-}
+const closeModal = () => localDialogOpen.value = false;
 
-const handleSubmit = async () => {
-    if (isEditing.value) {
-        form.patch(route('categories.update', props.editingItem.id), {
-            onSuccess: () => {
-                emit('saved')
-                form.reset();
-                this.isEditing.value = false
-                closeModal()
-            },
-        })
-    } else {
-        form.post('/categories', {
-            onSuccess: () => {
-                emit('saved')
-                form.reset();
-                closeModal()
-            },
-        })
-    }
-}
+const handleSubmit = () => {
+    const url = isEditing.value ? route('companies.update', props.editingItem.id) : route('companies.store');
+    const method = isEditing.value ? form.patch : form.post;
 
-
+    method(url, {
+        onSuccess: () => {
+            emit('saved');
+            form.reset();
+            closeModal();
+        },
+    });
+};
 </script>
 
 <template>
     <ModalDialog
         :open="localDialogOpen"
-        :title="isEditing ? 'Edit Category' : 'Create Category'"
+        :title="isEditing ? 'Edit Company' : 'Create Company'"
         :confirmText="isEditing ? 'Update' : 'Create'"
         :closeable="true"
         @confirm="handleSubmit"
@@ -89,32 +83,10 @@ const handleSubmit = async () => {
     >
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid gap-4 py-4">
-                <!-- Name -->
-                <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="name" class="text-nowrap">Name</Label>
-                    <Input id="name" v-model="form.name" placeholder="Enter name" class="col-span-3" />
-                    <div v-if="form.errors.name" class="text-red-500 text-sm col-span-4">
-                        {{ form.errors.name }}
-                    </div>
-
-                </div>
-
-                <!-- Parent -->
-                <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="parent_id" class="text-nowrap">Parent</Label>
-                    <v-select
-                        :options="categories"
-                        v-model="form.parent_id"
-                        :reduce="category => category.id"
-                        label="name"
-                        class="col-span-3"
-                    />
-                </div>
-
-                <!-- Remark -->
-                <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="remark" class="text-nowrap">Remark</Label>
-                    <Textarea id="remark" v-model="form.remark" rows="3" class="col-span-3" />
+                <div v-for="field in Object.keys(form)" :key="field" class="grid items-center grid-cols-4 gap-4">
+                    <Label :for="field" class="text-nowrap">{{ field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) }}</Label>
+                    <Input v-if="field !== 'address'" :id="field" v-model="form[field]" class="col-span-3" :placeholder="`Enter ${field}`" />
+                    <Textarea v-else :id="field" v-model="form[field]" rows="2" class="col-span-3" />
                 </div>
             </div>
         </form>
