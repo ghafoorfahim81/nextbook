@@ -17,7 +17,7 @@ class BranchController extends Controller
     {
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
-        $sortDirection = $request->input('sortDirection', 'asc');
+        $sortDirection = $request->input('sortDirection', 'desc');
 
         $branches = Branch::with('parent')
             ->search($request->query('search'))
@@ -25,15 +25,16 @@ class BranchController extends Controller
             ->paginate($perPage)
             ->withQueryString();
         return inertia('Administration/Branches/Index', [
-            'items' => BranchResource::collection($branches),
+            'branches' => BranchResource::collection($branches),
         ]);
     }
 
     public function store(BranchStoreRequest $request)
     {
         $branch = Branch::create($request->validated());
+        return redirect()->route('branches.index')->with('success', 'Branch created successfully.');
 
-        
+
     }
 
     public function show(Request $request, Branch $branch): Response
@@ -41,17 +42,16 @@ class BranchController extends Controller
         return new BranchResource($branch);
     }
 
-    public function update(BranchUpdateRequest $request, Branch $branch): Response
+    public function update(BranchUpdateRequest $request, Branch $branch)
     {
         $branch->update($request->validated());
+        return redirect()->route('branches.index')->with('success', 'Branch updated successfully.');
 
-        return new BranchResource($branch);
     }
 
-    public function destroy(Request $request, Branch $branch): Response
+    public function destroy(Request $request, Branch $branch)
     {
         $branch->delete();
-
-        return response()->noContent();
+        return back();
     }
 }

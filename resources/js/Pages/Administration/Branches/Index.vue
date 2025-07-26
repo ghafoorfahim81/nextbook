@@ -3,53 +3,76 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref } from 'vue';
 import { Button } from '@/Components/ui/button';
-import PlusButton from '@/Components/ui/button/PlusButton.vue';
-
-import { ArrowUpDown } from 'lucide-vue-next'
-import  DropdownAction  from '@/Components/DataTableDropdown.vue';
-
-import CreateEditModal from '@/Pages/Administration/Departments/CreateEditModal.vue';
-import Dialog from "@/Components/next/Dialog.vue";
-const isModalOpen = ref(false)
-const selectedBranch = ref(null)
-
-const isDialogOpen = ref(false);
-const fetchBranches = () => {
-    router.reload({ only: ['items'] }) // Refresh the department list
-}
-
-const showFilter = () => {
-    showFilter.value = true;
-}
+import { useDeleteResource } from '@/composables/useDeleteResource';
+import CreateEditModal from '@/Pages/Administration/Branches/CreateEditModal.vue';
+import { router } from '@inertiajs/vue3';
 
 const props = defineProps({
-    items: Object,
-})
+    branches: Object,
+});
+const isDialogOpen = ref(false)
+const editingBranch = ref(null)
+
 
 const columns = ref([
     { key: 'id', label: 'ID' },
-    { key: 'name', label: 'Name' },
+    { key: 'name', label: 'Name',sortable: true },
+    {
+        key: 'parent.name',
+        label: 'Parent',
+        sortable: true,
+        render: (row) => row.parent?.name ?? '-',
+    },
     { key: 'location', label: 'Location' },
     { key: 'sub_domain', label: 'Sub Domain' },
-    { key: `parent.name`, label: 'Parent',
-        render: (row) => row.parent?.name,},
-])
+    { key: 'remark', label: 'Remark' },
+    { key: 'actions', label: 'Actions' },
+]);
+
+const editItem = (item) => {
+    editingBranch.value = item
+    isDialogOpen.value = true
+}
+const { deleteResource } = useDeleteResource()
+const deleteItem = (id) => {
+    deleteResource('branches.destroy', id, {
+        title: 'Delete Branch',
+        description: 'This will permanently delete this branch.',
+        successMessage: 'Branch deleted successfully.',
+    })
+
+};
+
 </script>
 
 <template>
-    <AppLayout title="Designations">
-        <div class="flex gap-2 items-center">
+    <AppLayout title="Branches">
+        <div class="flex gap-2 items-center mb-4">
             <div class="ml-auto gap-3">
-                <Button  @click="isDialogOpen = true" variant="outline" class="bg-gray-100
-                hover:bg-gray-200 dark:border-gray-50 dark:text-green-300">Add New</Button>
+                <Button
+                    @click="isDialogOpen = true"
+                    variant="outline"
+                    class="bg-gray-100 hover:bg-gray-200 dark:border-gray-50 dark:text-green-300"
+                >
+                    Add New
+                </Button>
                 <CreateEditModal
                     :isDialogOpen="isDialogOpen"
-                    :categories="items"
+                    :editingItem="editingBranch"
+                    :branches="branches"
                     @update:isDialogOpen="isDialogOpen = $event"
+                    @saved="() => $inertia.reload()"
                 />
+
             </div>
         </div>
-        <DataTable :items="items" :columns="columns" :title="`Branches`" :url="`branches.index`" />
-
+        <DataTable
+            :items="branches"
+            :columns="columns"
+            @edit="editItem"
+            @delete="deleteItem"
+            :title="`Branches`"
+            :url="`branches.index`"
+        />
     </AppLayout>
 </template>

@@ -17,7 +17,7 @@ const props = defineProps({
   submitting: Boolean,
     width: {
         type: String,
-        default: "w-[400px] max-w-[400px]"
+        default: "w-[500px] max-w-[500px]"
     },
   confirmText: String,
   cancelText: String,

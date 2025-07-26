@@ -17,7 +17,7 @@ class BranchResource extends JsonResource
             'name' => $this->name,
             'is_main' => $this->is_main,
             'parent_id' => $this->parent_id,
-            'parent' => $this->parent,
+            'parent' => $this->parent ? array_merge($this->parent->toArray(), ['name' => $this->parent->name]) : null,
             'location' => $this->location,
             'sub_domain' => $this->sub_domain,
             'remark' => $this->remark,
