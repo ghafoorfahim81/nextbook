@@ -117,10 +117,10 @@ const data = {
                     title: 'Currency',
                     url: '/currencies',
                 },
-                {
-                    title: 'Department',
-                    url: '/departments',
-                },
+                // {
+                //     title: 'Department',
+                //     url: '/departments',
+                // },
                 {
                     title: 'Unit Measure',
                     url: '/unit_measures',
