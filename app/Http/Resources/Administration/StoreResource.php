@@ -18,6 +18,7 @@ class StoreResource extends JsonResource
             'address' => $this->address,
             'is_main' => $this->is_main,
             'branch_id' => $this->branch_id,
+            'remark' => $this->remark,
             'created_by' => $this->created_by,
             'updated_by' => $this->updated_by,
         ];

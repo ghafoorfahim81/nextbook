@@ -22,10 +22,8 @@ class StoreStoreRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'unique:stores,name'],
             'address' => ['nullable', 'string'],
-            'is_main' => ['required'],
-            'branch_id' => ['required', 'integer', 'exists:branches,id'],
-            'created_by' => ['required'],
-            'updated_by' => ['nullable'],
+            'is_main' => ['nullable', 'boolean'],
+            'branch_id' => ['required', 'string', 'exists:branches,id'],
         ];
     }
 }

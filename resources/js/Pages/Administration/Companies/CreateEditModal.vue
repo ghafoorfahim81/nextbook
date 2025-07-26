@@ -4,7 +4,6 @@ import { useForm } from '@inertiajs/vue3';
 import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import ModalDialog from '@/Components/next/Dialog.vue';
-import Textarea from '@/Components/ui/textarea/textarea.vue';
 import NextInput from "@/Components/next/NextInput.vue";
 import NextSelect from "@/Components/next/NextSelect.vue";
 
@@ -19,7 +18,6 @@ const props = defineProps({
 });
 
 const branches = computed(() => props.branches.data ?? props.branches);
-// console.log('this is branches', branches.value);
 const emit = defineEmits(['update:isDialogOpen', 'saved']);
 
 const isEditing = computed(() => !!props.editingItem?.id);
@@ -118,7 +116,7 @@ const handleSubmit = () => {
                     <NextInput label="City" v-model="form.city" type="text"/>
                     <NextInput label="Country" v-model="form.country" type="text"/>
                    <div>
-                       <Label for="parent_id" class="text-nowrap">Parent</Label>
+                       <Label for="parent_id" class="text-nowrap">Branch</Label>
                        <v-select
                            :options="branches"
                            v-model="form.branch_id"

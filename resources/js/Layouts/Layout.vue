@@ -133,10 +133,10 @@ const data = {
                     title: 'Company',
                     url: '/companies',
                 },
-                {
-                    title: 'Account Type',
-                    url: '/account-types',
-                },
+                // {
+                //     title: 'Account Type',
+                //     url: '/account-types',
+                // },
                 {
                     title: 'Store',
                     url: '/stores',
