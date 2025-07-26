@@ -19,13 +19,7 @@ class Branch extends Model
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
 
-    protected static function boot()
-    {
-        parent::boot();
-        static::creating(function ($model) {
-            $model->id = (string) new Ulid(); // Generate ULID
-        });
-    }
+
 
     /**
      * The attributes that are mass assignable.
@@ -61,13 +55,17 @@ class Branch extends Model
      */
     protected $casts = [
         'is_main' => 'boolean',
-        'parent_id' => 'integer',
-        'created_by' => 'integer',
-        'updated_by' => 'integer',
+        'parent_id' => 'string',
+        'created_by' => 'string',
+        'updated_by' => 'string',
     ];
 
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+    public function children()
+    {
+        return $this->hasMany(Branch::class, 'parent_id');
     }
 }

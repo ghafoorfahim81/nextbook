@@ -21,12 +21,11 @@ class BranchUpdateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string'],
-            'is_main' => ['required'],
-            'parent_id' => ['nullable', 'integer', 'exists:branches,id,id'],
+            'is_main' => ['nullable', 'boolean'],
+            'parent_id' => ['nullable', 'string', 'exists:branches,id'],
+            'location' => ['nullable', 'string'],
             'sub_domain' => ['nullable', 'string'],
             'remark' => ['nullable', 'string'],
-            'created_by' => ['required'],
-            'updated_by' => ['nullable'],
         ];
     }
 }
