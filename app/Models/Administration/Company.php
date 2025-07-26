@@ -1,6 +1,7 @@
 <?php
 namespace App\Models\Administration;
 
+use App\Traits\HasBranch;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -11,7 +12,7 @@ use Symfony\Component\Uid\Ulid;
 
 class Company extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, HasSearch, HasSorting;
+    use HasFactory, HasUlids, HasUserAuditable, HasBranch, HasSearch, HasSorting;
 
     protected $table = 'companies';
     protected $primaryKey = 'id';
@@ -31,16 +32,16 @@ class Company extends Model
         'updated_by' => 'string',
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($model) {
-            if (empty($model->id)) {
-                $model->id = (string) new Ulid();
-            }
-        });
-    }
+//    protected static function boot()
+//    {
+//        parent::boot();
+//
+//        static::creating(function ($model) {
+//            if (empty($model->id)) {
+//                $model->id = (string) new Ulid();
+//            }
+//        });
+//    }
 
     protected static function searchableColumns(): array
     {

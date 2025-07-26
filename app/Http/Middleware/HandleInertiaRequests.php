@@ -2,8 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Http\Resources\Administration\BranchResource;
 use App\Http\Resources\Administration\CategoryResource;
-use App\Models\Administration\Category; 
+use App\Models\Administration\Branch;
+use App\Models\Administration\Category;
 use App\Http\Resources\Account\AccountResource;
 use App\Models\Account\Account;
 use App\Http\Resources\Account\AccountTypeResource;
@@ -40,29 +42,23 @@ class HandleInertiaRequests extends Middleware
 
 
 
-        // $items = Cache::remember('items_'.app()->getLocale(), $cacheDuration,
-        //     fn () => ItemResource::collection(
-        //         Item::latest()->take(10)->get()
-        //     ));
-
-        // $measures = Cache::remember('measures_'.app()->getLocale(), $cacheDuration,
-        //     fn () => MeasureResource::collection(
-        //         Measure::latest()->take(10)->get()
-        //     ));
-
         $categories = Cache::remember('categories', $cacheDuration,
             fn () => CategoryResource::collection(
                 Category::latest()->take(10)->get()
             ));
-        
+
         $accounts = Cache::remember('accounts', $cacheDuration,
             fn () => AccountResource::collection(
                 Account::latest()->take(10)->get()
             ));
-            
+
         $accountTypes = Cache::remember('accountTypes', $cacheDuration,
             fn () => AccountTypeResource::collection(
                 AccountType::latest()->take(10)->get()
+            ));
+        $branches = Cache::remember('branches', $cacheDuration,
+            fn () => BranchResource::collection(
+                Branch::latest()->take(10)->get()
             ));
 
         return [
@@ -73,6 +69,7 @@ class HandleInertiaRequests extends Middleware
             'categories' => $categories,
             'accounts' => $accounts,
             'accountTypes' => $accountTypes,
+            'branches' => $branches
         ];
 
     }

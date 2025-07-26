@@ -5,13 +5,21 @@ import { Input } from '@/Components/ui/input';
 import { Label } from '@/Components/ui/label';
 import ModalDialog from '@/Components/next/Dialog.vue';
 import Textarea from '@/Components/ui/textarea/textarea.vue';
+import NextInput from "@/Components/next/NextInput.vue";
+import NextSelect from "@/Components/next/NextSelect.vue";
 
 const props = defineProps({
     isDialogOpen: Boolean,
     editingItem: Object,
+    branches: {
+        type: Array,
+        required: true,
+    },
     errors: Object,
 });
 
+const branches = computed(() => props.branches.data ?? props.branches);
+// console.log('this is branches', branches.value);
 const emit = defineEmits(['update:isDialogOpen', 'saved']);
 
 const isEditing = computed(() => !!props.editingItem?.id);
@@ -33,9 +41,11 @@ const form = useForm({
     address: '',
     city: '',
     country: '',
+    branch_id: '',
 });
 
 watch(() => props.editingItem, (item) => {
+        console.log('itemssssssssssss', item);
     if (item) {
         Object.assign(form, {
             name: item.name ?? '',
@@ -50,6 +60,7 @@ watch(() => props.editingItem, (item) => {
             address: item.address ?? '',
             city: item.city ?? '',
             country: item.country ?? '',
+            branch_id: item.branch_id ?? '',
         });
     } else {
         form.reset();
@@ -59,16 +70,25 @@ watch(() => props.editingItem, (item) => {
 const closeModal = () => localDialogOpen.value = false;
 
 const handleSubmit = () => {
-    const url = isEditing.value ? route('companies.update', props.editingItem.id) : route('companies.store');
-    const method = isEditing.value ? form.patch : form.post;
+    if (isEditing.value) {
+        form.patch(route('companies.update', props.editingItem.id), {
+            onSuccess: () => {
+                emit('saved');
+                form.reset();
+                closeModal();
+            },
+        });
+    } else {
 
-    method(url, {
-        onSuccess: () => {
-            emit('saved');
-            form.reset();
-            closeModal();
-        },
-    });
+        form.post('/companies', {
+            onSuccess: () => {
+                emit('saved')
+                form.reset();
+                closeModal()
+            },
+        })
+    }
+
 };
 </script>
 
@@ -78,15 +98,34 @@ const handleSubmit = () => {
         :title="isEditing ? 'Edit Company' : 'Create Company'"
         :confirmText="isEditing ? 'Update' : 'Create'"
         :closeable="true"
+        width="w-[900px] max-w-[900px]"
         @confirm="handleSubmit"
         @cancel="closeModal"
     >
         <form @submit.prevent="handleSubmit" id="modalForm">
-            <div class="grid gap-4 py-4">
-                <div v-for="field in Object.keys(form)" :key="field" class="grid items-center grid-cols-4 gap-4">
-                    <Label :for="field" class="text-nowrap">{{ field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) }}</Label>
-                    <Input v-if="field !== 'address'" :id="field" v-model="form[field]" class="col-span-3" :placeholder="`Enter ${field}`" />
-                    <Textarea v-else :id="field" v-model="form[field]" rows="2" class="col-span-3" />
+            <div class="grid col-span-2 gap-4 py-4">
+                <div class="grid items-center grid-cols-3 gap-4">
+                    <NextInput label="Name" v-model="form.name" :errors="errors?.name" type="text"/>
+                    <NextInput label="Legal Name" v-model="form.legal_name" type="text"/>
+                    <NextInput label="Registration Number" v-model="form.registration_number" type="text"/>
+                    <NextInput label="Email" v-model="form.email" type="email"/>
+                    <NextInput label="Phone" v-model="form.phone" type="text"/>
+                    <NextInput label="Website" v-model="form.website" type="text"/>
+                    <NextInput label="Industry" v-model="form.industry" type="text"/>
+                    <NextInput label="Type" v-model="form.type" type="text"/>
+                    <NextInput label="Address" v-model="form.address" type="text"/>
+                    <NextInput label="City" v-model="form.city" type="text"/>
+                    <NextInput label="Country" v-model="form.country" type="text"/>
+                   <div>
+                       <Label for="parent_id" class="text-nowrap">Parent</Label>
+                       <v-select
+                           :options="branches"
+                           v-model="form.branch_id"
+                           :reduce="branch => branch.id"
+                           label="name"
+                           class="col-span-3"
+                       />
+                   </div>
                 </div>
             </div>
         </form>
