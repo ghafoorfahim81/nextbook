@@ -99,6 +99,7 @@ const handleSubmit = () => {
         :confirmText="isEditing ? 'Update' : 'Create'"
         :closeable="true"
         width="w-[900px] max-w-[900px]"
+        @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
         @confirm="handleSubmit"
         @cancel="closeModal"
     >

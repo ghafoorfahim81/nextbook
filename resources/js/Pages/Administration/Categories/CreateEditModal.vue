@@ -83,10 +83,12 @@ const handleSubmit = async () => {
         :open="localDialogOpen"
         :title="isEditing ? 'Edit Category' : 'Create Category'"
         :confirmText="isEditing ? 'Update' : 'Create'"
+        @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
         :closeable="true"
         @confirm="handleSubmit"
         @cancel="closeModal"
     >
+
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid gap-4 py-4">
                 <!-- Name -->
