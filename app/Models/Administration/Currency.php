@@ -5,7 +5,7 @@ namespace App\Models\Administration;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\HasUserAuditable;
-use Illuminate\Database\Eloquent\Relations\BelongsTo; 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -23,7 +23,7 @@ class Currency extends Model
      */
     protected $keyType = 'string';
     public $incrementing = false; // Disable auto-incrementing
-    
+
     protected $fillable = [
         'name',
         'code',
@@ -52,13 +52,13 @@ class Currency extends Model
      * @var array
      */
     protected $casts = [
-        'id' => 'integer',
+        'id' => 'string',
         'exchange_rate' => 'decimal',
         'is_active' => 'boolean',
-        'branch_id' => 'integer',
-        'tenant_id' => 'integer',
-        'created_by' => 'integer',
-        'updated_by' => 'integer',
+        'branch_id' => 'string',
+        'tenant_id' => 'string',
+        'created_by' => 'string',
+        'updated_by' => 'string',
     ];
 
     protected static function searchableColumns(): array
@@ -79,5 +79,5 @@ class Currency extends Model
         return $this->belongsTo(Branch::class);
     }
 
-    
+
 }

@@ -18,13 +18,11 @@ class CurrencyResource extends JsonResource
             'code' => $this->code,
             'symbol' => $this->symbol,
             'format' => $this->format,
-            'exchange_rate' => $this->exchange_rate,
+//            'exchange_rate' => $this->exchange_rate,
             'is_active' => $this->is_active,
             'flag' => $this->flag,
             'branch_id' => $this->branch_id,
             'tenant_id' => $this->tenant_id,
-            'created_by' => $this->created_by,
-            'updated_by' => $this->updated_by,
         ];
     }
 }

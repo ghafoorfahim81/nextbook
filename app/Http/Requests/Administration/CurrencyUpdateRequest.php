@@ -20,17 +20,14 @@ class CurrencyUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:currencies,name'],
-            'code' => ['required', 'string', 'unique:currencies,code'],
-            'symbol' => ['required', 'string', 'unique:currencies,symbol'],
-            'format' => ['required', 'string', 'unique:currencies,format'],
+            'name' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
+            'code' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
+            'symbol' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
+            'format' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
             'exchange_rate' => ['required', 'numeric'],
-            'is_active' => ['required'],
-            'flag' => ['required', 'string', 'unique:currencies,flag'],
-            'branch_id' => ['required', 'integer', 'exists:branches,id'],
-            'tenant_id' => ['nullable', 'integer', 'exists:tenants,id'],
-            'created_by' => ['required'],
-            'updated_by' => ['nullable'],
+            'is_active' => ['nullable', 'boolean'],
+            'flag' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
+            'branch_id' => ['required', 'string', 'exists:branches,id'],
         ];
     }
 }

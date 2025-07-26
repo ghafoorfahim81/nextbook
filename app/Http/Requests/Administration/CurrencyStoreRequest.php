@@ -25,12 +25,9 @@ class CurrencyStoreRequest extends FormRequest
             'symbol' => ['required', 'string', 'unique:currencies,symbol'],
             'format' => ['required', 'string', 'unique:currencies,format'],
             'exchange_rate' => ['required', 'numeric'],
-            'is_active' => ['required'],
-            'flag' => ['required', 'string', 'unique:currencies,flag'],
-            'branch_id' => ['required', 'integer', 'exists:branches,id'],
-            'tenant_id' => ['nullable', 'integer', 'exists:tenants,id'],
-            'created_by' => ['required'],
-            'updated_by' => ['nullable'],
+            'is_active' => ['nullable', 'boolean'],
+            'flag' => ['nullable', 'string', 'unique:currencies,flag'],
+            'branch_id' => ['required', 'string', 'exists:branches,id'],
         ];
     }
 }
