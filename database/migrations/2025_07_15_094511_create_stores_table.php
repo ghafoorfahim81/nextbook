@@ -17,7 +17,7 @@ return new class extends Migration
             $table->char('id', 26)->primary();
             $table->string('name')->unique();
             $table->string('address')->nullable();
-            $table->boolean('is_main');
+            $table->boolean('is_main')->default(false);
             $table->char('branch_id',26);
             $table->char('created_by',26);
             $table->char('updated_by',26)->nullable();

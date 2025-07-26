@@ -20,12 +20,10 @@ class StoreUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:stores,name'],
+            'name' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('stores')->ignore($this->route('store'))],
             'address' => ['nullable', 'string'],
-            'is_main' => ['required'],
-            'branch_id' => ['required', 'integer', 'exists:branches,id'],
-            'created_by' => ['required'],
-            'updated_by' => ['nullable'],
+            'is_main' => ['nullable', 'boolean'],
+            'branch_id' => ['required', 'string', 'exists:branches,id'],
         ];
     }
 }

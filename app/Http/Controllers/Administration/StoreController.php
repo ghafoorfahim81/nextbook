@@ -13,27 +13,28 @@ use Illuminate\Http\Response;
 
 class StoreController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
 
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
-        $sortDirection = $request->input('sortDirection', 'asc');
+        $sortDirection = $request->input('sortDirection', 'desc');
 
         $stores = Store::search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
-        return inertia('Administration/Departments/Index', [
-            'items' => DepartmentResource::collection($stores),
+        return inertia('Administration/Stores/Index', [
+            'stores' => StoreResource::collection($stores),
         ]);
     }
 
-    public function store(StoreStoreRequest $request): Response
+    public function store(StoreStoreRequest $request)
     {
         $store = Store::create($request->validated());
+        return redirect()->route('stores.index')->with('success', 'Store created successfully.');
 
-        return new StoreResource($store);
+
     }
 
     public function show(Request $request, Store $store): Response
@@ -41,17 +42,17 @@ class StoreController extends Controller
         return new StoreResource($store);
     }
 
-    public function update(StoreUpdateRequest $request, Store $store): Response
+    public function update(StoreUpdateRequest $request, Store $store)
     {
         $store->update($request->validated());
+        return redirect()->route('stores.index')->with('success', 'Store created successfully.');
 
-        return new StoreResource($store);
     }
 
-    public function destroy(Request $request, Store $store): Response
+    public function destroy(Request $request, Store $store)
     {
         $store->delete();
 
-        return response()->noContent();
+        return back();
     }
 }

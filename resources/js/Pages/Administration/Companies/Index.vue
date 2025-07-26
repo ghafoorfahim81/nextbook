@@ -14,18 +14,13 @@ const props = defineProps({
     },
 });
 
-console.log('this is props', props.branches);
 const isDialogOpen = ref(false);
 const editingItem = ref(null);
 
 const columns = ref([
-    // { key: 'id', label: 'ID' },
     { key: 'name', label: 'Name', sortable: true },
     { key: 'legal_name', label: 'Legal Name' },
     { key: 'registration_number', label: 'Reg. Number' },
-    // { key: 'email', label: 'Email' },
-    // { key: 'phone', label: 'Phone' },
-    // { key: 'website', label: 'Website' },
     { key: 'industry', label: 'Industry' },
     { key: 'type', label: 'Type' },
     { key: 'city', label: 'City' },
