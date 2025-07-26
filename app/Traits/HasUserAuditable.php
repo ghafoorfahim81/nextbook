@@ -12,6 +12,7 @@ trait HasUserAuditable
     public static function bootHasUserAuditable()
     {
         $firstUser = \App\Models\User::first();
+        $branch = \App\Models\Administration\Branch::first();
         if(!$firstUser){
             $firstUser = User::create([
                 'id' => (string) new Ulid(),
@@ -20,7 +21,7 @@ trait HasUserAuditable
                 'password' => bcrypt('password'),
             ]);
         }
-        static::creating(function ($model) use($firstUser) {
+        static::creating(function ($model) use($firstUser, $branch) {
             $model->created_by =  $firstUser->id;
         });
 

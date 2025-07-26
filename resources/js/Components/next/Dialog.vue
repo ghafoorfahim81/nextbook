@@ -14,6 +14,11 @@ const props = defineProps({
   open: Boolean,
   title: String,
   description: String,
+  submitting: Boolean,
+    width: {
+        type: String,
+        default: "w-[400px] max-w-[400px]"
+    },
   confirmText: String,
   cancelText: String,
   showCancel: Boolean,
@@ -28,11 +33,12 @@ const emit = defineEmits(["update:open", "confirm", "cancel"]);
 </script>
 
 <template>
-  <Dialog :open="open" >
+  <Dialog :open="open" c @update:open="value => emit('update:open', value)">
     <!-- ✅ Lighter background (more transparency) -->
     <div v-if="open" class="fixed inset-0 bg-white/5" />
 
     <DialogContent
+        :class="width"
     >
       <DialogHeader>
         <DialogTitle>{{ title }}</DialogTitle>
