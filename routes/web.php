@@ -34,6 +34,7 @@ Route::middleware([
     Route::resource('account-types', \App\Http\Controllers\Account\AccountTypeController::class);
     Route::resource('chart-of-accounts', \App\Http\Controllers\Account\AccountController::class);
     Route::resource('/currencies', \App\Http\Controllers\Administration\CurrencyController::class);
+    Route::resource('/unit-measures', \App\Http\Controllers\Administration\UnitMeasureController::class);
 });
 
 

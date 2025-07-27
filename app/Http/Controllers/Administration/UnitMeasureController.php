@@ -13,11 +13,19 @@ use Illuminate\Http\Response;
 
 class UnitMeasureController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
-        $unitMeasures = UnitMeasure::all();
+        $perPage = $request->input('perPage', 10);
+        $sortField = $request->input('sortField', 'id');
+        $sortDirection = $request->input('sortDirection', 'desc');
 
-        return new UnitMeasureCollection($unitMeasures);
+        $unitMeasures = UnitMeasure::search($request->query('search'))
+            ->orderBy($sortField, $sortDirection)
+            ->paginate($perPage)
+            ->withQueryString();
+        return inertia('Administration/UnitMeasures/Index', [
+            'unitMeasures' => UnitMeasureResource::collection($unitMeasures),
+        ]);
     }
 
     public function store(UnitMeasureStoreRequest $request): Response

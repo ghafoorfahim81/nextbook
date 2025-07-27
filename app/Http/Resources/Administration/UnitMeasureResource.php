@@ -19,9 +19,8 @@ class UnitMeasureResource extends JsonResource
             'symbol' => $this->symbol,
             'branch_id' => $this->branch_id,
             'quantity_id' => $this->quantity_id,
+            'quantity' => $this->quantity,
             'value' => $this->value,
-            'created_by' => $this->created_by,
-            'updated_by' => $this->updated_by,
         ];
     }
 }

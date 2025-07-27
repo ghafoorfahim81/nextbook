@@ -123,7 +123,7 @@ const data = {
                 // },
                 {
                     title: 'Unit Measure',
-                    url: '/unit_measures',
+                    url: '/unit-measures',
                 },
                 {
                     title: 'Branch',
