@@ -110,7 +110,7 @@ const handleSubmit = async () => {
                     <NextInput label="Exchange Rate" v-model="form.exchange_rate" type="number"/>
                     <NextInput label="Flag" v-model="form.flag" type="text"/>
                     <div>
-                        <Label for="branch_id" class="text-nowrap">Parent</Label>
+                        <Label for="branch_id" class="text-nowrap">Branch</Label>
                         <v-select
                             :options="branches"
                             v-model="form.branch_id"
