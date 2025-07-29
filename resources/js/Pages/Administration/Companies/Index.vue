@@ -71,7 +71,8 @@ const editItem = (item) => {
             :editingItem="editingItem"
             :branches="branches"
             @update:isDialogOpen="isDialogOpen = $event"
-            @saved="$inertia.reload()"
+            @saved="() => { editingItem = null }"
+
         />
     </AppLayout>
 </template>

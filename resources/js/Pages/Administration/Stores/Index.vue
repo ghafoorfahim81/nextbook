@@ -57,7 +57,8 @@ const deleteItem = (id) => {
                     :stores="stores"
                     :branches="branches"
                     @update:isDialogOpen="isDialogOpen = $event"
-                    @saved="() => $inertia.reload()"
+                    @saved="() => { editingStore = null }"
+
                 />
             </div>
         </div>

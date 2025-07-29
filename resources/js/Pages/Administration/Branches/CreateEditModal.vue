@@ -65,7 +65,6 @@ const handleSubmit = async () => {
             onSuccess: () => {
                 emit('saved')
                 form.reset();
-                this.isEditing.value = false
                 closeModal()
             },
         })
