@@ -53,7 +53,6 @@ class Currency extends Model
      */
     protected $casts = [
         'id' => 'string',
-        'exchange_rate' => 'decimal',
         'is_active' => 'boolean',
         'branch_id' => 'string',
         'tenant_id' => 'string',

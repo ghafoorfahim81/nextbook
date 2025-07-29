@@ -61,7 +61,7 @@ const deleteItem = (id) => {
                     :currencies="currencies"
                     :branches="branches"
                     @update:isDialogOpen="isDialogOpen = $event"
-                    @saved="() => $inertia.reload()"
+                    @saved="() => { editingCurrency = null }"
                 />
 
             </div>

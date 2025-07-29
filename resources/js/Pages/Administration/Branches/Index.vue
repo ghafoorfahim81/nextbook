@@ -61,7 +61,7 @@ const deleteItem = (id) => {
                     :editingItem="editingBranch"
                     :branches="branches"
                     @update:isDialogOpen="isDialogOpen = $event"
-                    @saved="() => $inertia.reload()"
+                    @saved="() => { editingBranch = null }"
                 />
 
             </div>

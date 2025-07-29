@@ -59,7 +59,8 @@ const deleteItem = (id) => {
                     :editingItem="editingCategory"
                     :categories="categories"
                     @update:isDialogOpen="isDialogOpen = $event"
-                    @saved="() => $inertia.reload()"
+                    @saved="() => { editingCategory = null }"
+
                 />
             </div>
         </div>

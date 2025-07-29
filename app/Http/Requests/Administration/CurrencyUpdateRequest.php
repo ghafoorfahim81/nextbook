@@ -23,10 +23,10 @@ class CurrencyUpdateRequest extends FormRequest
             'name' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
             'code' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
             'symbol' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
-            'format' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
-            'exchange_rate' => ['required', 'numeric'],
+            'format' => ['nullable', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
+            'exchange_rate' => ['nullable', 'numeric'],
             'is_active' => ['nullable', 'boolean'],
-            'flag' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
+            'flag' => ['nullable', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
             'branch_id' => ['required', 'string', 'exists:branches,id'],
         ];
     }
