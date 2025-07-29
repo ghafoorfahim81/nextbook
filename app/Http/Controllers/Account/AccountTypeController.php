@@ -24,22 +24,19 @@ class AccountTypeController extends Controller
             ->paginate($perPage)
             ->withQueryString();
         return inertia('Accounts/AccountTypes/Index', [
-            'items' => AccountTypeResource::collection($accountTypes),
+            'accountTypes' => AccountTypeResource::collection($accountTypes),
         ]);
     }
 
-    public function create(Request $request): Response
+    public function create(Request $request)
     {
         return view('accountType.create');
     }
 
-    public function store(AccountTypeStoreRequest $request): Response
+    public function store(AccountTypeStoreRequest $request)
     {
         $accountType = AccountType::create($request->validated());
-
-        $request->session()->flash('accountType.id', $accountType->id);
-
-        return redirect()->route('accountTypes.index');
+        return redirect()->route('account-types.index');
     }
 
     public function show(Request $request, AccountType $accountType): Response
@@ -52,19 +49,17 @@ class AccountTypeController extends Controller
         return view('accountType.edit', compact('accountType'));
     }
 
-    public function update(AccountTypeUpdateRequest $request, AccountType $accountType): Response
+    public function update(AccountTypeUpdateRequest $request, AccountType $accountType)
     {
         $accountType->update($request->validated());
+        return redirect()->route('account-types.index')->with('success', 'Account type created successfully.');
 
-        $request->session()->flash('accountType.id', $accountType->id);
-
-        return redirect()->route('accountTypes.index');
     }
 
-    public function destroy(Request $request, AccountType $accountType): Response
+    public function destroy(Request $request, AccountType $accountType)
     {
         $accountType->delete();
 
-        return redirect()->route('accountTypes.index');
+        return redirect()->route('account-types.index');
     }
 }

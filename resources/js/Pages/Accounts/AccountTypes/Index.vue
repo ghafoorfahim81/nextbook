@@ -3,51 +3,66 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref } from 'vue';
 import { Button } from '@/Components/ui/button';
-import PlusButton from '@/Components/ui/button/PlusButton.vue';
-
-import { ArrowUpDown } from 'lucide-vue-next'
-import  DropdownAction  from '@/Components/DataTableDropdown.vue';
-
-import CreateEditModal from '@/Pages/Administration/Departments/CreateEditModal.vue';
-import Dialog from "@/Components/next/Dialog.vue";
-const isModalOpen = ref(false)
-const selectedBranch = ref(null)
-
-const isDialogOpen = ref(false);
-const fetchAccountTypes = () => {
-    router.reload({ only: ['items'] }) // Refresh the department list
-}
-
-const showFilter = () => {
-    showFilter.value = true;
-}
+import { useDeleteResource } from '@/composables/useDeleteResource';
+import CreateEditModal from '@/Pages/Accounts/AccountTypes/CreateEditModal.vue';
+import { router } from '@inertiajs/vue3';
 
 const props = defineProps({
-    items: Object,
-})
-console.log(props.items.data);
+    accountTypes: Object,
+});
+const isDialogOpen = ref(false)
+const editingAccountType = ref(null)
+
 
 const columns = ref([
-    { key: 'id', label: 'ID', class: 'w-10' },
-    { key: 'name', label: 'Name' },
+    { key: 'id', label: 'ID' },
+    { key: 'name', label: 'Name',sortable: true },
     { key: 'remark', label: 'Remark' },
-])
+    { key: 'actions', label: 'Actions' },
+]);
+
+const editItem = (item) => {
+    editingAccountType.value = item
+    isDialogOpen.value = true
+}
+const { deleteResource } = useDeleteResource()
+const deleteItem = (id) => {
+    deleteResource('account-types.destroy', id, {
+        title: 'Delete Account type',
+        description: 'This will permanently delete this account type.',
+        successMessage: 'Account type deleted successfully.',
+    })
+
+};
+
 </script>
 
 <template>
-    <AppLayout title="Designations">
-        <div class="flex gap-2 items-center">
+    <AppLayout title="Account types">
+        <div class="flex gap-2 items-center mb-4">
             <div class="ml-auto gap-3">
-                <Button  @click="isDialogOpen = true" variant="outline" class="bg-gray-100
-                hover:bg-gray-200 dark:border-gray-50 dark:text-green-300">Add New</Button>
+                <Button
+                    @click="isDialogOpen = true"
+                    variant="outline"
+                    class="bg-gray-100 hover:bg-gray-200 dark:border-gray-50 dark:text-green-300"
+                >
+                    Add New
+                </Button>
                 <CreateEditModal
                     :isDialogOpen="isDialogOpen"
-                    :categories="items"
+                    :editingItem="editingAccountType"
                     @update:isDialogOpen="isDialogOpen = $event"
+                    @saved="() => { editingAccountType = null }"
                 />
             </div>
         </div>
-        <DataTable :items="items" :columns="columns" :title="`Account Types`" :url="`account-types.index`" />
-
+        <DataTable
+            :items="accountTypes"
+            :columns="columns"
+            @edit="editItem"
+            @delete="deleteItem"
+            :title="`Account types`"
+            :url="`account-types.index`"
+        />
     </AppLayout>
 </template>
