@@ -20,7 +20,7 @@ class AccountTypeUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:account_types,name,' . $this->accountType->id],
+            'name' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('account_types')->ignore($this->route('account_type'))],
             'remark' => ['nullable', 'string'],
         ];
     }

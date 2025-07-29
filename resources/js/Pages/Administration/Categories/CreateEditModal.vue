@@ -1,9 +1,9 @@
 <script setup>
 import { computed, ref, reactive, watch } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
+import { Input } from '@/Components/ui/input'
+import { Textarea } from '@/Components/ui/textarea'
+import { Label } from '@/Components/ui/label'
 import ModalDialog from '@/Components/next/Dialog.vue'
 import vSelect from 'vue-select'
 
