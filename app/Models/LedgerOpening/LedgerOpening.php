@@ -35,13 +35,13 @@ class LedgerOpening extends Model
         ];
     }
 
-    public function createdBy(): BelongsTo
+    public function transactionable(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class);
+        return $this->morphTo();
     }
 
-    public function updatedBy(): BelongsTo
+    public function ledgerable(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class);
+        return $this->morphTo();
     }
 }
