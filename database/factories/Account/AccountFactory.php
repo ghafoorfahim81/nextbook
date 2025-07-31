@@ -27,7 +27,7 @@ class AccountFactory extends Factory
             'name' => fake()->unique()->word(),
             'number' => 'Ac-'.$this->faker->unique()->randomNumber(),
             'account_type_id' => AccountType::factory(),
-            'parent_id' => Account::factory(),
+            'is_active' => $this->faker->boolean(),
             'branch_id' => Branch::factory(),
             'remark' => $this->faker->text(),
             'created_by' => User::factory(),
