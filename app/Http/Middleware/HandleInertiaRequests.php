@@ -10,6 +10,7 @@ use App\Http\Resources\Account\AccountResource;
 use App\Models\Account\Account;
 use App\Http\Resources\Account\AccountTypeResource;
 use App\Models\Account\AccountType;
+use App\Models\Administration\Currency;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
@@ -61,6 +62,11 @@ class HandleInertiaRequests extends Middleware
                 Branch::latest()->take(10)->get()
             ));
 
+        $curencies = Cache::remember('currencies', $cacheDuration,
+            fn () => CategoryResource::collection(
+                Currency::latest()->take(10)->get()
+            ));
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -69,7 +75,8 @@ class HandleInertiaRequests extends Middleware
             'categories' => $categories,
             'accounts' => $accounts,
             'accountTypes' => $accountTypes,
-            'branches' => $branches
+            'branches' => $branches,
+            'currencies' => $curencies,
         ];
 
     }
