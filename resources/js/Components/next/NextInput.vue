@@ -6,7 +6,7 @@
         </label>
         <Input
             :id="inputId"
-            :type="type"
+            :type="type??'text'"
             v-model="model"
             :placeholder="placeholder"
             :disabled="disabled"
