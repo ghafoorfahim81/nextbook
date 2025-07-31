@@ -27,10 +27,7 @@ return new class extends Migration
 
         Schema::enableForeignKeyConstraints();
         Schema::table('accounts', function (Blueprint $table) {
-            $table->foreign('parent_id')
-                ->references('id')
-                ->on('accounts')
-                ->onDelete('CASCADE');
+
             $table->foreign('branch_id')
                 ->references('id')
                 ->on('branches')
