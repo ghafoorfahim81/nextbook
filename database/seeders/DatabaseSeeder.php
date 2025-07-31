@@ -45,7 +45,6 @@ class DatabaseSeeder extends Seeder
 //        $this->call(QuantitySeeder::class);
         $this->call(UnitMeasureSeeder::class);
         $this->call(CompanySeeder::class);
-//        Branch::factory()->count(20)->create();
-//        Category::factory()->count(20)->create();
+        $this->call(AccountTypeSeeder::class);
     }
 }

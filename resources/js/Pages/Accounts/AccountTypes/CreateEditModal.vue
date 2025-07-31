@@ -44,7 +44,8 @@ watch(() => props.editingItem, (item) => {
 
 
 const closeModal = () => {
-    localDialogOpen.value = false
+    localDialogOpen.value = false;
+    emit('saved');
 }
 
 const handleSubmit = async () => {

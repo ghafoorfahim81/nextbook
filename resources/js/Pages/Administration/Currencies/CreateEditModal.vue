@@ -25,7 +25,7 @@ const emit = defineEmits(['update:isDialogOpen', 'saved'])
 const branches = computed(() => props.branches.data ?? props.branches)
 const localDialogOpen = ref(props.isDialogOpen)
 
-watch(() => props.isDialogOpen, (val) => {
+watch(() => props.isDialogOpen, (val) => {0
     localDialogOpen.value = val
 })
 

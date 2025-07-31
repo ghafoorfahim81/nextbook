@@ -17,9 +17,8 @@ return new class extends Migration
             $table->string('name')->unique();
             $table->string('number')->unique();
             $table->char('account_type_id', 26)->constrained();
-            $table->char('parent_id', 26)->nullable();
+            $table->boolean('is_active')->default(true);
             $table->char('branch_id', 26);
-            $table->char('tenant_id', 26)->nullable();
             $table->text('remark')->nullable();
             $table->char('created_by', 26);
             $table->char('updated_by', 26)->nullable();

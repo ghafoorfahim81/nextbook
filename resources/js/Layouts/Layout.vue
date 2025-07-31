@@ -168,13 +168,14 @@ const data = {
             icon: ChartColumn,
             items: [
                 {
-                    title: 'Account Type',
-                    url: '/account-types',
-                },
-                {
                     title: 'Chart of Account',
                     url: '/chart-of-accounts',
                 },
+                {
+                    title: 'Account Type',
+                    url: '/account-types',
+                },
+
             ],
         },
     ],
