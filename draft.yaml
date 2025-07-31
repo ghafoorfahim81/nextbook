@@ -1,17 +1,22 @@
 models:
-  Administration/Company:
-    id: id
-    name: string unique
-    branch_id: id foreign:branches
+  Transaction/Transaction:
+    id: string(26)
+    transactionable: morph
+    amount: float
+    currency_id: id foreign:currencies
+    rate: float
+    date: date
+    type: enum('debit', 'credit')
+    remark: text nullable
     created_by: id foreign:users
     updated_by: id foreign:users nullable
     timestamps: true
 
 controllers:
-  Administration/Company:
+  Transaction/Transaction:
     resource: api
 
-seeders: Administration/Company
+seeders: Transaction/Transaction
 
 #models:
 #  Administration/Quantity:
