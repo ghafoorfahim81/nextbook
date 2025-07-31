@@ -1,14 +1,14 @@
 created:
-    - app/Http/Controllers/Administration/CompanyController.php
-    - database/factories/Administration/CompanyFactory.php
-    - database/migrations/2025_07_16_052932_create_companies_table.php
-    - app/Models/Administration/Company.php
-    - database/seeders/Administration/CompanySeeder.php
-    - tests/Feature/Http/Controllers/Administration/CompanyControllerTest.php
-    - app/Http/Requests/Administration/CompanyStoreRequest.php
-    - app/Http/Requests/Administration/CompanyUpdateRequest.php
-    - app/Http/Resources/Administration/CompanyCollection.php
-    - app/Http/Resources/Administration/CompanyResource.php
+    - app/Http/Controllers/Transaction/TransactionController.php
+    - database/factories/Transaction/TransactionFactory.php
+    - database/migrations/2025_07_31_073111_create_transactions_table.php
+    - app/Models/Transaction/Transaction.php
+    - database/seeders/Transaction/TransactionSeeder.php
+    - tests/Feature/Http/Controllers/Transaction/TransactionControllerTest.php
+    - app/Http/Requests/Transaction/TransactionStoreRequest.php
+    - app/Http/Requests/Transaction/TransactionUpdateRequest.php
+    - app/Http/Resources/Transaction/TransactionCollection.php
+    - app/Http/Resources/Transaction/TransactionResource.php
 updated:
     - routes/api.php
 models:
@@ -24,3 +24,4 @@ models:
     Administration/Quantity: { id: id, quantity: 'string index', unit: string, symbol: string, description: 'text nullable', branch_id: 'id foreign:branches', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
     Administration/UnitMeasure: { id: id, name: 'string unique', unit: string, symbol: string, branch_id: 'id foreign:branches', quantity_id: 'id foreign:quantities', value: 'double nullable', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
     Administration/Company: { id: id, name: 'string unique', legal_name: 'string nullable', registration_number: 'string nullable', logo: 'string nullable', email: 'string nullable', phone: 'string nullable', website: 'string nullable', industry: 'string nullable', type: 'string nullable', address: 'string nullable', city: 'string nullable', country: 'string nullable', branch_id: 'id foreign:branches', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
+    Transaction/Transaction: { id: string(26), transactionable: morph, amount: float, currency_id: 'id foreign:currencies', rate: float, date: date, type: "enum('debit', 'credit')", remark: 'text nullable', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }

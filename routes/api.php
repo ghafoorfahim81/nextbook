@@ -37,3 +37,6 @@ Route::apiResource('unit-measures', App\Http\Controllers\Administration\UnitMeas
 
 
 Route::apiResource('companies', App\Http\Controllers\Administration\CompanyController::class);
+
+
+Route::apiResource('transactions', App\Http\Controllers\Transaction\TransactionController::class);
