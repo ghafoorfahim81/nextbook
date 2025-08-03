@@ -15,7 +15,9 @@ return new class extends Migration
 
         Schema::create('transactions', function (Blueprint $table) {
             $table->char('id', 26)->primary();
-            $table->morphs('transactionable');
+            $table->char('transactionable_id', 26);
+            $table->string('transactionable_type');
+            $table->index(['transactionable_id', 'transactionable_type']);
             $table->char('account_id', 26);
             $table->float('amount');
             $table->char('currency_id', 26);

@@ -3,19 +3,32 @@
 namespace App\Models\Transaction;
 
 use App\Models\Account\Account;
+use App\Models\LedgerOpening\LedgerOpening;
+use App\Traits\HasSearch;
+use App\Traits\HasSorting;
+use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Transaction extends Model
 {
-    use HasFactory;
+    use HasFactory, HasSearch, HasSorting, HasUserAuditable;
 
     /**
      * The attributes that are mass assignable.
      *
      * @var array
      */
+    protected $keyType = 'string';
+    public $incrementing = false;
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            $model->id = (string) new \Symfony\Component\Uid\Ulid();
+        });
+    }
     protected $fillable = [
         'transactionable',
         'account_id',
@@ -38,11 +51,11 @@ class Transaction extends Model
     {
         return [
             'amount' => 'float',
-            'currency_id' => 'integer',
+            'currency_id' => 'string',
             'rate' => 'float',
             'date' => 'date',
-            'created_by' => 'integer',
-            'updated_by' => 'integer',
+            'created_by' => 'string',
+            'updated_by' => 'string',
         ];
     }
 
@@ -60,5 +73,11 @@ class Transaction extends Model
     {
         return $this->belongsTo(Account::class);
     }
+
+    public function opening()
+    {
+        return $this->morphOne(LedgerOpening::class, 'transaction');
+    }
+
 
 }

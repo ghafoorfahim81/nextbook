@@ -2,13 +2,27 @@
 
 namespace App\Models\LedgerOpening;
 
+use App\Traits\HasSearch;
+use App\Traits\HasSorting;
+use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LedgerOpening extends Model
 {
-    use HasFactory;
+    use HasFactory, HasSearch, HasSorting, HasUserAuditable;
+
+
+    protected $keyType = 'string';
+    public $incrementing = false;
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            $model->id = (string) new \Symfony\Component\Uid\Ulid();
+        });
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -30,8 +44,8 @@ class LedgerOpening extends Model
     protected function casts(): array
     {
         return [
-            'created_by' => 'integer',
-            'updated_by' => 'integer',
+            'created_by' => 'string',
+            'updated_by' => 'string',
         ];
     }
 
@@ -44,4 +58,15 @@ class LedgerOpening extends Model
     {
         return $this->morphTo();
     }
+
+    public function ledger()
+    {
+        return $this->morphTo();
+    }
+
+    public function transaction()
+    {
+        return $this->morphTo();
+    }
+
 }

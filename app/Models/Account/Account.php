@@ -2,7 +2,10 @@
 
 namespace App\Models\Account;
 
+use App\Models\LedgerOpening\LedgerOpening;
+use App\Models\Transaction\Transaction;
 use App\Traits\HasSearch;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,17 +16,10 @@ use App\Models\Tenant;
 
 class Account extends Model
 {
-    use HasFactory, HasSearch, HasSorting, HasUserAuditable;
+    use HasFactory,HasUlids, HasSearch, HasSorting, HasUserAuditable;
 
     protected $keyType = 'string';
     public $incrementing = false;
-    protected static function boot()
-    {
-        parent::boot();
-        static::creating(function ($model) {
-            $model->id = (string) new \Symfony\Component\Uid\Ulid();
-        });
-    }
 
     /**
      * The attributes that are mass assignable.
@@ -81,8 +77,16 @@ class Account extends Model
         return $this->belongsTo(Branch::class);
     }
 
-    public function tenant(): BelongsTo
+
+
+    public function transactions()
     {
-        return $this->belongsTo(Tenant::class);
+        return $this->belongsTo(Transaction::class, 'account_id');
     }
+
+    public function opening()
+    {
+        return $this->morphOne(LedgerOpening::class, 'ledger');
+    }
+
 }

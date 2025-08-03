@@ -35,10 +35,35 @@ class AccountController extends Controller
 
     public function store(AccountStoreRequest $request): Response
     {
-        $account = Account::create($request->validated());
+//        dd('Store method called');
+        $validated = $request->validated();
 
-        return new AccountResource($account);
+        // Create Account
+        $account = Account::create($validated);
+
+        // Optionally create transaction + opening if opening amount exists
+        if ($request->has('opening_amount') && $request->opening_amount > 0) {
+            $transaction = $account->transactions()->create([
+                'amount' => $request->opening_amount,
+                'currency_id' => $request->currency_id,
+                'transactionable_type' => Account::class,
+                'transactionable_id' => $account->id,
+                'rate' => 1,
+                'date' => now(),
+                'type' => $request->transaction_type ?? 'debit',
+                'remark' => 'Opening balance for account',
+                'created_by' => auth()->id(),
+            ]);
+
+            $transaction->opening()->create([
+                'ledger_id' => $account->id,
+                'ledger_type' => Account::class,
+            ]);
+        }
+
+        return to_route('accounts.index')->with('success', 'Account created successfully.');
     }
+
 
     public function show(Request $request, Account $account): Response
     {

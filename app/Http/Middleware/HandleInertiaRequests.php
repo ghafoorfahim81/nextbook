@@ -62,7 +62,7 @@ class HandleInertiaRequests extends Middleware
                 Branch::latest()->take(10)->get()
             ));
 
-        $curencies = Cache::remember('currencies', $cacheDuration,
+        $currencies = Cache::remember('currencies', $cacheDuration,
             fn () => CategoryResource::collection(
                 Currency::latest()->take(10)->get()
             ));
@@ -76,7 +76,7 @@ class HandleInertiaRequests extends Middleware
             'accounts' => $accounts,
             'accountTypes' => $accountTypes,
             'branches' => $branches,
-            'currencies' => $curencies,
+            'currencies' => $currencies,
         ];
 
     }
