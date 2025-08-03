@@ -26,8 +26,6 @@ class AccountStoreRequest extends FormRequest
             'is_active' => ['nullable', 'boolean'],
             'branch_id' => ['required', 'string', 'exists:branches,id'],
             'remark' => ['nullable', 'string'],
-            'created_by' => ['required'],
-            'updated_by' => ['nullable'],
         ];
     }
 }

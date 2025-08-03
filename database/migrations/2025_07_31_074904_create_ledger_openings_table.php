@@ -15,8 +15,13 @@ return new class extends Migration
 
         Schema::create('ledger_openings', function (Blueprint $table) {
             $table->char('id', 26)->primary();
-            $table->morphs('transactionable');
-            $table->morphs('ledgerable');
+            // Polymorphic relation to ledger: Customer, Supplier, Account, etc.
+            $table->char('ledger_id', 26);
+            $table->string('ledger_type');
+            $table->index(['ledger_id', 'ledger_type']);
+
+            // Transaction morph relation
+            $table->char('transaction_id', 26);
             $table->char('created_by', 26);
             $table->char('updated_by', 26)->nullable();
             $table->timestamps();
@@ -25,6 +30,9 @@ return new class extends Migration
         Schema::table('ledger_openings', function (Blueprint $table) {
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
+            $table->foreign('transaction_id')->references('id')->on('transactions');
+//            $table->foreign('ledger_id')->references('id')->on('ledgers');
+
         });
 
         Schema::enableForeignKeyConstraints();
