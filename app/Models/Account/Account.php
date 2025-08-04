@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use App\Models\Administration\Branch;
-use App\Models\Tenant;
 
 class Account extends Model
 {
@@ -77,16 +76,21 @@ class Account extends Model
         return $this->belongsTo(Branch::class);
     }
 
-
-
     public function transactions()
     {
-        return $this->belongsTo(Transaction::class, 'account_id');
+        return $this->hasMany(Transaction::class);
+//        return $this->belongsTo(Transaction::class, 'account_id');
+    }
+
+    public function asTransactionable()
+    {
+        return $this->morphMany(Transaction::class, 'transactionable');
     }
 
     public function opening()
     {
-        return $this->morphOne(LedgerOpening::class, 'ledger');
+        return $this->morphOne(LedgerOpening::class, 'ledgerable');
     }
+
 
 }

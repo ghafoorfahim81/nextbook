@@ -46,5 +46,6 @@ class DatabaseSeeder extends Seeder
         $this->call(UnitMeasureSeeder::class);
         $this->call(CompanySeeder::class);
         $this->call(AccountTypeSeeder::class);
+        $this->call(CurrencySeeder::class);
     }
 }

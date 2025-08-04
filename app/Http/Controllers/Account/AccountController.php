@@ -19,7 +19,8 @@ class AccountController extends Controller
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'asc');
 
-        $accounts = Account::search($request->query('search'))
+        $accounts = Account::with('opening')
+            ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
@@ -33,14 +34,14 @@ class AccountController extends Controller
         return inertia('Accounts/Accounts/Create');
     }
 
-    public function store(AccountStoreRequest $request): Response
+    public function store(AccountStoreRequest $request)
     {
 //        dd('Store method called');
         $validated = $request->validated();
 
         // Create Account
         $account = Account::create($validated);
-
+//        dd($account);
         // Optionally create transaction + opening if opening amount exists
         if ($request->has('opening_amount') && $request->opening_amount > 0) {
             $transaction = $account->transactions()->create([
@@ -54,14 +55,13 @@ class AccountController extends Controller
                 'remark' => 'Opening balance for account',
                 'created_by' => auth()->id(),
             ]);
-
             $transaction->opening()->create([
-                'ledger_id' => $account->id,
-                'ledger_type' => Account::class,
+                'ledgerable_id' => $account->id,
+                'ledgerable_type' => Account::class,
             ]);
         }
 
-        return to_route('accounts.index')->with('success', 'Account created successfully.');
+        return to_route('chart-of-accounts.index')->with('success', 'Account created successfully.');
     }
 
 

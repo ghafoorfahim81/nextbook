@@ -30,8 +30,9 @@ class Transaction extends Model
         });
     }
     protected $fillable = [
-        'transactionable',
         'account_id',
+        'transactionable_type',
+        'transactionable_id',
         'amount',
         'currency_id',
         'rate',
@@ -50,6 +51,10 @@ class Transaction extends Model
     protected function casts(): array
     {
         return [
+            'id' => 'string',
+            'account_id' => 'string',
+            'transactionable_type' => 'string',
+            'transactionable_id' => 'string',
             'amount' => 'float',
             'currency_id' => 'string',
             'rate' => 'float',
@@ -64,10 +69,7 @@ class Transaction extends Model
         return $this->belongsTo(\App\Models\Administration\Currency::class);
     }
 
-    public function transactionable()
-    {
-        return $this->morphTo();
-    }
+
 
     public function account(): BelongsTo
     {
@@ -76,8 +78,9 @@ class Transaction extends Model
 
     public function opening()
     {
-        return $this->morphOne(LedgerOpening::class, 'transaction');
+        return $this->hasOne(LedgerOpening::class,'transaction_id');
     }
+
 
 
 }

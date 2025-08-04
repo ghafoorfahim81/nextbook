@@ -16,9 +16,9 @@ return new class extends Migration
         Schema::create('ledger_openings', function (Blueprint $table) {
             $table->char('id', 26)->primary();
             // Polymorphic relation to ledger: Customer, Supplier, Account, etc.
-            $table->char('ledger_id', 26);
-            $table->string('ledger_type');
-            $table->index(['ledger_id', 'ledger_type']);
+            $table->char('ledgerable_id', 26);
+            $table->string('ledgerable_type');
+            $table->index(['ledgerable_id', 'ledgerable_type']);
 
             // Transaction morph relation
             $table->char('transaction_id', 26);
