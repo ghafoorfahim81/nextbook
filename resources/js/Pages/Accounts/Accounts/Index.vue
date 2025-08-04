@@ -3,20 +3,11 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref } from 'vue';
 import { Button } from '@/Components/ui/button';
-import PlusButton from '@/Components/ui/button/PlusButton.vue';
-
-import { ArrowUpDown } from 'lucide-vue-next'
-import  DropdownAction  from '@/Components/DataTableDropdown.vue';
 
 import CreateEditModal from '@/Pages/Administration/Departments/CreateEditModal.vue';
-import Dialog from "@/Components/next/Dialog.vue";
-const isModalOpen = ref(false)
-const selectedBranch = ref(null)
 
 const isDialogOpen = ref(false);
-const fetchAccountTypes = () => {
-    router.reload({ only: ['items'] }) // Refresh the department list
-}
+
 
 const showFilter = () => {
     showFilter.value = true;
@@ -25,14 +16,15 @@ const showFilter = () => {
 const props = defineProps({
     items: Object,
 })
-console.log(props.items.data);
+
+
+console.log('accountssssss',props.items.data);
 
 const columns = ref([
-    { key: 'id', label: 'ID', class: 'w-10' },
     { key: 'name', label: 'Name' },
     { key: 'number', label: 'Number' },
     { key: 'account_type.name', label: 'Account Type' },
-    { key: 'parent.name', label: 'Parent' },
+    { key: 'opening_amount', label:"Opening" }, 
     { key: 'branch.name', label: 'Branch' },
     { key: 'remark', label: 'Remark' },
 ])
