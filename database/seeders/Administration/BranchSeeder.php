@@ -13,15 +13,12 @@ class BranchSeeder extends Seeder
     public function run(): void
     {
         // Create main branch first
-        $mainBranch = Branch::factory()->create([
+        $mainBranch = Branch::create([
             'name' => 'Main Branch',
             'is_main' => true,
             'sub_domain' => 'main',
             'location' => 'Main Location',
             'remark' => 'Main Branch'
         ]);
-
-        // Create additional branches
-        Branch::factory()->count(4)->create();
     }
 }

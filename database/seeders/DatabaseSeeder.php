@@ -31,9 +31,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(BranchSeeder::class);
         $this->call(UserSeeder::class);
         $this->call(CategorySeeder::class);
-        $this->call(BranchSeeder::class);
         $this->call(StoreSeeder::class);
 //        $this->call(QuantitySeeder::class);
         $this->call(UnitMeasureSeeder::class);
