@@ -1,17 +1,23 @@
 models:
-  LedgerOpening/LedgerOpening:
+  Ledger/Ledger:
     id: char(26)
-    transactionable: morph
-    ledgerable: morph
+    name: string index
+    code: string nullable index
+    address: string nullable
+    contact_person: string nullable index
+    phone_no: string nullable
+    email: string nullable
+    currency_id: id foreign:currencies nullable
+    type: string nullable index
     created_by: id foreign:users
     updated_by: id foreign:users nullable
     timestamps: true
 
 controllers:
-  LedgerOpening/LedgerOpening:
+  Ledger/Ledger:
     resource: api
 
-seeders: Transaction/Transaction
+seeders: Ledger/Ledger
 
 #models:
 #  Administration/Quantity:

@@ -19,6 +19,7 @@ use Database\Seeders\Administration\UnitMeasureSeeder;
 use Database\Seeders\Administration\UserSeeder;
 use Database\Seeders\Account\AccountTypeSeeder;
 use Database\Seeders\Administration\CurrencySeeder;
+use Database\Seeders\Ledger\LedgerSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use App\Models\Account\Account;
@@ -30,15 +31,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        //        $x = User::create([
-        //            'id' => Str::uuid(),
-        //            'name' => 'admin',
-        //            'email' => 'admin@gmail.com',
-        //            'password' => bcrypt('password'),
-        //        ]);
-        // dd($x);
         $this->call(UserSeeder::class);
-
         $this->call(CategorySeeder::class);
         $this->call(BranchSeeder::class);
         $this->call(StoreSeeder::class);
@@ -47,5 +40,6 @@ class DatabaseSeeder extends Seeder
         $this->call(CompanySeeder::class);
         $this->call(AccountTypeSeeder::class);
         $this->call(CurrencySeeder::class);
+        $this->call(LedgerSeeder::class);
     }
 }

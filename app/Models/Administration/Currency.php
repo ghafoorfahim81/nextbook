@@ -33,7 +33,6 @@ class Currency extends Model
         'is_active',
         'flag',
         'branch_id',
-        'tenant_id',
         'created_by',
         'updated_by',
     ];
