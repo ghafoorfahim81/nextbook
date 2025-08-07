@@ -5,7 +5,6 @@ namespace Database\Factories\Account;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Account\Account;
 use App\Models\Account\AccountType;
-use App\Models\Account\Tenant;
 use App\Models\Administration\Branch;
 use App\Models\User;
 

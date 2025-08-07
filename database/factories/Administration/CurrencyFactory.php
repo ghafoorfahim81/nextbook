@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Currency;
-use App\Models\Administration\Tenant;
 use App\Models\User;
 
 class CurrencyFactory extends Factory
@@ -32,7 +31,6 @@ class CurrencyFactory extends Factory
             'is_active' => $this->faker->boolean(),
             'flag' => $this->faker->word(),
             'branch_id' => Branch::factory(),
-            'tenant_id' => Tenant::factory(),
             'created_by' => User::factory()->create()->created_by,
             'updated_by' => User::factory()->create()->updated_by,
         ];

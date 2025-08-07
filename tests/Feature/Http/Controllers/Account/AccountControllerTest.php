@@ -6,7 +6,6 @@ use App\Models\Account;
 use App\Models\AccountType;
 use App\Models\Branch;
 use App\Models\CreatedBy;
-use App\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use JMac\Testing\Traits\AdditionalAssertions;
@@ -49,7 +48,6 @@ final class AccountControllerTest extends TestCase
         $number = $this->faker->word();
         $account_type = AccountType::factory()->create();
         $branch = Branch::factory()->create();
-        $tenant = Tenant::factory()->create();
         $created_by = CreatedBy::factory()->create();
 
         $response = $this->post(route('accounts.store'), [
@@ -57,7 +55,6 @@ final class AccountControllerTest extends TestCase
             'number' => $number,
             'account_type_id' => $account_type->id,
             'branch_id' => $branch->id,
-            'tenant_id' => $tenant->id,
             'created_by' => $created_by->id,
         ]);
 
@@ -66,7 +63,6 @@ final class AccountControllerTest extends TestCase
             ->where('number', $number)
             ->where('account_type_id', $account_type->id)
             ->where('branch_id', $branch->id)
-            ->where('tenant_id', $tenant->id)
             ->where('created_by', $created_by->id)
             ->get();
         $this->assertCount(1, $accounts);

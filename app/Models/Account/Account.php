@@ -79,7 +79,6 @@ class Account extends Model
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
-//        return $this->belongsTo(Transaction::class, 'account_id');
     }
 
     public function asTransactionable()

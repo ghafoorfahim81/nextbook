@@ -1,14 +1,14 @@
 created:
-    - app/Http/Controllers/LedgerOpening/LedgerOpeningController.php
-    - database/factories/LedgerOpening/LedgerOpeningFactory.php
-    - database/migrations/2025_07_31_074904_create_ledger_openings_table.php
-    - app/Models/LedgerOpening/LedgerOpening.php
-    - database/seeders/Transaction/TransactionSeeder.php
-    - tests/Feature/Http/Controllers/LedgerOpening/LedgerOpeningControllerTest.php
-    - app/Http/Requests/LedgerOpening/LedgerOpeningStoreRequest.php
-    - app/Http/Requests/LedgerOpening/LedgerOpeningUpdateRequest.php
-    - app/Http/Resources/LedgerOpening/LedgerOpeningCollection.php
-    - app/Http/Resources/LedgerOpening/LedgerOpeningResource.php
+    - app/Http/Controllers/Ledger/LedgerController.php
+    - database/factories/Ledger/LedgerFactory.php
+    - database/migrations/2025_08_07_061811_create_ledgers_table.php
+    - app/Models/Ledger/Ledger.php
+    - database/seeders/Ledger/LedgerSeeder.php
+    - tests/Feature/Http/Controllers/Ledger/LedgerControllerTest.php
+    - app/Http/Requests/Ledger/LedgerStoreRequest.php
+    - app/Http/Requests/Ledger/LedgerUpdateRequest.php
+    - app/Http/Resources/Ledger/LedgerCollection.php
+    - app/Http/Resources/Ledger/LedgerResource.php
 updated:
     - routes/api.php
 models:
@@ -26,3 +26,4 @@ models:
     Administration/Company: { id: id, name: 'string unique', legal_name: 'string nullable', registration_number: 'string nullable', logo: 'string nullable', email: 'string nullable', phone: 'string nullable', website: 'string nullable', industry: 'string nullable', type: 'string nullable', address: 'string nullable', city: 'string nullable', country: 'string nullable', branch_id: 'id foreign:branches', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
     Transaction/Transaction: { id: string(26), transactionable: morph, amount: float, currency_id: 'id foreign:currencies', rate: float, date: date, type: "enum('debit', 'credit')", remark: 'text nullable', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
     LedgerOpening/LedgerOpening: { id: char(26), transactionable: morph, ledgerable: morph, created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
+    Ledger/Ledger: { id: char(26), name: 'string index', code: 'string nullable index', address: 'string nullable', contact_person: 'string nullable index', phone_no: 'string nullable', email: 'string nullable', currency_id: 'id foreign:currencies nullable', type: 'string nullable index', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }

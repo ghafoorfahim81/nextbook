@@ -43,3 +43,6 @@ Route::apiResource('transactions', App\Http\Controllers\Transaction\TransactionC
 
 
 Route::apiResource('ledger-openings', App\Http\Controllers\LedgerOpening\LedgerOpeningController::class);
+
+
+Route::apiResource('ledgers', App\Http\Controllers\Ledger\LedgerController::class);
