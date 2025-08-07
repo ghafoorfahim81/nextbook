@@ -2,6 +2,7 @@
 
 namespace Database\Seeders\Administration;
 
+use App\Models\Administration\Branch;
 use App\Models\Administration\Department;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -15,13 +16,13 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $adminUser = User::where('name', 'admin')->first();
-
-        // If the admin user doesn't exist, create it
+        $branch = Branch::where('name', 'Main Branch')->first();
         if (!$adminUser) {
             User::create([
                 'id' => (string) new Ulid(),
                 'name' => 'admin',
                 'email' => 'admin@nextbook.com',
+                'branch_id' => $branch->id,
                 'password' => bcrypt('password'),
             ]);
         }

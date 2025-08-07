@@ -75,7 +75,7 @@ import {
     Moon, Sun,
     ChartColumn,
     Cog,
-    Layers
+    Layers, UserCog
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 import Toaster from '@/components/ui/toast/Toaster.vue'
@@ -173,6 +173,22 @@ const data = {
                 },
                 {
                     title: 'Account Type',
+                    url: '/account-types',
+                },
+
+            ],
+        },
+        {
+            title: 'Ledger',
+            url: '#',
+            icon: UserCog,
+            items: [
+                {
+                    title: 'Customer',
+                    url: '/chart-of-accounts',
+                },
+                {
+                    title: 'Supplier',
                     url: '/account-types',
                 },
 

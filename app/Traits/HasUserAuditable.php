@@ -16,8 +16,9 @@ trait HasUserAuditable
         if(!$firstUser){
             $firstUser = User::create([
                 'id' => (string) new Ulid(),
-                'name' => 'admin',
-                'email' => 'admin@gmail.com',
+                'name' => 'admin_1',
+                'email' => 'admin@nextbook1.com',
+                'branch_id' => $branch?->id,
                 'password' => bcrypt('password'),
             ]);
         }
