@@ -24,16 +24,21 @@ class ItemController extends Controller
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
-        return inertia('Inventory/Items/Index', [
+        return inertia('Inventories/Items/Index', [
             'items' => ItemResource::collection($items),
         ]);
     }
 
-    public function store(ItemStoreRequest $request): Response
+    public function create()
+    {
+        return inertia('Inventories/Items/Create');
+    }
+    public function store(ItemStoreRequest $request)
     {
         $item = Item::create($request->validated());
 
-        return new ItemResource($item);
+        return redirect()->route('items.index')->with('success', 'Items created successfully.');
+
     }
 
     public function show(Request $request, Item $item): Response

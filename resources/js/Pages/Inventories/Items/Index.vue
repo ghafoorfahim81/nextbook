@@ -18,13 +18,16 @@ const props = defineProps({
 })
 
 
+console.log('accountssssss',props.items.data);
+
 const columns = ref([
     { key: 'name', label: 'Name' },
-    { key: 'number', label: 'Number' },
-    { key: 'account_type.name', label: 'Account Type' },
-    { key: 'opening_amount', label:"Opening" },
-    { key: 'branch.name', label: 'Branch' },
-    { key: 'remark', label: 'Remark' },
+    { key: 'code', label: 'Code' },
+    { key: 'category', label: 'Category' },
+    { key: 'measure', label: 'Unit' },
+    { key: 'company', label: 'Company' },
+    { key: 'purchase_price', label: 'Purchase Price' },
+    { key: 'mrp_rate', label: 'MRP Rate' },
 ])
 </script>
 
@@ -32,18 +35,14 @@ const columns = ref([
     <AppLayout title="Designations">
         <div class="flex gap-2 items-center">
             <div class="ml-auto gap-3">
-                <Link :href="route('chart-of-accounts.create')">
+                <Link :href="route('items.create')">
                     <Button  variant="outline" class="bg-gray-100
                     hover:bg-gray-200 dark:border-gray-50 dark:text-green-300">Add New</Button>
                 </Link>
-                <CreateEditModal
-                    :isDialogOpen="isDialogOpen"
-                    :categories="items"
-                    @update:isDialogOpen="isDialogOpen = $event"
-                />
+
             </div>
         </div>
-        <DataTable :items="items" :columns="columns" :title="`Chart of Accounts`" :url="`chart-of-accounts.index`" />
+        <DataTable :items="items" :columns="columns" :title="`Items`" :url="`items.index`" />
 
     </AppLayout>
 </template>
