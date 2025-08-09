@@ -194,6 +194,22 @@ const data = {
 
             ],
         },
+        {
+            title: 'Inventory',
+            url: '#',
+            icon: UserCog,
+            items: [
+                {
+                    title: 'Item',
+                    url: '/items',
+                },
+                {
+                    title: 'Supplier',
+                    url: '/account-types',
+                },
+
+            ],
+        },
     ],
     // projects: [
     //     {

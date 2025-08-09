@@ -46,3 +46,6 @@ Route::apiResource('ledger-openings', App\Http\Controllers\LedgerOpening\LedgerO
 
 
 Route::apiResource('ledgers', App\Http\Controllers\Ledger\LedgerController::class);
+
+
+Route::apiResource('items', App\Http\Controllers\Inventory\ItemController::class);
