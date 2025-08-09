@@ -26,7 +26,6 @@ class QuantityFactory extends Factory
             'quantity' => fake()->word(),
             'unit' => fake()->word(),
             'symbol' => fake()->word(),
-            'description' => fake()->text(),
             'branch_id' => Branch::factory(),
         ];
     }
