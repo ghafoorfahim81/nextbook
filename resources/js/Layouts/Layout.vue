@@ -203,10 +203,10 @@ const data = {
                     title: 'Item',
                     url: '/items',
                 },
-                {
-                    title: 'Supplier',
-                    url: '/account-types',
-                },
+                // {
+                //     title: 'Supplier',
+                //     url: '/account-types',
+                // },
 
             ],
         },
