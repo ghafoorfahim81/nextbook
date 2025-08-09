@@ -25,9 +25,9 @@ class ItemStoreRequest extends FormRequest
             'generic_name' => ['nullable', 'string'],
             'packing' => ['nullable', 'string'],
             'barcode' => ['nullable', 'string'],
-            'unit_measure_id' => ['required', 'integer', 'exists:unit_measures,id'],
-            'company_id' => ['required', 'integer', 'exists:companies,id'],
-            'category_id' => ['required', 'integer', 'exists:categories,id'],
+            'unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
+            'company_id' => ['required', 'string', 'exists:companies,id'],
+            'category_id' => ['required', 'string', 'exists:categories,id'],
             'minimum_stock' => ['nullable', 'numeric'],
             'maximum_stock' => ['nullable', 'numeric'],
             'colors' => ['nullable', 'string'],
@@ -39,10 +39,10 @@ class ItemStoreRequest extends FormRequest
             'rate_a' => ['nullable', 'numeric'],
             'rate_b' => ['nullable', 'numeric'],
             'rate_c' => ['nullable', 'numeric'],
-            'rack_no' => ['nullable', 'integer'],
+            'rack_no' => ['nullable', 'string'],
             'fast_search' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
-            'branch_id' => ['required', 'integer', 'exists:branches,id'],
+            'branch_id' => ['required', 'string', 'exists:branches,id'],
         ];
     }
 }

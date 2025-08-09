@@ -39,7 +39,7 @@ return new class extends Migration
             $table->char('branch_id',26);
             $table->text('description')->nullable();
             $table->char('created_by');
-            $table->char('updated_by');
+            $table->char('updated_by')->nullable();
             $table->timestamps();
         });
 

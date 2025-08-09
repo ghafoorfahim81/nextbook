@@ -18,13 +18,11 @@ const props = defineProps({
 })
 
 
-console.log('accountssssss',props.items.data);
-
 const columns = ref([
     { key: 'name', label: 'Name' },
     { key: 'number', label: 'Number' },
     { key: 'account_type.name', label: 'Account Type' },
-    { key: 'opening_amount', label:"Opening" }, 
+    { key: 'opening_amount', label:"Opening" },
     { key: 'branch.name', label: 'Branch' },
     { key: 'remark', label: 'Remark' },
 ])

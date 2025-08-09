@@ -4,13 +4,18 @@ namespace App\Http\Middleware;
 
 use App\Http\Resources\Administration\BranchResource;
 use App\Http\Resources\Administration\CategoryResource;
+use App\Http\Resources\Administration\CompanyResource;
+use App\Http\Resources\Administration\StoreResource;
+use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Category;
 use App\Http\Resources\Account\AccountResource;
 use App\Models\Account\Account;
 use App\Http\Resources\Account\AccountTypeResource;
 use App\Models\Account\AccountType;
+use App\Models\Administration\Company;
 use App\Models\Administration\Currency;
+use App\Models\Administration\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
@@ -62,9 +67,24 @@ class HandleInertiaRequests extends Middleware
                 Branch::latest()->take(10)->get()
             ));
 
+        $stores = Cache::remember('stores', $cacheDuration,
+            fn () => StoreResource::collection(
+                Store::latest()->take(10)->get()
+            ));
+
         $currencies = Cache::remember('currencies', $cacheDuration,
             fn () => CategoryResource::collection(
                 Currency::latest()->take(10)->get()
+            ));
+
+        $companies = Cache::remember('companies', $cacheDuration,
+            fn () => CompanyResource::collection(
+                Company::latest()->take(10)->get()
+            ));
+
+        $unitMeasures = Cache::remember('unitMeasures', $cacheDuration,
+            fn () => UnitMeasureResource::collection(
+                \App\Models\Administration\UnitMeasure::latest()->take(10)->get()
             ));
 
         return [
@@ -77,6 +97,9 @@ class HandleInertiaRequests extends Middleware
             'accountTypes' => $accountTypes,
             'branches' => $branches,
             'currencies' => $currencies,
+            'stores' => $stores,
+            'companies' => $companies,
+            'unitMeasures' => $unitMeasures
         ];
 
     }
