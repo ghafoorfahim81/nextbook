@@ -2,6 +2,7 @@
 
 namespace App\Models\Administration;
 
+use App\Traits\HasBranch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\HasUserAuditable;
@@ -13,7 +14,7 @@ use Symfony\Component\Uid\Ulid;
 
 class Currency extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch;
 
 
     /**

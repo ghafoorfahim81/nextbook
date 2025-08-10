@@ -2,6 +2,7 @@
 
 namespace App\Models\Administration;
 
+use App\Traits\HasBranch;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -13,18 +14,10 @@ use Symfony\Component\Uid\Ulid;
 
 class Store extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
-
-    protected static function boot()
-    {
-        parent::boot();
-        static::creating(function ($model) {
-            $model->id = (string) new Ulid(); // Generate ULID
-        });
-    }
 
     /**
      * The attributes that are mass assignable.

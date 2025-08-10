@@ -12,7 +12,7 @@ use Symfony\Component\Uid\Ulid;
 
 class Company extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, HasBranch, HasSearch, HasSorting;
+    use HasFactory, HasUlids, HasUserAuditable, HasBranch, HasSearch, HasSorting, HasBranch;
 
     protected $table = 'companies';
     protected $primaryKey = 'id';

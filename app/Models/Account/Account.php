@@ -4,6 +4,7 @@ namespace App\Models\Account;
 
 use App\Models\LedgerOpening\LedgerOpening;
 use App\Models\Transaction\Transaction;
+use App\Traits\HasBranch;
 use App\Traits\HasSearch;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,7 +16,7 @@ use App\Models\Administration\Branch;
 
 class Account extends Model
 {
-    use HasFactory,HasUlids, HasSearch, HasSorting, HasUserAuditable;
+    use HasFactory,HasUlids, HasSearch, HasSorting, HasUserAuditable, HasBranch;
 
     protected $keyType = 'string';
     public $incrementing = false;
