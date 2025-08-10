@@ -37,6 +37,9 @@ Route::middleware([
     Route::resource('/unit-measures', \App\Http\Controllers\Administration\UnitMeasureController::class);
     Route::resource('/items', \App\Http\Controllers\Inventory\ItemController::class);
 
+    Route::resource('/ledgers', \App\Http\Controllers\Ledger\LedgerController::class);
+    Route::resource('/suppliers', \App\Http\Controllers\Ledger\SupplierController::class);
+    Route::resource('/customers', \App\Http\Controllers\Ledger\CustomerController::class);
 
 });
 

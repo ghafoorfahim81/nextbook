@@ -185,11 +185,11 @@ const data = {
             items: [
                 {
                     title: 'Customer',
-                    url: '/chart-of-accounts',
+                    url: '/customers',
                 },
                 {
                     title: 'Supplier',
-                    url: '/account-types',
+                    url: '/suppliers',
                 },
 
             ],
