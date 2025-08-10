@@ -5,9 +5,7 @@ import { h, ref } from 'vue';
 import { Button } from '@/Components/ui/button';
 
 import CreateEditModal from '@/Pages/Administration/Departments/CreateEditModal.vue';
-
 const isDialogOpen = ref(false);
-
 
 const showFilter = () => {
     showFilter.value = true;
@@ -17,14 +15,11 @@ const props = defineProps({
     items: Object,
 })
 
-
-console.log('accountssssss',props.items.data);
-
 const columns = ref([
     { key: 'name', label: 'Name' },
     { key: 'number', label: 'Number' },
     { key: 'account_type.name', label: 'Account Type' },
-    { key: 'opening_amount', label:"Opening" }, 
+    { key: 'opening_amount', label:"Opening" },
     { key: 'branch.name', label: 'Branch' },
     { key: 'remark', label: 'Remark' },
 ])

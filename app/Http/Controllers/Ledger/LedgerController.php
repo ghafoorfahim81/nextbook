@@ -19,15 +19,19 @@ class LedgerController extends Controller
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
+        $type = $request->input('type', 'customer'); // default to customer
+
         $ledgers = Ledger::search($request->query('search'))
+            ->where('type', $type) // ✅ filter here
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
-            ->where('type',$request->type)
             ->withQueryString();
-        return inertia('Ledgers/Index', [
-            'ledgers' => BranchResource::collection($ledgers),
+
+        return inertia('Ledgers/Customers/Index', [
+            'ledgers' => LedgerResource::collection($ledgers),
         ]);
     }
+
 
     public function store(LedgerStoreRequest $request): Response
     {
