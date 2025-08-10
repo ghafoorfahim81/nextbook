@@ -4,10 +4,12 @@ namespace App\Models\Inventory;
 
 use App\Models\Administration\Store;
 use App\Models\Administration\UnitMeasure;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 
 class Stock extends Model
 {
+    use HasUlids;
     protected $table = 'stocks';
     protected $primaryKey = 'id';
     protected $keyType = 'string';
@@ -37,5 +39,10 @@ class Stock extends Model
     public function store()
     {
         return $this->belongsTo(Store::class);
+    }
+
+    public function opening()
+    {
+        return $this->belongsTo(StockOpening::class);
     }
 }

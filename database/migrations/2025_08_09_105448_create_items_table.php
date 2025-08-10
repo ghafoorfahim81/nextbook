@@ -34,7 +34,7 @@ return new class extends Migration
             $table->double('rate_a')->nullable();
             $table->double('rate_b')->nullable();
             $table->double('rate_c')->nullable();
-            $table->integer('rack_no')->nullable();
+            $table->string('rack_no')->nullable();
             $table->string('fast_search')->nullable()->index();
             $table->char('branch_id',26);
             $table->text('description')->nullable();
