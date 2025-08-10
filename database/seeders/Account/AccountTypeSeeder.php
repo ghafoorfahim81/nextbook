@@ -16,16 +16,16 @@ class AccountTypeSeeder extends Seeder
     {
         $accountTypes = [
             [
+                'name' => "Account Payable",
+                'remark' => 'Account Payable Account Type',
+            ],
+            [
+                'name' => "Account Receivable",
+                'remark' => 'Account Receivable Account Type',
+            ],
+            [
                 'name' => "Cost of Goods Sold",
                 'remark' => 'Cost of Goods Sold Account Type',
-            ],
-            [
-                'name' => "Accounts Receivable",
-                'remark' => 'Accounts Receivable Account Type',
-            ],
-            [
-                'name' => "Accounts Payable",
-                'remark' => 'Accounts Payable Account Type',
             ],
             [
                 'name' => "Gains/Losses",
@@ -38,14 +38,6 @@ class AccountTypeSeeder extends Seeder
             [
                 'name' => "Store",
                 'remark' => 'Store Account Type',
-            ],
-            [
-                'name' => "Account Payable",
-                'remark' => 'Account Payable Account Type',
-            ],
-            [
-                'name' => "Account Receivable",
-                'remark' => 'Account Receivable Account Type',
             ],
             [
                 'name' => "Bank Account",

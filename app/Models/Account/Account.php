@@ -44,7 +44,7 @@ class Account extends Model
      */
     protected $casts = [
         'id' => 'string',
-        'account_type_id' => 'string', 
+        'account_type_id' => 'string',
         'branch_id' => 'string',
         'tenant_id' => 'string',
         'created_by' => 'string',

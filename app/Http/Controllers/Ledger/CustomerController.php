@@ -50,9 +50,10 @@ class CustomerController extends Controller
         $validated['type'] = 'customer';
         $ledger = Ledger::create($validated);
         if ($request->has('opening_amount') && $request->opening_amount > 0) {
-            $receivable_account = Account::where('name', 'Receivables')->first();
+            $account_id = $request->transaction_type == 'credit' ? Account::where('name','Account Receivable')->first()->id : Account::where('name','Account Payable')->first()->id;
             $transaction = $ledger->transactions()->create([
                 'amount' => $request->opening_amount,
+                'account_id' => $account_id,
                 'currency_id' => $request->opening_currency_id,
                 'transactionable_type' => Ledger::class,
                 'transactionable_id' => $ledger->id,
