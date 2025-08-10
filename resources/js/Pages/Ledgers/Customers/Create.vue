@@ -31,6 +31,7 @@ const form = useForm({
     phone_no: '',
     contact_person: '',
     email: '',
+    address: '',
     currency_id: null,
     opening_currency_id: null,
     transaction_type: '',
@@ -60,6 +61,7 @@ function handleSubmit() {
                     <NextInput placeholder="Enter Phone Number" :error="form.errors?.phone_no" type="text" v-model="form.phone_no" label="Phone Number" />
                     <NextInput placeholder="Enter Contact Person" :error="form.errors?.contact_person" type="text" v-model="form.contact_person" label="Contact Person" />
                     <NextInput placeholder="Enter Email" :error="form.errors?.email" type="text" v-model="form.email" label="Email" />
+                    <NextInput placeholder="Enter Address" :error="form.errors?.address" type="text" v-model="form.address" label="Address" />
                     <div class="m-2">
                         <Label for="parent_id" class="text-nowrap">Currency</Label>
                         <v-select
