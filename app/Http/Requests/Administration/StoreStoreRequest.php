@@ -23,7 +23,6 @@ class StoreStoreRequest extends FormRequest
             'name' => ['required', 'string', 'unique:stores,name'],
             'address' => ['nullable', 'string'],
             'is_main' => ['nullable', 'boolean'],
-            'branch_id' => ['required', 'string', 'exists:branches,id'],
         ];
     }
 }

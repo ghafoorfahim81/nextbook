@@ -23,7 +23,6 @@ class StoreUpdateRequest extends FormRequest
             'name' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('stores')->ignore($this->route('store'))],
             'address' => ['nullable', 'string'],
             'is_main' => ['nullable', 'boolean'],
-            'branch_id' => ['required', 'string', 'exists:branches,id'],
         ];
     }
 }

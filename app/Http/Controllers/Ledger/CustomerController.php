@@ -46,7 +46,9 @@ class CustomerController extends Controller
      */
     public function store(LedgerStoreRequest $request)
     {
-        $ledger = Ledger::create($request->validated());
+        $validated = $request->validated();
+        $validated['type'] = 'customer';
+        $ledger = Ledger::create($validated);
         if ($request->has('opening_amount') && $request->opening_amount > 0) {
             $transaction = $ledger->transactions()->create([
                 'amount' => $request->opening_amount,

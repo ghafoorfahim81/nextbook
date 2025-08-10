@@ -26,7 +26,6 @@ class CompanyUpdateRequest extends FormRequest
             'address' => ['nullable', 'string'],
             'city' => ['nullable', 'string'],
             'country' => ['nullable', 'string'],
-            'branch_id' => ['required', 'string'],
         ];
     }
 }

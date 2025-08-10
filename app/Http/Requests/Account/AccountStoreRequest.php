@@ -24,7 +24,6 @@ class AccountStoreRequest extends FormRequest
             'number' => ['required', 'string', 'unique:accounts,number'],
             'account_type_id' => ['required', 'string', 'exists:account_types,id'],
             'is_active' => ['nullable', 'boolean'],
-            'branch_id' => ['required', 'string', 'exists:branches,id'],
             'remark' => ['nullable', 'string'],
         ];
     }

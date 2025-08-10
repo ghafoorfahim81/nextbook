@@ -88,7 +88,7 @@ function handleSubmit() {
                     <NextSelect :options="transactionType" v-model="form.transaction_type" labelText="Type" @input="form.registration_type = $event" />
                     </div>
                    <div class="m-2">
-                            <Label for="parent_id" class="text-nowrap">Account Type</Label>
+                            <Label for="parent_id" class="text-nowrap">Currency</Label>
                             <v-select
                                 :options="currencies.data"
                                 v-model="form.opening_currency_id"
