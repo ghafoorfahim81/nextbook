@@ -124,5 +124,15 @@ class Item extends Model
         return $this->belongsTo(\App\Models\Administration\Branch::class);
     }
 
+    public function stocks()
+    {
+        return $this->hasMany(Stock::class);
+    }
+
+    public function opening()
+    {
+        return $this->hasOne(StockOpening::class);
+    }
+
 
 }
