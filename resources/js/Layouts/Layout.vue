@@ -75,7 +75,7 @@ import {
     Moon, Sun,
     ChartColumn,
     Cog,
-    Layers, UserCog
+    Layers, UserCog, Database
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 import Toaster from '@/components/ui/toast/Toaster.vue'
@@ -144,24 +144,35 @@ const data = {
             ],
         },
         {
-            title: 'Master',
+            title: 'Inventory',
             url: '#',
-            icon: Layers,
+            icon: Database,
             items: [
                 {
-                    title: 'Genesis',
-                    url: '#',
-                },
-                {
-                    title: 'Explorer',
-                    url: '#',
-                },
-                {
-                    title: 'Quantum',
-                    url: '#',
+                    title: 'Item',
+                    url: '/items',
                 },
             ],
         },
+        // {
+        //     title: 'Master',
+        //     url: '#',
+        //     icon: Layers,
+        //     items: [
+        //         {
+        //             title: 'Genesis',
+        //             url: '#',
+        //         },
+        //         {
+        //             title: 'Explorer',
+        //             url: '#',
+        //         },
+        //         {
+        //             title: 'Quantum',
+        //             url: '#',
+        //         },
+        //     ],
+        // },
         {
             title: 'Account',
             url: '#',
@@ -191,22 +202,6 @@ const data = {
                     title: 'Supplier',
                     url: '/suppliers',
                 },
-
-            ],
-        },
-        {
-            title: 'Inventory',
-            url: '#',
-            icon: UserCog,
-            items: [
-                {
-                    title: 'Item',
-                    url: '/items',
-                },
-                // {
-                //     title: 'Supplier',
-                //     url: '/account-types',
-                // },
 
             ],
         },
