@@ -23,7 +23,6 @@ class AccountUpdateRequest extends FormRequest
             'name' => ['required', 'string', 'unique:accounts,name'],
             'number' => ['required', 'string', 'unique:accounts,number'],
             'account_type_id' => ['required', 'string', 'exists:account_types,id'],
-            'branch_id' => ['required', 'string', 'exists:branches,id'],
             'remark' => ['nullable', 'string'],
             'created_by' => ['required'],
             'updated_by' => ['nullable'],
