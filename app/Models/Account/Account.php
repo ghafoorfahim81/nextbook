@@ -30,7 +30,6 @@ class Account extends Model
         'name',
         'number',
         'account_type_id',
-        'parent_id',
         'branch_id',
         'tenant_id',
         'remark',
@@ -45,8 +44,7 @@ class Account extends Model
      */
     protected $casts = [
         'id' => 'string',
-        'account_type_id' => 'string',
-        'parent_id' => 'string',
+        'account_type_id' => 'string', 
         'branch_id' => 'string',
         'tenant_id' => 'string',
         'created_by' => 'string',
