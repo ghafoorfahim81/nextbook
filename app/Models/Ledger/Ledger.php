@@ -5,6 +5,7 @@ namespace App\Models\Ledger;
 use App\Models\Administration\Branch;
 use App\Models\LedgerOpening\LedgerOpening;
 use App\Models\Transaction\Transaction;
+use App\Traits\HasBranch;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Ledger extends Model
 {
-    use HasFactory,HasUlids, HasSearch, HasSorting, HasUserAuditable;
+    use HasFactory,HasUlids, HasSearch, HasSorting, HasUserAuditable, HasBranch;
 
 
     /**

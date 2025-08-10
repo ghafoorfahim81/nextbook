@@ -27,7 +27,6 @@ class CurrencyUpdateRequest extends FormRequest
             'exchange_rate' => ['nullable', 'numeric'],
             'is_active' => ['nullable', 'boolean'],
             'flag' => ['nullable', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
-            'branch_id' => ['required', 'string', 'exists:branches,id'],
         ];
     }
 }

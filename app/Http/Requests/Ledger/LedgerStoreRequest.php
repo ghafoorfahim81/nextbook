@@ -27,7 +27,6 @@ class LedgerStoreRequest extends FormRequest
             'phone_no' => ['nullable', 'string'],
             'email' => ['nullable', 'email'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
-            'branch_id' => ['required', 'string', 'exists:branches,id'],
             'type' => ['nullable', 'string'],
         ];
     }
