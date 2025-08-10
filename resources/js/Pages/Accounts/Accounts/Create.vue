@@ -15,7 +15,7 @@ import {Label} from "@/Components/ui/label/index.js";
 //     remark: '',
 //     account_type_id: null,
 //     currency_id: null,
-//     registration_type: '',
+//     transaction_type: '',
 //     opening_amount: '',
 // });
 
@@ -41,7 +41,7 @@ const form = useForm({
     remark: '',
     account_type_id: '',
     currency_id: null,
-    registration_type: '',
+    transaction_type: '',
     opening_amount: '',
     branch_id: '',
 })
@@ -95,7 +95,7 @@ function handleSubmit() {
                 <div class="mt-3 grid grid-cols-3 mb-3 gap-x-2 gap-y-5">
                     <NextInput placeholder="Amount" :error="form.errors?.name" type="number" v-model="form.opening_amount" label="Amount" />
                     <div class="m-2">
-                    <NextSelect :options="transactionType" v-model="form.registration_type" labelText="Type" @input="form.registration_type = $event" />
+                    <NextSelect :options="transactionType" v-model="form.transaction_type" labelText="Type" @input="form.transaction_type = $event" />
                     </div>
                    <div class="m-2">
                             <Label for="parent_id" class="text-nowrap">Currency</Label>

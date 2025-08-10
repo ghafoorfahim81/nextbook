@@ -43,5 +43,6 @@ class DatabaseSeeder extends Seeder
         $this->call(CurrencySeeder::class);
         $this->call(LedgerSeeder::class);
         $this->call(ItemSeeder::class);
+        $this->call(AccountSeeder::class);
     }
 }

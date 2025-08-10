@@ -64,7 +64,7 @@ class Ledger extends Model
     }
     public function transactions()
     {
-        return $this->hasMany(Transaction::class);
+        return $this->hasMany(Transaction::class, 'transactionable_id');
     }
     public function opening()
     {

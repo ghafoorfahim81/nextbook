@@ -40,12 +40,12 @@ class AccountTypeSeeder extends Seeder
                 'remark' => 'Store Account Type',
             ],
             [
-                'name' => "Sundry Debtors",
-                'remark' => 'Sundry Debtors Account Type',
+                'name' => "Account Payable",
+                'remark' => 'Account Payable Account Type',
             ],
             [
-                'name' => "Sundry Creditors",
-                'remark' => 'Sundry Creditors Account Type',
+                'name' => "Account Receivable",
+                'remark' => 'Account Receivable Account Type',
             ],
             [
                 'name' => "Bank Account",
