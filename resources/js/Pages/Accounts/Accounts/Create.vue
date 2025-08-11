@@ -8,6 +8,7 @@ import {Separator} from "@/Components/ui/separator/index.js";
 import NextTextarea from "@/Components/next/NextTextarea.vue";
 import {useForm} from "@inertiajs/vue3";
 import {Label} from "@/Components/ui/label/index.js";
+import FloatingLabel from "@/Components/next/FloatingLabel.vue";
 
 // const form = reactive({
 //     name: '',
@@ -66,39 +67,47 @@ function handleSubmit() {
                 <div class="mb-5 grid grid-cols-3 mb-3 gap-x-2 gap-y-5">
                     <NextInput placeholder="Name" :error="form.errors?.name" type="text" v-model="form.name" label="Name" />
                     <NextInput placeholder="Number" :error="form.errors?.number" type="text" v-model="form.number" label="Number" />
-                    <div class="m-2">
-                        <Label for="parent_id" class="text-nowrap">Account Type</Label>
-                        <v-select
-                            :options="accountTypes.data"
-                            v-model="form.account_type_id"
-                            :reduce="type => type.id"
-                            label="name"
-                            class="col-span-3"
+                    <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
+                        <div>
+                            <v-select
+                                :options="accountTypes.data"
+                                v-model="form.account_type_id"
+                                :reduce="type => type.id"
+                                label="name"
+                                class="col-span-3"
+                            />
+                            <FloatingLabel :id="'type'" :label="`Account Type`"/>
+                        </div>
+                        <span v-if="form.errors?.[`openings.${index}.store_id`]" class="text-red-500 text-sm">
+                          {{ form.errors?.[`openings.${index}.store_id`] }}
+                        </span>
+                    </div>
+                        <NextTextarea
+                            v-model="form.remark"
+                            label="Description"
+                            placeholder="Enter product description"
                         />
-                    </div>
-                    <div class="grid w-full gap-1.5">
-                        <Label for="message">Remark</Label>
-                        <Textarea id="message" placeholder="Remark" v-model="form.remark"/>
-                    </div>
-                    <div class="m-2">
-                        <Label for="parent_id" class="text-nowrap">Branch</Label>
-                        <v-select
-                            :options="branches.data"
-                            v-model="form.branch_id"
-                            :reduce="branch => branch.id"
-                            label="name"
-                            class="col-span-3"
-                        />
-                    </div>
                 </div>
                 <span class="font-bold">Opening</span>
                 <div class="mt-3 grid grid-cols-3 mb-3 gap-x-2 gap-y-5">
                     <NextInput placeholder="Amount" :error="form.errors?.name" type="number" v-model="form.opening_amount" label="Amount" />
-                    <div class="m-2">
-                    <NextSelect :options="transactionType" v-model="form.transaction_type" labelText="Type" @input="form.transaction_type = $event" />
+                    <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
+                        <div>
+                            <v-select
+                                :options="transactionType"
+                                v-model="form.transaction_type"
+                                :reduce="type => type.id"
+                                @input="form.transaction_type = $event"
+                                class="col-span-3"
+                            />
+                            <FloatingLabel :id="'type'" :label="`Transaction Type`"/>
+                        </div>
+                        <span v-if="form.errors?.[`openings.${index}.store_id`]" class="text-red-500 text-sm">
+                          {{ form.errors?.[`openings.${index}.store_id`] }}
+                        </span>
                     </div>
-                   <div class="m-2">
-                            <Label for="parent_id" class="text-nowrap">Currency</Label>
+                    <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
+                        <div>
                             <v-select
                                 :options="currencies.data"
                                 v-model="form.currency_id"
@@ -106,8 +115,13 @@ function handleSubmit() {
                                 label="name"
                                 class="col-span-3"
                             />
+                            <FloatingLabel :id="'type'" :label="`Currency`"/>
                         </div>
+                        <span v-if="form.errors?.[`openings.${index}.store_id`]" class="text-red-500 text-sm">
+                          {{ form.errors?.[`openings.${index}.store_id`] }}
+                        </span>
                     </div>
+                </div>
             </form>
         <div>
             <Button type="submit" @click="handleSubmit" class="bg-blue-500 text-white">Submit</Button>

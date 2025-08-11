@@ -62,10 +62,7 @@ class Ledger extends Model
     {
         return $this->belongsTo(Branch::class);
     }
-    public function transactions()
-    {
-        return $this->hasMany(Transaction::class, 'transactionable_id');
-    }
+
     public function opening()
     {
         return $this->morphOne(LedgerOpening::class, 'ledgerable');

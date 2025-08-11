@@ -31,8 +31,6 @@ class Transaction extends Model
     }
     protected $fillable = [
         'account_id',
-        'transactionable_type',
-        'transactionable_id',
         'amount',
         'currency_id',
         'rate',

@@ -47,8 +47,6 @@ class AccountController extends Controller
             $transaction = $account->transactions()->create([
                 'amount' => $request->opening_amount,
                 'currency_id' => $request->currency_id,
-                'transactionable_type' => Account::class,
-                'transactionable_id' => $account->id,
                 'rate' => 1,
                 'date' => now(),
                 'type' => $request->transaction_type ?? 'debit',

@@ -80,11 +80,6 @@ class Account extends Model
         return $this->hasMany(Transaction::class);
     }
 
-    public function asTransactionable()
-    {
-        return $this->morphMany(Transaction::class, 'transactionable');
-    }
-
     public function opening()
     {
         return $this->morphOne(LedgerOpening::class, 'ledgerable');
