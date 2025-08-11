@@ -49,11 +49,6 @@ class LedgerOpening extends Model
         ];
     }
 
-    public function transactionable(): BelongsTo
-    {
-        return $this->morphTo();
-    }
-
     public function ledgerable(): BelongsTo
     {
         return $this->morphTo();
@@ -68,6 +63,5 @@ class LedgerOpening extends Model
     {
         return $this->belongsTo(Transaction::class, 'transaction_id');
     }
-
 
 }
