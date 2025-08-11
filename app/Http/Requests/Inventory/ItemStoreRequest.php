@@ -42,7 +42,6 @@ class ItemStoreRequest extends FormRequest
             'rack_no' => ['nullable', 'string'],
             'fast_search' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],
-            'branch_id' => ['required', 'string', 'exists:branches,id'],
         ];
     }
 }

@@ -7,6 +7,7 @@ import NextTextarea from '@/Components/next/NextTextarea.vue'
 import { useForm } from '@inertiajs/vue3'
 import { Label } from '@/Components/ui/label'
 import NextSelect from '@/Components/next/NextSelect.vue'
+import FloatingLabel     from "@/Components/next/FloatingLabel.vue";
 // keep props reactive
 const props = defineProps({
     branches: { type: [Array, Object], required: true },
@@ -111,47 +112,50 @@ const handleSubmit = () => {
                 <NextInput label="Size" v-model="form.size" :error="form.errors?.size" placeholder="Size" />
 
                 <!-- Photo -->
-                <div class="grid items-start gap-1.5">
-                    <Label>Photo</Label>
-                    <input type="file" @change="onPhotoChange" />
-                    <span v-if="form.errors?.photo" class="text-red-500 text-sm">{{ form.errors.photo }}</span>
-                </div>
+
+                <NextInput label="Photo" type="file"  @input="onPhotoChange" :error="form.errors?.photo" placeholder="Photo" />
+
 
                 <!-- Unit Measure -->
-                <div>
-                    <Label>Unit Measure</Label>
-                    <v-select
-                        :options="unitMeasures"
-                        v-model="form.unit_measure_id"
-                        :reduce="u => u.id"
-                        label="name"
-                    />
+                <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
+                    <div>
+                        <v-select class="" :options="unitMeasures"   id="" v-model="form.unit_measure_id"
+                                  :reduce="u => u.id"
+                                  label="name"
+                        ></v-select>
+                        <FloatingLabel :id="'type'" :label="`asdjfaksdf`"/>
+                    </div>
                     <span v-if="form.errors?.unit_measure_id" class="text-red-500 text-sm">
-            {{ form.errors.unit_measure_id }}
-          </span>
+                    {{ form.errors.unit_measure_id }}
+                  </span>
                 </div>
 
                 <!-- Category -->
-                <div>
-                    <Label>Category</Label>
-                    <v-select
-                        :options="categories"
-                        v-model="form.category_id"
-                        :reduce="c => c.id"
-                        label="name"
-                    />
-                </div>
 
-                 
-                <!-- Company -->
-                <NextSelect
-                    :value.sync="form.company_id"
-                    :options.sync="companies"
-                    :reduce="company => company.id"
-                    label="Company"
-                    labelKey="name"
-                :error="form.errors?.company_id"
-                />
+                <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
+                    <div>
+                        <v-select :options="categories" v-model="form.category_id"
+                                  :reduce="c => c.id"
+                                  label="name"
+                        ></v-select>
+                        <FloatingLabel :id="'type'" :label="`Category`"/>
+                    </div>
+                    <span v-if="form.errors?.category_id" class="text-red-500 text-sm">
+                    {{ form.errors.category_id }}
+                  </span>
+                </div>
+                <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
+                    <div>
+                        <v-select :options="companies" v-model="form.company_id"
+                                  :reduce="c => c.id"
+                                  label="name"
+                        ></v-select>
+                        <FloatingLabel :id="'type'" :label="`Company`"/>
+                    </div>
+                    <span v-if="form.errors?.company_id" class="text-red-500 text-sm">
+                    {{ form.errors.company_id }}
+                  </span>
+                </div>
                 <NextInput label="Minimum Stock" type="number" v-model="form.minimum_stock" :error="form.errors?.minimum_stock" />
                 <NextInput label="Maximum Stock" type="number" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
                 <NextInput label="Purchase Price" type="number" v-model="form.purchase_price" :error="form.errors?.purchase_price" />
@@ -164,26 +168,19 @@ const handleSubmit = () => {
                 <NextInput label="Rack No" v-model="form.rack_no" :error="form.errors?.rack_no" />
                 <NextInput label="Fast Search" v-model="form.fast_search" :error="form.errors?.fast_search" />
 
-                <!-- Branch -->
+<!--                <NextTextarea label="Description" v-model="form.description" :error="form.errors?.description" />-->
                 <div>
-                    <Label>Branch</Label>
-                    <v-select
-                        :options="branches"
-                        v-model="form.branch_id"
-                        :reduce="b => b.id"
-                        label="name"
+                    <NextTextarea
+                        v-model="form.description"
+                        label="Description"
+                        placeholder="Enter product description"
                     />
-                    <span v-if="form.errors?.branch_id" class="text-red-500 text-sm">
-            {{ form.errors.branch_id }}
-          </span>
                 </div>
-
-                <NextTextarea label="Description" v-model="form.description" :error="form.errors?.description" />
             </div>
 
             <div class="pt-2">
                 <span class="font-bold">Opening</span>
-
+                    <separator> </separator>
                 <div
                     v-for="(opening, index) in form.openings"
                     :key="index"
@@ -193,23 +190,20 @@ const handleSubmit = () => {
                     <NextInput label="Expire Date" type="date" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]"/>
                     <NextInput label="Quantity" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
 
-                    <div>
-                        <Label>Store</Label>
-                        <v-select
-                            :options="stores"
-                            v-model="opening.store_id"
-                            :reduce="s => s.id"
-                            label="name"
-                        />
+                    <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
+                        <div>
+                            <v-select :options="stores" v-model="opening.store_id"
+                                      :reduce="c => c.id"
+                                      label="name"
+                            ></v-select>
+                            <FloatingLabel :id="'type'" :label="`Store`"/>
+                        </div>
                         <span v-if="form.errors?.[`openings.${index}.store_id`]" class="text-red-500 text-sm">
-              {{ form.errors?.[`openings.${index}.store_id`] }}
-            </span>
+                          {{ form.errors?.[`openings.${index}.store_id`] }}
+                        </span>
                     </div>
 
-<!--                    <div class="col-span-4 flex gap-2">-->
-<!--                        <Button type="button" variant="outline" @click="addRow">Add Row</Button>-->
-<!--                        <Button type="button" variant="outline" @click="removeRow(index)" :disabled="form.openings.length === 1">Remove</Button>-->
-<!--                    </div>-->
+
                 </div>
             </div>
 
