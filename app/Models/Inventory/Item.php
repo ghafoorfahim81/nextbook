@@ -2,6 +2,7 @@
 
 namespace App\Models\Inventory;
 
+use App\Traits\HasBranch;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Item extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
