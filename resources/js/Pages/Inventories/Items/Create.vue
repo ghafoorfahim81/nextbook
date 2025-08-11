@@ -6,7 +6,7 @@ import NextInput from '@/Components/next/NextInput.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import { useForm } from '@inertiajs/vue3'
 import { Label } from '@/Components/ui/label'
-
+import NextSelect from '@/Components/next/NextSelect.vue'
 // keep props reactive
 const props = defineProps({
     branches: { type: [Array, Object], required: true },
@@ -140,25 +140,18 @@ const handleSubmit = () => {
                         :reduce="c => c.id"
                         label="name"
                     />
-                    <span v-if="form.errors?.category_id" class="text-red-500 text-sm">
-            {{ form.errors.category_id }}
-          </span>
                 </div>
 
+                 
                 <!-- Company -->
-                <div>
-                    <Label>Company</Label>
-                    <v-select
-                        :options="companies"
-                        v-model="form.company_id"
-                        :reduce="c => c.id"
-                        label="name"
-                    />
-                    <span v-if="form.errors?.company_id" class="text-red-500 text-sm">
-            {{ form.errors.company_id }}
-          </span>
-                </div>
-
+                <NextSelect
+                    :value.sync="form.company_id"
+                    :options.sync="companies"
+                    :reduce="company => company.id"
+                    label="Company"
+                    labelKey="name"
+                :error="form.errors?.company_id"
+                />
                 <NextInput label="Minimum Stock" type="number" v-model="form.minimum_stock" :error="form.errors?.minimum_stock" />
                 <NextInput label="Maximum Stock" type="number" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
                 <NextInput label="Purchase Price" type="number" v-model="form.purchase_price" :error="form.errors?.purchase_price" />

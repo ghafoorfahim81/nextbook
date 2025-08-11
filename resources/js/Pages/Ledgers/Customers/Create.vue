@@ -87,7 +87,7 @@ function handleSubmit() {
                 <div class="mt-3 grid grid-cols-3 mb-3 gap-x-2 gap-y-5">
                     <NextInput placeholder="Amount" :error="form.errors?.opening_amount" type="number" v-model="form.opening_amount" label="Amount" />
                     <div class="m-2">
-                        <Label for="parent_id" class="text-nowrap">Currency</Label>
+                        <Label for="parent_id" class="text-nowrap">Transaction Type</Label>
                         <v-select
                             :options="transactionType"
                             v-model="form.transaction_type"
