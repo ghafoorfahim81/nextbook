@@ -6,6 +6,8 @@ import { Textarea } from '@/Components/ui/textarea'
 import { Label } from '@/Components/ui/label'
 import ModalDialog from '@/Components/next/Dialog.vue'
 import vSelect from 'vue-select'
+import NextInput from "@/Components/next/NextInput.vue";
+import NextTextarea from "@/Components/next/NextTextarea.vue";
 
 const props = defineProps({
     isDialogOpen: Boolean,
@@ -91,31 +93,9 @@ const handleSubmit = async () => {
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid gap-4 py-4">
                 <!-- Name -->
-                <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="name" class="text-nowrap">Name</Label>
-                    <Input id="name" v-model="form.name" placeholder="Enter name" class="col-span-3" />
-                    <div v-if="form.errors.name" class="text-red-500 text-sm col-span-4">
-                        {{ form.errors.name }}
-                    </div>
 
-                </div>
-
-                <!-- Parent -->
-                <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="branch_id" class="text-nowrap">Branch</Label>
-                    <v-select
-                        :options="branches"
-                        v-model="form.branch_id"
-                        :reduce="branch => branch.id"
-                        label="name"
-                        class="col-span-3"
-                    />
-                </div>
-
-                <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="address" class="text-nowrap">Address</Label>
-                    <Textarea id="address" v-model="form.address" rows="3" class="col-span-3" />
-                </div>
+                <NextInput label="Name" v-model="form.name" :error="form.errors?.name" placeholder="Enter name" />
+                <NextTextarea label="Address" v-model="form.address" :error="form.errors?.address" placeholder="Enter address" />
 
             </div>
         </form>

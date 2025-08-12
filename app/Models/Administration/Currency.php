@@ -69,7 +69,6 @@ class Currency extends Model
             'format',
             'flag',
             'branch.name',
-            'tenant.name'
         ];
     }
 

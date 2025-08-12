@@ -115,16 +115,7 @@ const handleSubmit = () => {
                     <NextInput label="Address" v-model="form.address" type="text"/>
                     <NextInput label="City" v-model="form.city" type="text"/>
                     <NextInput label="Country" v-model="form.country" type="text"/>
-                   <div>
-                       <Label for="parent_id" class="text-nowrap">Branch</Label>
-                       <v-select
-                           :options="branches"
-                           v-model="form.branch_id"
-                           :reduce="branch => branch.id"
-                           label="name"
-                           class="col-span-3"
-                       />
-                   </div>
+
                 </div>
             </div>
         </form>
