@@ -21,8 +21,8 @@ console.log('props.currencies.data', props.currencies.data);
 const columns = ref([
     { key: 'id', label: 'ID' },
     { key: 'name', label: 'Name',sortable: true },
-    { key: 'code', label: 'Code' },
-    { key: 'exchange_rate', label: 'Exchange Rate' },
+    { key: 'code', label: 'Code', sortable: true },
+    { key: 'exchange_rate', label: 'Exchange Rate',sortable: true },
     { key: 'symbol', label: 'Symbol' },
     { key: 'format', label: 'Format' },
     { key: 'actions', label: 'Actions' },

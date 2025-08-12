@@ -8,6 +8,8 @@ import ModalDialog from '@/Components/next/Dialog.vue'
 import vSelect from 'vue-select'
 import NextInput from "@/Components/next/NextInput.vue";
 import NextTextarea from "@/Components/next/NextTextarea.vue";
+import FloatingLabel from "@/Components/next/FloatingLabel.vue";
+import NextSelect from "@/Components/next/NextSelect.vue";
 
 const props = defineProps({
     isDialogOpen: Boolean,
@@ -101,16 +103,31 @@ const handleSubmit = async () => {
                     <NextInput label="Name" v-model="form.name" :errors="errors?.name" type="text"/>
                     <NextInput label="Location" v-model="form.location" type="text"/>
                     <NextInput label="Sub Domain" v-model="form.sub_domain" type="text"/>
-                    <div>
-                        <Label for="parent_id" class="text-nowrap">Parent</Label>
-                        <v-select
-                            :options="branches"
-                            v-model="form.parent_id"
-                            :reduce="branch => branch.id"
-                            label="name"
-                            class="col-span-3"
-                        />
-                    </div>
+                    <NextSelect
+                        v-model="form.parent_id"
+                        :options="branches"
+                        label-key="name"
+                        value-key="id"
+                        id="type"
+                        floating-text="Parent"
+                        :error="form.errors?.parent_id"
+                    />
+
+<!--                    <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">-->
+<!--                        <div>-->
+<!--                            <v-select-->
+<!--                                :options="branches"-->
+<!--                                v-model="form.parent_id"-->
+<!--                                :reduce="branch => branch.id"-->
+<!--                                label="name"-->
+<!--                                class="col-span-3"-->
+<!--                            />-->
+<!--                            <FloatingLabel :id="'type'" :label="`Parent`"/>-->
+<!--                        </div>-->
+<!--                        <span v-if="form.errors?.parent_id" class="text-red-500 text-sm">-->
+<!--                    {{ form.errors.parent_id }}-->
+<!--                  </span>-->
+<!--                    </div>-->
                     <NextTextarea
                         v-model="form.remark"
                         label="Remark"

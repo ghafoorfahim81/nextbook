@@ -6,6 +6,9 @@ import { Textarea } from '@/Components/ui/textarea'
 import { Label } from '@/Components/ui/label'
 import ModalDialog from '@/Components/next/Dialog.vue'
 import vSelect from 'vue-select'
+import NextInput from "@/Components/next/NextInput.vue";
+import FloatingLabel from "@/Components/next/FloatingLabel.vue";
+import NextTextarea from "@/Components/next/NextTextarea.vue";
 
 const props = defineProps({
     isDialogOpen: Boolean,
@@ -91,32 +94,29 @@ const handleSubmit = async () => {
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid gap-4 py-4">
                 <!-- Name -->
-                <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="name" class="text-nowrap">Name</Label>
-                    <Input id="name" v-model="form.name" placeholder="Enter name" class="col-span-3" />
-                    <div v-if="form.errors.name" class="text-red-500 text-sm col-span-4">
-                        {{ form.errors.name }}
+
+                <NextInput label="Name" v-model="form.name" :error="form.errors.name" />
+
+                <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
+                    <div>
+                        <v-select
+                            :options="categories"
+                            v-model="form.parent_id"
+                            :reduce="category => category.id"
+                            label="name"
+                            class="col-span-3"
+                        />
+                        <FloatingLabel :id="'type'" :label="`Parent`"/>
                     </div>
-
+                    <span v-if="form.errors?.parent_id" class="text-red-500 text-sm">
+                    {{ form.errors.parent_id }}
+                  </span>
                 </div>
-
-                <!-- Parent -->
-                <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="parent_id" class="text-nowrap">Parent</Label>
-                    <v-select
-                        :options="categories"
-                        v-model="form.parent_id"
-                        :reduce="category => category.id"
-                        label="name"
-                        class="col-span-3"
-                    />
-                </div>
-
-                <!-- Remark -->
-                <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="remark" class="text-nowrap">Remark</Label>
-                    <Textarea id="remark" v-model="form.remark" rows="3" class="col-span-3" />
-                </div>
+                <NextTextarea
+                    v-model="form.remark"
+                    label="Description"
+                    placeholder="Enter product description"
+                />
             </div>
         </form>
     </ModalDialog>
