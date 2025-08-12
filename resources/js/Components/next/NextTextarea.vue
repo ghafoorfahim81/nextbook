@@ -5,8 +5,8 @@
             id="message"
             rows="4"
             :name="name"
-            :value="value"
-            @input="updateValue"
+            :value="modelValue"
+            @input="e => emit('update:modelValue', e.target.value)"
             :readonly="readonly ?? false"
             class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300"
         />
@@ -14,16 +14,11 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
+    modelValue: { type: String, default: '' },
     name: String,
-    value: String,
     label: String,
-    readonly: Boolean
+    readonly: Boolean,
 });
-
-const emit = defineEmits(['update:value']);
-
-const updateValue = (event) => {
-    emit('update:value', event.target.value);
-};
+const emit = defineEmits(['update:modelValue']);
 </script>

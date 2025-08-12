@@ -5,6 +5,8 @@ import { Input } from '@/Components/ui/input'
 import { Textarea } from '@/Components/ui/textarea'
 import { Label } from '@/Components/ui/label'
 import ModalDialog from '@/Components/next/Dialog.vue'
+import NextInput from "@/Components/next/NextInput.vue";
+import NextTextarea from "@/Components/next/NextTextarea.vue";
 
 const props = defineProps({
     isDialogOpen: Boolean,
@@ -49,6 +51,7 @@ const closeModal = () => {
 }
 
 const handleSubmit = async () => {
+    console.log('this is remark', form.remark)
     if (isEditing.value) {
         form.patch(route('account-types.update', props.editingItem.id), {
             onSuccess: () => {
@@ -85,19 +88,23 @@ const handleSubmit = async () => {
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid gap-4 py-4">
                 <!-- Name -->
-                <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="name" class="text-nowrap">Name</Label>
-                    <Input id="name" v-model="form.name" placeholder="Enter name" class="col-span-3" />
-                    <div v-if="form.errors.name" class="text-red-500 text-sm col-span-4">
-                        {{ form.errors.name }}
-                    </div>
-
-                </div>
-                <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="remark" class="text-nowrap">Remark</Label>
-                    <Textarea id="remark" v-model="form.remark" rows="3" class="col-span-3" />
-                </div>
+                <NextInput label="Name" id="name" v-model="form.name" placeholder="Enter name" :error="form.errors.name" />
+                <NextTextarea label="Remark" v-model="form.remark" placeholder="Enter remark" />
             </div>
+<!--                <div class="grid items-center grid-cols-4 gap-4">-->
+<!--                    <Label for="name" class="text-nowrap">Name</Label>-->
+<!--                    <Input id="name" v-model="form.name" placeholder="Enter name" class="col-span-3" />-->
+<!--                    <div v-if="form.errors.name" class="text-red-500 text-sm col-span-4">-->
+<!--                        {{ form.errors.name }}-->
+<!--                    </div>-->
+<!--                    -->
+
+<!--                </div>-->
+<!--                <div class="grid items-center grid-cols-4 gap-4">-->
+<!--                    <Label for="remark" class="text-nowrap">Remark</Label>-->
+<!--                    <Textarea id="remark" v-model="form.remark" rows="3" class="col-span-3" />-->
+<!--                </div>-->
+<!--            </div>-->
         </form>
     </ModalDialog>
 </template>
