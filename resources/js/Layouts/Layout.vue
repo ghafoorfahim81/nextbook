@@ -152,6 +152,10 @@ const data = {
                     title: 'Item',
                     url: '/items',
                 },
+                {
+                    title: 'Fas Entry',
+                    url: '/fast-entry',
+                },
             ],
         },
         // {

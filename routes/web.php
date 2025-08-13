@@ -40,6 +40,8 @@ Route::middleware([
     Route::resource('/ledgers', \App\Http\Controllers\Ledger\LedgerController::class);
     Route::resource('/suppliers', \App\Http\Controllers\Ledger\SupplierController::class);
     Route::resource('/customers', \App\Http\Controllers\Ledger\CustomerController::class);
+    Route::get('item-fast-entry', \App\Http\Controllers\Inventory\ItemFastEntryController::class,'create')->name('item.fast.entry');
+    Route::post('item-fast-entry', \App\Http\Controllers\Inventory\ItemFastEntryController::class,'store')->name('item.fast.entry.store');
 
 });
 
