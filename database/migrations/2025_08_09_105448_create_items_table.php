@@ -21,8 +21,8 @@ return new class extends Migration
             $table->string('packing')->nullable();
             $table->string('barcode')->nullable()->index();
             $table->char('unit_measure_id',26);
-            $table->char('company_id',26);
-            $table->char('category_id',26);
+            $table->char('company_id',26)->nullable();
+            $table->char('category_id',26)->nullable();
             $table->double('minimum_stock')->nullable();
             $table->double('maximum_stock')->nullable();
             $table->string('colors')->nullable();
