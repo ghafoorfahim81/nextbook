@@ -42,7 +42,8 @@ Route::middleware([
     Route::resource('/suppliers', \App\Http\Controllers\Ledger\SupplierController::class);
     Route::resource('/customers', \App\Http\Controllers\Ledger\CustomerController::class);
     Route::get('/item-fast-entry', [ItemFastEntryController::class,'create'])->name('item.fast.entry');
-
+    Route::post('/item-fast-entry', [ItemFastEntryController::class, 'store'])
+        ->name('item.fast.store');
 //    Route::post('item_entry/Store', ['as' => 'item_entry.store', 'uses' => 'FastEntry\ItemEntryController@store'])->middleware(['dbconfig','auth:sanctum']);
 
 });

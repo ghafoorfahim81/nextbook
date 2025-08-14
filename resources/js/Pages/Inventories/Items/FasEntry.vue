@@ -5,27 +5,23 @@ import { useForm } from '@inertiajs/vue3'
 import { Button } from '@/Components/ui/button'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
+import { useToast } from '@/components/ui/toast/use-toast'
 
 const props = defineProps({
-    branches: { type: [Array, Object], required: true },
     stores: { type: [Array, Object], required: true },
     unitMeasures: { type: [Array, Object], required: true },
-    categories: { type: [Array, Object], required: true },
     companies: { type: [Array, Object], required: true },
 })
 
+
+const { toast } = useToast()
 const stores        = computed(() => props.stores?.data ?? props.stores ?? [])
 const unitMeasures  = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
-const categories    = computed(() => props.categories?.data ?? props.categories ?? [])
-const companies     = computed(() => props.companies?.data ?? props.companies ?? [])
 
 const blankRow = () => ({
-    _key: crypto.randomUUID?.() ?? String(Date.now() + Math.random()), // stable unique key
     name: '',
     code: '',
-    category_id: null,
     measure_id: null,
-    company_id: null,
     purchase_price: '',
     mrp_rate: '',
     batch: '',
@@ -51,29 +47,44 @@ const removeRow = (idx) => {
 }
 
 const normalize = () => {
-    form.items = form.items
-        .map(r => ({
-            ...r,
-            quantity: r.quantity === '' ? null : Number(r.quantity),
-            purchase_price: r.purchase_price === '' ? null : Number(r.purchase_price),
-            mrp_rate: r.mrp_rate === '' ? null : Number(r.mrp_rate),
-            category_id: r.category_id ?? null,
-            measure_id: r.measure_id ?? null,
-            company_id: r.company_id ?? null,
-            store_id: r.store_id ?? null,
-            expire_date: r.expire_date || null,
-        }))
-        // drop completely empty rows
-        .filter(r => Object.values({ ...r, _key: undefined }).some(v => v !== '' && v !== null))
+        form.items = form.items
+            .map(r => ({
+                ...r,
+                quantity: r.quantity === '' ? null : Number(r.quantity),
+                purchase_price: r.purchase_price === '' ? null : Number(r.purchase_price),
+                mrp_rate: r.mrp_rate === '' ? null : Number(r.mrp_rate),
+                category_id: r.category_id ?? null,
+                measure_id: r.measure_id ?? null,
+                company_id: r.company_id ?? null,
+                store_id: r.store_id ?? null,
+                expire_date: r.expire_date || null,
+            }))
+            // drop completely empty rows
+            .filter(r => Object.values({ ...r, _key: undefined }).some(v => v !== '' && v !== null))
 }
 
 const handleSubmit = () => {
     normalize()
-    form.post(route('items.store'), {
+
+    // ensure items is a clean array; drop helper keys
+    form.transform(data => ({
+        items: (data.items ?? []).map(({ _key, ...r }) => r)
+    }))
+
+    form.post(route('item.fast.store'), {
         preserveScroll: true,
-        onSuccess: () => form.reset('items'),
+        // preserveState: true, // optional
+        onSuccess: () => {
+            toast({
+                title: 'Success',
+                variant: 'success',
+                description: 'The items have been added successfully.',
+            });
+            form.reset('items')
+        },
     })
 }
+
 </script>
 
 <template>
