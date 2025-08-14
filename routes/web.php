@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Inventory\ItemFastEntryController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
@@ -40,8 +41,9 @@ Route::middleware([
     Route::resource('/ledgers', \App\Http\Controllers\Ledger\LedgerController::class);
     Route::resource('/suppliers', \App\Http\Controllers\Ledger\SupplierController::class);
     Route::resource('/customers', \App\Http\Controllers\Ledger\CustomerController::class);
-    Route::get('item-fast-entry', \App\Http\Controllers\Inventory\ItemFastEntryController::class,'create')->name('item.fast.entry');
-    Route::post('item-fast-entry', \App\Http\Controllers\Inventory\ItemFastEntryController::class,'store')->name('item.fast.entry.store');
+    Route::get('/item-fast-entry', [ItemFastEntryController::class,'create'])->name('item.fast.entry');
+
+//    Route::post('item_entry/Store', ['as' => 'item_entry.store', 'uses' => 'FastEntry\ItemEntryController@store'])->middleware(['dbconfig','auth:sanctum']);
 
 });
 

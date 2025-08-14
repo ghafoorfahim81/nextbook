@@ -123,7 +123,7 @@ const handleSubmit = () => {
                                   :reduce="u => u.id"
                                   label="name"
                         ></v-select>
-                        <FloatingLabel :id="'type'" :label="`asdjfaksdf`"/>
+                        <FloatingLabel :id="'type'" :label="`Measure`"/>
                     </div>
                     <span v-if="form.errors?.unit_measure_id" class="text-red-500 text-sm">
                     {{ form.errors.unit_measure_id }}

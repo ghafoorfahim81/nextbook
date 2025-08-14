@@ -154,12 +154,12 @@ const data = {
                 },
                 {
                     title: 'Fas Entry',
-                    url: '/fast-entry',
+                    url: '/item-fast-entry',
                 },
             ],
         },
         // {
-        //     title: 'Master',
+         //     title: 'Master',
         //     url: '#',
         //     icon: Layers,
         //     items: [
