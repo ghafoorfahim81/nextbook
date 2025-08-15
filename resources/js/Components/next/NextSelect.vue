@@ -38,7 +38,7 @@ const props = defineProps({
     valueKey: { type: String, default: "id" },
     reduceFn: { type: Function, default: null },
     id: { type: String, default: () => "sel-" + Math.random().toString(36).slice(2) },
-    floatingText: { type: String, default: "Label" },
+    floatingText: { type: String, default: "" },
     error: { type: String, default: "" },
 });
 
