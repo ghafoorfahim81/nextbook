@@ -156,6 +156,10 @@ const data = {
                     title: 'Fas Entry',
                     url: '/item-fast-entry',
                 },
+                {
+                    title: 'Fas Opening',
+                    url: '/item-fast-opening',
+                },
             ],
         },
         // {
