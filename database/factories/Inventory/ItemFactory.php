@@ -47,7 +47,6 @@ class ItemFactory extends Factory
             'rate_c' => fake()->randomFloat(0, 0, 9999999999.),
             'rack_no' => fake()->numberBetween(-10000, 10000),
             'fast_search' => fake()->word(),
-            'description' => fake()->text(),
             'branch_id' => Branch::factory(),
             'created_by' => User::factory(),
             'updated_by' => User::factory(),

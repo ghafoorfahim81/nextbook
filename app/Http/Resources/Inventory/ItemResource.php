@@ -38,7 +38,6 @@ class ItemResource extends JsonResource
             'rate_c' => $this->rate_c,
             'rack_no' => $this->rack_no,
             'fast_search' => $this->fast_search,
-            'description' => $this->description,
             'branch_id' => $this->branch_id,
             'quantity' => $this->stocks->sum(('quantity')),
             'openings' => StockOpeningResource::collection($this->openings),

@@ -44,8 +44,7 @@ class Item extends Model
         'rate_b',
         'rate_c',
         'rack_no',
-        'fast_search',
-        'description',
+        'fast_search', 
         'branch_id',
         'created_by',
         'updated_by',
@@ -100,7 +99,6 @@ class Item extends Model
             'rate_c',
             'rack_no',
             'fast_search',
-            'description',
             'branch.name',
         ];
     }

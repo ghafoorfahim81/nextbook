@@ -41,7 +41,6 @@ class ItemStoreRequest extends FormRequest
             'rate_c' => ['nullable', 'numeric'],
             'rack_no' => ['nullable', 'string'],
             'fast_search' => ['nullable', 'string'],
-            'description' => ['nullable', 'string'],
         ];
     }
 }
