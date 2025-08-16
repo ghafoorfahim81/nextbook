@@ -115,20 +115,28 @@ const handleSubmit = () => {
 
                 <NextInput label="Photo" type="file"  @input="onPhotoChange" :error="form.errors?.photo" placeholder="Photo" />
 
-
+                <NextSelect
+                    v-model="form.unit_measure_id"
+                    :options="unitMeasures"
+                    label-key="name"
+                    value-key="id"
+                    id="measure"
+                    floating-text="Measure"
+                    :error="form.errors.unit_measure_id"
+                />
                 <!-- Unit Measure -->
-                <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
-                    <div>
-                        <v-select class="" :options="unitMeasures"   id="" v-model="form.unit_measure_id"
-                                  :reduce="u => u.id"
-                                  label="name"
-                        ></v-select>
-                        <FloatingLabel :id="'type'" :label="`Measure`"/>
-                    </div>
-                    <span v-if="form.errors?.unit_measure_id" class="text-red-500 text-sm">
-                    {{ form.errors.unit_measure_id }}
-                  </span>
-                </div>
+<!--                <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">-->
+<!--                    <div>-->
+<!--                        <v-select class="" :options="unitMeasures"   id="" v-model="form.unit_measure_id"-->
+<!--                                  :reduce="u => u.id"-->
+<!--                                  label="name"-->
+<!--                        ></v-select>-->
+<!--                        <FloatingLabel :id="'type'" :label="`Measure`"/>-->
+<!--                    </div>-->
+<!--                    <span v-if="form.errors?.unit_measure_id" class="text-red-500 text-sm">-->
+<!--                    {{ form.errors.unit_measure_id }}-->
+<!--                  </span>-->
+<!--                </div>-->
 
                 <!-- Category -->
 

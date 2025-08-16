@@ -9,8 +9,7 @@
                 :modelValue="modelValue"
                 @update:modelValue="val => emit('update:modelValue', val)"
                 append-to-body
-                :close-on-select="true"
-                :clearable="false"
+                :close-on-select="true" 
                 class="col-span-3 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 v-bind="$attrs"
             />
