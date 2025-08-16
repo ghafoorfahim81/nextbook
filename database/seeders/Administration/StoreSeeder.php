@@ -2,6 +2,7 @@
 
 namespace Database\Seeders\Administration;
 
+use App\Models\Administration\Branch;
 use App\Models\Administration\Store;
 use Illuminate\Database\Seeder;
 
@@ -12,6 +13,11 @@ class StoreSeeder extends Seeder
      */
     public function run(): void
     {
-        Store::factory()->count(5)->create();
+        Store::create([
+            'name' =>'Main Store',
+            'address' =>'Main store',
+            'is_main' => true,
+            'branch_id' => Branch::first()->id,
+        ]);
     }
 }

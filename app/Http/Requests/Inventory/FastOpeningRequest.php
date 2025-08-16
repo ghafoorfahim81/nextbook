@@ -14,12 +14,13 @@ class FastOpeningRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'items'                   => ['required','array'],
+            'items'                   => ['required','array','min:1'],
+            'items.*.item_id'         => ['required','string'],
             'items.*.quantity'        => ['required','numeric'],
+            'items.*.batch'           => ['nullable','string'],
             'items.*.expire_date'     => ['nullable','date'],
-            'items.*.purchase_price'   => ['required','numeric'],
+            'items.*.cost'            => ['required','numeric'],
             'items.*.unit_measure_id' => ['required','exists:unit_measures,id'],
-            'items.*.store_id'        => ['required','exists:stores,id'],
         ];
     }
 

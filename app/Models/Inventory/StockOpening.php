@@ -16,4 +16,10 @@ class StockOpening extends Model
         'item_id',
         'stock_id',
     ];
+
+    public function stock()
+    {
+        return $this->belongsTo(Stock::class);
+    }
+
 }

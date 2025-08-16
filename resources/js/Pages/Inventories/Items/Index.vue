@@ -3,8 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref } from 'vue';
 import { Button } from '@/Components/ui/button';
-
-import CreateEditModal from '@/Pages/Administration/Departments/CreateEditModal.vue';
+import {useDeleteResource} from "@/composables/useDeleteResource.js";
 
 const isDialogOpen = ref(false);
 
@@ -17,9 +16,6 @@ const props = defineProps({
     items: Object,
 })
 
-
-console.log('accountssssss',props.items.data);
-
 const columns = ref([
     { key: 'name', label: 'Name' },
     { key: 'code', label: 'Code' },
@@ -28,7 +24,20 @@ const columns = ref([
     { key: 'company', label: 'Company' },
     { key: 'purchase_price', label: 'Purchase Price' },
     { key: 'mrp_rate', label: 'MRP Rate' },
+    { key: 'actions', label: 'Actions' },
+
 ])
+
+const { deleteResource } = useDeleteResource()
+const deleteItem = (id) => {
+    deleteResource('items.destroy', id, {
+        title: 'Delete Item',
+        description: 'This will permanently delete this Item.',
+        successMessage: 'Item deleted successfully.',
+    })
+
+};
+
 </script>
 
 <template>
@@ -42,7 +51,9 @@ const columns = ref([
 
             </div>
         </div>
-        <DataTable :items="items" :columns="columns" :title="`Items`" :url="`items.index`" />
+        <DataTable :items="items" :columns="columns"
+                   @delete="deleteItem"
+                   :title="`Items`" :url="`items.index`" />
 
     </AppLayout>
 </template>

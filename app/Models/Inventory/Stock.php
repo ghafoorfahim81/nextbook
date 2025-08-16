@@ -43,6 +43,8 @@ class Stock extends Model
 
     public function opening()
     {
-        return $this->belongsTo(StockOpening::class);
+        return $this->hasOne(StockOpening::class,'stock_id'); // StockOpening has stock_id
     }
+
+
 }
