@@ -40,6 +40,8 @@ class ItemResource extends JsonResource
             'fast_search' => $this->fast_search,
             'description' => $this->description,
             'branch_id' => $this->branch_id,
+            'quantity' => $this->stocks->sum(('quantity')),
+            'openings' => StockOpeningResource::collection($this->openings),
         ];
     }
 }

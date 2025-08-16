@@ -4,10 +4,6 @@ import DataTable from '@/Components/DataTable.vue';
 import { h, ref } from 'vue';
 import { Button } from '@/Components/ui/button';
 import {useDeleteResource} from "@/composables/useDeleteResource.js";
-
-const isDialogOpen = ref(false);
-
-
 const showFilter = () => {
     showFilter.value = true;
 }
@@ -16,17 +12,25 @@ const props = defineProps({
     items: Object,
 })
 
+console.log('this is items', props.items.data);
+
 const columns = ref([
     { key: 'name', label: 'Name' },
     { key: 'code', label: 'Code' },
     { key: 'category', label: 'Category' },
     { key: 'measure', label: 'Unit' },
     { key: 'company', label: 'Company' },
-    { key: 'purchase_price', label: 'Purchase Price' },
-    { key: 'mrp_rate', label: 'MRP Rate' },
+    { key: 'cost', label: 'Cost' },
+    { key: 'quantity', label: 'Quantity' },
+    { key: 'mrp_rate', label: 'Rate' },
     { key: 'actions', label: 'Actions' },
 
 ])
+
+const editItem = (item) => {
+    console.log('this is item', item)
+    window.location.href = `/items/${item.id}/edit`;
+}
 
 const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
@@ -53,6 +57,7 @@ const deleteItem = (id) => {
         </div>
         <DataTable :items="items" :columns="columns"
                    @delete="deleteItem"
+                   @edit="editItem"
                    :title="`Items`" :url="`items.index`" />
 
     </AppLayout>
