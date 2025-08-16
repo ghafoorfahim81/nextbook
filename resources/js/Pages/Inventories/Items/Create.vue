@@ -124,21 +124,6 @@ const handleSubmit = () => {
                     floating-text="Measure"
                     :error="form.errors.unit_measure_id"
                 />
-                <!-- Unit Measure -->
-<!--                <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">-->
-<!--                    <div>-->
-<!--                        <v-select class="" :options="unitMeasures"   id="" v-model="form.unit_measure_id"-->
-<!--                                  :reduce="u => u.id"-->
-<!--                                  label="name"-->
-<!--                        ></v-select>-->
-<!--                        <FloatingLabel :id="'type'" :label="`Measure`"/>-->
-<!--                    </div>-->
-<!--                    <span v-if="form.errors?.unit_measure_id" class="text-red-500 text-sm">-->
-<!--                    {{ form.errors.unit_measure_id }}-->
-<!--                  </span>-->
-<!--                </div>-->
-
-                <!-- Category -->
 
                 <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
                     <div>
@@ -175,8 +160,6 @@ const handleSubmit = () => {
                 <NextInput label="Barcode" v-model="form.barcode" :error="form.errors?.barcode" />
                 <NextInput label="Rack No" v-model="form.rack_no" :error="form.errors?.rack_no" />
                 <NextInput label="Fast Search" v-model="form.fast_search" :error="form.errors?.fast_search" />
-
-<!--                <NextTextarea label="Description" v-model="form.description" :error="form.errors?.description" />-->
                 <div>
                     <NextTextarea
                         v-model="form.description"
