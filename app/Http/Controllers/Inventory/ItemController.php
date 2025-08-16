@@ -102,10 +102,11 @@ class ItemController extends Controller
         return new ItemResource($item);
     }
 
-    public function destroy(Request $request, Item $item): Response
+    public function destroy(Request $request, Item $item)
     {
+        $item->opening()->delete();
+        $item->stocks()->delete();
         $item->delete();
-
-        return response()->noContent();
+        return back();
     }
 }

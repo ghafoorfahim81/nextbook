@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Inventory\FastOpeningRequest;
+use App\Models\Administration\Store;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\Stock;
+use App\Models\Inventory\StockOpening;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -18,9 +20,6 @@ class FastOpeningController extends Controller
         // Fetch all items with their related units and other necessary details
         $items = Item::with('unitMeasure') // eager load unitMeasure and stores (if necessary)
         ->get();
-
-        $unitMeasures = UnitMeasure::all(); // Fetch all unit measures available
-
         return Inertia::render('Inventories/Items/FastOpening', [
             'items'        => $items
         ]);
@@ -28,25 +27,46 @@ class FastOpeningController extends Controller
 
     public function Store(FastOpeningRequest $request)
     {
-        return $request->all();
         $validated = $request->validated();
-        DB::transaction(function () use ($validated) {
-            foreach ($validated['items'] as $itemData) {
-                // 1) Create stock record
-                $stock = Stock::create([
-                    'item_id'         => $itemData['item_id'],
-                    'quantity'        => $itemData['quantity'],
-                    'unit_measure_id' => $itemData['unit_measure_id'],
-                    'expire_date'     => $itemData['expire_date'] ?? null,
-                    'purchase_price'   => $itemData['purchase_price'] ?? null,
-                    'store_id'        => $itemData['store_id'],
-                ]);
+        $rows = collect($validated['items']);
+        DB::transaction(function () use ($rows) {
+            foreach ($rows as $itemData) {
 
-                // 2) Create StockOpening
-                $stock->opening->create([
-                    'item_id'         => $stock->item_id,
-                ]);
+                // Check if item already has an opening
+                $existingOpening = StockOpening::where('item_id', $itemData['item_id'])->first();
+
+                if ($existingOpening) {
+                    // Update existing stock
+                    $stock = $existingOpening->stock;
+                    $stock->update([
+                        'quantity'        => $itemData['quantity'],
+                        'unit_measure_id' => $itemData['unit_measure_id'],
+                        'expire_date'     => $itemData['expire_date'] ?? null,
+                        'batch'           => $itemData['batch'] ?? null,
+                        'cost'            => $itemData['cost'] ?? null,
+                        'store_id'        => $itemData['store_id']??Store::where('is_main',true)->first()->id,
+                    ]);
+
+                    // Ensure opening item_id is correct
+                    $existingOpening->update(['item_id' => $itemData['item_id']]);
+                } else {
+                    // Create new stock + opening
+                    $stock = Stock::create([
+                        'item_id'         => $itemData['item_id'],
+                        'quantity'        => $itemData['quantity'],
+                        'unit_measure_id' => $itemData['unit_measure_id'],
+                        'expire_date'     => $itemData['expire_date'] ?? null,
+                        'batch'           => $itemData['batch'] ?? null,
+                        'cost'            => $itemData['cost'] ?? null,
+                        'store_id'        => $itemData['store_id']??Store::where('is_main',true)->first()->id,
+                    ]);
+
+                    $stock->opening()->create([
+                        'item_id' => $itemData['item_id']
+                    ]);
+                }
             }
+
         });
     }
 }
