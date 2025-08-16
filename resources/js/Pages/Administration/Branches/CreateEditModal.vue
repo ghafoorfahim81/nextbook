@@ -112,22 +112,6 @@ const handleSubmit = async () => {
                         floating-text="Parent"
                         :error="form.errors?.parent_id"
                     />
-
-<!--                    <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">-->
-<!--                        <div>-->
-<!--                            <v-select-->
-<!--                                :options="branches"-->
-<!--                                v-model="form.parent_id"-->
-<!--                                :reduce="branch => branch.id"-->
-<!--                                label="name"-->
-<!--                                class="col-span-3"-->
-<!--                            />-->
-<!--                            <FloatingLabel :id="'type'" :label="`Parent`"/>-->
-<!--                        </div>-->
-<!--                        <span v-if="form.errors?.parent_id" class="text-red-500 text-sm">-->
-<!--                    {{ form.errors.parent_id }}-->
-<!--                  </span>-->
-<!--                    </div>-->
                     <NextTextarea
                         v-model="form.remark"
                         label="Remark"

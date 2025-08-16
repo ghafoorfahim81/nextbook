@@ -130,9 +130,10 @@ class Item extends Model
         return $this->hasMany(Stock::class);
     }
 
-    public function opening()
+    public function openings()
     {
-        return $this->hasOne(StockOpening::class);
+        return $this->hasMany(StockOpening::class, 'item_id', 'id');
+
     }
 
 

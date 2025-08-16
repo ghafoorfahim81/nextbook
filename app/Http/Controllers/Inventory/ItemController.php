@@ -55,7 +55,6 @@ class ItemController extends Controller
 
             $openings
                 ->filter(function ($o) {
-                    // only rows with a store and quantity > 0
                     return !empty($o['store_id']) && (float)($o['quantity'] ?? 0) > 0;
                 })
                 ->each(function ($o) use ($item, $request) {
@@ -90,17 +89,71 @@ class ItemController extends Controller
         return redirect()->route('items.index')->with('success', 'Items created successfully.');
     }
 
-    public function show(Request $request, Item $item): Response
+    public function show(Request $request, Item $item)
     {
         return new ItemResource($item);
     }
 
-    public function update(ItemUpdateRequest $request, Item $item): Response
+    public function edit(Request $request, Item $item)
     {
-        $item->update($request->validated());
 
-        return new ItemResource($item);
+        return inertia('Inventories/Items/Edit', [
+            'item' => new ItemResource($item),
+        ]);
     }
+
+    public function update(ItemUpdateRequest $request, Item $item)
+    {
+        $validated = $request->validated();
+
+        // Handle photo update
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('items', 'public');
+            $validated['photo'] = $path;
+        }
+
+        DB::transaction(function () use ($validated, $request, $item) {
+            // 1) Update item
+            $item->update($validated);
+
+            // 2) Handle openings
+            $openings = collect($request->input('openings', []));
+
+            // Remove old openings (optional: you may also soft-delete instead)
+            $item->openings->each(function ($opening) {
+                $opening->delete();
+                $opening->stock()->delete();
+            });
+            $openings
+                ->filter(fn($o) => !empty($o['store_id']) && (float)($o['quantity'] ?? 0) > 0)
+                ->each(function ($o) use ($item, $request) {
+                    $cost = (float)($request->input('cost') ?? $request->input('purchase_price') ?? 0);
+
+                    $stock = Stock::create([
+                        'item_id' => $item->id,
+                        'store_id' => $o['store_id'],
+                        'unit_measure_id' => $request->unit_measure_id,
+                        'quantity' => (float) $o['quantity'],
+                        'cost' => $cost,
+                        'free' => isset($o['free']) ? (float) $o['free'] : null,
+                        'batch' => $o['batch'] ?? null,
+                        'discount' => isset($o['discount']) ? (float) $o['discount'] : null,
+                        'tax' => isset($o['tax']) ? (float) $o['tax'] : null,
+                        'date' => $o['date'] ?? now()->toDateString(),
+                        'expire_date' => $o['expire_date'] ?? null,
+                        'purchase_id' => null,
+                    ]);
+
+                    $stock->opening()->create([
+                        'item_id' => $item->id,
+                        'stock_id' => $stock->id,
+                    ]);
+                });
+        });
+
+        return redirect()->route('items.index')->with('success', 'Item updated successfully.');
+    }
+
 
     public function destroy(Request $request, Item $item)
     {
