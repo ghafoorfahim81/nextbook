@@ -7,18 +7,9 @@ import NextSelect from '@/Components/next/NextSelect.vue';
 import {Separator} from "@/Components/ui/separator/index.js";
 import NextTextarea from "@/Components/next/NextTextarea.vue";
 import {useForm} from "@inertiajs/vue3";
-import {Label} from "@/Components/ui/label/index.js";
 import FloatingLabel from "@/Components/next/FloatingLabel.vue";
+import { useToast } from '@/components/ui/toast/use-toast'
 
-// const form = reactive({
-//     name: '',
-//     number: '',
-//     remark: '',
-//     account_type_id: null,
-//     currency_id: null,
-//     transaction_type: '',
-//     opening_amount: '',
-// });
 
 const { currencies, accountTypes,branches } = defineProps({
     accountTypes: {
@@ -35,7 +26,6 @@ const { currencies, accountTypes,branches } = defineProps({
     },
 });
 
-console.log('this is data',accountTypes)
 const form = useForm({
     name: '',
     number: '',
@@ -48,14 +38,17 @@ const form = useForm({
 })
 
 const transactionType = ['Credit','Debit'];
+const { toast } = useToast()
 
 function handleSubmit() {
     console.log('Submitting form:', form);
     form.post('/chart-of-accounts', {
         onSuccess: () => {
-            emit('saved')
-            form.reset();
-            closeModal()
+            toast({
+                title: 'Success',
+                variant: 'success',
+                description: 'The Account have been added successfully.',
+            });
         },
     })
 }
@@ -91,36 +84,21 @@ function handleSubmit() {
                 <span class="font-bold">Opening</span>
                 <div class="mt-3 grid grid-cols-3 mb-3 gap-x-2 gap-y-5">
                     <NextInput placeholder="Amount" :error="form.errors?.name" type="number" v-model="form.opening_amount" label="Amount" />
-                    <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
-                        <div>
-                            <v-select
-                                :options="transactionType"
-                                v-model="form.transaction_type"
-                                :reduce="type => type.id"
-                                @input="form.transaction_type = $event"
-                                class="col-span-3"
-                            />
-                            <FloatingLabel :id="'type'" :label="`Transaction Type`"/>
-                        </div>
-                        <span v-if="form.errors?.[`openings.${index}.store_id`]" class="text-red-500 text-sm">
-                          {{ form.errors?.[`openings.${index}.store_id`] }}
-                        </span>
-                    </div>
-                    <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
-                        <div>
-                            <v-select
-                                :options="currencies.data"
-                                v-model="form.currency_id"
-                                :reduce="currency => currency.id"
-                                label="name"
-                                class="col-span-3"
-                            />
-                            <FloatingLabel :id="'type'" :label="`Currency`"/>
-                        </div>
-                        <span v-if="form.errors?.[`openings.${index}.store_id`]" class="text-red-500 text-sm">
-                          {{ form.errors?.[`openings.${index}.store_id`] }}
-                        </span>
-                    </div>
+
+                    <NextSelect
+                        :options="transactionType"
+                        v-model="form.transaction_type"
+                        :reduce="type => type.id"
+                        floating-text="Transaction Type"
+                        :error="form.errors?.transaction_type"
+                    />
+                    <NextSelect
+                        :options="currencies.data"
+                        v-model="form.currency_id"
+                        :reduce="currency => currency.id"
+                        floating-text="Currency"
+                        :error="form.errors?.currency_id"
+                    />
                 </div>
             </form>
         <div>
