@@ -28,7 +28,6 @@ const columns = ref([
 ])
 
 const editItem = (item) => {
-    console.log('this is item', item)
     window.location.href = `/items/${item.id}/edit`;
 }
 

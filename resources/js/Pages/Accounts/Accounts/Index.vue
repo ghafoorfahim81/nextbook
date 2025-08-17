@@ -5,6 +5,7 @@ import { h, ref } from 'vue';
 import { Button } from '@/Components/ui/button';
 
 import CreateEditModal from '@/Pages/Administration/Departments/CreateEditModal.vue';
+import {useDeleteResource} from "@/composables/useDeleteResource.js";
 
 const isDialogOpen = ref(false);
 
@@ -17,14 +18,27 @@ const props = defineProps({
     items: Object,
 })
 
+const editItem = (item) => {
+    window.location.href = `/chart-of-accounts/${item.id}/edit`;
+}
+
+const { deleteResource } = useDeleteResource()
+const deleteItem = (id) => {
+    deleteResource('chart-of-accounts.destroy', id, {
+        title: 'Delete Account?',
+        description: 'This will permanently delete this Item and may has some transactions, this action cannot be undone.',
+        successMessage: 'Item deleted successfully.',
+    })
+
+};
 
 const columns = ref([
     { key: 'name', label: 'Name' },
     { key: 'number', label: 'Number' },
     { key: 'account_type.name', label: 'Account Type' },
-    { key: 'opening_amount', label:"Opening" },
+    { key: 'balance', label:"Balance" },
     { key: 'branch.name', label: 'Branch' },
-    { key: 'remark', label: 'Remark' },
+    { key: 'actions', label: 'Actions' },
 ])
 </script>
 
@@ -43,7 +57,10 @@ const columns = ref([
                 />
             </div>
         </div>
-        <DataTable :items="items" :columns="columns" :title="`Chart of Accounts`" :url="`chart-of-accounts.index`" />
+        <DataTable :items="items" :columns="columns"
+                   @delete="deleteItem"
+                   @edit="editItem"
+                   :title="`Chart of Accounts`" :url="`chart-of-accounts.index`" />
 
     </AppLayout>
 </template>
