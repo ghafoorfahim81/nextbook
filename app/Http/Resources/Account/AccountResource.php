@@ -18,7 +18,7 @@ class AccountResource extends JsonResource
             'number' => $this->number,
             'account_type_id' => $this->account_type_id,
             'opening' => $this->opening,
-            'opening_amount' => $this->opening?->transaction->amount ??0,
+            'balance' => $this->transactions?->sum('amount')?? 0,
             'account_type' => $this->accountType,
             'parent'    => $this->parent,
             'branch_id' => $this->branch_id,
