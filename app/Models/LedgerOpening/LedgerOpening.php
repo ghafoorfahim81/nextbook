@@ -49,12 +49,16 @@ class LedgerOpening extends Model
         ];
     }
 
-    public function ledgerable(): BelongsTo
+//    public function ledgerable(): BelongsTo
+//    {
+//        return $this->morphTo();
+//    }
+
+    public function ledger()
     {
         return $this->morphTo();
     }
-
-    public function ledger()
+    public function account()
     {
         return $this->morphTo();
     }

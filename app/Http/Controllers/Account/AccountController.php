@@ -36,12 +36,9 @@ class AccountController extends Controller
 
     public function store(AccountStoreRequest $request)
     {
-//        dd('Store method called');
         $validated = $request->validated();
 
-        // Create Account
         $account = Account::create($validated);
-//        dd($account);
         // Optionally create transaction + opening if opening amount exists
         if ($request->has('opening_amount') && $request->opening_amount > 0) {
             $transaction = $account->transactions()->create([
@@ -66,6 +63,13 @@ class AccountController extends Controller
     public function show(Request $request, Account $account): Response
     {
         return new AccountResource($account);
+    }
+
+    public function edit(Request $request, Account $account)
+    {
+        inertia('Accounts/Accounts/Edit', [
+            'account' => new AccountResource($account),
+        ]);
     }
 
     public function update(AccountUpdateRequest $request, Account $account): Response

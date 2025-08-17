@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Account;
 
+use App\Http\Resources\LedgerOpening\LedgerOpeningResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,15 +18,13 @@ class AccountResource extends JsonResource
             'name' => $this->name,
             'number' => $this->number,
             'account_type_id' => $this->account_type_id,
-            'opening' => $this->opening,
+            'opening' => LedgerOpeningResource::collection($this->opening),
             'balance' => $this->transactions?->sum('amount')?? 0,
             'account_type' => $this->accountType,
             'parent'    => $this->parent,
             'branch_id' => $this->branch_id,
             'branch'    => $this->branch,
             'remark' => $this->remark,
-            'created_by' => $this->created_by,
-            'updated_by' => $this->updated_by,
         ];
     }
 }

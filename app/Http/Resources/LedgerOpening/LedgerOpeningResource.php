@@ -14,9 +14,6 @@ class LedgerOpeningResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'ledgerable_id',
-            'ledgerable_type',
-            'transaction_id'
         ];
     }
 }
