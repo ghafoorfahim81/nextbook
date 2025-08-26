@@ -49,3 +49,6 @@ Route::apiResource('ledgers', App\Http\Controllers\Ledger\LedgerController::clas
 
 
 Route::apiResource('items', App\Http\Controllers\Inventory\ItemController::class);
+
+
+Route::apiResource('companies', App\Http\Controllers\Administration\CompanyController::class);

@@ -79,7 +79,7 @@
                                 <DropdownMenuContent class="w-48">
                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                     <DropdownMenuItem @click="$emit('edit', item)"><SquarePen /> Edit</DropdownMenuItem>
-                                    <DropdownMenuItem @click="$emit('delete', item.id)"><Trash /> Delete</DropdownMenuItem>
+                                    <DropdownMenuItem @click="$emit('delete', item.id)"><Trash2 /> Delete</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </template>
@@ -119,7 +119,8 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/Components/ui/select'
 import {
-    Search, CircleX, ChevronUp, ChevronDown, SlidersHorizontal, Ellipsis,SquarePen, Trash
+    Search, CircleX, ChevronUp, ChevronDown, SlidersHorizontal, Ellipsis,SquarePen, Trash,
+    Trash2
 } from 'lucide-vue-next'
 import {
     DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,

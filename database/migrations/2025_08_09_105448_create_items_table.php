@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('packing')->nullable();
             $table->string('barcode')->nullable()->index();
             $table->char('unit_measure_id',26);
-            $table->char('company_id',26)->nullable();
+            $table->char('brand_id',26)->nullable();
             $table->char('category_id',26)->nullable();
             $table->double('minimum_stock')->nullable();
             $table->double('maximum_stock')->nullable();
@@ -44,7 +44,7 @@ return new class extends Migration
 
         Schema::table('items', function (Blueprint $table) {
             $table->foreign('unit_measure_id')->references('id')->on('unit_measures');
-            $table->foreign('company_id')->references('id')->on('companies');
+            $table->foreign('brand_id')->references('id')->on('brands');
             $table->foreign('category_id')->references('id')->on('categories');
             $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
