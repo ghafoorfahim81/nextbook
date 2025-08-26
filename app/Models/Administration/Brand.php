@@ -10,11 +10,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Symfony\Component\Uid\Ulid;
 
-class Company extends Model
+class Brand extends Model
 {
     use HasFactory, HasUlids, HasUserAuditable, HasBranch, HasSearch, HasSorting, HasBranch;
 
-    protected $table = 'companies';
+    protected $table = 'brands';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';

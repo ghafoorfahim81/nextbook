@@ -1,37 +1,31 @@
 models:
-  Inventory/Item:
+  Administration/Company:
     id: char(26)
-    name: string unique index
-    code: string unique index
-    generic_name: string nullable
-    packing: string nullable
-    barcode: string nullable index
-    unit_measure_id: id foreign:unit_measures
-    company_id: id foreign:companies
-    category_id: id foreign:categories
-    minimum_stock: double nullable
-    maximum_stock: double nullable
-    colors: string nullable
-    size: string nullable
-    photo: string nullable
-    purchase_price: double nullable
-    cost: double nullable
-    mrp_rate: double
-    rate_a: double nullable
-    rate_b: double nullable
-    rate_c: double nullable
-    rack_no: integer nullable
-    fast_search: string nullable index
-    description: text nullable
-    branch_id: id foreign:branches
+    name_en: string index
+    name_fa: string nullable index
+    name_pa: string nullable index
+    abbreviation: string nullable
+    address: string nullable
+    phone: string nullable
+    country: string nullable
+    city: string nullable
+    logo: string nullable
+    calendar_type: string nullable
+    working_style: string nullable
+    business_type: string nullable
+    locale: string nullable
+    currency: string nullable
+    email: string nullable
+    website: string nullable
+    invoice_desc: text nullable
     created_by: id foreign:users
     updated_by: id foreign:users nullable
     timestamps: true
 controllers:
-  Inventory/Item:
+  Administration/Company:
     resource: api
 
-seeders: Inventory/Item
+seeders: Administration/Company
 
 #models:
 #  Administration/Quantity:

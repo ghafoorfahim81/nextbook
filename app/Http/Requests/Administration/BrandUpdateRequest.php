@@ -4,7 +4,7 @@ namespace App\Http\Requests\Administration;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class CompanyUpdateRequest extends FormRequest
+class BrandUpdateRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -14,7 +14,7 @@ class CompanyUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', Rule::unique('companies')->ignore($this->route('company'))],
+            'name' => ['required', 'string', Rule::unique('brands')->ignore($this->route('brand'))],
             'legal_name' => ['nullable', 'string'],
             'registration_number' => ['nullable', 'string'],
             'logo' => ['nullable', 'string'],

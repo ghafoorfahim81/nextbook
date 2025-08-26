@@ -130,8 +130,8 @@ const data = {
                     url: '/branches',
                 },
                 {
-                    title: 'Company',
-                    url: '/companies',
+                    title: 'Brand',
+                    url: '/brands',
                 },
                 // {
                 //     title: 'Account Type',

@@ -2,16 +2,16 @@
 
 namespace Database\Seeders\Administration;
 
-use App\Models\Administration\Company;
+use App\Models\Administration\Brand;
 use Illuminate\Database\Seeder;
 
-class CompanySeeder extends Seeder
+class BrandSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        Company::factory()->count(5)->create();
+        Brand::factory()->count(5)->create();
     }
 }

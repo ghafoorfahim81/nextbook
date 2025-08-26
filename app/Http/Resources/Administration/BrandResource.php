@@ -4,7 +4,7 @@ namespace App\Http\Resources\Administration;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class CompanyResource extends JsonResource
+class BrandResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
