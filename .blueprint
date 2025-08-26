@@ -1,14 +1,14 @@
 created:
-    - app/Http/Controllers/Inventory/ItemController.php
-    - database/factories/Inventory/ItemFactory.php
-    - database/migrations/2025_08_09_105448_create_items_table.php
-    - app/Models/Inventory/Item.php
-    - database/seeders/Inventory/ItemSeeder.php
-    - tests/Feature/Http/Controllers/Inventory/ItemControllerTest.php
-    - app/Http/Requests/Inventory/ItemStoreRequest.php
-    - app/Http/Requests/Inventory/ItemUpdateRequest.php
-    - app/Http/Resources/Inventory/ItemCollection.php
-    - app/Http/Resources/Inventory/ItemResource.php
+    - app/Http/Controllers/Administration/CompanyController.php
+    - database/factories/Administration/CompanyFactory.php
+    - database/migrations/2025_08_26_163520_create_companies_table.php
+    - app/Models/Administration/Company.php
+    - database/seeders/Administration/CompanySeeder.php
+    - tests/Feature/Http/Controllers/Administration/CompanyControllerTest.php
+    - app/Http/Requests/Administration/CompanyStoreRequest.php
+    - app/Http/Requests/Administration/CompanyUpdateRequest.php
+    - app/Http/Resources/Administration/CompanyCollection.php
+    - app/Http/Resources/Administration/CompanyResource.php
 updated:
     - routes/api.php
 models:
@@ -23,7 +23,7 @@ models:
     User: { id: 'char:26', name: string, email: string, email_verified_at: 'timestamp nullable', password: string, remember_token: 'string:100 nullable', profile_photo_path: 'string:2048 nullable', two_factor_secret: 'text nullable', two_factor_recovery_codes: 'text nullable', two_factor_confirmed_at: 'timestamp nullable' }
     Administration/Quantity: { id: id, quantity: 'string index', unit: string, symbol: string, description: 'text nullable', branch_id: 'id foreign:branches', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
     Administration/UnitMeasure: { id: id, name: 'string unique', unit: string, symbol: string, branch_id: 'id foreign:branches', quantity_id: 'id foreign:quantities', value: 'double nullable', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
-    Administration/Company: { id: id, name: 'string unique', legal_name: 'string nullable', registration_number: 'string nullable', logo: 'string nullable', email: 'string nullable', phone: 'string nullable', website: 'string nullable', industry: 'string nullable', type: 'string nullable', address: 'string nullable', city: 'string nullable', country: 'string nullable', branch_id: 'id foreign:branches', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
+    Administration/Company: { id: char(26), name_en: 'string index', name_fa: 'string nullable index', name_pa: 'string nullable index', abbreviation: 'string nullable', address: 'string nullable', phone: 'string nullable', country: 'string nullable', city: 'string nullable', logo: 'string nullable', calendar_type: 'string nullable', working_style: 'string nullable', business_type: 'string nullable', locale: 'string nullable', currency: 'string nullable', email: 'string nullable', website: 'string nullable', invoice_desc: 'text nullable', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
     Transaction/Transaction: { id: string(26), transactionable: morph, amount: float, currency_id: 'id foreign:currencies', rate: float, date: date, type: "enum('debit', 'credit')", remark: 'text nullable', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
     LedgerOpening/LedgerOpening: { id: char(26), transactionable: morph, ledgerable: morph, created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
     Ledger/Ledger: { id: char(26), name: 'string index', code: 'string nullable index', address: 'string nullable', contact_person: 'string nullable index', phone_no: 'string nullable', email: 'string nullable', currency_id: 'id foreign:currencies nullable', type: 'string nullable index', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }

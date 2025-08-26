@@ -17,7 +17,7 @@ models:
     currency: string nullable
     email: string nullable
     website: string nullable
-    invoice_desc: text nullable
+    invoice_description: text nullable
     created_by: id foreign:users
     updated_by: id foreign:users nullable
     timestamps: true
