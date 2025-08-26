@@ -4,7 +4,7 @@ namespace Tests\Feature\Http\Controllers\Inventory;
 
 use App\Models\Branch;
 use App\Models\Category;
-use App\Models\Company;
+use App\Models\Administration\Brand;
 use App\Models\CreatedBy;
 use App\Models\Item;
 use App\Models\UnitMeasure;
@@ -49,7 +49,7 @@ final class ItemControllerTest extends TestCase
         $name = fake()->name();
         $code = fake()->word();
         $unit_measure = UnitMeasure::factory()->create();
-        $company = Company::factory()->create();
+        $brand = Brand::factory()->create();
         $category = Category::factory()->create();
         $mrp_rate = fake()->randomFloat(/** double_attributes **/);
         $branch = Branch::factory()->create();
@@ -59,7 +59,7 @@ final class ItemControllerTest extends TestCase
             'name' => $name,
             'code' => $code,
             'unit_measure_id' => $unit_measure->id,
-            'company_id' => $company->id,
+            'brand_id' => $brand->id,
             'category_id' => $category->id,
             'mrp_rate' => $mrp_rate,
             'branch_id' => $branch->id,
@@ -70,7 +70,7 @@ final class ItemControllerTest extends TestCase
             ->where('name', $name)
             ->where('code', $code)
             ->where('unit_measure_id', $unit_measure->id)
-            ->where('company_id', $company->id)
+            ->where('brand_id', $brand->id)
             ->where('category_id', $category->id)
             ->where('mrp_rate', $mrp_rate)
             ->where('branch_id', $branch->id)
@@ -113,7 +113,7 @@ final class ItemControllerTest extends TestCase
         $name = fake()->name();
         $code = fake()->word();
         $unit_measure = UnitMeasure::factory()->create();
-        $company = Company::factory()->create();
+        $brand = Brand::factory()->create();
         $category = Category::factory()->create();
         $mrp_rate = fake()->randomFloat(/** double_attributes **/);
         $branch = Branch::factory()->create();
@@ -123,7 +123,7 @@ final class ItemControllerTest extends TestCase
             'name' => $name,
             'code' => $code,
             'unit_measure_id' => $unit_measure->id,
-            'company_id' => $company->id,
+            'brand_id' => $brand->id,
             'category_id' => $category->id,
             'mrp_rate' => $mrp_rate,
             'branch_id' => $branch->id,
@@ -138,7 +138,7 @@ final class ItemControllerTest extends TestCase
         $this->assertEquals($name, $item->name);
         $this->assertEquals($code, $item->code);
         $this->assertEquals($unit_measure->id, $item->unit_measure_id);
-        $this->assertEquals($company->id, $item->company_id);
+        $this->assertEquals($brand->id, $item->brand_id);
         $this->assertEquals($category->id, $item->category_id);
         $this->assertEquals($mrp_rate, $item->mrp_rate);
         $this->assertEquals($branch->id, $item->branch_id);

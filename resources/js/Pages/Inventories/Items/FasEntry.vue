@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/toast/use-toast'
 const props = defineProps({
     stores: { type: [Array, Object], required: true },
     unitMeasures: { type: [Array, Object], required: true },
-    companies: { type: [Array, Object], required: true },
+    brands: { type: [Array, Object], required: true },
 })
 
 

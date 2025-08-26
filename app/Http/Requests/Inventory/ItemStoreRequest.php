@@ -26,7 +26,7 @@ class ItemStoreRequest extends FormRequest
             'packing' => ['nullable', 'string'],
             'barcode' => ['nullable', 'string'],
             'unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
-            'company_id' => ['nullable', 'string', 'exists:companies,id'],
+            'brand_id' => ['nullable', 'string', 'exists:brands,id'],
             'category_id' => ['nullable', 'string', 'exists:categories,id'],
             'minimum_stock' => ['nullable', 'numeric'],
             'maximum_stock' => ['nullable', 'numeric'],

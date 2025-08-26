@@ -14,7 +14,7 @@ const props = defineProps({
     stores: { type: [Array, Object], required: true },
     unitMeasures: { type: [Array, Object], required: true },
     categories: { type: [Array, Object], required: true },
-    companies: { type: [Array, Object], required: true },
+    brands: { type: [Array, Object], required: true },
 })
 
 // normalize lists whether they’re paginated or not
@@ -22,7 +22,7 @@ const branches = computed(() => props.branches?.data ?? props.branches ?? [])
 const stores = computed(() => props.stores?.data ?? props.stores ?? [])
 const unitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 const categories = computed(() => props.categories?.data ?? props.categories ?? [])
-const companies = computed(() => props.companies?.data ?? props.companies ?? [])
+const brands = computed(() => props.brands?.data ?? props.brands ?? [])
 
 const form = useForm({
     name: '',
@@ -39,7 +39,7 @@ const form = useForm({
     minimum_stock: '',
     maximum_stock: '',
     purchase_price: '',
-    company_id: null,
+    brand_id: null,
     category_id: null,
     cost: '',
     mrp_rate: '',
@@ -135,13 +135,13 @@ const handleSubmit = () => {
                     :error="form.errors.category_id"
                 />
                 <NextSelect
-                    :options="companies"
-                    v-model="form.company_id"
+                    :options="brands"
+                    v-model="form.brand_id"
                     label-key="name"
                     value-key="id"
-                    id="company"
-                    floating-text="Company"
-                    :error="form.errors.company_id"
+                    id="brand"
+                    floating-text="Brand"
+                    :error="form.errors.brand_id"
                 />
 
                 <NextInput label="Minimum Stock" type="number" v-model="form.minimum_stock" :error="form.errors?.minimum_stock" />

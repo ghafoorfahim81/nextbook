@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Category;
-use App\Models\Administration\Company;
+use App\Models\Administration\Brand;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Inventory\Item;
 use App\Models\User;
@@ -32,7 +32,7 @@ class ItemFactory extends Factory
             'packing' => fake()->word(),
             'barcode' => fake()->word(),
             'unit_measure_id' => UnitMeasure::factory(),
-            'company_id' => Company::factory(),
+            'brand_id' => Brand::factory(),
             'category_id' => Category::factory(),
             'minimum_stock' => fake()->randomFloat(0, 0, 9999999999.),
             'maximum_stock' => fake()->randomFloat(0, 0, 9999999999.),

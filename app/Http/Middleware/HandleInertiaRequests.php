@@ -4,7 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Http\Resources\Administration\BranchResource;
 use App\Http\Resources\Administration\CategoryResource;
-use App\Http\Resources\Administration\CompanyResource;
+use App\Http\Resources\Administration\BrandResource;
 use App\Http\Resources\Administration\StoreResource;
 use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Models\Administration\Branch;
@@ -13,7 +13,7 @@ use App\Http\Resources\Account\AccountResource;
 use App\Models\Account\Account;
 use App\Http\Resources\Account\AccountTypeResource;
 use App\Models\Account\AccountType;
-use App\Models\Administration\Company;
+use App\Models\Administration\Brand;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Store;
 use Illuminate\Http\Request;
@@ -77,9 +77,9 @@ class HandleInertiaRequests extends Middleware
                 Currency::latest()->take(10)->get()
             ));
 
-        $companies = Cache::remember('companies', $cacheDuration,
-            fn () => CompanyResource::collection(
-                Company::latest()->take(10)->get()
+        $brands = Cache::remember('brands', $cacheDuration,
+            fn () => BrandResource::collection(
+                Brand::latest()->take(10)->get()
             ));
 
         $unitMeasures = Cache::remember('unitMeasures', $cacheDuration,
@@ -98,7 +98,7 @@ class HandleInertiaRequests extends Middleware
             'branches' => $branches,
             'currencies' => $currencies,
             'stores' => $stores,
-            'companies' => $companies,
+            'brands' => $brands,
             'unitMeasures' => $unitMeasures
         ];
 

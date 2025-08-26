@@ -5,17 +5,17 @@ namespace Database\Factories\Administration;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 use App\Models\Administration\Branch;
-use App\Models\Administration\Company;
+use App\Models\Administration\Brand;
 use App\Models\User;
 
-class CompanyFactory extends Factory
+class BrandFactory extends Factory
 {
     /**
      * The name of the factory's corresponding model.
      *
      * @var string
      */
-    protected $model = Company::class;
+    protected $model = Brand::class;
 
     /**
      * Define the model's default state.

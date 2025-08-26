@@ -30,7 +30,7 @@ class Item extends Model
         'packing',
         'barcode',
         'unit_measure_id',
-        'company_id',
+        'brand_id',
         'category_id',
         'minimum_stock',
         'maximum_stock',
@@ -44,7 +44,7 @@ class Item extends Model
         'rate_b',
         'rate_c',
         'rack_no',
-        'fast_search', 
+        'fast_search',
         'branch_id',
         'created_by',
         'updated_by',
@@ -59,7 +59,7 @@ class Item extends Model
     {
         return [
             'unit_measure_id' => 'string',
-            'company_id' => 'string',
+            'brand_id' => 'string',
             'category_id' => 'string',
             'minimum_stock' => 'double',
             'maximum_stock' => 'double',
@@ -84,7 +84,7 @@ class Item extends Model
             'packing',
             'barcode',
             'unitMeasure.name',
-            'company.name',
+            'brand.name',
             'category.name',
             'minimum_stock',
             'maximum_stock',
@@ -108,9 +108,9 @@ class Item extends Model
         return $this->belongsTo(\App\Models\Administration\UnitMeasure::class);
     }
 
-    public function company(): BelongsTo
+    public function brand(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Administration\Company::class);
+        return $this->belongsTo(\App\Models\Administration\Brand::class);
     }
 
     public function category(): BelongsTo

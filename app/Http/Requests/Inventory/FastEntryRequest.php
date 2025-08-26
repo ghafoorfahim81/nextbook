@@ -19,7 +19,7 @@ class FastEntryRequest extends FormRequest
             'items.*.code'                => ['nullable','string','max:50'],
             'items.*.category_id'         => ['nullable','exists:categories,id'],
             'items.*.measure_id'          => ['required','exists:unit_measures,id'],
-            'items.*.company_id'          => ['nullable','exists:companies,id'],
+            'items.*.brand_id'            => ['nullable','exists:brands,id'],
             'items.*.purchase_price'      => ['nullable','numeric','min:0'],
             'items.*.mrp_rate'            => ['nullable','numeric','min:0'],
             'items.*.batch'               => ['nullable','string','max:100'],

@@ -13,13 +13,13 @@ const props = defineProps({
     stores: { type: [Array, Object], required: true },
     unitMeasures: { type: [Array, Object], required: true },
     categories: { type: [Array, Object], required: true },
-    companies: { type: [Array, Object], required: true },
+    brands: { type: [Array, Object], required: true },
 })
 
 const stores = computed(() => props.stores?.data ?? props.stores ?? [])
 const unitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 const categories = computed(() => props.categories?.data ?? props.categories ?? [])
-const companies = computed(() => props.companies?.data ?? props.companies ?? [])
+const brands = computed(() => props.brands?.data ?? props.brands ?? [])
 
 const form = useForm({
     ...props.item.data,
