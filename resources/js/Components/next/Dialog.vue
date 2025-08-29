@@ -57,6 +57,7 @@ const emit = defineEmits(["update:open", "confirm", "cancel"]);
           <Button
               variant="outline"
               :disabled="submitting"
+              class="bg-primary text-white"
               @click="$emit('confirm')"
           >
               <span v-if="submitting">Saving...</span>

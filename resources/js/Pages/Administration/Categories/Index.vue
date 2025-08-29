@@ -50,7 +50,7 @@ const deleteItem = (id) => {
                 <Button
                     @click="isDialogOpen = true"
                     variant="outline"
-                    class="bg-gray-100 hover:bg-gray-200 dark:border-gray-50 dark:text-green-300"
+                    class="bg-primary text-white"
                 >
                     Add New
                 </Button>
