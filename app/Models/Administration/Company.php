@@ -2,13 +2,20 @@
 
 namespace App\Models\Administration;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\HasSearch;
+use App\Traits\HasSorting;
+use App\Traits\HasUserAuditable;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 
+  
 class Company extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting;
+    
 
     /**
      * The attributes that are mass assignable.
@@ -48,6 +55,14 @@ class Company extends Model
             'created_by' => 'integer',
             'updated_by' => 'integer',
         ];
+    }
+
+    /**
+     * Get all of the users for the company.
+     */
+    public function users()
+    {
+        return $this->hasMany(User::class);
     }
 
     public function currency(): BelongsTo

@@ -19,6 +19,10 @@ use App\Models\Administration\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
+use App\Enums\BusinessType;
+use App\Enums\CalendarType;
+use App\Enums\Locale;
+use App\Enums\WorkingStyle;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -87,6 +91,30 @@ class HandleInertiaRequests extends Middleware
                 \App\Models\Administration\UnitMeasure::latest()->take(10)->get()
             ));
 
+        $businessTypes = Cache::rememberForever('businessTypes_'.app()->getLocale(),
+            fn () => collect(BusinessType::cases())->map(fn ($item): array => [
+                'id' => $item->value,
+                'name' => $item->getLabel(),
+            ]));
+
+        $calendarTypes = Cache::rememberForever('calendarTypes_'.app()->getLocale(),
+            fn () => collect(CalendarType::cases())->map(fn ($item): array => [
+                'id' => $item->value,
+                'name' => $item->getLabel(),
+            ]));
+
+        $workingStyles = Cache::rememberForever('workingStyles_'.app()->getLocale(),
+            fn () => collect(WorkingStyle::cases())->map(fn ($item): array => [
+                'id' => $item->value,
+                'name' => $item->getLabel(),
+            ]));
+
+        $locales = Cache::rememberForever('locales_'.app()->getLocale(),
+            fn () => collect(Locale::cases())->map(fn ($item): array => [
+                'id' => $item->value,
+                'name' => $item->getLabel(),
+            ]));
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -99,7 +127,11 @@ class HandleInertiaRequests extends Middleware
             'currencies' => $currencies,
             'stores' => $stores,
             'brands' => $brands,
-            'unitMeasures' => $unitMeasures
+            'unitMeasures' => $unitMeasures,
+            'businessTypes' => $businessTypes,
+            'calendarTypes' => $calendarTypes,
+            'workingStyles' => $workingStyles,
+            'locales' => $locales,
         ];
 
     }

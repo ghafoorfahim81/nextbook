@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Administration\Company;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -41,12 +42,21 @@ class User extends Authenticatable
         'email',
         'password',
         'branch_id',
+        'company_id',
     ];
 
     protected $keyType = 'string';
 
     // Disable auto-incrementing for the primary key
     public $incrementing = false;
+
+    /**
+     * Get the company that owns the user.
+     */
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
 
     /**
      * The attributes that should be hidden for serialization.
