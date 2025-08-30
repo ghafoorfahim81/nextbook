@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Administration\DesignationController;
 use App\Http\Controllers\Administration\DepartmentController;
+use App\Http\Middleware\CheckCompany;
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -16,10 +17,22 @@ Route::get('/', function () {
     ]);
 });
 
+// Public routes that don't require company check
+Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])
+    ->group(function () {
+        Route::get('/company/create', [\App\Http\Controllers\CompanyController::class, 'create'])
+            ->name('company.create');
+
+        Route::post('/company', [\App\Http\Controllers\CompanyController::class, 'store'])
+            ->name('company.store');
+    });
+
+// Authenticated routes that require a company
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
     'verified',
+    CheckCompany::class,
 ])->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
