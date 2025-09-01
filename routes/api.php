@@ -52,3 +52,9 @@ Route::apiResource('items', App\Http\Controllers\Inventory\ItemController::class
 
 
 Route::apiResource('companies', App\Http\Controllers\Administration\CompanyController::class);
+
+
+Route::apiResource('purchases', App\Http\Controllers\Purchase\PurchaseController::class);
+
+
+Route::apiResource('purchases', App\Http\Controllers\Purchase\PurchaseController::class);

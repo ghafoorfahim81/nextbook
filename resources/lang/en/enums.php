@@ -30,4 +30,8 @@ return [
         'en' => 'English',
         'pa' => 'پښتو',
     ],
+    'sales_purchase_type' => [
+        'cash' => 'Cash',
+        'credit' => 'Credit',
+    ],
 ];
