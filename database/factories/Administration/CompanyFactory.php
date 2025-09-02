@@ -39,8 +39,8 @@ class CompanyFactory extends Factory
             'email' => fake()->safeEmail(),
             'website' => fake()->word(),
             'invoice_description' => fake()->text(),
-            'created_by' => User::factory()->create()->created_by,
-            'updated_by' => User::factory()->create()->updated_by,
+            'created_by' => User::factory(),
+            'updated_by' => User::factory(),
         ];
     }
 }

@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('type')->default('cash');
             $table->text('description')->nullable();
             $table->string('status')->default('pending');
+            $table->char('branch_id', 26);
             $table->char('created_by', 26);
             $table->char('updated_by', 26)->nullable();
             $table->timestamps();
@@ -36,6 +37,7 @@ return new class extends Migration
             $table->foreign('transaction_id')->references('id')->on('transactions');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
+            $table->foreign('branch_id')->references('id')->on('branches');
         });
 
     }
