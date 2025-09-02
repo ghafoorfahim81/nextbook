@@ -15,8 +15,7 @@ const props = defineProps({
 const columns = ref([
     { key: 'number', label: 'Number' },
     { key: 'supplier', label: 'Supplier' },
-    { key: 'date', label:"Date" },
-    { key: 'transaction', label: 'Transaction' },
+    { key: 'date', label:"Date" }, 
     { key: 'discount', label: 'Discount' },
     { key: 'discount_type', label: 'Discount Type' },
     { key: 'type', label: 'Type' },
