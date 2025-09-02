@@ -21,6 +21,7 @@ use Database\Seeders\Account\AccountTypeSeeder;
 use Database\Seeders\Administration\CurrencySeeder;
 use Database\Seeders\Inventory\ItemSeeder;
 use Database\Seeders\Ledger\LedgerSeeder;
+use Database\Seeders\Purchase\PurchaseSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use App\Models\Account\Account;
@@ -44,5 +45,6 @@ class DatabaseSeeder extends Seeder
         $this->call(LedgerSeeder::class);
 //        $this->call(ItemSeeder::class);
         $this->call(AccountSeeder::class);
+        $this->call(PurchaseSeeder::class);
     }
 }

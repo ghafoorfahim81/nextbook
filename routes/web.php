@@ -62,6 +62,7 @@ Route::middleware([
     Route::post('/item-fast-opening', [\App\Http\Controllers\Inventory\FastOpeningController::class, 'store'])
         ->name('fast-opening.store');
 
+    Route::resource('/purchases', \App\Http\Controllers\Purchase\PurchaseController::class);
 //    Route::post('item_entry/Store', ['as' => 'item_entry.store', 'uses' => 'FastEntry\ItemEntryController@store'])->middleware(['dbconfig','auth:sanctum']);
 
 });
