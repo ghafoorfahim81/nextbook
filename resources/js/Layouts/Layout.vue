@@ -198,6 +198,22 @@ const data = {
             ],
         },
         {
+            title: 'Purchase',
+            url: '#',
+            icon: ChartColumn,
+            items: [
+                {
+                    title: 'Purchase',
+                    url: '/purchases',
+                },
+                {
+                    title: 'Purchase Return',
+                    url: '/purchase-returns',
+                },
+
+            ],
+        },
+        {
             title: 'Ledger',
             url: '#',
             icon: UserCog,

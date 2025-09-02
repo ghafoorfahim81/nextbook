@@ -27,12 +27,12 @@ class CurrencyFactory extends Factory
             'code' => $this->faker->word(),
             'symbol' => $this->faker->word(),
             'format' => $this->faker->word(),
-            'exchange_rate' => $this->faker->randomFloat(0, 0, 9999999999.),
+            'exchange_rate' => $this->faker->randomFloat(0, 0, 999.),
             'is_active' => $this->faker->boolean(),
             'flag' => $this->faker->word(),
             'branch_id' => Branch::factory(),
-            'created_by' => User::factory()->create()->created_by,
-            'updated_by' => User::factory()->create()->updated_by,
+            'created_by' => User::factory(),
+            'updated_by' => User::factory(),
         ];
     }
 }

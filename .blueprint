@@ -1,30 +1,34 @@
 created:
-    - app/Http/Controllers/Administration/CompanyController.php
-    - database/factories/Administration/CompanyFactory.php
-    - database/migrations/2025_08_26_163520_create_companies_table.php
-    - app/Models/Administration/Company.php
-    - database/seeders/Administration/CompanySeeder.php
-    - tests/Feature/Http/Controllers/Administration/CompanyControllerTest.php
-    - app/Http/Requests/Administration/CompanyStoreRequest.php
-    - app/Http/Requests/Administration/CompanyUpdateRequest.php
-    - app/Http/Resources/Administration/CompanyCollection.php
-    - app/Http/Resources/Administration/CompanyResource.php
+    - app/Http/Controllers/Purchase/PurchaseController.php
+    - database/factories/Purchase/PurchaseFactory.php
+    - database/migrations/2025_09_01_063044_create_purchases_table.php
+    - app/Models/Purchase/Purchase.php
+    - database/seeders/Purchase/PurchaseSeeder.php
+    - tests/Feature/Http/Controllers/Purchase/PurchaseControllerTest.php
+    - app/Http/Requests/Purchase/PurchaseStoreRequest.php
+    - app/Http/Requests/Purchase/PurchaseUpdateRequest.php
+    - app/Http/Resources/Purchase/PurchaseCollection.php
+    - app/Http/Resources/Purchase/PurchaseResource.php
 updated:
     - routes/api.php
 models:
-    Account\Account: {  }
-    Account\AccountType: {  }
+    Account\Account: { id: 'char:26', name: string, number: string, account_type_id: 'char:26', is_active: 'boolean default:true', branch_id: 'char:26', remark: 'text nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
+    Account\AccountType: { id: 'char:26', name: string, remark: 'text nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
     Administration\Branch: { id: 'char:26', name: string, remark: 'text nullable', location: 'string nullable', is_main: 'boolean default:false', sub_domain: 'string nullable', parent_id: 'char:26 nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
+    Administration\Brand: { id: 'char:26', name: string, legal_name: 'string nullable', registration_number: 'string nullable', logo: 'string nullable', email: 'string nullable', phone: 'string nullable', website: 'string nullable', industry: 'string nullable', type: 'string nullable', address: 'string nullable', city: 'string nullable', country: 'string nullable', branch_id: 'char:26', created_by: 'char:26', updated_by: 'char:26 nullable' }
     Administration\Category: { id: 'char:26', name: string, remark: 'text nullable', parent_id: 'char:26 nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
-    Administration\Currency: {  }
+    Administration\Company: { id: 'char:26', name_en: string, name_fa: 'string nullable', name_pa: 'string nullable', abbreviation: 'string nullable', address: 'string nullable', phone: 'string nullable', country: 'string nullable', city: 'string nullable', logo: 'string nullable', calendar_type: 'string nullable', working_style: 'string nullable', business_type: 'string nullable', locale: 'string nullable', currency_id: 'char:26 nullable', email: 'string nullable', website: 'string nullable', invoice_description: 'text nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
+    Administration\Currency: { id: 'char:26', name: string, code: string, symbol: string, format: 'string nullable', exchange_rate: 'decimal:8,2', is_active: 'boolean default:true', flag: 'string nullable', branch_id: 'char:26', tenant_id: 'char:26 nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
     Administration\Department: { id: 'char:26', name: string, code: string, remark: 'text nullable', parent_id: 'char:26 nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
     Administration\Designation: { id: uuid }
-    Administration\Store: { id: 'char:26', name: string, address: 'string nullable', is_main: boolean, branch_id: 'char:26', created_by: 'char:26', updated_by: 'char:26 nullable' }
-    User: { id: 'char:26', name: string, email: string, email_verified_at: 'timestamp nullable', password: string, remember_token: 'string:100 nullable', profile_photo_path: 'string:2048 nullable', two_factor_secret: 'text nullable', two_factor_recovery_codes: 'text nullable', two_factor_confirmed_at: 'timestamp nullable' }
-    Administration/Quantity: { id: id, quantity: 'string index', unit: string, symbol: string, description: 'text nullable', branch_id: 'id foreign:branches', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
-    Administration/UnitMeasure: { id: id, name: 'string unique', unit: string, symbol: string, branch_id: 'id foreign:branches', quantity_id: 'id foreign:quantities', value: 'double nullable', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
-    Administration/Company: { id: char(26), name_en: 'string index', name_fa: 'string nullable index', name_pa: 'string nullable index', abbreviation: 'string nullable', address: 'string nullable', phone: 'string nullable', country: 'string nullable', city: 'string nullable', logo: 'string nullable', calendar_type: 'string nullable', working_style: 'string nullable', business_type: 'string nullable', locale: 'string nullable', currency: 'string nullable', email: 'string nullable', website: 'string nullable', invoice_desc: 'text nullable', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
-    Transaction/Transaction: { id: string(26), transactionable: morph, amount: float, currency_id: 'id foreign:currencies', rate: float, date: date, type: "enum('debit', 'credit')", remark: 'text nullable', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
-    LedgerOpening/LedgerOpening: { id: char(26), transactionable: morph, ledgerable: morph, created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
-    Ledger/Ledger: { id: char(26), name: 'string index', code: 'string nullable index', address: 'string nullable', contact_person: 'string nullable index', phone_no: 'string nullable', email: 'string nullable', currency_id: 'id foreign:currencies nullable', type: 'string nullable index', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
-    Inventory/Item: { id: char(26), name: 'string unique index', code: 'string unique index', generic_name: 'string nullable', packing: 'string nullable', barcode: 'string nullable index', unit_measure_id: 'id foreign:unit_measures', company_id: 'id foreign:companies', category_id: 'id foreign:categories', minimum_stock: 'double nullable', maximum_stock: 'double nullable', colors: 'string nullable', size: 'string nullable', photo: 'string nullable', purchase_price: 'double nullable', cost: 'double nullable', mrp_rate: double, rate_a: 'double nullable', rate_b: 'double nullable', rate_c: 'double nullable', rack_no: 'integer nullable', fast_search: 'string nullable index', description: 'text nullable', branch_id: 'id foreign:branches', created_by: 'id foreign:users', updated_by: 'id foreign:users nullable', timestamps: timestamps }
+    Administration\Quantity: { id: 'char:26', quantity: string, unit: string, symbol: string, branch_id: 'char:26', created_by: 'char:26', updated_by: 'char:26 nullable' }
+    Administration\Store: { id: 'char:26', name: string, address: 'string nullable', is_main: 'boolean default:false', branch_id: 'char:26', created_by: 'char:26', updated_by: 'char:26 nullable' }
+    Administration\UnitMeasure: { id: 'char:26', name: string, unit: string, symbol: string, value: 'double nullable', quantity_id: 'char:26', branch_id: 'char:26', created_by: 'char:26', updated_by: 'char:26 nullable' }
+    Inventory\Item: { id: 'char:26', name: string, code: string, generic_name: 'string nullable', packing: 'string nullable', barcode: 'string nullable', unit_measure_id: 'char:26', brand_id: 'char:26 nullable', category_id: 'char:26 nullable', minimum_stock: 'double nullable', maximum_stock: 'double nullable', colors: 'string nullable', size: 'string nullable', photo: 'string nullable', purchase_price: 'double nullable', cost: 'double nullable', mrp_rate: double, rate_a: 'double nullable', rate_b: 'double nullable', rate_c: 'double nullable', rack_no: 'string nullable', fast_search: 'string nullable', branch_id: 'char:26', created_by: char, updated_by: 'char nullable' }
+    Inventory\Stock: { id: 'char:26', item_id: char, store_id: 'char:26', unit_measure_id: 'char:26', quantity: double, cost: double, free: 'double nullable', batch: 'string nullable', discount: 'double nullable', tax: 'double nullable', date: 'date nullable', expire_date: 'date nullable', purchase_id: 'char:26 nullable' }
+    Inventory\StockOpening: { id: 'char:26', item_id: char, stock_id: 'char:26' }
+    LedgerOpening\LedgerOpening: { id: 'char:26', ledgerable_id: 'char:26', ledgerable_type: string, transaction_id: 'char:26', created_by: 'char:26', updated_by: 'char:26 nullable' }
+    Ledger\Ledger: { id: 'char:26', name: string, code: 'string nullable', address: 'string nullable', contact_person: 'string nullable', phone_no: 'string nullable', email: 'string nullable', currency_id: 'char:26 nullable', branch_id: 'char:26 nullable', type: "string default:'customer'::character varying", created_by: 'char:26', updated_by: 'char:26 nullable' }
+    Transaction\Transaction: { id: 'char:26', account_id: 'char:26', amount: double, currency_id: 'char:26', rate: double, date: date, type: string, remark: 'text nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
+    User: { id: 'char:26', name: string, email: string, email_verified_at: 'timestamp nullable', password: string, remember_token: 'string:100 nullable', profile_photo_path: 'string:2048 nullable', two_factor_secret: 'text nullable', two_factor_recovery_codes: 'text nullable', two_factor_confirmed_at: 'timestamp nullable', branch_id: 'char:26 nullable', company_id: 'char:26 nullable' }
+    Purchase/Purchase: { id: char(26), number: 'string index', supplier_id: 'char(26) foreign:ledgers', date: date, transaction_id: 'char(26) foreign:transactions', discount: 'decimal nullable', discount_type: 'string nullable', type: string, description: 'text nullable', status: 'string nullable', created_by: 'char(26) foreign:users', updated_by: 'char(26) foreign:users nullable', timestamps: timestamps }

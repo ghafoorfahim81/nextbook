@@ -1,31 +1,23 @@
 models:
-  Administration/Company:
+  Purchase/Purchase:
     id: char(26)
-    name_en: string index
-    name_fa: string nullable index
-    name_pa: string nullable index
-    abbreviation: string nullable
-    address: string nullable
-    phone: string nullable
-    country: string nullable
-    city: string nullable
-    logo: string nullable
-    calendar_type: string nullable
-    working_style: string nullable
-    business_type: string nullable
-    locale: string nullable
-    currency: string nullable
-    email: string nullable
-    website: string nullable
-    invoice_description: text nullable
-    created_by: id foreign:users
-    updated_by: id foreign:users nullable
+    number: string index
+    supplier_id: char(26) foreign:ledgers  
+    date: date
+    transaction_id: char(26) foreign:transactions  
+    discount: decimal nullable
+    discount_type: string nullable
+    type: string 
+    description: text nullable
+    status: string nullable
+    created_by: char(26) foreign:users
+    updated_by: char(26) foreign:users nullable
     timestamps: true
 controllers:
-  Administration/Company:
+  Purchase/Purchase:
     resource: api
 
-seeders: Administration/Company
+seeders: Purchase/Purchase
 
 #models:
 #  Administration/Quantity:

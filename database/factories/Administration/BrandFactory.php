@@ -36,8 +36,8 @@ class BrandFactory extends Factory
             'city' => fake()->city(),
             'country' => fake()->country(),
             'branch_id' => Branch::factory(),
-            'created_by' => User::factory()->create()->created_by,
-            'updated_by' => User::factory()->create()->updated_by,
+            'created_by' => User::factory(),
+            'updated_by' => User::factory(),
         ];
     }
 }
