@@ -42,12 +42,12 @@ class Purchase extends Model
     protected function casts(): array
     {
         return [
-            'supplier_id' => 'integer',
+            'supplier_id' => 'string',
             'date' => 'date',
-            'transaction_id' => 'integer',
+            'transaction_id' => 'string',
             'discount' => 'decimal',
-            'created_by' => 'integer',
-            'updated_by' => 'integer',
+            'created_by' => 'string',
+            'updated_by' => 'string',
         ];
     }
 
