@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Administration\DesignationController;
 use App\Http\Controllers\Administration\DepartmentController;
+use App\Http\Controllers\SearchController;
 use App\Http\Middleware\CheckCompany;
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -64,6 +65,9 @@ Route::middleware([
 
     Route::resource('/purchases', \App\Http\Controllers\Purchase\PurchaseController::class);
 //    Route::post('item_entry/Store', ['as' => 'item_entry.store', 'uses' => 'FastEntry\ItemEntryController@store'])->middleware(['dbconfig','auth:sanctum']);
+    // Search routes
+    Route::post('/search/{resourceType}', [App\Http\Controllers\SearchController::class, 'search']);
+    Route::get('/search/resource-types', [App\Http\Controllers\SearchController::class, 'getResourceTypes']);
 
 });
 

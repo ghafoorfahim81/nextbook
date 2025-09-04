@@ -25,7 +25,12 @@ class PurchaseController extends Controller
             ->withQueryString();
         return inertia('Purchase/Purchases/Index', [
             'purchases' => PurchaseResource::collection($purchases),
-        ]); 
+        ]);
+    }
+
+    public function create(Request $request)
+    {
+        return inertia('Purchase/Purchases/Create');
     }
 
     public function store(PurchaseStoreRequest $request): Response
