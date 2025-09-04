@@ -16,6 +16,8 @@ use App\Models\Account\AccountType;
 use App\Models\Administration\Brand;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Store;
+use App\Http\Resources\Ledger\LedgerResource;
+use App\Models\Ledger\Ledger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
@@ -115,6 +117,11 @@ class HandleInertiaRequests extends Middleware
                 'name' => $item->getLabel(),
             ]));
 
+        $ledgers = Cache::remember('ledgers', $cacheDuration,
+            fn () => LedgerResource::collection(
+                Ledger::latest()->take(10)->get()
+            ));
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -132,6 +139,7 @@ class HandleInertiaRequests extends Middleware
             'calendarTypes' => $calendarTypes,
             'workingStyles' => $workingStyles,
             'locales' => $locales,
+            'ledgers' => $ledgers,
         ];
 
     }
