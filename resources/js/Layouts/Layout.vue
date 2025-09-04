@@ -80,7 +80,7 @@ import {
 import { ref, computed } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { Toaster } from '@/components/ui/toast'
-
+import { HousePlug } from 'lucide-vue-next'
 // This is sample data.
 const data = {
     user: {
@@ -106,6 +106,12 @@ const data = {
         },
     ],
     navMain: [
+
+        {
+            title: 'Dashboard',
+            url: '/dashboard',
+            icon: HousePlug,
+        },
         {
             title: 'Administration',
             url: '#',
@@ -264,7 +270,10 @@ function isMenuItemActive(itemUrl: string): boolean {
 }
 
 // Function to check if a parent menu should be expanded (has active child)
-function shouldExpandParent(items: any[]): boolean {
+function shouldExpandParent(items: any[] | undefined): boolean {
+    if (!items || !Array.isArray(items)) {
+        return false
+    }
     return items.some(item => isMenuItemActive(item.url))
 }
 import { useColorMode, useCycleList } from '@vueuse/core'
@@ -342,40 +351,55 @@ const mode = useColorMode({
                 <SidebarGroup>
                     <SidebarGroupLabel>Platform</SidebarGroupLabel>
                     <SidebarMenu>
-                        <Collapsible
-                            v-for="item in data.navMain"
-                            :key="item.title"
-                            as-child
-                            :default-open="shouldExpandParent(item.items)"
-                            class="group/collapsible"
-                        >
-                            <SidebarMenuItem>
-                                <CollapsibleTrigger as-child>
-                                    <SidebarMenuButton :tooltip="item.title">
+                        <template v-for="item in data.navMain" :key="item.title">
+                            <!-- Simple menu item without sub-items (like Dashboard) -->
+                            <SidebarMenuItem v-if="!item.items">
+                                <SidebarMenuButton
+                                    :isActive="isMenuItemActive(item.url)"
+                                    as-child
+                                >
+                                    <Link :href="item.url">
                                         <component :is="item.icon" />
                                         <span>{{ item.title }}</span>
-                                        <ChevronRight class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                                    </SidebarMenuButton>
-                                </CollapsibleTrigger>
-                                <CollapsibleContent>
-                                    <SidebarMenuSub>
-                                        <SidebarMenuSubItem
-                                            v-for="subItem in item.items"
-                                            :key="subItem.title"
-                                        >
-                                            <SidebarMenuSubButton
-                                                :isActive="isMenuItemActive(subItem.url)"
-                                                as-child
-                                            >
-                                                <Link :href="subItem.url">
-                                                    <span>{{ subItem.title }}</span>
-                                                </Link>
-                                            </SidebarMenuSubButton>
-                                        </SidebarMenuSubItem>
-                                    </SidebarMenuSub>
-                                </CollapsibleContent>
+                                    </Link>
+                                </SidebarMenuButton>
                             </SidebarMenuItem>
-                        </Collapsible>
+
+                            <!-- Collapsible menu item with sub-items -->
+                            <Collapsible
+                                v-else
+                                as-child
+                                :default-open="shouldExpandParent(item.items)"
+                                class="group/collapsible"
+                            >
+                                <SidebarMenuItem>
+                                    <CollapsibleTrigger as-child>
+                                        <SidebarMenuButton :tooltip="item.title">
+                                            <component :is="item.icon" />
+                                            <span>{{ item.title }}</span>
+                                            <ChevronRight class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                        </SidebarMenuButton>
+                                    </CollapsibleTrigger>
+                                    <CollapsibleContent>
+                                        <SidebarMenuSub>
+                                            <SidebarMenuSubItem
+                                                v-for="subItem in item.items"
+                                                :key="subItem.title"
+                                            >
+                                                <SidebarMenuSubButton
+                                                    :isActive="isMenuItemActive(subItem.url)"
+                                                    as-child
+                                                >
+                                                    <Link :href="subItem.url">
+                                                        <span>{{ subItem.title }}</span>
+                                                    </Link>
+                                                </SidebarMenuSubButton>
+                                            </SidebarMenuSubItem>
+                                        </SidebarMenuSub>
+                                    </CollapsibleContent>
+                                </SidebarMenuItem>
+                            </Collapsible>
+                        </template>
                     </SidebarMenu>
                 </SidebarGroup>
                 <!-- Projects section commented out as it's not being used -->
