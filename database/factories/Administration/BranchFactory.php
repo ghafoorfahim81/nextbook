@@ -23,11 +23,11 @@ class BranchFactory extends Factory
     {
         return [
             'id' => Str::ulid(), // Generate a UUID for the department ID
-            'name' => $this->faker->name(),
+            'name' => fake()->name(),
             'is_main' => $this->faker->boolean(),
-            'sub_domain' => $this->faker->domainName(),
-            'remark' => $this->faker->sentence(),
-            'location' => $this->faker->sentence(),
+            'sub_domain' => fake()->domainName(),
+            'remark' => fake()->sentence(),
+            'location' => fake()->sentence(),
             'parent_id' => null,
 
         ];
