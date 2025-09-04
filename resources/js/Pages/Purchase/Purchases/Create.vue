@@ -55,6 +55,10 @@ function handleSubmit() {
                     :reduce="ledger => ledger.id"
                     floating-text="Supplier"
                     :error="form.errors?.supplier_id"
+                    :searchable="true"
+                    resource-type="ledgers"
+                    :search-fields="['name', 'email', 'phone_no']"
+                    :search-options="{ type: 'supplier' }"
                 />
                 <NextInput placeholder="Number" :error="form.errors?.number" type="text" v-model="form.number" label="Number" />
                 <NextInput placeholder="Date" :error="form.errors?.date" type="date" v-model="form.date" label="Date" />
@@ -64,6 +68,9 @@ function handleSubmit() {
                     :reduce="currency => currency.id"
                     floating-text="Currency"
                     :error="form.errors?.currency_id"
+                    :searchable="true"
+                    resource-type="currencies"
+                    :search-fields="['name', 'code', 'symbol']"
                 />
                 <NextSelect
                     :options="salePurchaseTypes"
