@@ -77,14 +77,16 @@ import {
     Cog,
     Layers, UserCog, Database
 } from 'lucide-vue-next'
-import { ref } from 'vue'
-import Toaster from '@/components/ui/toast/Toaster.vue'
+import { ref, computed } from 'vue'
+import { usePage } from '@inertiajs/vue3'
+import { Toaster } from '@/components/ui/toast'
 
 // This is sample data.
 const data = {
     user: {
         name: 'shadcn',
         email: 'm@example.com',
+        avatar: null as string | null,
     },
     teams: [
         {
@@ -250,9 +252,20 @@ const data = {
 }
 
 const activeTeam = ref(data.teams[0])
+const page = usePage()
 
 function setActiveTeam(team: typeof data.teams[number]) {
     activeTeam.value = team
+}
+
+// Function to check if a menu item is active
+function isMenuItemActive(itemUrl: string): boolean {
+    return page.url === itemUrl
+}
+
+// Function to check if a parent menu should be expanded (has active child)
+function shouldExpandParent(items: any[]): boolean {
+    return items.some(item => isMenuItemActive(item.url))
 }
 import { useColorMode, useCycleList } from '@vueuse/core'
 
@@ -333,7 +346,7 @@ const mode = useColorMode({
                             v-for="item in data.navMain"
                             :key="item.title"
                             as-child
-                            :default-open="item.isActive"
+                            :default-open="shouldExpandParent(item.items)"
                             class="group/collapsible"
                         >
                             <SidebarMenuItem>
@@ -350,9 +363,14 @@ const mode = useColorMode({
                                             v-for="subItem in item.items"
                                             :key="subItem.title"
                                         >
-                                            <Link :href="subItem.url">
-                                                <span>{{ subItem.title }}</span>
-                                            </Link>
+                                            <SidebarMenuSubButton
+                                                :isActive="isMenuItemActive(subItem.url)"
+                                                as-child
+                                            >
+                                                <Link :href="subItem.url">
+                                                    <span>{{ subItem.title }}</span>
+                                                </Link>
+                                            </SidebarMenuSubButton>
                                         </SidebarMenuSubItem>
                                     </SidebarMenuSub>
                                 </CollapsibleContent>
@@ -360,8 +378,9 @@ const mode = useColorMode({
                         </Collapsible>
                     </SidebarMenu>
                 </SidebarGroup>
-                <SidebarGroup class="group-data-[collapsible=icon]:hidden">
-<!--                    <SidebarGroupLabel>Projects</SidebarGroupLabel>-->
+                <!-- Projects section commented out as it's not being used -->
+                <!-- <SidebarGroup class="group-data-[collapsible=icon]:hidden">
+                    <SidebarGroupLabel>Projects</SidebarGroupLabel>
                     <SidebarMenu>
                         <SidebarMenuItem
                             v-for="item in data.projects"
@@ -397,14 +416,8 @@ const mode = useColorMode({
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </SidebarMenuItem>
-<!--                        <SidebarMenuItem>-->
-<!--                            <SidebarMenuButton class="text-sidebar-foreground/70">-->
-<!--                                <MoreHorizontal class="text-sidebar-foreground/70" />-->
-<!--                                <span>More</span>-->
-<!--                            </SidebarMenuButton>-->
-<!--                        </SidebarMenuItem>-->
                     </SidebarMenu>
-                </SidebarGroup>
+                </SidebarGroup> -->
             </SidebarContent>
             <SidebarFooter>
                 <SidebarMenu>
