@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 
 class Purchase extends Model
 {
-    use HasFactory,HasUlids, HasSearch, HasSorting, HasUserAuditable, HasBranch;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasBranch;
 
     /**
      * The attributes that are mass assignable.
@@ -45,7 +45,7 @@ class Purchase extends Model
             'supplier_id' => 'string',
             'date' => 'date',
             'transaction_id' => 'string',
-            'discount' => 'decimal',
+            'discount' => 'float',
             'created_by' => 'string',
             'updated_by' => 'string',
         ];
@@ -54,8 +54,8 @@ class Purchase extends Model
     protected static function searchableColumns(): array
     {
         return [
-            'number', 
-            'date', 
+            'number',
+            'date',
             'discount',
             'discount_type',
             'type',
