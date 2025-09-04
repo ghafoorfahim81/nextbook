@@ -18,7 +18,6 @@ class AccountResource extends JsonResource
             'name' => $this->name,
             'number' => $this->number,
             'account_type_id' => $this->account_type_id,
-            // 'opening' => LedgerOpeningResource::collection($this->opening),
             'balance' => $this->transactions?->sum('amount')?? 0,
             'account_type' => $this->accountType,
             'parent'    => $this->parent,
