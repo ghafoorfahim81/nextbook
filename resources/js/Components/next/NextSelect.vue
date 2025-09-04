@@ -3,13 +3,16 @@
         <div class="relative">
             <v-select
                 :id="id"
-                :options="options"
+                :options="searchableOptions"
                 :label="labelKey"
                 :reduce="reduceInternal"
                 :modelValue="modelValue"
                 @update:modelValue="val => emit('update:modelValue', val)"
+                @search="handleSearch"
+                :filterable="false"
+                :loading="isLoading"
                 append-to-body
-                :close-on-select="true" 
+                :close-on-select="true"
                 class="col-span-3 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 v-bind="$attrs"
             />
@@ -28,7 +31,9 @@
 </template>
 
 <script setup>
+import { ref, computed, watch } from 'vue';
 import FloatingLabel from "@/Components/next/FloatingLabel.vue";
+import { useSearchResources } from '@/composables/useSearchResources.js';
 
 const props = defineProps({
     modelValue: [String, Number, Object, Array, null],
@@ -39,19 +44,63 @@ const props = defineProps({
     id: { type: String, default: () => "sel-" + Math.random().toString(36).slice(2) },
     floatingText: { type: String, default: "" },
     error: { type: String, default: "" },
+    // Search-related props
+    searchable: { type: Boolean, default: false },
+    resourceType: { type: String, default: null },
+    searchFields: { type: Array, default: () => ['name'] },
+    searchOptions: { type: Object, default: () => ({}) },
 });
 
 const emit = defineEmits(["update:modelValue"]);
+
+// Search functionality
+const { searchResources, isLoading } = useSearchResources();
+const searchableOptions = ref([...props.options]);
+const currentSearchTerm = ref('');
+
+// Watch for changes in options prop
+watch(() => props.options, (newOptions) => {
+    if (!props.searchable) {
+        searchableOptions.value = [...newOptions];
+    }
+}, { immediate: true });
 
 const reduceInternal = (opt) => {
     if (props.reduceFn) return props.reduceFn(opt);
     if (opt !== null && typeof opt === "object") return opt?.[props.valueKey];
     return opt;
 };
+
+const handleSearch = async (searchTerm) => {
+    currentSearchTerm.value = searchTerm;
+
+    if (!props.searchable || !props.resourceType) {
+        return;
+    }
+
+    try {
+        const results = await searchResources(
+            searchTerm,
+            props.options,
+            props.resourceType,
+            {
+                labelKey: props.labelKey,
+                valueKey: props.valueKey,
+                searchFields: props.searchFields,
+                ...props.searchOptions
+            }
+        );
+
+        searchableOptions.value = results;
+    } catch (error) {
+        console.error('Search error:', error);
+        // Fallback to local options
+        searchableOptions.value = [...props.options];
+    }
+};
 </script>
 
 <!-- Styles specific to vue-select dropdown -->
-<style scoped>
 <style scoped>
     /* Keep the menu above surrounding UI */
 :deep(.vs__dropdown-menu) { z-index: 2000; }

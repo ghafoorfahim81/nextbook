@@ -54,73 +54,108 @@ class HandleInertiaRequests extends Middleware
 
 
 
-        $categories = Cache::remember('categories', $cacheDuration,
-            fn () => CategoryResource::collection(
+        $categories = Cache::remember(
+            'categories',
+            $cacheDuration,
+            fn() => CategoryResource::collection(
                 Category::latest()->take(10)->get()
-            ));
+            )
+        );
 
-        $accounts = Cache::remember('accounts', $cacheDuration,
-            fn () => AccountResource::collection(
+        $accounts = Cache::remember(
+            'accounts',
+            $cacheDuration,
+            fn() => AccountResource::collection(
                 Account::latest()->take(10)->get()
-            ));
+            )
+        );
 
-        $accountTypes = Cache::remember('accountTypes', $cacheDuration,
-            fn () => AccountTypeResource::collection(
+        $accountTypes = Cache::remember(
+            'accountTypes',
+            $cacheDuration,
+            fn() => AccountTypeResource::collection(
                 AccountType::latest()->take(10)->get()
-            ));
-        $branches = Cache::remember('branches', $cacheDuration,
-            fn () => BranchResource::collection(
+            )
+        );
+        $branches = Cache::remember(
+            'branches',
+            $cacheDuration,
+            fn() => BranchResource::collection(
                 Branch::latest()->take(10)->get()
-            ));
+            )
+        );
 
-        $stores = Cache::remember('stores', $cacheDuration,
-            fn () => StoreResource::collection(
+        $stores = Cache::remember(
+            'stores',
+            $cacheDuration,
+            fn() => StoreResource::collection(
                 Store::latest()->take(10)->get()
-            ));
+            )
+        );
 
-        $currencies = Cache::remember('currencies', $cacheDuration,
-            fn () => CategoryResource::collection(
+        $currencies = Cache::remember(
+            'currencies',
+            $cacheDuration,
+            fn() => CategoryResource::collection(
                 Currency::latest()->take(10)->get()
-            ));
+            )
+        );
 
-        $brands = Cache::remember('brands', $cacheDuration,
-            fn () => BrandResource::collection(
+        $brands = Cache::remember(
+            'brands',
+            $cacheDuration,
+            fn() => BrandResource::collection(
                 Brand::latest()->take(10)->get()
-            ));
+            )
+        );
 
-        $unitMeasures = Cache::remember('unitMeasures', $cacheDuration,
-            fn () => UnitMeasureResource::collection(
+        $unitMeasures = Cache::remember(
+            'unitMeasures',
+            $cacheDuration,
+            fn() => UnitMeasureResource::collection(
                 \App\Models\Administration\UnitMeasure::latest()->take(10)->get()
-            ));
+            )
+        );
 
-        $businessTypes = Cache::rememberForever('businessTypes_'.app()->getLocale(),
-            fn () => collect(BusinessType::cases())->map(fn ($item): array => [
+        $businessTypes = Cache::rememberForever(
+            'businessTypes_' . app()->getLocale(),
+            fn() => collect(BusinessType::cases())->map(fn($item): array => [
                 'id' => $item->value,
                 'name' => $item->getLabel(),
-            ]));
+            ])
+        );
 
-        $calendarTypes = Cache::rememberForever('calendarTypes_'.app()->getLocale(),
-            fn () => collect(CalendarType::cases())->map(fn ($item): array => [
+        $calendarTypes = Cache::rememberForever(
+            'calendarTypes_' . app()->getLocale(),
+            fn() => collect(CalendarType::cases())->map(fn($item): array => [
                 'id' => $item->value,
                 'name' => $item->getLabel(),
-            ]));
+            ])
+        );
 
-        $workingStyles = Cache::rememberForever('workingStyles_'.app()->getLocale(),
-            fn () => collect(WorkingStyle::cases())->map(fn ($item): array => [
+        $workingStyles = Cache::rememberForever(
+            'workingStyles_' . app()->getLocale(),
+            fn() => collect(WorkingStyle::cases())->map(fn($item): array => [
                 'id' => $item->value,
                 'name' => $item->getLabel(),
-            ]));
+            ])
+        );
 
-        $locales = Cache::rememberForever('locales_'.app()->getLocale(),
-            fn () => collect(Locale::cases())->map(fn ($item): array => [
+        $locales = Cache::rememberForever(
+            'locales_' . app()->getLocale(),
+            fn() => collect(Locale::cases())->map(fn($item): array => [
                 'id' => $item->value,
                 'name' => $item->getLabel(),
-            ]));
+            ])
+        );
 
-        $ledgers = Cache::remember('ledgers', $cacheDuration,
-            fn () => LedgerResource::collection(
-                Ledger::latest()->take(10)->get()
-            ));
+        $ledgers = Cache::remember(
+            'ledgers',
+            $cacheDuration,
+            fn() => LedgerResource::collection(
+                Ledger::latest()->take(5)->get()
+            )
+        );
 
         return [
             ...parent::share($request),
@@ -141,6 +176,5 @@ class HandleInertiaRequests extends Middleware
             'locales' => $locales,
             'ledgers' => $ledgers,
         ];
-
     }
 }
