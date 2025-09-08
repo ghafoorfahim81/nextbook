@@ -26,6 +26,7 @@ class CurrencyUpdateRequest extends FormRequest
             'format' => ['nullable', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
             'exchange_rate' => ['nullable', 'numeric'],
             'is_active' => ['nullable', 'boolean'],
+            'is_base_currency' => ['nullable', 'boolean'],
             'flag' => ['nullable', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
         ];
     }

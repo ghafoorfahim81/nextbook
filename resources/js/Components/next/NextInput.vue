@@ -8,7 +8,7 @@
             :disabled="disabled"
             :autocomplete="autocomplete"
             placeholder=" "
-        class="peer block w-full rounded-md border border-input bg-background px-3 py-3 text-sm shadow-sm
+        class="peer block w-full rounded-md border border-2 border-black border-input bg-background px-3 py-3 text-sm shadow-sm
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
         disabled:cursor-not-allowed disabled:opacity-50"
         />
