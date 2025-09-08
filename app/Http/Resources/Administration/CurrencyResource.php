@@ -20,6 +20,7 @@ class CurrencyResource extends JsonResource
             'format' => $this->format,
             'exchange_rate' => $this->exchange_rate,
             'is_active' => $this->is_active,
+            'is_base_currency' => $this->is_base_currency,
             'flag' => $this->flag,
             'branch_id' => $this->branch_id,
             'tenant_id' => $this->tenant_id,

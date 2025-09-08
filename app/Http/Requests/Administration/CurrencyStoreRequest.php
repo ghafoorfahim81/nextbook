@@ -26,6 +26,7 @@ class CurrencyStoreRequest extends FormRequest
             'format' => ['required', 'string', 'unique:currencies,format'],
             'exchange_rate' => ['required', 'numeric'],
             'is_active' => ['nullable', 'boolean'],
+            'is_base_currency' => ['nullable', 'boolean'],
             'flag' => ['nullable', 'string', 'unique:currencies,flag'],
         ];
     }

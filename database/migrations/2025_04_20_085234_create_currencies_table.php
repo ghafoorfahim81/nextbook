@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('format')->nullable();
             $table->decimal('exchange_rate');
             $table->boolean('is_active')->default(true);
+            $table->boolean('is_base_currency')->default(false);
             $table->string('flag')->unique()->nullable();
             $table->char('branch_id', 26);
             $table->char('tenant_id', 26)->nullable();
