@@ -23,7 +23,7 @@ const props = defineProps({
 
 const form = useForm({
     number: '',
-    supplier_id: '',
+    ledger_id: '',
     date: '',
     sale_purchase_type_id: '',
     discount: '',
@@ -51,10 +51,10 @@ function handleSubmit() {
             <div class="mb-5 grid grid-cols-3 mb-3 gap-x-2 gap-y-5">
                 <NextSelect
                     :options="ledgers.data"
-                    v-model="form.supplier_id"
+                    v-model="form.ledger_id"
                     :reduce="ledger => ledger.id"
                     floating-text="Supplier"
-                    :error="form.errors?.supplier_id"
+                    :error="form.errors?.ledger_id"
                     :searchable="true"
                     resource-type="ledgers"
                     :search-fields="['name', 'email', 'phone_no']"
@@ -70,6 +70,7 @@ function handleSubmit() {
                     :error="form.errors?.currency_id"
                     :searchable="true"
                     resource-type="currencies"
+                    label-key="name"
                     :search-fields="['name', 'code', 'symbol']"
                 />
                 <NextSelect

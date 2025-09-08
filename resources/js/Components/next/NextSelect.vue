@@ -40,7 +40,7 @@ const props = defineProps({
     options: { type: Array, default: () => [] },
     labelKey: { type: String, default: "name" },
     valueKey: { type: String, default: "id" },
-    reduceFn: { type: Function, default: null },
+    reduce: { type: Function, default: null },
     id: { type: String, default: () => "sel-" + Math.random().toString(36).slice(2) },
     floatingText: { type: String, default: "" },
     error: { type: String, default: "" },
@@ -50,26 +50,60 @@ const props = defineProps({
     searchFields: { type: Array, default: () => ['name'] },
     searchOptions: { type: Object, default: () => ({}) },
 });
+// ... existing imports and props ...
 
 const emit = defineEmits(["update:modelValue"]);
+
+// Add this: Cache for all fetched options (Map for quick lookup by valueKey)
+const cachedOptions = ref(new Map());
 
 // Search functionality
 const { searchResources, isLoading } = useSearchResources();
 const searchableOptions = ref([...props.options]);
 const currentSearchTerm = ref('');
 
-// Watch for changes in options prop
+// Updated ensure function to also check cachedOptions
+const ensureSelectedOptionInOptions = () => {
+    if (!props.modelValue) return;
+
+    const reduceFn = props.reduce || ((opt) => opt ? opt[props.valueKey] : null);
+    const selectedValue = Array.isArray(props.modelValue) ? props.modelValue : props.modelValue;
+
+    // Find if the selected option is already in searchableOptions
+    const selectedOptionExists = searchableOptions.value.some(option => reduceFn(option) === selectedValue);
+
+    if (!selectedOptionExists) {
+        // First, try props.options
+        let selectedOption = props.options.find(option => reduceFn(option) === selectedValue);
+
+        // If not found, try cachedOptions
+        if (!selectedOption) {
+            selectedOption = cachedOptions.value.get(selectedValue);
+        }
+
+        if (selectedOption) {
+            // Add to the front to prioritize
+            searchableOptions.value = [selectedOption, ...searchableOptions.value.filter(opt => reduceFn(opt) !== selectedValue)];
+        }
+    }
+};
+
+// Existing watches remain the same
 watch(() => props.options, (newOptions) => {
     if (!props.searchable) {
         searchableOptions.value = [...newOptions];
+    } else {
+        ensureSelectedOptionInOptions();
     }
 }, { immediate: true });
 
-const reduceInternal = (opt) => {
-    if (props.reduceFn) return props.reduceFn(opt);
-    if (opt !== null && typeof opt === "object") return opt?.[props.valueKey];
-    return opt;
-};
+watch(() => props.modelValue, () => {
+    if (props.searchable) {
+        ensureSelectedOptionInOptions();
+    }
+}, { immediate: true });
+
+// Existing reduceInternal remains the same
 
 const handleSearch = async (searchTerm) => {
     currentSearchTerm.value = searchTerm;
@@ -91,13 +125,28 @@ const handleSearch = async (searchTerm) => {
             }
         );
 
+        // Add new results to cachedOptions (avoids duplicates)
+        results.forEach(opt => {
+            const key = props.reduce ? props.reduce(opt) : opt[props.valueKey];
+            if (!cachedOptions.value.has(key)) {
+                cachedOptions.value.set(key, opt);
+            }
+        });
+
         searchableOptions.value = results;
     } catch (error) {
         console.error('Search error:', error);
-        // Fallback to local options
         searchableOptions.value = [...props.options];
+    } finally {
+        // Ensure selected is included after updating options
+        ensureSelectedOptionInOptions();
     }
 };
+
+// Optional: If you need to handle pre-set modelValue (e.g., editing forms) where the option isn't in initial props.options or cached yet,
+// you could add an async fetch here in ensureSelectedOptionInOptions if (!selectedOption) { ... fetch single by ID ... }.
+// But that requires backend support (e.g., modify searchRemote to handle { id: props.modelValue } in additionalParams).
+// For now, this fixes the post-search selection issue.
 </script>
 
 <!-- Styles specific to vue-select dropdown -->
