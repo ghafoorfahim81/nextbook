@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
-import { reactive } from 'vue';
+import { reactive, onMounted, computed } from 'vue';
 import { Button } from '@/Components/ui/button';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
@@ -39,6 +39,21 @@ const form = useForm({
 
 const transactionType = ['Credit','Debit'];
 const { toast } = useToast()
+
+// Find base currency
+const baseCurrency = computed(() => {
+    if (currencies?.data) {
+        return currencies.data.find(currency => currency.is_base_currency);
+    }
+    return null;
+});
+
+// Set base currency as default when component mounts
+onMounted(() => {
+    if (baseCurrency.value && !form.currency_id) {
+        form.currency_id = baseCurrency.value.id;
+    }
+});
 
 function handleSubmit() {
     console.log('Submitting form:', form);

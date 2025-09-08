@@ -15,12 +15,41 @@ class CurrencySeeder extends Seeder
     {
         $branch = Branch::where('is_main', true)->first();
         $currencyList = [
+            // Most important currencies first
             'AFN' => [
                 'name' => 'Afghanistan, Afghani',
                 'symbol' => '؋',
                 'format' => '؋1,0.00',
                 'exchange_rate' => 0.00,
                 'flag'     => 'af.png',
+                'is_active' => true,
+                'branch_id' => $branch->id,
+                'is_base_currency' => true,
+            ],
+            'USD' => [
+                'name' => 'US Dollar',
+                'symbol' => '$',
+                'format' => '$1,0.00',
+                'exchange_rate' => 1.00,
+                'flag' => 'us.png',
+                'branch_id' => $branch->id,
+                'is_active' => true,
+            ],
+            'IRR' => [
+                'name' => 'Iranian Rial',
+                'symbol' => '﷼',
+                'format' => '﷼ 1,0/00',
+                'exchange_rate' => 0.00,
+                'flag'     => 'ir.png',
+                'is_active' => true,
+                'branch_id' => $branch->id,
+            ],
+            'INR' => [
+                'name' => 'Indian Rupee',
+                'symbol' => '₹',
+                'format' => '1,0.00₹',
+                'exchange_rate' => 0.00,
+                'flag'     => 'in.png',
                 'is_active' => true,
                 'branch_id' => $branch->id,
             ],
@@ -573,15 +602,6 @@ class CurrencySeeder extends Seeder
                 'is_active' => true,
                 'branch_id' => $branch->id,
             ],
-            'IRR' => [
-                'name' => 'Iranian Rial',
-                'symbol' => '﷼',
-                'format' => '﷼ 1,0/00',
-                'exchange_rate' => 0.00,
-                'flag'     => 'ir.png',
-                'is_active' => true,
-                'branch_id' => $branch->id,
-            ],
             'ISK' => [
                 'name' => 'Iceland Krona',
                 'symbol' => 'kr.',
@@ -987,15 +1007,6 @@ class CurrencySeeder extends Seeder
                 'is_active' => true,
                 'branch_id' => $branch->id,
             ],
-            'PKR' => [
-                'name' => 'Pakistan Rupee',
-                'symbol' => '₨',
-                'format' => '₨1,0.00',
-                'exchange_rate' => 0.00,
-                'flag' => 'pk.png',
-                'is_active' => true,
-                'branch_id' => $branch->id,
-            ],
             'PLN' => [
                 'name' => 'Poland, Zloty',
                 'symbol' => 'zł',
@@ -1284,15 +1295,7 @@ class CurrencySeeder extends Seeder
                 'branch_id' => $branch->id,
                 'is_active' => true,
             ],
-            'USD' => [
-                'name' => 'US Dollar',
-                'symbol' => '$',
-                'format' => '$1,0.00',
-                'exchange_rate' => 0.00,
-                'flag' => 'us.png',
-                'branch_id' => $branch->id,
-                'is_active' => true,
-            ],
+
             'UYU' => [
                 'name' => 'Peso Uruguayo',
                 'symbol' => '$U',
@@ -1305,6 +1308,10 @@ class CurrencySeeder extends Seeder
         ];
         foreach ($currencyList as $key => $value) {
             $temp = $value + ['code' => $key];
+            // Ensure is_base_currency is set for all currencies
+            if (!isset($temp['is_base_currency'])) {
+                $temp['is_base_currency'] = false;
+            }
             Currency::create($temp);
         }
     }

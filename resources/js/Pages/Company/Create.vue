@@ -1,8 +1,9 @@
 <script setup>
 import {useForm } from '@inertiajs/vue3';
+import { onMounted, computed } from 'vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
-import NextInput from '@/Components/next/NextInput.vue';    
+import NextInput from '@/Components/next/NextInput.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 
 const props = defineProps({
@@ -50,6 +51,21 @@ const form = useForm({
     invoice_description: '',
 });
 
+// Find base currency
+const baseCurrency = computed(() => {
+    if (props.currencies?.data) {
+        return props.currencies.data.find(currency => currency.is_base_currency);
+    }
+    return null;
+});
+
+// Set base currency as default when component mounts
+onMounted(() => {
+    if (baseCurrency.value && !form.currency_id) {
+        form.currency_id = baseCurrency.value.id;
+    }
+});
+
 const submit = () => {
     console.log(form);
     form.post(route('company.store'), {
@@ -67,6 +83,10 @@ const previewImage = (event) => {
         reader.readAsDataURL(file);
     }
 };
+
+const handleSelectChange = (field, value) => { 
+    form[field] = value.id;
+};
 </script>
 
 <template>
@@ -80,7 +100,7 @@ const previewImage = (event) => {
                                 <!-- Basic Information -->
                                 <div class="space-y-4">
                                     <h3 class="text-lg font-medium">Basic Information</h3>
-                                    
+
                                     <NextInput :error="form.errors?.name" type="text" v-model="form.name_en" label="Company Name (English)*" />
                                     <NextInput :error="form.errors?.name" type="text" v-model="form.name_fa" label="Company Name (Persian)" />
                                     <NextInput :error="form.errors?.name" type="text" v-model="form.name_pa" label="Company Name (Pashto)" />
@@ -92,7 +112,7 @@ const previewImage = (event) => {
                                 <!-- Contact Information -->
                                 <div class="space-y-4">
                                     <h3 class="text-lg font-medium">Contact Information</h3>
-                                    
+
                                     <NextInput :error="form.errors?.name" type="text" v-model="form.email" label="Email" />
                                     <NextInput :error="form.errors?.name" type="text" v-model="form.phone" label="Phone" />
 
@@ -107,11 +127,14 @@ const previewImage = (event) => {
                             <!-- Settings -->
                             <div class="pt-6 mt-6 border-t border-gray-200">
                                 <h3 class="text-lg font-medium">Company Settings</h3>
-                                
+
                                 <div class="grid grid-cols-1 gap-6 mt-4 md:grid-cols-3">
                                     <NextSelect
                                         :options="businessTypes"
                                         v-model="form.business_type"
+                                        label-key="name"
+                                        value-key="id"
+                                        @update:modelValue="(value) => handleSelectChange('business_type', value)"
                                         :reduce="type => type.id"
                                         floating-text="Business Type"
                                         :error="form.errors?.business_type"
@@ -119,6 +142,9 @@ const previewImage = (event) => {
                                     <NextSelect
                                         :options="calendarTypes"
                                         v-model="form.calendar_type"
+                                        label-key="name"
+                                        value-key="id"
+                                        @update:modelValue="(value) => handleSelectChange('calendar_type', value)"
                                         :reduce="type => type.id"
                                         floating-text="Calendar Type"
                                         :error="form.errors?.calendar_type"
@@ -126,6 +152,9 @@ const previewImage = (event) => {
                                     <NextSelect
                                         :options="workingStyles"
                                         v-model="form.working_style"
+                                        label-key="name"
+                                        value-key="id"
+                                        @update:modelValue="(value) => handleSelectChange('working_style', value)"
                                         :reduce="type => type.id"
                                         floating-text="Working Style"
                                         :error="form.errors?.working_style"
@@ -136,6 +165,9 @@ const previewImage = (event) => {
                                     <NextSelect
                                         :options="locales"
                                         v-model="form.locale"
+                                        label-key="name"
+                                        value-key="id"
+                                        @update:modelValue="(value) => handleSelectChange('locale', value)"
                                         :reduce="type => type.id"
                                         floating-text="Default Language"
                                         :error="form.errors?.locale"
@@ -143,9 +175,15 @@ const previewImage = (event) => {
                                     <NextSelect
                                         :options="currencies.data"
                                         v-model="form.currency_id"
+                                        label-key="name"
+                                        value-key="id"
+                                        @update:modelValue="(value) => handleSelectChange('currency_id', value)"
                                         :reduce="currency => currency.id"
                                         floating-text="Currency"
                                         :error="form.errors?.currency_id"
+                                        :searchable="true"
+                                        resource-type="currencies"
+                                        :search-fields="['name', 'code', 'symbol']"
                                     />
                                 </div>
 
@@ -162,7 +200,7 @@ const previewImage = (event) => {
                             <!-- Logo Upload -->
                             <div class="pt-6 mt-6 border-t border-gray-200">
                                 <h3 class="text-lg font-medium">Company Logo</h3>
-                                
+
                                 <div class="flex items-center mt-4">
                                     <div class="mr-4">
                                         <div v-if="form.logo" class="w-24 h-24 overflow-hidden bg-gray-200 rounded-full">
