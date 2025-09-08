@@ -29,6 +29,7 @@ class CurrencyFactory extends Factory
             'format' => $this->faker->word(),
             'exchange_rate' => $this->faker->randomFloat(0, 0, 999.),
             'is_active' => $this->faker->boolean(),
+            'is_base_currency' => false,
             'flag' => $this->faker->word(),
             'branch_id' => Branch::factory(),
             'created_by' => User::factory(),

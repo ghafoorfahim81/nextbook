@@ -32,6 +32,7 @@ class Currency extends Model
         'format',
         'exchange_rate',
         'is_active',
+        'is_base_currency',
         'flag',
         'branch_id',
         'created_by',
@@ -54,6 +55,7 @@ class Currency extends Model
     protected $casts = [
         'id' => 'string',
         'is_active' => 'boolean',
+        'is_base_currency' => 'boolean',
         'branch_id' => 'string',
         'tenant_id' => 'string',
         'created_by' => 'string',
@@ -76,6 +78,4 @@ class Currency extends Model
     {
         return $this->belongsTo(Branch::class);
     }
-
-
 }

@@ -25,7 +25,8 @@ use App\Enums\BusinessType;
 use App\Enums\CalendarType;
 use App\Enums\Locale;
 use App\Enums\WorkingStyle;
-
+use App\Http\Resources\Administration\CurrencyResource;
+use App\Enums\SalesPurchaseType;
 class HandleInertiaRequests extends Middleware
 {
     /**
@@ -96,8 +97,8 @@ class HandleInertiaRequests extends Middleware
         $currencies = Cache::remember(
             'currencies',
             $cacheDuration,
-            fn() => CategoryResource::collection(
-                Currency::latest()->take(10)->get()
+            fn() => CurrencyResource::collection(
+                Currency::latest()->get()
             )
         );
 
@@ -156,6 +157,13 @@ class HandleInertiaRequests extends Middleware
                 Ledger::latest()->take(5)->get()
             )
         );
+        $salePurchaseTypes = Cache::rememberForever(
+            'salePurchaseTypes_' . app()->getLocale(),
+            fn() => collect(SalesPurchaseType::cases())->map(fn($item): array => [
+                'id' => $item->value,
+                'name' => $item->getLabel(),
+            ])
+        );
 
         return [
             ...parent::share($request),
@@ -175,6 +183,7 @@ class HandleInertiaRequests extends Middleware
             'workingStyles' => $workingStyles,
             'locales' => $locales,
             'ledgers' => $ledgers,
+            'salePurchaseTypes' => $salePurchaseTypes,
         ];
     }
 }

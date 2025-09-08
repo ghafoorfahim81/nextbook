@@ -60,7 +60,7 @@ class SearchController extends Controller
      */
     private function performSearch(string $resourceType, string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
-        $searchTerm = '%' . $searchTerm . '%';
+        $searchTerm = '%' . strtolower($searchTerm) . '%';
 
         switch ($resourceType) {
             case 'ledgers':
@@ -96,7 +96,7 @@ class SearchController extends Controller
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'email', 'phone_no', 'address'])) {
-                        $q->orWhere($field, 'LIKE', $searchTerm);
+                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
                     }
                 }
             });
@@ -123,7 +123,7 @@ class SearchController extends Controller
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'code', 'description'])) {
-                        $q->orWhere($field, 'LIKE', $searchTerm);
+                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
                     }
                 }
             });
@@ -150,11 +150,11 @@ class SearchController extends Controller
     private function searchCurrencies(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
         $query = DB::table('currencies')
-            ->select('id', 'name', 'code', 'symbol', 'rate')
+            ->select('id', 'name', 'code', 'symbol', 'exchange_rate')
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'code', 'symbol'])) {
-                        $q->orWhere($field, 'LIKE', $searchTerm);
+                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
                     }
                 }
             });
@@ -172,7 +172,7 @@ class SearchController extends Controller
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'email'])) {
-                        $q->orWhere($field, 'LIKE', $searchTerm);
+                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
                     }
                 }
             });
@@ -195,7 +195,7 @@ class SearchController extends Controller
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'address', 'phone', 'email'])) {
-                        $q->orWhere($field, 'LIKE', $searchTerm);
+                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
                     }
                 }
             });
@@ -218,7 +218,7 @@ class SearchController extends Controller
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'email', 'phone', 'address'])) {
-                        $q->orWhere($field, 'LIKE', $searchTerm);
+                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
                     }
                 }
             });
