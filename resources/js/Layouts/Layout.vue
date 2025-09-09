@@ -149,6 +149,10 @@ const data = {
                     title: 'Store',
                     url: '/stores',
                 },
+                {
+                    title: 'Company',
+                    url: '/company',
+                },
             ],
         },
         {
