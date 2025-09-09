@@ -65,9 +65,16 @@ Route::middleware([
 
     Route::resource('/purchases', \App\Http\Controllers\Purchase\PurchaseController::class);
 //    Route::post('item_entry/Store', ['as' => 'item_entry.store', 'uses' => 'FastEntry\ItemEntryController@store'])->middleware(['dbconfig','auth:sanctum']);
+
+    // Company routes
+    Route::get('/company', [\App\Http\Controllers\CompanyController::class, 'show'])
+        ->name('company.show');
+    Route::patch('/company/{company}', [\App\Http\Controllers\CompanyController::class, 'update'])
+        ->name('company.update');
+
     // Search routes
-    Route::post('/search/{resourceType}', [App\Http\Controllers\SearchController::class, 'search']);
-    Route::get('/search/resource-types', [App\Http\Controllers\SearchController::class, 'getResourceTypes']);
+    Route::post('/search/{resourceType}', [\App\Http\Controllers\SearchController::class, 'search']);
+    Route::get('/search/resource-types', [\App\Http\Controllers\SearchController::class, 'getResourceTypes']);
 
 });
 
