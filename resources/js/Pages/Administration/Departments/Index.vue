@@ -44,7 +44,10 @@ const columns = ref([
                 <CreateEditModal
                     :isDialogOpen="isDialogOpen"
                     :departments="items"
-                    @update:isDialogOpen="isDialogOpen = $event"
+                    @update:isDialogOpen="(value) => {
+                        isDialogOpen = value;
+                        if (!value) editingDepartment = null;
+                    }"
                 />
             </div>
         </div>
