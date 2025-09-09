@@ -6,7 +6,9 @@ use App\Enums\BusinessType;
 use App\Enums\CalendarType;
 use App\Enums\Locale;
 use App\Enums\WorkingStyle;
+use App\Http\Requests\Administration\CompanyUpdateRequest;
 use App\Models\Administration\Company;
+use App\Models\Administration\Currency;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -58,5 +60,42 @@ class CompanyController extends Controller
 
         return redirect()->route('dashboard')
             ->with('success', 'Company created successfully.');
+    }
+
+    /**
+     * Display the company information page.
+     */
+    public function show()
+    {
+        $company = Auth::user()->company;
+
+        if (!$company) {
+            return redirect()->route('company.create')
+                ->with('error', 'No company found. Please create a company first.');
+        }
+
+
+        return inertia('Administration/Companies/Show', [
+            'company' => $company
+        ]);
+    }
+
+    /**
+     * Update the company information.
+     */
+    public function update(CompanyUpdateRequest $request, Company $company)
+    {
+        // Ensure the user can only update their own company
+        if (Auth::user()->company_id !== $company->id) {
+            abort(403, 'Unauthorized to update this company.');
+        }
+
+        $validated = $request->validated();
+        $validated['updated_by'] = Auth::id();
+
+        $company->update($validated);
+
+        return redirect()->back()
+            ->with('success', 'Company information updated successfully.');
     }
 }

@@ -42,6 +42,7 @@ const form = useForm({
     city: '',
     logo: null,
     calendar_type: '',
+    selected_currency: null,
     working_style: '',
     business_type: '',
     locale: 'en',
@@ -52,19 +53,19 @@ const form = useForm({
 });
 
 // Find base currency
-const baseCurrency = computed(() => {
-    if (props.currencies?.data) {
-        return props.currencies.data.find(currency => currency.is_base_currency);
-    }
-    return null;
-});
+// const baseCurrency = computed(() => {
+//     if (props.currencies?.data) {
+//         return props.currencies.data.find(currency => currency.is_base_currency);
+//     }
+//     return null;
+// });
 
-// Set base currency as default when component mounts
-onMounted(() => {
-    if (baseCurrency.value && !form.currency_id) {
-        form.currency_id = baseCurrency.value.id;
-    }
-});
+// // Set base currency as default when component mounts
+// onMounted(() => {
+//     if (baseCurrency.value && !form.currency_id) {
+//         form.currency_id = baseCurrency.value.id;
+//     }
+// });
 
 const submit = () => {
     console.log(form);
@@ -84,7 +85,10 @@ const previewImage = (event) => {
     }
 };
 
-const handleSelectChange = (field, value) => { 
+const handleSelectChange = (field, value) => {
+    if(field === 'currency_id') {
+        form.currency_id = value;
+    }
     form[field] = value.id;
 };
 </script>
@@ -174,7 +178,7 @@ const handleSelectChange = (field, value) => {
                                     />
                                     <NextSelect
                                         :options="currencies.data"
-                                        v-model="form.currency_id"
+                                        v-model="form.selected_currency"
                                         label-key="name"
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('currency_id', value)"
