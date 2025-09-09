@@ -2,6 +2,7 @@
 
 namespace App\Models\Administration;
 
+use App\Traits\HasBranch;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -9,11 +10,12 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Symfony\Component\Uid\Ulid;
 
 class Quantity extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch;
 
 
     /**
@@ -61,13 +63,8 @@ class Quantity extends Model
         return $this->belongsTo(Branch::class);
     }
 
-    public function createdBy(): BelongsTo
+    public function measures(): HasMany
     {
-        return $this->belongsTo(\App\Models\User::class);
-    }
-
-    public function updatedBy(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class);
+        return $this->hasMany(UnitMeasure::class, 'quantity_id');
     }
 }

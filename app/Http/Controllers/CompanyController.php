@@ -67,7 +67,6 @@ class CompanyController extends Controller
                 ->with('error', 'No company found. Please create a company first.');
         }
 
-
         return inertia('Administration/Companies/Show', [
             'company' => $company
         ]);

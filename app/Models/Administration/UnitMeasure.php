@@ -2,6 +2,7 @@
 
 namespace App\Models\Administration;
 
+use App\Traits\HasBranch;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -13,7 +14,7 @@ use Symfony\Component\Uid\Ulid;
 
 class UnitMeasure extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
@@ -35,6 +36,7 @@ class UnitMeasure extends Model
         'name',
         'unit',
         'symbol',
+        'description',
         'branch_id',
         'quantity_id',
         'value',
