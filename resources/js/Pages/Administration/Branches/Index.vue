@@ -60,7 +60,10 @@ const deleteItem = (id) => {
                     :isDialogOpen="isDialogOpen"
                     :editingItem="editingBranch"
                     :branches="branches"
-                    @update:isDialogOpen="isDialogOpen = $event"
+                    @update:isDialogOpen="(value) => {
+                        isDialogOpen = value;
+                        if (!value) editingBranch = null;
+                    }"
                     @saved="() => { editingBranch = null }"
                 />
 

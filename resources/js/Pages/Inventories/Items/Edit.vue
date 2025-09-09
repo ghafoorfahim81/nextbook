@@ -20,18 +20,22 @@ const stores = computed(() => props.stores?.data ?? props.stores ?? [])
 const unitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 const categories = computed(() => props.categories?.data ?? props.categories ?? [])
 const brands = computed(() => props.brands?.data ?? props.brands ?? [])
-
+console.log('props.item.data', props.item.data)
 const form = useForm({
     ...props.item.data,
+    selected_unit_measure: props.item.data.unitMeasure,
+    selected_category: props.item.data.category,
+    selected_brand: props.item.data.brand,
     photo: null,
     openings: props.item.data.openings?.length
         ? props.item.data.openings.map(o => ({
             batch: o.batch,
             expire_date: o.expire_date,
             quantity: o.quantity,
-            store_id: o.store_id
+            store_id: o.store_id,
+            selected_store: o.store
         }))
-        : [{ batch: '', expire_date: '', quantity: '', store_id: null }],
+        : [{ batch: '', expire_date: '', quantity: '', store_id: null, selected_store: null, store: null }],
 })
 
 
@@ -43,7 +47,7 @@ const onPhotoChange = (e) => {
 // Rows
 const addRow = (index) => {
     if (index === form.openings.length - 1) {
-        form.openings.push({ batch: '', expire_date: '', quantity: '', store_id: null })
+        form.openings.push({ batch: '', expire_date: '', quantity: '', store_id: null, selected_store: null, store: null })
     }
 }
 const removeRow = (idx) => {
@@ -71,12 +75,6 @@ const normalize = () => {
 }
 
 const handleSubmit = () => {
-    // const formData = new FormData();
-    // formData.append('photo', form.photo);
-    //
-    // formData.append('form', (form));
-    // formData.append('_method', 'PUT');
-    // formData.append('openings', JSON.stringify(form.openings));
     normalize()
     form.patch(route('items.update', form.id), {
         onSuccess: () => {
@@ -84,6 +82,15 @@ const handleSubmit = () => {
         },
     })
 }
+const handleSelectChange = (field, value) => {
+    form[field] = value.id;
+};
+
+const handleOpeningSelectChange = (index, value) => {
+    form.openings[index].selected_store = value;
+    form.openings[index].store_id = value ? value.id : null;
+};
+
 </script>
 <template>
     <AppLayout title="Create Item">
@@ -101,31 +108,43 @@ const handleSubmit = () => {
                 <NextInput label="Photo" type="file"  @input="onPhotoChange" :error="form.errors?.photo" placeholder="Photo" />
 
                 <NextSelect
-                    v-model="form.unit_measure_id"
+                    v-model="form.selected_unit_measure"
                     :options="unitMeasures"
+                    @update:modelValue="(value) => handleSelectChange('unit_measure_id', value)"
                     label-key="name"
                     value-key="id"
                     id="measure"
                     floating-text="Measure"
+                    :searchable="true"
+                    resource-type="unit_measures"
+                    :search-fields="['name','unit','symbol']"
                     :error="form.errors.unit_measure_id"
                 />
                 <NextSelect
-                    v-model="form.category_id"
+                    v-model="form.selected_category"
+                    @update:modelValue="(value) => handleSelectChange('category_id', value)"
                     :options="categories"
                     label-key="name"
                     value-key="id"
                     id="category"
                     floating-text="Category"
+                    :searchable="true"
+                    resource-type="categories"
+                    :search-fields="['name']"
                     :error="form.errors.category_id"
                 />
                 <NextSelect
-                    v-model="form.company_id"
-                    :options="companies"
+                    v-model="form.selected_brand"
+                    @update:modelValue="(value) => handleSelectChange('brand_id', value)"
+                    :options="brands"
                     label-key="name"
                     value-key="id"
-                    id="company"
-                    floating-text="Company"
-                    :error="form.errors.company_id"
+                    id="brand"
+                    floating-text="Brand"
+                    :searchable="true"
+                    resource-type="brands"
+                    :search-fields="['name', 'legal_name', 'registration_number', 'email', 'phone', 'website', 'industry', 'type', 'city', 'country']"
+                    :error="form.errors.brand_id"
                 />
                 <NextInput label="Minimum Stock" type="number" v-model="form.minimum_stock" :error="form.errors?.minimum_stock" />
                 <NextInput label="Maximum Stock" type="number" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
@@ -152,17 +171,23 @@ const handleSubmit = () => {
                     <NextInput label="Expire Date" type="date" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]"/>
                     <NextInput label="Quantity" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
                     <NextSelect
-                        v-model="opening.store_id"
+                        v-model="opening.selected_store"
+                        @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
                         :options="stores"
                         label-key="name"
                         value-key="id"
-                        id="measure"
-                        floating-text="Measure"
+                        id="store"
+                        floating-text="Store"
                         :error="form.errors[`openings.${index}.store_id`]"
+                        :searchable="true"
+                        resource-type="stores"
+                        :search-fields="['name', 'address']"
                     />
                 </div>
             </div>
-
+            <progress v-if="form.progress" :value="form.progress.percentage" max="100">
+            {{ form.progress.percentage }}%
+            </progress>
             <div class="pt-4">
                 <Button type="submit" class="bg-blue-500 text-white">Submit</Button>
             </div>

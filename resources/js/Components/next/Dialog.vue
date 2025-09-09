@@ -33,7 +33,7 @@ const emit = defineEmits(["update:open", "confirm", "cancel"]);
 </script>
 
 <template>
-  <Dialog :open="open" c @update:open="value => emit('update:open', value)">
+  <Dialog :open="open" @update:open="value => emit('update:open', value)">
     <!-- ✅ Lighter background (more transparency) -->
     <div v-if="open" class="fixed inset-0 bg-white/5" />
 

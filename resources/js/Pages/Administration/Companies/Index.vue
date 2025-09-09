@@ -70,7 +70,10 @@ const editItem = (item) => {
             :isDialogOpen="isDialogOpen"
             :editingItem="editingItem"
             :branches="branches"
-            @update:isDialogOpen="isDialogOpen = $event"
+            @update:isDialogOpen="(value) => {
+                isDialogOpen = value;
+                if (!value) editingItem = null;
+            }"
             @saved="() => { editingItem = null }"
 
         />

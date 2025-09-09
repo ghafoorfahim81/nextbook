@@ -14,6 +14,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+
 class ItemController extends Controller
 {
     public function index(Request $request)
@@ -22,7 +23,7 @@ class ItemController extends Controller
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $items = Item::with('category','unitMeasure')
+        $items = Item::with('category', 'unitMeasure')
             ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -39,7 +40,7 @@ class ItemController extends Controller
     public function store(ItemStoreRequest $request)
     {
         $validated = $request->validated();
-
+        // dd($request->all());
         // If you’re uploading a photo here, handle it first (optional)
         if ($request->hasFile('photo')) {
             $path = $request->file('photo')->store('items', 'public');
@@ -82,7 +83,7 @@ class ItemController extends Controller
                     StockOpening::create([
                         'id'      => (string) Str::ulid(),
                         'item_id' => $item->id,
-                        'stock_id'=> $stock->id,
+                        'stock_id' => $stock->id,
                     ]);
                 });
         });
@@ -96,9 +97,9 @@ class ItemController extends Controller
 
     public function edit(Request $request, Item $item)
     {
-
+        $item = Item::with('unitMeasure', 'brand', 'category')->find($item->id);
         return inertia('Inventories/Items/Edit', [
-            'item' => new ItemResource($item),
+            'item' => new ItemResource($item)
         ]);
     }
 
