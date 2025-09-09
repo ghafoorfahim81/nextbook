@@ -11,7 +11,7 @@ const props = defineProps({
     unitMeasures: Object,
 });
 const isDialogOpen = ref(false)
-const editingBranch = ref(null)
+const editingMeasure = ref(null)
 
 
 const columns = ref([
@@ -34,15 +34,15 @@ const columns = ref([
 ]);
 
 const editItem = (item) => {
-    editingBranch.value = item
+    editingMeasure.value = item
     isDialogOpen.value = true
 }
 const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('unit-measures.destroy', id, {
-        title: 'Delete Branch',
-        description: 'This will permanently delete this branch.',
-        successMessage: 'Branch deleted successfully.',
+        title: 'Delete Measure',
+        description: 'This will permanently delete this measure.',
+        successMessage: 'Measure deleted successfully.',
     })
 
 };
@@ -62,9 +62,12 @@ const deleteItem = (id) => {
                 </Button>
                 <CreateEditModal
                     :isDialogOpen="isDialogOpen"
-                    :editingItem="editingBranch"
-                    @update:isDialogOpen="isDialogOpen = $event"
-                    @saved="() => $inertia.reload()"
+                    :editingItem="editingMeasure"
+                    @update:isDialogOpen="(value) => {
+                        isDialogOpen = value;
+                        if (!value) editingMeasure = null;
+                    }"
+                    @saved="() => { editingMeasure = null }"
                 />
 
             </div>
