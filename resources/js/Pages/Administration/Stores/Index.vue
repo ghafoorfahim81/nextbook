@@ -56,7 +56,10 @@ const deleteItem = (id) => {
                     :editingItem="editingStore"
                     :stores="stores"
                     :branches="branches"
-                    @update:isDialogOpen="isDialogOpen = $event"
+                    @update:isDialogOpen="(value) => {
+                        isDialogOpen = value;
+                        if (!value) editingStore = null;
+                    }"
                     @saved="() => { editingStore = null }"
 
                 />

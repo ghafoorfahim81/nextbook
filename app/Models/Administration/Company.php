@@ -10,12 +10,13 @@ use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Support\Facades\Storage;
 
-  
+
 class Company extends Model
 {
     use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting;
-    
+
 
     /**
      * The attributes that are mass assignable.
@@ -68,5 +69,16 @@ class Company extends Model
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
+    }
+
+    /**
+     * Get the logo URL attribute.
+     */
+    public function getLogoUrlAttribute()
+    {
+        if ($this->logo) {
+            return asset('storage/' . $this->logo);
+        }
+        return null;
     }
 }

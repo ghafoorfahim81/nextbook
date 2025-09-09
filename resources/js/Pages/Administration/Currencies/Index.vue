@@ -60,7 +60,10 @@ const deleteItem = (id) => {
                     :editingItem="editingCurrency"
                     :currencies="currencies"
                     :branches="branches"
-                    @update:isDialogOpen="isDialogOpen = $event"
+                    @update:isDialogOpen="(value) => {
+                isDialogOpen = value;
+                if (!value) editingCurrency = null;
+            }"
                     @saved="() => { editingCurrency = null }"
                 />
 

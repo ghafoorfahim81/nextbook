@@ -81,6 +81,18 @@ class SearchController extends Controller
             case 'companies':
                 return $this->searchCompanies($searchTerm, $fields, $limit, $additionalParams);
 
+            case 'unit_measures':
+                return $this->searchUnitMeasures($searchTerm, $fields, $limit, $additionalParams);
+
+            case 'brands':
+                return $this->searchBrands($searchTerm, $fields, $limit, $additionalParams);
+
+            case 'categories':
+                return $this->searchCategories($searchTerm, $fields, $limit, $additionalParams);
+
+            case 'stores':
+                return $this->searchStores($searchTerm, $fields, $limit, $additionalParams);
+
             default:
                 throw new \InvalidArgumentException("Unsupported resource type: {$resourceType}");
         }
@@ -225,6 +237,71 @@ class SearchController extends Controller
 
         return $query->limit($limit)->get()->toArray();
     }
+    /**
+     * Search unit measures
+     */
+    private function searchUnitMeasures(string $searchTerm, array $fields, int $limit, array $additionalParams): array
+    {
+        $query = DB::table('unit_measures')
+            ->select('id', 'name', 'unit', 'symbol')
+            ->where(function ($q) use ($searchTerm, $fields) {
+                foreach ($fields as $field) {
+                    if (in_array($field, ['name', 'unit', 'symbol'])) {
+                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
+                    }
+                }
+            });
+
+        return $query->limit($limit)->get()->toArray();
+    }
+    /**
+     * Search brands
+     */
+    private function searchBrands(string $searchTerm, array $fields, int $limit, array $additionalParams): array
+    {
+        $query = DB::table('brands')
+            ->select('id', 'name', 'legal_name', 'registration_number', 'email', 'phone', 'website', 'industry', 'type', 'city', 'country')
+            ->where(function ($q) use ($searchTerm, $fields) {
+                foreach ($fields as $field) {
+                    if (in_array($field, ['name', 'legal_name', 'registration_number', 'email', 'phone', 'website', 'industry', 'type', 'city', 'country'])) {
+                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
+                    }
+                }
+            });
+        return $query->limit($limit)->get()->toArray();
+    }
+    /**
+     * Search categories
+     */
+    private function searchCategories(string $searchTerm, array $fields, int $limit, array $additionalParams): array
+    {
+        $query = DB::table('categories')
+            ->select('id', 'name', 'description')
+            ->where(function ($q) use ($searchTerm, $fields) {
+                foreach ($fields as $field) {
+                    if (in_array($field, ['name', 'description'])) {
+                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
+                    }
+                }
+            });
+        return $query->limit($limit)->get()->toArray();
+    }
+    /**
+     * Search stores
+     */
+    private function searchStores(string $searchTerm, array $fields, int $limit, array $additionalParams): array
+    {
+        $query = DB::table('stores')
+            ->select('id', 'name', 'address')
+            ->where(function ($q) use ($searchTerm, $fields) {
+                foreach ($fields as $field) {
+                    if (in_array($field, ['name', 'address'])) {
+                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
+                    }
+                }
+            });
+        return $query->limit($limit)->get()->toArray();
+    }
 
     /**
      * Get available resource types
@@ -237,7 +314,11 @@ class SearchController extends Controller
             'currencies' => 'Currency definitions',
             'users' => 'System users',
             'branches' => 'Company branches',
-            'companies' => 'Companies'
+            'companies' => 'Companies',
+            'unit_measures' => 'Unit measures',
+            'brands' => 'Brands',
+            'categories' => 'Categories',
+            'stores' => 'Stores'
         ];
 
         return response()->json([
