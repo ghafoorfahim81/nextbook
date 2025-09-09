@@ -20,6 +20,7 @@ const props = defineProps({
 
 const isEditing = ref(false);
 const originalData = ref({});
+const logoPreview = ref(null);
 
 
 
@@ -32,15 +33,21 @@ const form = useForm({
     phone: '',
     country: '',
     city: '',
-    logo: null,
+    logo: '',
     calendar_type: '',
-    working_style: '',
-    business_type: '',
-    locale: '',
+    selected_calendar_type: '',
     currency_id: '',
+    selected_currency: null,
+    working_style: '',
+    selected_working_style: '',
+    business_type: '',
+    selected_business_type: '',
+    locale: '',
     email: '',
     website: '',
     invoice_description: '',
+}, {
+    forceFormData: true
 });
 
 // Initialize form with company data
@@ -55,9 +62,14 @@ watch(() => props.company, (company) => {
         form.country = company.country || '';
         form.city = company.city || '';
         form.logo = company.logo || null;
+        form.selected_calendar_type = props.calendarTypes.find(type => type.id === company.calendar_type)  || '';
         form.calendar_type = company.calendar_type || '';
+        form.selected_currency = company.currency || null;
+        form.selected_working_style = props.workingStyles.find(style => style.id === company.working_style) || '';
         form.working_style = company.working_style || '';
+        form.selected_business_type = props.businessTypes.find(type => type.id === company.business_type)  || '';
         form.business_type = company.business_type || '';
+        form.selected_locale = company.locale || '';
         form.locale = company.locale || '';
         form.currency_id = company.currency_id || '';
         form.email = company.email || '';
@@ -74,10 +86,16 @@ watch(() => props.company, (company) => {
             country: company.country || '',
             city: company.city || '',
             logo: company.logo || null,
+            selected_calendar_type: company.calendar_type || '',
             calendar_type: company.calendar_type || '',
+            selected_working_style: company.working_style || '',
             working_style: company.working_style || '',
+            selected_business_type: company.business_type || '',
             business_type: company.business_type || '',
+            selected_locale: company.locale || '',
             locale: company.locale || '',
+            selected_business_type: company.business_type || '',
+            selected_locale: company.locale || '',
             currency_id: company.currency_id || '',
             email: company.email || '',
             website: company.website || '',
@@ -97,6 +115,8 @@ const cancelEditing = () => {
     Object.keys(originalData.value).forEach(key => {
         form[key] = originalData.value[key];
     });
+    // Clear logo preview
+    logoPreview.value = null;
     form.clearErrors();
 };
 
@@ -105,6 +125,7 @@ const saveChanges = () => {
         onSuccess: () => {
             isEditing.value = false;
             originalData.value = { ...form.data() };
+            logoPreview.value = null; // Clear preview after successful save
         },
         onError: () => {
             // Errors will be handled by the form
@@ -114,21 +135,43 @@ const saveChanges = () => {
 
 const previewImage = (event) => {
     const file = event.target.files[0];
+
     if (file) {
+        // Validate file size (2MB max)
+        if (file.size > 2 * 1024 * 1024) {
+            alert('File size must be less than 2MB');
+            event.target.value = ''; // Clear the input
+            return;
+        }
+
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+        if (!allowedTypes.includes(file.type)) {
+            alert('Please select a valid image file (JPEG, PNG, JPG, or GIF)');
+            event.target.value = ''; // Clear the input
+            return;
+        }
+
+        // Set the file for upload
+        form.logo = file;
+        console.log('form', form);
+
+        // Create preview
         const reader = new FileReader();
         reader.onload = (e) => {
-            form.logo = e.target.result;
+            // Store preview URL for display
+            logoPreview.value = e.target.result;
         };
         reader.readAsDataURL(file);
+    } else {
+        // Clear the form if no file selected
+        form.logo = null;
+        logoPreview.value = null;
     }
 };
 
 const handleSelectChange = (field, value) => {
-    if (field === 'currency_id') {
-        form.currency_id = value;
-    } else {
         form[field] = value.id;
-    }
 };
 
 const getDisplayValue = (field) => {
@@ -411,9 +454,8 @@ const getDisplayValue = (field) => {
                                     <NextSelect
                                         v-if="isEditing"
                                         :options="businessTypes"
-                                        v-model="form.business_type"
+                                        v-model="form.selected_business_type"
                                         label-key="name"
-                                        value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('business_type', value)"
                                         :reduce="type => type.id"
                                         floating-text="Business Type"
@@ -433,7 +475,7 @@ const getDisplayValue = (field) => {
                                     <NextSelect
                                         v-if="isEditing"
                                         :options="calendarTypes"
-                                        v-model="form.calendar_type"
+                                        v-model="form.selected_calendar_type"
                                         label-key="name"
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('calendar_type', value)"
@@ -455,7 +497,7 @@ const getDisplayValue = (field) => {
                                     <NextSelect
                                         v-if="isEditing"
                                         :options="workingStyles"
-                                        v-model="form.working_style"
+                                        v-model="form.selected_working_style"
                                         label-key="name"
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('working_style', value)"
@@ -477,7 +519,7 @@ const getDisplayValue = (field) => {
                                     <NextSelect
                                         v-if="isEditing"
                                         :options="locales"
-                                        v-model="form.locale"
+                                        v-model="form.selected_locale"
                                         label-key="name"
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('locale', value)"
@@ -499,7 +541,7 @@ const getDisplayValue = (field) => {
                                     <NextSelect
                                         v-if="isEditing"
                                         :options="currencies.data"
-                                        v-model="form.currency_id"
+                                        v-model="form.selected_currency"
                                         label-key="name"
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('currency_id', value)"
@@ -546,9 +588,9 @@ const getDisplayValue = (field) => {
                             </h3>
                             <div class="flex items-center gap-6">
                                 <div class="flex-shrink-0">
-                                    <div v-if="form.logo || company?.logo" class="w-24 h-24 overflow-hidden bg-gray-200 rounded-full">
+                                    <div v-if="logoPreview || form.logo || company?.logo_url" class="w-24 h-24 overflow-hidden bg-gray-200 rounded-full">
                                         <img
-                                            :src="form.logo || company?.logo"
+                                            :src="logoPreview || (company?.logo_url || (company?.logo ? `/storage/${company.logo}` : null))"
                                             alt="Company Logo"
                                             class="object-cover w-full h-full"
                                         />

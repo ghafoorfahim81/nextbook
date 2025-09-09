@@ -36,6 +36,10 @@ const form = useForm({
     size: '',
     barcode: '',
     unit_measure_id: null,
+    selected_unit_measure: '',
+    selected_company: '',
+    selected_category: '',
+    selected_brand: '',
     minimum_stock: '',
     maximum_stock: '',
     purchase_price: '',
@@ -49,7 +53,7 @@ const form = useForm({
     rack_no: '',
     photo: null, // file
     openings: [
-        { batch: '', expire_date: '', quantity: '', store_id: null },
+        { batch: '', expire_date: '', quantity: '', store_id: null, selected_store: null },
     ],
 })
 
@@ -62,7 +66,7 @@ const onPhotoChange = (e) => {
 // rows
 const addRow = (index) => {
     if (index === form.openings.length - 1) {
-        form.openings.push({ batch: '', expire_date: '', quantity: '', store_id: null })
+        form.openings.push({ batch: '', expire_date: '', quantity: '', store_id: null, selected_store: null })
     }
 }
 const removeRow = (idx) => {
@@ -91,6 +95,7 @@ const normalize = () => {
 
 const handleSubmit = () => {
     normalize()
+    console.log('this is form',form)
     form.post(route('items.store'), {
         forceFormData: true, // required to send the file
         onSuccess: () => {
@@ -98,6 +103,16 @@ const handleSubmit = () => {
         },
     })
 }
+
+const handleSelectChange = (field, value) => {
+    form[field] = value.id;
+};
+
+const handleOpeningSelectChange = (index, value) => {
+    form.openings[index].selected_store = value;
+    form.openings[index].store_id = value ? value.id : null;
+};
+
 </script>
 
 <template>
@@ -116,31 +131,44 @@ const handleSubmit = () => {
                 <NextInput label="Photo" type="file"  @input="onPhotoChange" :error="form.errors?.photo" placeholder="Photo" />
 
                 <NextSelect
-                    v-model="form.unit_measure_id"
+                    v-model="form.selected_unit_measure"
                     :options="unitMeasures"
+                    @update:modelValue="(value) => handleSelectChange('unit_measure_id', value)"
                     label-key="name"
+                    :reduceInternal="type => type.id"
                     value-key="id"
                     id="measure"
                     floating-text="Measure"
+                    :searchable="true"
+                    resource-type="unit_measures"
+                    :search-fields="['name','unit','symbol']"
                     :error="form.errors.unit_measure_id"
                 />
 
                 <NextSelect
                     :options="categories"
-                    v-model="form.category_id"
+                    v-model="form.selected_category"
+                    @update:modelValue="(value) => handleSelectChange('category_id', value)"
                     label-key="name"
                     value-key="id"
                     id="category"
                     floating-text="Category"
+                    :searchable="true"
+                    resource-type="categories"
+                    :search-fields="['name']"
                     :error="form.errors.category_id"
                 />
                 <NextSelect
                     :options="brands"
-                    v-model="form.brand_id"
+                    v-model="form.selected_brand"
+                    @update:modelValue="(value) => handleSelectChange('brand_id', value)"
                     label-key="name"
                     value-key="id"
                     id="brand"
                     floating-text="Brand"
+                    :searchable="true"
+                    resource-type="brands"
+                    :search-fields="['name', 'legal_name', 'registration_number', 'email', 'phone', 'website', 'industry', 'type', 'city', 'country']"
                     :error="form.errors.brand_id"
                 />
 
@@ -170,16 +198,24 @@ const handleSubmit = () => {
                     <NextInput label="Quantity" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
 
                     <NextSelect
-                        v-model="opening.store_id"
+                        v-model="opening.selected_store"
                         :options="stores"
                         label-key="name"
+                        @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
                         value-key="id"
-                        id="measure"
-                        floating-text="Measure"
+                        id="store"
+                        floating-text="Store"
                         :error="form.errors[`openings.${index}.store_id`]"
+                        :searchable="true"
+                        resource-type="stores"
+                        :search-fields="['name', 'address']"
                     />
                 </div>
             </div>
+
+            <progress v-if="form.progress" :value="form.progress.percentage" max="100">
+                {{ form.progress.percentage }}%
+            </progress>
 
             <div class="pt-4">
                 <Button type="submit" class="bg-blue-500 text-white">Submit</Button>
