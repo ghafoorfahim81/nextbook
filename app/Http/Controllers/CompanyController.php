@@ -7,10 +7,12 @@ use App\Enums\CalendarType;
 use App\Enums\Locale;
 use App\Enums\WorkingStyle;
 use App\Http\Requests\Administration\CompanyUpdateRequest;
+use App\Http\Requests\Administration\CompanyStoreRequest;
 use App\Models\Administration\Company;
 use App\Models\Administration\Currency;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class CompanyController extends Controller
@@ -26,33 +28,24 @@ class CompanyController extends Controller
     /**
      * Store a newly created company in storage.
      */
-    public function store(Request $request)
+    public function store(CompanyStoreRequest $request)
     {
-        $validated = $request->validate([
-            'name_en' => 'required|string|max:255',
-            'name_fa' => 'nullable|string|max:255',
-            'name_pa' => 'nullable|string|max:255',
-            'abbreviation' => 'nullable|string|max:50',
-            'address' => 'nullable|string',
-            'phone' => 'nullable|string|max:20',
-            'country' => 'nullable|string|max:100',
-            'city' => 'nullable|string|max:100',
-            'logo' => 'nullable|string',
-            'calendar_type' => 'required|in:' . implode(',', array_column(CalendarType::cases(), 'value')),
-            'working_style' => 'required|in:' . implode(',', array_column(WorkingStyle::cases(), 'value')),
-            'business_type' => 'required|in:' . implode(',', array_column(BusinessType::cases(), 'value')),
-            'locale' => 'required|in:' . implode(',', array_column(Locale::cases(), 'value')),
-            'currency_id' => 'required|exists:currencies,id',
-            'email' => 'nullable|email|max:255',
-            'website' => 'nullable|url|max:255',
-            'invoice_description' => 'nullable|string',
-        ]);
+
 
         $validated['created_by'] = Auth::id();
         $validated['updated_by'] = Auth::id();
 
-        $company = Company::create($validated);
+        // Handle logo upload
+        if ($request->hasFile('logo')) {
+            $logoPath = $request->file('logo')->store('company-logos', 'public');
+            $validated['logo'] = $logoPath;
+        }
 
+        $company = Company::create($validated);
+        $currency = Currency::find($validated['currency_id']);
+        $currency->is_base_currency = true;
+        $currency->exchange_rate = 1.00;
+        $currency->save();
         // Update the user's company_id
         $user = Auth::user();
         $user->company_id = $company->id;
@@ -67,7 +60,7 @@ class CompanyController extends Controller
      */
     public function show()
     {
-        $company = Auth::user()->company;
+        $company = Auth::user()->company->load('currency');
 
         if (!$company) {
             return redirect()->route('company.create')
@@ -85,15 +78,45 @@ class CompanyController extends Controller
      */
     public function update(CompanyUpdateRequest $request, Company $company)
     {
+        // return $request->all();
         // Ensure the user can only update their own company
         if (Auth::user()->company_id !== $company->id) {
             abort(403, 'Unauthorized to update this company.');
         }
 
         $validated = $request->validated();
-        $validated['updated_by'] = Auth::id();
 
-        $company->update($validated);
+        // dd($validated);
+        $validated['updated_by'] = Auth::id();
+        $currency = Currency::find($validated['currency_id']);
+        $currency->is_base_currency = true;
+        $currency->exchange_rate = 1.00;
+        $currency->save();
+
+        $newLogoPath = null;
+        if ($request->hasFile('logo') && $request->file('logo')->isValid()) {
+            $newLogoPath = $request->file('logo')->store('company-logos', 'public');
+        }
+
+        if ($newLogoPath) {
+            // Schedule old logo deletion after commit
+            $oldLogoPath = $company->logo;
+
+            $validated['logo'] = $newLogoPath;
+
+            $company->update($validated);
+
+
+            // Delete old file after successful commit
+            if ($oldLogoPath && Storage::disk('public')->exists($oldLogoPath)) {
+                Storage::disk('public')->delete($oldLogoPath);
+            }
+        } else {
+            // No new file; just update other fields
+            $company->update($validated);
+        }
+
+        // $company->update($validated);
 
         return redirect()->back()
             ->with('success', 'Company information updated successfully.');
