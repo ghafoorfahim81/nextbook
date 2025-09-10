@@ -56,6 +56,7 @@ import {
     BookOpen,
     Bot,
     ChevronRight,
+    ChevronLeft,
     ChevronsUpDown,
     Command,
     CreditCard,
@@ -283,6 +284,7 @@ function shouldExpandParent(items: any[] | undefined): boolean {
     return items.some(item => isMenuItemActive(item.url))
 }
 import { useColorMode, useCycleList } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
 
 const mode = useColorMode({
     emitAuto: true,
@@ -292,13 +294,18 @@ const mode = useColorMode({
     },
 })
 
+const { locale } = useI18n()
+const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
+const sidebarSide = computed(() => isRTL.value ? 'right' : 'left')
+const chevronIcon = computed(() => isRTL.value ? ChevronLeft : ChevronRight)
+
 
 </script>
 
 <template>
     <Toaster />
     <SidebarProvider>
-        <Sidebar collapsible="icon">
+        <Sidebar collapsible="icon" :side="sidebarSide">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
@@ -355,7 +362,7 @@ const mode = useColorMode({
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
-                    <SidebarGroupLabel>Platform</SidebarGroupLabel>
+                    <SidebarGroupLabel>Menu</SidebarGroupLabel>
                     <SidebarMenu>
                         <template v-for="item in data.navMain" :key="item.title">
                             <!-- Simple menu item without sub-items (like Dashboard) -->
@@ -383,7 +390,7 @@ const mode = useColorMode({
                                         <SidebarMenuButton :tooltip="item.title">
                                             <component :is="item.icon" />
                                             <span>{{ item.title }}</span>
-                                            <ChevronRight class="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                            <component :is="chevronIcon" :class="isRTL ? 'mr-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' : 'ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90'" />
                                         </SidebarMenuButton>
                                     </CollapsibleTrigger>
                                     <CollapsibleContent>
@@ -521,9 +528,9 @@ const mode = useColorMode({
             <SidebarRail />
         </Sidebar>
         <SidebarInset>
-            <header class="flex h-16 shrink-0 items-center justify-between gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+            <header class="flex h-16 shrink-0 items-center justify-between gap-2 px-4 rtl:pr-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
                 <!-- Left side: Sidebar trigger and breadcrumb -->
-                <div class="flex items-center gap-2 px-4">
+                <div class="flex items-center gap-2">
                     <SidebarTrigger class="-ml-1"/>
                     <Separator orientation="vertical" class="mr-2 h-4" />
                 </div>
