@@ -1,0 +1,41 @@
+{
+  "group": {
+    "menu": "Menu"
+  },
+  "main": {
+    "dashboard": "Dashboard",
+    "administration": "Administration",
+    "inventory": "Inventory",
+    "account": "Account",
+    "purchase": "Purchase",
+    "ledger": "Ledger"
+  },
+  "administration": {
+    "category": "Category",
+    "currency": "Currency",
+    "unit_measure": "Unit Measure",
+    "branch": "Branch",
+    "brand": "Brand",
+    "store": "Store",
+    "company": "Company"
+  },
+  "inventory": {
+    "item": "Item",
+    "fast_entry": "Fast Entry",
+    "fast_opening": "Fast Opening"
+  },
+  "account": {
+    "chart_of_account": "Chart of Account",
+    "account_type": "Account Type"
+  },
+  "purchase": {
+    "purchase": "Purchase",
+    "purchase_return": "Purchase Return"
+  },
+  "ledger": {
+    "customer": "Customer",
+    "supplier": "Supplier"
+  }
+}
+
+

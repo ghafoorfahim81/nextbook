@@ -1,0 +1,41 @@
+{
+  "group": {
+    "menu": "مینو"
+  },
+  "main": {
+    "dashboard": "ډشبورډ",
+    "administration": "اداره",
+    "inventory": "ذخیره",
+    "account": "حساب",
+    "purchase": "پېرود",
+    "ledger": "لیجر"
+  },
+  "administration": {
+    "category": "کټګوري",
+    "currency": "اسعار",
+    "unit_measure": "یونټ اندازه",
+    "branch": "څانګه",
+    "brand": "برنډ",
+    "store": "ګودام",
+    "company": "شرکت"
+  },
+  "inventory": {
+    "item": "ایټم",
+    "fast_entry": "چټک ثبت",
+    "fast_opening": "چټک افتتاح"
+  },
+  "account": {
+    "chart_of_account": "حسابونو جدول",
+    "account_type": "د حساب ډول"
+  },
+  "purchase": {
+    "purchase": "پېرود",
+    "purchase_return": "د پېرود ستنول"
+  },
+  "ledger": {
+    "customer": "پېرېدونکی",
+    "supplier": "عرضه کوونکی"
+  }
+}
+
+
