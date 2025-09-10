@@ -21,6 +21,7 @@ createInertiaApp({
         const initial = (stored || htmlLang || 'en').replace(/^pa$/, 'ps')
         const i18n = createI18nInstance(initial)
         document.documentElement.setAttribute('lang', initial)
+        document.documentElement.setAttribute('dir', ['fa','ps','pa'].includes(initial) ? 'rtl' : 'ltr')
         return createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(i18n)

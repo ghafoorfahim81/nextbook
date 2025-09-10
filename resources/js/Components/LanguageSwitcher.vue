@@ -17,6 +17,7 @@ function setLocale(next) {
         localStorage.setItem('locale', normalized)
     } catch {}
     document.documentElement.setAttribute('lang', normalized)
+    document.documentElement.setAttribute('dir', ['fa','ps','pa'].includes(normalized) ? 'rtl' : 'ltr')
 }
 
 const current = computed({
@@ -28,7 +29,8 @@ const current = computed({
 <template>
     <select
         v-model="current"
-        class="h-9 rounded-md border bg-background px-2 text-sm shadow-sm focus:outline-none"
+        class="h-9 rounded-md border bg-background text-sm shadow-sm focus:outline-none appearance-none"
+
     >
         <option v-for="opt in options" :key="opt.value" :value="opt.value">
             {{ opt.label }}
