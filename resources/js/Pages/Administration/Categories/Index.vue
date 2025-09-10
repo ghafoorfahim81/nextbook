@@ -1,8 +1,8 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
+import AddNewButton from '@/Components/next/AddNewButton.vue';
 import { h, ref } from 'vue';
-import { Button } from '@/Components/ui/button';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import CreateEditModal from '@/Pages/Administration/Categories/CreateEditModal.vue';
 import { router } from '@inertiajs/vue3';
@@ -14,7 +14,7 @@ const isDialogOpen = ref(false)
 const editingCategory = ref(null)
 
 
-const columns = ref([ 
+const columns = ref([
     { key: 'name', label: 'Name',sortable: true },
     {
         key: 'parent.name',
@@ -46,13 +46,13 @@ const deleteItem = (id) => {
     <AppLayout title="Categories">
         <div class="flex gap-2 items-center mb-4">
             <div class="ml-auto gap-3">
-                <Button
-                    @click="isDialogOpen = true"
-                    variant="outline"
+                <AddNewButton
+                    action="modal"
+                    @modal-open="isDialogOpen = true"
+                    variant="default"
+                    title="category"
                     class="bg-primary text-white"
-                >
-                    Add New
-                </Button>
+                />
                 <CreateEditModal
                     :isDialogOpen="isDialogOpen"
                     :editingItem="editingCategory"
