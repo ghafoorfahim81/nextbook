@@ -1,14 +1,18 @@
+
 import { createApp, h, ref } from 'vue'
 import ConfirmDeleteDialog from '@/Components/next/ConfirmDeleteDialog.vue'
 import { router } from '@inertiajs/vue3'
-import { ToastAction } from '@/components/ui/toast'
-import { useToast } from '@/components/ui/toast/use-toast'
+import { ToastAction } from '@/Components/ui/toast'
+import { useI18n } from 'vue-i18n'
+import { useToast } from '@/Components/ui/toast/use-toast'
 
-const { toast } = useToast()
 export function useDeleteResource() {
+    // Move composables to the top level
+    const { t } = useI18n()
+    const { toast } = useToast()
+
     const deleteResource = (routeName, id, options = {}) => {
         const isOpen = ref(true)
-
         const container = document.createElement('div')
         document.body.appendChild(container)
 
@@ -18,9 +22,9 @@ export function useDeleteResource() {
                     router.delete(route(routeName, id), {
                         onSuccess: () => {
                             toast({
-                                title: 'Success',
+                                title: t('general.success'),
                                 variant: 'success',
-                                description: options.successMessage || 'The resource has been deleted successfully.',
+                                description: options.successMessage || t('general.delete_success', { name: options.name }),
                             });
                             app.unmount()
                             container.remove()
@@ -28,13 +32,13 @@ export function useDeleteResource() {
                         },
                         onError: () => {
                             toast({
-                                title: 'Uh oh! Something went wrong.',
-                                description: 'There was a problem with your request.',
+                                title: t('general.error'),
+                                description: t('general.delete_error_message'),
                                 variant: 'destructive',
                                 action: h(ToastAction, {
-                                    altText: 'Try again',
+                                    altText: t('general.try_again'),
                                 }, {
-                                    default: () => 'Try again',
+                                    default: () => t('general.try_again'),
                                 }),
                             });
                             app.unmount()
@@ -53,8 +57,10 @@ export function useDeleteResource() {
                 return () =>
                     h(ConfirmDeleteDialog, {
                         open: isOpen.value,
-                        title: options.title || 'Are you sure?',
-                        description: options.description || 'This action cannot be undone.',
+                        cancelText:   t('general.cancel'),
+                        continueText:   t('general.confirm'),
+                        title: options.title || t('general.are_you_sure'),
+                        description: options.description || t('general.action_cannot_be_undone'),
                         'onUpdate:open': (val) => {
                             if (!val) handleClose()
                         },

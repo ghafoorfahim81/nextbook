@@ -2,9 +2,9 @@
   "name": "نام",
   "number": "شماره",
   "remarks": "ملاحظات",
-  "action": "عمل",
+  "action": "عملیه",
   "cancel": "لغو",
-  "delete": "حذف",
+  "delete": "حذف {name}",
   "update": "به‌روزرسانی",
   "edit": "ویرایش",
   "are_you_sure": "آیا مطمئن هستید؟",
@@ -27,7 +27,7 @@
   "select": "انتخاب",
   "create_success": "موفقانه ایجاد شد",
   "update_success": "موفقانه به‌روزرسانی شد",
-  "delete_success": "موفقانه حذف شد",
+  "delete_success": "{name} موفقانه حذف شد",
   "status": "وضعیت",
   "enter": "وارد کردن",
   "text": "متن",
@@ -45,7 +45,7 @@
   "approve": "تایید",
   "decline": "عدم تایید",
   "clear": "پاک کردن",
-  "actions": "اقدامات",
+  "actions": "عملیه ها",
   "no_data_found": "داده‌ای یافت نشد",
   "delete_error_message": "خطا در هنگام حذف رخ داد.",
   "update_error_message": "خطا در هنگام به‌روزرسانی رخ داد.",
@@ -98,7 +98,8 @@
   "add_new": "افزودن جدید",
   "type": "نوع",
   "and": "و",
-  "finish": "پایان"
+  "finish": "پایان",
+  "delete_description": "این {name} را به طور دائم حذف خواهی کرد."
 }
 
 

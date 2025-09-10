@@ -4,7 +4,7 @@
   "remarks": "ملاحظې",
   "action": "عمل",
   "cancel": "لغوه",
-  "delete": "ړنګول",
+  "delete": "ړنګول {name}",
   "update": "نوی کول",
   "edit": "سمون",
   "are_you_sure": "ایا ډاډه یاست؟",
@@ -27,7 +27,7 @@
   "select": "انتخاب",
   "create_success": "بریالي جوړ شو",
   "update_success": "بریالي نوي شو",
-  "delete_success": "بریالي ړنګ شو",
+  "delete_success": "{name} بریالي ړنګ شو",
   "status": "حالت",
   "enter": "داخل کړئ",
   "text": "متن",
@@ -98,7 +98,8 @@
   "add_new": "نوی زیاتول",
   "type": "ډول",
   "and": "او",
-  "finish": "پای"
+  "finish": "پای",
+  "delete_description": "د {name} را به طور دائم ړنګ خواهی کرد."
 }
 
 
