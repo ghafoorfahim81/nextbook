@@ -82,6 +82,7 @@ import { ref, computed } from 'vue'
 // @ts-ignore - Vue SFC default export shim
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue'
 import { usePage } from '@inertiajs/vue3'
+// @ts-ignore - Vue SFC default export shim
 import Toaster from '@/Components/ui/toast/Toaster.vue'
 import { HousePlug } from 'lucide-vue-next'
 // This is sample data.
@@ -108,143 +109,7 @@ const data = {
             plan: 'Free',
         },
     ],
-    navMain: [
-
-        {
-            title: 'Dashboard',
-            url: '/dashboard',
-            icon: HousePlug,
-        },
-        {
-            title: 'Administration',
-            url: '#',
-            icon: Cog,
-            items: [
-                {
-                    title: 'Category',
-                    url: '/categories',
-                },
-                {
-                    title: 'Currency',
-                    url: '/currencies',
-                },
-                // {
-                //     title: 'Department',
-                //     url: '/departments',
-                // },
-                {
-                    title: 'Unit Measure',
-                    url: '/unit-measures',
-                },
-                {
-                    title: 'Branch',
-                    url: '/branches',
-                },
-                {
-                    title: 'Brand',
-                    url: '/brands',
-                },
-                // {
-                //     title: 'Account Type',
-                //     url: '/account-types',
-                // },
-                {
-                    title: 'Store',
-                    url: '/stores',
-                },
-                {
-                    title: 'Company',
-                    url: '/company',
-                },
-            ],
-        },
-        {
-            title: 'Inventory',
-            url: '#',
-            icon: Database,
-            items: [
-                {
-                    title: 'Item',
-                    url: '/items',
-                },
-                {
-                    title: 'Fas Entry',
-                    url: '/item-fast-entry',
-                },
-                {
-                    title: 'Fas Opening',
-                    url: '/item-fast-opening',
-                },
-            ],
-        },
-        // {
-         //     title: 'Master',
-        //     url: '#',
-        //     icon: Layers,
-        //     items: [
-        //         {
-        //             title: 'Genesis',
-        //             url: '#',
-        //         },
-        //         {
-        //             title: 'Explorer',
-        //             url: '#',
-        //         },
-        //         {
-        //             title: 'Quantum',
-        //             url: '#',
-        //         },
-        //     ],
-        // },
-        {
-            title: 'Account',
-            url: '#',
-            icon: ChartColumn,
-            items: [
-                {
-                    title: 'Chart of Account',
-                    url: '/chart-of-accounts',
-                },
-                {
-                    title: 'Account Type',
-                    url: '/account-types',
-                },
-
-            ],
-        },
-        {
-            title: 'Purchase',
-            url: '#',
-            icon: ChartColumn,
-            items: [
-                {
-                    title: 'Purchase',
-                    url: '/purchases',
-                },
-                {
-                    title: 'Purchase Return',
-                    url: '/purchase-returns',
-                },
-
-            ],
-        },
-        {
-            title: 'Ledger',
-            url: '#',
-            icon: UserCog,
-            items: [
-                {
-                    title: 'Customer',
-                    url: '/customers',
-                },
-                {
-                    title: 'Supplier',
-                    url: '/suppliers',
-                },
-
-            ],
-        },
-    ],
+    navMain: [],
     // projects: [
     //     {
     //         name: 'Design Engineering',
@@ -294,10 +159,72 @@ const mode = useColorMode({
     },
 })
 
-const { locale } = useI18n()
+const { t, locale } = useI18n()
 const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
 const sidebarSide = computed(() => isRTL.value ? 'right' : 'left')
 const chevronIcon = computed(() => isRTL.value ? ChevronLeft : ChevronRight)
+
+const navMain = computed(() => [
+    {
+        title: t('sidebar.main.dashboard'),
+        url: '/dashboard',
+        icon: HousePlug,
+    },
+    {
+        title: t('sidebar.main.administration'),
+        url: '#',
+        icon: Cog,
+        items: [
+            { title: t('sidebar.administration.category'), url: '/categories' },
+            { title: t('sidebar.administration.currency'), url: '/currencies' },
+            { title: t('sidebar.administration.unit_measure'), url: '/unit-measures' },
+            { title: t('sidebar.administration.branch'), url: '/branches' },
+            { title: t('sidebar.administration.brand'), url: '/brands' },
+            { title: t('sidebar.administration.store'), url: '/stores' },
+            { title: t('sidebar.administration.company'), url: '/company' },
+        ],
+    },
+    {
+        title: t('sidebar.main.inventory'),
+        url: '#',
+        icon: Database,
+        items: [
+            { title: t('sidebar.inventory.item'), url: '/items' },
+            { title: t('sidebar.inventory.fast_entry'), url: '/item-fast-entry' },
+            { title: t('sidebar.inventory.fast_opening'), url: '/item-fast-opening' },
+        ],
+    },
+    {
+        title: t('sidebar.main.account'),
+        url: '#',
+        icon: ChartColumn,
+        items: [
+            { title: t('sidebar.account.chart_of_account'), url: '/chart-of-accounts' },
+            { title: t('sidebar.account.account_type'), url: '/account-types' },
+        ],
+    },
+    {
+        title: t('sidebar.main.purchase'),
+        url: '#',
+        icon: ChartColumn,
+        items: [
+            { title: t('sidebar.purchase.purchase'), url: '/purchases' },
+            { title: t('sidebar.purchase.purchase_return'), url: '/purchase-returns' },
+        ],
+    },
+    {
+        title: t('sidebar.main.ledger'),
+        url: '#',
+        icon: UserCog,
+        items: [
+            { title: t('sidebar.ledger.customer'), url: '/customers' },
+            { title: t('sidebar.ledger.supplier'), url: '/suppliers' },
+        ],
+    },
+])
+
+// assign to data after computed is available
+data.navMain = navMain.value
 
 
 </script>
@@ -362,9 +289,9 @@ const chevronIcon = computed(() => isRTL.value ? ChevronLeft : ChevronRight)
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
-                    <SidebarGroupLabel>Menu</SidebarGroupLabel>
+                    <SidebarGroupLabel>{{ t('sidebar.group.menu') }}</SidebarGroupLabel>
                     <SidebarMenu>
-                        <template v-for="item in data.navMain" :key="item.title">
+                        <template v-for="item in navMain" :key="item.title">
                             <!-- Simple menu item without sub-items (like Dashboard) -->
                             <SidebarMenuItem v-if="!item.items">
                                 <SidebarMenuButton
