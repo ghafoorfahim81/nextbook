@@ -14,8 +14,7 @@ const isDialogOpen = ref(false)
 const editingCategory = ref(null)
 
 
-const columns = ref([
-    { key: 'id', label: 'ID' },
+const columns = ref([ 
     { key: 'name', label: 'Name',sortable: true },
     {
         key: 'parent.name',
