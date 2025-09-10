@@ -21,7 +21,7 @@ import AppLayout from '@/Layouts/Layout.vue';
         <Card>
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle class="text-sm font-medium">
-              Total Revenue
+              {{ $t('dashboard.total_revenue') }}
             </CardTitle>
             <DollarSign class="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -37,7 +37,7 @@ import AppLayout from '@/Layouts/Layout.vue';
         <Card>
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle class="text-sm font-medium">
-              Subscriptions
+              {{ $t('dashboard.total_subscriptions') }}
             </CardTitle>
             <Users class="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -53,7 +53,7 @@ import AppLayout from '@/Layouts/Layout.vue';
         <Card>
           <CardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle class="text-sm font-medium">
-              Sales
+              {{ $t('dashboard.total_sales') }}
             </CardTitle>
             <CreditCard class="h-4 w-4 text-muted-foreground" />
           </CardHeader>

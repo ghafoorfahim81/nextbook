@@ -78,8 +78,10 @@ import {
     Layers, UserCog, Database
 } from 'lucide-vue-next'
 import { ref, computed } from 'vue'
+// @ts-ignore - Vue SFC default export shim
+import LanguageSwitcher from '@/Components/LanguageSwitcher.vue'
 import { usePage } from '@inertiajs/vue3'
-import { Toaster } from '@/components/ui/toast'
+import Toaster from '@/Components/ui/toast/Toaster.vue'
 import { HousePlug } from 'lucide-vue-next'
 // This is sample data.
 const data = {
@@ -526,6 +528,7 @@ const mode = useColorMode({
                     <Separator orientation="vertical" class="mr-2 h-4" />
                 </div>
                     <div class="flex items-center gap-2 pr-4">
+                        <LanguageSwitcher />
                         <button
                             @click="mode = mode === 'dark' ? 'light' : 'dark'"
                             class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
