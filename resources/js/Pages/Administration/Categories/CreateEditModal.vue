@@ -9,7 +9,8 @@ import vSelect from 'vue-select'
 import NextInput from "@/Components/next/NextInput.vue";
 import FloatingLabel from "@/Components/next/FloatingLabel.vue";
 import NextTextarea from "@/Components/next/NextTextarea.vue";
-
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n()
 const props = defineProps({
     isDialogOpen: Boolean,
     editingItem: Object, // ✅ this is passed from Index.vue
@@ -83,8 +84,8 @@ const handleSubmit = async () => {
 <template>
     <ModalDialog
         :open="localDialogOpen"
-        :title="isEditing ? 'Edit Category' : 'Create Category'"
-        :confirmText="isEditing ? 'Update' : 'Create'"
+            :title="isEditing ? t('general.edit', { name: t('admin.category.category') }) : t('general.create', { name: t('admin.category.category') })"
+        :confirmText="isEditing ? t('general.update') : t('general.create')"
         @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
         :closeable="true"
         @confirm="handleSubmit"
@@ -95,7 +96,7 @@ const handleSubmit = async () => {
             <div class="grid gap-4 py-4">
                 <!-- Name -->
 
-                <NextInput label="Name" v-model="form.name" :error="form.errors.name" />
+                <NextInput :label="t('general.name')" :placeholder="t('general.enter', { text: t('general.name') })" v-model="form.name" :error="form.errors.name" />
 
                 <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
                     <div>
@@ -106,7 +107,7 @@ const handleSubmit = async () => {
                             label="name"
                             class="col-span-3"
                         />
-                        <FloatingLabel :id="'type'" :label="`Parent`"/>
+                        <FloatingLabel :id="'type'" :label="`${t('admin.category.parent')}`"/>
                     </div>
                     <span v-if="form.errors?.parent_id" class="text-red-500 text-sm">
                     {{ form.errors.parent_id }}
@@ -114,8 +115,8 @@ const handleSubmit = async () => {
                 </div>
                 <NextTextarea
                     v-model="form.remark"
-                    label="Description"
-                    placeholder="Enter product description"
+                    :label="t('general.remarks')"
+                    :placeholder="t('general.enter', { name: t('general.remarks') })"
                 />
             </div>
         </form>
