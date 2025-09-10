@@ -52,7 +52,7 @@
         <Table>
             <TableHeader>
                 <TableRow>
-                    <TableHead v-for="column in columns" :key="column.key">
+                    <TableHead v-for="column in derivedColumns" :key="column.key">
                         <div :class="isRTL ? 'flex items-center space-x-reverse space-x-1' : 'flex items-center space-x-1'">
                             <span>{{ column.label }}</span>
                             <div v-if="column.sortable">
@@ -67,9 +67,12 @@
                 </TableRow>
             </TableHeader>
             <TableBody>
-                <TableRow v-for="item in items.data" :key="item.id">
-                    <TableCell v-for="column in columns" :key="column.key">
-                        <template v-if="column.key === 'actions'">
+                <TableRow v-for="(item, rowIndex) in items.data" :key="item.id">
+                    <TableCell v-for="column in derivedColumns" :key="column.key">
+                        <template v-if="column.key === '__index'">
+                            {{ getRowNumber(rowIndex) }}
+                        </template>
+                        <template v-else-if="column.key === 'actions'">
                             <DropdownMenu>
                                 <DropdownMenuTrigger as-child>
                                     <Button variant="ghost" size="icon">
@@ -97,12 +100,8 @@
                 {{ t('datatable.showing', { from: items.meta.from, to: items.meta.to, total: items.total }) }}
             </div>
             <div :class="isRTL ? 'flex space-x-reverse space-x-2' : 'flex space-x-2'">
-                <Button v-if="!isRTL" :disabled="!items.links.prev" @click="changePage(items.meta.current_page - 1)">{{ t('datatable.previous') }}</Button>
-                <Button v-if="!isRTL" :disabled="!items.links.next" @click="changePage(items.meta.current_page + 1)">{{ t('datatable.next') }}</Button>
-
-                <!-- RTL: Swap button order and labels -->
-                <Button v-if="isRTL" :disabled="!items.links.next" @click="changePage(items.meta.current_page + 1)">{{ t('datatable.previous') }}</Button>
-                <Button v-if="isRTL" :disabled="!items.links.prev" @click="changePage(items.meta.current_page - 1)">{{ t('datatable.next') }}</Button>
+                <Button  :disabled="!items.links.prev" @click="changePage(items.meta.current_page - 1)">{{ t('datatable.previous') }}</Button>
+                <Button  :disabled="!items.links.next" @click="changePage(items.meta.current_page + 1)">{{ t('datatable.next') }}</Button> 
             </div>
         </div>
     </div>
@@ -147,6 +146,17 @@ const search = ref(props.filters?.search || '')
 const perPage = ref(props.filters?.perPage || 10)
 const sortField = ref(props.filters?.sortField || 'id')
 const sortDirection = ref(props.filters?.sortDirection || 'asc')
+
+// Derived columns: inject index column at the start
+const derivedColumns = computed(() => {
+    const cols = props.columns ? [...props.columns] : []
+    // If no explicit index column exists, add one
+    const hasIndex = cols.some(c => c.key === '__index')
+    if (!hasIndex) {
+        cols.unshift({ key: '__index', label: t('general.number'), sortable: false })
+    }
+    return cols
+})
 
 // Helper
 const getNestedValue = (obj, path) => {
@@ -202,5 +212,12 @@ const changePage = (page) => {
 const clearSearch = () => {
     search.value = ''
     updateFilters()
+}
+
+// Row number: starts at 1 and increments across pages
+const getRowNumber = (rowIndex) => {
+    const current = props.items?.meta?.current_page ?? 1
+    const per = props.items?.meta?.per_page ?? (perPage.value || 10)
+    return (current - 1) * per + rowIndex + 1
 }
 </script>
