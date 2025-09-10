@@ -4,7 +4,7 @@
         <div class="flex items-center justify-between">
             <div class="flex relative w-full max-w-sm">
                 <div class="flex justify-items-start">
-                    <h1 class="text-lg font-semibold mr-2 text-nowrap mt-1">{{ props.title }}</h1>
+                    <h1 :class="isRTL ? 'text-lg font-semibold ml-2 text-nowrap mt-1' : 'text-lg font-semibold mr-2 text-nowrap mt-1'">{{ props.title }}</h1>
                 </div>
                 <div class="flex relative gap-4">
                     <Input
@@ -13,11 +13,11 @@
                         @input="debouncedSearch"
                         type="text"
                         :placeholder="'Search ' + (props.title ? props.title.charAt(0).toLowerCase() + props.title.slice(1).toLowerCase() : 'items')"
-                        class="pl-8 w-72"
+                        :class="isRTL ? 'pl-8 w-72 pr-10' : 'pl-8 w-72 pr-20'"
                     />
                     <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-            <Search class="size-4 text-muted-foreground" />
-          </span>
+                        <Search class="size-4 text-muted-foreground" />
+                    </span>
                     <button
                         v-if="search"
                         class="absolute end-0 inset-y-0 flex items-center justify-center px-2 text-muted-foreground hover:text-foreground"
@@ -34,7 +34,7 @@
                 </div>
             </div>
 
-            <div class="flex items-center space-x-2">
+            <div :class="isRTL ? 'flex items-center space-x-reverse space-x-2' : 'flex items-center space-x-2'">
                 <Select v-model="perPage" @update:modelValue="updatePerPage">
                     <SelectTrigger class="w-[100px]">
                         <SelectValue placeholder="Per page" />
@@ -53,7 +53,7 @@
             <TableHeader>
                 <TableRow>
                     <TableHead v-for="column in columns" :key="column.key">
-                        <div class="flex items-center space-x-1">
+                        <div :class="isRTL ? 'flex items-center space-x-reverse space-x-1' : 'flex items-center space-x-1'">
                             <span>{{ column.label }}</span>
                             <div v-if="column.sortable">
                                 <Button variant="ghost" size="sm" @click="sort(column.key)">
@@ -76,10 +76,10 @@
                                         <Ellipsis class="w-5 h-5 text-muted-foreground" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent class="w-48">
-                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem @click="$emit('edit', item)"><SquarePen /> Edit</DropdownMenuItem>
-                                    <DropdownMenuItem @click="$emit('delete', item.id)"><Trash2 /> Delete</DropdownMenuItem>
+                                <DropdownMenuContent class="w-48 rtl:text-right" side="bottom" :align="isRTL ? 'end' : 'start'">
+                                    <DropdownMenuLabel class="rtl:text-right">Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem :class="isRTL ? 'flex-row-reverse gap-2' : 'gap-2'" @click="$emit('edit', item)"><SquarePen /> Edit</DropdownMenuItem>
+                                    <DropdownMenuItem :class="isRTL ? 'flex-row-reverse gap-2' : 'gap-2'" @click="$emit('delete', item.id)"><Trash2 /> Delete</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </template>
@@ -96,18 +96,23 @@
             <div class="text-sm text-muted-foreground">
                 Showing {{ items.meta.from }} to {{ items.meta.to }} of {{ items.total }} entries
             </div>
-            <div class="flex space-x-2">
-                <Button :disabled="!items.links.prev" @click="changePage(items.meta.current_page - 1)">Previous</Button>
-                <Button :disabled="!items.links.next" @click="changePage(items.meta.current_page + 1)">Next</Button>
+            <div :class="isRTL ? 'flex space-x-reverse space-x-2' : 'flex space-x-2'">
+                <Button v-if="!isRTL" :disabled="!items.links.prev" @click="changePage(items.meta.current_page - 1)">Previous</Button>
+                <Button v-if="!isRTL" :disabled="!items.links.next" @click="changePage(items.meta.current_page + 1)">Next</Button>
+
+                <!-- RTL: Swap button order and labels -->
+                <Button v-if="isRTL" :disabled="!items.links.next" @click="changePage(items.meta.current_page + 1)">Previous</Button>
+                <Button v-if="isRTL" :disabled="!items.links.prev" @click="changePage(items.meta.current_page - 1)">Next</Button>
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { debounce } from 'lodash'
+import { useI18n } from 'vue-i18n'
 
 // UI Components
 import {
@@ -133,6 +138,9 @@ const props = defineProps({
     title: String,
     filters: Object,
 })
+
+const { locale } = useI18n()
+const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
 
 const pageOptions = [5, 10, 20, 50]
 const search = ref(props.filters?.search || '')
