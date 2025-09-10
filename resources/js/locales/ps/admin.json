@@ -1,1 +1,7 @@
-﻿{}
+﻿{
+    "category":{
+        "category": "دسته بندی",
+        "parent": "والد",
+        "categories": "دسته بندی ها"
+    }
+}

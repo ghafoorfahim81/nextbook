@@ -1,1 +1,7 @@
-﻿{}
+﻿{
+    "category":{
+        "category": "Category",
+        "parent": "Parent",
+        "categories": "Categories"
+    }
+}

@@ -4,7 +4,7 @@
   "remarks": "Remarks",
   "action": "Action",
   "cancel": "Cancel",
-  "delete": "Delete",
+  "delete": "Delete {name}",
   "update": "Update",
   "edit": "Edit",
   "are_you_sure": "Are you sure?",
@@ -27,7 +27,7 @@
   "select": "Select",
   "create_success": "Created successfully",
   "update_success": "Updated successfully",
-  "delete_success": "Deleted successfully",
+  "delete_success": "Deleted successfully {name}",
   "status": "Status",
   "enter": "Enter",
   "text": "Text",
@@ -98,7 +98,8 @@
   "add_new": "Add new",
   "type": "Type",
   "and": "and",
-  "finish": "Finish"
+  "finish": "Finish",
+  "delete_description": "This will permanently delete this {name}."
 }
 
 

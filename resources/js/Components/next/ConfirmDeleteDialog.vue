@@ -2,12 +2,13 @@
 import {
     Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from '@/Components/ui/dialog'
-import { Button } from '@/Components/ui/button'
-
+import { Button } from '@/Components/ui/button' 
 const props = defineProps({
     open: Boolean,
     title: String,
     description: String,
+    cancelText: String,
+    continueText: String,
 })
 const emit = defineEmits(['confirm', 'update:open'])
 </script>
@@ -20,8 +21,8 @@ const emit = defineEmits(['confirm', 'update:open'])
                 <DialogDescription>{{ description }}</DialogDescription>
             </DialogHeader>
             <DialogFooter>
-                <Button variant="outline" @click="$emit('update:open', false)">Cancel</Button>
-                <Button @click="$emit('confirm')">Continue</Button>
+                <Button variant="outline" @click="$emit('update:open', false)">{{ cancelText }}</Button>
+                <Button @click="$emit('confirm')">{{ continueText }}</Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>
