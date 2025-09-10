@@ -86,7 +86,7 @@
   "read": "Read",
   "import": "Import",
   "new": "New",
-  "add": "Add",
+  "add": "Add {title}",
   "true": "True",
   "false": "False",
   "change": "Change",
