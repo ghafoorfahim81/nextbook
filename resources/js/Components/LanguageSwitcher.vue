@@ -29,8 +29,7 @@ const current = computed({
 <template>
     <select
         v-model="current"
-        class="h-9 rounded-md border bg-background text-sm shadow-sm focus:outline-none appearance-none"
-
+        class="h-9 rounded-md border-border bg-background text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
     >
         <option v-for="opt in options" :key="opt.value" :value="opt.value">
             {{ opt.label }}
