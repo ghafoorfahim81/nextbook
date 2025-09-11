@@ -18,7 +18,7 @@ const columns = ref([
         key: 'parent.name',
         label: t('admin.category.parent'),
         sortable: true,
-        render: (row) => row.parent?.name ?? '-',
+        render: (row) => row.parent?.name,
     },
     { key: 'remark', label: t('general.remarks') },
     { key: 'actions', label: t('general.action') },

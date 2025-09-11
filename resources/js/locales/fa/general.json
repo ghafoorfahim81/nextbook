@@ -29,7 +29,7 @@
   "update_success": "موفقانه به‌روزرسانی شد",
   "delete_success": "{name} موفقانه حذف شد",
   "status": "وضعیت",
-  "enter": ":text را وارد کنید",
+  "enter": "{text} را وارد کنید ",
   "text": "متن",
   "radio": "رادیویی",
   "result_not_found": "نتیجه‌ای یافت نشد",
