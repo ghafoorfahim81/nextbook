@@ -29,7 +29,7 @@
   "update_success": "بریالي نوي شو",
   "delete_success": "{name} بریالي ړنګ شو",
   "status": "حالت",
-  "enter": "داخل کړئ {name}",
+  "enter": "داخل کړئ {text}",
   "text": "متن",
   "radio": "راډیو",
   "result_not_found": "نتیجه و نه موندل شوه",
