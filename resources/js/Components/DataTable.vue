@@ -34,18 +34,7 @@
                 </div>
             </div>
 
-            <div :class="isRTL ? 'flex items-center space-x-reverse space-x-2' : 'flex items-center space-x-2'">
-                <Select v-model="perPage" @update:modelValue="updatePerPage">
-                    <SelectTrigger class="w-[100px]">
-                        <SelectValue :placeholder="t('datatable.per_page')" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem v-for="option in pageOptions" :key="option" :value="option">
-                            {{ option }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
+            <!-- Per-page selector moved to pagination -->
         </div>
 
         <!-- Table -->
@@ -99,7 +88,17 @@
             <div class="text-sm text-muted-foreground">
                 {{ t('datatable.showing', { from: items.meta.from, to: items.meta.to, total: items.total }) }}
             </div>
-            <div :class="isRTL ? 'flex space-x-reverse space-x-2' : 'flex space-x-2'">
+            <div :class="isRTL ? 'flex items-center space-x-reverse space-x-2' : 'flex items-center space-x-2'">
+                <Select v-model="perPage" @update:modelValue="updatePerPage">
+                    <SelectTrigger class="w-[100px]">
+                        <SelectValue :placeholder="t('datatable.per_page')" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem v-for="option in pageOptions" :key="option" :value="option">
+                            {{ option }}
+                        </SelectItem>
+                    </SelectContent>
+                </Select>
                 <Button  :disabled="!items.links.prev" @click="changePage(items.meta.current_page - 1)">{{ t('datatable.previous') }}</Button>
                 <Button  :disabled="!items.links.next" @click="changePage(items.meta.current_page + 1)">{{ t('datatable.next') }}</Button> 
             </div>
