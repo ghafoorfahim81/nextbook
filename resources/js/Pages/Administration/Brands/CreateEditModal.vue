@@ -6,7 +6,8 @@ import { Label } from '@/Components/ui/label';
 import ModalDialog from '@/Components/next/Dialog.vue';
 import NextInput from "@/Components/next/NextInput.vue";
 import NextSelect from "@/Components/next/NextSelect.vue";
-
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n()
 const props = defineProps({
     isDialogOpen: Boolean,
     editingItem: Object,
@@ -82,7 +83,10 @@ const handleSubmit = () => {
             onSuccess: () => {
                 emit('saved')
                 form.reset();
-                closeModal()
+                closeModal() 
+            },
+            onError: () => {
+                console.log('error', form.errors);
             },
         })
     }
@@ -93,8 +97,9 @@ const handleSubmit = () => {
 <template>
     <ModalDialog
         :open="localDialogOpen"
-        :title="isEditing ? 'Edit Brand' : 'Create Brand'"
-        :confirmText="isEditing ? 'Update' : 'Create'"
+        :title="isEditing ? t('general.edit', { name: t('admin.brand.brand') }) : t('general.create', { name: t('admin.brand.brand') })"
+        :confirmText="isEditing ? t('general.update') : t('general.create')"
+        :cancel-text="t('general.close')"
         :closeable="true"
         width="w-[900px] max-w-[900px]"
         @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
@@ -104,17 +109,17 @@ const handleSubmit = () => {
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid col-span-2 gap-4 py-4">
                 <div class="grid items-center grid-cols-3 gap-4">
-                    <NextInput label="Name" v-model="form.name" :errors="errors?.name" type="text"/>
-                    <NextInput label="Legal Name" v-model="form.legal_name" type="text"/>
-                    <NextInput label="Registration Number" v-model="form.registration_number" type="text"/>
-                    <NextInput label="Email" v-model="form.email" type="email"/>
-                    <NextInput label="Phone" v-model="form.phone" type="text"/>
-                    <NextInput label="Website" v-model="form.website" type="text"/>
-                    <NextInput label="Industry" v-model="form.industry" type="text"/>
-                    <NextInput label="Type" v-model="form.type" type="text"/>
-                    <NextInput label="Address" v-model="form.address" type="text"/>
-                    <NextInput label="City" v-model="form.city" type="text"/>
-                    <NextInput label="Country" v-model="form.country" type="text"/>
+                    <NextInput :label="t('general.name')" :placeholder="t('general.enter', { text: t('general.name') })" v-model="form.name" :error="form.errors?.name"  />
+                    <NextInput :label="t('admin.brand.legal_name')" :placeholder="t('general.enter', { text: t('admin.brand.legal_name') })" v-model="form.legal_name" :error="form.errors?.legal_name"/>
+                    <NextInput :label="t('admin.brand.registration_number')" :placeholder="t('general.enter', { text: t('admin.brand.registration_number') })" v-model="form.registration_number" :error="form.errors?.registration_number"/>
+                    <NextInput :label="t('admin.shared.email')" :placeholder="t('general.enter', { text: t('admin.shared.email') })" v-model="form.email" type="email" :error="form.errors?.email"/>
+                    <NextInput :label="t('admin.shared.phone')" :placeholder="t('general.enter', { text: t('admin.shared.phone') })" v-model="form.phone" :error="form.errors?.phone"/>
+                    <NextInput :label="t('admin.brand.website')" :placeholder="t('general.enter', { text: t('admin.brand.website') })" v-model="form.website" :error="form.errors?.website"/>
+                    <NextInput :label="t('admin.brand.industry')" :placeholder="t('general.enter', { text: t('admin.brand.industry') })" v-model="form.industry" :error="form.errors?.industry"/>
+                    <NextInput :label="t('admin.brand.type')" :placeholder="t('general.enter', { text: t('admin.brand.type') })" v-model="form.type" :error="form.errors?.type"/>
+                    <NextInput :label="t('admin.brand.address')" :placeholder="t('general.enter', { text: t('admin.brand.address') })" v-model="form.address" :error="form.errors?.address"/>
+                    <NextInput :label="t('admin.brand.city')" :placeholder="t('general.enter', { text: t('admin.brand.city') })" v-model="form.city" :error="form.errors?.city"/>
+                    <NextInput :label="t('admin.shared.country')" :placeholder="t('general.enter', { text: t('admin.shared.country') })" v-model="form.country" :error="form.errors?.country"/>
 
                 </div>
             </div>

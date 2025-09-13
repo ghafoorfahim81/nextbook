@@ -9,6 +9,7 @@ import vSelect from 'vue-select'
 import NextInput from "@/Components/next/NextInput.vue";
 import FloatingLabel from "@/Components/next/FloatingLabel.vue";
 import NextTextarea from "@/Components/next/NextTextarea.vue";
+import NextSelect from "@/Components/next/NextSelect.vue";
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n()
 const props = defineProps({
@@ -58,6 +59,10 @@ const closeModal = () => {
     localDialogOpen.value = false
 }
 
+const handleParentSelectChange = (value) => {
+    form.parent_id = value
+}
+
 const handleSubmit = async () => {
     if (isEditing.value) {
         form.patch(route('categories.update', props.editingItem.id), {
@@ -98,7 +103,21 @@ const handleSubmit = async () => {
 
                 <NextInput :label="t('general.name')" :placeholder="t('general.enter', { text: t('general.name') })" v-model="form.name" :error="form.errors.name" />
 
-                <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
+                <NextSelect
+                        v-model="form.parent_id"
+                        :options="categories"
+                        label-key="name"
+                        @update:modelValue="(value) => handleParentSelectChange(value)"
+                        value-key="id"
+                        id="parent"
+                        :floating-text="t('admin.shared.parent')"
+                        :error="form.errors?.parent_id"
+                        :searchable="true"
+                        resource-type="categories"
+                        :search-fields="['name']"
+                    />
+                    
+                <!-- <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
                     <div>
                         <v-select
                             :options="categories"
@@ -112,7 +131,7 @@ const handleSubmit = async () => {
                     <span v-if="form.errors?.parent_id" class="text-red-500 text-sm">
                     {{ form.errors.parent_id }}
                   </span>
-                </div>
+                </div> -->
                 <NextTextarea
                     v-model="form.remark"
                     :label="t('general.remarks')"

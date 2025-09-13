@@ -29,7 +29,11 @@
         "industry": "Industry",
         "type": "Type",
         "city": "City",
-        "country": "Country"
+        "country": "Country",
+        "legal_name": "Legal Name",
+        "registration_number": "Registration Number",
+        "phone": "Phone",
+        "address": "Address"
     },
     "company": {
         "company": "Company",
@@ -65,6 +69,9 @@
         "parent": "Parent",
         "address": "Address", 
         "symbol": "Symbol",
-        "logo": "Logo"
+        "logo": "Logo",
+        "email": "Email",
+        "phone": "Phone",
+        "country": "Country"    
     }
 }
