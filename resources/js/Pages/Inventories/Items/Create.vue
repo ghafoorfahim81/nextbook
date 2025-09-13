@@ -172,17 +172,17 @@ const handleOpeningSelectChange = (index, value) => {
                     :error="form.errors.brand_id"
                 />
 
-                <NextInput label="Minimum Stock" type="number" v-model="form.minimum_stock" :error="form.errors?.minimum_stock" />
-                <NextInput label="Maximum Stock" type="number" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
-                <NextInput label="Purchase Price" type="number" v-model="form.purchase_price" :error="form.errors?.purchase_price" />
+                <NextInput label="Minimum Stock" type="number" placeholder="Minimum Stock" v-model="form.minimum_stock" :error="form.errors?.minimum_stock" />
+                <NextInput label="Maximum Stock" type="number" placeholder="Maximum Stock" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
+                <NextInput label="Purchase Price" type="number" placeholder="Purchase Price" v-model="form.purchase_price" :error="form.errors?.purchase_price" />
                 <NextInput label="Cost" type="number" v-model="form.cost" :error="form.errors?.cost" />
-                <NextInput label="MRP Rate" type="number" v-model="form.mrp_rate" :error="form.errors?.mrp_rate" />
-                <NextInput label="Rate A" type="number" v-model="form.rate_a" :error="form.errors?.rate_a" />
-                <NextInput label="Rate B" type="number" v-model="form.rate_b" :error="form.errors?.rate_b" />
-                <NextInput label="Rate C" type="number" v-model="form.rate_c" :error="form.errors?.rate_c" />
-                <NextInput label="Barcode" v-model="form.barcode" :error="form.errors?.barcode" />
-                <NextInput label="Rack No" v-model="form.rack_no" :error="form.errors?.rack_no" />
-                <NextInput label="Fast Search" v-model="form.fast_search" :error="form.errors?.fast_search" />
+                <NextInput label="MRP Rate" type="number" placeholder="MRP Rate" v-model="form.mrp_rate" :error="form.errors?.mrp_rate" />
+                <NextInput label="Rate A" type="number" placeholder="Rate A" v-model="form.rate_a" :error="form.errors?.rate_a" />
+                <NextInput label="Rate B" type="number" placeholder="Rate B" v-model="form.rate_b" :error="form.errors?.rate_b" />
+                <NextInput label="Rate C" type="number" placeholder="Rate C" v-model="form.rate_c" :error="form.errors?.rate_c" />
+                <NextInput label="Barcode" v-model="form.barcode" placeholder="Barcode" :error="form.errors?.barcode" />
+                <NextInput label="Rack No" v-model="form.rack_no" placeholder="Rack No" :error="form.errors?.rack_no" />
+                <NextInput label="Fast Search" v-model="form.fast_search" placeholder="Fast Search" :error="form.errors?.fast_search" />
             </div>
 
             <div class="pt-2">

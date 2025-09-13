@@ -93,7 +93,8 @@ const handleSubmit = () => {
 <template>
     <ModalDialog
         :open="localDialogOpen"
-        :title="isEditing ? 'Edit Company' : 'Create Company'"
+        :title="isEditing ? t('general.edit', { name: t('admin.company.company') }) : t('general.create', { name: t('admin.company.company') })"  
+        :cancel-text="t('general.close')"
         :confirmText="isEditing ? 'Update' : 'Create'"
         :closeable="true"
         width="w-[900px] max-w-[900px]"
@@ -104,17 +105,17 @@ const handleSubmit = () => {
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid col-span-2 gap-4 py-4">
                 <div class="grid items-center grid-cols-3 gap-4">
-                    <NextInput label="Name" v-model="form.name" :errors="errors?.name" type="text"/>
-                    <NextInput label="Legal Name" v-model="form.legal_name" type="text"/>
-                    <NextInput label="Registration Number" v-model="form.registration_number" type="text"/>
-                    <NextInput label="Email" v-model="form.email" type="email"/>
-                    <NextInput label="Phone" v-model="form.phone" type="text"/>
-                    <NextInput label="Website" v-model="form.website" type="text"/>
-                    <NextInput label="Industry" v-model="form.industry" type="text"/>
-                    <NextInput label="Type" v-model="form.type" type="text"/>
-                    <NextInput label="Address" v-model="form.address" type="text"/>
-                    <NextInput label="City" v-model="form.city" type="text"/>
-                    <NextInput label="Country" v-model="form.country" type="text"/>
+                    <NextInput :label="t('general.name')" v-model="form.name" :error="errors?.name" />
+                    <NextInput :label="t('admin.company.legal_name')" v-model="form.legal_name" type="text" :error="errors?.legal_name"/>
+                    <NextInput :label="t('admin.company.registration_number')" v-model="form.registration_number" type="text" :error="errors?.registration_number"/>
+                    <NextInput :label="t('admin.shared.email')" v-model="form.email" type="email" :error="errors?.email"/>
+                    <NextInput :label="t('admin.shared.phone')" v-model="form.phone" type="text" :error="errors?.phone"/>
+                    <NextInput :label="t('admin.company.website')" v-model="form.website" type="text"/>
+                    <NextInput :label="t('admin.company.industry')" v-model="form.industry" type="text"/>
+                    <NextInput :label="t('admin.company.type')" v-model="form.type" type="text"/>
+                    <NextInput :label="t('admin.company.address')" v-model="form.address" type="text"/>
+                    <NextInput :label="t('admin.company.city')" v-model="form.city" type="text"/>
+                    <NextInput :label="t('admin.shared.country')" v-model="form.country" type="text"/>
 
                 </div>
             </div>

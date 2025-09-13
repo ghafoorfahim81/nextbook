@@ -2,10 +2,9 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref } from 'vue';
-import { Button } from '@/Components/ui/button';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import CreateEditModal from '@/Pages/Administration/Stores/CreateEditModal.vue';
-import { router } from '@inertiajs/vue3';
+import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
     stores: Object,
@@ -16,12 +15,12 @@ const props = defineProps({
 });
 const isDialogOpen = ref(false)
 const editingStore = ref(null)
+const { t } = useI18n()
 
-const columns = ref([
-    { key: 'id', label: 'ID' },
-    { key: 'name', label: 'Name',sortable: true },
-    { key: 'address', label: 'Address' },
-    { key: 'actions', label: 'Actions' },
+const columns = ref([ 
+    { key: 'name', label: t('general.name'),sortable: true },
+    { key: 'address', label: t('admin.shared.address') },
+    { key: 'actions', label: t('general.action') },
 ]);
 
 const editItem = (item) => {
@@ -31,9 +30,9 @@ const editItem = (item) => {
 const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('stores.destroy', id, {
-        title: 'Delete Store',
-        description: 'This will permanently delete this category.',
-        successMessage: 'Store deleted successfully.',
+        title: t('general.delete', { name: t('admin.store.store') }),
+        description: t('general.delete_description', { name: t('admin.store.store') }),
+        successMessage: t('general.delete_success', { name: t('admin.store.store') }),
     })
 
 };
@@ -41,37 +40,29 @@ const deleteItem = (id) => {
 </script>
 
 <template>
-    <AppLayout title="Categories">
-        <div class="flex gap-2 items-center mb-4">
-            <div class="ml-auto gap-3">
-                <Button
-                    @click="isDialogOpen = true"
-                    variant="outline"
-                    class="bg-gray-100 hover:bg-gray-200 dark:border-gray-50 dark:text-green-300"
-                >
-                    Add New
-                </Button>
-                <CreateEditModal
-                    :isDialogOpen="isDialogOpen"
-                    :editingItem="editingStore"
-                    :stores="stores"
-                    :branches="branches"
-                    @update:isDialogOpen="(value) => {
-                        isDialogOpen = value;
-                        if (!value) editingStore = null;
-                    }"
-                    @saved="() => { editingStore = null }"
-
-                />
-            </div>
-        </div>
+    <AppLayout :title="t('admin.store.stores')">
+        <CreateEditModal
+            :isDialogOpen="isDialogOpen"
+            :editingItem="editingStore"
+            :stores="stores"
+            :branches="branches"
+            @update:isDialogOpen="(value) => {
+                isDialogOpen = value;
+                if (!value) editingStore = null;
+            }"
+            @saved="() => { editingStore = null }"
+        />
         <DataTable
             :items="stores"
             :columns="columns"
             @edit="editItem"
             @delete="deleteItem"
-            :title="`Stores`"
+            @add="isDialogOpen = true"
+            :title="t('admin.store.stores')"
             :url="`stores.index`"
+            :showAddButton="true"
+            :addTitle="t('admin.store.store')"
+            :addAction="'modal'"
         />
     </AppLayout>
 </template>

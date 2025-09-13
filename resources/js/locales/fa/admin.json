@@ -3,5 +3,76 @@
         "category": "دسته بندی",
         "parent": "والد",
         "categories": "دسته بندی ها"
+    },
+    "store": {
+        "store": "فروشگاه",
+        "stores": "فروشگاه ها"
+    },
+    "department": {
+        "department": "دپارتمان",
+        "departments": "دپارتمان ها"
+    },
+    "currency": {
+        "currency": "ارز",
+        "currencies": "ارز ها",
+        "exchange_rate": "نرخ تبدیل", 
+        "code": "کد",
+        "format": "فرمت",
+        "flag": "پرچم",
+        "is_active": "فعال",
+        "is_base_currency": "ارز اصلی"
+    },
+        "brand": {
+        "brand": "برند",
+        "brands": "برند ها",
+        "website": "وبسایت", 
+        "industry": "صنعت",
+        "type": "نوع", 
+        "city": "شهر",
+        "country": "کشور",
+        "legal_name": "نام قانونی",
+        "registration_number": "شماره ثبت",
+        "phone": "تلفن",
+        "address": "آدرس"
+    },
+    "company": {
+        "company": "شرکت",
+        "companies": "شرکت ها",
+        "website": "وبسایت", 
+        "sub_domain": "زیر دامنه"
+    },
+    "designation": {
+        "designation": "دیزاینیشن",
+        "designations": "دیزاینیشن ها"
+    },
+    "quantity": {
+        "quantity": "مقدار",
+        "quantities": "مقدار ها"
+    },
+    "unit_measure": {
+        "unit_measure": "واحد اندازه گیری",
+        "unit_measures": "واحد اندازه گیری ها",
+        "value": "مقدار", 
+        "unit": "واحد",
+        "quantity": "مقدار",
+        "metric": "متریک",
+        "base_unit": "واحد اصلی"
+    },
+    "branch": {
+        "branch": "شعبه",
+        "branches": "شعبه ها", 
+        "city": "شهر",
+        "location": "مکان",
+        "sub_domain": "زیر دامنه" 
+    },
+    "shared": { 
+        "remark": "توضیحات",
+        "parent": "والد",
+        "address": "آدرس",
+        "symbol": "نماد",
+        "logo": "لوگو",
+        "email": "ایمیل",
+        "phone": "تلفن",
+        "country": "کشور"
     }
 }

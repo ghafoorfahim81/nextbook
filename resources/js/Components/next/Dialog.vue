@@ -52,7 +52,7 @@ const emit = defineEmits(["update:open", "confirm", "cancel"]);
       <DialogFooter>
         <Button type="button" variant="outline"
                 @click="$emit('cancel'); $emit('update:open', false)">
-          Close
+          {{ cancelText || "Close" }}
         </Button>
           <Button
               variant="outline"
@@ -61,7 +61,7 @@ const emit = defineEmits(["update:open", "confirm", "cancel"]);
               @click="$emit('confirm')"
           >
               <span v-if="submitting">Saving...</span>
-              <span v-else>{{ confirmText || "Submit" }}</span>
+              <span v-else>{{ confirmText || "Save" }}</span>
           </Button>
 
       </DialogFooter>

@@ -33,8 +33,20 @@
                     </button>
                 </div>
             </div>
-
-            <!-- Per-page selector moved to pagination -->
+            
+            <!-- Right actions (Add New) -->
+            <div class="ml-4 flex items-center gap-2" v-if="showAddButton">
+                <AddNewButton
+                    :title="addTitle || props.title"
+                    :action="addAction"
+                    :route="addRoute"
+                    :routeParams="addRouteParams"
+                    variant="default"
+                    class="bg-primary text-white"
+                    @modal-open="$emit('add')"
+                    @redirect="$emit('add')"
+                />
+            </div>
         </div>
 
         <!-- Table -->
@@ -84,23 +96,76 @@
         </Table>
 
         <!-- Pagination -->
-        <div class="flex items-center justify-between">
+        <div class="border-t pt-3 flex items-center justify-between">
+            <!-- Left: Showing X - Y of Z [title] -->
             <div class="text-sm text-muted-foreground">
                 {{ t('datatable.showing', { from: items.meta.from, to: items.meta.to, total: items.total }) }}
+                <template v-if="props.title"> {{ props.title.toLowerCase() }}</template>
             </div>
+
+            <!-- Right: Rows per page | First Prev  Page X of Y  Next Last -->
             <div :class="isRTL ? 'flex items-center space-x-reverse space-x-2' : 'flex items-center space-x-2'">
-                <Select v-model="perPage" @update:modelValue="updatePerPage">
-                    <SelectTrigger class="w-[100px]">
-                        <SelectValue :placeholder="t('datatable.per_page')" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem v-for="option in pageOptions" :key="option" :value="option">
-                            {{ option }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-                <Button  :disabled="!items.links.prev" @click="changePage(items.meta.current_page - 1)">{{ t('datatable.previous') }}</Button>
-                <Button  :disabled="!items.links.next" @click="changePage(items.meta.current_page + 1)">{{ t('datatable.next') }}</Button> 
+                <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span>{{ t('datatable.per_page') }}:</span>
+                    <Select v-model="perPage" @update:modelValue="updatePerPage">
+                        <SelectTrigger class="w-[90px] h-8">
+                            <SelectValue :placeholder="t('datatable.per_page')" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem v-for="option in pageOptions" :key="option" :value="option">
+                                {{ option }}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <!-- First -->
+                <Button
+                    variant="outline"
+                    size="icon"
+                    class="w-8 h-8"
+                    :disabled="currentPage <= 1"
+                    @click="changePage(1)"
+                >
+                    <component :is="isRTL ? ChevronsRight : ChevronsLeft" class="h-4 w-4" />
+                </Button>
+
+                <!-- Prev -->
+                <Button
+                    variant="outline"
+                    size="icon"
+                    class="w-8 h-8"
+                    :disabled="currentPage <= 1"
+                    @click="changePage(currentPage - 1)"
+                >
+                    <component :is="isRTL ? ChevronRight : ChevronLeft" class="h-4 w-4" />
+                </Button>
+
+                <span class="mx-2 text-sm text-muted-foreground">
+                    Page {{ currentPage }} of {{ lastPage }}
+                </span>
+
+                <!-- Next -->
+                <Button
+                    variant="outline"
+                    size="icon"
+                    class="w-8 h-8"
+                    :disabled="currentPage >= lastPage"
+                    @click="changePage(currentPage + 1)"
+                >
+                    <component :is="isRTL ? ChevronLeft : ChevronRight" class="h-4 w-4" />
+                </Button>
+
+                <!-- Last -->
+                <Button
+                    variant="outline"
+                    size="icon"
+                    class="w-8 h-8"
+                    :disabled="currentPage >= lastPage"
+                    @click="changePage(lastPage)"
+                >
+                    <component :is="isRTL ? ChevronsLeft : ChevronsRight" class="h-4 w-4" />
+                </Button>
             </div>
         </div>
     </div>
@@ -111,6 +176,7 @@ import { ref, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { debounce } from 'lodash'
 import { useI18n } from 'vue-i18n'
+import AddNewButton from '@/Components/next/AddNewButton.vue'
 
 // UI Components
 import {
@@ -122,8 +188,8 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/Components/ui/select'
 import {
-    Search, CircleX, ChevronUp, ChevronDown, SlidersHorizontal, Ellipsis,SquarePen, Trash,
-    Trash2
+    Search, CircleX, ChevronUp, ChevronDown, SlidersHorizontal, Ellipsis, SquarePen, Trash,
+    Trash2, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight,
 } from 'lucide-vue-next'
 import {
     DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -135,16 +201,26 @@ const props = defineProps({
     url: String,
     title: String,
     filters: Object,
+    // Controls for AddNewButton in header
+    showAddButton: { type: Boolean, default: false },
+    addTitle: { type: String, default: null },
+    addAction: { type: String, default: 'modal' },
+    addRoute: { type: String, default: null },
+    addRouteParams: { type: Object, default: () => ({}) },
 })
 
 const { t, locale } = useI18n()
 const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
+// Declare emits for clarity
+defineEmits(['edit', 'delete', 'add'])
 
-const pageOptions = [5, 10, 20, 50]
+const pageOptions = [10, 20, 50, 100]
 const search = ref(props.filters?.search || '')
 const perPage = ref(props.filters?.perPage || 10)
 const sortField = ref(props.filters?.sortField || 'id')
 const sortDirection = ref(props.filters?.sortDirection || 'asc')
+const currentPage = computed(() => props.items?.meta?.current_page ?? 1)
+const lastPage = computed(() => props.items?.meta?.last_page ?? 1)
 
 // Derived columns: inject index column at the start
 const derivedColumns = computed(() => {
