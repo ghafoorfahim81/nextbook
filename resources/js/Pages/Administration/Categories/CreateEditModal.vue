@@ -89,8 +89,9 @@ const handleSubmit = async () => {
 <template>
     <ModalDialog
         :open="localDialogOpen"
-            :title="isEditing ? t('general.edit', { name: t('admin.category.category') }) : t('general.create', { name: t('admin.category.category') })"
+        :title="isEditing ? t('general.edit', { name: t('admin.category.category') }) : t('general.create', { name: t('admin.category.category') })"
         :confirmText="isEditing ? t('general.update') : t('general.create')"
+        :cancel-text="t('general.close')"
         @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
         :closeable="true"
         @confirm="handleSubmit"
@@ -98,44 +99,26 @@ const handleSubmit = async () => {
     >
 
         <form @submit.prevent="handleSubmit" id="modalForm">
-            <div class="grid gap-4 py-4">
-                <!-- Name -->
-
+            <div class="grid gap-4 py-4"> 
                 <NextInput :label="t('general.name')" :placeholder="t('general.enter', { text: t('general.name') })" v-model="form.name" :error="form.errors.name" />
-
                 <NextSelect
-                        v-model="form.parent_id"
-                        :options="categories"
-                        label-key="name"
-                        @update:modelValue="(value) => handleParentSelectChange(value)"
-                        value-key="id"
-                        id="parent"
-                        :floating-text="t('admin.shared.parent')"
-                        :error="form.errors?.parent_id"
-                        :searchable="true"
-                        resource-type="categories"
-                        :search-fields="['name']"
-                    />
-                    
-                <!-- <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
-                    <div>
-                        <v-select
-                            :options="categories"
-                            v-model="form.parent_id"
-                            :reduce="category => category.id"
-                            label="name"
-                            class="col-span-3"
-                        />
-                        <FloatingLabel :id="'type'" :label="`${t('admin.category.parent')}`"/>
-                    </div>
-                    <span v-if="form.errors?.parent_id" class="text-red-500 text-sm">
-                    {{ form.errors.parent_id }}
-                  </span>
-                </div> -->
+                    v-model="form.parent_id"
+                    :options="categories"
+                    label-key="name"
+                    @update:modelValue="(value) => handleParentSelectChange(value)"
+                    value-key="id"
+                    id="parent"
+                    :floating-text="t('admin.shared.parent')"
+                    :error="form.errors?.parent_id"
+                    :searchable="true"
+                    resource-type="categories"
+                    :search-fields="['name']"
+                    /> 
                 <NextTextarea
                     v-model="form.remark"
                     :label="t('general.remarks')"
-                    :placeholder="t('general.enter', { name: t('general.remarks') })"
+                    :placeholder="t('general.enter', { text: t('general.remarks') })"
+                    :error="form.errors?.remark"
                 />
             </div>
         </form>
