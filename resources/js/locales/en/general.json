@@ -29,7 +29,7 @@
   "update_success": "Updated successfully",
   "delete_success": "Deleted successfully {name}",
   "status": "Status",
-  "enter": "{text} Enter",
+  "enter": "Enter {text}",
   "text": "Text",
   "radio": "Radio",
   "result_not_found": "Result not found",

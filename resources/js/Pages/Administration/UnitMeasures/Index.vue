@@ -2,47 +2,46 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref } from 'vue';
-import { Button } from '@/Components/ui/button';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import CreateEditModal from '@/Pages/Administration/UnitMeasures/CreateEditModal.vue';
-import { router } from '@inertiajs/vue3';
+import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
     unitMeasures: Object,
 });
 const isDialogOpen = ref(false)
-const editingBranch = ref(null)
-
+const editingUnitMeasure = ref(null)
+const { t } = useI18n()
 
 const columns = ref([
     {
         key: 'quantity.quantity',
-        label: 'metric',
+        label: t('admin.unit_measure.metric'),
         sortable: true,
         render: (row) => row.quantity?.quantity ?? '-',
     },
     {
         key: 'quantity.unit',
-        label: 'Base Unit',
+        label: t('admin.unit_measure.base_unit'),
         sortable: true,
         render: (row) => row.quantity?.unit ?? '-',
     },
-    { key: 'name', label: 'Name' },
-    { key: 'unit', label: 'Unit' },
-    { key: 'symbol', label: 'Symbol' },
-    { key: 'actions', label: 'Actions' },
+    { key: 'name', label: t('general.name'), sortable: true },
+    { key: 'unit', label: t('admin.unit_measure.unit'), sortable: true },
+    { key: 'symbol', label: t('admin.shared.symbol') },
+    { key: 'actions', label: t('general.action') },
 ]);
 
 const editItem = (item) => {
-    editingBranch.value = item
+    editingUnitMeasure.value = item
     isDialogOpen.value = true
 }
 const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('unit-measures.destroy', id, {
-        title: 'Delete Branch',
-        description: 'This will permanently delete this branch.',
-        successMessage: 'Branch deleted successfully.',
+        title: t('general.delete', { name: t('admin.unit_measure.unit_measure') }),
+        description: t('general.delete_description', { name: t('admin.unit_measure.unit_measure') }),
+        successMessage: t('general.delete_success', { name: t('admin.unit_measure.unit_measure') }),
     })
 
 };
@@ -50,32 +49,27 @@ const deleteItem = (id) => {
 </script>
 
 <template>
-    <AppLayout title="Unit Measure">
-        <div class="flex gap-2 items-center mb-4">
-            <div class="ml-auto gap-3">
-                <Button
-                    @click="isDialogOpen = true"
-                    variant="outline"
-                    class="bg-gray-100 hover:bg-gray-200 dark:border-gray-50 dark:text-green-300"
-                >
-                    Add New
-                </Button>
-                <CreateEditModal
-                    :isDialogOpen="isDialogOpen"
-                    :editingItem="editingBranch"
-                    @update:isDialogOpen="isDialogOpen = $event"
-                    @saved="() => $inertia.reload()"
-                />
-
-            </div>
-        </div>
+    <AppLayout :title="t('admin.unit_measure.unit_measures')">
+        <CreateEditModal
+            :isDialogOpen="isDialogOpen"
+            :editingItem="editingUnitMeasure"
+            @update:isDialogOpen="(value) => {
+                isDialogOpen = value;
+                if (!value) editingUnitMeasure = null;
+            }"
+            @saved="() => { editingUnitMeasure = null }"
+        />
         <DataTable
             :items="unitMeasures"
             :columns="columns"
             @edit="editItem"
             @delete="deleteItem"
-            :title="`Unit Measures`"
+            @add="isDialogOpen = true"
+            :title="t('admin.unit_measure.unit_measures')"
             :url="`unit-measures.index`"
+            :showAddButton="true"
+            :addTitle="t('admin.unit_measure.unit_measure')"
+            :addAction="'modal'"
         />
     </AppLayout>
 </template>

@@ -1,14 +1,11 @@
 <script setup>
 import { computed, ref, reactive, watch } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
-import { Input } from '@/Components/ui/input'
-import { Textarea } from '@/Components/ui/textarea'
-import { Label } from '@/Components/ui/label'
 import ModalDialog from '@/Components/next/Dialog.vue'
-import vSelect from 'vue-select'
 import NextInput from "@/Components/next/NextInput.vue";
 import NextTextarea from "@/Components/next/NextTextarea.vue";
-
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n()
 const props = defineProps({
     isDialogOpen: Boolean,
     editingItem: Object, // ✅ this is passed from Index.vue
@@ -82,20 +79,20 @@ const handleSubmit = async () => {
 <template>
     <ModalDialog
         :open="localDialogOpen"
-        :title="isEditing ? 'Edit Stores' : 'Create Stores'"
-        :confirmText="isEditing ? 'Update' : 'Create'"
+        :title="isEditing ? t('general.edit', { name: t('admin.store.store') }) : t('general.create', { name: t('admin.store.store') })"
+        :confirmText="isEditing ? t('general.update') : t('general.create')"
+        :cancel-text="t('general.close')"
         @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
-        :closeable="true"
+        :closeable="true" 
         @confirm="handleSubmit"
         @cancel="closeModal"
     >
 
-        <form @submit.prevent="handleSubmit" id="modalForm">
+        <form @submit.prevent="handleSubmit"  >
             <div class="grid gap-4 py-4">
                 <!-- Name -->
-
-                <NextInput label="Name" v-model="form.name" :error="form.errors?.name" placeholder="Enter name" />
-                <NextTextarea label="Address" v-model="form.address" :error="form.errors?.address" placeholder="Enter address" />
+                <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name" :placeholder="t('general.enter', { text: t('general.name') })" />
+                <NextTextarea :label="t('admin.shared.address')" v-model="form.address" :error="form.errors?.address" :placeholder="t('general.enter', { text: t('admin.shared.address') })" />
 
             </div>
         </form>

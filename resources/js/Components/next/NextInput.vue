@@ -16,7 +16,7 @@
         <!-- floating label -->
         <label
             :for="id"
-            class="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded bg-background px-1
+            class="pointer-events-none absolute start-3 top-1/2 z-10 -translate-y-1/2 rounded bg-background px-1
          text-muted-foreground transition-all duration-150
          peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-sm
          peer-focus:top-0 peer-focus:-translate-y-1/2 peer-focus:text-xs peer-focus:text-foreground
