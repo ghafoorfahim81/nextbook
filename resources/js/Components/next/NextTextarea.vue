@@ -12,6 +12,7 @@
             id="message"
             rows="4"
             :name="name"
+            :placeholder="placeholder??t('general.enter', { text: label })"
             :value="modelValue"
             @input="e => emit('update:modelValue', e.target.value)"
             :readonly="readonly ?? false"
@@ -28,6 +29,7 @@ const props = defineProps({
     name: String,
     label: String,
     readonly: Boolean,
+    placeholder: String,
 });
 const emit = defineEmits(['update:modelValue']);
 </script>

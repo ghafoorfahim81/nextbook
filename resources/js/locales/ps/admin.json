@@ -29,7 +29,11 @@
         "industry": "صنعت",
         "type": "نوع", 
         "city": "شهر",
-        "country": "کشور"
+        "country": "کشور",
+        "legal_name": "نام قانونی",
+        "registration_number": "شماره ثبت",
+        "phone": "تلفن",
+        "address": "آدرس"
     },
     "company": {
         "company": "شرکت",
@@ -66,6 +70,9 @@
         "parent": "والد",
         "address": "آدرس",
         "symbol": "نماد",
-        "logo": "لوگو"
+        "logo": "لوگو",
+        "email": "ایمیل",
+        "phone": "تلفن",
+        "country": "کشور"
     }
 }
