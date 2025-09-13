@@ -3,5 +3,68 @@
         "category": "Category",
         "parent": "Parent",
         "categories": "Categories"
+    },
+    "store": {
+        "store": "Store",
+        "stores": "Stores"
+    },
+    "department": {
+        "department": "Department",
+        "departments": "Departments"
+    },
+    "currency": {
+        "currency": "Currency",
+        "currencies": "Currencies",
+        "exchange_rate": "Exchange Rate", 
+        "code": "Code",
+        "format": "Format",
+        "flag": "Flag",
+        "is_active": "Is Active",
+        "is_base_currency": "Is Base Currency"
+    },  
+    "brand": {
+        "brand": "Brand",
+        "brands": "Brands",
+        "website": "Website", 
+        "industry": "Industry",
+        "type": "Type",
+        "city": "City",
+        "country": "Country"
+    },
+    "company": {
+        "company": "Company",
+        "companies": "Companies",
+        "website": "Website"
+    },
+    "designation": {
+        "designation": "Designation",
+        "designations": "Designations"
+    },
+    "quantity": {
+        "quantity": "Quantity",
+        "quantities": "Quantities"
+    },
+    "unit_measure": {
+        "unit_measure": "Unit Measure",
+        "unit_measures": "Unit Measures",
+        "value": "Value", 
+        "unit": "Unit",
+        "quantity": "Quantity",
+        "metric": "Metric",
+        "base_unit": "Base Unit"
+    },
+    "branch": {
+        "branch": "Branch",
+        "branches": "Branches",
+        "city": "City",
+        "location": "Location",
+        "sub_domain": "Sub Domain"
+    },
+    "shared": {
+        "remark": "Remark",
+        "parent": "Parent",
+        "address": "Address", 
+        "symbol": "Symbol",
+        "logo": "Logo"
     }
 }

@@ -2,10 +2,9 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref } from 'vue';
-import { Button } from '@/Components/ui/button';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import CreateEditModal from '@/Pages/Administration/Currencies/CreateEditModal.vue';
-import { router } from '@inertiajs/vue3';
+import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
     currencies: Object,
@@ -16,16 +15,15 @@ const props = defineProps({
 });
 const isDialogOpen = ref(false)
 const editingCurrency = ref(null)
+const { t } = useI18n()
 
-console.log('props.currencies.data', props.currencies.data);
-const columns = ref([
-    { key: 'id', label: 'ID' },
-    { key: 'name', label: 'Name',sortable: true },
-    { key: 'code', label: 'Code', sortable: true },
-    { key: 'exchange_rate', label: 'Exchange Rate',sortable: true },
-    { key: 'symbol', label: 'Symbol' },
-    { key: 'format', label: 'Format' },
-    { key: 'actions', label: 'Actions' },
+const columns = ref([ 
+    { key: 'name', label: t('general.name'), sortable: true },
+    { key: 'code', label: t('admin.currency.code'), sortable: true },
+    { key: 'exchange_rate', label: t('admin.currency.exchange_rate'), sortable: true },
+    { key: 'symbol', label: t('admin.shared.symbol') },
+    { key: 'format', label: t('admin.currency.format') },
+    { key: 'actions', label: t('general.action') },
 ]);
 
 const editItem = (item) => {
@@ -35,9 +33,9 @@ const editItem = (item) => {
 const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('currencies.destroy', id, {
-        title: 'Delete Currency',
-        description: 'This will permanently delete this branch.',
-        successMessage: 'Currency deleted successfully.',
+        title: t('general.delete', { name: t('admin.currency.currency') }),
+        description: t('general.delete_description', { name: t('admin.currency.currency') }),
+        successMessage: t('general.delete_success', { name: t('admin.currency.currency') }),
     })
 
 };
@@ -45,37 +43,29 @@ const deleteItem = (id) => {
 </script>
 
 <template>
-    <AppLayout title="Currencies">
-        <div class="flex gap-2 items-center mb-4">
-            <div class="ml-auto gap-3">
-                <Button
-                    @click="isDialogOpen = true"
-                    variant="outline"
-                    class="bg-gray-100 hover:bg-gray-200 dark:border-gray-50 dark:text-green-300"
-                >
-                    Add New
-                </Button>
-                <CreateEditModal
-                    :isDialogOpen="isDialogOpen"
-                    :editingItem="editingCurrency"
-                    :currencies="currencies"
-                    :branches="branches"
-                    @update:isDialogOpen="(value) => {
+    <AppLayout :title="t('admin.currency.currencies')">
+        <CreateEditModal
+            :isDialogOpen="isDialogOpen"
+            :editingItem="editingCurrency"
+            :currencies="currencies"
+            :branches="branches"
+            @update:isDialogOpen="(value) => {
                 isDialogOpen = value;
                 if (!value) editingCurrency = null;
             }"
-                    @saved="() => { editingCurrency = null }"
-                />
-
-            </div>
-        </div>
+            @saved="() => { editingCurrency = null }"
+        />
         <DataTable
             :items="currencies"
             :columns="columns"
             @edit="editItem"
             @delete="deleteItem"
-            :title="`Currencies`"
+            @add="isDialogOpen = true"
+            :title="t('admin.currency.currencies')"
             :url="`currencies.index`"
+            :showAddButton="true"
+            :addTitle="t('admin.currency.currency')"
+            :addAction="'modal'"
         />
     </AppLayout>
 </template>
