@@ -24,6 +24,10 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+
 const props = defineProps({
     modelValue: { type: String, default: '' },
     name: String,
@@ -31,5 +35,6 @@ const props = defineProps({
     readonly: Boolean,
     placeholder: String,
 });
+
 const emit = defineEmits(['update:modelValue']);
 </script>

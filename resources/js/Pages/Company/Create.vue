@@ -43,6 +43,9 @@ const form = useForm({
     logo: null,
     calendar_type: '',
     selected_currency: null,
+    selected_business_type: null,
+    selected_calendar_type: null,
+    selected_working_style: null,
     working_style: '',
     business_type: '',
     locale: 'en',
@@ -68,9 +71,14 @@ const form = useForm({
 // });
 
 const submit = () => {
-    console.log(form);
+    console.log('form', form);
     form.post(route('company.store'), {
-        onFinish: () => form.reset(),
+        onSuccess: () => {
+            form.reset();
+        },
+        onError: () => {
+            console.log(form.errors);
+        }
     });
 };
 
@@ -89,7 +97,7 @@ const handleSelectChange = (field, value) => {
     if(field === 'currency_id') {
         form.currency_id = value;
     }
-    form[field] = value.id;
+    form[field] = value;
 };
 </script>
 
@@ -133,33 +141,44 @@ const handleSelectChange = (field, value) => {
                                 <h3 class="text-lg font-medium">Company Settings</h3>
 
                                 <div class="grid grid-cols-1 gap-6 mt-4 md:grid-cols-3">
+                                    <!-- <NextSelect
+                                        v-model="form.parent_id"
+                                        :options="categories"
+                                        label-key="name"
+                                        @update:modelValue="(value) => handleParentSelectChange(value)"
+                                        value-key="id"
+                                        id="parent"
+                                        :floating-text="t('admin.shared.parent')"
+                                        :error="form.errors?.parent_id"
+                                        :searchable="true"
+                                        resource-type="categories"
+                                        :search-fields="['name']"
+                                        /> -->
+
                                     <NextSelect
                                         :options="businessTypes"
-                                        v-model="form.business_type"
+                                        v-model="form.selected_business_type"
                                         label-key="name"
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('business_type', value)"
-                                        :reduce="type => type.id"
                                         floating-text="Business Type"
                                         :error="form.errors?.business_type"
                                     />
                                     <NextSelect
                                         :options="calendarTypes"
-                                        v-model="form.calendar_type"
+                                        v-model="form.selected_calendar_type"
                                         label-key="name"
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('calendar_type', value)"
-                                        :reduce="type => type.id"
                                         floating-text="Calendar Type"
                                         :error="form.errors?.calendar_type"
                                     />
                                     <NextSelect
                                         :options="workingStyles"
-                                        v-model="form.working_style"
+                                        v-model="form.selected_working_style"
                                         label-key="name"
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('working_style', value)"
-                                        :reduce="type => type.id"
                                         floating-text="Working Style"
                                         :error="form.errors?.working_style"
                                     />
@@ -172,7 +191,6 @@ const handleSelectChange = (field, value) => {
                                         label-key="name"
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('locale', value)"
-                                        :reduce="type => type.id"
                                         floating-text="Default Language"
                                         :error="form.errors?.locale"
                                     />
