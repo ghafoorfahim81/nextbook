@@ -1,5 +1,5 @@
 <template>
-    <div class="flex items-center space-x-2">
+    <div class="flex items-center gap-2">
         <input
             :id="id"
             type="radio"
@@ -8,11 +8,11 @@
             :disabled="disabled"
             :checked="isChecked"
             @change="handleChange"
-            class="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+            class="h-4 w-4 text-primary focus:ring-primary border-input bg-background"
         />
         <label
             :for="id"
-            class="text-sm font-medium text-gray-700 cursor-pointer"
+            class="text-sm font-medium text-foreground cursor-pointer"
             :class="{ 'opacity-50': disabled }"
         >
             {{ label }}

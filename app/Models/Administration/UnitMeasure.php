@@ -60,6 +60,18 @@ class UnitMeasure extends Model
         'parent_id' => 'string',
     ];
 
+    protected static function searchableColumns(): array
+    {
+        return [
+        'name',
+        'unit',
+        'symbol', 
+        'quantity.quantity',
+        'quantity.unit',
+        'quantity.symbol',
+        ];
+    }
+
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
