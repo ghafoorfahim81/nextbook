@@ -31,7 +31,8 @@ class CompanyController extends Controller
     public function store(CompanyStoreRequest $request)
     {
 
-
+        $validated = $request->validated();
+        
         $validated['created_by'] = Auth::id();
         $validated['updated_by'] = Auth::id();
 
