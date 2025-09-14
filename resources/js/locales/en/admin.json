@@ -15,17 +15,17 @@
     "currency": {
         "currency": "Currency",
         "currencies": "Currencies",
-        "exchange_rate": "Exchange Rate", 
+        "exchange_rate": "Exchange Rate",
         "code": "Code",
         "format": "Format",
         "flag": "Flag",
         "is_active": "Is Active",
         "is_base_currency": "Is Base Currency"
-    },  
+    },
     "brand": {
         "brand": "Brand",
         "brands": "Brands",
-        "website": "Website", 
+        "website": "Website",
         "industry": "Industry",
         "type": "Type",
         "city": "City",
@@ -51,11 +51,32 @@
     "unit_measure": {
         "unit_measure": "Unit Measure",
         "unit_measures": "Unit Measures",
-        "value": "Value", 
+        "value": "Value",
         "unit": "Unit",
         "quantity": "Quantity",
         "metric": "Metric",
-        "base_unit": "Base Unit"
+        "base_unit": "Base Unit",
+        "count": "Count",
+        "pair": "Pair",
+        "dozen": "Dozen",
+        "length": "Length",
+        "area": "Area",
+        "weight": "Weight",
+        "inch": "Inch",
+        "centimetre": "Centimetre",
+        "metre": "Metre",
+        "kilometre": "Kilometre",
+        "millimetre": "Millimetre",
+        "square_centimetre": "Square Centimetre",
+        "square_decimeter": "Square Decimeter",
+        "square_meter": "Square Meter",
+        "gram": "Gram",
+        "kilogram": "Kilogram",
+        "ton": "Ton",
+        "other": "Other",
+        "pcs": "Pcs",
+        "other_measure": "Other Measure",
+        "select_quantity_type_first": "Select a quantity type first"
     },
     "branch": {
         "branch": "Branch",
@@ -67,11 +88,11 @@
     "shared": {
         "remark": "Remark",
         "parent": "Parent",
-        "address": "Address", 
+        "address": "Address",
         "symbol": "Symbol",
         "logo": "Logo",
         "email": "Email",
         "phone": "Phone",
-        "country": "Country"    
+        "country": "Country"
     }
 }

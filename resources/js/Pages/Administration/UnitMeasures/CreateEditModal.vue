@@ -1,15 +1,11 @@
 <script setup>
 import { computed, ref, reactive, watch } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
-import { Input } from '@/Components/ui/input'
-import { Textarea } from '@/Components/ui/textarea'
-import { Label } from '@/Components/ui/label'
 import ModalDialog from '@/Components/next/Dialog.vue'
-import vSelect from 'vue-select'
 import NextInput from "@/Components/next/NextInput.vue";
-import NextTextarea from "@/Components/next/NextTextarea.vue";
 import NextRadio from "@/Components/next/NextRadio.vue";
-
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n()
 const props = defineProps({
     isDialogOpen: Boolean,
     editingItem: Object, // ✅ this is passed from Index.vue
@@ -52,146 +48,139 @@ const onMetricChange = () => {
 
 const  metricList = {
         count: {
-          name: "Count",
-          unit: "Pcs",
+          name: t('admin.unit_measure.count'),
+          unit: 'pc',
           symbol: "ea",
-          description: "this is description for count type measure",
           measure: [
             {
-              text: "pcs",
+              text: t('admin.unit_measure.pcs'),
               name: "pcs",
               unit: 1,
               symbol: "ea",
-              description: "this is description for pcs  measure",
             },
             {
-              text: "Pair",
+              text: t('admin.unit_measure.pair'),
               name: "Pair",
               unit: 2,
               symbol: "pr",
-              description: "this is description for pcs  measure",
+
             },
             {
-              text: "Dozen",
+              text: t('admin.unit_measure.dozen'),
               name: "Dozen",
               unit: 12,
               symbol: "dz",
-              description: "this is description for pcs  measure",
+
             },
             {
-              text: "Other",
+              text: t('admin.unit_measure.other'),
               name: "",
               unit: 1,
               symbol: "",
-              description: "",
+
             },
           ],
         },
         length: {
-          name: "Length",
+          name: t('admin.unit_measure.length'),
           unit: "Centimetre",
           symbol: "cm",
-          description: "this is description for Centimetre type measure",
+
           measure: [
             {
-              text: "Centimetre",
+              text: t('admin.unit_measure.centimetre'),
               name: "Centimetre",
               unit: 1,
               symbol: "cm",
-              description: "this is description for Centimetre  measure",
+
             },
             {
-              text: "Inch",
+              text: t('admin.unit_measure.inch'),
               name: "Inch",
               unit: 2.5,
               symbol: "in",
-              description: "this is description for Inch  measure",
+
             },
             {
-              text: "Meter",
+              text: t('admin.unit_measure.metre'),
               name: "Meter",
               unit: 100,
               symbol: "m",
-              description: "this is description for Meter  measure",
+
             },
             {
-              text: "Other",
+              text: t('admin.unit_measure.other'),
               name: "",
               unit: 1,
               symbol: "",
-              description: "",
+
             },
           ],
         },
         Area: {
-          name: "Area",
+          name: t('admin.unit_measure.area'),
           unit: "SquareCentimetre",
           symbol: "cm2",
-          description: "this is description for SquareCentimetre type area",
+
           measure: [
             {
-              text: "SquareCentimetre",
+              text: t('admin.unit_measure.square_centimetre'),
               name: "SquareCentimetre",
               unit: 1,
               symbol: "cm2",
-              description: "this is description for SquareCentimetre  area",
+
             },
             {
-              text: "SquareDecimeter",
+                text: t('admin.unit_measure.square_decimeter'),
               name: "SquareDecimeter",
               unit: 0.01,
               symbol: "dm2",
-              description: "this is description for SquareInch  area",
+
             },
             {
-              text: "SquareMetere",
+              text: t('admin.unit_measure.square_meter'),
               name: "SquareMeter",
               unit: 0.0001,
               symbol: "m2",
-              description: "this is description for SquareMeter  area",
+
             },
             {
-              text: "Other",
+              text: t('admin.unit_measure.other'),
               name: "",
               unit: 1,
               symbol: "",
-              description: "",
+
             },
           ],
         },
         Weight: {
-          name: "Weight",
+          name: t('admin.unit_measure.weight'),
           unit: "Gram",
           symbol: "g",
-          description: "this is description for Gram type measure",
           measure: [
             {
-              text: "Gram",
+              text: t('admin.unit_measure.gram'),
               name: "Gram",
               unit: 1,
               symbol: "g",
-              description: "this is description for Gram  measure",
             },
             {
-              text: "Kilogram",
+              text: t('admin.unit_measure.kilogram'),
               name: "Kilogram",
               unit: 1000,
               symbol: "kg",
-              description: "this is description for Kilogram  measure",
             },
             {
-              text: "Ton",
+              text: t('admin.unit_measure.ton'),
               name: "Ton",
               unit: 1000000,
               symbol: "ton",
-              description: "this is description for Ton  measure",
             },
             {
-              text: "Other",
+              text: t('admin.unit_measure.other'),
               name: "",
               unit: 1,
               symbol: "",
-              description: "",
             },
           ],
         },
@@ -257,8 +246,8 @@ const handleSubmit = () => {
 <template>
     <ModalDialog
         :open="localDialogOpen"
-        :title="isEditing ? 'Edit Unit Measure' : 'Create Unit Measure'"
-        :confirmText="isEditing ? 'Update' : 'Create'"
+        :title="isEditing ?t('general.edit', { name: t('admin.unit_measure.unit_measure') }) : t('general.create', { name: t('admin.unit_measure.unit_measure') })"
+        :confirmText="isEditing ? t('general.update') : t('general.create')"
         @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
         :closeable="true"
         width="w-[900px] max-w-[900px]"
@@ -270,7 +259,7 @@ const handleSubmit = () => {
                 <div class="grid grid-cols-3 gap-6">
                     <!-- Quantity Types Column -->
                     <div class="space-y-4">
-                        <h3 class="text-lg font-semibold text-gray-900">Quantity</h3>
+                        <h3 class="text-lg font-semibold text-foreground">{{ t('admin.unit_measure.quantity') }}</h3>
                         <div class="space-y-2">
                             <NextRadio
                                 v-for="(metric, key) in metricList"
@@ -286,7 +275,7 @@ const handleSubmit = () => {
 
                     <!-- Measures Column -->
                     <div class="space-y-4">
-                        <h3 class="text-lg font-semibold text-gray-900">Measures</h3>
+                        <h3 class="text-lg font-semibold text-foreground">{{ t('admin.unit_measure.unit_measure') }}</h3>
                         <div class="space-y-2" v-if="form.metric && form.metric.measure">
                             <NextRadio
                                 v-for="measure in form.metric.measure"
@@ -297,32 +286,32 @@ const handleSubmit = () => {
                                 name="measure"
                             />
                         </div>
-                        <div v-else class="text-sm text-gray-500">
-                            Select a quantity type first
+                        <div v-else class="text-sm text-muted-foreground">
+                            {{ t('admin.unit_measure.select_quantity_type_first') }}
                         </div>
                     </div>
 
                     <!-- Other Measures Column -->
-                    <div class="space-y-4" v-if="form.measure && form.measure.text === 'Other'">
-                        <h3 class="text-lg font-semibold text-gray-900">Other Measures</h3>
+                    <div class="space-y-4" v-if="form.measure && form.measure.text === t('admin.unit_measure.other')">
+                        <h3 class="text-lg font-semibold text-foreground">{{ t('admin.unit_measure.other_measure') }}</h3>
                         <div class="space-y-4">
                             <NextInput
                                 v-model="form.measure.name"
-                                label="Other Measure Name"
+                                :label="t('general.name')"
                                 type="text"
-                                placeholder="Enter measure name"
+                                :placeholder="t('general.enter', { text: t('general.name') })"
                             />
                             <NextInput
                                 v-model="form.measure.unit"
-                                label="Measure Unit"
+                                :label="t('admin.unit_measure.unit')"
                                 type="number"
-                                placeholder="Enter unit value"
+                                :placeholder="t('general.enter', { text: t('admin.unit_measure.unit') })"
                             />
                             <NextInput
                                 v-model="form.measure.symbol"
-                                label="Measure Symbol"
+                                :label="t('admin.shared.symbol')"
                                 type="text"
-                                placeholder="Enter symbol"
+                                :placeholder="t('general.enter', { text: t('admin.shared.symbol') })"
                             />
                         </div>
                     </div>

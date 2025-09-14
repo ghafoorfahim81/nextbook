@@ -20,7 +20,7 @@
                     </span>
                     <button
                         v-if="search"
-                        class="absolute end-0 inset-y-0 flex items-center justify-center px-2 text-muted-foreground hover:text-foreground"
+                        class="absolute end-0 inset-y-0 flex items-center justify-center px-2 rtl:px-8 text-muted-foreground hover:text-foreground"
                         @click="clearSearch"
                     >
                         <CircleX class="size-4 mr-9" />
@@ -33,7 +33,7 @@
                     </button>
                 </div>
             </div>
-            
+
             <!-- Right actions (Add New) -->
             <div class="ml-4 flex items-center gap-2" v-if="showAddButton">
                 <AddNewButton

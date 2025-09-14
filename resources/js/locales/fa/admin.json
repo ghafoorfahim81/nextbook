@@ -15,7 +15,7 @@
     "currency": {
         "currency": "ارز",
         "currencies": "ارز ها",
-        "exchange_rate": "نرخ تبدیل", 
+        "exchange_rate": "نرخ تبدیل",
         "code": "کد",
         "format": "فرمت",
         "flag": "پرچم",
@@ -25,9 +25,9 @@
         "brand": {
         "brand": "برند",
         "brands": "برند ها",
-        "website": "وبسایت", 
+        "website": "وبسایت",
         "industry": "صنعت",
-        "type": "نوع", 
+        "type": "نوع",
         "city": "شهر",
         "country": "کشور",
         "legal_name": "نام قانونی",
@@ -38,7 +38,7 @@
     "company": {
         "company": "شرکت",
         "companies": "شرکت ها",
-        "website": "وبسایت", 
+        "website": "وبسایت",
         "sub_domain": "زیر دامنه"
     },
     "designation": {
@@ -52,20 +52,41 @@
     "unit_measure": {
         "unit_measure": "واحد اندازه گیری",
         "unit_measures": "واحد اندازه گیری ها",
-        "value": "مقدار", 
+        "value": "مقدار",
         "unit": "واحد",
         "quantity": "مقدار",
         "metric": "متریک",
-        "base_unit": "واحد اصلی"
+        "base_unit": "واحد اصلی",
+        "count": "تعداد",
+        "pair": "زوج",
+        "dozen": "دوازده",
+        "length": "طول",
+        "area": "مساحت",
+        "weight": "وزن",
+        "inch": "اینچ",
+        "centimetre": "سانتی متر",
+        "metre": "متر",
+        "kilometre": "کیلومتر",
+        "millimetre": "میلی متر",
+        "square_centimetre": "سانتی متر مربع",
+        "square_decimeter": "دسی متر مربع",
+        "square_meter": "متر مربع",
+        "gram": "گرم",
+        "kilogram": "کیلوگرم",
+        "ton": "تن",
+        "other": "دیگر",
+        "pcs": "تعداد",
+        "other_measure": "واحد اندازه گیری دیگر",
+        "select_quantity_type_first": "لطفا یک نوع مقدار انتخاب کنید"
     },
     "branch": {
         "branch": "شعبه",
-        "branches": "شعبه ها", 
+        "branches": "شعبه ها",
         "city": "شهر",
         "location": "مکان",
-        "sub_domain": "زیر دامنه" 
+        "sub_domain": "زیر دامنه"
     },
-    "shared": { 
+    "shared": {
         "remark": "توضیحات",
         "parent": "والد",
         "address": "آدرس",
