@@ -7,7 +7,7 @@
             v-model="model"
             :disabled="disabled"
             :autocomplete="autocomplete"
-            placeholder=" "
+            :placeholder="placeholder"
         class="peer block w-full rounded-md border border-2 border-black border-input bg-background px-3 py-3 text-sm shadow-sm
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
         disabled:cursor-not-allowed disabled:opacity-50"
@@ -16,7 +16,7 @@
         <!-- floating label -->
         <label
             :for="id"
-            class="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded bg-background px-1
+            class="pointer-events-none absolute start-3 top-1/2 z-10 -translate-y-1/2 rounded bg-background px-1
          text-muted-foreground transition-all duration-150
          peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-sm
          peer-focus:top-0 peer-focus:-translate-y-1/2 peer-focus:text-xs peer-focus:text-foreground
@@ -48,6 +48,7 @@ const props = defineProps({
     autocomplete: { type: String, default: 'off' },
     error: String,
     hint: String,
+    placeholder: String,
 })
 
 const emit = defineEmits(['update:modelValue'])

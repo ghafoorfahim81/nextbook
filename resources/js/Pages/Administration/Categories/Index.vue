@@ -2,29 +2,25 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref } from 'vue';
-import { Button } from '@/Components/ui/button';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import CreateEditModal from '@/Pages/Administration/Categories/CreateEditModal.vue';
-import { router } from '@inertiajs/vue3';
-
+import { useI18n } from 'vue-i18n';
 const props = defineProps({
     categories: Object,
 });
 const isDialogOpen = ref(false)
 const editingCategory = ref(null)
-
-
+const { t } = useI18n()
 const columns = ref([
-    { key: 'id', label: 'ID' },
-    { key: 'name', label: 'Name',sortable: true },
+    { key: 'name', label: t('general.name'),sortable: true },
     {
         key: 'parent.name',
-        label: 'Parent',
+        label: t('admin.category.parent'),
         sortable: true,
-        render: (row) => row.parent?.name ?? '-',
+        render: (row) => row.parent?.name,
     },
-    { key: 'remark', label: 'Remark' },
-    { key: 'actions', label: 'Actions' },
+    { key: 'remark', label: t('general.remarks') },
+    { key: 'actions', label: t('general.action') },
 ]);
 
 const editItem = (item) => {
@@ -34,9 +30,9 @@ const editItem = (item) => {
 const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('categories.destroy', id, {
-        title: 'Delete Category',
-        description: 'This will permanently delete this category.',
-        successMessage: 'Category deleted successfully.',
+        title: t('general.delete', { name: t('admin.category.category') }),
+        description: t('general.delete_description', { name: t('admin.category.category') }),
+        successMessage: t('general.delete_success', { name: t('admin.category.category') }),
     })
 
 };
@@ -44,36 +40,28 @@ const deleteItem = (id) => {
 </script>
 
 <template>
-    <AppLayout title="Categories">
-        <div class="flex gap-2 items-center mb-4">
-            <div class="ml-auto gap-3">
-                <Button
-                    @click="isDialogOpen = true"
-                    variant="outline"
-                    class="bg-primary text-white"
-                >
-                    Add New
-                </Button>
-                <CreateEditModal
-                    :isDialogOpen="isDialogOpen"
-                    :editingItem="editingCategory"
-                    :categories="categories"
-                    @update:isDialogOpen="(value) => {
-                        isDialogOpen = value;
-                        if (!value) editingCategory = null;
-                    }"
-                    @saved="() => { editingCategory = null }"
-
-                />
-            </div>
-        </div>
+    <AppLayout :title="t('admin.category.categories')">
+        <CreateEditModal
+            :isDialogOpen="isDialogOpen"
+            :editingItem="editingCategory"
+            :categories="categories"
+            @update:isDialogOpen="(value) => {
+                isDialogOpen = value;
+                if (!value) editingCategory = null;
+            }"
+            @saved="() => { editingCategory = null }"
+        />
         <DataTable
             :items="categories"
             :columns="columns"
             @edit="editItem"
             @delete="deleteItem"
-            :title="`Categories`"
+            @add="isDialogOpen = true"
+            :title="t('admin.category.categories')"
             :url="`categories.index`"
+            :showAddButton="true"
+            :addTitle="t('admin.category.category')"
+            :addAction="'modal'"
         />
     </AppLayout>
 </template>

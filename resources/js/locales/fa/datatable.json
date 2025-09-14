@@ -1,0 +1,12 @@
+{
+  "actions": "عملیه ها",
+  "edit": "ویرایش",
+  "delete": "حذف",
+  "per_page": "در هر صفحه",
+  "search": "جستجو",
+  "showing": "نمایش {from} تا {to} از {total} مورد",
+  "previous": "قبلی",
+  "next": "بعدی"
+}
+
+

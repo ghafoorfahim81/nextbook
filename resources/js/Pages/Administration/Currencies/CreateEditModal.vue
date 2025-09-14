@@ -4,11 +4,10 @@ import { useForm, router } from '@inertiajs/vue3'
 import { Input } from '@/Components/ui/input'
 import { Textarea } from '@/Components/ui/textarea'
 import { Label } from '@/Components/ui/label'
-import ModalDialog from '@/Components/next/Dialog.vue'
-import vSelect from 'vue-select'
-import NextInput from "@/Components/next/NextInput.vue";
-import NextTextarea from "@/Components/next/NextTextarea.vue";
-
+import ModalDialog from '@/Components/next/Dialog.vue' 
+import NextInput from "@/Components/next/NextInput.vue"; 
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n()
 const props = defineProps({
     isDialogOpen: Boolean,
     editingItem: Object, // ✅ this is passed from Index.vue
@@ -17,7 +16,6 @@ const props = defineProps({
         default: () => [],
     },
 
-    errors: Object,
 })
 
 const emit = defineEmits(['update:isDialogOpen', 'saved'])
@@ -81,6 +79,9 @@ const handleSubmit = async () => {
                 form.reset();
                 closeModal()
             },
+            onError: () => {
+                console.log('error', form.errors);
+            },
         })
     }
 }
@@ -91,8 +92,9 @@ const handleSubmit = async () => {
 <template>
     <ModalDialog
         :open="localDialogOpen"
-        :title="isEditing ? 'Edit Currency' : 'Create Currency'"
-        :confirmText="isEditing ? 'Update' : 'Create'"
+        :title="isEditing ? t('general.edit', { name: t('admin.currency.currency') }) : t('general.create', { name: t('admin.currency.currency') })"
+        :confirmText="isEditing ? t('general.update') : t('general.create')"
+        :cancel-text="t('general.close')"
         @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
         :closeable="true"
         width="w-[800px] max-w-[800px]"
@@ -102,12 +104,12 @@ const handleSubmit = async () => {
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid col-span-2 gap-4 py-4">
                 <div class="grid items-center grid-cols-2 gap-4">
-                    <NextInput label="Name" v-model="form.name" :errors="errors?.name" type="text"/>
-                    <NextInput label="code" v-model="form.code" type="text"/>
-                    <NextInput label="Symbol" v-model="form.symbol" type="text"/>
-                    <NextInput label="Format" v-model="form.format" type="text"/>
-                    <NextInput label="Exchange Rate" v-model="form.exchange_rate" type="number"/>
-                    <NextInput label="Flag" v-model="form.flag" type="text"/>
+                    <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name"/>
+                    <NextInput :label="t('admin.currency.code')" v-model="form.code" :error="form.errors?.code"/>
+                    <NextInput :label="t('admin.shared.symbol')" v-model="form.symbol" :error="form.errors?.symbol"/>
+                    <NextInput :label="t('admin.currency.format')" v-model="form.format" :error="form.errors?.format"/>
+                    <NextInput :label="t('admin.currency.exchange_rate')" v-model="form.exchange_rate" type="number" :error="form.errors?.exchange_rate"/>
+                    <NextInput :label="t('admin.currency.flag')" v-model="form.flag" :error="form.errors?.flag"/>
                 </div>
             </div>
         </form>

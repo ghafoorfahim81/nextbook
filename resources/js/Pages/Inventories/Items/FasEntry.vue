@@ -5,7 +5,7 @@ import { useForm } from '@inertiajs/vue3'
 import { Button } from '@/Components/ui/button'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
-import { useToast } from '@/components/ui/toast/use-toast'
+import { useToast } from '@/Components/ui/toast/use-toast'
 
 const props = defineProps({
     stores: { type: [Array, Object], required: true },

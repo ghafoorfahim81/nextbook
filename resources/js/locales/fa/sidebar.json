@@ -1,0 +1,41 @@
+{
+  "group": {
+    "menu": "منو"
+  },
+  "main": {
+    "dashboard": "داشبورد",
+    "administration": "مدیریت",
+    "inventory": "انبار",
+    "account": "حسابداری",
+    "purchase": "خرید",
+    "ledger": "دفتر"
+  },
+  "administration": {
+    "category": "دسته بندی",
+    "currency": "ارز",
+    "unit_measure": "واحد اندازه گیری",
+    "branch": "شعبه",
+    "brand": "برند",
+    "store": "گدام/انبار",
+    "company": "شرکت"
+  },
+  "inventory": {
+    "item": "جنس/کالا",
+    "fast_entry": "ثبت سریع",
+    "fast_opening": "افتتاحیه سریع"
+  },
+  "account": {
+    "chart_of_account": "چارت حساب",
+    "account_type": "نوع حساب"
+  },
+  "purchase": {
+    "purchase": "خرید",
+    "purchase_return": "برگشت خرید"
+  },
+  "ledger": {
+    "customer": "مشتری",
+    "supplier": "تامین کننده"
+  }
+}
+
+
