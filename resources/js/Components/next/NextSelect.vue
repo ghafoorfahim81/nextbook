@@ -11,7 +11,6 @@
                 @search="handleSearch"
                 :filterable="false"
                 :loading="isLoading"
-                append-to-body
                 :close-on-select="true"
                 class="col-span-3 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 v-bind="$attrs"
@@ -20,7 +19,7 @@
             <FloatingLabel
                 :id="id"
                 :label="floatingText"
-                class="pointer-events-none z-10"
+                class="pointer-events-none z-0"
             />
         </div>
 
@@ -103,7 +102,13 @@ watch(() => props.modelValue, () => {
     }
 }, { immediate: true });
 
-// Existing reduceInternal remains the same
+// Define reduceInternal function
+const reduceInternal = (option) => {
+    if (props.reduce) {
+        return props.reduce(option);
+    }
+    return option ? option[props.valueKey] : null;
+};
 
 const handleSearch = async (searchTerm) => {
     currentSearchTerm.value = searchTerm;
@@ -151,8 +156,33 @@ const handleSearch = async (searchTerm) => {
 
 <!-- Styles specific to vue-select dropdown -->
 <style scoped>
-    /* Keep the menu above surrounding UI */
-:deep(.vs__dropdown-menu) { z-index: 2000; }
+    /* Keep the menu above surrounding UI - higher z-index for modals */
+:deep(.vs__dropdown-menu) { 
+    z-index: 9999 !important; 
+    position: absolute !important;
+}
+
+/* Ensure the dropdown toggle is clickable */
+:deep(.vs__dropdown-toggle) {
+    cursor: pointer !important;
+}
+
+/* Ensure dropdown options are clickable */
+:deep(.vs__dropdown-option) {
+    cursor: pointer !important;
+}
+
+/* Ensure the entire dropdown container is interactive */
+:deep(.vs__dropdown) {
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+/* Fix any potential overflow issues in modals */
+:deep(.vs__dropdown-menu) {
+    max-height: 200px !important;
+    overflow-y: auto !important;
+}
 
 /* --- Compact control height (match Tailwind inputs) --- */
 /* If your inputs are h-10 (2.5rem), keep min-height but remove extra inner spacing.

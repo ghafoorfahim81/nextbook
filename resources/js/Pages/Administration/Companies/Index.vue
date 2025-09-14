@@ -2,9 +2,9 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { ref } from 'vue';
-import { Button } from '@/Components/ui/button';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import CreateEditModal from './CreateEditModal.vue';
+import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
     companies: Object,
@@ -16,24 +16,25 @@ const props = defineProps({
 
 const isDialogOpen = ref(false);
 const editingItem = ref(null);
+const { t } = useI18n();
 
 const columns = ref([
-    { key: 'name', label: 'Name', sortable: true },
-    { key: 'legal_name', label: 'Legal Name' },
-    { key: 'registration_number', label: 'Reg. Number' },
-    { key: 'industry', label: 'Industry' },
-    { key: 'type', label: 'Type' },
-    { key: 'city', label: 'City' },
-    { key: 'country', label: 'Country' },
-    { key: 'actions', label: 'Actions' },
+    { key: 'name', label: t('general.name'), sortable: true },
+    { key: 'legal_name', label: t('admin.company.legal_name') },
+    { key: 'registration_number', label: t('admin.company.registration_number') },
+    { key: 'industry', label: t('admin.company.industry') },
+    { key: 'type', label: t('general.type') },
+    { key: 'city', label: t('general.city') },
+    { key: 'country', label: t('general.country') },
+    { key: 'actions', label: t('general.action') },
 ]);
 
 const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {
     deleteResource('companies.destroy', id, {
-        title: 'Delete Company',
-        description: 'This will permanently delete this company.',
-        successMessage: 'Company deleted successfully.',
+        title: t('general.delete', { name: t('admin.company.company') }),
+        description: t('general.delete_description', { name: t('admin.company.company') }),
+        successMessage: t('general.delete_success', { name: t('admin.company.company') }),
     });
 };
 
@@ -44,28 +45,7 @@ const editItem = (item) => {
 </script>
 
 <template>
-    <AppLayout title="Companies">
-        <div class="flex gap-2 items-center mb-4">
-            <div class="ml-auto">
-                <Button
-                    @click="isDialogOpen = true"
-                    variant="outline"
-                    class="bg-gray-100 hover:bg-gray-200"
-                >
-                    Add New
-                </Button>
-            </div>
-        </div>
-
-        <DataTable
-            :items="companies"
-            :columns="columns"
-            :title="`Companies`"
-            :url="`companies.index`"
-            @edit="editItem"
-            @delete="deleteItem"
-        />
-
+    <AppLayout :title="t('admin.company.companies')">
         <CreateEditModal
             :isDialogOpen="isDialogOpen"
             :editingItem="editingItem"
@@ -75,7 +55,18 @@ const editItem = (item) => {
                 if (!value) editingItem = null;
             }"
             @saved="() => { editingItem = null }"
-
+        />
+        <DataTable
+            :items="companies"
+            :columns="columns"
+            @edit="editItem"
+            @delete="deleteItem"
+            @add="isDialogOpen = true"
+            :title="t('admin.company.companies')"
+            :url="`companies.index`"
+            :showAddButton="true"
+            :addTitle="t('admin.company.company')"
+            :addAction="'modal'"
         />
     </AppLayout>
 </template>

@@ -46,10 +46,7 @@ const columns = ref([
     <AppLayout title="Designations">
         <div class="flex gap-2 items-center">
             <div class="ml-auto gap-3">
-                <Link :href="route('chart-of-accounts.create')">
-                    <Button  variant="outline" class="bg-gray-100
-                    hover:bg-gray-200 dark:border-gray-50 dark:text-green-300">Add New</Button>
-                </Link>
+                
                 <CreateEditModal
                     :isDialogOpen="isDialogOpen"
                     :categories="items"

@@ -10,8 +10,9 @@ import NextInput from "@/Components/next/NextInput.vue";
 import NextTextarea from "@/Components/next/NextTextarea.vue";
 import FloatingLabel from "@/Components/next/FloatingLabel.vue";
 import NextSelect from "@/Components/next/NextSelect.vue";
-
-const props = defineProps({
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n()
+const props = defineProps({ 
     isDialogOpen: Boolean,
     editingItem: Object, // ✅ this is passed from Index.vue
     branches: {
@@ -23,7 +24,11 @@ const props = defineProps({
 
 const emit = defineEmits(['update:isDialogOpen', 'saved'])
 
-const branches = computed(() => props.branches.data ?? props.branches)
+const branches = computed(() => {
+    const data = props.branches.data ?? props.branches
+    console.log('Branches data:', data)
+    return data
+})
 const localDialogOpen = ref(props.isDialogOpen)
 
 watch(() => props.isDialogOpen, (val) => {
@@ -61,6 +66,10 @@ const closeModal = () => {
     localDialogOpen.value = false
 }
 
+const handleParentSelectChange = (value) => {
+    form.parent_id = value
+}
+
 const handleSubmit = async () => {
     if (isEditing.value) {
         form.patch(route('branches.update', props.editingItem.id), {
@@ -87,35 +96,40 @@ const handleSubmit = async () => {
 <template>
     <ModalDialog
         :open="localDialogOpen"
-        :title="isEditing ? 'Edit Branch' : 'Create Branch'"
-        :confirmText="isEditing ? 'Update' : 'Create'"
+        :title="isEditing ? t('general.edit') + ' ' + t('admin.branch.branch') : t('general.create') + ' ' + t('admin.branch.branch')"
+        :confirmText="isEditing ? t('general.update') : t('general.create')"
         @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
         :closeable="true"
         width="w-[800px] max-w-[800px]"
         @confirm="handleSubmit"
         @cancel="closeModal"
+        :cancel-text="t('general.close')"
     >
 
 
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid col-span-2 gap-4 py-4">
                 <div class="grid items-center grid-cols-2 gap-4">
-                    <NextInput label="Name" v-model="form.name" :errors="errors?.name" type="text"/>
-                    <NextInput label="Location" v-model="form.location" type="text"/>
-                    <NextInput label="Sub Domain" v-model="form.sub_domain" type="text"/>
+                    <NextInput :label="t('general.name')" :placeholder="t('general.enter', { text: t('general.name') })" v-model="form.name" :error="errors?.name"/>
+                    <NextInput :label="t('admin.branch.location')" :placeholder="t('general.enter', { text: t('admin.branch.location') })" v-model="form.location" :error="errors?.location"/>
+                    <NextInput :label="t('admin.branch.sub_domain')" :placeholder="t('general.enter', { text: t('admin.branch.sub_domain') })" v-model="form.sub_domain" :error="errors?.sub_domain"/>
                     <NextSelect
                         v-model="form.parent_id"
                         :options="branches"
                         label-key="name"
+                        @update:modelValue="(value) => handleParentSelectChange(value)"
                         value-key="id"
-                        id="type"
-                        floating-text="Parent"
+                        id="parent"
+                        :floating-text="t('admin.shared.parent')"
                         :error="form.errors?.parent_id"
+                        :searchable="true"
+                        resource-type="branches"
+                        :search-fields="['name', 'location']"
                     />
                     <NextTextarea
                         v-model="form.remark"
-                        label="Remark"
-                        placeholder="Enter your remark..."
+                        :label="t('admin.shared.remark')"
+                        :placeholder="t('general.enter', { text: t('admin.shared.remark') })"
                         :error="form.errors?.remark"
                     />
                 </div>

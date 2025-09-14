@@ -9,7 +9,9 @@ import vSelect from 'vue-select'
 import NextInput from "@/Components/next/NextInput.vue";
 import FloatingLabel from "@/Components/next/FloatingLabel.vue";
 import NextTextarea from "@/Components/next/NextTextarea.vue";
-
+import NextSelect from "@/Components/next/NextSelect.vue";
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n()
 const props = defineProps({
     isDialogOpen: Boolean,
     editingItem: Object, // ✅ this is passed from Index.vue
@@ -57,6 +59,10 @@ const closeModal = () => {
     localDialogOpen.value = false
 }
 
+const handleParentSelectChange = (value) => {
+    form.parent_id = value
+}
+
 const handleSubmit = async () => {
     if (isEditing.value) {
         form.patch(route('categories.update', props.editingItem.id), {
@@ -83,8 +89,9 @@ const handleSubmit = async () => {
 <template>
     <ModalDialog
         :open="localDialogOpen"
-        :title="isEditing ? 'Edit Category' : 'Create Category'"
-        :confirmText="isEditing ? 'Update' : 'Create'"
+        :title="isEditing ? t('general.edit', { name: t('admin.category.category') }) : t('general.create', { name: t('admin.category.category') })"
+        :confirmText="isEditing ? t('general.update') : t('general.create')"
+        :cancel-text="t('general.close')"
         @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
         :closeable="true"
         @confirm="handleSubmit"
@@ -92,30 +99,26 @@ const handleSubmit = async () => {
     >
 
         <form @submit.prevent="handleSubmit" id="modalForm">
-            <div class="grid gap-4 py-4">
-                <!-- Name -->
-
-                <NextInput label="Name" v-model="form.name" :error="form.errors.name" />
-
-                <div class="relative z-100 w-full group dark:bg-slate-50 dark:text-slate-500">
-                    <div>
-                        <v-select
-                            :options="categories"
-                            v-model="form.parent_id"
-                            :reduce="category => category.id"
-                            label="name"
-                            class="col-span-3"
-                        />
-                        <FloatingLabel :id="'type'" :label="`Parent`"/>
-                    </div>
-                    <span v-if="form.errors?.parent_id" class="text-red-500 text-sm">
-                    {{ form.errors.parent_id }}
-                  </span>
-                </div>
+            <div class="grid gap-4 py-4"> 
+                <NextInput :label="t('general.name')" :placeholder="t('general.enter', { text: t('general.name') })" v-model="form.name" :error="form.errors.name" />
+                <NextSelect
+                    v-model="form.parent_id"
+                    :options="categories"
+                    label-key="name"
+                    @update:modelValue="(value) => handleParentSelectChange(value)"
+                    value-key="id"
+                    id="parent"
+                    :floating-text="t('admin.shared.parent')"
+                    :error="form.errors?.parent_id"
+                    :searchable="true"
+                    resource-type="categories"
+                    :search-fields="['name']"
+                    /> 
                 <NextTextarea
                     v-model="form.remark"
-                    label="Description"
-                    placeholder="Enter product description"
+                    :label="t('general.remarks')"
+                    :placeholder="t('general.enter', { text: t('general.remarks') })"
+                    :error="form.errors?.remark"
                 />
             </div>
         </form>

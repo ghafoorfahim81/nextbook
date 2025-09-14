@@ -8,7 +8,7 @@ import {Separator} from "@/Components/ui/separator/index.js";
 import NextTextarea from "@/Components/next/NextTextarea.vue";
 import {useForm} from "@inertiajs/vue3";
 import FloatingLabel from "@/Components/next/FloatingLabel.vue";
-import { useToast } from '@/components/ui/toast/use-toast'
+import { useToast } from '@/Components/ui/toast/use-toast'
 
 
 const { currencies, accountTypes,branches } = defineProps({

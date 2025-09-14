@@ -2,31 +2,29 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref } from 'vue';
-import { Button } from '@/Components/ui/button';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import CreateEditModal from '@/Pages/Administration/Branches/CreateEditModal.vue';
-import { router } from '@inertiajs/vue3';
+import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
     branches: Object,
 });
 const isDialogOpen = ref(false)
 const editingBranch = ref(null)
+const { t } = useI18n()
 
-
-const columns = ref([
-    { key: 'id', label: 'ID' },
-    { key: 'name', label: 'Name',sortable: true },
+const columns = ref([ 
+    { key: 'name', label: t('general.name'), sortable: true },
     {
         key: 'parent.name',
-        label: 'Parent',
+        label: t('admin.shared.parent'),
         sortable: true,
         render: (row) => row.parent?.name ?? '-',
     },
-    { key: 'location', label: 'Location' },
-    { key: 'sub_domain', label: 'Sub Domain' },
-    { key: 'remark', label: 'Remark' },
-    { key: 'actions', label: 'Actions' },
+    { key: 'location', label: t('admin.branch.location') },
+    { key: 'sub_domain', label: t('admin.branch.sub_domain') },
+    { key: 'remark', label: t('admin.shared.remark') },
+    { key: 'actions', label: t('general.action') },
 ]);
 
 const editItem = (item) => {
@@ -36,9 +34,9 @@ const editItem = (item) => {
 const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('branches.destroy', id, {
-        title: 'Delete Branch',
-        description: 'This will permanently delete this branch.',
-        successMessage: 'Branch deleted successfully.',
+        title: t('general.delete', { name: t('admin.branch.branch') }),
+        description: t('general.delete_description', { name: t('admin.branch.branch') }),
+        successMessage: t('general.delete_success', { name: t('admin.branch.branch') }),
     })
 
 };
@@ -46,36 +44,28 @@ const deleteItem = (id) => {
 </script>
 
 <template>
-    <AppLayout title="Branches">
-        <div class="flex gap-2 items-center mb-4">
-            <div class="ml-auto gap-3">
-                <Button
-                    @click="isDialogOpen = true"
-                    variant="outline"
-                    class="bg-gray-100 hover:bg-gray-200 dark:border-gray-50 dark:text-green-300"
-                >
-                    Add New
-                </Button>
-                <CreateEditModal
-                    :isDialogOpen="isDialogOpen"
-                    :editingItem="editingBranch"
-                    :branches="branches"
-                    @update:isDialogOpen="(value) => {
-                        isDialogOpen = value;
-                        if (!value) editingBranch = null;
-                    }"
-                    @saved="() => { editingBranch = null }"
-                />
-
-            </div>
-        </div>
+    <AppLayout :title="t('admin.branch.branches')">
+        <CreateEditModal
+            :isDialogOpen="isDialogOpen"
+            :editingItem="editingBranch"
+            :branches="branches"
+            @update:isDialogOpen="(value) => {
+                isDialogOpen = value;
+                if (!value) editingBranch = null;
+            }"
+            @saved="() => { editingBranch = null }"
+        />
         <DataTable
             :items="branches"
             :columns="columns"
             @edit="editItem"
             @delete="deleteItem"
-            :title="`Branches`"
+            @add="isDialogOpen = true"
+            :title="t('admin.branch.branches')"
             :url="`branches.index`"
+            :showAddButton="true"
+            :addTitle="t('admin.branch.branch')"
+            :addAction="'modal'"
         />
     </AppLayout>
 </template>
