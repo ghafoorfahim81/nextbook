@@ -2,6 +2,7 @@
 import {useForm } from '@inertiajs/vue3';
 import { onMounted, computed } from 'vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
+import { Button } from '@/Components/ui/button';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
@@ -245,8 +246,14 @@ const handleSelectChange = (field, value) => {
                             </div>
 
                             <div class="flex justify-end pt-6 mt-6 border-t border-gray-200">
-                                <Button type="submit" variant="outline" class="bg-primary text-white" :disabled="form.processing">
-                                    Create Company
+                                <Button
+                                    type="submit"
+                                    variant="outline"
+                                    :disabled="form.processing"
+                                    class="bg-primary text-white"
+                                >
+                                    <span v-if="form.processing">Saving...</span>
+                                    <span v-else>Save</span>
                                 </Button>
                             </div>
                         </form>
