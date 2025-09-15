@@ -158,7 +158,7 @@ class ItemController extends Controller
 
     public function destroy(Request $request, Item $item)
     {
-        $item->opening()->delete();
+        $item->openings()->delete();
         $item->stocks()->delete();
         $item->delete();
         return back();
