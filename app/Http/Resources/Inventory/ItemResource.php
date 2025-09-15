@@ -24,6 +24,7 @@ class ItemResource extends JsonResource
             'unitMeasure'  => $this->unitMeasure,
             'brand_id' => $this->brand_id,
             'brand' => $this->brand,
+            'brand_name' => $this->brand?->name,
             'category_id' => $this->category_id,
             'category' => $this->category?->name,
             'minimum_stock' => $this->minimum_stock,

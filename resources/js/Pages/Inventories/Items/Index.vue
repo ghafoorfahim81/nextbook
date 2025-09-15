@@ -12,14 +12,12 @@ const props = defineProps({
     items: Object,
 })
 
-console.log('this is items', props.items.data);
-
 const columns = ref([
     { key: 'name', label: 'Name' },
     { key: 'code', label: 'Code' },
     { key: 'category', label: 'Category' },
     { key: 'measure', label: 'Unit' },
-    { key: 'company', label: 'Company' },
+    { key: 'brand_name', label: 'Brand' },
     { key: 'cost', label: 'Cost' },
     { key: 'quantity', label: 'Quantity' },
     { key: 'mrp_rate', label: 'Rate' },
