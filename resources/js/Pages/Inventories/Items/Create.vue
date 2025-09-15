@@ -105,12 +105,12 @@ const handleSubmit = () => {
 }
 
 const handleSelectChange = (field, value) => {
-    form[field] = value.id;
+    form[field] = value;
 };
 
 const handleOpeningSelectChange = (index, value) => {
     form.openings[index].selected_store = value;
-    form.openings[index].store_id = value ? value.id : null;
+    form.openings[index].store_id = value ? value: null;
 };
 
 </script>
