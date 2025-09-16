@@ -136,9 +136,19 @@ function setActiveTeam(team: typeof data.teams[number]) {
     activeTeam.value = team
 }
 
-// Function to check if a menu item is active
+// Normalize a URL to its pathname without query or trailing slash
+function normalizePath(url: string): string {
+    // Inertia provides relative URLs like "/branches?search=x"; split at '?' and remove trailing '/'
+    const path = (url || '').split('?')[0]
+    if (path === '/') return '/'
+    return path.replace(/\/+$/, '')
+}
+
+// Function to check if a menu item is active (ignore query params; match by prefix)
 function isMenuItemActive(itemUrl: string): boolean {
-    return page.url === itemUrl
+    const currentPath = normalizePath(page.url)
+    const targetPath = normalizePath(itemUrl)
+    return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`)
 }
 
 // Function to check if a parent menu should be expanded (has active child)
