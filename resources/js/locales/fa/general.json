@@ -25,8 +25,8 @@
   "list": "فهرست",
   "back_to_the_list": "بازگشت به فهرست",
   "select": "انتخاب",
-  "create_success": "موفقانه ایجاد شد",
-  "update_success": "موفقانه به‌روزرسانی شد",
+  "create_success": "{name} موفقانه ایجاد شد ",
+  "update_success": "{name} موفقانه به‌روزرسانی شد ",
   "delete_success": "{name} موفقانه حذف شد",
   "status": "وضعیت",
   "enter": "{text} را وارد کنید ",
@@ -85,7 +85,7 @@
   "create": "ایجاد {name}",
   "read": "خواندن",
   "import": "وارد کردن",
-  "new": "جدید",
+  "new": "{name} جدید ",
   "add": "اضافه کردن {title}",
   "true": "درست",
   "false": "نادرست",
@@ -95,11 +95,14 @@
   "font": "فونت",
   "in": "داخل",
   "out": "خارج",
-  "add_new": "افزودن جدید",
+  "add_new": "افزودن جدید {name}",
   "type": "نوع",
   "and": "و",
   "finish": "پایان",
-  "delete_description": "این {name} را به طور دائم حذف خواهی کرد."
+  "delete_description": "این {name} را به طور دائم حذف خواهی کرد.",
+  "create_and_new": "ایجاد و جدید",
+  "rows": "ردیف ها",
+  "add_row": "افزودن ردیف"
 }
 
 

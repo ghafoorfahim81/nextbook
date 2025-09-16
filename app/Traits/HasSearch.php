@@ -38,7 +38,7 @@ trait HasSearch
                         });
                     } else {
                         // Direct column search
-                        $query->orWhere($column, 'like', "%{$searchTerm}%");
+                        $query->orWhere($column, 'iLike', "%{$searchTerm}%");
                     }
                 }
             });

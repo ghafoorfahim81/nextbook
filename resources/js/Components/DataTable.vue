@@ -37,7 +37,7 @@
             <!-- Right actions (Add New) -->
             <div class="ml-4 flex items-center gap-2" v-if="showAddButton">
                 <AddNewButton
-                    :title="addTitle || props.title"
+                    :title="addTitle"
                     :action="addAction"
                     :route="addRoute"
                     :routeParams="addRouteParams"

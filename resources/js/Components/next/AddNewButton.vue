@@ -7,7 +7,7 @@
         :disabled="disabled"
     >
         <Plus class="w-4 h-4" />
-        <span>{{ t('general.add', { title: title }) }}</span>
+        <span>{{  t('general.new', { name: title }) }}</span>
     </Button>
 </template>
 

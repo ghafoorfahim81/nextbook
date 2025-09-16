@@ -9,6 +9,7 @@
             :autocomplete="autocomplete"
             :placeholder="placeholder"
         class="peer block w-full rounded-md border border-2 border-black border-input bg-background px-3 py-3 text-sm shadow-sm
+        placeholder:text-transparent focus:placeholder:text-muted-foreground
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
         disabled:cursor-not-allowed disabled:opacity-50"
         />
@@ -20,9 +21,10 @@
          text-muted-foreground transition-all duration-150
          peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-sm
          peer-focus:top-0 peer-focus:-translate-y-1/2 peer-focus:text-xs peer-focus:text-foreground
+         peer-focus:opacity-100
          peer-[:not(:placeholder-shown)]:top-0
          peer-[:not(:placeholder-shown)]:-translate-y-1/2
-         peer-[:not(:placeholder-shown)]:text-xs">
+         peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:opacity-100">
             {{ label }}
             <span v-if="isRequired" class="text-red-600 ms-[2px]">*</span>
         </label>

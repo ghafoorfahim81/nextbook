@@ -87,6 +87,9 @@ class ItemController extends Controller
                     ]);
                 });
         });
+        if ((bool) $request->input('stay') || (bool) $request->input('create_and_new')) {
+            return redirect()->route('items.create')->with('success', 'Item created successfully.');
+        }
         return redirect()->route('items.index')->with('success', 'Items created successfully.');
     }
 
