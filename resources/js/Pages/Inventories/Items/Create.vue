@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { Button } from '@/Components/ui/button'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
-import { useForm } from '@inertiajs/vue3'
+import { useForm, router } from '@inertiajs/vue3'
 import { Label } from '@/Components/ui/label'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import FloatingLabel     from "@/Components/next/FloatingLabel.vue";
@@ -93,15 +93,30 @@ const normalize = () => {
     }))
 }
 
-const handleSubmit = () => {
+const handleCreate = () => {
     normalize()
-    console.log('this is form',form)
-    form.post(route('items.store'), {
-        forceFormData: true, // required to send the file
-        onSuccess: () => {
-            form.reset()
-        },
+    // ensure no leftover transform
+    form.transform((d) => d).post(route('items.store'), {
+        forceFormData: true,
     })
+}
+
+const handleCreateAndNew = () => {
+    normalize()
+    form
+        .transform((data) => ({ ...data, stay: true }))
+        .post(route('items.store'), {
+            forceFormData: true,
+            onSuccess: () => {
+                form.reset()
+                // reset transform so it doesn't affect other submits
+                form.transform((d) => d)
+            },
+        })
+}
+
+const handleCancel = () => {
+    router.visit(route('items.index'))
 }
 
 const handleSelectChange = (field, value) => {
@@ -117,7 +132,7 @@ const handleOpeningSelectChange = (index, value) => {
 
 <template>
     <AppLayout title="Create Item">
-        <form @submit.prevent="handleSubmit" class="space-y-6">
+        <form @submit.prevent="handleCreate" class="space-y-6">
             <div class="grid grid-cols-3 gap-x-2 gap-y-5">
                 <NextInput label="Name" v-model="form.name" :error="form.errors?.name" placeholder="Name" />
                 <NextInput label="Code" v-model="form.code" :error="form.errors?.code" placeholder="Code" />
@@ -217,8 +232,10 @@ const handleOpeningSelectChange = (index, value) => {
                 {{ form.progress.percentage }}%
             </progress>
 
-            <div class="pt-4">
-                <Button type="submit" class="bg-blue-500 text-white">Submit</Button>
+            <div class="pt-4 flex gap-2">
+                <Button type="submit" class="bg-blue-500 text-white">Create</Button>
+                <Button type="button" class="bg-green-600 text-white" @click="handleCreateAndNew">Create & New</Button>
+                <Button type="button" class="bg-gray-200 text-gray-700" @click="handleCancel">Cancel</Button>
             </div>
         </form>
     </AppLayout>
