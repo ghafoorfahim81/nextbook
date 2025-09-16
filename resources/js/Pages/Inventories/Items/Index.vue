@@ -4,6 +4,8 @@ import DataTable from '@/Components/DataTable.vue';
 import { h, ref } from 'vue';
 import { Button } from '@/Components/ui/button';
 import {useDeleteResource} from "@/composables/useDeleteResource.js";
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n()
 const showFilter = () => {
     showFilter.value = true;
 }
@@ -13,15 +15,15 @@ const props = defineProps({
 })
 
 const columns = ref([
-    { key: 'name', label: 'Name' },
-    { key: 'code', label: 'Code' },
-    { key: 'category', label: 'Category' },
-    { key: 'measure', label: 'Unit' },
-    { key: 'brand_name', label: 'Brand' },
-    { key: 'cost', label: 'Cost' },
-    { key: 'quantity', label: 'Quantity' },
-    { key: 'mrp_rate', label: 'Rate' },
-    { key: 'actions', label: 'Actions' },
+    { key: 'name', label: t('general.name') },
+    { key: 'code', label: t('admin.currency.code') },
+    { key: 'category', label: t('admin.category.category') },
+    { key: 'measure', label: t('admin.unit_measure.unit_measure') },
+    { key: 'brand_name', label: t('admin.brand.brand') },
+    { key: 'cost', label: t('item.cost') },
+    { key: 'quantity', label: t('general.quantity') },
+    { key: 'mrp_rate', label: t('item.mrp_rate') },
+    { key: 'actions', label: t('general.actions') },
 
 ])
 
@@ -32,9 +34,9 @@ const editItem = (item) => {
 const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('items.destroy', id, {
-        title: 'Delete Item',
-        description: 'This will permanently delete this Item.',
-        successMessage: 'Item deleted successfully.',
+        title: t('general.delete', { name: t('item.item') }),
+        description: t('general.delete_description', { name: t('item.item') }),
+        successMessage: t('general.delete_success', { name: t('item.item') }),
     })
 
 };
@@ -42,20 +44,18 @@ const deleteItem = (id) => {
 </script>
 
 <template>
-    <AppLayout title="Designations">
-        <div class="flex gap-2 items-center">
-            <div class="ml-auto gap-3">
-                <Link :href="route('items.create')">
-                    <Button  variant="outline" class="bg-gray-100
-                    hover:bg-gray-200 dark:border-gray-50 dark:text-green-300">Add New</Button>
-                </Link>
+    <AppLayout :title="t('item.items')">
 
-            </div>
-        </div>
         <DataTable :items="items" :columns="columns"
                    @delete="deleteItem"
                    @edit="editItem"
-                   :title="`Items`" :url="`items.index`" />
+                   :title="t('item.items')"
+                   :url="`items.index`"
+                   :showAddButton="true"
+                   :addTitle="t('item.item')"
+                   :addAction="'redirect'"
+                   :addRoute="'items.create'"
+                   />
 
     </AppLayout>
 </template>
