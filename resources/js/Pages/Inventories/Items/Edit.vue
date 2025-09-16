@@ -7,6 +7,7 @@ import NextTextarea from '@/Components/next/NextTextarea.vue'
 import { useForm } from '@inertiajs/vue3'
 import FloatingLabel from "@/Components/next/FloatingLabel.vue";
 import NextSelect from "@/Components/next/NextSelect.vue";
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
     item: { type: Object, required: true },
@@ -16,6 +17,7 @@ const props = defineProps({
     brands: { type: [Array, Object], required: true },
 })
 
+const { t } = useI18n()
 const stores = computed(() => props.stores?.data ?? props.stores ?? [])
 const unitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 const categories = computed(() => props.categories?.data ?? props.categories ?? [])
@@ -93,19 +95,19 @@ const handleOpeningSelectChange = (index, value) => {
 
 </script>
 <template>
-    <AppLayout title="Create Item">
+    <AppLayout :title="t('general.edit', { name: t('item.item') })">
         <form @submit.prevent="handleSubmit" class="space-y-6">
             <div class="grid grid-cols-3 gap-x-2 gap-y-5">
-                <NextInput label="Name" v-model="form.name" :error="form.errors?.name" placeholder="Name" />
-                <NextInput label="Code" v-model="form.code" :error="form.errors?.code" placeholder="Code" />
-                <NextInput label="Generic Name" v-model="form.generic_name" :error="form.errors?.generic_name" placeholder="Generic Name" />
-                <NextInput label="Packing" v-model="form.packing" :error="form.errors?.packing" placeholder="Packing" />
-                <NextInput label="Colors" v-model="form.colors" :error="form.errors?.colors" placeholder="Colors" />
-                <NextInput label="Size" v-model="form.size" :error="form.errors?.size" placeholder="Size" />
+                <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name" :placeholder="t('general.enter', { text: t('general.name') })" />
+                <NextInput :label="t('admin.currency.code')" v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
+                <NextInput :label="t('item.generic_name')" v-model="form.generic_name" :error="form.errors?.generic_name" :placeholder="t('general.enter', { text: t('item.generic_name') })" />
+                <NextInput :label="t('item.packing')" v-model="form.packing" :error="form.errors?.packing" :placeholder="t('general.enter', { text: t('item.packing') })" />
+                <NextInput :label="t('general.colors')" v-model="form.colors" :error="form.errors?.colors" :placeholder="t('general.enter', { text: t('general.colors') })" />
+                <NextInput :label="t('item.size')" v-model="form.size" :error="form.errors?.size" :placeholder="t('general.enter', { text: t('item.size') })" />
 
                 <!-- Photo -->
 
-                <NextInput label="Photo" type="file"  @input="onPhotoChange" :error="form.errors?.photo" placeholder="Photo" />
+                <NextInput :label="t('item.photo')" type="file"  @input="onPhotoChange" :error="form.errors?.photo" :placeholder="t('general.enter', { text: t('item.photo') })" />
 
                 <NextSelect
                     v-model="form.selected_unit_measure"
@@ -114,7 +116,7 @@ const handleOpeningSelectChange = (index, value) => {
                     label-key="name"
                     value-key="id"
                     id="measure"
-                    floating-text="Measure"
+                    :floating-text="t('admin.unit_measure.unit_measure')"
                     :searchable="true"
                     resource-type="unit_measures"
                     :search-fields="['name','unit','symbol']"
@@ -127,7 +129,7 @@ const handleOpeningSelectChange = (index, value) => {
                     label-key="name"
                     value-key="id"
                     id="category"
-                    floating-text="Category"
+                    :floating-text="t('admin.category.category')"
                     :searchable="true"
                     resource-type="categories"
                     :search-fields="['name']"
@@ -140,36 +142,36 @@ const handleOpeningSelectChange = (index, value) => {
                     label-key="name"
                     value-key="id"
                     id="brand"
-                    floating-text="Brand"
+                    :floating-text="t('admin.brand.brand')"
                     :searchable="true"
                     resource-type="brands"
                     :search-fields="['name', 'legal_name', 'registration_number', 'email', 'phone', 'website', 'industry', 'type', 'city', 'country']"
                     :error="form.errors.brand_id"
                 />
-                <NextInput label="Minimum Stock" type="number" v-model="form.minimum_stock" :error="form.errors?.minimum_stock" />
-                <NextInput label="Maximum Stock" type="number" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
-                <NextInput label="Purchase Price" type="number" v-model="form.purchase_price" :error="form.errors?.purchase_price" />
-                <NextInput label="Cost" type="number" v-model="form.cost" :error="form.errors?.cost" />
-                <NextInput label="MRP Rate" type="number" v-model="form.mrp_rate" :error="form.errors?.mrp_rate" />
-                <NextInput label="Rate A" type="number" v-model="form.rate_a" :error="form.errors?.rate_a" />
-                <NextInput label="Rate B" type="number" v-model="form.rate_b" :error="form.errors?.rate_b" />
-                <NextInput label="Rate C" type="number" v-model="form.rate_c" :error="form.errors?.rate_c" />
-                <NextInput label="Barcode" v-model="form.barcode" :error="form.errors?.barcode" />
-                <NextInput label="Rack No" v-model="form.rack_no" :error="form.errors?.rack_no" />
-                <NextInput label="Fast Search" v-model="form.fast_search" :error="form.errors?.fast_search" />
+                <NextInput :label="t('item.minimum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.minimum_stock') })" v-model="form.minimum_stock" :error="form.errors?.minimum_stock" />
+                <NextInput :label="t('item.maximum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.maximum_stock') })" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
+                <NextInput :label="t('item.purchase_price')" type="number" :placeholder="t('general.enter', { text: t('item.purchase_price') })" v-model="form.purchase_price" :error="form.errors?.purchase_price" />
+                <NextInput :label="t('item.cost')" type="number" v-model="form.cost" :error="form.errors?.cost" />
+                <NextInput :label="t('item.mrp_rate')" type="number" :placeholder="t('general.enter', { text: t('item.mrp_rate') })" v-model="form.mrp_rate" :error="form.errors?.mrp_rate" />
+                <NextInput :label="t('item.rate_a')" type="number" :placeholder="t('general.enter', { text: t('item.rate_a') })" v-model="form.rate_a" :error="form.errors?.rate_a" />
+                <NextInput :label="t('item.rate_b')" type="number" :placeholder="t('general.enter', { text: t('item.rate_b') })" v-model="form.rate_b" :error="form.errors?.rate_b" />
+                <NextInput :label="t('item.rate_c')" type="number" :placeholder="t('general.enter', { text: t('item.rate_c') })" v-model="form.rate_c" :error="form.errors?.rate_c" />
+                <NextInput :label="t('item.barcode')" v-model="form.barcode" :placeholder="t('general.enter', { text: t('item.barcode') })" :error="form.errors?.barcode" />
+                <NextInput :label="t('item.rack_no')" v-model="form.rack_no" :placeholder="t('general.enter', { text: t('item.rack_no') })" :error="form.errors?.rack_no" />
+                <NextInput :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
             </div>
 
             <div class="pt-2">
-                <span class="font-bold">Opening</span>
+                <span class="font-bold">{{ t('item.openings') }}</span>
                 <separator> </separator>
                 <div
                     v-for="(opening, index) in form.openings"
                     :key="index"
                     class="mt-3 grid grid-cols-4 gap-x-2 gap-y-5 items-start"
                 >
-                    <NextInput label="Batch" @click="addRow(index)" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
-                    <NextInput label="Expire Date" type="date" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]"/>
-                    <NextInput label="Quantity" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
+                    <NextInput :label="t('item.batch')" @click="addRow(index)" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
+                    <NextInput :label="t('item.expire_date')" type="date" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]"/>
+                    <NextInput :label="t('general.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
                     <NextSelect
                         v-model="opening.selected_store"
                         @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
@@ -177,7 +179,7 @@ const handleOpeningSelectChange = (index, value) => {
                         label-key="name"
                         value-key="id"
                         id="store"
-                        floating-text="Store"
+                        :floating-text="t('admin.store.store')"
                         :error="form.errors[`openings.${index}.store_id`]"
                         :searchable="true"
                         resource-type="stores"
@@ -189,7 +191,7 @@ const handleOpeningSelectChange = (index, value) => {
             {{ form.progress.percentage }}%
             </progress>
             <div class="pt-4">
-                <Button type="submit" class="bg-blue-500 text-white">Submit</Button>
+                <Button type="submit" class="bg-blue-500 text-white">{{ t('general.update') }}</Button>
             </div>
         </form>
     </AppLayout>

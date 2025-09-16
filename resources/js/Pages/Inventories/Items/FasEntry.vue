@@ -6,6 +6,8 @@ import { Button } from '@/Components/ui/button'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import { useToast } from '@/Components/ui/toast/use-toast'
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n()
 
 const props = defineProps({
     stores: { type: [Array, Object], required: true },
@@ -76,9 +78,9 @@ const handleSubmit = () => {
         // preserveState: true, // optional
         onSuccess: () => {
             toast({
-                title: 'Success',
+                title: t('general.success'),
                 variant: 'success',
-                description: 'The items have been added successfully.',
+                description: t('general.create_success', { name: t('item.item') }),
             });
             form.reset('items')
         },
@@ -88,28 +90,28 @@ const handleSubmit = () => {
 </script>
 
 <template>
-    <AppLayout title="Fast Item Entry">
+    <AppLayout :title="t('item.fast_entry')">
         <form @submit.prevent="handleSubmit" class="space-y-4">
             <div class="rounded-2xl border bg-card text-card-foreground shadow-sm">
                 <div class="p-4 border-b">
-                    <h2 class="text-lg font-semibold">Fast Entry</h2>
-                    <p class="text-sm text-muted-foreground">Add multiple items quickly. Use the “+” on the last row to append more.</p>
-                </div>
+                    <h2 class="text-lg font-semibold">{{ t('item.fast_entry') }}</h2>
+                    <p class="text-sm text-muted-foreground">{{ t('item.add_multiple_items_quickly') }}</p>
+                    </div>
 
                 <div class="overflow-x-auto">
                     <table class="w-full table-fixed min-w-[1000px]">
                         <thead class="sticky top-0 bg-muted/40">
                         <tr class="text-left text-sm">
-                            <th class="px-1 py-1 w-40">Name</th>
-                            <th class="px-1 py-1 w-36">Code</th>
-                            <th class="px-1 py-1 w-40">Measure</th>
-                            <th class="px-1 py-1 w-28">Qty</th>
-                            <th class="px-1 py-1 w-36">Batch</th>
-                            <th class="px-1 py-1 w-44">Expiry</th>
-                            <th class="px-1 py-1 w-44">Store</th>
-                            <th class="px-1 py-1 w-36">MRP</th>
-                            <th class="px-1 py-1 w-40">Purchase</th>
-                            <th class="px-1 py-1 w-24">Actions</th>
+                            <th class="px-1 py-1 w-40">{{ t('general.name') }}</th>
+                            <th class="px-1 py-1 w-36">{{ t('item.code') }}</th>
+                            <th class="px-1 py-1 w-40">{{ t('admin.unit_measure.unit_measure') }}</th>
+                            <th class="px-1 py-1 w-28">{{ t('item.quantity') }}</th>
+                            <th class="px-1 py-1 w-36">{{ t('item.batch') }}</th>
+                            <th class="px-1 py-1 w-44">{{ t('item.expire_date') }}</th>
+                            <th class="px-1 py-1 w-44">{{ t('admin.store.store') }}</th>
+                            <th class="px-1 py-1 w-36">{{ t('item.mrp_rate') }}</th>
+                            <th class="px-1 py-1 w-40">{{ t('item.purchase_price') }}</th>
+                            <th class="px-1 py-1 w-24">{{ t('general.actions') }}</th>
                         </tr>
                         </thead>
 
@@ -117,14 +119,12 @@ const handleSubmit = () => {
                         <tr v-for="(item, index) in form.items" :key="item._key" class="border-t">
                             <td class="px-1 py-2 align-top">
                                 <NextInput
-                                    label="Name"
                                     v-model="item.name"
                                     :error="fieldError(index, 'name')"
                                 />
                             </td>
                             <td class="px-1 py-2 align-top">
                                 <NextInput
-                                    label="Code"
                                     v-model="item.code"
                                     :error="fieldError(index, 'code')"
                                 />
@@ -136,13 +136,12 @@ const handleSubmit = () => {
                                     label-key="name"
                                     value-key="id"
                                     id="measure"
-                                    floating-text="Measure"
+                                    :floating-text="t('admin.unit_measure.unit_measure')"
                                     :error="fieldError(index, 'measure_id')"
                                 />
                             </td>
                             <td class="px-1 py-2 align-top">
                                 <NextInput
-                                    label="Quantity"
                                     type="number"
                                     inputmode="decimal"
                                     v-model="item.quantity"
@@ -151,7 +150,6 @@ const handleSubmit = () => {
                             </td>
                             <td class="px-1 py-2 align-top">
                                 <NextInput
-                                    label="Batch"
                                     v-model="item.batch"
                                     :error="fieldError(index, 'batch')"
                                     @keyup.enter.prevent="addRowAfter(index)"
@@ -159,7 +157,6 @@ const handleSubmit = () => {
                             </td>
                             <td class="px-1 py-2 align-top">
                                 <NextInput
-                                    label="Expire Date"
                                     type="date"
                                     v-model="item.expire_date"
                                     :error="fieldError(index, 'expire_date')"
@@ -172,13 +169,11 @@ const handleSubmit = () => {
                                     label-key="name"
                                     value-key="id"
                                     append-to-body
-                                    floating-text="Store"
                                     :error="fieldError(index, 'measure_id')"
                                 />
                             </td>
                             <td class="px-1 py-2 align-top">
                                 <NextInput
-                                    label="MRP Rate"
                                     type="number"
                                     inputmode="decimal"
                                     v-model="item.mrp_rate"
@@ -187,7 +182,6 @@ const handleSubmit = () => {
                             </td>
                             <td class="px-1 py-2 align-top">
                                 <NextInput
-                                    label="Purchase Price"
                                     type="number"
                                     inputmode="decimal"
                                     v-model="item.purchase_price"
@@ -207,14 +201,14 @@ const handleSubmit = () => {
 
                 <div class="p-4 border-t flex items-center justify-between gap-4">
                     <div class="text-sm text-muted-foreground">
-                        Rows: <span class="font-medium text-foreground">{{ form.items.length }}</span>
+                        {{ t('general.rows') }}: <span class="font-medium text-foreground">{{ form.items.length }}</span>
                     </div>
                     <div class="flex gap-2">
                         <Button type="button" variant="secondary" @click="form.items.push(blankRow())">
-                            Add Row
+                            {{ t('general.add_row') }}
                         </Button>
                         <Button type="submit" :disabled="form.processing">
-                            Save
+                            {{ t('general.save') }}
                         </Button>
                     </div>
                 </div>

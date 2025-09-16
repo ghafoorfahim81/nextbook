@@ -25,8 +25,8 @@
   "list": "List",
   "back_to_the_list": "Back to the list",
   "select": "Select",
-  "create_success": "Created successfully",
-  "update_success": "Updated successfully",
+  "create_success": "Created successfully {name}",
+  "update_success": "Updated successfully {name}",
   "delete_success": "Deleted successfully {name}",
   "status": "Status",
   "enter": "Enter {text}",
@@ -82,10 +82,10 @@
   "save_and_new": "Save and new",
   "from": "From",
   "to": "To",
-  "create": "Create {name}",
+  "create": "Create",
   "read": "Read",
   "import": "Import",
-  "new": "New",
+  "new": "New {name}",
   "add": "Add {title}",
   "true": "True",
   "false": "False",
@@ -95,11 +95,14 @@
   "font": "Font",
   "in": "In",
   "out": "Out",
-  "add_new": "Add new",
+  "add_new": "Add new {name}",
   "type": "Type",
   "and": "and",
   "finish": "Finish",
-  "delete_description": "This will permanently delete this {name}."
+  "delete_description": "This will permanently delete this {name}.",
+  "create_and_new": "Create and new",
+  "rows": "Rows",
+  "add_row": "Add row"
 }
 
 
