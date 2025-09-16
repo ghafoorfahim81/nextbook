@@ -93,9 +93,26 @@ const previewImage = (event) => {
     }
 };
 
+const setCalendarLocaleStorage = (selected) => {
+    try {
+        const id = typeof selected === 'object' && selected ? selected.id : selected
+        const item = Array.isArray(props.calendarTypes)
+            ? props.calendarTypes.find(ct => (ct?.id ?? ct?.value) === id)
+            : null
+        const name = (item?.name || item?.label || item?.value || '').toString().toLowerCase()
+        const locale = /miladi|gregorian|english|en/.test(name) ? 'en' : 'fa'
+        if (typeof localStorage !== 'undefined') localStorage.setItem('calendar_type', locale)
+    } catch (e) {
+        // noop
+    }
+}
+
 const handleSelectChange = (field, value) => {
-    if(field === 'currency_id') {
+    if (field === 'currency_id') {
         form.currency_id = value;
+    }
+    if (field === 'calendar_type') {
+        setCalendarLocaleStorage(value)
     }
     form[field] = value;
 };
