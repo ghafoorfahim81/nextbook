@@ -1,1 +1,7 @@
-﻿{}
+﻿{
+    "purchase": "Purchase",
+    "purchase_number": "Pu Number",
+    "purchase_date": "Purchase Date",
+    "purchase_type": "Purchase Type",
+    "purchase_status": "Purchase Status"
+}

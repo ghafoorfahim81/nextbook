@@ -102,7 +102,13 @@
   "delete_description": "This will permanently delete this {name}.",
   "create_and_new": "Create and new",
   "rows": "Rows",
-  "add_row": "Add row"
+  "add_row": "Add row",
+  "on_hand": "On hand",
+  "batch": "Batch",
+  "expire_date": "Expiry",
+  "tax": "Tax",
+  "qty": "Qty",
+  "unit": "Unit"
 }
 
 

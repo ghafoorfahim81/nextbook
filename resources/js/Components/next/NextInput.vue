@@ -59,3 +59,10 @@ const model = computed({
     set: v => emit('update:modelValue', v),
 })
 </script>
+
+<style scoped>
+/* Hide number input spinners only inside NextInput */
+:deep(input[type="number"]) { appearance: textfield; -moz-appearance: textfield; }
+:deep(input[type="number"])::-webkit-outer-spin-button,
+:deep(input[type="number"])::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+</style>

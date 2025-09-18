@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\NextController;
+
+
 use App\Http\Controllers\Inventory\ItemFastEntryController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\App;
@@ -9,6 +12,7 @@ use App\Http\Controllers\Administration\DesignationController;
 use App\Http\Controllers\Administration\DepartmentController;
 use App\Http\Controllers\SearchController;
 use App\Http\Middleware\CheckCompany;
+
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -55,7 +59,7 @@ Route::middleware([
     Route::resource('/ledgers', \App\Http\Controllers\Ledger\LedgerController::class);
     Route::resource('/suppliers', \App\Http\Controllers\Ledger\SupplierController::class);
     Route::resource('/customers', \App\Http\Controllers\Ledger\CustomerController::class);
-    Route::get('/item-fast-entry', [ItemFastEntryController::class,'create'])->name('item.fast.entry');
+    Route::get('/item-fast-entry', [ItemFastEntryController::class, 'create'])->name('item.fast.entry');
     Route::post('/item-fast-entry', [ItemFastEntryController::class, 'store'])
         ->name('item.fast.store');
     Route::get('/item-fast-opening', [\App\Http\Controllers\Inventory\FastOpeningController::class, 'index'])
@@ -64,7 +68,8 @@ Route::middleware([
         ->name('fast-opening.store');
 
     Route::resource('/purchases', \App\Http\Controllers\Purchase\PurchaseController::class);
-//    Route::post('item_entry/Store', ['as' => 'item_entry.store', 'uses' => 'FastEntry\ItemEntryController@store'])->middleware(['dbconfig','auth:sanctum']);
+    //    Route::post('item_entry/Store', ['as' => 'item_entry.store', 'uses' => 'FastEntry\ItemEntryController@store'])->middleware(['dbconfig','auth:sanctum']);
+    Route::get('/purchase-item-change', [NextController::class, 'purchaseItemChange'])->name('purchase.item.change');
 
     // Company routes
     Route::get('/company', [\App\Http\Controllers\CompanyController::class, 'show'])
@@ -75,7 +80,4 @@ Route::middleware([
     // Search routes
     Route::post('/search/{resourceType}', [\App\Http\Controllers\SearchController::class, 'search']);
     Route::get('/search/resource-types', [\App\Http\Controllers\SearchController::class, 'getResourceTypes']);
-
 });
-
-
