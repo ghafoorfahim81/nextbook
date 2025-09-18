@@ -228,7 +228,7 @@ const derivedColumns = computed(() => {
     // If no explicit index column exists, add one
     const hasIndex = cols.some(c => c.key === '__index')
     if (!hasIndex) {
-        cols.unshift({ key: '__index', label: t('general.number'), sortable: false })
+        cols.unshift({ key: '__index', label: '#', sortable: false })
     }
     return cols
 })

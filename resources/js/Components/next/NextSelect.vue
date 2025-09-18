@@ -157,8 +157,8 @@ const handleSearch = async (searchTerm) => {
 <!-- Styles specific to vue-select dropdown -->
 <style scoped>
     /* Keep the menu above surrounding UI - higher z-index for modals */
-:deep(.vs__dropdown-menu) { 
-    z-index: 9999 !important; 
+:deep(.vs__dropdown-menu) {
+    z-index: 9999 !important;
     position: absolute !important;
 }
 

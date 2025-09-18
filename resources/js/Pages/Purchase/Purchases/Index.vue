@@ -3,6 +3,9 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref } from 'vue';
 import { Button } from '@/Components/ui/button';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 const showFilter = () => {
     showFilter.value = true;
@@ -13,27 +16,25 @@ const props = defineProps({
 })
 
 const columns = ref([
-    { key: 'number', label: 'Number' },
-    { key: 'supplier', label: 'Supplier' },
-    { key: 'amount', label: 'Amount' },
-    { key: 'date', label:"Date" },
-    { key: 'type', label: 'Type' },
-    { key: 'status', label: 'Status' },
+    { key: 'number', label: t('general.number'), sortable: true },
+    { key: 'supplier', label: t('ledger.supplier.supplier') },
+    { key: 'amount', label: t('general.amount'), sortable: true },
+    { key: 'date', label: t('general.date'), sortable: true },
+    { key: 'type', label: t('general.type'), sortable: true },
+    { key: 'status', label: t('general.status') },
 ])
 </script>
 
 <template>
-    <AppLayout title="Designations">
-        <div class="flex gap-2 items-center">
-            <div class="ml-auto gap-3">
-                <Link :href="route('purchases.create')">
-                    <Button  variant="outline" class="bg-gray-100
-                    hover:bg-gray-200 dark:border-gray-50 dark:text-green-300">Add New</Button>
-                </Link>
-
-            </div>
-        </div>
-        <DataTable :items="purchases" :columns="columns" :title="`Purchases`" :url="`purchases.index`" />
+    <AppLayout :title="t('purchase.purchase')">
+        <DataTable :items="purchases" :columns="columns"
+         :title="t('purchase.purchase')"
+         :url="`purchases.index`"
+         :showAddButton="true"
+         :addTitle="t('purchase.purchase')"
+         :addAction="'redirect'"
+         :addRoute="'purchases.create'"
+         />
 
     </AppLayout>
 </template>
