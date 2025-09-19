@@ -156,10 +156,10 @@ console.log('items', props.items);
 </script>
 
 <template>
-    <AppLayout title="Create Purchase">
+    <AppLayout :title="t('general.create', { name: t('purchase.purchase') })">
          <form @submit.prevent="handleSubmit">
             <div class="mb-5 rounded-xl border bg-card p-4 shadow-sm relative ">
-            <div class="absolute -top-3 left-3 bg-card px-2 text-sm font-semibold text-muted-foreground">Create Purchase</div>
+            <div class="absolute -top-3 left-3 bg-card px-2 text-sm font-semibold text-muted-foreground">{{ t('general.create', { name: t('purchase.purchase') }) }}</div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <NextSelect
                     :options="ledgers.data"
@@ -175,8 +175,8 @@ console.log('items', props.items);
                     :search-fields="['name', 'email', 'phone_no']"
                     :search-options="{ type: 'supplier' }"
                 />
-                <NextInput placeholder="Number" :error="form.errors?.number" type="number" v-model="form.number" label="Number" />
-                <NextInput placeholder="Date" :error="form.errors?.date" type="date" v-model="form.date" label="Date" />
+                <NextInput placeholder="Number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.number')" />
+                <NextInput placeholder="Date" :error="form.errors?.date" type="date" v-model="form.date" :label="t('general.date')" />
                 <div class="grid grid-cols-2 gap-2">
                     <NextSelect
                     :options="currencies.data"
