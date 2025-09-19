@@ -82,7 +82,7 @@
   "save_and_new": "Save and new",
   "from": "From",
   "to": "To",
-  "create": "Create",
+  "create": "Create {name}",
   "read": "Read",
   "import": "Import",
   "new": "New {name}",
