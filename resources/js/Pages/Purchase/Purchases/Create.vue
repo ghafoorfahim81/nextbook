@@ -48,6 +48,7 @@ const form = useForm({
     items: [
         {
             item_id: '',
+            selected_item: '',
             quantity: '',
             unit_measure_id: '',
             batch: '',
@@ -60,6 +61,7 @@ const form = useForm({
         },
         {
             item_id: '',
+            selected_item: '',
             quantity: '',
             unit_measure_id: '',
             batch: '',
@@ -72,6 +74,7 @@ const form = useForm({
         },
         {
             item_id: '',
+            selected_item: '',
             quantity: '',
             unit_measure_id: '',
             batch: '',
@@ -85,7 +88,7 @@ const form = useForm({
     ],
 })
 
-console.log('salePurchaseTypes', props.salePurchaseTypes);
+console.log('item is ', props.items.data);
 
 
 // Set base currency as default
@@ -145,22 +148,33 @@ function handleSubmit() {
 }
 
 const handleItemChange = async (index, selectedItem) => {
-    console.log('sss',selectedItem)
-    try {
+    console.log('sss', selectedItem)
 
-        const itemId = selectedItem
-        const storeId = form.store_id
-        if (!itemId || !storeId) return
-        const { data } = await axios.get(`/purchase-item-change`, { params: { item_id: itemId, store_id: storeId } })
-        const row = form.items[index]
-        if (!row) return
-        row.on_hand = data.onHand
-        row.selected_measure = data.measure
-        row.purchase_price = data.purchasePrice
-    } catch (e) {
-        console.error(e)
-    }
+    // Update the form item with selected item data
+    const row = form.items[index]
+    if (!row || !selectedItem) return
+
+    // Set the selected measure from the item
+    row.selected_measure = selectedItem.unitMeasure
+    row.item_id = selectedItem.id
+
+    // try {
+    //     const itemId = selectedItem.id
+    //     const storeId = form.store_id
+    //     if (!itemId || !storeId) return
+    //     const { data } = await axios.get(`/purchase-item-change`, { params: { item_id: itemId, store_id: storeId } })
+    //     row.on_hand = data.onHand
+    //     row.purchase_price = data.purchasePrice
+    // } catch (e) {
+    //     console.error(e)
+    // }
 }
+
+const onhand = computed((item) => {
+    const measure = item.selected_measure;
+    return props.items.data.reduce((acc, item) => acc + item.on_hand, 0)
+
+})
 
 console.log('items', props.items);
 </script>
@@ -178,7 +192,7 @@ console.log('items', props.items);
                     label-key="name"
                     value-key="id"
                     :reduce="ledger => ledger.id"
-                    floating-text="t('general.supplier')"
+                    :floating-text="t('ledger.supplier.supplier')"
                     :error="form.errors?.ledger_id"
                     :searchable="true"
                     resource-type="ledgers"
@@ -253,11 +267,11 @@ console.log('items', props.items);
                             <td>
                                 <NextSelect
                                     :options="items.data"
-                                    v-model="item.item_id"
-                                    @update:modelValue="(value) => handleItemChange(index, value)"
+                                    v-model="item.selected_item"
+                                    @update:modelValue=" value => handleItemChange(index, value)"
                                     label-key="name"
                                     value-key="id"
-                                    :reduce="item => item.id"
+                                    :reduce="item => item"
                                 />
                             </td>
                             <td>
