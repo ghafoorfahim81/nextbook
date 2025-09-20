@@ -118,6 +118,16 @@ watch(() => props.salePurchaseTypes, (salePurchaseTypes) => {
     }
 }, { immediate: true });
 
+watch(() => props.stores.data, (stores) => {
+    if (stores && !form.selected_store) {
+        const baseStore = stores.find(c => c.is_main === true);
+        if (baseStore) {
+            form.selected_store = baseStore;
+            form.store_id = baseStore.id;
+        }
+    }
+}, { immediate: true });
+
 const handleSelectChange = (field, value) => {
     if(field === 'currency_id') {
         form.rate = value.exchange_rate;
@@ -168,7 +178,7 @@ console.log('items', props.items);
                     label-key="name"
                     value-key="id"
                     :reduce="ledger => ledger.id"
-                    floating-text="Supplier"
+                    floating-text="t('general.supplier')"
                     :error="form.errors?.ledger_id"
                     :searchable="true"
                     resource-type="ledgers"
@@ -185,13 +195,13 @@ console.log('items', props.items);
                     value-key="id"
                     @update:modelValue="(value) => handleSelectChange('currency_id', value)"
                     :reduce="currency => currency.id"
-                    floating-text="Currency"
+                   :floating-text="t('admin.currency.currency')"
                     :error="form.errors?.currency_id"
                     :searchable="true"
                     resource-type="currencies"
                     :search-fields="['name', 'code', 'symbol']"
                 />
-                <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" v-model="form.rate" label="Rate"/>
+                <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" v-model="form.rate" :label="t('general.rate')"/>
                 </div>
 
                 <NextSelect
@@ -201,7 +211,7 @@ console.log('items', props.items);
                     label-key="name"
                     value-key="id"
                     :reduce="salePurchaseType => salePurchaseType.id"
-                    floating-text="Type"
+                    :floating-text="t('general.type')"
                     :error="form.errors?.sale_purchase_type_id"
                 />
                 <NextSelect
@@ -211,7 +221,7 @@ console.log('items', props.items);
                     label-key="name"
                     value-key="id"
                     :reduce="store => store.id"
-                    floating-text="Store"
+                    :floating-text="t('admin.store.store')"
                     :error="form.errors?.store_id"
                 />
             </div>
