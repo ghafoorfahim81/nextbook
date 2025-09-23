@@ -123,7 +123,7 @@ const handleCancel = () => {
 }
 
 const handleSelectChange = (field, value) => {
-    form[field] = value;
+    form[field] = value; 
 };
 
 const handleOpeningSelectChange = (index, value) => {
@@ -152,9 +152,8 @@ const handleOpeningSelectChange = (index, value) => {
                     :options="unitMeasures"
                     @update:modelValue="(value) => handleSelectChange('unit_measure_id', value)"
                     label-key="name"
-                    :reduceInternal="type => type.id"
                     value-key="id"
-                    id="measure"
+                    id="measure_id"
                     :floating-text="t('admin.unit_measure.unit_measure')"
                     :searchable="true"
                     resource-type="unit_measures"

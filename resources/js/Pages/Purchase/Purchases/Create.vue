@@ -24,7 +24,6 @@ const props = defineProps({
     salePurchaseTypes: Object,
     currencies: Object,
     items: Object,
-    measurementUnits: Object,
     stores: Object,
     unitMeasures: Object,
 })
@@ -148,33 +147,23 @@ function handleSubmit() {
 }
 
 const handleItemChange = async (index, selectedItem) => {
-    console.log('sss', selectedItem)
-
-    // Update the form item with selected item data
     const row = form.items[index]
     if (!row || !selectedItem) return
-
-    // Set the selected measure from the item
+    props.unitMeasures.data = props.unitMeasures.data.filter(unit => {
+        return unit.quantity_id === selectedItem.unitMeasure.quantity_id
+    })
     row.selected_measure = selectedItem.unitMeasure
     row.item_id = selectedItem.id
-
-    // try {
-    //     const itemId = selectedItem.id
-    //     const storeId = form.store_id
-    //     if (!itemId || !storeId) return
-    //     const { data } = await axios.get(`/purchase-item-change`, { params: { item_id: itemId, store_id: storeId } })
-    //     row.on_hand = data.onHand
-    //     row.purchase_price = data.purchasePrice
-    // } catch (e) {
-    //     console.error(e)
-    // }
+    row.on_hand = selectedItem.on_hand
 }
 
-const onhand = computed((item) => {
-    const measure = item.selected_measure;
-    return props.items.data.reduce((acc, item) => acc + item.on_hand, 0)
+const onhand = (item, index) => {
+    console.log('item11111', item)
+    // if(!item) return 0;
+    // const unit = item.selected_measure.unit;
+    // item.on_hand = item.on_hand * unit;
 
-})
+}
 
 console.log('items', props.items);
 </script>
@@ -270,6 +259,11 @@ console.log('items', props.items);
                                     v-model="item.selected_item"
                                     @update:modelValue=" value => handleItemChange(index, value)"
                                     label-key="name"
+                                    id="item_id"
+                                    :error="form.errors?.item_id"
+                                    :searchable="true"
+                                    resource-type="items"
+                                    :search-fields="['name', 'code', 'generic_name', 'packing', 'barcode','fast_search']"
                                     value-key="id"
                                     :reduce="item => item"
                                 />
@@ -297,8 +291,7 @@ console.log('items', props.items);
                                 />
                             </td>
                             <td class="text-center">
-                                {{ item.on_hand }}
-                                <!-- onhand  -->
+                                 {{ onhand(item.selected_item, index) }}
                             </td>
                             <td>
                                 <NextSelect
