@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\Inventory\ItemResource;
+use App\Models\Inventory\Item;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -144,8 +145,9 @@ class SearchController extends Controller
      */
     private function searchItems(string $searchTerm, array $fields, int $limit, array $additionalParams): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
     {
-        $query = DB::table('items')
-            ->select('id', 'name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search', 'category_id', 'brand_id')
+        // Use Eloquent so ItemResource receives models (not stdClass) and can access relations
+        $query = Item::query()
+            ->with(['unitMeasure', 'brand', 'category', 'stocks', 'openings', 'stockOut'])
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search'])) {

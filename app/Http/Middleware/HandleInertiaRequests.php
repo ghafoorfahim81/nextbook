@@ -157,7 +157,7 @@ class HandleInertiaRequests extends Middleware
             'ledgers',
             $cacheDuration,
             fn() => LedgerResource::collection(
-                Ledger::latest()->take(5)->get()
+                Ledger::latest()->take(1000)->get()
             )
         );
         $salePurchaseTypes = Cache::rememberForever(

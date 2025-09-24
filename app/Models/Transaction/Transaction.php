@@ -4,6 +4,7 @@ namespace App\Models\Transaction;
 
 use App\Models\Account\Account;
 use App\Models\LedgerOpening\LedgerOpening;
+use App\Models\Ledger\Ledger;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -31,6 +32,7 @@ class Transaction extends Model
     }
     protected $fillable = [
         'account_id',
+        'ledger_id',
         'amount',
         'currency_id',
         'rate',
@@ -51,6 +53,7 @@ class Transaction extends Model
         return [
             'id' => 'string',
             'account_id' => 'string',
+            'ledger_id' => 'string',
             'transactionable_type' => 'string',
             'transactionable_id' => 'string',
             'amount' => 'float',
@@ -77,6 +80,10 @@ class Transaction extends Model
     public function opening()
     {
         return $this->hasOne(LedgerOpening::class,'transaction_id');
+    }
+    public function ledger(): BelongsTo
+    {
+        return $this->belongsTo(Ledger::class);
     }
 
 
