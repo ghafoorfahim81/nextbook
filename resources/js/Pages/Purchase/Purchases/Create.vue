@@ -29,18 +29,19 @@ const props = defineProps({
 })
 
 const form = useForm({
-    number: '',
+    number: 'Mof®2025#@¡',
     ledger_id: '',
     date: '',
     currency_id: '',
     rate: '',
     sale_purchase_type_id: '',
     selected_currency: '',
-    selected_supplier: '',
+    selected_ledger: '',
     selected_sale_purchase_type: '',
     discount: '',
     discount_type: 'percentage',
     description: '',
+    paid_amount:'',
     status: '',
     store_id: '',
     selected_store: '',
@@ -54,7 +55,7 @@ const form = useForm({
             expire_date: '',
             purchase_price: '',
             selected_measure: '',
-            discount: '',
+            item_discount: '',
             free: '',
             tax: '',
         },
@@ -67,7 +68,7 @@ const form = useForm({
             expire_date: '',
             purchase_price: '',
             selected_measure: '',
-            discount: '',
+            item_discount: '',
             free: '',
             tax: '',
         },
@@ -80,15 +81,12 @@ const form = useForm({
             expire_date: '',
             purchase_price: '',
             selected_measure: '',
-            discount: '',
+            item_discount: '',
             free: '',
             tax: '',
         },
     ],
 })
-
-console.log('item is ', props.items.data);
-
 
 // Set base currency as default
 watch(() => props.currencies?.data, (currencies) => {
@@ -134,6 +132,7 @@ const handleSelectChange = (field, value) => {
     if(field === 'currency_id') {
         form.rate = value.exchange_rate;
     }
+
     form[field] = value;
 };
 
@@ -148,24 +147,84 @@ function handleSubmit() {
 
 const handleItemChange = async (index, selectedItem) => {
     const row = form.items[index]
-    if (!row || !selectedItem) return
-    props.unitMeasures.data = props.unitMeasures.data.filter(unit => {
+
+    if (!row || !selectedItem){
+        row.available_measures = []
+        row.selected_measure = ''
+        row.purchase_price = ''
+        row.quantity = ''
+        row.batch = ''
+        row.expire_date = ''
+        row.discount = ''
+        row.free = ''
+        row.tax = ''
+    }
+
+    addRow();
+    row.available_measures = props.unitMeasures.data.filter(unit => {
         return unit.quantity_id === selectedItem.unitMeasure.quantity_id
     })
     row.selected_measure = selectedItem.unitMeasure
     row.item_id = selectedItem.id
     row.on_hand = selectedItem.on_hand
+    row.purchase_price = selectedItem.purchase_price
 }
 
-const onhand = (item, index) => {
-    console.log('item11111', item)
-    // if(!item) return 0;
-    // const unit = item.selected_measure.unit;
-    // item.on_hand = item.on_hand * unit;
-
+const onhand = (index) => {
+    const item = form.items[index]
+    if (!item || !item.selected_item) return ''
+    const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1
+    const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
+    const onHand = Number(item.on_hand) || 0
+    const converted = (onHand * baseUnit) / selectedUnit
+    const free = Number(item.free) || 0
+    return converted + free;
 }
 
-console.log('items', props.items);
+const toNum = (v, d = 0) => {
+    const n = Number(v)
+    return isNaN(n) ? d : n
+}
+
+const rowTotal = (index) => {
+    const item = form.items[index]
+    if (!item || !item.selected_item) return ''
+    const qty = toNum(item.quantity, 0)
+    const price = toNum(item.purchase_price, 0)
+    const disc = toNum(item.item_discount, 0)
+    const tax = toNum(item.tax, 0)
+    return qty * price - disc + tax
+}
+
+const deleteRow = (index) => {
+    if(form.items.length === 1) return;
+    form.items.splice(index, 1)
+}
+
+const totalRows = computed(() => form.items.length)
+const totalItemDiscount = computed(() => form.items.reduce((acc, item) => acc + toNum(item.item_discount, 0), 0))
+const totalTax = computed(() => form.items.reduce((acc, item) => acc + toNum(item.tax, 0), 0))
+const totalPurchasePrice = computed(() => form.items.reduce((acc, item) => acc + toNum(item.purchase_price, 0),0))
+const totalDiscount = computed(() => form.discount)
+const totalRowTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.purchase_price, 0) * toNum(item.quantity, 0) - toNum(item.item_discount, 0) + toNum(item.tax, 0)), 0))
+const totalQuantity = computed(() => form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0))
+const totalFree = computed(() => form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0))
+
+const addRow = () => {
+    form.items.push({
+        item_id: '',
+        selected_item: '',
+        quantity: '',
+        unit_measure_id: '',
+        batch: '',
+        expire_date: '',
+        purchase_price: '',
+        selected_measure: '',
+        item_discount: '',
+        free: '',
+        tax: '',
+    })
+}
 </script>
 
 <template>
@@ -176,10 +235,11 @@ console.log('items', props.items);
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <NextSelect
                     :options="ledgers.data"
-                    v-model="form.selected_supplier"
+                    v-model="form.selected_ledger"
                     @update:modelValue="(value) => handleSelectChange('ledger_id', value)"
                     label-key="name"
                     value-key="id"
+                    :placeholder="t('ledger.supplier.supplier')"
                     :reduce="ledger => ledger.id"
                     :floating-text="t('ledger.supplier.supplier')"
                     :error="form.errors?.ledger_id"
@@ -217,6 +277,8 @@ console.log('items', props.items);
                     :floating-text="t('general.type')"
                     :error="form.errors?.sale_purchase_type_id"
                 />
+                <NextInput placeholder="Number" :error="form.errors?.paid_amount" type="number" v-model="form.paid_amount" :label="t('general.Paid')" />
+
                 <NextSelect
                     :options="stores.data"
                     v-model="form.selected_store"
@@ -259,8 +321,10 @@ console.log('items', props.items);
                                     v-model="item.selected_item"
                                     @update:modelValue=" value => handleItemChange(index, value)"
                                     label-key="name"
+                                    :placeholder="t('general.search_or_select')"
                                     id="item_id"
                                     :error="form.errors?.item_id"
+                                    :show-arrow="false"
                                     :searchable="true"
                                     resource-type="items"
                                     :search-fields="['name', 'code', 'generic_name', 'packing', 'barcode','fast_search']"
@@ -271,13 +335,14 @@ console.log('items', props.items);
                             <td>
                                 <NextInput
                                     v-model="item.batch"
-                                    type="text"
+                                    :disabled="!item.selected_item"
                                     :error="form.errors?.batch"
                                 />
                             </td>
                             <td>
                                 <NextInput
                                     v-model="item.expire_date"
+                                    :disabled="!item.selected_item"
                                     type="date"
                                     :error="form.errors?.expire_date"
                                 />
@@ -285,26 +350,35 @@ console.log('items', props.items);
                             <td>
                                 <NextInput
                                     v-model="item.quantity"
+                                    :disabled="!item.selected_item"
                                     type="number"
                                     inputmode="decimal"
                                     :error="form.errors?.quantity"
                                 />
                             </td>
                             <td class="text-center">
-                                 {{ onhand(item.selected_item, index) }}
+                                 <span :title="String(onhand(index))">{{ Number(onhand(index)).toFixed(2) }}</span>
                             </td>
                             <td>
                                 <NextSelect
-                                    :options="unitMeasures.data"
+                                    :options="item.available_measures"
                                     v-model="item.selected_measure"
                                     label-key="name"
                                     value-key="id"
-                                    :reduce="unit => unit.id"
+                                    :show-arrow="false"
+                                    :reduce="unit => unit"
+                                    @update:modelValue="(measure) => {
+                                        const baseUnit = Number(form.items[index]?.selected_item?.unitMeasure?.unit) || 1
+                                        const selectedUnit = Number(measure?.unit) || baseUnit
+                                        const basePrice = Number(form.items[index]?.selected_item?.purchase_price) || 0
+                                        form.items[index].purchase_price = (basePrice / baseUnit) * selectedUnit
+                                    }"
                                 />
                             </td>
                             <td>
                                 <NextInput
                                     v-model="item.purchase_price"
+                                    :disabled="!item.selected_item"
                                     type="number"
                                     inputmode="decimal"
                                     :error="form.errors?.purchase_price"
@@ -312,15 +386,17 @@ console.log('items', props.items);
                             </td>
                             <td>
                                 <NextInput
-                                    v-model="item.discount"
+                                    v-model="item.item_discount"
+                                    :disabled="!item.selected_item"
                                     type="number"
                                     inputmode="decimal"
-                                    :error="form.errors?.discount"
+                                    :error="form.errors?.item_discount"
                                 />
                             </td>
                             <td>
                                 <NextInput
                                     v-model="item.free"
+                                    :disabled="!item.selected_item"
                                     type="number"
                                     inputmode="decimal"
                                     :error="form.errors?.free"
@@ -329,29 +405,54 @@ console.log('items', props.items);
                             <td>
                                 <NextInput
                                     v-model="item.tax"
+                                    :disabled="!item.selected_item"
                                     type="number"
                                     inputmode="decimal"
                                     :error="form.errors?.tax"
                                 />
                             </td>
                             <td>
-                                <NextInput
-                                    v-model="item.total"
-                                    type="number"
-                                    inputmode="decimal"
-                                    :error="form.errors?.total"
-                                />
+                                 {{ rowTotal(index) }}
                             </td>
                             <td class="w-10 text-center">
-                                <Trash class="w-4 h-4 cursor-pointer text-red-500 inline" />
+                                <Trash class="w-4 h-4 cursor-pointer text-red-500 inline" @click="deleteRow(index)" />
                             </td>
                         </tr>
                     </tbody>
+                    <tfoot>
+                        <tr class="bg-muted/40">
+                            <!-- #: blank to align -->
+                            <td></td>
+                            <!-- Item total centered across item column -->
+                            <td class="text-center">{{ totalRows }}</td>
+                            <!-- Batch, Expiry blank -->
+                            <td></td>
+                            <td></td>
+                            <!-- Qty total centered -->
+                            <td class="text-center">{{ totalQuantity || 0 }}</td>
+                            <!-- On hand blank -->
+                            <td></td>
+                            <!-- Unit blank -->
+                            <td></td>
+                            <!-- Price total centered -->
+                            <td class="text-center">{{ totalPurchasePrice || 0 }}</td>
+                            <!-- Discount total centered -->
+                            <td class="text-center">{{ totalItemDiscount || 0 }}</td>
+                            <!-- Free total centered -->
+                            <td class="text-center">{{ totalFree || 0 }}</td>
+                            <!-- Tax total centered -->
+                            <td class="text-center">{{ totalTax || 0 }}</td>
+                            <!-- Grand total centered -->
+                            <td class="text-center">{{ totalRowTotal || 0 }}</td>
+                            <!-- Delete column blank -->
+                            <td></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
             <div class="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 items-start">
-                <DiscountSummary :summary="form.summary" />
-                <TaxSummary :summary="form.summary" />
+                <DiscountSummary :summary="form.summary" :total-item-discount="totalItemDiscount" :bill-discount="totalDiscount" :total-discount="totalDiscount" />
+                <TaxSummary :summary="form.summary" :total-tax="totalTax" />
                 <div class="rounded-xl p-4">
                     <div class="text-lg font-semibold mb-3">Bill Disc</div>
                     <DiscountField
@@ -360,7 +461,7 @@ console.log('items', props.items);
                         :error="form.errors?.discount"
                     />
                 </div>
-                <TransactionSummary :summary="form.summary" />
+                <TransactionSummary :summary="form.summary" :balance="selected_ledger?.statement.balance" :balance-nature="selected_ledger?.statement.balance_nature" />
             </div>
 
          </form>

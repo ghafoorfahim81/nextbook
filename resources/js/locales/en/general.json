@@ -108,7 +108,8 @@
   "expire_date": "Expiry",
   "tax": "Tax",
   "qty": "Qty",
-  "unit": "Unit"
+  "unit": "Unit",
+  "search_or_select": "Search or select item..."
 }
 
 

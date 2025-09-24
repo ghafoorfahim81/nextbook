@@ -38,7 +38,6 @@ const props = defineProps({
             itemDiscount: 0,
             cashReceived: 0,
             balance: 0,
-            tax: 0,
             grandTotal: 0,
             oldBalance: 0,
         }),
@@ -65,7 +64,6 @@ const rows = computed(() => [
     { key: 'itemDiscount', label: 'Item Discount', value: format(props.summary.itemDiscount) },
     { key: 'cashReceived', label: 'Cash Received', value: format(props.summary.cashReceived) },
     { key: 'balance', label: 'Balance', value: format(props.summary.balance) },
-    { key: 'tax', label: 'Tax', value: format(props.summary.tax) },
 ])
 </script>
 

@@ -29,7 +29,7 @@ const props = defineProps({
     fractionDigits: { type: Number, default: 2 },
     locale: { type: String, default: undefined },
 })
-
+ 
 const format = (num) => {
     const n = Number(num ?? 0)
     try {
