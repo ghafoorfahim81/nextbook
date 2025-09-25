@@ -17,7 +17,7 @@
 
             <div class="flex items-center justify-between">
                 <span class="text-muted-foreground">Old Balance:</span>
-                <span class="tabular-nums">{{ format(summary.oldBalance) }}</span>
+                <span class="tabular-nums">{{ format(summary.oldBalance) }}. {{ summary.balanceNature }}</span>
             </div>
         </div>
     </div>
@@ -40,6 +40,7 @@ const props = defineProps({
             balance: 0,
             grandTotal: 0,
             oldBalance: 0,
+            balanceNature: '',
         }),
     },
     fractionDigits: { type: Number, default: 2 },
@@ -60,10 +61,10 @@ const format = (num) => {
 
 const rows = computed(() => [
     { key: 'valueOfGoods', label: 'Value Of Goods', value: format(props.summary.valueOfGoods) },
-    { key: 'billDiscount', label: `Bill Discount ${format(props.summary.billDiscountPercent)} %`, value: format(props.summary.billDiscount) },
-    { key: 'itemDiscount', label: 'Item Discount', value: format(props.summary.itemDiscount) },
-    { key: 'cashReceived', label: 'Cash Received', value: format(props.summary.cashReceived) },
-    { key: 'balance', label: 'Balance', value: format(props.summary.balance) },
+    { key: 'billDiscount', label: `Bill disc. (${format(props.summary.billDiscountPercent)} %)`, value: format(props.summary.billDiscount) },
+    { key: 'itemDiscount', label: 'Item Disc', value: format(props.summary.itemDiscount) },
+    { key: 'cashReceived', label: 'Cash Received:', value: format(props.summary.cashReceived) },
+    { key: 'balance', label: 'Balance:', value: format(props.summary.balance) },
 ])
 </script>
 

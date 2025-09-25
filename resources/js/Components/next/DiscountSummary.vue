@@ -29,7 +29,7 @@ const props = defineProps({
     fractionDigits: { type: Number, default: 2 },
     locale: { type: String, default: undefined },
 })
- 
+
 const format = (num) => {
     const n = Number(num ?? 0)
     try {
@@ -42,7 +42,7 @@ const format = (num) => {
     }
 }
 
-const { title, totalItemDiscount, billDiscount, totalDiscount } = props
+// Avoid destructuring props to keep reactivity intact
 </script>
 
 

@@ -14,11 +14,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+
 class Ledger extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasBranch;
 
-   // ... your existing code ...
+    // ... your existing code ...
 
     /**
      * Statement accessor
@@ -36,26 +37,26 @@ class Ledger extends Model
 
                 $netBalance = $totals['debit'] - $totals['credit'];
                 $balanceAmount = abs($netBalance);
-                $balanceNature = $netBalance >= 0 ? 'debit' : 'credit';
+                $balanceNature = $netBalance >= 0 ? 'dr' : 'cr';
                 $isSupplier = $this->type === 'supplier';
 
                 // Single array creation with ternary operations
                 return [
                     'balance' => $balanceAmount,
                     'balance_nature' => $balanceNature,
-                    'normal_balance_nature' => $isSupplier ? 'credit' : 'debit',
-                    'is_normal_balance' => $balanceNature === ($isSupplier ? 'credit' : 'debit'),
+                    'normal_balance_nature' => $isSupplier ? 'cr' : 'dr',
+                    'is_normal_balance' => $balanceNature === ($isSupplier ? 'cr' : 'dr'),
                     'total_debit' => $totals['debit'],
                     'total_credit' => $totals['credit'],
                     'net_balance' => $netBalance,
                     'account_type' => $this->type,
-                    'payable_amount' => $balanceNature === 'credit' ? $balanceAmount : 0,
-                    'receivable_amount' => $balanceNature === 'debit' ? $balanceAmount : 0,
+                    'payable_amount' => $balanceNature === 'cr' ? $balanceAmount : 0,
+                    'receivable_amount' => $balanceNature === 'dr' ? $balanceAmount : 0,
                     'meaning' => $isSupplier
-                        ? ($balanceNature === 'credit'
+                        ? ($balanceNature === 'cr'
                             ? "You owe {$balanceAmount} to this supplier"
                             : "Supplier owes you {$balanceAmount}")
-                        : ($balanceNature === 'debit'
+                        : ($balanceNature === 'dr'
                             ? "Customer owes you {$balanceAmount}"
                             : "You owe {$balanceAmount} to this customer"),
                 ];
@@ -116,7 +117,4 @@ class Ledger extends Model
     {
         return $this->hasMany(Transaction::class);
     }
-
-
-
 }

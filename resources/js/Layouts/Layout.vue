@@ -174,6 +174,9 @@ const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
 const sidebarSide = computed(() => isRTL.value ? 'right' : 'left')
 const chevronIcon = computed(() => isRTL.value ? ChevronLeft : ChevronRight)
 
+// Allow parent pages to control initial sidebar state
+const props = withDefaults(defineProps<{ sidebarCollapsed?: boolean }>(), { sidebarCollapsed: false })
+
 const navMain = computed(() => [
     {
         title: t('sidebar.main.dashboard'),
@@ -241,7 +244,7 @@ data.navMain = navMain.value
 
 <template>
     <Toaster />
-    <SidebarProvider>
+    <SidebarProvider :default-open="!props.sidebarCollapsed">
         <Sidebar collapsible="icon" :side="sidebarSide">
             <SidebarHeader>
                 <SidebarMenu>
