@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import { h, ref, watch, onMounted, computed } from 'vue';
+import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
 import axios from 'axios'
 import { useForm } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
@@ -13,6 +13,7 @@ import { Trash2, Trash } from 'lucide-vue-next';
 import TransactionSummary from '@/Components/next/TransactionSummary.vue';
 import DiscountSummary from '@/Components/next/DiscountSummary.vue';
 import TaxSummary from '@/Components/next/TaxSummary.vue';
+import { useSidebar } from '@/Components/ui/sidebar/utils';
 const { t } = useI18n();
 
 const showFilter = () => {
@@ -29,7 +30,7 @@ const props = defineProps({
 })
 
 const form = useForm({
-    number: 'Mof®2025#@¡',
+    number: '',
     ledger_id: '',
     date: '',
     currency_id: '',
@@ -129,6 +130,7 @@ watch(() => props.stores.data, (stores) => {
 }, { immediate: true });
 
 const handleSelectChange = (field, value) => {
+    console.log('selected value', value)
     if(field === 'currency_id') {
         form.rate = value.exchange_rate;
     }
@@ -144,6 +146,26 @@ function handleSubmit() {
         }
     })
 }
+
+// Collapse sidebar while on this page, restore on leave (safe if provider missing)
+let sidebar = null
+try {
+    sidebar = useSidebar()
+} catch (e) {
+    sidebar = null
+}
+const prevSidebarOpen = ref(true)
+onMounted(() => {
+    if (sidebar) {
+        prevSidebarOpen.value = sidebar.open.value
+        sidebar.setOpen(false)
+    }
+})
+onUnmounted(() => {
+    if (sidebar) {
+        sidebar.setOpen(prevSidebarOpen.value)
+    }
+})
 
 const handleItemChange = async (index, selectedItem) => {
     const row = form.items[index]
@@ -204,11 +226,52 @@ const deleteRow = (index) => {
 const totalRows = computed(() => form.items.length)
 const totalItemDiscount = computed(() => form.items.reduce((acc, item) => acc + toNum(item.item_discount, 0), 0))
 const totalTax = computed(() => form.items.reduce((acc, item) => acc + toNum(item.tax, 0), 0))
-const totalPurchasePrice = computed(() => form.items.reduce((acc, item) => acc + toNum(item.purchase_price, 0),0))
-const totalDiscount = computed(() => form.discount)
+// Value of goods (sum of qty * price)
+const goodsTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.purchase_price, 0) * toNum(item.quantity, 0)), 0))
+// Bill discount currency and percent
+const billDiscountCurrency = computed(() => {
+    const billDisc = toNum(form.discount, 0)
+    if (form.discount_type === 'percentage') {
+        return goodsTotal.value * (billDisc / 100)
+    }
+    return billDisc
+})
+const billDiscountPercent = computed(() => {
+    const billDisc = toNum(form.discount, 0)
+    if (form.discount_type === 'percentage') {
+        return billDisc
+    }
+    const gt = goodsTotal.value
+    return gt > 0 ? (billDisc / gt) * 100 : 0
+})
+const totalDiscount = computed(() => billDiscountCurrency.value + totalItemDiscount.value)
 const totalRowTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.purchase_price, 0) * toNum(item.quantity, 0) - toNum(item.item_discount, 0) + toNum(item.tax, 0)), 0))
 const totalQuantity = computed(() => form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0))
 const totalFree = computed(() => form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0))
+
+// Transaction summary for card (spec-compliant)
+const transactionSummary = computed(() => {
+    const paid = toNum(form.paid_amount, 0)
+    const oldBalance = toNum(form?.selected_ledger?.statement?.balance, 0)
+    const nature = form?.selected_ledger?.statement?.balance_nature // 'Dr' | 'Cr'
+    const hasSelectedItem = Array.isArray(form.items) && form.items.some(r => !!r.selected_item)
+    const netAmount = goodsTotal.value - totalDiscount.value + totalTax.value
+    const grandTotal = hasSelectedItem
+        ? (nature === 'Dr' ? (netAmount - oldBalance) : (netAmount + oldBalance))
+        : 0
+    const balance = hasSelectedItem ? (grandTotal - paid) : 0
+    return {
+        valueOfGoods: goodsTotal.value,
+        billDiscountPercent: billDiscountPercent.value,
+        billDiscount: billDiscountCurrency.value,
+        itemDiscount: totalItemDiscount.value,
+        cashReceived: paid,
+        balance,
+        grandTotal,
+        oldBalance,
+        balanceNature: nature,
+    }
+})
 
 const addRow = () => {
     form.items.push({
@@ -228,7 +291,7 @@ const addRow = () => {
 </script>
 
 <template>
-    <AppLayout :title="t('general.create', { name: t('purchase.purchase') })">
+    <AppLayout :title="t('general.create', { name: t('purchase.purchase') })" :sidebar-collapsed="true">
          <form @submit.prevent="handleSubmit">
             <div class="mb-5 rounded-xl border bg-card p-4 shadow-sm relative ">
             <div class="absolute -top-3 left-3 bg-card px-2 text-sm font-semibold text-muted-foreground">{{ t('general.create', { name: t('purchase.purchase') }) }}</div>
@@ -239,8 +302,7 @@ const addRow = () => {
                     @update:modelValue="(value) => handleSelectChange('ledger_id', value)"
                     label-key="name"
                     value-key="id"
-                    :placeholder="t('ledger.supplier.supplier')"
-                    :reduce="ledger => ledger.id"
+                    :reduce="ledger => ledger"
                     :floating-text="t('ledger.supplier.supplier')"
                     :error="form.errors?.ledger_id"
                     :searchable="true"
@@ -277,7 +339,7 @@ const addRow = () => {
                     :floating-text="t('general.type')"
                     :error="form.errors?.sale_purchase_type_id"
                 />
-                <NextInput placeholder="Number" :error="form.errors?.paid_amount" type="number" v-model="form.paid_amount" :label="t('general.Paid')" />
+                <NextInput v-if="form.selected_sale_purchase_type === 'credit'" placeholder="Number" :error="form.errors?.paid_amount" type="number" v-model="form.paid_amount" :label="t('general.Paid')" />
 
                 <NextSelect
                     :options="stores.data"
@@ -315,7 +377,7 @@ const addRow = () => {
                     <tbody class="p-2">
                         <tr v-for="(item, index) in form.items" :key="item.id" class="hover:bg-muted/40 transition-colors">
                             <td class="px-1 py-2 align-top w-5">{{ index + 1 }}</td>
-                            <td>
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
                                 <NextSelect
                                     :options="items.data"
                                     v-model="item.selected_item"
@@ -332,14 +394,14 @@ const addRow = () => {
                                     :reduce="item => item"
                                 />
                             </td>
-                            <td>
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
                                 <NextInput
                                     v-model="item.batch"
                                     :disabled="!item.selected_item"
                                     :error="form.errors?.batch"
                                 />
                             </td>
-                            <td>
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
                                 <NextInput
                                     v-model="item.expire_date"
                                     :disabled="!item.selected_item"
@@ -347,7 +409,7 @@ const addRow = () => {
                                     :error="form.errors?.expire_date"
                                 />
                             </td>
-                            <td>
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
                                 <NextInput
                                     v-model="item.quantity"
                                     :disabled="!item.selected_item"
@@ -359,7 +421,7 @@ const addRow = () => {
                             <td class="text-center">
                                  <span :title="String(onhand(index))">{{ Number(onhand(index)).toFixed(2) }}</span>
                             </td>
-                            <td>
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
                                 <NextSelect
                                     :options="item.available_measures"
                                     v-model="item.selected_measure"
@@ -375,7 +437,7 @@ const addRow = () => {
                                     }"
                                 />
                             </td>
-                            <td>
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
                                 <NextInput
                                     v-model="item.purchase_price"
                                     :disabled="!item.selected_item"
@@ -384,7 +446,7 @@ const addRow = () => {
                                     :error="form.errors?.purchase_price"
                                 />
                             </td>
-                            <td>
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
                                 <NextInput
                                     v-model="item.item_discount"
                                     :disabled="!item.selected_item"
@@ -393,7 +455,7 @@ const addRow = () => {
                                     :error="form.errors?.item_discount"
                                 />
                             </td>
-                            <td>
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
                                 <NextInput
                                     v-model="item.free"
                                     :disabled="!item.selected_item"
@@ -402,7 +464,7 @@ const addRow = () => {
                                     :error="form.errors?.free"
                                 />
                             </td>
-                            <td>
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
                                 <NextInput
                                     v-model="item.tax"
                                     :disabled="!item.selected_item"
@@ -434,8 +496,8 @@ const addRow = () => {
                             <td></td>
                             <!-- Unit blank -->
                             <td></td>
-                            <!-- Price total centered -->
-                            <td class="text-center">{{ totalPurchasePrice || 0 }}</td>
+                            <!-- Value of goods (qty*price) total centered -->
+                            <td class="text-center">{{ goodsTotal || 0 }}</td>
                             <!-- Discount total centered -->
                             <td class="text-center">{{ totalItemDiscount || 0 }}</td>
                             <!-- Free total centered -->
@@ -451,8 +513,8 @@ const addRow = () => {
                 </table>
             </div>
             <div class="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 items-start">
-                <DiscountSummary :summary="form.summary" :total-item-discount="totalItemDiscount" :bill-discount="totalDiscount" :total-discount="totalDiscount" />
-                <TaxSummary :summary="form.summary" :total-tax="totalTax" />
+                <DiscountSummary :summary="form.summary" :total-item-discount="totalItemDiscount" :bill-discount="billDiscountCurrency" :total-discount="totalDiscount" />
+                <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
                 <div class="rounded-xl p-4">
                     <div class="text-lg font-semibold mb-3">Bill Disc</div>
                     <DiscountField
@@ -461,7 +523,7 @@ const addRow = () => {
                         :error="form.errors?.discount"
                     />
                 </div>
-                <TransactionSummary :summary="form.summary" :balance="selected_ledger?.statement.balance" :balance-nature="selected_ledger?.statement.balance_nature" />
+                <TransactionSummary :summary="transactionSummary" :balance-nature="form?.selected_ledger?.statement?.balance_nature" />
             </div>
 
          </form>

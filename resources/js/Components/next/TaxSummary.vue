@@ -29,7 +29,7 @@ const format = (num) => {
     }
 }
 
-const { title, totalItemTax } = props
+// Avoid destructuring props to keep reactivity intact
 </script>
 
 

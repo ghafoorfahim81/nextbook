@@ -11,7 +11,7 @@
                 @search="handleSearch"
                 :filterable="false"
                 :loading="isLoading"
-                :placeholder="placeholder?placeholder:'Select an option'"
+                :placeholder="placeholder"
                 :close-on-select="true"
                 class="col-span-3 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                 :class="[{ 'no-arrow': !showArrow }]"
