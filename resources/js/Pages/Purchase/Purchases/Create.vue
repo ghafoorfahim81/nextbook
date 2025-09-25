@@ -293,8 +293,8 @@ const addRow = () => {
 <template>
     <AppLayout :title="t('general.create', { name: t('purchase.purchase') })" :sidebar-collapsed="true">
          <form @submit.prevent="handleSubmit">
-            <div class="mb-5 rounded-xl border bg-card p-4 shadow-sm relative ">
-            <div class="absolute -top-3 left-3 bg-card px-2 text-sm font-semibold text-muted-foreground">{{ t('general.create', { name: t('purchase.purchase') }) }}</div>
+            <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative ">
+            <div class="absolute -top-3 left-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('purchase.purchase') }) }}</div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <NextSelect
                     :options="ledgers.data"
@@ -354,10 +354,10 @@ const addRow = () => {
                 />
             </div>
             </div>
-            <div class="rounded-xl border bg-card p-2 shadow-sm overflow-x-auto">
-                <table class="w-full table-fixed min-w-[1000px] purchase-table border-separate border-spacing-y-2">
+            <div class="rounded-xl border border-violet-500 p-2 shadow-sm overflow-x-auto">
+                <table class="w-full table-fixed min-w-[1000px] purchase-table border-separate border-spacing-y-2  ">
                     <thead>
-                        <tr>
+                        <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500 ">
                             <th class="sticky top-0 backdrop-blur px-1 py-1 w-5 min-w-5">#</th>
                             <th class="sticky top-0 backdrop-blur px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
                             <th class="sticky top-0 backdrop-blur px-1 py-1 w-32">{{ t('general.batch') }}</th>
@@ -371,7 +371,7 @@ const addRow = () => {
                             <th class="sticky top-0 backdrop-blur px-1 py-1 w-16">{{ t('general.tax') }}</th>
                             <th class="sticky top-0 backdrop-blur px-1 py-1 w-16">{{ t('general.total') }}</th>
                             <th class="sticky top-0 backdrop-blur px-1 py-1 w-10 min-w-10 text-center">
-                                <Trash2 class="w-4 h-4 cursor-pointer text-red-500 inline" />
+                                <Trash2 class="w-4 h-4 cursor-pointer text-fuchsia-500 inline" />
                             </th>
                         </tr>
                     </thead>
@@ -478,7 +478,7 @@ const addRow = () => {
                                  {{ rowTotal(index) }}
                             </td>
                             <td class="w-10 text-center">
-                                <Trash class="w-4 h-4 cursor-pointer text-red-500 inline" @click="deleteRow(index)" />
+                                <Trash2 class="w-4 h-4 cursor-pointer text-fuchsia-500 inline" @click="deleteRow(index)" />
                             </td>
                         </tr>
                     </tbody>
@@ -517,7 +517,7 @@ const addRow = () => {
                 <DiscountSummary :summary="form.summary" :total-item-discount="totalItemDiscount" :bill-discount="billDiscountCurrency" :total-discount="totalDiscount" />
                 <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
                 <div class="rounded-xl p-4">
-                    <div class="text-lg font-semibold mb-3">Bill Disc</div>
+                    <div class="text-sm font-semibold mb-3 text-violet-500 text-sm">Bill Disc</div>
                     <DiscountField
                         v-model="form.discount"
                         v-model:discount-type="form.discount_type"
@@ -533,15 +533,17 @@ const addRow = () => {
 </template>
 
 <style scoped>
+.purchase-table thead {
+    border: 2px solid hsl(var(--border));
+    border-radius: 8px;
+}
+
 .purchase-table thead th {
-    font-weight: 200;
-    font-size: 15px; text-align: left;
-    background-color: hsl(var(--primary) / 0.06);
     border-bottom: 1px solid hsl(var(--border));
     padding: 0.5rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-
 }
+
 </style>
