@@ -27,6 +27,9 @@ use App\Enums\Locale;
 use App\Enums\WorkingStyle;
 use App\Http\Resources\Administration\CurrencyResource;
 use App\Enums\SalesPurchaseType;
+use App\Http\Resources\Inventory\ItemResource;
+use App\Models\Inventory\Item;
+
 class HandleInertiaRequests extends Middleware
 {
     /**
@@ -154,7 +157,7 @@ class HandleInertiaRequests extends Middleware
             'ledgers',
             $cacheDuration,
             fn() => LedgerResource::collection(
-                Ledger::latest()->take(5)->get()
+                Ledger::latest()->take(1000)->get()
             )
         );
         $salePurchaseTypes = Cache::rememberForever(
@@ -163,6 +166,13 @@ class HandleInertiaRequests extends Middleware
                 'id' => $item->value,
                 'name' => $item->getLabel(),
             ])
+        );
+        $items = Cache::remember(
+            'items',
+            $cacheDuration,
+            fn() => ItemResource::collection(
+                Item::latest()->take(10)->get()
+            )
         );
 
         return [
@@ -184,6 +194,7 @@ class HandleInertiaRequests extends Middleware
             'locales' => $locales,
             'ledgers' => $ledgers,
             'salePurchaseTypes' => $salePurchaseTypes,
+            'items' => $items,
         ];
     }
 }

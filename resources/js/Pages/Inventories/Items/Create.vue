@@ -8,6 +8,7 @@ import { useForm, router } from '@inertiajs/vue3'
 import { Label } from '@/Components/ui/label'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import FloatingLabel     from "@/Components/next/FloatingLabel.vue";
+import DatePicker from '@/Components/next/DatePicker.vue'
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n()
 // keep props reactive
@@ -122,7 +123,7 @@ const handleCancel = () => {
 }
 
 const handleSelectChange = (field, value) => {
-    form[field] = value;
+    form[field] = value; 
 };
 
 const handleOpeningSelectChange = (index, value) => {
@@ -143,7 +144,6 @@ const handleOpeningSelectChange = (index, value) => {
                 <NextInput :label="t('item.colors')" v-model="form.colors" :error="form.errors?.colors" :placeholder="t('general.enter', { text: t('item.colors') })" />
                 <NextInput :label="t('item.size')" v-model="form.size" :error="form.errors?.size" :placeholder="t('general.enter', { text: t('item.size') })" />
 
-                <!-- Photo -->
 
                 <NextInput :label="t('item.photo')" type="file"  @input="onPhotoChange" :error="form.errors?.photo" :placeholder="t('general.enter', { text: t('item.photo') })" />
 
@@ -152,9 +152,8 @@ const handleOpeningSelectChange = (index, value) => {
                     :options="unitMeasures"
                     @update:modelValue="(value) => handleSelectChange('unit_measure_id', value)"
                     label-key="name"
-                    :reduceInternal="type => type.id"
                     value-key="id"
-                    id="measure"
+                    id="measure_id"
                     :floating-text="t('admin.unit_measure.unit_measure')"
                     :searchable="true"
                     resource-type="unit_measures"
@@ -211,7 +210,9 @@ const handleOpeningSelectChange = (index, value) => {
                     class="mt-3 grid grid-cols-4 gap-x-2 gap-y-5 items-start"
                 >
                     <NextInput :label="t('item.batch')" @click="addRow(index)" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
-                    <NextInput :label="t('item.expire_date')" type="date" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]"/>
+
+                        <DatePicker v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+
                     <NextInput :label="t('item.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
 
                     <NextSelect

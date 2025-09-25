@@ -174,6 +174,9 @@ const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
 const sidebarSide = computed(() => isRTL.value ? 'right' : 'left')
 const chevronIcon = computed(() => isRTL.value ? ChevronLeft : ChevronRight)
 
+// Allow parent pages to control initial sidebar state
+const props = withDefaults(defineProps<{ sidebarCollapsed?: boolean }>(), { sidebarCollapsed: false })
+
 const navMain = computed(() => [
     {
         title: t('sidebar.main.dashboard'),
@@ -241,7 +244,7 @@ data.navMain = navMain.value
 
 <template>
     <Toaster />
-    <SidebarProvider>
+    <SidebarProvider :default-open="!props.sidebarCollapsed">
         <Sidebar collapsible="icon" :side="sidebarSide">
             <SidebarHeader>
                 <SidebarMenu>
@@ -465,7 +468,7 @@ data.navMain = navMain.value
             <SidebarRail />
         </Sidebar>
         <SidebarInset>
-            <header class="flex h-16 shrink-0 items-center justify-between gap-2 px-4 rtl:pr-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+            <header class="flex h-16 shrink-0 items-center justify-between gap-2 px-4 rtl:pr-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <!-- Left side: Sidebar trigger and breadcrumb -->
                 <div class="flex items-center gap-2">
                     <SidebarTrigger class="-ml-1"/>
@@ -483,7 +486,7 @@ data.navMain = navMain.value
                     </div>
 <!--                </div>-->
             </header>
-            <div class="flex flex-1 flex-col gap-4 p-4 pt-0 min-w-0">
+            <div class="flex flex-1 flex-col gap-4 p-4 pt-4 min-w-0">
                 <slot/>
             </div>
         </SidebarInset>

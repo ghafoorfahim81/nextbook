@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\Inventory\ItemResource;
+use App\Models\Inventory\Item;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 
 class SearchController extends Controller
 {
     /**
      * Search resources by type
      */
-    public function search(Request $request, string $resourceType): JsonResponse
+    public function search(Request $request, string $resourceType): JsonResponse|\Illuminate\Http\Resources\Json\AnonymousResourceCollection
     {
         $validator = Validator::make($request->all(), [
             'search' => 'required|string|min:2|max:255',
@@ -36,6 +39,18 @@ class SearchController extends Controller
         try {
             $results = $this->performSearch($resourceType, $searchTerm, $fields, $limit, $additionalParams);
 
+            if ($results instanceof \Illuminate\Http\Resources\Json\AnonymousResourceCollection) {
+                return $results->additional([
+                    'success' => true,
+                    'meta' => [
+                        'resource_type' => $resourceType,
+                        'search_term' => $searchTerm,
+                        'total' => $results->count(),
+                        'limit' => $limit
+                    ]
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => $results,
@@ -58,7 +73,7 @@ class SearchController extends Controller
     /**
      * Perform the actual search based on resource type
      */
-    private function performSearch(string $resourceType, string $searchTerm, array $fields, int $limit, array $additionalParams): array
+    private function performSearch(string $resourceType, string $searchTerm, array $fields, int $limit, array $additionalParams): array|\Illuminate\Http\Resources\Json\AnonymousResourceCollection
     {
         $searchTerm = '%' . strtolower($searchTerm) . '%';
 
@@ -108,7 +123,7 @@ class SearchController extends Controller
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'email', 'phone_no', 'address'])) {
-                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
+                        $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
                 }
             });
@@ -128,14 +143,15 @@ class SearchController extends Controller
     /**
      * Search items
      */
-    private function searchItems(string $searchTerm, array $fields, int $limit, array $additionalParams): array
+    private function searchItems(string $searchTerm, array $fields, int $limit, array $additionalParams): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
     {
-        $query = DB::table('items')
-            ->select('id', 'name', 'code', 'description', 'category_id', 'brand_id')
+        // Use Eloquent so ItemResource receives models (not stdClass) and can access relations
+        $query = Item::query()
+            ->with(['unitMeasure', 'brand', 'category', 'stocks', 'openings', 'stockOut'])
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
-                    if (in_array($field, ['name', 'code', 'description'])) {
-                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
+                    if (in_array($field, ['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search'])) {
+                        $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
                 }
             });
@@ -153,9 +169,8 @@ class SearchController extends Controller
             $query->where('branch_id', $additionalParams['branch_id']);
         }
 
-        return $query->limit($limit)->get()->toArray();
+        return ItemResource::collection($query->limit($limit)->get());
     }
-
     /**
      * Search currencies
      */
@@ -166,7 +181,7 @@ class SearchController extends Controller
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'code', 'symbol'])) {
-                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
+                        $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
                 }
             });
@@ -184,7 +199,7 @@ class SearchController extends Controller
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'email'])) {
-                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
+                        $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
                 }
             });
@@ -207,7 +222,7 @@ class SearchController extends Controller
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'address', 'phone', 'email'])) {
-                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
+                        $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
                 }
             });
@@ -230,7 +245,7 @@ class SearchController extends Controller
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'email', 'phone', 'address'])) {
-                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
+                        $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
                 }
             });
@@ -247,7 +262,7 @@ class SearchController extends Controller
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'unit', 'symbol'])) {
-                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
+                        $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
                 }
             });
@@ -264,7 +279,7 @@ class SearchController extends Controller
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'legal_name', 'registration_number', 'email', 'phone', 'website', 'industry', 'type', 'city', 'country'])) {
-                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
+                        $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
                 }
             });
@@ -280,7 +295,7 @@ class SearchController extends Controller
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'description'])) {
-                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
+                        $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
                 }
             });
@@ -296,7 +311,7 @@ class SearchController extends Controller
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'address'])) {
-                        $q->orWhereRaw('LOWER(' . $field . ') LIKE ?', [$searchTerm]);
+                        $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
                 }
             });

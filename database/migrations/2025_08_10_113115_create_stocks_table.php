@@ -32,7 +32,7 @@ return new class extends Migration
             $table->foreign('item_id')->references('id')->on('items');
             $table->foreign('store_id')->references('id')->on('stores');
             $table->foreign('unit_measure_id')->references('id')->on('unit_measures');
-//            $table->foreign('purchase_id')->references('id')->on('purchases');
+           $table->foreign('purchase_id')->references('id')->on('purchases');
         });
     }
 

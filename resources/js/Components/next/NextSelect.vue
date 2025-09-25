@@ -11,8 +11,10 @@
                 @search="handleSearch"
                 :filterable="false"
                 :loading="isLoading"
+                :placeholder="placeholder"
                 :close-on-select="true"
                 class="col-span-3 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                :class="[{ 'no-arrow': !showArrow }]"
                 v-bind="$attrs"
             />
             <!-- Floating label sits *under* the dropdown and ignores pointer events -->
@@ -43,11 +45,13 @@ const props = defineProps({
     id: { type: String, default: () => "sel-" + Math.random().toString(36).slice(2) },
     floatingText: { type: String, default: "" },
     error: { type: String, default: "" },
+    placeholder: { type: String, default: "" },
     // Search-related props
     searchable: { type: Boolean, default: false },
     resourceType: { type: String, default: null },
     searchFields: { type: Array, default: () => ['name'] },
     searchOptions: { type: Object, default: () => ({}) },
+    showArrow: { type: Boolean, default: true },
 });
 // ... existing imports and props ...
 
@@ -157,14 +161,19 @@ const handleSearch = async (searchTerm) => {
 <!-- Styles specific to vue-select dropdown -->
 <style scoped>
     /* Keep the menu above surrounding UI - higher z-index for modals */
-:deep(.vs__dropdown-menu) { 
-    z-index: 9999 !important; 
+:deep(.vs__dropdown-menu) {
+    z-index: 9999 !important;
     position: absolute !important;
 }
 
 /* Ensure the dropdown toggle is clickable */
 :deep(.vs__dropdown-toggle) {
     cursor: pointer !important;
+}
+
+/* Hide only the chevron (keep clear button visible) when showArrow=false */
+.no-arrow :deep(.vs__open-indicator) {
+    display: none !important;
 }
 
 /* Ensure dropdown options are clickable */

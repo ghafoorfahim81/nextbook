@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\StockOut;
 
 class Item extends Model
 {
@@ -131,8 +132,10 @@ class Item extends Model
     public function openings()
     {
         return $this->hasMany(StockOpening::class, 'item_id', 'id');
-
     }
 
-
+    public function stockOut()
+    {
+        return $this->hasMany(StockOut::class);
+    }
 }

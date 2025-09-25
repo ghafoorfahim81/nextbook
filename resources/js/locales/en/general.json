@@ -82,7 +82,7 @@
   "save_and_new": "Save and new",
   "from": "From",
   "to": "To",
-  "create": "Create",
+  "create": "Create {name}",
   "read": "Read",
   "import": "Import",
   "new": "New {name}",
@@ -102,7 +102,14 @@
   "delete_description": "This will permanently delete this {name}.",
   "create_and_new": "Create and new",
   "rows": "Rows",
-  "add_row": "Add row"
+  "add_row": "Add row",
+  "on_hand": "On hand",
+  "batch": "Batch",
+  "expire_date": "Expiry",
+  "tax": "Tax",
+  "qty": "Qty",
+  "unit": "Unit",
+  "search_or_select": "Search or select item..."
 }
 
 
