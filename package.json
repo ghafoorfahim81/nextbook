@@ -34,6 +34,8 @@
         "tailwind-merge": "^2.6.0",
         "tailwindcss-animate": "^1.0.7",
         "vue-i18n": "^9.14.5",
-        "vue-select": "^4.0.0-beta.6"
+        "vue-persian-datetime-picker": "^2.10.4",
+        "vue-select": "^4.0.0-beta.6",
+        "vue3-persian-datetime-picker": "^1.2.2"
     }
 }

@@ -2,7 +2,6 @@
 import {useForm } from '@inertiajs/vue3';
 import { onMounted, computed } from 'vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
-import { Button } from '@/Components/ui/button';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
@@ -94,9 +93,26 @@ const previewImage = (event) => {
     }
 };
 
+const setCalendarLocaleStorage = (selected) => {
+    try {
+        const id = typeof selected === 'object' && selected ? selected.id : selected
+        const item = Array.isArray(props.calendarTypes)
+            ? props.calendarTypes.find(ct => (ct?.id ?? ct?.value) === id)
+            : null
+        const name = (item?.name || item?.label || item?.value || '').toString().toLowerCase()
+        const locale = /miladi|gregorian|english|en/.test(name) ? 'en' : 'fa'
+        if (typeof localStorage !== 'undefined') localStorage.setItem('calendar_type', locale)
+    } catch (e) {
+        // noop
+    }
+}
+
 const handleSelectChange = (field, value) => {
-    if(field === 'currency_id') {
+    if (field === 'currency_id') {
         form.currency_id = value;
+    }
+    if (field === 'calendar_type') {
+        setCalendarLocaleStorage(value)
     }
     form[field] = value;
 };
@@ -246,14 +262,8 @@ const handleSelectChange = (field, value) => {
                             </div>
 
                             <div class="flex justify-end pt-6 mt-6 border-t border-gray-200">
-                                <Button
-                                    type="submit"
-                                    variant="outline"
-                                    :disabled="form.processing"
-                                    class="bg-primary text-white"
-                                >
-                                    <span v-if="form.processing">Saving...</span>
-                                    <span v-else>Save</span>
+                                <Button type="submit" variant="outline" class="bg-primary text-white" :disabled="form.processing">
+                                    Create Company
                                 </Button>
                             </div>
                         </form>

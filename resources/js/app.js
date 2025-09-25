@@ -8,6 +8,7 @@ import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import vSelect from 'vue-select'; // ✅ Import v-select
 import Toaster from '@/Components/ui/toast/Toaster.vue'
 import { createI18nInstance } from './lib/i18n'
+import DatePickerAf from '@/Components/next/DatePicker.vue'
 
 const appName = import.meta.env.VITE_APP_NAME || 'Nextbook';
 
@@ -29,6 +30,7 @@ createInertiaApp({
             .component('Head', Head)
             .component('Link', Link)
             .component('v-select', vSelect) // ✅ Register v-select globally
+            .component('DatePickerAf', DatePickerAf)
             .mount(el);
     },
     progress: {

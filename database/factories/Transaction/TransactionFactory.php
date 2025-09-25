@@ -8,6 +8,7 @@ use App\Models\Administration\Currency;
 use App\Models\Account\Account;
 use App\Models\Transaction\Transaction;
 use App\Models\User;
+use App\Models\Ledger\Ledger;
 
 class TransactionFactory extends Factory
 {
@@ -23,11 +24,12 @@ class TransactionFactory extends Factory
      */
     public function definition(): array
     {
-        return [ 
-            'amount' => fake()->randomFloat(0, 0, 9999999999.),
+        return [
+            'amount' => fake()->randomFloat(0, 0, 10000.),
             'account_id' => Account::factory(),
+            'ledger_id' => Ledger::factory(),
             'currency_id' => Currency::where('is_active', true)->inRandomOrder()->first()->id,
-            'rate' => fake()->randomFloat(0, 0, 9999999999.),
+            'rate' => fake()->randomFloat(0, 0, 10000.),
             'date' => fake()->date(),
             'type' => fake()->randomElement(['debit', 'credit']),
             'remark' => fake()->text(),

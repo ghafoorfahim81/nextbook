@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::disableForeignKeyConstraints();
 
         Schema::create('purchases', function (Blueprint $table) {
-            $table->char('id', 26);
+            $table->char('id', 26)->primary();
             $table->string('number')->index();
             $table->char('supplier_id', 26);
             $table->date('date');
@@ -33,13 +33,12 @@ return new class extends Migration
         Schema::enableForeignKeyConstraints();
 
         Schema::table('purchases', function (Blueprint $table) {
-            $table->foreign('supplier_id')->references('id')->on('ledgers'); 
+            $table->foreign('supplier_id')->references('id')->on('ledgers');
             $table->foreign('transaction_id')->references('id')->on('transactions');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('branch_id')->references('id')->on('branches');
         });
-
     }
 
     /**

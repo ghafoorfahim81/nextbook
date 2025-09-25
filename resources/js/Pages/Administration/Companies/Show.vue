@@ -125,7 +125,8 @@ const saveChanges = () => {
         onSuccess: () => {
             isEditing.value = false;
             originalData.value = { ...form.data() };
-            logoPreview.value = null; // Clear preview after successful save
+            logoPreview.value = null;
+            setCalendarLocaleStorage(form.calendar_type) // Clear preview after successful save
         },
         onError: () => {
             // Errors will be handled by the form
@@ -171,8 +172,11 @@ const previewImage = (event) => {
 };
 
 const handleSelectChange = (field, value) => {
-        form[field] = value.id;
-};
+        form[field] = value;
+        // if (field === 'calendar_type') {
+        //     setCalendarLocaleStorage(value)
+        // }
+    };
 
 const getDisplayValue = (field) => {
     const value = props.company?.[field];
@@ -202,6 +206,20 @@ const getDisplayValue = (field) => {
 
     return value;
 };
+
+const setCalendarLocaleStorage = (selected) => {
+    try {
+        const id = typeof selected === 'object' && selected ? selected.id : selected
+        const item = Array.isArray(props.calendarTypes)
+            ? props.calendarTypes.find(ct => (ct?.id ?? ct?.value) === id)
+            : null
+        const name = (item?.name || item?.label || item?.value || '').toString().toLowerCase()
+        const locale = /miladi|gregorian|english|en/.test(name) ? 'en' : 'fa'
+        if (typeof localStorage !== 'undefined') localStorage.setItem('calendar_type', locale)
+    } catch (e) {
+        // noop
+    }
+}
 </script>
 
 <template>

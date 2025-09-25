@@ -16,6 +16,7 @@ return new class extends Migration
         Schema::create('transactions', function (Blueprint $table) {
             $table->char('id', 26)->primary();
             $table->char('account_id', 26);
+            $table->char('ledger_id', 26);
             $table->float('amount');
             $table->char('currency_id', 26);
             $table->float('rate');
@@ -32,6 +33,7 @@ return new class extends Migration
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('currency_id')->references('id')->on('currencies');
             $table->foreign('account_id')->references('id')->on('accounts');
+            $table->foreign('ledger_id')->references('id')->on('ledgers');
         });
 
         Schema::enableForeignKeyConstraints();

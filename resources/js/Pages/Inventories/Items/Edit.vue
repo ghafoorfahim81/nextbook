@@ -85,7 +85,7 @@ const handleSubmit = () => {
     })
 }
 const handleSelectChange = (field, value) => {
-    form[field] = value.id;
+    form[field] = value;
 };
 
 const handleOpeningSelectChange = (index, value) => {
