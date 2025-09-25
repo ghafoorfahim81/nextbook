@@ -302,7 +302,7 @@ const addRow = () => {
                     @update:modelValue="(value) => handleSelectChange('ledger_id', value)"
                     label-key="name"
                     value-key="id"
-                    :reduce="ledger => ledger"
+                    :reduce="ledger => ledger.id"
                     :floating-text="t('ledger.supplier.supplier')"
                     :error="form.errors?.ledger_id"
                     :searchable="true"
@@ -329,6 +329,7 @@ const addRow = () => {
                 <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" v-model="form.rate" :label="t('general.rate')"/>
                 </div>
 
+               <div :class="form.selected_sale_purchase_type === 'credit' ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-1 gap-2'">
                 <NextSelect
                     :options="salePurchaseTypes"
                     v-model="form.selected_sale_purchase_type"
@@ -340,7 +341,7 @@ const addRow = () => {
                     :error="form.errors?.sale_purchase_type_id"
                 />
                 <NextInput v-if="form.selected_sale_purchase_type === 'credit'" placeholder="Number" :error="form.errors?.paid_amount" type="number" v-model="form.paid_amount" :label="t('general.Paid')" />
-
+                </div>
                 <NextSelect
                     :options="stores.data"
                     v-model="form.selected_store"
@@ -360,7 +361,7 @@ const addRow = () => {
                             <th class="sticky top-0 backdrop-blur px-1 py-1 w-5 min-w-5">#</th>
                             <th class="sticky top-0 backdrop-blur px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
                             <th class="sticky top-0 backdrop-blur px-1 py-1 w-32">{{ t('general.batch') }}</th>
-                            <th class="sticky top-0 backdrop-blur px-1 py-1 w-24">{{ t('general.expire_date') }}</th>
+                            <th class="sticky top-0 backdrop-blur px-1 py-1 w-32">{{ t('general.expire_date') }}</th>
                             <th class="sticky top-0 backdrop-blur px-1 py-1 w-16">{{ t('general.qty') }}</th>
                             <th class="sticky top-0 backdrop-blur px-1 py-1 w-24">{{ t('general.on_hand') }}</th>
                             <th class="sticky top-0 backdrop-blur px-1 py-1 w-24">{{ t('general.unit') }}</th>
@@ -473,7 +474,7 @@ const addRow = () => {
                                     :error="form.errors?.tax"
                                 />
                             </td>
-                            <td>
+                            <td class="text-center">
                                  {{ rowTotal(index) }}
                             </td>
                             <td class="w-10 text-center">
