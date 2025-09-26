@@ -8,7 +8,8 @@
             :disabled="disabled"
             :autocomplete="autocomplete"
             :placeholder="placeholder"
-        class="peer block w-full rounded-md border bg-background px-3 py-3 text-sm shadow-sm
+            @input="input"
+        class="peer block w-full rounded-md border border-2 border-black border-input bg-background px-3 py-3 text-sm shadow-sm
         placeholder:text-transparent focus:placeholder:text-muted-foreground
         focus:border-violet-500 focus:outline-none
         disabled:cursor-not-allowed disabled:opacity-50"
@@ -51,6 +52,7 @@ const props = defineProps({
     error: String,
     hint: String,
     placeholder: String,
+    input: Function,
 })
 
 const emit = defineEmits(['update:modelValue'])
