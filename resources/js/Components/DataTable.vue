@@ -51,10 +51,10 @@
 
         <!-- Table -->
         <Table>
-            <TableHeader>
+            <TableHeader class="bg-violet-500">
                 <TableRow>
                     <TableHead v-for="column in derivedColumns" :key="column.key">
-                        <div :class="isRTL ? 'flex items-center space-x-reverse space-x-1' : 'flex items-center space-x-1'">
+                        <div :class="isRTL ? 'flex items-center space-x-reverse space-x-1 text-white' : 'flex items-center space-x-1 text-white'">
                             <span>{{ column.label }}</span>
                             <div v-if="column.sortable">
                                 <Button variant="ghost" size="sm" @click="sort(column.key)">

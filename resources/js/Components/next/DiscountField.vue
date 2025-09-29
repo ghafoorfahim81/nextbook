@@ -26,8 +26,8 @@
                 :disabled="disabled"
                 class="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-1 rounded text-white text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2"
                 :class="discountType === 'percentage'
-                    ? 'bg-teal-500 hover:bg-teal-600 focus:ring-teal-500'
-                    : 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-500'"
+                    ? 'bg-violet-500 hover:bg-violet-600 focus:ring-violet-500'
+                    : 'bg-violet-500 hover:bg-violet-600 focus:ring-violet-500'"
             >
                 <span v-if="discountType === 'percentage'">%</span>
                 <span v-else>$</span>
@@ -42,9 +42,9 @@
                 peer-focus:top-0 peer-focus:-translate-y-1/2 peer-focus:text-xs peer-focus:text-foreground
                 peer-[:not(:placeholder-shown)]:top-0
                 peer-[:not(:placeholder-shown)]:-translate-y-1/2
-                peer-[:not(:placeholder-shown)]:text-xs">
+                peer-[:not(:placeholder-shown)]:text-xs ">
                 {{ label }}
-                <span v-if="isRequired" class="text-red-600 ms-[2px]">*</span>
+                <span v-if="isRequired" class="text-violet-600 ms-[2px]">*</span>
             </label>
         </div>
 

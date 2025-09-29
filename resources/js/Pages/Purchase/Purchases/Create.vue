@@ -14,11 +14,15 @@ import TransactionSummary from '@/Components/next/TransactionSummary.vue';
 import DiscountSummary from '@/Components/next/DiscountSummary.vue';
 import TaxSummary from '@/Components/next/TaxSummary.vue';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
+import { ToastAction } from '@/Components/ui/toast'
+import { useToast } from '@/Components/ui/toast/use-toast'
 const { t } = useI18n();
-
 const showFilter = () => {
     showFilter.value = true;
 }
+
+
+const { toast } = useToast()
 
 const props = defineProps({
     ledgers: Object,
@@ -130,7 +134,6 @@ watch(() => props.stores.data, (stores) => {
 }, { immediate: true });
 
 const handleSelectChange = (field, value) => {
-    console.log('selected value', value)
     if(field === 'currency_id') {
         form.rate = value.exchange_rate;
     }
@@ -160,6 +163,18 @@ onMounted(() => {
         prevSidebarOpen.value = sidebar.open.value
         sidebar.setOpen(false)
     }
+    // Auto-generate bill number: latest + 1
+    ;(async () => {
+        // try {
+        //     const { data } = await axios.get('/purchases/latest-number')
+        //     const latest = Number((data && (data.number ?? data.latest ?? data.data)) ?? 0)
+        //     if (!isNaN(latest) && latest >= 0) {
+        //         form.number = String(latest + 1)
+        //     }
+        // } catch (e) {
+        //     // ignore if endpoint not available
+        // }
+    })()
 })
 onUnmounted(() => {
     if (sidebar) {
@@ -180,16 +195,148 @@ const handleItemChange = async (index, selectedItem) => {
         row.discount = ''
         row.free = ''
         row.tax = ''
+        // do not add a new row on deselect
+        return
     }
 
-    addRow();
-    row.available_measures = props.unitMeasures.data.filter(unit => {
-        return unit.quantity_id === selectedItem.unitMeasure.quantity_id
+    // Build available measures robustly by matching quantity id
+    const selUM = selectedItem?.unitMeasure || {}
+    const selectedQuantityId = selUM.quantity_id ?? selUM.quantity?.id
+    const selectedQuantityName = (selUM.quantity?.name || selUM.quantity?.code || '').toString().toLowerCase()
+    row.available_measures = (props.unitMeasures?.data || []).filter(unit => {
+        const unitQtyId = unit?.quantity_id ?? unit?.quantity?.id
+        const unitQtyName = (unit?.quantity?.name || unit?.quantity?.code || '').toString().toLowerCase()
+        return (selectedQuantityId && unitQtyId === selectedQuantityId) || (!!selectedQuantityName && unitQtyName === selectedQuantityName)
     })
     row.selected_measure = selectedItem.unitMeasure
     row.item_id = selectedItem.id
     row.on_hand = selectedItem.on_hand
     row.purchase_price = selectedItem.purchase_price
+
+    // Add a new empty row only when selecting into the last row
+    if (index === form.items.length - 1) {
+        addRow()
+    }
+
+    // Duplicate check after selection
+    if (isDuplicateRow(index)) {
+        notifyIfDuplicate(index)
+        // Automatically clear the duplicate item
+        resetRow(index)
+        return
+    }
+}
+const isRowEnabled = (index) => {
+    if (!form.selected_ledger) return false
+    for (let i = 0; i < index; i++) {
+        if (!form.items[i]?.selected_item) return false
+    }
+    return true
+}
+
+const buildRowKey = (r) => {
+    const measureId = r?.selected_measure?.id
+        || (typeof r?.selected_measure === 'object' ? (r?.selected_measure?.name || r?.selected_measure?.unit) : r?.selected_measure)
+        || ''
+    return [
+        (r.item_id || r.selected_item?.id || '').toString(),
+        (r.batch || '').toString().trim().toLowerCase(),
+        (r.expire_date || '').toString().trim(),
+        measureId.toString()
+    ].join('|')
+}
+
+const isDuplicateRow = (index) => {
+    const r = form.items[index]
+    if (!r || !r.selected_item || !r.selected_measure) return false
+
+    // Only check for duplicates if batch or expiry is provided
+    const hasBatchOrExpiry = (r.batch && r.batch.trim()) || (r.expire_date && r.expire_date.trim())
+    if (!hasBatchOrExpiry) {
+        console.log(`Row ${index}: No batch or expiry provided, skipping duplicate check`)
+        return false
+    }
+
+    const key = buildRowKey(r)
+    let count = 0
+
+    console.log(`Checking for duplicates in row ${index}:`, {
+        item: r.selected_item?.name,
+        batch: r.batch,
+        expiry: r.expire_date,
+        measure: r.selected_measure?.name,
+        key
+    })
+
+    for (let i = 0; i < form.items.length; i++) {
+        const x = form.items[i]
+        if (!x || !x.selected_item || !x.selected_measure) continue
+
+        // Only compare with rows that also have batch or expiry
+        const xHasBatchOrExpiry = (x.batch && x.batch.trim()) || (x.expire_date && x.expire_date.trim())
+        if (!xHasBatchOrExpiry) continue
+
+        const xkey = buildRowKey(x)
+        console.log(`Comparing with row ${i}:`, {
+            item: x.selected_item?.name,
+            batch: x.batch,
+            expiry: x.expire_date,
+            measure: x.selected_measure?.name,
+            key: xkey,
+            match: key === xkey
+        })
+
+        if (key === xkey) {
+            count++
+            if (count > 1) {
+                console.log('DUPLICATE DETECTED:', {
+                    current: {
+                        item: r.selected_item?.name,
+                        batch: r.batch,
+                        expiry: r.expire_date,
+                        unit: r.selected_measure?.name
+                    },
+                    existing: {
+                        item: x.selected_item?.name,
+                        batch: x.batch,
+                        expiry: x.expire_date,
+                        unit: x.selected_measure?.name
+                    },
+                    key: key
+                })
+                return true
+            }
+        }
+    }
+    return false
+}
+
+const resetRow = (index) => {
+    const r = form.items[index]
+    if (!r) return
+    r.selected_item = ''
+    r.item_id = ''
+    r.selected_measure = ''
+    r.available_measures = []
+    r.batch = ''
+    r.expire_date = ''
+    r.quantity = ''
+    r.purchase_price = ''
+}
+
+const notifyIfDuplicate = (index) => {
+    if (isDuplicateRow(index)) {
+        const item = form.items[index]
+        const batchText = item.batch ? `Batch: ${item.batch}` : 'No batch'
+        const expiryText = item.expire_date ? `Expiry: ${item.expire_date}` : 'No expiry'
+        toast({
+            title: 'Duplicate item detected',
+            description: `Same item with ${batchText} and ${expiryText} already exists.`,
+            variant: 'destructive',
+            duration: Infinity,
+            action: h(ToastAction, { altText: 'Unselect', onClick: () => resetRow(index) }, { default: () => 'Unselect' }),
+        })
+    }
 }
 
 const onhand = (index) => {
@@ -257,7 +404,7 @@ const transactionSummary = computed(() => {
     const hasSelectedItem = Array.isArray(form.items) && form.items.some(r => !!r.selected_item)
     const netAmount = goodsTotal.value - totalDiscount.value + totalTax.value
     const grandTotal = hasSelectedItem
-        ? (nature === 'Dr' ? (netAmount - oldBalance) : (netAmount + oldBalance))
+        ? (nature === 'dr' ? (netAmount - oldBalance) : (netAmount + oldBalance))
         : 0
     const balance = hasSelectedItem ? (grandTotal - paid) : 0
     return {
@@ -288,13 +435,15 @@ const addRow = () => {
         tax: '',
     })
 }
+
+
 </script>
 
 <template>
     <AppLayout :title="t('general.create', { name: t('purchase.purchase') })" :sidebar-collapsed="true">
          <form @submit.prevent="handleSubmit">
-            <div class="mb-5 rounded-xl border bg-card p-4 shadow-sm relative ">
-            <div class="absolute -top-3 left-3 bg-card px-2 text-sm font-semibold text-muted-foreground">{{ t('general.create', { name: t('purchase.purchase') }) }}</div>
+            <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative ">
+            <div class="absolute -top-3 left-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('purchase.purchase') }) }}</div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <NextSelect
                     :options="ledgers.data"
@@ -354,23 +503,23 @@ const addRow = () => {
                 />
             </div>
             </div>
-            <div class="rounded-xl border bg-card p-2 shadow-sm overflow-x-auto">
+            <div class="rounded-xl border bg-card p-2 shadow-sm overflow-x-auto max-h-72">
                 <table class="w-full table-fixed min-w-[1000px] purchase-table border-separate border-spacing-y-2">
                     <thead>
-                        <tr>
-                            <th class="sticky top-0 backdrop-blur px-1 py-1 w-5 min-w-5">#</th>
-                            <th class="sticky top-0 backdrop-blur px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
-                            <th class="sticky top-0 backdrop-blur px-1 py-1 w-32">{{ t('general.batch') }}</th>
-                            <th class="sticky top-0 backdrop-blur px-1 py-1 w-32">{{ t('general.expire_date') }}</th>
-                            <th class="sticky top-0 backdrop-blur px-1 py-1 w-16">{{ t('general.qty') }}</th>
-                            <th class="sticky top-0 backdrop-blur px-1 py-1 w-24">{{ t('general.on_hand') }}</th>
-                            <th class="sticky top-0 backdrop-blur px-1 py-1 w-24">{{ t('general.unit') }}</th>
-                            <th class="sticky top-0 backdrop-blur px-1 py-1 w-24">{{ t('general.price') }}</th>
-                            <th class="sticky top-0 backdrop-blur px-1 py-1 w-24">{{ t('general.discount') }}</th>
-                            <th class="sticky top-0 backdrop-blur px-1 py-1 w-16">{{ t('general.free') }}</th>
-                            <th class="sticky top-0 backdrop-blur px-1 py-1 w-16">{{ t('general.tax') }}</th>
-                            <th class="sticky top-0 backdrop-blur px-1 py-1 w-16">{{ t('general.total') }}</th>
-                            <th class="sticky top-0 backdrop-blur px-1 py-1 w-10 min-w-10 text-center">
+                        <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500 ">
+                            <th class="sticky top-0 bg-card px-1 py-1 w-5 min-w-5">#</th>
+                            <th class="sticky top-0 bg-card px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
+                            <th class="sticky top-0 bg-card px-1 py-1 w-32">{{ t('general.batch') }}</th>
+                            <th class="sticky top-0 bg-card px-1 py-1 w-32">{{ t('general.expire_date') }}</th>
+                            <th class="sticky top-0 bg-card px-1 py-1 w-16">{{ t('general.qty') }}</th>
+                            <th class="sticky top-0 bg-card px-1 py-1 w-24">{{ t('general.on_hand') }}</th>
+                            <th class="sticky top-0 bg-card px-1 py-1 w-24">{{ t('general.unit') }}</th>
+                            <th class="sticky top-0 bg-card px-1 py-1 w-24">{{ t('general.price') }}</th>
+                            <th class="sticky top-0 bg-card px-1 py-1 w-24">{{ t('general.discount') }}</th>
+                            <th class="sticky top-0 bg-card px-1 py-1 w-16">{{ t('general.free') }}</th>
+                            <th class="sticky top-0 bg-card px-1 py-1 w-16">{{ t('general.tax') }}</th>
+                            <th class="sticky top-0 bg-card px-1 py-1 w-16">{{ t('general.total') }}</th>
+                            <th class="sticky top-0 bg-card px-1 py-1 w-10 min-w-10 text-center">
                                 <Trash2 class="w-4 h-4 cursor-pointer text-red-500 inline" />
                             </th>
                         </tr>
@@ -378,11 +527,10 @@ const addRow = () => {
                     <tbody class="p-2">
                         <tr v-for="(item, index) in form.items" :key="item.id" class="hover:bg-muted/40 transition-colors">
                             <td class="px-1 py-2 align-top w-5">{{ index + 1 }}</td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
                                     :options="items.data"
                                     v-model="item.selected_item"
-                                    @update:modelValue=" value => handleItemChange(index, value)"
                                     label-key="name"
                                     :placeholder="t('general.search_or_select')"
                                     id="item_id"
@@ -393,24 +541,27 @@ const addRow = () => {
                                     :search-fields="['name', 'code', 'generic_name', 'packing', 'barcode','fast_search']"
                                     value-key="id"
                                     :reduce="item => item"
+                                    @update:modelValue=" value => { handleItemChange(index, value); }"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
                                     v-model="item.batch"
                                     :disabled="!item.selected_item"
                                     :error="form.errors?.batch"
+                                    @input="notifyIfDuplicate(index)"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
                                     v-model="item.expire_date"
                                     :disabled="!item.selected_item"
                                     type="date"
                                     :error="form.errors?.expire_date"
+                                    @input="notifyIfDuplicate(index)"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
                                     v-model="item.quantity"
                                     :disabled="!item.selected_item"
@@ -422,7 +573,7 @@ const addRow = () => {
                             <td class="text-center">
                                  <span :title="String(onhand(index))">{{ Number(onhand(index)).toFixed(2) }}</span>
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
                                     :options="item.available_measures"
                                     v-model="item.selected_measure"
@@ -435,10 +586,11 @@ const addRow = () => {
                                         const selectedUnit = Number(measure?.unit) || baseUnit
                                         const basePrice = Number(form.items[index]?.selected_item?.purchase_price) || 0
                                         form.items[index].purchase_price = (basePrice / baseUnit) * selectedUnit
+                                        notifyIfDuplicate(index)
                                     }"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
                                     v-model="item.purchase_price"
                                     :disabled="!item.selected_item"
@@ -447,7 +599,7 @@ const addRow = () => {
                                     :error="form.errors?.purchase_price"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
                                     v-model="item.item_discount"
                                     :disabled="!item.selected_item"
@@ -456,7 +608,7 @@ const addRow = () => {
                                     :error="form.errors?.item_discount"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
                                     v-model="item.free"
                                     :disabled="!item.selected_item"
@@ -465,7 +617,7 @@ const addRow = () => {
                                     :error="form.errors?.free"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !form.selected_ledger }">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
                                     v-model="item.tax"
                                     :disabled="!item.selected_item"
@@ -478,7 +630,7 @@ const addRow = () => {
                                  {{ rowTotal(index) }}
                             </td>
                             <td class="w-10 text-center">
-                                <Trash class="w-4 h-4 cursor-pointer text-red-500 inline" @click="deleteRow(index)" />
+                                <Trash2 class="w-4 h-4 cursor-pointer text-fuchsia-500 inline" @click="deleteRow(index)" />
                             </td>
                         </tr>
                     </tbody>
@@ -517,7 +669,7 @@ const addRow = () => {
                 <DiscountSummary :summary="form.summary" :total-item-discount="totalItemDiscount" :bill-discount="billDiscountCurrency" :total-discount="totalDiscount" />
                 <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
                 <div class="rounded-xl p-4">
-                    <div class="text-lg font-semibold mb-3">Bill Disc</div>
+                    <div class="text-sm font-semibold mb-3 text-violet-500 text-sm">Bill Disc</div>
                     <DiscountField
                         v-model="form.discount"
                         v-model:discount-type="form.discount_type"
@@ -527,21 +679,29 @@ const addRow = () => {
                 <TransactionSummary :summary="transactionSummary" :balance-nature="form?.selected_ledger?.statement?.balance_nature" />
             </div>
 
+            <div class="mt-4 flex gap-2">
+                <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white">{{ t('general.create') }}</button>
+                <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white" @click="() => { handleSubmit(); form.reset(); }">{{ t('general.create') }} & {{ t('general.new') }}</button>
+                <button type="button" class="btn px-4 py-2 rounded-md border" @click="() => $inertia.visit('/purchases')">{{ t('general.cancel') }}</button>
+            </div>
+
          </form>
 
     </AppLayout>
 </template>
 
 <style scoped>
+.purchase-table thead {
+    border: 2px solid hsl(var(--border));
+    border-radius: 8px;
+}
+
 .purchase-table thead th {
-    font-weight: 200;
-    font-size: 15px; text-align: left;
-    background-color: hsl(var(--primary) / 0.06);
     border-bottom: 1px solid hsl(var(--border));
     padding: 0.5rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-
 }
+
 </style>
