@@ -1,20 +1,20 @@
 <template>
     <div class="rounded-xl border bg-gradient-to-b from-muted/50 to-background p-4 shadow-sm">
-        <div class="text-lg font-semibold mb-3">{{ title }}</div>
+        <div class="text-lg font-semibold mb-3 text-violet-500 text-sm">{{ title }}</div>
 
         <div class="space-y-2">
-            <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">Total Item Disc:</span>
-                <span class="tabular-nums">{{ format(totalItemDiscount) }}</span>
+            <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
+                <span class="text-muted-foreground hover:text-violet-500">Total Item Disc:</span>
+                <span class="tabular-nums text-sm">{{ format(totalItemDiscount) }}</span>
             </div>
-            <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">Bill Discount:</span>
-                <span class="tabular-nums">{{ format(billDiscount) }}</span>
+            <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
+                <span class="text-muted-foreground hover:text-violet-500">Bill Discount:</span>
+                <span class="tabular-nums text-sm hover:text-violet-500">{{ format(billDiscount) }}</span>
             </div>
 
-            <div class="flex items-center justify-between font-semibold">
-                <span>Total Disc:</span>
-                <span class="tabular-nums">{{ format(totalDiscount) }}</span>
+            <div class="flex items-center justify-between font-semibold hover:bg-muted hover:text-violet-500">
+                <span class="text-sm">Total Disc:</span>
+                <span class="tabular-nums text-sm">{{ format(totalDiscount) }}</span>
             </div>
         </div>
     </div>

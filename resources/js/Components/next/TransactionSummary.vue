@@ -1,23 +1,23 @@
 <template>
-    <div class="rounded-xl border bg-gradient-to-b from-muted/50 to-background p-4 shadow-sm">
-        <div class="text-lg font-semibold mb-3">{{ title }}</div>
+    <div class="rounded-xl border border-violet-500 bg-gradient-to-b from-muted/50 to-background p-4 shadow-sm">
+        <div class="text-sm font-semibold mb-3 text-violet-500">{{ title }}</div>
 
         <div class="space-y-2">
-            <div v-for="row in rows" :key="row.key" class="flex items-center justify-between">
-                <span class="text-muted-foreground">{{ row.label }}:</span>
-                <span class="tabular-nums">{{ row.value }}</span>
+            <div v-for="row in rows" :key="row.key" class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
+                <span class="text-muted-foreground hover:text-violet-500">{{ row.label }}:</span>
+                <span class="tabular-nums text-sm hover:text-violet-500">{{ row.value }}</span>
             </div>
 
             <div class="flex items-center justify-between font-semibold">
                 <span>Grand Total:</span>
-                <span class="tabular-nums">{{ format(summary.grandTotal) }}</span>
+                <span class="tabular-nums text-sm">{{ format(summary.grandTotal) }}</span>
             </div>
 
             <div class="border-t my-2"></div>
 
-            <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">Old Balance:</span>
-                <span class="tabular-nums">{{ format(summary.oldBalance) }}. {{ summary.balanceNature }}</span>
+            <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
+                <span class="text-muted-foreground hover:text-violet-500">Old Balance:</span>
+                <span class="tabular-nums text-sm hover:text-violet-500">{{ format(summary.oldBalance) }}. {{ summary.balanceNature }}</span>
             </div>
         </div>
     </div>
