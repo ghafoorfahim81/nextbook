@@ -306,12 +306,12 @@ data.navMain = navMain.value
                     <SidebarMenu>
                         <template v-for="item in navMain" :key="item.title">
                             <!-- Simple menu item without sub-items (like Dashboard) -->
-                            <SidebarMenuItem v-if="!item.items">
+                            <SidebarMenuItem v-if="!item.items" >
                                 <SidebarMenuButton
                                     :isActive="isMenuItemActive(item.url)"
                                     as-child
                                 >
-                                    <Link :href="item.url">
+                                    <Link :href="item.url" >
                                         <component :is="item.icon" />
                                         <span>{{ item.title }}</span>
                                     </Link>
@@ -329,7 +329,9 @@ data.navMain = navMain.value
                                     <CollapsibleTrigger as-child>
                                         <SidebarMenuButton :tooltip="item.title">
                                             <component :is="item.icon" />
-                                            <span>{{ item.title }}</span>
+                                            <span
+                                            class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500"
+                                            >{{ item.title }}</span>
                                             <component :is="chevronIcon" :class="isRTL ? 'mr-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' : 'ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90'" />
                                         </SidebarMenuButton>
                                     </CollapsibleTrigger>
@@ -342,6 +344,7 @@ data.navMain = navMain.value
                                                 <SidebarMenuSubButton
                                                     :isActive="isMenuItemActive(subItem.url)"
                                                     as-child
+                                                    class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500"
                                                 >
                                                     <Link :href="subItem.url">
                                                         <span>{{ subItem.title }}</span>

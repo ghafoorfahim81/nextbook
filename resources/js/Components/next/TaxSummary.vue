@@ -2,9 +2,9 @@
     <div class="rounded-xl border bg-gradient-to-b from-muted/50 to-background p-4 shadow-sm">
         <div class="text-lg font-semibold mb-3 text-violet-500 text-sm">{{ title }}</div>
 
-        <div class="flex items-center justify-between">
-            <span class="text-muted-foreground">Total Item Tax:</span>
-            <span class="tabular-nums text-sm">{{ format(totalItemTax) }}</span>
+        <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
+            <span class="text-muted-foreground hover:text-violet-500">Total Item Tax:</span>
+            <span class="tabular-nums text-sm hover:text-violet-500">{{ format(totalItemTax) }}</span>
         </div>
     </div>
 </template>

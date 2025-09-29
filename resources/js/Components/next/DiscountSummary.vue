@@ -3,16 +3,16 @@
         <div class="text-lg font-semibold mb-3 text-violet-500 text-sm">{{ title }}</div>
 
         <div class="space-y-2">
-            <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">Total Item Disc:</span>
+            <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
+                <span class="text-muted-foreground hover:text-violet-500">Total Item Disc:</span>
                 <span class="tabular-nums text-sm">{{ format(totalItemDiscount) }}</span>
             </div>
-            <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">Bill Discount:</span>
-                <span class="tabular-nums text-sm">{{ format(billDiscount) }}</span>
+            <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
+                <span class="text-muted-foreground hover:text-violet-500">Bill Discount:</span>
+                <span class="tabular-nums text-sm hover:text-violet-500">{{ format(billDiscount) }}</span>
             </div>
 
-            <div class="flex items-center justify-between font-semibold">
+            <div class="flex items-center justify-between font-semibold hover:bg-muted hover:text-violet-500">
                 <span class="text-sm">Total Disc:</span>
                 <span class="tabular-nums text-sm">{{ format(totalDiscount) }}</span>
             </div>

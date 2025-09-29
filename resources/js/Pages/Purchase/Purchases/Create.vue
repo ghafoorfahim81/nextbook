@@ -219,10 +219,11 @@ const handleItemChange = async (index, selectedItem) => {
     }
 
     // Duplicate check after selection
-    notifyIfDuplicate(index)
-    // Also check once immediately to catch default unit without requiring reselect
-    if (!isDuplicateRow(index)) {
-        // no-op
+    if (isDuplicateRow(index)) {
+        notifyIfDuplicate(index)
+        // Automatically clear the duplicate item
+        resetRow(index)
+        return
     }
 }
 const isRowEnabled = (index) => {
@@ -241,21 +242,71 @@ const buildRowKey = (r) => {
         (r.item_id || r.selected_item?.id || '').toString(),
         (r.batch || '').toString().trim().toLowerCase(),
         (r.expire_date || '').toString().trim(),
-        (r?.selected_measure?.id || r?.selected_measure?.id || '').toString()
+        measureId.toString()
     ].join('|')
 }
 
 const isDuplicateRow = (index) => {
     const r = form.items[index]
-    console.log('duplicate row found: ', r)
     if (!r || !r.selected_item || !r.selected_measure) return false
+
+    // Only check for duplicates if batch or expiry is provided
+    const hasBatchOrExpiry = (r.batch && r.batch.trim()) || (r.expire_date && r.expire_date.trim())
+    if (!hasBatchOrExpiry) {
+        console.log(`Row ${index}: No batch or expiry provided, skipping duplicate check`)
+        return false
+    }
+
     const key = buildRowKey(r)
     let count = 0
+
+    console.log(`Checking for duplicates in row ${index}:`, {
+        item: r.selected_item?.name,
+        batch: r.batch,
+        expiry: r.expire_date,
+        measure: r.selected_measure?.name,
+        key
+    })
+
     for (let i = 0; i < form.items.length; i++) {
         const x = form.items[i]
+        if (!x || !x.selected_item || !x.selected_measure) continue
+
+        // Only compare with rows that also have batch or expiry
+        const xHasBatchOrExpiry = (x.batch && x.batch.trim()) || (x.expire_date && x.expire_date.trim())
+        if (!xHasBatchOrExpiry) continue
+
         const xkey = buildRowKey(x)
-        if (key === xkey) count++
-        if (count > 1) return true
+        console.log(`Comparing with row ${i}:`, {
+            item: x.selected_item?.name,
+            batch: x.batch,
+            expiry: x.expire_date,
+            measure: x.selected_measure?.name,
+            key: xkey,
+            match: key === xkey
+        })
+
+        if (key === xkey) {
+            count++
+            if (count > 1) {
+                console.log('DUPLICATE DETECTED:', {
+                    current: {
+                        item: r.selected_item?.name,
+                        batch: r.batch,
+                        expiry: r.expire_date,
+                        unit: r.selected_measure?.name
+                    },
+                    existing: {
+                        item: x.selected_item?.name,
+                        batch: x.batch,
+                        expiry: x.expire_date,
+                        unit: x.selected_measure?.name
+                    },
+                    key: key
+                })
+                return true
+            }
+        }
     }
     return false
 }
@@ -275,9 +326,12 @@ const resetRow = (index) => {
 
 const notifyIfDuplicate = (index) => {
     if (isDuplicateRow(index)) {
+        const item = form.items[index]
+        const batchText = item.batch ? `Batch: ${item.batch}` : 'No batch'
+        const expiryText = item.expire_date ? `Expiry: ${item.expire_date}` : 'No expiry'
         toast({
-            title: 'This item already added',
-            description: 'Same Item + Batch + Expiry + Unit exists.',
+            title: 'Duplicate item detected',
+            description: `Same item with ${batchText} and ${expiryText} already exists.`,
             variant: 'destructive',
             duration: Infinity,
             action: h(ToastAction, { altText: 'Unselect', onClick: () => resetRow(index) }, { default: () => 'Unselect' }),
@@ -452,7 +506,7 @@ const addRow = () => {
             <div class="rounded-xl border bg-card p-2 shadow-sm overflow-x-auto max-h-72">
                 <table class="w-full table-fixed min-w-[1000px] purchase-table border-separate border-spacing-y-2">
                     <thead>
-                        <tr>
+                        <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500 ">
                             <th class="sticky top-0 bg-card px-1 py-1 w-5 min-w-5">#</th>
                             <th class="sticky top-0 bg-card px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
                             <th class="sticky top-0 bg-card px-1 py-1 w-32">{{ t('general.batch') }}</th>

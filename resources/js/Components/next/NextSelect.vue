@@ -13,7 +13,7 @@
                 :loading="isLoading"
                 :placeholder="placeholder"
                 :close-on-select="true"
-                class="col-span-3 border border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                class="col-span-3 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:border-violet-500 focus:outline-none focus:ring-violet-500 sm:text-sm"
                 :class="[{ 'no-arrow': !showArrow }]"
                 v-bind="$attrs"
             />
@@ -21,7 +21,7 @@
             <FloatingLabel
                 :id="id"
                 :label="floatingText"
-                class="pointer-events-none z-0"
+                class="pointer-events-none z-0 focus:text-violet-500 focus:outline-none focus:ring-violet-500"
             />
         </div>
 
@@ -169,6 +169,7 @@ const handleSearch = async (searchTerm) => {
 /* Ensure the dropdown toggle is clickable */
 :deep(.vs__dropdown-toggle) {
     cursor: pointer !important;
+
 }
 
 /* Hide only the chevron (keep clear button visible) when showArrow=false */
@@ -176,9 +177,57 @@ const handleSearch = async (searchTerm) => {
     display: none !important;
 }
 
+/* Style clear icon with fuchsia-500 and arrow icon with violet-500 */
+:deep(.vs__clear),
+:deep(.vs__clear svg),
+:deep(.vs__clear path),
+:deep(.vs__actions .vs__clear) {
+    color: rgb(217 70 239) !important; /* fuchsia-500 */
+    fill: rgb(217 70 239) !important; /* fuchsia-500 for SVG fill */
+    stroke: rgb(217 70 239) !important; /* fuchsia-500 for SVG stroke */
+}
+
+:deep(.vs__open-indicator),
+:deep(.vs__open-indicator svg),
+:deep(.vs__open-indicator path),
+:deep(.vs__actions .vs__open-indicator) {
+    color: rgb(139 92 246) !important; /* violet-500 */
+    fill: rgb(139 92 246) !important; /* violet-500 for SVG fill */
+    stroke: rgb(139 92 246) !important; /* violet-500 for SVG stroke */
+}
+
+:deep(.vs__clear:hover),
+:deep(.vs__clear:hover svg),
+:deep(.vs__clear:hover path),
+:deep(.vs__actions .vs__clear:hover) {
+    color: rgb(192 38 211) !important; /* fuchsia-600 for hover */
+    fill: rgb(192 38 211) !important; /* fuchsia-600 for SVG fill on hover */
+    stroke: rgb(192 38 211) !important; /* fuchsia-600 for SVG stroke on hover */
+}
+
+:deep(.vs__open-indicator:hover),
+:deep(.vs__open-indicator:hover svg),
+:deep(.vs__open-indicator:hover path),
+:deep(.vs__actions .vs__open-indicator:hover) {
+    color: rgb(124 58 237) !important; /* violet-600 for hover */
+    fill: rgb(124 58 237) !important; /* violet-600 for SVG fill on hover */
+    stroke: rgb(124 58 237) !important; /* violet-600 for SVG stroke on hover */
+}
+
 /* Ensure dropdown options are clickable */
 :deep(.vs__dropdown-option) {
     cursor: pointer !important;
+}
+
+/* Style dropdown option hover with violet-500 */
+:deep(.vs__dropdown-option:hover) {
+    background-color: rgb(139 92 246) !important; /* violet-500 */
+    color: white !important;
+}
+
+:deep(.vs__dropdown-option--highlight) {
+    background-color: rgb(139 92 246) !important; /* violet-500 for selected/highlighted option */
+    color: white !important;
 }
 
 /* Ensure the entire dropdown container is interactive */
@@ -191,6 +240,7 @@ const handleSearch = async (searchTerm) => {
 :deep(.vs__dropdown-menu) {
     max-height: 200px !important;
     overflow-y: auto !important;
+
 }
 
 /* --- Compact control height (match Tailwind inputs) --- */
@@ -201,6 +251,7 @@ const handleSearch = async (searchTerm) => {
     min-height: 2.5rem;           /* match h-10; change to 2.25rem for h-9 */
     padding-top: 0;                /* vue-select adds vertical padding via children; zero here */
     padding-bottom: 0;
+
 }
 
 /* Remove extra vertical margins inside the control */
@@ -211,13 +262,15 @@ const handleSearch = async (searchTerm) => {
     padding-top: 0.375rem;         /* = py-1.5 */
     padding-bottom: 0.375rem;
     line-height: 1.25rem;          /* text leading to avoid clipping */
-    font-size: 0.875rem;           /* text-sm */
+    font-size: 0.875rem;
+           /* text-sm */
 }
 
 /* Tighten the right side (indicator & clear) so it doesn't add height */
 :deep(.vs__actions) {
     padding-top: 0.25rem;          /* py-1 */
     padding-bottom: 0.25rem;
+
 }
 
 /* Ensure the control border looks like your inputs */
@@ -225,6 +278,7 @@ const handleSearch = async (searchTerm) => {
     border-color: rgb(209 213 219);   /* Tailwind gray-300 */
     border-radius: 0.375rem;          /* rounded-md */
     box-shadow: 0 0 0 0 rgba(0,0,0,0);
+
 }
 
 /* Optional hover/focus parity with Tailwind inputs */
@@ -232,6 +286,19 @@ const handleSearch = async (searchTerm) => {
 :deep(.vs__dropdown-toggle:focus-within) {
     border-color: rgb(99 102 241);    /* indigo-500 */
     box-shadow: 0 0 0 1px rgba(99,102,241,.25);
+}
+
+/* Special handling for table headers and sticky elements */
+:deep(.vs__dropdown-menu) {
+    /* Force dropdown to render above table headers and sticky elements */
+    transform: translateZ(0) !important;
+    will-change: transform !important;
+}
+
+/* Ensure dropdown works in table contexts */
+:deep(.vs__dropdown) {
+    /* Create a new stacking context for table headers */
+    isolation: isolate !important;
 }
 
 </style>
