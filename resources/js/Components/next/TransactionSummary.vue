@@ -3,9 +3,9 @@
         <div class="text-sm font-semibold mb-3 text-violet-500">{{ title }}</div>
 
         <div class="space-y-2">
-            <div v-for="row in rows" :key="row.key" class="flex items-center justify-between">
-                <span class="text-muted-foreground">{{ row.label }}:</span>
-                <span class="tabular-nums text-sm">{{ row.value }}</span>
+            <div v-for="row in rows" :key="row.key" class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
+                <span class="text-muted-foreground hover:text-violet-500">{{ row.label }}:</span>
+                <span class="tabular-nums text-sm hover:text-violet-500">{{ row.value }}</span>
             </div>
 
             <div class="flex items-center justify-between font-semibold">
@@ -15,9 +15,9 @@
 
             <div class="border-t my-2"></div>
 
-            <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">Old Balance:</span>
-                <span class="tabular-nums text-sm">{{ format(summary.oldBalance) }}. {{ summary.balanceNature }}</span>
+            <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
+                <span class="text-muted-foreground hover:text-violet-500">Old Balance:</span>
+                <span class="tabular-nums text-sm hover:text-violet-500">{{ format(summary.oldBalance) }}. {{ summary.balanceNature }}</span>
             </div>
         </div>
     </div>

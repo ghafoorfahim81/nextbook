@@ -9,9 +9,9 @@
             :autocomplete="autocomplete"
             :placeholder="placeholder"
             @input="input"
-        class="peer block w-full rounded-md border border-2 border-black border-input bg-background px-3 py-3 text-sm shadow-sm
+        class="peer block w-full border-gray-300 rounded-md border border-1   bg-background px-3 py-3 text-sm shadow-sm
         placeholder:text-transparent focus:placeholder:text-muted-foreground
-        focus:border-violet-500 focus:outline-none
+        focus:border-none  
         disabled:cursor-not-allowed disabled:opacity-50"
         />
 
