@@ -13,7 +13,7 @@
                 :loading="isLoading"
                 :placeholder="placeholder"
                 :close-on-select="true"
-                class="col-span-3 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:border-violet-500 focus:outline-none focus:ring-violet-500 sm:text-sm"
+                class="col-span-3 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:border-violet-500 focus:outline-none focus:ring-violet-500 sm:text-sm "
                 :class="[{ 'no-arrow': !showArrow }]"
                 v-bind="$attrs"
             />

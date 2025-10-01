@@ -8,10 +8,10 @@
             :disabled="disabled"
             :autocomplete="autocomplete"
             :placeholder="placeholder"
-            @input="input"
+            @click="$emit('click')"
         class="peer block w-full border-gray-300 rounded-md border border-1   bg-background px-3 py-3 text-sm shadow-sm
         placeholder:text-transparent focus:placeholder:text-muted-foreground
-        focus:border-none  
+        focus:border-none
         disabled:cursor-not-allowed disabled:opacity-50"
         />
 

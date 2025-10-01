@@ -1,6 +1,5 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
-import { computed } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { Button } from '@/Components/ui/button'
 import NextInput from '@/Components/next/NextInput.vue'
@@ -8,6 +7,9 @@ import NextSelect from '@/Components/next/NextSelect.vue'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n()
+import { useSidebar } from '@/Components/ui/sidebar/utils';
+import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
+import { Trash2, Trash } from 'lucide-vue-next';
 
 const props = defineProps({
     stores: { type: [Array, Object], required: true },
@@ -15,6 +17,25 @@ const props = defineProps({
     brands: { type: [Array, Object], required: true },
 })
 
+let sidebar = null
+try {
+    sidebar = useSidebar()
+} catch (e) {
+    sidebar = null
+}
+const prevSidebarOpen = ref(true)
+onMounted(() => {
+    if (sidebar) {
+        prevSidebarOpen.value = sidebar.open.value
+        sidebar.setOpen(false)
+    }
+
+})
+onUnmounted(() => {
+    if (sidebar) {
+        sidebar.setOpen(prevSidebarOpen.value)
+    }
+})
 
 const { toast } = useToast()
 const stores        = computed(() => props.stores?.data ?? props.stores ?? [])
@@ -47,7 +68,9 @@ const removeRow = (idx) => {
     if (form.items.length <= 1) return
     form.items.splice(idx, 1)
 }
-
+const sss= (index) => {
+    console.log('ssss', index)
+}
 const normalize = () => {
         form.items = form.items
             .map(r => ({
@@ -90,37 +113,41 @@ const handleSubmit = () => {
 </script>
 
 <template>
-    <AppLayout :title="t('item.fast_entry')">
+    <AppLayout :title="t('item.fast_entry')" :sidebar-collapsed="true">
         <form @submit.prevent="handleSubmit" class="space-y-4">
-            <div class="rounded-2xl border bg-card text-card-foreground shadow-sm">
+            <div class="rounded-2xl border bg-card text-card-foreground shadow-sm p-1">
                 <div class="p-4 border-b">
                     <h2 class="text-lg font-semibold">{{ t('item.fast_entry') }}</h2>
                     <p class="text-sm text-muted-foreground">{{ t('item.add_multiple_items_quickly') }}</p>
                     </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full table-fixed min-w-[1000px]">
+                <div class="rounded-xl border bg-card shadow-sm overflow-x-auto p-3 mt-1 mb-1">
+                    <table class="w-full table-fixed min-w-[1000px] entry-table border-separate border-spacing-y-2">
                         <thead class="sticky top-0 bg-muted/40">
-                        <tr class="text-left text-sm">
-                            <th class="px-1 py-1 w-40">{{ t('general.name') }}</th>
-                            <th class="px-1 py-1 w-36">{{ t('item.code') }}</th>
-                            <th class="px-1 py-1 w-40">{{ t('admin.unit_measure.unit_measure') }}</th>
-                            <th class="px-1 py-1 w-28">{{ t('item.quantity') }}</th>
-                            <th class="px-1 py-1 w-36">{{ t('item.batch') }}</th>
-                            <th class="px-1 py-1 w-44">{{ t('item.expire_date') }}</th>
-                            <th class="px-1 py-1 w-44">{{ t('admin.store.store') }}</th>
-                            <th class="px-1 py-1 w-36">{{ t('item.mrp_rate') }}</th>
-                            <th class="px-1 py-1 w-40">{{ t('item.purchase_price') }}</th>
-                            <th class="px-1 py-1 w-24">{{ t('general.actions') }}</th>
+                        <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
+                            <th class="px-1 py-1 w-5 min-w-5">#</th>
+                            <th class="px-1 py-1 w-36">{{ t('general.name') }}</th>
+                            <th class="px-1 py-1 w-20">{{ t('item.code') }}</th>
+                            <th class="px-1 py-1 w-28">{{ t('admin.unit_measure.unit_measure') }}</th>
+                            <th class="px-1 py-1 w-20">{{ t('item.quantity') }}</th>
+                            <th class="px-1 py-1 w-20">{{ t('item.batch') }}</th>
+                            <th class="px-1 py-1 w-36">{{ t('item.expire_date') }}</th>
+                            <th class="px-1 py-1 w-32">{{ t('admin.store.store') }}</th>
+                            <th class="px-1 py-1 w-20">{{ t('item.mrp_rate') }}</th>
+                            <th class="px-1 py-1 w-28">{{ t('item.purchase_price') }}</th>
+                            <th class="px-1 py-1 w-16">{{ t('general.actions') }}</th>
                         </tr>
                         </thead>
 
                         <tbody>
                         <tr v-for="(item, index) in form.items" :key="item._key" class="border-t">
+                            <td class="px-1 py-2 align-top w-5 tex-center">{{ index + 1 }}</td>
+
                             <td class="px-1 py-2 align-top">
                                 <NextInput
                                     v-model="item.name"
                                     :error="fieldError(index, 'name')"
+                                    @click="addRowAfter(index)"
                                 />
                             </td>
                             <td class="px-1 py-2 align-top">
@@ -134,9 +161,9 @@ const handleSubmit = () => {
                                     v-model="item.measure_id"
                                     :options="unitMeasures"
                                     label-key="name"
+                                    :show-arrow="false"
                                     value-key="id"
                                     id="measure"
-                                    :floating-text="t('admin.unit_measure.unit_measure')"
                                     :error="fieldError(index, 'measure_id')"
                                 />
                             </td>
@@ -152,7 +179,6 @@ const handleSubmit = () => {
                                 <NextInput
                                     v-model="item.batch"
                                     :error="fieldError(index, 'batch')"
-                                    @keyup.enter.prevent="addRowAfter(index)"
                                 />
                             </td>
                             <td class="px-1 py-2 align-top">
@@ -168,6 +194,7 @@ const handleSubmit = () => {
                                     :options="stores"
                                     label-key="name"
                                     value-key="id"
+                                    :show-arrow="false"
                                     append-to-body
                                     :error="fieldError(index, 'measure_id')"
                                 />
@@ -189,10 +216,8 @@ const handleSubmit = () => {
                                 />
                             </td>
                             <td class="px-1 py-2 align-top">
-                                <div class="flex gap-2">
-                                    <Button type="button" variant="secondary" size="sm" @click="addRowAfter(index)" :disabled="index !== form.items.length - 1">+</Button>
-                                    <Button type="button" variant="destructive" size="sm" @click="removeRow(index)" :disabled="form.items.length === 1">−</Button>
-                                </div>
+                                <!-- <Trash2 class="w-4 h-4 cursor-pointer text-fuchsia-500 inline" @click="deleteRow(index)" /> -->
+                                    <Button type="button" variant="secondary" class="text-fuchsia-500 text-center" size="sm" @click="removeRow(index)" :disabled="form.items.length === 1">−</Button>
                             </td>
                         </tr>
                         </tbody>
@@ -204,7 +229,7 @@ const handleSubmit = () => {
                         {{ t('general.rows') }}: <span class="font-medium text-foreground">{{ form.items.length }}</span>
                     </div>
                     <div class="flex gap-2">
-                        <Button type="button" variant="secondary" @click="form.items.push(blankRow())">
+                        <Button type="button" variant="secondary" @click="form.items.push(blankRow())" >
                             {{ t('general.add_row') }}
                         </Button>
                         <Button type="submit" :disabled="form.processing">
@@ -216,3 +241,17 @@ const handleSubmit = () => {
         </form>
     </AppLayout>
 </template>
+<style scoped>
+.entry-table thead {
+    border: 2px solid hsl(var(--border));
+    border-radius: 8px;
+}
+
+.entry-table thead th {
+    border-bottom: 1px solid hsl(var(--border));
+    padding: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+</style>

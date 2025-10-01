@@ -25,7 +25,7 @@ const isRTL = computed(() => ['fa','ps','pa','ar','ur','he'].includes(locale.val
     v-bind="delegatedProps"
     :class="
       cn(
-        'pointer-events-none fixed top-0 z-[2147483647] flex max-h-screen w-full flex-col-reverse p-4 sm:top-auto sm:bottom-0 sm:w-auto sm:flex-col bg-transparent',
+        'pointer-events-none fixed top-0 z-[2147483647] flex max-h-screen w-full flex-col-reverse m-6 sm:top-auto sm:bottom-0 sm:w-auto sm:flex-col ',
         isRTL ? 'sm:left-0' : 'sm:right-0',
         props.class,
       )
