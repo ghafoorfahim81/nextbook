@@ -7,7 +7,10 @@
                 <span class="text-muted-foreground hover:text-violet-500">{{ row.label }}:</span>
                 <span class="tabular-nums text-sm hover:text-violet-500">{{ row.value }}</span>
             </div>
-
+            <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
+                <span class="text-muted-foreground hover:text-violet-500"> {{ t('general.old_balance') }}:</span>
+                <span class="tabular-nums text-sm hover:text-violet-500">{{ format(summary.oldBalance) }}  {{ summary.balanceNature }}</span>
+            </div>
             <div class="flex items-center justify-between font-semibold">
                 <span>{{ t('general.grand_total') }}:</span>
                 <span class="tabular-nums text-sm">{{ format(summary.grandTotal) }}</span>
@@ -16,8 +19,8 @@
             <div class="border-t my-2"></div>
 
             <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
-                <span class="text-muted-foreground hover:text-violet-500"> {{ t('general.old_balance') }}:</span>
-                <span class="tabular-nums text-sm hover:text-violet-500">{{ format(summary.oldBalance) }}  {{ summary.balanceNature }}</span>
+                <span class="text-muted-foreground hover:text-violet-500"> {{ t('general.balance') }}:</span>
+                <span class="tabular-nums text-sm hover:text-violet-500">{{ format(summary.balance) }}  {{ summary.balanceNature }}</span>
             </div>
         </div>
     </div>
@@ -66,7 +69,7 @@ const rows = computed(() => [
     { key: 'billDiscount', label: t('general.bill_disc')+`.(${format(props.summary.billDiscountPercent)} %)`, value: format(props.summary.billDiscount) },
     { key: 'itemDiscount', label: t('general.item_disc'), value: format(props.summary.itemDiscount) },
     { key: 'cashReceived', label: t('general.cash_paid'), value: format(props.summary.cashReceived) },
-    { key: 'balance', label: t('general.balance'), value: format(props.summary.balance) },
+    // { key: 'balance', label: t('general.balance'), value: format(props.summary.balance) },
 ])
 </script>
 

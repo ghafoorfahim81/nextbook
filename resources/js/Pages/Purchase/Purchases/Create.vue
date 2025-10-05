@@ -136,6 +136,7 @@ watch(() => props.stores.data, (stores) => {
 let disabled = (false);
 
 const handleSelectChange = (field, value) => {
+    console.log('value 123', value);
     if(field === 'currency_id') {
         form.rate = value.exchange_rate;
     }
@@ -357,10 +358,13 @@ const transactionSummary = computed(() => {
     const nature = form?.selected_ledger?.statement?.balance_nature // 'Dr' | 'Cr'
     const hasSelectedItem = Array.isArray(form.items) && form.items.some(r => !!r.selected_item)
     const netAmount = goodsTotal.value - totalDiscount.value + totalTax.value
-    const grandTotal = hasSelectedItem
-        ? (nature === 'dr' ? (netAmount - oldBalance) : (netAmount + oldBalance))
+    const grandTotal = netAmount - paid;
+    // const grandTotal = hasSelectedItem
+    //     ? (nature === 'dr' ? (netAmount - oldBalance) : (netAmount + oldBalance))
+    //     : 0
+    const balance = hasSelectedItem
+        ? (nature === 'dr' ? (grandTotal - oldBalance) : (grandTotal + oldBalance))
         : 0
-    const balance = hasSelectedItem ? (grandTotal - paid) : 0
     return {
         valueOfGoods: goodsTotal.value,
         billDiscountPercent: billDiscountPercent.value,
@@ -406,7 +410,7 @@ const addRow = () => {
                     @update:modelValue="(value) => handleSelectChange('ledger_id', value)"
                     label-key="name"
                     value-key="id"
-                    :reduce="ledger => ledger.id"
+                    :reduce="ledger => ledger"
                     :floating-text="t('ledger.supplier.supplier')"
                     :error="form.errors?.ledger_id"
                     :searchable="true"
