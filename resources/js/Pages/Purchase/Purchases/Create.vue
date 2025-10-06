@@ -8,6 +8,7 @@ import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
+import PaymentDialog from '@/Components/next/PaymentDialog.vue';
 import { useI18n } from 'vue-i18n';
 import { Trash2, Trash } from 'lucide-vue-next';
 import TransactionSummary from '@/Components/next/TransactionSummary.vue';
@@ -31,6 +32,7 @@ const props = defineProps({
     items: Object,
     stores: Object,
     unitMeasures: Object,
+    accounts: Object,
 })
 
 const form = useForm({
@@ -46,7 +48,12 @@ const form = useForm({
     discount: '',
     discount_type: 'percentage',
     description: '',
-    paid_amount:'',
+    payment:{
+        method: '',
+        amount: '',
+        account_id: '',
+        note: '',
+    },
     status: '',
     store_id: '',
     selected_store: '',
@@ -133,6 +140,16 @@ watch(() => props.stores.data, (stores) => {
     }
 }, { immediate: true });
 
+// Payment dialog state
+const showPaymentDialog = ref(false);
+
+// Watch for sale/purchase type changes and show payment dialog for credit transactions
+watch(() => form.selected_sale_purchase_type, (newType) => {
+    if (newType && newType === 'credit') {
+        showPaymentDialog.value = true;
+    }
+});
+
 let disabled = (false);
 
 const handleSelectChange = (field, value) => {
@@ -152,6 +169,23 @@ function handleSubmit() {
         }
     })
 }
+
+// Payment dialog handlers
+const handlePaymentDialogConfirm = () => {
+    // Payment data is already updated in the form.payment object via the dialog's update:payment event
+    showPaymentDialog.value = false;
+};
+
+const handlePaymentDialogCancel = () => {
+    // Reset the sale/purchase type back to debit when dialog is cancelled
+    if (props.salePurchaseTypes) {
+        const debitType = props.salePurchaseTypes.find(type => type.id === 'debit');
+        if (debitType) {
+            form.selected_sale_purchase_type = debitType;
+        }
+    }
+    showPaymentDialog.value = false;
+};
 
 // Collapse sidebar while on this page, restore on leave (safe if provider missing)
 let sidebar = null
@@ -434,7 +468,7 @@ const addRow = () => {
                 <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" v-model="form.rate" :label="t('general.rate')"/>
                 </div>
 
-               <div :class="form.selected_sale_purchase_type === 'credit' ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-1 gap-2'">
+               <div class="grid grid-cols-1 gap-2">
                 <NextSelect
                     :options="salePurchaseTypes"
                     v-model="form.selected_sale_purchase_type"
@@ -445,7 +479,6 @@ const addRow = () => {
                     :floating-text="t('general.type')"
                     :error="form.errors?.sale_purchase_type_id"
                 />
-                <NextInput v-if="form.selected_sale_purchase_type === 'credit'" placeholder="Number" :error="form.errors?.paid_amount" type="number" v-model="form.paid_amount" :label="t('general.Paid')" />
                 </div>
                 <NextSelect
                     :options="stores.data"
@@ -642,6 +675,19 @@ const addRow = () => {
             </div>
 
          </form>
+
+         <!-- Payment Dialog for Credit Transactions -->
+         <PaymentDialog
+             :open="showPaymentDialog"
+             :payment="form.payment"
+             :errors="form.errors"
+             :accounts="props.accounts?.data || []"
+             :submitting="false"
+             @update:open="(value) => showPaymentDialog = value"
+             @confirm="handlePaymentDialogConfirm"
+             @cancel="handlePaymentDialogCancel"
+             @update:payment="(payment) => form.payment = payment"
+         />
 
     </AppLayout>
 </template>
