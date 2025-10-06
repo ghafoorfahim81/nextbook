@@ -359,9 +359,6 @@ const transactionSummary = computed(() => {
     const hasSelectedItem = Array.isArray(form.items) && form.items.some(r => !!r.selected_item)
     const netAmount = goodsTotal.value - totalDiscount.value + totalTax.value
     const grandTotal = netAmount - paid;
-    // const grandTotal = hasSelectedItem
-    //     ? (nature === 'dr' ? (netAmount - oldBalance) : (netAmount + oldBalance))
-    //     : 0
     const balance = hasSelectedItem
         ? (nature === 'dr' ? (grandTotal - oldBalance) : (grandTotal + oldBalance))
         : 0
@@ -628,7 +625,7 @@ const addRow = () => {
                 <DiscountSummary :summary="form.summary" :total-item-discount="totalItemDiscount" :bill-discount="billDiscountCurrency" :total-discount="totalDiscount" />
                 <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
                 <div class="rounded-xl p-4">
-                    <div class="text-sm font-semibold mb-3 text-violet-500 text-sm">{{t('general.bill_disc')}}</div>
+                    <div class="text-sm font-semibold mb-3 text-violet-500 text-sm">{{t('general.bill_discount')}}</div>
                     <DiscountField
                         v-model="form.discount"
                         v-model:discount-type="form.discount_type"

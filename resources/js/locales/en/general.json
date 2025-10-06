@@ -114,6 +114,7 @@
   "transaction_summary": "Transaction Summary",
   "value_of_goods": "Value of Goods",
   "bill_disc":"Bill Disc",
+  "bill_discount":"Bill Discount",
   "item_disc":"Item Disc",
   "cash_paid":"Cash Paid",
   "cash_received":"Cash Received",
