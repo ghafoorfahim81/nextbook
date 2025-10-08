@@ -109,7 +109,25 @@
   "tax": "Tax",
   "qty": "Qty",
   "unit": "Unit",
-  "search_or_select": "Search or select item..."
+  "search_or_select": "Search or select item...",
+  "grand_total": "Grand Total",
+  "transaction_summary": "Transaction Summary",
+  "value_of_goods": "Value of Goods",
+  "bill_disc":"Bill Disc",
+  "bill_discount":"Bill Discount",
+  "item_disc":"Item Disc",
+  "cash_paid":"Cash Paid",
+  "cash_received":"Cash Received",
+  "balance":"Balance",
+  "old_balance":"Old Balance",
+  "tax_summary":"Tax Summary",
+  "discount_summary":"Discount Summary",
+  "total_item_discount":"Total Item Discount",
+  "total_discount":"Total Discount",
+  "total_item_tax":"Total Item Tax",
+  "":""
+
+
 }
 
 

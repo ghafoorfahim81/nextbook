@@ -8,6 +8,7 @@ import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
+import PaymentDialog from '@/Components/next/PaymentDialog.vue';
 import { useI18n } from 'vue-i18n';
 import { Trash2, Trash } from 'lucide-vue-next';
 import TransactionSummary from '@/Components/next/TransactionSummary.vue';
@@ -31,6 +32,7 @@ const props = defineProps({
     items: Object,
     stores: Object,
     unitMeasures: Object,
+    accounts: Object,
 })
 
 const form = useForm({
@@ -46,7 +48,12 @@ const form = useForm({
     discount: '',
     discount_type: 'percentage',
     description: '',
-    paid_amount:'',
+    payment:{
+        method: '',
+        amount: '',
+        account_id: '',
+        note: '',
+    },
     status: '',
     store_id: '',
     selected_store: '',
@@ -133,7 +140,20 @@ watch(() => props.stores.data, (stores) => {
     }
 }, { immediate: true });
 
+// Payment dialog state
+const showPaymentDialog = ref(false);
+
+// Watch for sale/purchase type changes and show payment dialog for credit transactions
+watch(() => form.selected_sale_purchase_type, (newType) => {
+    if (newType && newType === 'credit') {
+        showPaymentDialog.value = true;
+    }
+});
+
+let disabled = (false);
+
 const handleSelectChange = (field, value) => {
+    console.log('value 123', value);
     if(field === 'currency_id') {
         form.rate = value.exchange_rate;
     }
@@ -149,6 +169,23 @@ function handleSubmit() {
         }
     })
 }
+
+// Payment dialog handlers
+const handlePaymentDialogConfirm = () => {
+    // Payment data is already updated in the form.payment object via the dialog's update:payment event
+    showPaymentDialog.value = false;
+};
+
+const handlePaymentDialogCancel = () => {
+    // Reset the sale/purchase type back to debit when dialog is cancelled
+    if (props.salePurchaseTypes) {
+        const debitType = props.salePurchaseTypes.find(type => type.id === 'debit');
+        if (debitType) {
+            form.selected_sale_purchase_type = debitType;
+        }
+    }
+    showPaymentDialog.value = false;
+};
 
 // Collapse sidebar while on this page, restore on leave (safe if provider missing)
 let sidebar = null
@@ -218,13 +255,14 @@ const handleItemChange = async (index, selectedItem) => {
         addRow()
     }
 
+    notifyIfDuplicate(index)
     // Duplicate check after selection
-    if (isDuplicateRow(index)) {
-        notifyIfDuplicate(index)
-        // Automatically clear the duplicate item
-        resetRow(index)
-        return
-    }
+    // if (isDuplicateRow(index)) {
+    //     notifyIfDuplicate(index)
+    //     // Automatically clear the duplicate item
+    //     resetRow(index)
+    //     return
+    // }
 }
 const isRowEnabled = (index) => {
     if (!form.selected_ledger) return false
@@ -242,71 +280,19 @@ const buildRowKey = (r) => {
         (r.item_id || r.selected_item?.id || '').toString(),
         (r.batch || '').toString().trim().toLowerCase(),
         (r.expire_date || '').toString().trim(),
-        measureId.toString()
+        (r?.selected_measure?.id || r?.selected_measure?.id || '').toString()
     ].join('|')
 }
-
 const isDuplicateRow = (index) => {
     const r = form.items[index]
     if (!r || !r.selected_item || !r.selected_measure) return false
-
-    // Only check for duplicates if batch or expiry is provided
-    const hasBatchOrExpiry = (r.batch && r.batch.trim()) || (r.expire_date && r.expire_date.trim())
-    if (!hasBatchOrExpiry) {
-        console.log(`Row ${index}: No batch or expiry provided, skipping duplicate check`)
-        return false
-    }
-
     const key = buildRowKey(r)
     let count = 0
-
-    console.log(`Checking for duplicates in row ${index}:`, {
-        item: r.selected_item?.name,
-        batch: r.batch,
-        expiry: r.expire_date,
-        measure: r.selected_measure?.name,
-        key
-    })
-
     for (let i = 0; i < form.items.length; i++) {
         const x = form.items[i]
-        if (!x || !x.selected_item || !x.selected_measure) continue
-
-        // Only compare with rows that also have batch or expiry
-        const xHasBatchOrExpiry = (x.batch && x.batch.trim()) || (x.expire_date && x.expire_date.trim())
-        if (!xHasBatchOrExpiry) continue
-
         const xkey = buildRowKey(x)
-        console.log(`Comparing with row ${i}:`, {
-            item: x.selected_item?.name,
-            batch: x.batch,
-            expiry: x.expire_date,
-            measure: x.selected_measure?.name,
-            key: xkey,
-            match: key === xkey
-        })
-
-        if (key === xkey) {
-            count++
-            if (count > 1) {
-                console.log('DUPLICATE DETECTED:', {
-                    current: {
-                        item: r.selected_item?.name,
-                        batch: r.batch,
-                        expiry: r.expire_date,
-                        unit: r.selected_measure?.name
-                    },
-                    existing: {
-                        item: x.selected_item?.name,
-                        batch: x.batch,
-                        expiry: x.expire_date,
-                        unit: x.selected_measure?.name
-                    },
-                    key: key
-                })
-                return true
-            }
-        }
+        if (key === xkey) count++
+        if (count > 1) return true
     }
     return false
 }
@@ -322,6 +308,7 @@ const resetRow = (index) => {
     r.expire_date = ''
     r.quantity = ''
     r.purchase_price = ''
+    disabled =false;
 }
 
 const notifyIfDuplicate = (index) => {
@@ -329,10 +316,12 @@ const notifyIfDuplicate = (index) => {
         const item = form.items[index]
         const batchText = item.batch ? `Batch: ${item.batch}` : 'No batch'
         const expiryText = item.expire_date ? `Expiry: ${item.expire_date}` : 'No expiry'
+        disabled =true;
         toast({
             title: 'Duplicate item detected',
             description: `Same item with ${batchText} and ${expiryText} already exists.`,
             variant: 'destructive',
+            class:'bg-pink-600 text-white',
             duration: Infinity,
             action: h(ToastAction, { altText: 'Unselect', onClick: () => resetRow(index) }, { default: () => 'Unselect' }),
         })
@@ -403,10 +392,10 @@ const transactionSummary = computed(() => {
     const nature = form?.selected_ledger?.statement?.balance_nature // 'Dr' | 'Cr'
     const hasSelectedItem = Array.isArray(form.items) && form.items.some(r => !!r.selected_item)
     const netAmount = goodsTotal.value - totalDiscount.value + totalTax.value
-    const grandTotal = hasSelectedItem
-        ? (nature === 'dr' ? (netAmount - oldBalance) : (netAmount + oldBalance))
+    const grandTotal = netAmount - paid;
+    const balance = hasSelectedItem
+        ? (nature === 'dr' ? (grandTotal - oldBalance) : (grandTotal + oldBalance))
         : 0
-    const balance = hasSelectedItem ? (grandTotal - paid) : 0
     return {
         valueOfGoods: goodsTotal.value,
         billDiscountPercent: billDiscountPercent.value,
@@ -437,6 +426,7 @@ const addRow = () => {
 }
 
 
+
 </script>
 
 <template>
@@ -451,7 +441,7 @@ const addRow = () => {
                     @update:modelValue="(value) => handleSelectChange('ledger_id', value)"
                     label-key="name"
                     value-key="id"
-                    :reduce="ledger => ledger.id"
+                    :reduce="ledger => ledger"
                     :floating-text="t('ledger.supplier.supplier')"
                     :error="form.errors?.ledger_id"
                     :searchable="true"
@@ -478,7 +468,7 @@ const addRow = () => {
                 <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" v-model="form.rate" :label="t('general.rate')"/>
                 </div>
 
-               <div :class="form.selected_sale_purchase_type === 'credit' ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-1 gap-2'">
+               <div class="grid grid-cols-1 gap-2">
                 <NextSelect
                     :options="salePurchaseTypes"
                     v-model="form.selected_sale_purchase_type"
@@ -489,7 +479,6 @@ const addRow = () => {
                     :floating-text="t('general.type')"
                     :error="form.errors?.sale_purchase_type_id"
                 />
-                <NextInput v-if="form.selected_sale_purchase_type === 'credit'" placeholder="Number" :error="form.errors?.paid_amount" type="number" v-model="form.paid_amount" :label="t('general.Paid')" />
                 </div>
                 <NextSelect
                     :options="stores.data"
@@ -503,24 +492,24 @@ const addRow = () => {
                 />
             </div>
             </div>
-            <div class="rounded-xl border bg-card p-2 shadow-sm overflow-x-auto max-h-72">
-                <table class="w-full table-fixed min-w-[1000px] purchase-table border-separate border-spacing-y-2">
-                    <thead>
-                        <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500 ">
-                            <th class="sticky top-0 bg-card px-1 py-1 w-5 min-w-5">#</th>
-                            <th class="sticky top-0 bg-card px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
-                            <th class="sticky top-0 bg-card px-1 py-1 w-32">{{ t('general.batch') }}</th>
-                            <th class="sticky top-0 bg-card px-1 py-1 w-32">{{ t('general.expire_date') }}</th>
-                            <th class="sticky top-0 bg-card px-1 py-1 w-16">{{ t('general.qty') }}</th>
-                            <th class="sticky top-0 bg-card px-1 py-1 w-24">{{ t('general.on_hand') }}</th>
-                            <th class="sticky top-0 bg-card px-1 py-1 w-24">{{ t('general.unit') }}</th>
-                            <th class="sticky top-0 bg-card px-1 py-1 w-24">{{ t('general.price') }}</th>
-                            <th class="sticky top-0 bg-card px-1 py-1 w-24">{{ t('general.discount') }}</th>
-                            <th class="sticky top-0 bg-card px-1 py-1 w-16">{{ t('general.free') }}</th>
-                            <th class="sticky top-0 bg-card px-1 py-1 w-16">{{ t('general.tax') }}</th>
-                            <th class="sticky top-0 bg-card px-1 py-1 w-16">{{ t('general.total') }}</th>
-                            <th class="sticky top-0 bg-card px-1 py-1 w-10 min-w-10 text-center">
-                                <Trash2 class="w-4 h-4 cursor-pointer text-red-500 inline" />
+            <div class="rounded-xl border bg-card shadow-sm overflow-x-auto max-h-72">
+                <table class="w-full table-fixed min-w-[1000px] purchase-table border-separate">
+                    <thead class="bg-card sticky top-0 z-[200]">
+                        <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
+                            <th class="px-1 py-1 w-5 min-w-5">#</th>
+                            <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
+                            <th class="px-1 py-1 w-32">{{ t('general.batch') }}</th>
+                            <th class="px-1 py-1 w-32">{{ t('general.expire_date') }}</th>
+                            <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
+                            <th class="px-1 py-1 w-24">{{ t('general.on_hand') }}</th>
+                            <th class="px-1 py-1 w-24">{{ t('general.unit') }}</th>
+                            <th class="px-1 py-1 w-24">{{ t('general.price') }}</th>
+                            <th class="px-1 py-1 w-24">{{ t('general.discount') }}</th>
+                            <th class="px-1 py-1 w-16">{{ t('general.free') }}</th>
+                            <th class="px-1 py-1 w-16">{{ t('general.tax') }}</th>
+                            <th class="px-1 py-1 w-16">{{ t('general.total') }}</th>
+                            <th class="px-1 py-1 w-10 min-w-10 text-center">
+                                <Trash2 class="w-4 h-4 text-red-500 inline" />
                             </th>
                         </tr>
                     </thead>
@@ -571,7 +560,7 @@ const addRow = () => {
                                 />
                             </td>
                             <td class="text-center">
-                                 <span :title="String(onhand(index))">{{ Number(onhand(index)).toFixed(2) }}</span>
+                                 <span :title="String(onhand(index))">{{ Number(onhand(index)).toFixed(1) }}</span>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
@@ -634,7 +623,7 @@ const addRow = () => {
                             </td>
                         </tr>
                     </tbody>
-                    <tfoot>
+                    <tfoot class="sticky bottom-0 bg-card">
                         <tr class="bg-muted/40">
                             <!-- #: blank to align -->
                             <td></td>
@@ -669,7 +658,7 @@ const addRow = () => {
                 <DiscountSummary :summary="form.summary" :total-item-discount="totalItemDiscount" :bill-discount="billDiscountCurrency" :total-discount="totalDiscount" />
                 <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
                 <div class="rounded-xl p-4">
-                    <div class="text-sm font-semibold mb-3 text-violet-500 text-sm">Bill Disc</div>
+                    <div class="text-sm font-semibold mb-3 text-violet-500 text-sm">{{t('general.bill_discount')}}</div>
                     <DiscountField
                         v-model="form.discount"
                         v-model:discount-type="form.discount_type"
@@ -680,12 +669,25 @@ const addRow = () => {
             </div>
 
             <div class="mt-4 flex gap-2">
-                <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white">{{ t('general.create') }}</button>
-                <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white" @click="() => { handleSubmit(); form.reset(); }">{{ t('general.create') }} & {{ t('general.new') }}</button>
+                <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white disabled:bg-gray-300" :disabled="disabled">{{ t('general.create') }}</button>
+                <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white disabled:bg-gray-300" :disabled="disabled" @click="() => { handleSubmit(); form.reset(); }">{{ t('general.create') }} & {{ t('general.new') }}</button>
                 <button type="button" class="btn px-4 py-2 rounded-md border" @click="() => $inertia.visit('/purchases')">{{ t('general.cancel') }}</button>
             </div>
 
          </form>
+
+         <!-- Payment Dialog for Credit Transactions -->
+         <PaymentDialog
+             :open="showPaymentDialog"
+             :payment="form.payment"
+             :errors="form.errors"
+             :accounts="props.accounts?.data || []"
+             :submitting="false"
+             @update:open="(value) => showPaymentDialog = value"
+             @confirm="handlePaymentDialogConfirm"
+             @cancel="handlePaymentDialogCancel"
+             @update:payment="(payment) => form.payment = payment"
+         />
 
     </AppLayout>
 </template>
@@ -701,7 +703,6 @@ const addRow = () => {
     padding: 0.5rem;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
 }
 
 </style>

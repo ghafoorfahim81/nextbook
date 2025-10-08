@@ -1,5 +1,4 @@
 <script setup>
-import { ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/Layout.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
@@ -7,8 +6,32 @@ import NextInput from '@/Components/next/NextInput.vue'
 import { Button } from '@/Components/ui/button'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import { useI18n } from 'vue-i18n';
+import { useSidebar } from '@/Components/ui/sidebar/utils';
+import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
+
 const { t } = useI18n()
 const { toast } = useToast()
+
+let sidebar = null
+try {
+    sidebar = useSidebar()
+} catch (e) {
+    sidebar = null
+}
+const prevSidebarOpen = ref(true)
+onMounted(() => {
+    if (sidebar) {
+        prevSidebarOpen.value = sidebar.open.value
+        sidebar.setOpen(false)
+    }
+
+})
+onUnmounted(() => {
+    if (sidebar) {
+        sidebar.setOpen(prevSidebarOpen.value)
+    }
+})
+
 const props = defineProps({
     items: { type: Array, required: true },
     unitMeasures: { type: Array, required: true }, // Array of {id, name}
@@ -71,22 +94,22 @@ const handleSubmit = () => {
 </script>
 
 <template>
-    <AppLayout :title="t('item.fast_opening')">
+    <AppLayout :title="t('item.fast_opening')" :sidebar-collapsed="true">
         <form @submit.prevent="handleSubmit" class="space-y-4">
-            <div class="rounded-2xl border bg-card text-card-foreground shadow-sm">
+            <div class="rounded-2xl border bg-card text-card-foreground shadow-sm p-1">
                 <div class="p-4 border-b">
                     <h2 class="text-lg font-semibold">{{ t('item.fast_opening') }}</h2>
                     <p class="text-sm text-muted-foreground">{{ t('item.remove_unwanted_items') }}</p>
                 </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full table-fixed min-w-[1000px]">
+                <div class="rounded-xl border bg-card shadow-sm overflow-x-auto p-3 mt-1 mb-1">
+                    <table class="w-full table-fixed min-w-[1000px] entry-table border-separate border-spacing-y-2">
                         <thead class="sticky top-0 bg-muted/40">
-                        <tr class="text-left text-sm">
+                        <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
+                            <th class="px-1 py-1 w-5 min-w-5">#</th>
                             <th class="px-1 py-1 w-40">{{ t('item.item') }}</th>
                             <th class="px-1 py-1 w-36">{{ t('item.batch') }}</th>
                             <th class="px-1 py-1 w-28">{{ t('item.quantity') }}</th>
-                            <th class="px-1 py-1 w-36">{{ t('admin.unit_measure.unit_measure') }}</th>
                             <th class="px-1 py-1 w-44">{{ t('item.expire_date') }}</th>
                             <th class="px-1 py-1 w-40">{{ t('item.cost') }}</th>
                             <th class="px-1 py-1 w-44">{{ t('admin.store.store') }}</th>
@@ -96,6 +119,7 @@ const handleSubmit = () => {
 
                         <tbody>
                         <tr v-for="(item, index) in form.items" :key="item._key" class="border-t">
+                            <td class="px-1 py-2">{{ index + 1 }}</td>
                             <!-- Item Name (readonly) -->
                             <td class="px-1 py-2 align-top">
                                 <NextInput v-model="item.name" :disabled="true" />
@@ -121,18 +145,6 @@ const handleSubmit = () => {
                                     :error="fieldError(index, 'quantity')"
                                 />
                             </td>
-
-                            <!-- Unit Measure (editable, defaults to item's unit) -->
-                            <td class="px-1 py-2 align-top">
-                                <NextSelect
-                                    v-model="item.unit_measure_id"
-                                    :options="props.unitMeasures.data"
-                                    label-key="name"
-                                    value-key="id"
-                                    :error="fieldError(index, 'unit_measure_id')"
-                                />
-                            </td>
-
                             <!-- Expiration Date -->
                             <td class="px-1 py-2 align-top">
                                 <NextInput
@@ -159,15 +171,14 @@ const handleSubmit = () => {
                                     :options="props.stores.data"
                                     label-key="name"
                                     value-key="id"
+                                    :show-arrow="false"
                                     :error="fieldError(index, 'store_id')"
                                 />
                             </td>
 
                             <!-- Actions -->
                             <td class="px-1 py-2 align-top">
-                                <div class="flex gap-2">
-                                    <Button type="button" variant="destructive" size="sm" @click="removeRow(index)" :disabled="form.items.length === 1">−</Button>
-                                </div>
+                                <Button type="button" variant="secondary" class="text-fuchsia-500" size="sm" @click="removeRow(index)" :disabled="form.items.length === 1">−</Button>
                             </td>
                         </tr>
                         </tbody>
