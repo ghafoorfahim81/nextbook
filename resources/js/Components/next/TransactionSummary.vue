@@ -1,23 +1,26 @@
 <template>
     <div class="rounded-xl border border-violet-500 bg-gradient-to-b from-muted/50 to-background p-4 shadow-sm">
-        <div class="text-sm font-semibold mb-3 text-violet-500">{{ title }}</div>
+        <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.transaction_summary') }}</div>
 
         <div class="space-y-2">
             <div v-for="row in rows" :key="row.key" class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
                 <span class="text-muted-foreground hover:text-violet-500">{{ row.label }}:</span>
                 <span class="tabular-nums text-sm hover:text-violet-500">{{ row.value }}</span>
             </div>
-
+            <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
+                <span class="text-muted-foreground hover:text-violet-500"> {{ t('general.old_balance') }}:</span>
+                <span class="tabular-nums text-sm hover:text-violet-500">{{ format(summary.oldBalance) }}  {{ summary.balanceNature }}</span>
+            </div>
             <div class="flex items-center justify-between font-semibold">
-                <span>Grand Total:</span>
+                <span>{{ t('general.grand_total') }}:</span>
                 <span class="tabular-nums text-sm">{{ format(summary.grandTotal) }}</span>
             </div>
 
             <div class="border-t my-2"></div>
 
             <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
-                <span class="text-muted-foreground hover:text-violet-500">Old Balance:</span>
-                <span class="tabular-nums text-sm hover:text-violet-500">{{ format(summary.oldBalance) }}. {{ summary.balanceNature }}</span>
+                <span class="text-muted-foreground hover:text-violet-500"> {{ t('general.balance') }}:</span>
+                <span class="tabular-nums text-sm hover:text-violet-500">{{ format(summary.balance) }}  {{ summary.balanceNature }}</span>
             </div>
         </div>
     </div>
@@ -26,6 +29,8 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
 
 const props = defineProps({
     title: { type: String, default: 'Grand Total' },
@@ -43,7 +48,7 @@ const props = defineProps({
             balanceNature: '',
         }),
     },
-    fractionDigits: { type: Number, default: 2 },
+    fractionDigits: { type: Number, default: 1 },
     locale: { type: String, default: undefined },
 })
 
@@ -60,11 +65,11 @@ const format = (num) => {
 }
 
 const rows = computed(() => [
-    { key: 'valueOfGoods', label: 'Value Of Goods', value: format(props.summary.valueOfGoods) },
-    { key: 'billDiscount', label: `Bill disc. (${format(props.summary.billDiscountPercent)} %)`, value: format(props.summary.billDiscount) },
-    { key: 'itemDiscount', label: 'Item Disc', value: format(props.summary.itemDiscount) },
-    { key: 'cashReceived', label: 'Cash Received:', value: format(props.summary.cashReceived) },
-    { key: 'balance', label: 'Balance:', value: format(props.summary.balance) },
+    { key: 'valueOfGoods', label: t('general.value_of_goods'), value: format(props.summary.valueOfGoods) },
+    { key: 'billDiscount', label: t('general.bill_disc')+`.(${format(props.summary.billDiscountPercent)} %)`, value: format(props.summary.billDiscount) },
+    { key: 'itemDiscount', label: t('general.item_disc'), value: format(props.summary.itemDiscount) },
+    { key: 'cashReceived', label: t('general.cash_paid'), value: format(props.summary.cashReceived) },
+    // { key: 'balance', label: t('general.balance'), value: format(props.summary.balance) },
 ])
 </script>
 
