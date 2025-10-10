@@ -68,7 +68,25 @@
                 </TableRow>
             </TableHeader>
             <TableBody>
-                <TableRow v-for="(item, rowIndex) in items.data" :key="item.id">
+                <!-- Empty State Message -->
+                <TableRow v-if="isEmpty">
+                    <TableCell :colspan="derivedColumns.length" class="h-96 text-center">
+                        <div class="flex flex-col items-center justify-center space-y-4 py-12">
+                            <div class="rounded-full bg-violet-100 p-6">
+                                <FileX class="h-12 w-12 text-violet-600" />
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-lg font-semibold text-gray-900">No record available</h3>
+                                <p class="text-sm text-gray-500 max-w-sm">
+                                    There are currently no records to display. Add a new record to get started.
+                                </p>
+                            </div>
+                        </div>
+                    </TableCell>
+                </TableRow>
+
+                <!-- Data Rows -->
+                <TableRow v-else v-for="(item, rowIndex) in items.data" :key="item.id">
                     <TableCell v-for="column in derivedColumns" :key="column.key">
                         <template v-if="column.key === '__index'">
                             {{ getRowNumber(rowIndex) }}
@@ -76,14 +94,14 @@
                         <template v-else-if="column.key === 'actions'">
                             <DropdownMenu>
                                 <DropdownMenuTrigger as-child>
-                                    <Button variant="ghost" size="icon">
-                                        <Ellipsis class="w-5 h-5 text-muted-foreground" />
+                                    <Button variant="ghost" size="icon" class="hover:bg-violet-400 hover:text-white">
+                                        <Ellipsis class="w-5 h-5" />
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent class="w-48 rtl:text-right" side="bottom" :align="isRTL ? 'end' : 'start'">
                                     <DropdownMenuLabel class="rtl:text-right">{{ t('datatable.actions') }}</DropdownMenuLabel>
-                                    <DropdownMenuItem :class="isRTL ? 'flex-row-reverse gap-2' : 'gap-2'" @click="$emit('edit', item)"><SquarePen /> {{ t('datatable.edit') }}</DropdownMenuItem>
-                                    <DropdownMenuItem :class="isRTL ? 'flex-row-reverse gap-2' : 'gap-2'" @click="$emit('delete', item.id)"><Trash2 /> {{ t('datatable.delete') }}</DropdownMenuItem>
+                                    <DropdownMenuItem :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-400 [&:hover]:text-white [&:focus]:bg-violet-400 [&:focus]:text-white']" @click="$emit('edit', item)"><SquarePen /> {{ t('datatable.edit') }}</DropdownMenuItem>
+                                    <DropdownMenuItem :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-400 [&:hover]:text-white [&:focus]:bg-violet-400 [&:focus]:text-white']" @click="$emit('delete', item.id)"><Trash2 /> {{ t('datatable.delete') }}</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </template>
@@ -92,6 +110,7 @@
                         </template>
                     </TableCell>
                 </TableRow>
+ 
             </TableBody>
         </Table>
 
@@ -189,7 +208,7 @@ import {
 } from '@/Components/ui/select'
 import {
     Search, CircleX, ChevronUp, ChevronDown, SlidersHorizontal, Ellipsis, SquarePen, Trash,
-    Trash2, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight,
+    Trash2, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, FileX,
 } from 'lucide-vue-next'
 import {
     DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -207,6 +226,8 @@ const props = defineProps({
     addAction: { type: String, default: 'modal' },
     addRoute: { type: String, default: null },
     addRouteParams: { type: Object, default: () => ({}) },
+    // Controls for empty state and rows
+    emptyRowsCount: { type: Number, default: 10 },
 })
 
 const { t, locale } = useI18n()
@@ -221,6 +242,14 @@ const sortField = ref(props.filters?.sortField || 'id')
 const sortDirection = ref(props.filters?.sortDirection || 'asc')
 const currentPage = computed(() => props.items?.meta?.current_page ?? 1)
 const lastPage = computed(() => props.items?.meta?.last_page ?? 1)
+
+// Empty state and rows handling
+const isEmpty = computed(() => !props.items?.data || props.items.data.length === 0)
+const dataRowsCount = computed(() => props.items?.data?.length || 0)
+const emptyRowsToShow = computed(() => {
+    if (isEmpty.value) return props.emptyRowsCount
+    return Math.max(0, props.emptyRowsCount - dataRowsCount.value)
+})
 
 // Derived columns: inject index column at the start
 const derivedColumns = computed(() => {
