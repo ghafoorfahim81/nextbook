@@ -30,12 +30,16 @@ export function useDeleteResource() {
                             container.remove()
                             options?.onSuccess?.()
                         },
-                        onError: () => {
+                        onError: (errors) => {
+                            // Check if it's a dependency error
+                            const errorMessage = errors?.message || errors?.error || t('general.delete_error_message');
+                            const isDependencyError = errorMessage.includes('Cannot delete this record because it\'s used in another resource');
+
                             toast({
-                                title: t('general.error'),
-                                description: t('general.delete_error_message'),
+                                title: isDependencyError ? t('general.dependencies_found') : t('general.error'),
+                                description: errorMessage,
                                 variant: 'destructive',
-                                action: h(ToastAction, {
+                                action: isDependencyError ? null : h(ToastAction, {
                                     altText: t('general.try_again'),
                                 }, {
                                     default: () => t('general.try_again'),
