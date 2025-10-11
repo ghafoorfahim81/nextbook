@@ -50,6 +50,11 @@ class CategoryController extends Controller
 
     public function destroy(Request $request, Category $category)
     {
+        // Check for dependencies before deletion
+        if (!$category->canBeDeleted()) {
+            $message = $category->getDependencyMessage();
+            return redirect()->route('categories.index')->with('error', $message);
+        }
 
         $category->delete();
         return back();

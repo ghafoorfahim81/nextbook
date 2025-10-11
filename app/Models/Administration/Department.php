@@ -2,6 +2,7 @@
 
 namespace App\Models\Administration;
 
+use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -14,7 +15,7 @@ use Symfony\Component\Uid\Ulid;
 
 class Department extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasDependencyCheck;
 
     /**
      * The attributes that are mass assignable.
@@ -62,6 +63,27 @@ class Department extends Model
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Department::class, 'parent_id');
+    }
+
+    /**
+     * Get relationships configuration for dependency checking
+     */
+    protected function getRelationships(): array
+    {
+        return [
+            'children' => [
+                'model' => 'subdepartments',
+                'message' => 'This department has subdepartments'
+            ]
+        ];
+    }
+
+    /**
+     * Get the child departments
+     */
+    public function children()
+    {
+        return $this->hasMany(Department::class, 'parent_id');
     }
 
 }

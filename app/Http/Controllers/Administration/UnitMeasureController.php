@@ -141,6 +141,12 @@ class UnitMeasureController extends Controller
 
     public function destroy(Request $request, UnitMeasure $unitMeasure)
     {
+        // Check for dependencies before deletion
+        if (!$unitMeasure->canBeDeleted()) {
+            $message = $unitMeasure->getDependencyMessage();
+            return redirect()->route('unit-measures.index')->with('error', $message);
+        }
+
         $unitMeasure->delete();
 
         return redirect()->route('unit-measures.index')->with('success', 'Unit measure deleted successfully.');
