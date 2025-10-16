@@ -34,8 +34,7 @@ const deleteItem = (id) => {
         description: t('general.delete_description', { name: t('admin.category.category') }),
         successMessage: t('general.delete_success', { name: t('admin.category.category') }),
     })
-
-};
+}
 
 </script>
 
