@@ -128,7 +128,10 @@
   "cannot_delete_dependencies":"Cannot delete this record because it's used in another resource. Please delete those records first.",
   "dependencies_found":"Dependencies found",
   "undo":"Undo",
-  "try_again":"Try again"
+  "try_again":"Try again",
+  "restore":"Restore",
+  "restore_success":"{name} restored successfully",
+  "restore_error_message":"Failed to restore {name}"
 
 }
 

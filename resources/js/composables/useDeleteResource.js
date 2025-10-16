@@ -21,11 +21,50 @@ export function useDeleteResource() {
                 const handleConfirm = () => {
                     router.delete(route(routeName, id), {
                         onSuccess: () => {
-                            toast({
+                            // Show success toast with undo option
+                            let dismissed = false;
+
+                            const handleUndo = () => {
+                                if (dismissed) return;
+                                dismissed = true;
+
+                                // Restore the record
+                                router.patch(route(routeName.replace('.destroy', '.restore'), id), {}, {
+                                    onSuccess: () => {
+                                        toast({
+                                            title: t('general.success'),
+                                            variant: 'success',
+                                            description: t('general.restore_success', { name: options.name }),
+                                        });
+                                        options?.onUndo?.()
+                                    },
+                                    onError: (errors) => {
+                                        toast({
+                                            title: t('general.error'),
+                                            description: errors?.message || t('general.restore_error_message'),
+                                            variant: 'destructive',
+                                        });
+                                        options?.onError?.()
+                                    }
+                                });
+                            };
+
+                            const toastInstance = toast({
                                 title: t('general.success'),
                                 variant: 'success',
                                 description: options.successMessage || t('general.delete_success', { name: options.name }),
+                                action: h(ToastAction, {
+                                    altText: t('general.undo'),
+                                    onClick: handleUndo
+                                }, {
+                                    default: () => t('general.undo'),
+                                }),
+                                duration: 5000, // 5 seconds to undo
+                                onDismiss: () => {
+                                    dismissed = true;
+                                }
                             });
+
                             app.unmount()
                             container.remove()
                             options?.onSuccess?.()

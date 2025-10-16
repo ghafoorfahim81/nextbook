@@ -18,21 +18,15 @@ class CategoryController extends Controller
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
-        $showDeleted = $request->input('deleted', false);
 
-        $query = Category::with('parent')->search($request->query('search'));
-
-        if ($showDeleted) {
-            $query->onlyTrashed();
-        }
-
-        $categories = $query->orderBy($sortField, $sortDirection)
+        $categories = Category::with('parent')
+            ->search($request->query('search'))
+            ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
 
         return inertia('Administration/Categories/Index', [
             'categories' => CategoryResource::collection($categories),
-            'showDeleted' => $showDeleted,
         ]);
     }
 
@@ -64,7 +58,7 @@ class CategoryController extends Controller
         }
 
         $category->delete();
-        return back()->with('success', 'Category deleted successfully. Use restore to recover it.');
+        return back()->with('success', 'Category deleted successfully.');
     }
 
     public function restore(Request $request, Category $category)
