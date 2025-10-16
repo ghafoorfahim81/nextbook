@@ -10,7 +10,6 @@ import NextTextarea from '@/Components/next/NextTextarea.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
 import PaymentDialog from '@/Components/next/PaymentDialog.vue';
 import { useI18n } from 'vue-i18n';
-import { Trash2, Trash } from 'lucide-vue-next';
 import TransactionSummary from '@/Components/next/TransactionSummary.vue';
 import DiscountSummary from '@/Components/next/DiscountSummary.vue';
 import TaxSummary from '@/Components/next/TaxSummary.vue';
@@ -494,7 +493,7 @@ const addRow = () => {
             </div>
             <div class="rounded-xl border bg-card shadow-sm overflow-x-auto max-h-72">
                 <table class="w-full table-fixed min-w-[1000px] purchase-table border-separate">
-                    <thead class="bg-card sticky top-0 z-[200]">
+                    <thead class="bg-card sticky top-0" :class="form.selected_sale_purchase_type === 'cash' ? 'z-[200]' : ''">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 min-w-5">#</th>
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>

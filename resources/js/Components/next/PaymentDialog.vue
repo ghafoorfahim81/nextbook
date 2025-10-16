@@ -106,7 +106,7 @@ const resetForm = () => {
 
 <template>
   <Dialog :open="open" @update:open="value => emit('update:open', value)">
-    <div v-if="open" class="fixed inset-0 bg-white/5 z-[500]" />
+    <div v-if="open" class="fixed inset-0 bg-white/5" />
 
     <DialogContent class="w-[500px] max-w-[500px]">
       <DialogHeader>

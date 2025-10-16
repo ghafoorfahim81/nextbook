@@ -25,22 +25,45 @@ export function useDeleteResource() {
                                 title: t('general.success'),
                                 variant: 'success',
                                 description: options.successMessage || t('general.delete_success', { name: options.name }),
+                                 
+
                             });
                             app.unmount()
                             container.remove()
                             options?.onSuccess?.()
                         },
-                        onError: () => {
+                        onError: (errors) => {
+                            // Check if it's a dependency error (Laravel validation errors)
+                            let errorMessage = t('general.delete_error_message');
+                            let isDependencyError = false;
+
+                            if (errors?.category) {
+                                errorMessage = errors.category;
+                                isDependencyError = true;
+                            } else if (errors?.message) {
+                                errorMessage = errors.message;
+                                isDependencyError = errorMessage.includes('Cannot delete this record') ||
+                                                   errorMessage.includes('dependencies') ||
+                                                   errorMessage.includes('used in');
+                            } else if (errors?.error) {
+                                errorMessage = errors.error;
+                                isDependencyError = errorMessage.includes('Cannot delete this record') ||
+                                                   errorMessage.includes('dependencies') ||
+                                                   errorMessage.includes('used in');
+                            }
                             toast({
-                                title: t('general.error'),
-                                description: t('general.delete_error_message'),
+                                title: isDependencyError ? t('general.dependencies_found') : t('general.error'),
+                                description: errorMessage,
                                 variant: 'destructive',
-                                action: h(ToastAction, {
+                                class:'bg-pink-600 text-white',
+                                duration: Infinity,
+                                    action: isDependencyError ? null : h(ToastAction, {
                                     altText: t('general.try_again'),
                                 }, {
                                     default: () => t('general.try_again'),
                                 }),
-                            });
+                            })
+
                             app.unmount()
                             container.remove()
                             options?.onError?.()

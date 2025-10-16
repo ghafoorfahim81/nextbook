@@ -50,8 +50,13 @@ class CategoryController extends Controller
 
     public function destroy(Request $request, Category $category)
     {
+        // Check for dependencies before deletion
+        if (!$category->canBeDeleted()) {
+            $message = $category->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            return back()->withErrors(['category' => $message]);
+        }
 
         $category->delete();
-        return back();
+        return back()->with('success', 'Category deleted successfully.');
     }
 }

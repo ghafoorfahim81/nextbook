@@ -2,6 +2,7 @@
 
 namespace App\Models\Administration;
 
+use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -14,7 +15,7 @@ use Symfony\Component\Uid\Ulid;
 
 class Category extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasDependencyCheck;
 
     /**
      * The table associated with the model.
@@ -110,5 +111,30 @@ class Category extends Model
     public function children(): HasMany
     {
         return $this->hasMany(Category::class, 'parent_id');
+    }
+
+    /**
+     * Get relationships configuration for dependency checking
+     */
+    protected function getRelationships(): array
+    {
+        return [
+            'items' => [
+                'model' => 'items',
+                'message' => 'This category is used in items'
+            ],
+            'children' => [
+                'model' => 'subcategories',
+                'message' => 'This category has subcategories'
+            ]
+        ];
+    }
+
+    /**
+     * Relationship to items that use this category
+     */
+    public function items()
+    {
+        return $this->hasMany(\App\Models\Inventory\Item::class, 'category_id');
     }
 }
