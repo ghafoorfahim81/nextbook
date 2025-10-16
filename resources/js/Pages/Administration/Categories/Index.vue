@@ -28,6 +28,7 @@ const editItem = (item) => {
     isDialogOpen.value = true
 }
 const { deleteResource } = useDeleteResource()
+
 const deleteItem = (id) => {
     deleteResource('categories.destroy', id, {
         title: t('general.delete', { name: t('admin.category.category') }),

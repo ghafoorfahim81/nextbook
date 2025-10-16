@@ -62,7 +62,8 @@ trait HasDependencyCheck
 
             $relation = $this->$relationName();
 
-            // Only count non-soft-deleted records
+            // Only count non-soft-deleted records for dependency checks
+            // This ensures that soft-deleted related records don't prevent operations
             $relation = $relation->whereNull($relation->getModel()->getQualifiedDeletedAtColumn());
 
             if (isset($relationConfig['conditions'])) {

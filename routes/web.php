@@ -46,6 +46,7 @@ Route::middleware([
     Route::resource('designations', DesignationController::class);
     Route::resource('/departments', DepartmentController::class);
     Route::resource('/categories', \App\Http\Controllers\Administration\CategoryController::class);
+    Route::patch('/categories/{category}/restore', [\App\Http\Controllers\Administration\CategoryController::class, 'restore'])->name('categories.restore')->withTrashed();
     Route::resource('/stores', \App\Http\Controllers\Administration\StoreController::class);
     Route::resource('/brands', \App\Http\Controllers\Administration\BrandController::class);
     Route::get('/departments/parents', [DepartmentController::class, 'getParents'])->name('departments.parents');
