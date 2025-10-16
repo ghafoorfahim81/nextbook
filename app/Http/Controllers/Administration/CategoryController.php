@@ -24,6 +24,7 @@ class CategoryController extends Controller
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
+
         return inertia('Administration/Categories/Index', [
             'categories' => CategoryResource::collection($categories),
         ]);
@@ -52,11 +53,17 @@ class CategoryController extends Controller
     {
         // Check for dependencies before deletion
         if (!$category->canBeDeleted()) {
-            $message = $category->getDependencyMessage();
-            return redirect()->route('categories.index')->with('error', $message);
+            $message = $category->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            return back()->withErrors(['category' => $message]);
         }
 
         $category->delete();
-        return back();
+        return back()->with('success', 'Category deleted successfully.');
+    }
+
+    public function restore(Request $request, Category $category)
+    {
+        $category->restore();
+        return back()->with('success', 'Category restored successfully.');
     }
 }

@@ -5,6 +5,7 @@ namespace App\Models\Purchase;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasBranch;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 
 class Purchase extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasBranch;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasBranch, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.

@@ -10,7 +10,6 @@ import NextTextarea from '@/Components/next/NextTextarea.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
 import PaymentDialog from '@/Components/next/PaymentDialog.vue';
 import { useI18n } from 'vue-i18n';
-import { Trash2, Trash } from 'lucide-vue-next';
 import TransactionSummary from '@/Components/next/TransactionSummary.vue';
 import DiscountSummary from '@/Components/next/DiscountSummary.vue';
 import TaxSummary from '@/Components/next/TaxSummary.vue';

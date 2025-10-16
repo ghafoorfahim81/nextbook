@@ -13,7 +13,7 @@ trait HasUserAuditable
     {
         $firstUser = \App\Models\User::first();
         $branch = \App\Models\Administration\Branch::first();
-        if(!$firstUser){
+        if (!$firstUser) {
             $firstUser = User::create([
                 'id' => (string) new Ulid(),
                 'name' => 'admin_1',
@@ -22,21 +22,21 @@ trait HasUserAuditable
                 'password' => bcrypt('password'),
             ]);
         }
-        static::creating(function ($model) use($firstUser, $branch) {
+        static::creating(function ($model) use ($firstUser, $branch) {
             $model->created_by =  $firstUser->id;
         });
 
-        static::updating(function ($model) use($firstUser) {
+        static::updating(function ($model) use ($firstUser) {
             $model->updated_by =  $firstUser->id;
         });
 
-//        static::deleting(function ($model) use($firstUser) {
-//            $model->deleted_by =  $firstUser->id;
-//            $model->save();
-//        });
+        static::deleting(function ($model) use ($firstUser) {
+            $model->deleted_by =  $firstUser->id;
+            $model->save();
+        });
 
-//        static::restoring(function ($model) {
-//            $model->deleted_by = null;
-//        });
+        static::restoring(function ($model) {
+            $model->deleted_by = null;
+        });
     }
 }

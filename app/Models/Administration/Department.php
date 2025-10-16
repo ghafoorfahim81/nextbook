@@ -7,15 +7,15 @@ use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
-
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\Ulid;
 
 class Department extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasDependencyCheck;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -85,5 +85,4 @@ class Department extends Model
     {
         return $this->hasMany(Department::class, 'parent_id');
     }
-
 }

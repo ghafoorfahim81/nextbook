@@ -11,10 +11,11 @@ use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Transaction extends Model
 {
-    use HasFactory, HasSearch, HasSorting, HasUserAuditable;
+    use HasFactory, HasSearch, HasSorting, HasUserAuditable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -79,13 +80,10 @@ class Transaction extends Model
 
     public function opening()
     {
-        return $this->hasOne(LedgerOpening::class,'transaction_id');
+        return $this->hasOne(LedgerOpening::class, 'transaction_id');
     }
     public function ledger(): BelongsTo
     {
         return $this->belongsTo(Ledger::class);
     }
-
-
-
 }

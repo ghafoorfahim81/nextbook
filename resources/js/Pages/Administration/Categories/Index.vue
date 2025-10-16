@@ -28,14 +28,14 @@ const editItem = (item) => {
     isDialogOpen.value = true
 }
 const { deleteResource } = useDeleteResource()
+
 const deleteItem = (id) => {
     deleteResource('categories.destroy', id, {
         title: t('general.delete', { name: t('admin.category.category') }),
         description: t('general.delete_description', { name: t('admin.category.category') }),
         successMessage: t('general.delete_success', { name: t('admin.category.category') }),
     })
-
-};
+}
 
 </script>
 

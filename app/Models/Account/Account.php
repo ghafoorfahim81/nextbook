@@ -5,18 +5,20 @@ namespace App\Models\Account;
 use App\Models\LedgerOpening\LedgerOpening;
 use App\Models\Transaction\Transaction;
 use App\Traits\HasBranch;
+use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use App\Models\Administration\Branch;
 
 class Account extends Model
 {
-    use HasFactory,HasUlids, HasSearch, HasSorting, HasUserAuditable, HasBranch;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasBranch, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -85,5 +87,16 @@ class Account extends Model
         return $this->morphOne(LedgerOpening::class, 'ledgerable');
     }
 
-
+    /**
+     * Get relationships configuration for dependency checking
+     */
+    protected function getRelationships(): array
+    {
+        return [
+            'transactions' => [
+                'model' => 'transactions',
+                'message' => 'This account is used in transactions'
+            ]
+        ];
+    }
 }
