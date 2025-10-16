@@ -25,8 +25,6 @@ export function useDeleteResource() {
                                 title: t('general.success'),
                                 variant: 'success',
                                 description: options.successMessage || t('general.delete_success', { name: options.name }),
-                                 
-
                             });
                             app.unmount()
                             container.remove()
