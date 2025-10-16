@@ -2,15 +2,17 @@
 
 namespace App\Models\Account;
 
+use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 
 class AccountType extends Model
 {
-    use HasFactory, HasSearch, HasSorting, HasUserAuditable;
+    use HasFactory, HasSearch, HasSorting, HasUserAuditable, HasDependencyCheck, SoftDeletes;
 
     protected $table = 'account_types';
     protected $keyType = 'string';
@@ -52,5 +54,26 @@ class AccountType extends Model
             'name',
             'remark',
         ];
+    }
+
+    /**
+     * Get relationships configuration for dependency checking
+     */
+    protected function getRelationships(): array
+    {
+        return [
+            'accounts' => [
+                'model' => 'accounts',
+                'message' => 'This account type is used in accounts'
+            ]
+        ];
+    }
+
+    /**
+     * Relationship to accounts that use this account type
+     */
+    public function accounts()
+    {
+        return $this->hasMany(\App\Models\Account\Account::class, 'account_type_id');
     }
 }

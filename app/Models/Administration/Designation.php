@@ -2,14 +2,16 @@
 
 namespace App\Models\Administration;
 
+use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Designation extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, HasUserAuditable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -23,13 +25,5 @@ class Designation extends Model
         'updated_by',
     ];
 
-    public function createdBy(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class);
-    }
-
-    public function updatedBy(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class);
-    }
+ 
 }

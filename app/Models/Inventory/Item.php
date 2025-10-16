@@ -2,7 +2,9 @@
 
 namespace App\Models\Inventory;
 
+use App\Models\StockOut;
 use App\Traits\HasBranch;
+use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -10,11 +12,11 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\StockOut;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Item extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
@@ -137,5 +139,26 @@ class Item extends Model
     public function stockOut()
     {
         return $this->hasMany(StockOut::class);
+    }
+
+    /**
+     * Get relationships configuration for dependency checking
+     */
+    protected function getRelationships(): array
+    {
+        return [
+            'stocks' => [
+                'model' => 'stock records',
+                'message' => 'This item has stock records'
+            ],
+            'openings' => [
+                'model' => 'opening balances',
+                'message' => 'This item has opening balances'
+            ],
+            'stockOut' => [
+                'model' => 'stock out records',
+                'message' => 'This item has stock out records'
+            ]
+        ];
     }
 }
