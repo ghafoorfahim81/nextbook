@@ -3,6 +3,7 @@
 namespace App\Models\Administration;
 
 use App\Traits\HasBranch;
+use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -14,7 +15,7 @@ use Symfony\Component\Uid\Ulid;
 
 class UnitMeasure extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch, HasDependencyCheck;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
@@ -65,7 +66,7 @@ class UnitMeasure extends Model
         return [
         'name',
         'unit',
-        'symbol', 
+        'symbol',
         'quantity.quantity',
         'quantity.unit',
         'quantity.symbol',
@@ -80,6 +81,39 @@ class UnitMeasure extends Model
     public function quantity(): BelongsTo
     {
         return $this->belongsTo(Quantity::class);
+    }
+
+    /**
+     * Get relationships configuration for dependency checking
+     */
+    protected function getRelationships(): array
+    {
+        return [
+            'items' => [
+                'model' => 'items',
+                'message' => 'This unit measure is used in items'
+            ],
+            'stocks' => [
+                'model' => 'stock records',
+                'message' => 'This unit measure is used in stock records'
+            ]
+        ];
+    }
+
+    /**
+     * Relationship to items that use this unit measure
+     */
+    public function items()
+    {
+        return $this->hasMany(\App\Models\Inventory\Item::class, 'unit_measure_id');
+    }
+
+    /**
+     * Relationship to stocks that use this unit measure
+     */
+    public function stocks()
+    {
+        return $this->hasMany(\App\Models\Inventory\Stock::class, 'unit_measure_id');
     }
 
 }

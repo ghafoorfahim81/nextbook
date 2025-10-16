@@ -125,8 +125,10 @@
   "total_item_discount":"Total Item Discount",
   "total_discount":"Total Discount",
   "total_item_tax":"Total Item Tax",
-  "":""
-
+  "cannot_delete_dependencies":"Cannot delete this record because it's used in another resource. Please delete those records first.",
+  "dependencies_found":"Dependencies found",
+  "undo":"Undo",
+  "try_again":"Try again"
 
 }
 
