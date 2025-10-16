@@ -11,11 +11,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\Ulid;
 
 class Category extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasDependencyCheck;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
 
     /**
      * The table associated with the model.
@@ -128,6 +129,14 @@ class Category extends Model
                 'message' => 'This category has subcategories'
             ]
         ];
+    }
+
+    /**
+     * Check if category is deleted
+     */
+    public function isDeleted(): bool
+    {
+        return !is_null($this->deleted_at);
     }
 
     /**

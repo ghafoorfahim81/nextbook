@@ -3,9 +3,11 @@
 namespace App\Models\Administration;
 
 use App\Models\User;
+use App\Traits\HasDependencyCheck;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -15,7 +17,7 @@ use Illuminate\Support\Facades\Storage;
 
 class Company extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
 
 
     /**
@@ -69,6 +71,19 @@ class Company extends Model
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
+    }
+
+    /**
+     * Get relationships configuration for dependency checking
+     */
+    protected function getRelationships(): array
+    {
+        return [
+            'users' => [
+                'model' => 'users',
+                'message' => 'This company has users'
+            ]
+        ];
     }
 
     /**

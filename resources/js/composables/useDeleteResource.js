@@ -21,30 +21,86 @@ export function useDeleteResource() {
                 const handleConfirm = () => {
                     router.delete(route(routeName, id), {
                         onSuccess: () => {
-                            toast({
+                            // Show success toast with undo option
+                            let dismissed = false;
+
+                            const handleUndo = () => {
+                                if (dismissed) return;
+                                dismissed = true;
+
+                                // Restore the record
+                                router.patch(route(routeName.replace('.destroy', '.restore'), id), {}, {
+                                    onSuccess: () => {
+                                        toast({
+                                            title: t('general.success'),
+                                            variant: 'success',
+                                            description: t('general.restore_success', { name: options.name }),
+                                        });
+                                        options?.onUndo?.()
+                                    },
+                                    onError: (errors) => {
+                                        toast({
+                                            title: t('general.error'),
+                                            description: errors?.message || t('general.restore_error_message'),
+                                            variant: 'destructive',
+                                        });
+                                        options?.onError?.()
+                                    }
+                                });
+                            };
+
+                            const toastInstance = toast({
                                 title: t('general.success'),
                                 variant: 'success',
                                 description: options.successMessage || t('general.delete_success', { name: options.name }),
+                                action: h(ToastAction, {
+                                    altText: t('general.undo'),
+                                    onClick: handleUndo
+                                }, {
+                                    default: () => t('general.undo'),
+                                }),
+                                duration: 5000, // 5 seconds to undo
+                                onDismiss: () => {
+                                    dismissed = true;
+                                }
                             });
+
                             app.unmount()
                             container.remove()
                             options?.onSuccess?.()
                         },
                         onError: (errors) => {
-                            // Check if it's a dependency error
-                            const errorMessage = errors?.message || errors?.error || t('general.delete_error_message');
-                            const isDependencyError = errorMessage.includes('Cannot delete this record because it\'s used in another resource');
+                            // Check if it's a dependency error (Laravel validation errors)
+                            let errorMessage = t('general.delete_error_message');
+                            let isDependencyError = false;
 
+                            if (errors?.category) {
+                                errorMessage = errors.category;
+                                isDependencyError = true;
+                            } else if (errors?.message) {
+                                errorMessage = errors.message;
+                                isDependencyError = errorMessage.includes('Cannot delete this record') ||
+                                                   errorMessage.includes('dependencies') ||
+                                                   errorMessage.includes('used in');
+                            } else if (errors?.error) {
+                                errorMessage = errors.error;
+                                isDependencyError = errorMessage.includes('Cannot delete this record') ||
+                                                   errorMessage.includes('dependencies') ||
+                                                   errorMessage.includes('used in');
+                            }
                             toast({
                                 title: isDependencyError ? t('general.dependencies_found') : t('general.error'),
                                 description: errorMessage,
                                 variant: 'destructive',
-                                action: isDependencyError ? null : h(ToastAction, {
+                                class:'bg-pink-600 text-white',
+                                duration: Infinity,
+                                    action: isDependencyError ? null : h(ToastAction, {
                                     altText: t('general.try_again'),
                                 }, {
                                     default: () => t('general.try_again'),
                                 }),
-                            });
+                            })
+
                             app.unmount()
                             container.remove()
                             options?.onError?.()

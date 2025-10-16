@@ -6,10 +6,11 @@ use App\Models\Administration\Store;
 use App\Models\Administration\UnitMeasure;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Stock extends Model
 {
-    use HasUlids;
+    use HasUlids, SoftDeletes;
     protected $table = 'stocks';
     protected $primaryKey = 'id';
     protected $keyType = 'string';
@@ -43,8 +44,6 @@ class Stock extends Model
 
     public function opening()
     {
-        return $this->hasOne(StockOpening::class,'stock_id'); // StockOpening has stock_id
+        return $this->hasOne(StockOpening::class, 'stock_id'); // StockOpening has stock_id
     }
-
-
 }
