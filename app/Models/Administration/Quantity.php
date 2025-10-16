@@ -3,6 +3,7 @@
 namespace App\Models\Administration;
 
 use App\Traits\HasBranch;
+use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -11,11 +12,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\Ulid;
 
 class Quantity extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch, HasDependencyCheck, SoftDeletes;
 
 
     /**
@@ -66,5 +68,18 @@ class Quantity extends Model
     public function measures(): HasMany
     {
         return $this->hasMany(UnitMeasure::class, 'quantity_id');
+    }
+
+    /**
+     * Get relationships configuration for dependency checking
+     */
+    protected function getRelationships(): array
+    {
+        return [
+            'measures' => [
+                'model' => 'unit measures',
+                'message' => 'This quantity is used in unit measures'
+            ]
+        ];
     }
 }

@@ -10,11 +10,12 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\Ulid;
 
 class Store extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch, SoftDeletes;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
@@ -38,7 +39,7 @@ class Store extends Model
      *
      * @return array<string, string>
      */
-     protected $casts = [
+    protected $casts = [
         'id' => 'string',
         'is_main' => 'boolean',
         'branch_id' => 'string',
@@ -51,15 +52,5 @@ class Store extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
-    }
-
-    public function createdBy(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class);
-    }
-
-    public function updatedBy(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class);
     }
 }
