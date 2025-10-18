@@ -58,4 +58,9 @@ class PurchaseController extends Controller
 
         return response()->noContent();
     }
+    public function restore(Request $request, Purchase $purchase)
+    {
+        $purchase->restore();
+        return redirect()->route('purchases.index')->with('success', 'Purchase restored successfully.');
+    }
 }

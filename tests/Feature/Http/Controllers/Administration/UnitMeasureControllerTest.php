@@ -4,6 +4,7 @@ namespace Tests\Feature\Http\Controllers\Administration;
 
 use App\Models\Branch;
 use App\Models\CreatedBy;
+use App\Models\Inventory\Item;
 use App\Models\Quantity;
 use App\Models\UnitMeasure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -139,8 +140,36 @@ final class UnitMeasureControllerTest extends TestCase
 
         $response = $this->delete(route('unit-measures.destroy', $unitMeasure));
 
-        $response->assertNoContent();
+        $response->assertRedirect(route('unit-measures.index'));
+        $response->assertSessionHas('success', 'Unit measure deleted successfully.');
 
         $this->assertModelMissing($unitMeasure);
+    }
+
+    #[Test]
+    public function destroy_prevents_deletion_when_has_dependencies(): void
+    {
+        $unitMeasure = UnitMeasure::factory()->create();
+        $item = \App\Models\Inventory\Item::factory()->create([
+            'unit_measure_id' => $unitMeasure->id
+        ]);
+
+        // Check if the unit measure can be deleted
+        $canBeDeleted = $unitMeasure->canBeDeleted();
+
+        $this->assertFalse($canBeDeleted, 'UnitMeasure should not be deletable when it has items');
+
+        // Try to delete it
+        $response = $this->delete(route('unit-measures.destroy', $unitMeasure));
+
+        // Should return an Inertia response with error
+        $response->assertInertia(fn ($page) =>
+            $page->component('Administration/UnitMeasures/Index')
+                ->has('error')
+                ->where('error', 'Cannot delete this record because it\'s used in 1 items. Please delete those records first.')
+        );
+
+        // The record should still exist
+        $this->assertModelExists($unitMeasure);
     }
 }

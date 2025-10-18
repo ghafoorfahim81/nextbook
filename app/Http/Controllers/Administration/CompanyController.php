@@ -54,4 +54,9 @@ class CompanyController extends Controller
 
         return response()->noContent();
     }
+    public function restore(Request $request, Company $company)
+    {
+        $company->restore();
+        return redirect()->route('companies.index')->with('success', 'Company restored successfully.');
+    }
 }

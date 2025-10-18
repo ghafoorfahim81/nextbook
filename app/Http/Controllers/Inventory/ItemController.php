@@ -166,4 +166,9 @@ class ItemController extends Controller
         $item->delete();
         return back();
     }
+    public function restore(Request $request, Item $item)
+    {
+        $item->restore();
+        return redirect()->route('items.index')->with('success', 'Item restored successfully.');
+    }
 }

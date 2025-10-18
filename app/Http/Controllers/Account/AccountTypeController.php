@@ -62,4 +62,9 @@ class AccountTypeController extends Controller
 
         return redirect()->route('account-types.index');
     }
+    public function restore(Request $request, AccountType $accountType)
+    {
+        $accountType->restore();
+        return redirect()->route('account-types.index')->with('success', 'Account type restored successfully.');
+    }
 }

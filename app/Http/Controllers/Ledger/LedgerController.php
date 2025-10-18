@@ -58,4 +58,9 @@ class LedgerController extends Controller
 
         return response()->noContent();
     }
+    public function restore(Request $request, Ledger $ledger)
+    {
+        $ledger->restore();
+        return redirect()->route('ledgers.index')->with('success', 'Ledger restored successfully.');
+    }
 }

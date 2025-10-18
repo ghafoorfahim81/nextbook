@@ -143,12 +143,20 @@ class UnitMeasureController extends Controller
     {
         // Check for dependencies before deletion
         if (!$unitMeasure->canBeDeleted()) {
-            $message = $unitMeasure->getDependencyMessage();
-            return redirect()->route('unit-measures.index')->with('error', $message);
+            $message = $unitMeasure->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            return inertia('Administration/UnitMeasures/Index', [
+                'error' => $message
+            ]);
         }
 
         $unitMeasure->delete();
 
         return redirect()->route('unit-measures.index')->with('success', 'Unit measure deleted successfully.');
+    }
+
+    public function restore(Request $request, UnitMeasure $unitMeasure)
+    {
+        $unitMeasure->restore();
+        return redirect()->route('unit-measures.index')->with('success', 'Unit measure restored successfully.');
     }
 }

@@ -112,4 +112,9 @@ class SupplierController extends Controller
     {
         //
     }
+    public function restore(Request $request, Supplier $supplier)
+    {
+        $supplier->restore();
+        return redirect()->route('suppliers.index')->with('success', 'Supplier restored successfully.');
+    }
 }

@@ -85,4 +85,9 @@ class AccountController extends Controller
 
         return response()->noContent();
     }
+    public function restore(Request $request, Account $account)
+    {
+        $account->restore();
+        return redirect()->route('chart-of-accounts.index')->with('success', 'Account restored successfully.');
+    }
 }

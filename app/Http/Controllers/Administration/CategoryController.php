@@ -54,11 +54,13 @@ class CategoryController extends Controller
         // Check for dependencies before deletion
         if (!$category->canBeDeleted()) {
             $message = $category->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
-            return back()->withErrors(['category' => $message]);
+            return inertia('Administration/Categories/Index', [
+                'error' => $message
+            ]);
         }
 
         $category->delete();
-        return back()->with('success', 'Category deleted successfully.');
+        return redirect()->route('categories.index')->with('success', 'Category deleted successfully.');
     }
 
     public function restore(Request $request, Category $category)

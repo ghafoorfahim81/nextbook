@@ -48,4 +48,9 @@ class BrandController extends Controller
         $brand->delete();
         return back();
     }
+    public function restore(Request $request, Brand $brand)
+    {
+        $brand->restore();
+        return redirect()->route('brands.index')->with('success', 'Brand restored successfully.');
+    }
 }
