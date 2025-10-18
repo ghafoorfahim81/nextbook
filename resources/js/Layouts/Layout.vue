@@ -29,6 +29,16 @@ import {
     DropdownMenuShortcut,
     DropdownMenuTrigger,
 } from '@/Components/ui/dropdown-menu'
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/Components/ui/tooltip'
+import {
+    Kbd,
+    KbdGroup,
+} from '@/Components/ui/kbd'
 import { Separator } from '@/Components/ui/separator'
 import {
     Sidebar,
@@ -251,7 +261,7 @@ data.navMain = navMain.value
                     <SidebarMenuItem>
                         <DropdownMenu>
                             <DropdownMenuTrigger as-child>
-                                <SidebarMenuButton
+                                <!-- <SidebarMenuButton
                                     size="lg"
                                     class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                                 >
@@ -263,7 +273,7 @@ data.navMain = navMain.value
                                         <span class="truncate text-xs">{{ activeTeam.plan }}</span>
                                     </div>
                                     <ChevronsUpDown class="ml-auto" />
-                                </SidebarMenuButton>
+                                </SidebarMenuButton> -->
                             </DropdownMenuTrigger>
                             <DropdownMenuContent
                                 class="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
