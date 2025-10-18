@@ -48,17 +48,19 @@ class DepartmentController extends Controller
         return new DepartmentResource($department);
     }
 
-    public function destroy(Request $request, Department $department): DepartmentResource
+    public function destroy(Request $request, Department $department)
     {
         // Check for dependencies before deletion
         if (!$department->canBeDeleted()) {
             $message = $department->getDependencyMessage();
-            return redirect()->route('departments.index')->with('error', $message);
+            return inertia('Administration/Departments/Index', [
+                'error' => $message
+            ]);
         }
 
         $department->delete();
 
-        return response()->noContent();
+        return redirect()->route('departments.index')->with('success', 'Department deleted successfully.');
     }
 
     public function getParents()

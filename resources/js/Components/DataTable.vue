@@ -52,7 +52,7 @@
         <!-- Table -->
         <Table>
             <TableHeader class="bg-violet-300">
-                <TableRow class="bg-violet-500 hover:bg-violet-600">
+                <TableRow class="bg-violet-500 hover:bg-violet-600 ">
                     <TableHead v-for="column in derivedColumns" :key="column.key">
                         <div :class="isRTL ? 'flex items-center space-x-reverse space-x-1 text-white' : 'flex items-center space-x-1 text-white'">
                             <span>{{ column.label }}</span>

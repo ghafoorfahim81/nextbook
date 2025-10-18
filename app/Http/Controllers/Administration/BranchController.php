@@ -54,4 +54,9 @@ class BranchController extends Controller
         $branch->delete();
         return back();
     }
+    public function restore(Request $request, Branch $branch)
+    {
+        $branch->restore();
+        return redirect()->route('branches.index')->with('success', 'Branch restored successfully.');
+    }
 }

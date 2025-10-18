@@ -55,4 +55,9 @@ class StoreController extends Controller
 
         return back();
     }
+    public function restore(Request $request, Store $store)
+    {
+        $store->restore();
+        return redirect()->route('stores.index')->with('success', 'Store restored successfully.');
+    }
 }

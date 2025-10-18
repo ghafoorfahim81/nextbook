@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasBranch;
+use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 
 class Purchase extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasBranch, HasDependencyCheck, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -73,5 +74,10 @@ class Purchase extends Model
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Transaction\Transaction::class);
+    }
+
+    public function getDependencyMessage(): string
+    {
+        return 'You cannot delete this purchase because it has dependencies.';
     }
 }

@@ -52,4 +52,9 @@ class CurrencyController extends Controller
         $currency->delete();
         return back();
     }
+    public function restore(Request $request, Currency $currency)
+    {
+        $currency->restore();
+        return redirect()->route('currencies.index')->with('success', 'Currency restored successfully.');
+    }
 }

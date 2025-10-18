@@ -28,7 +28,7 @@ const columns = ref([
         sortable: true,
         render: (row) => row.quantity?.unit ?? '-',
     },
-    { key: 'name', label: t('general.name') },
+    { key: 'name', label: t('general.name'),sortable: true },
     { key: 'unit', label: t('admin.unit_measure.unit') },
     { key: 'symbol', label: t('admin.shared.symbol') },
     { key: 'actions', label: t('general.action') },
@@ -50,7 +50,7 @@ const deleteItem = (id) => {
 
 </script>
 
-<template> 
+<template>
     <AppLayout title="t('admin.unit_measure.unit_measure')">
         <div class="flex gap-2 items-center mb-4">
             <div class="ml-auto gap-3">

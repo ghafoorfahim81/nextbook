@@ -20,7 +20,22 @@ export function useDeleteResource() {
             setup() {
                 const handleConfirm = () => {
                     router.delete(route(routeName, id), {
-                        onSuccess: () => {
+                        onSuccess: (page) => {
+                            // Check if there's an error in the response (dependency error)
+                            if (page.props.error) {
+                                toast({
+                                    title: t('general.dependencies_found'),
+                                    description: page.props.error,
+                                    variant: 'destructive',
+                                    class:'bg-pink-600 text-white',
+                                    duration: Infinity,
+                                });
+                                app.unmount();
+                                container.remove();
+                                options?.onError?.();
+                                return;
+                            }
+
                             // Show success toast with undo option
                             let dismissed = false;
 

@@ -103,4 +103,9 @@ class CustomerController extends Controller
     {
         //
     }
+    public function restore(Request $request, Customer $customer)
+    {
+        $customer->restore();
+        return redirect()->route('customers.index')->with('success', 'Customer restored successfully.');
+    }
 }
