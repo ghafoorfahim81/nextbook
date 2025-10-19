@@ -66,7 +66,7 @@ Route::middleware([
     Route::patch('/unit-measures/{unitMeasure}/restore', [\App\Http\Controllers\Administration\UnitMeasureController::class, 'restore'])->name('unit-measures.restore')->withTrashed();
 
     Route::resource('/items', \App\Http\Controllers\Inventory\ItemController::class);
-
+    Route::patch('/items/{item}/restore', [\App\Http\Controllers\Inventory\ItemController::class, 'restore'])->name('items.restore')->withTrashed();
     Route::resource('/ledgers', \App\Http\Controllers\Ledger\LedgerController::class);
     Route::patch('/ledgers/{ledger}/restore', [\App\Http\Controllers\Ledger\LedgerController::class, 'restore'])->name('ledgers.restore')->withTrashed();
     Route::resource('/suppliers', \App\Http\Controllers\Ledger\SupplierController::class);

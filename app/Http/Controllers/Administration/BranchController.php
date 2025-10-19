@@ -33,8 +33,6 @@ class BranchController extends Controller
     {
         $branch = Branch::create($request->validated());
         return redirect()->route('branches.index')->with('success', 'Branch created successfully.');
-
-
     }
 
     public function show(Request $request, Branch $branch): Response
@@ -46,13 +44,20 @@ class BranchController extends Controller
     {
         $branch->update($request->validated());
         return redirect()->route('branches.index')->with('success', 'Branch updated successfully.');
-
     }
 
     public function destroy(Request $request, Branch $branch)
     {
+        // Check for dependencies before deletion
+        if (!$branch->canBeDeleted()) {
+            $message = $branch->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            return inertia('Administration/Branches/Index', [
+                'error' => $message
+            ]);
+        }
+
         $branch->delete();
-        return back();
+        return redirect()->route('branches.index')->with('success', __('general.branch_deleted_successfully'));
     }
     public function restore(Request $request, Branch $branch)
     {
