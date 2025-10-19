@@ -51,9 +51,17 @@ class StoreController extends Controller
 
     public function destroy(Request $request, Store $store)
     {
-        $store->delete();
 
-        return back();
+        // Check for dependencies before deletion
+        if (!$store->canBeDeleted()) {
+            $message = $store->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            return inertia('Administration/Stores/Index', [
+                'error' => $message
+            ]);
+        }
+
+        $store->delete();
+        return redirect()->route('stores.index')->with('success', 'Store deleted successfully.');
     }
     public function restore(Request $request, Store $store)
     {

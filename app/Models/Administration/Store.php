@@ -12,10 +12,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\Ulid;
+use App\Traits\HasDependencyCheck;
 
 class Store extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch, SoftDeletes, HasDependencyCheck;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
@@ -48,6 +49,37 @@ class Store extends Model
         'parent_id' => 'string',
     ];
 
+    protected static function searchableColumns(): array
+    {
+        return [
+            'name',
+            'address',
+            'is_main',
+            'branch.name',
+        ];
+    }
+
+    /**
+     * Get relationships configuration for dependency checking
+     */
+    protected function getRelationships(): array
+    {
+        return [
+            'stocks' => [
+                'model' => 'stocks',
+                'message' => 'This store is associated with stocks'
+            ]
+        ];
+    }
+
+
+    /**
+     * Relationship to stocks that use this store
+     */
+    public function stocks()
+    {
+        return $this->hasMany(\App\Models\Inventory\Stock::class);
+    }
 
     public function branch(): BelongsTo
     {

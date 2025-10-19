@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Administration;
 
 use App\Http\Controllers\Controller;
@@ -45,8 +46,17 @@ class BrandController extends Controller
 
     public function destroy(Request $request, Brand $brand)
     {
+
+        // Check for dependencies before deletion
+        if (!$brand->canBeDeleted()) {
+            $message = $brand->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            return inertia('Administration/Brands/Index', [
+                'error' => $message
+            ]);
+        }
+
         $brand->delete();
-        return back();
+        return redirect()->route('brands.index')->with('success', 'Brand deleted successfully.');
     }
     public function restore(Request $request, Brand $brand)
     {
