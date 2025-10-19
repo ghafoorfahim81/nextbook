@@ -30,7 +30,6 @@ return new class extends Migration
             $table->char('store_id', 26)->nullable();
             $table->char('created_by', 26)->nullable();
             $table->char('updated_by', 26)->nullable();
-            $table->char('deleted_by', 26)->nullable();
             $table->timestamps();
         });
 
@@ -42,8 +41,7 @@ return new class extends Migration
             // $table->foreign('issue_id')->references('id')->on('issues');
             $table->foreign('store_id')->references('id')->on('stores');
             $table->foreign('created_by')->references('id')->on('users');
-            $table->foreign('updated_by')->references('id')->on('users');
-            $table->foreign('deleted_by')->references('id')->on('users');
+            $table->foreign('updated_by')->references('id')->on('users'); 
         });
     }
 
