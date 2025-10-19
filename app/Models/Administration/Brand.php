@@ -47,17 +47,6 @@ class Brand extends Model
         'updated_by' => 'string',
     ];
 
-    //    protected static function boot()
-    //    {
-    //        parent::boot();
-    //
-    //        static::creating(function ($model) {
-    //            if (empty($model->id)) {
-    //                $model->id = (string) new Ulid();
-    //            }
-    //        });
-    //    }
-
     protected static function searchableColumns(): array
     {
         return ['name', 'legal_name', 'registration_number', 'email', 'phone'];

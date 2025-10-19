@@ -71,19 +71,6 @@ class Category extends Model
         'updated_by' => 'integer',
     ];
 
-    /**
-     * Boot the model and assign ULID to id on creating.
-     */
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($model) {
-            if (empty($model->id)) {
-                $model->id = (string) new Ulid(); // Generate ULID if not already set
-            }
-        });
-    }
 
     /**
      * Columns used for searchable queries.
