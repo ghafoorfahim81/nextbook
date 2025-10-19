@@ -15,22 +15,27 @@ return new class extends Migration
     public function up()
     {
         $tables = [
+            'account_types',
+            'accounts',
+            'branches',
+            'brands',
             'categories',
+            'companies',
+            'currencies',
             'departments',
             'designations',
             'items',
-            'brands',
-            'currencies',
-            'accounts',
-            'transactions',
-            'account_types',
-            'unit_measures',
+            'ledger_openings',
+            'ledgers',
+            'purchases',
             'quantities',
             'stock_openings',
-            'ledgers',
-            'ledger_openings',
+            'stocks',
+            'stock_outs',
+            'stores',
+            'transactions',
+            'unit_measures',
             'users',
-            'branches',
         ];
         foreach ($tables as $table) {
             Schema::table($table, function (Blueprint $table) {
@@ -49,22 +54,27 @@ return new class extends Migration
     public function down()
     {
         $tables = [
+            'account_types',
+            'accounts',
+            'branches',
+            'brands',
             'categories',
+            'companies',
+            'currencies',
             'departments',
             'designations',
             'items',
-            'brands',
-            'currencies',
-            'accounts',
-            'transactions',
-            'account_types',
-            'unit_measures',
+            'ledger_openings',
+            'ledgers',
+            'purchases',
             'quantities',
             'stock_openings',
-            'ledgers',
-            'ledger_openings',
+            'stocks',
+            'stock_outs',
+            'stores',
+            'transactions',
+            'unit_measures',
             'users',
-            'branches',
         ];
         foreach ($tables as $table) {
             Schema::table($table, function (Blueprint $table) {
