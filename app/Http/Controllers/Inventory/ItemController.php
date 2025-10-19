@@ -161,14 +161,29 @@ class ItemController extends Controller
 
     public function destroy(Request $request, Item $item)
     {
+
+        // Check for dependencies before deletion
+        if (!$item->canBeDeleted()) {
+            $message = $item->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            return inertia('Inventories/Items/Index', [
+                'error' => $message
+            ]);
+        }
+
+        foreach ($item->openings as $opening) {
+            $opening->stock()->delete();
+        }
         $item->openings()->delete();
-        $item->stocks()->delete();
         $item->delete();
-        return back();
+        return redirect()->route('items.index')->with('success', 'Item deleted successfully.');
     }
     public function restore(Request $request, Item $item)
     {
         $item->restore();
+        foreach ($item->openings as $opening) {
+            $opening->stock()->restore();
+        }
+        $item->openings()->restore();
         return redirect()->route('items.index')->with('success', 'Item restored successfully.');
     }
 }

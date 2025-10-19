@@ -147,14 +147,6 @@ class Item extends Model
     protected function getRelationships(): array
     {
         return [
-            'stocks' => [
-                'model' => 'stock records',
-                'message' => 'This item has stock records'
-            ],
-            'openings' => [
-                'model' => 'opening balances',
-                'message' => 'This item has opening balances'
-            ],
             'stockOut' => [
                 'model' => 'stock out records',
                 'message' => 'This item has stock out records'
