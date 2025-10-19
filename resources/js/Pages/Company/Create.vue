@@ -5,7 +5,10 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
-
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
+const { toast } = useToast();
+import { useToast } from '@/Components/ui/toast/use-toast';
 const props = defineProps({
     calendarTypes: {
         type: Array,
@@ -71,13 +74,18 @@ const form = useForm({
 // });
 
 const submit = () => {
-    console.log('form', form);
     form.post(route('company.store'), {
         onSuccess: () => {
             form.reset();
         },
         onError: () => {
-            console.log(form.errors);
+            toast({
+                title: 'Error',
+                description: 'Something went wrong',
+                variant: 'destructive',
+                class:'bg-red-600 text-white',
+                duration: Infinity,
+            });
         }
     });
 };
@@ -128,49 +136,36 @@ const handleSelectChange = (field, value) => {
                             <div class="mb-5 grid grid-cols-2 gap-x-2 gap-y-5">
                                 <!-- Basic Information -->
                                 <div class="space-y-4">
-                                    <h3 class="text-lg font-medium">Basic Information</h3>
+                                    <h3 class="text-lg font-medium">{{ t('company.basic_information') }}</h3>
 
-                                    <NextInput :error="form.errors?.name" type="text" v-model="form.name_en" label="Company Name (English)*" />
-                                    <NextInput :error="form.errors?.name" type="text" v-model="form.name_fa" label="Company Name (Persian)" />
-                                    <NextInput :error="form.errors?.name" type="text" v-model="form.name_pa" label="Company Name (Pashto)" />
+                                    <NextInput :error="form.errors?.name_en" type="text" v-model="form.name_en" :label="t('company.name_en') + '*'" />
+                                    <NextInput :error="form.errors?.name" type="text" v-model="form.name_fa" :label="t('company.name_fa')" />
+                                    <NextInput :error="form.errors?.name" type="text" v-model="form.name_pa" :label="t('company.name_pa')" />
 
-                                    <NextInput :error="form.errors?.name" type="text" v-model="form.abbreviation" label="Abbreviation" />
+                                    <NextInput :error="form.errors?.name" type="text" v-model="form.abbreviation" :label="t('company.abbreviation')" />
 
                                 </div>
 
                                 <!-- Contact Information -->
                                 <div class="space-y-4">
-                                    <h3 class="text-lg font-medium">Contact Information</h3>
+                                    <h3 class="text-lg font-medium">{{ t('company.contact_information') }}</h3>
 
-                                    <NextInput :error="form.errors?.name" type="text" v-model="form.email" label="Email" />
-                                    <NextInput :error="form.errors?.name" type="text" v-model="form.phone" label="Phone" />
+                                    <NextInput :error="form.errors?.name" type="text" v-model="form.email" :label="t('company.email')" />
+                                    <NextInput :error="form.errors?.name" type="text" v-model="form.phone" :label="t('company.phone')" />
 
                                     <div class="grid grid-cols-2 gap-4">
-                                        <NextInput :error="form.errors?.name" type="text" v-model="form.country" label="Country" />
-                                        <NextInput :error="form.errors?.name" type="text" v-model="form.city" label="City" />
+                                        <NextInput :error="form.errors?.name" type="text" v-model="form.country" :label="t('company.country')" />
+                                        <NextInput :error="form.errors?.name" type="text" v-model="form.city" :label="t('company.city')" />
                                     </div>
-                                    <NextInput :error="form.errors?.name" type="text" v-model="form.website" label="Website" />
+                                    <NextInput :error="form.errors?.name" type="text" v-model="form.website" :label="t('company.website')" />
                                 </div>
                             </div>
 
                             <!-- Settings -->
                             <div class="pt-6 mt-6 border-t border-gray-200">
-                                <h3 class="text-lg font-medium">Company Settings</h3>
+                                <h3 class="text-lg font-medium">{{ t('company.settings') }}</h3>
 
                                 <div class="grid grid-cols-1 gap-6 mt-4 md:grid-cols-3">
-                                    <!-- <NextSelect
-                                        v-model="form.parent_id"
-                                        :options="categories"
-                                        label-key="name"
-                                        @update:modelValue="(value) => handleParentSelectChange(value)"
-                                        value-key="id"
-                                        id="parent"
-                                        :floating-text="t('admin.shared.parent')"
-                                        :error="form.errors?.parent_id"
-                                        :searchable="true"
-                                        resource-type="categories"
-                                        :search-fields="['name']"
-                                        /> -->
 
                                     <NextSelect
                                         :options="businessTypes"
@@ -178,7 +173,7 @@ const handleSelectChange = (field, value) => {
                                         label-key="name"
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('business_type', value)"
-                                        floating-text="Business Type"
+                                        :floating-text="t('company.business_type')"
                                         :error="form.errors?.business_type"
                                     />
                                     <NextSelect
@@ -187,7 +182,7 @@ const handleSelectChange = (field, value) => {
                                         label-key="name"
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('calendar_type', value)"
-                                        floating-text="Calendar Type"
+                                        :floating-text="t('company.calendar_type')"
                                         :error="form.errors?.calendar_type"
                                     />
                                     <NextSelect
@@ -196,7 +191,7 @@ const handleSelectChange = (field, value) => {
                                         label-key="name"
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('working_style', value)"
-                                        floating-text="Working Style"
+                                        :floating-text="t('company.working_style')"
                                         :error="form.errors?.working_style"
                                     />
                                 </div>
@@ -208,7 +203,7 @@ const handleSelectChange = (field, value) => {
                                         label-key="name"
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('locale', value)"
-                                        floating-text="Default Language"
+                                        :floating-text="t('company.locale')"
                                         :error="form.errors?.locale"
                                     />
                                     <NextSelect
@@ -218,7 +213,7 @@ const handleSelectChange = (field, value) => {
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('currency_id', value)"
                                         :reduce="currency => currency.id"
-                                        floating-text="Currency"
+                                        :floating-text="t('company.currency')"
                                         :error="form.errors?.currency_id"
                                         :searchable="true"
                                         resource-type="currencies"
@@ -230,15 +225,16 @@ const handleSelectChange = (field, value) => {
                                     <NextTextarea
                                         v-model="form.invoice_description"
                                         rows="3"
-                                        floating-text="Invoice Description"
+                                        :label="t('company.invoice_description')"
+                                        :floating-text="t('company.invoice_description')"
                                         :error="form.errors?.invoice_description"
-                                    />
+                                    /> 
                                 </div>
                             </div>
 
                             <!-- Logo Upload -->
                             <div class="pt-6 mt-6 border-t border-gray-200">
-                                <h3 class="text-lg font-medium">Company Logo</h3>
+                                <h3 class="text-lg font-medium">{{ t('company.logo') }}</h3>
 
                                 <div class="flex items-center mt-4">
                                     <div class="mr-4">
@@ -253,18 +249,17 @@ const handleSelectChange = (field, value) => {
                                     </div>
                                     <div>
                                         <label class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                            <span>Upload Logo</span>
+                                            <span>{{ t('company.upload_logo') }}</span>
                                             <input id="logo" name="logo" type="file" class="sr-only" @change="previewImage" accept="image/*">
                                         </label>
-                                        <p class="mt-1 text-xs text-gray-500">PNG, JPG, GIF up to 2MB</p>
+                                        <p class="mt-1 text-xs text-gray-500">{{ t('company.upload_logo_description') }}</p>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="flex justify-end pt-6 mt-6 border-t border-gray-200">
-                                <Button type="submit" variant="outline" class="bg-primary text-white" :disabled="form.processing">
-                                    Create Company
-                                </Button>
+                                <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white disabled:bg-gray-300" :disabled="form.processing">{{ t('general.create') }}</button>
+
                             </div>
                         </form>
                     </div>
