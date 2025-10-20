@@ -10,6 +10,7 @@ use App\Http\Resources\Administration\BranchResource;
 use App\Models\Administration\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 
 class BranchController extends Controller
 {
@@ -48,17 +49,21 @@ class BranchController extends Controller
 
     public function destroy(Request $request, Branch $branch)
     {
+        // Prevent deleting the main branch
+        if ($branch->is_main) {
+            return redirect()->route('branches.index')->with('error', __('You cannot delete the main branch.'));
+        }
+
         // Check for dependencies before deletion
         if (!$branch->canBeDeleted()) {
             $message = $branch->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
-            return inertia('Administration/Branches/Index', [
-                'error' => $message
-            ]);
+            return redirect()->route('branches.index')->with('error', $message);
         }
 
         $branch->delete();
         return redirect()->route('branches.index')->with('success', __('general.branch_deleted_successfully'));
     }
+
     public function restore(Request $request, Branch $branch)
     {
         $branch->restore();
