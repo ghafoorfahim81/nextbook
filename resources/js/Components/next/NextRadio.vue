@@ -8,7 +8,7 @@
             :disabled="disabled"
             :checked="isChecked"
             @change="handleChange"
-            class="h-4 w-4 text-primary focus:ring-primary border-input bg-background"
+            class="h-4 w-4 text-primary focus:ring-primary border-1 bg-background"
         />
         <label
             :for="id"
@@ -16,7 +16,7 @@
             :class="{ 'opacity-50': disabled }"
         >
             {{ label }}
-        </label>
+        </label> 
     </div>
 </template>
 
@@ -29,6 +29,7 @@ const props = defineProps({
     label: { type: String, required: true },
     id: { type: String, default: () => `radio-${Math.random().toString(36).slice(2, 9)}` },
     name: { type: String, required: true },
+    error: String,
     disabled: Boolean,
 })
 

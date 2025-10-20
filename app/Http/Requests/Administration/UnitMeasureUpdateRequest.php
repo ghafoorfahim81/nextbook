@@ -20,14 +20,35 @@ class UnitMeasureUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:unit_measures,name'],
-            'unit' => ['required', 'string'],
-            'symbol' => ['required', 'string'],
-            'branch_id' => ['required', 'integer', 'exists:branches,id'],
-            'quantity_id' => ['required', 'integer', 'exists:quantities,id'],
-            'value' => ['nullable', 'numeric'],
-            'created_by' => ['required'],
-            'updated_by' => ['nullable'],
+            'metric' => ['required', 'array'],
+            'measure' => ['required', 'array'],
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            // Custom validation to check for duplicate measures within the same quantity (excluding current record)
+            $metricData = $this['metric'];
+            $measureData = $this['measure'];
+            $currentUnitMeasureId = $this->route('unitMeasure')->id;
+
+            if ($metricData && $measureData && $currentUnitMeasureId) {
+                $metric = \App\Models\Administration\Quantity::where('unit', $metricData['unit'])->first();
+                if ($metric) {
+                    $existingMeasure = $metric->measures()
+                        ->where('name', $measureData['name'])
+                        ->where('id', '!=', $currentUnitMeasureId)
+                        ->whereNull('deleted_at')
+                        ->first();
+                    if ($existingMeasure) {
+                        $validator->errors()->add('measure', 'A measure with this name already exists for the selected quantity type.');
+                    }
+                }
+            }
+        });
     }
 }

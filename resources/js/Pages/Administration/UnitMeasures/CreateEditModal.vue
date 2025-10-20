@@ -49,7 +49,7 @@ const onMetricChange = () => {
 const  metricList = {
         count: {
           name: t('admin.unit_measure.count'),
-          unit: 'pc',
+          unit: 'Pcs',
           symbol: "ea",
           measure: [
             {
@@ -205,6 +205,8 @@ const handleSubmit = () => {
         // Use Inertia's patch method for updates
         form.patch(route('unit-measures.update', props.editingItem.id), {
             data: requestData,
+            preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
                 emit('saved')
                 form.reset()
@@ -213,6 +215,7 @@ const handleSubmit = () => {
             },
             onError: (errors) => {
                 console.error('Validation errors:', errors)
+                // Modal will stay open automatically due to preserveState
                 submit.value = false
             },
             onFinish: () => {
@@ -223,6 +226,8 @@ const handleSubmit = () => {
         // Use Inertia's post method for creation
         form.post(route('unit-measures.store'), {
             data: requestData,
+            preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
                 emit('saved')
                 form.reset()
@@ -231,6 +236,7 @@ const handleSubmit = () => {
             },
             onError: (errors) => {
                 console.error('Validation errors:', errors)
+                // Modal will stay open automatically due to preserveState
                 submit.value = false
             },
             onFinish: () => {
@@ -255,6 +261,13 @@ const handleSubmit = () => {
         @cancel="closeModal"
     >
         <form @submit.prevent="handleSubmit" id="modalForm">
+            <!-- server-side validation errors -->
+            <div v-if="Object.keys(form.errors).length || Object.keys(props.errors || {}).length" class="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-red-700 text-sm">
+                <ul class="list-disc ps-5 space-y-1">
+                    <li v-for="(msg, key) in form.errors" :key="key">{{ msg }}</li>
+                    <li v-for="(msg, key) in props.errors" :key="key">{{ msg }}</li>
+                </ul>
+            </div>
             <div class="py-4">
                 <div class="grid grid-cols-3 gap-6">
                     <!-- Quantity Types Column -->
@@ -265,6 +278,7 @@ const handleSubmit = () => {
                                 v-for="(metric, key) in metricList"
                                 :key="key"
                                 v-model="form.metric"
+                                :error="form.errors.metric || props.errors?.metric"
                                 :value="metric"
                                 :label="metric.name"
                                 name="metric"
@@ -281,6 +295,7 @@ const handleSubmit = () => {
                                 v-for="measure in form.metric.measure"
                                 :key="measure.text"
                                 v-model="form.measure"
+                                :error="form.errors.measure || props.errors?.measure"
                                 :value="measure"
                                 :label="measure.text"
                                 name="measure"
@@ -298,18 +313,21 @@ const handleSubmit = () => {
                             <NextInput
                                 v-model="form.measure.name"
                                 :label="t('general.name')"
+                                :error="form.errors.name || props.errors?.name"
                                 type="text"
                                 :placeholder="t('general.enter', { text: t('general.name') })"
                             />
                             <NextInput
                                 v-model="form.measure.unit"
                                 :label="t('admin.unit_measure.unit')"
+                                :error="form.errors.unit || props.errors?.unit"
                                 type="number"
                                 :placeholder="t('general.enter', { text: t('admin.unit_measure.unit') })"
                             />
                             <NextInput
                                 v-model="form.measure.symbol"
                                 :label="t('admin.shared.symbol')"
+                                :error="form.errors.symbol || props.errors?.symbol"
                                 type="text"
                                 :placeholder="t('general.enter', { text: t('admin.shared.symbol') })"
                             />
