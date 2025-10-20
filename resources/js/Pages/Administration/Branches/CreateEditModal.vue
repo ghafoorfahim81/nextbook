@@ -12,7 +12,7 @@ import FloatingLabel from "@/Components/next/FloatingLabel.vue";
 import NextSelect from "@/Components/next/NextSelect.vue";
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n()
-const props = defineProps({ 
+const props = defineProps({
     isDialogOpen: Boolean,
     editingItem: Object, // ✅ this is passed from Index.vue
     branches: {
@@ -110,9 +110,9 @@ const handleSubmit = async () => {
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid col-span-2 gap-4 py-4">
                 <div class="grid items-center grid-cols-2 gap-4">
-                    <NextInput :label="t('general.name')" :placeholder="t('general.enter', { text: t('general.name') })" v-model="form.name" :error="errors?.name"/>
-                    <NextInput :label="t('admin.branch.location')" :placeholder="t('general.enter', { text: t('admin.branch.location') })" v-model="form.location" :error="errors?.location"/>
-                    <NextInput :label="t('admin.branch.sub_domain')" :placeholder="t('general.enter', { text: t('admin.branch.sub_domain') })" v-model="form.sub_domain" :error="errors?.sub_domain"/>
+                    <NextInput :label="t('general.name')" :placeholder="t('general.enter', { text: t('general.name') })" v-model="form.name" :error="form.errors?.name"/>
+                    <NextInput :label="t('admin.branch.location')" :placeholder="t('general.enter', { text: t('admin.branch.location') })" v-model="form.location" :error="form.errors?.location"/>
+                    <NextInput :label="t('admin.branch.sub_domain')" :placeholder="t('general.enter', { text: t('admin.branch.sub_domain') })" v-model="form.sub_domain" :error="form.errors?.sub_domain"/>
                     <NextSelect
                         v-model="form.parent_id"
                         :options="branches"

@@ -133,8 +133,8 @@ const handleSubmit = () => {
                             <th class="px-1 py-1 w-20">{{ t('item.batch') }}</th>
                             <th class="px-1 py-1 w-36">{{ t('item.expire_date') }}</th>
                             <th class="px-1 py-1 w-32">{{ t('admin.store.store') }}</th>
-                            <th class="px-1 py-1 w-20">{{ t('item.mrp_rate') }}</th>
                             <th class="px-1 py-1 w-28">{{ t('item.purchase_price') }}</th>
+                            <th class="px-1 py-1 w-20">{{ t('item.mrp_rate') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.actions') }}</th>
                         </tr>
                         </thead>
@@ -203,16 +203,16 @@ const handleSubmit = () => {
                                 <NextInput
                                     type="number"
                                     inputmode="decimal"
-                                    v-model="item.mrp_rate"
-                                    :error="fieldError(index, 'mrp_rate')"
+                                    v-model="item.purchase_price"
+                                    :error="fieldError(index, 'purchase_price')"
                                 />
                             </td>
                             <td class="px-1 py-2 align-top">
                                 <NextInput
                                     type="number"
                                     inputmode="decimal"
-                                    v-model="item.purchase_price"
-                                    :error="fieldError(index, 'purchase_price')"
+                                    v-model="item.mrp_rate"
+                                    :error="fieldError(index, 'mrp_rate')"
                                 />
                             </td>
                             <td class="px-1 py-2 align-top">
