@@ -100,7 +100,9 @@
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent class="w-48 rtl:text-right" side="bottom" :align="isRTL ? 'end' : 'start'">
                                     <DropdownMenuLabel class="rtl:text-right">{{ t('datatable.actions') }}</DropdownMenuLabel>
-                                    <DropdownMenuItem :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-400 [&:hover]:text-white [&:focus]:bg-violet-400 [&:focus]:text-white']" @click="$emit('edit', item)"><SquarePen /> {{ t('datatable.edit') }}</DropdownMenuItem>
+                                    <DropdownMenuItem v-show="has-edit" :class="[isRTL ? 'flex-row-reverse gap-2' :
+                                    'gap-2', '[&:hover]:bg-violet-400 [&:hover]:text-white [&:focus]:bg-violet-400 [&:focus]:text-white']"
+                                    @click="$emit('edit', item)"><SquarePen /> {{ t('datatable.edit') }}</DropdownMenuItem>
                                     <DropdownMenuItem :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-400 [&:hover]:text-white [&:focus]:bg-violet-400 [&:focus]:text-white']" @click="$emit('delete', item.id)"><Trash2 /> {{ t('datatable.delete') }}</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -223,6 +225,7 @@ const props = defineProps({
     showAddButton: { type: Boolean, default: false },
     addTitle: { type: String, default: null },
     addAction: { type: String, default: 'modal' },
+    hasEdit:{ type: Boolean, default: true },
     addRoute: { type: String, default: null },
     addRouteParams: { type: Object, default: () => ({}) },
     // Controls for empty state and rows

@@ -34,10 +34,7 @@ const columns = ref([
     { key: 'actions', label: t('general.action') },
 ]);
 
-const editItem = (item) => {
-    editingMeasure.value = item
-    isDialogOpen.value = true
-}
+
 const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('unit-measures.destroy', id, {
@@ -69,12 +66,12 @@ const deleteItem = (id) => {
         <DataTable
             :items="unitMeasures"
             :columns="columns"
-            @edit="editItem"
             @delete="deleteItem"
             :title="`${t('admin.unit_measure.unit_measure')}`"
             :showAddButton="true"
             :addTitle="t('admin.unit_measure.unit_measure')"
             :addAction="'modal'"
+            :hasEdit="false"
             @add="isDialogOpen = true"
             :addRoute="route('unit-measures.create')"
             :url="`unit-measures.index`"
