@@ -84,7 +84,6 @@
                         </div>
                     </TableCell>
                 </TableRow>
-
                 <!-- Data Rows -->
                 <TableRow v-else v-for="(item, rowIndex) in items.data" :key="item.id">
                     <TableCell v-for="column in derivedColumns" :key="column.key">
@@ -100,7 +99,7 @@
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent class="w-48 rtl:text-right" side="bottom" :align="isRTL ? 'end' : 'start'">
                                     <DropdownMenuLabel class="rtl:text-right">{{ t('datatable.actions') }}</DropdownMenuLabel>
-                                    <DropdownMenuItem v-show="has-edit" :class="[isRTL ? 'flex-row-reverse gap-2' :
+                                    <DropdownMenuItem v-if="props.hasEdit" :class="[isRTL ? 'flex-row-reverse gap-2' :
                                     'gap-2', '[&:hover]:bg-violet-400 [&:hover]:text-white [&:focus]:bg-violet-400 [&:focus]:text-white']"
                                     @click="$emit('edit', item)"><SquarePen /> {{ t('datatable.edit') }}</DropdownMenuItem>
                                     <DropdownMenuItem :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-400 [&:hover]:text-white [&:focus]:bg-violet-400 [&:focus]:text-white']" @click="$emit('delete', item.id)"><Trash2 /> {{ t('datatable.delete') }}</DropdownMenuItem>
@@ -226,6 +225,8 @@ const props = defineProps({
     addTitle: { type: String, default: null },
     addAction: { type: String, default: 'modal' },
     hasEdit:{ type: Boolean, default: true },
+    // Hide delete action when the provided key path resolves to true on the row item
+    hideDeleteOnKeyTrue: { type: String, default: null },
     addRoute: { type: String, default: null },
     addRouteParams: { type: Object, default: () => ({}) },
     // Controls for empty state and rows

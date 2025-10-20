@@ -13,7 +13,7 @@ const isDialogOpen = ref(false)
 const editingBranch = ref(null)
 const { t } = useI18n()
 
-const columns = ref([ 
+const columns = ref([
     { key: 'name', label: t('general.name'), sortable: true },
     {
         key: 'parent.name',

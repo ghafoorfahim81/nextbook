@@ -21,11 +21,12 @@ export function useDeleteResource() {
                 const handleConfirm = () => {
                     router.delete(route(routeName, id), {
                         onSuccess: (page) => {
-                            // Check if there's an error in the response (dependency error)
-                            if (page.props.error) {
+                            // Check server flashed error (e.g., main branch or dependency)
+                            const flashedError = page?.props?.flash?.error || page?.props?.error
+                            if (flashedError) {
                                 toast({
                                     title: t('general.dependencies_found'),
-                                    description: page.props.error,
+                                    description: flashedError,
                                     variant: 'destructive',
                                     class:'bg-pink-600 text-white',
                                     duration: Infinity,
