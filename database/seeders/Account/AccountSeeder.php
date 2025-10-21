@@ -14,8 +14,6 @@ class AccountSeeder extends Seeder
      */
     public function run(): void
     {
-        $accountTypes = \App\Models\Account\AccountType::pluck('id')->toArray();
-
         // Get the main branch
         $mainBranch = Branch::where('is_main', true)->first();
         if (!$mainBranch) {
@@ -26,14 +24,14 @@ class AccountSeeder extends Seeder
             [
                 'name' => 'Cash',
                 'number' => 'Ac-101',
-                'account_type_id' => $accountTypes[9],
+                'account_type_id' => AccountType::where('name', 'Cash-In-Hand')->first()->id,
                 'branch_id' => $mainBranch->id,
                 'remark' => 'Cash-In-Hand Account Type',
             ],
             [
                 'name' => 'Sarafi',
                 'number' => 'Ac-103',
-                'account_type_id' => $accountTypes[10],
+                'account_type_id' => AccountType::where('name', 'Sarafi')->first()->id,
                 'branch_id' => $mainBranch->id,
                 'remark' => 'Sarafi Account Type',
             ],
@@ -54,7 +52,7 @@ class AccountSeeder extends Seeder
             [
                 'name' => 'Store',
                 'number' => 'Ac-401',
-                'account_type_id' => $accountTypes[5],
+                'account_type_id' => AccountType::where('name', 'Store')->first()->id,
                 'branch_id' => $mainBranch->id,
                 'remark' => 'Store Account Type',
             ],
@@ -75,7 +73,7 @@ class AccountSeeder extends Seeder
             [
                 'name' => 'Cost of Goods Sold',
                 'number' => 'Ac-901',
-                'account_type_id' => $accountTypes[0],
+                'account_type_id' => AccountType::where('name', 'Cost of Goods Sold')->first()->id,
                 'branch_id' => $mainBranch->id,
                 'remark' => 'Cost of Goods Sold Account Type',
             ],

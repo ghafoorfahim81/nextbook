@@ -76,8 +76,16 @@ class Purchase extends Model
         return $this->belongsTo(\App\Models\Transaction\Transaction::class);
     }
 
+    public function items(): HasMany
+    {
+        return $this->hasMany(\App\Models\Purchase\PurchaseItem::class);
+    }
+
     public function getDependencyMessage(): string
     {
         return 'You cannot delete this purchase because it has dependencies.';
     }
+
+        // Primary relationship (if transaction belongs to one main source)
+
 }

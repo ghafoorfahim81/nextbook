@@ -22,10 +22,10 @@ class AccountTypeFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->name(),
+            'name' => $this->faker->unique()->company(),
             'remark' => $this->faker->text(),
-            'created_by' => User::factory()->create()->created_by,
-            'updated_by' => User::factory()->create()->updated_by,
+            'created_by' => User::factory(),
+            'updated_by' => User::factory(),
         ];
     }
 }
