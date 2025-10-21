@@ -47,6 +47,6 @@ class DatabaseSeeder extends Seeder
         //        $this->call(ItemSeeder::class);
         $this->call(AccountSeeder::class);
         $this->call(PurchaseSeeder::class);
-        $this->call(PurchaseItemSeeder::class);
+        // $this->call(PurchaseItemSeeder::class);
     }
 }

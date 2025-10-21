@@ -36,7 +36,7 @@ const props = defineProps({
 
 const form = useForm({
     number: '',
-    ledger_id: '',
+    supplier_id: '',
     date: '',
     currency_id: '',
     rate: '',
@@ -437,12 +437,12 @@ const addRow = () => {
                 <NextSelect
                     :options="ledgers.data"
                     v-model="form.selected_ledger"
-                    @update:modelValue="(value) => handleSelectChange('ledger_id', value)"
+                    @update:modelValue="(value) => handleSelectChange('supplier_id', value)"
                     label-key="name"
                     value-key="id"
-                    :reduce="ledger => ledger"
+                    :reduce="ledger => ledger.id"
                     :floating-text="t('ledger.supplier.supplier')"
-                    :error="form.errors?.ledger_id"
+                    :error="form.errors?.supplier_id"
                     :searchable="true"
                     resource-type="ledgers"
                     :search-fields="['name', 'email', 'phone_no']"
