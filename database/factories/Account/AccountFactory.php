@@ -23,13 +23,14 @@ class AccountFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->unique()->word(),
-            'number' => 'Ac-'.$this->faker->unique()->randomNumber(),
+            'name' => fake()->unique()->company(),
+            'number' => 'Ac-' . $this->faker->unique()->randomNumber(),
             'account_type_id' => AccountType::factory(),
             'is_active' => $this->faker->boolean(),
             'branch_id' => Branch::factory(),
             'remark' => $this->faker->text(),
             'created_by' => User::factory(),
+            'updated_by' => User::factory(),
         ];
     }
 }

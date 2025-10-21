@@ -21,11 +21,14 @@ return new class extends Migration
             $table->char('currency_id', 26);
             $table->float('rate');
             $table->date('date');
+            $table->string('reference_type')->nullable()->index();
+            $table->char('reference_id', 26)->nullable()->index();
             $table->enum('type', ['debit', 'credit']);
             $table->text('remark')->nullable();
             $table->char('created_by', 26);
             $table->char('updated_by', 26)->nullable();
             $table->timestamps();
+            $table->index(['reference_type', 'reference_id']);
         });
 
         Schema::table('transactions', function (Blueprint $table) {
