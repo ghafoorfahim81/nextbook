@@ -25,16 +25,16 @@ class TransactionFactory extends Factory
     public function definition(): array
     {
         return [
-            'amount' => fake()->randomFloat(0, 0, 10000.),
-            'account_id' => Account::factory(),
+            'amount' => fake()->randomFloat(2, 0, 100000),
+            'account_id' => Account::inRandomOrder()->first()->id,
             'ledger_id' => Ledger::factory(),
             'currency_id' => Currency::where('is_active', true)->inRandomOrder()->first()->id,
-            'rate' => fake()->randomFloat(0, 0, 10000.),
+            'rate' => fake()->randomFloat(2, 0.5, 2.0),
             'date' => fake()->date(),
             'type' => fake()->randomElement(['debit', 'credit']),
             'remark' => fake()->text(),
-            'created_by' => User::factory(),
-            'updated_by' => User::factory(),
+            'reference_type' => fake()->randomElement(['purchase', 'sale', 'expense', 'income']),
+            'reference_id' => \App\Models\Purchase\Purchase::factory(),
         ];
     }
 }

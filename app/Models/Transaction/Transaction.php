@@ -71,8 +71,6 @@ class Transaction extends Model
         return $this->belongsTo(\App\Models\Administration\Currency::class);
     }
 
-
-
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);
@@ -82,8 +80,36 @@ class Transaction extends Model
     {
         return $this->hasOne(LedgerOpening::class, 'transaction_id');
     }
+
     public function ledger(): BelongsTo
     {
         return $this->belongsTo(Ledger::class);
     }
+    
+    public function reference()
+    {
+        return $this->morphTo();
+    }
+
+    // Helper methods for common types
+    public function purchase(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Purchase\Purchase::class, 'reference_id')
+            ->where('reference_type', 'purchase');
+    }
+    // public function sale(): BelongsTo
+    // {
+    //     return $this->belongsTo(\App\Models\Sale\Sale::class, 'reference_id')
+    //         ->where('reference_type', 'sale');
+    // }
+    // public function expense(): BelongsTo
+    // {
+    //     return $this->belongsTo(\App\Models\Expense\Expense::class, 'reference_id')
+    //         ->where('reference_type', 'expense');
+    // }
+    // public function income(): BelongsTo
+    // {
+    //     return $this->belongsTo(\App\Models\Income\Income::class, 'reference_id')
+    //         ->where('reference_type', 'income');
+    // }
 }

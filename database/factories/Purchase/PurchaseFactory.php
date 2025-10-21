@@ -24,11 +24,10 @@ class PurchaseFactory extends Factory
     public function definition(): array
     {
         return [
-            'number' => fake()->word(),
+            'number' => fake()->word() . '-' . fake()->unique()->numberBetween(0, 9999),
             'supplier_id' => Ledger::factory(),
             'date' => fake()->date(),
-            'transaction_id' => Transaction::factory(),
-            'discount' => fake()->randomFloat(0, 100),
+            'discount' => fake()->randomFloat(2, 0, 1000),
             'discount_type' => fake()->randomElement(['currency', 'percentage']),
             'type' => fake()->randomElement(['cash', 'credit']),
             'description' => fake()->text(),

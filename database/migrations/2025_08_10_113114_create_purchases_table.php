@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('number')->index();
             $table->char('supplier_id', 26);
             $table->date('date');
-            $table->char('transaction_id', 26);
+            $table->char('transaction_id', 26)->nullable();
             $table->decimal('discount', 10, 2)->nullable();
             $table->string('discount_type')->nullable();
             $table->string('type')->default('cash');
@@ -34,7 +34,7 @@ return new class extends Migration
 
         Schema::table('purchases', function (Blueprint $table) {
             $table->foreign('supplier_id')->references('id')->on('ledgers');
-            $table->foreign('transaction_id')->references('id')->on('transactions');
+            $table->foreign('transaction_id')->references('id')->on('transactions')->onDelete('set null');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('branch_id')->references('id')->on('branches');
