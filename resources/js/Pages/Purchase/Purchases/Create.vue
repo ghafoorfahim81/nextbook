@@ -423,9 +423,6 @@ const addRow = () => {
         tax: '',
     })
 }
-
-
-
 </script>
 
 <template>

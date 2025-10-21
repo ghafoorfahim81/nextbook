@@ -76,7 +76,7 @@ class Purchase extends Model
         return $this->belongsTo(\App\Models\Transaction\Transaction::class);
     }
 
-    public function items(): HasMany
+    public function items()
     {
         return $this->hasMany(\App\Models\Purchase\PurchaseItem::class);
     }
