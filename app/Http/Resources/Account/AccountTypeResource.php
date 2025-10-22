@@ -16,6 +16,8 @@ class AccountTypeResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'remark' => $this->remark,
+            'slug' => $this->slug,
+            'is_main' => $this->is_main,
             'created_by' => $this->created_by,
             'updated_by' => $this->updated_by,
         ];

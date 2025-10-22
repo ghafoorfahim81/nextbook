@@ -32,6 +32,8 @@ class AccountType extends Model
     protected $fillable = [
         'name',
         'remark',
+        'slug',
+        'is_main',
         'created_by',
         'updated_by',
     ];
@@ -44,6 +46,8 @@ class AccountType extends Model
      */
     protected $casts = [
         'id' => 'string',
+        'slug' => 'string',
+        'is_main' => 'boolean',
         'created_by' => 'string',
         'updated_by' => 'string',
     ];

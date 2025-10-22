@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
+use App\Models\Account\Account;
+use App\Models\Administration\Currency;
 class PurchaseController extends Controller
 {
     public function index(Request $request)
@@ -41,17 +43,17 @@ class PurchaseController extends Controller
             $purchase = Purchase::create($request->validated());
             $purchase->items()->createMany($request->items);
             // HIGH PERFORMANCE: Direct transaction creation
-            // $transaction = $transactionService->createTransaction([
-            //     'account_id' => $request->account_id,
-            //     'ledger_id' => $request->ledger_id,
-            //     'amount' => $purchase->total_amount - $this->calculateDiscount($purchase),
-            //     'currency_id' => $request->currency_id,
-            //     'date' => $purchase->date,
-            //     'type' => $request->type === 'credit' ? 'credit' : 'debit',
-            //     'remark' => "Purchase #{$purchase->number}",
-            //     'reference_type' => 'purchase',
-            //     'reference_id' => $purchase->id,
-            // ]);
+            $transaction = $transactionService->createTransaction([
+                'account_id' => Account::where('name', 'Inventory asset')->first()->id,
+                'ledger_id' => $request->ledger_id,
+                'amount' => $purchase->total_amount - $this->calculateDiscount($purchase),
+                'currency_id' => $request->currency_id,
+                'date' => $purchase->date,
+                'type' => $request->type === 'credit' ? 'credit' : 'debit',
+                'remark' => "Purchase #{$purchase->number}",
+                'reference_type' => 'purchase',
+                'reference_id' => $purchase->id,
+            ]);
 
             // $purchase->update(['transaction_id' => $transaction->id]);
 
