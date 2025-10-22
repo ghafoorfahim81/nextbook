@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('number')->unique();
             $table->char('account_type_id', 26);
             $table->boolean('is_active')->default(true);
+            $table->boolean('is_main')->default(false);
+            $table->string('slug')->unique();
             $table->char('branch_id', 26);
             $table->text('remark')->nullable();
             $table->char('created_by', 26);

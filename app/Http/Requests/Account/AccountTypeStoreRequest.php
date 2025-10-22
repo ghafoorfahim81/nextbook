@@ -22,6 +22,8 @@ class AccountTypeStoreRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'unique:account_types,name'],
             'remark' => ['nullable', 'string'],
+            'slug' => ['nullable', 'string', 'unique:account_types,slug'],
+            'is_main' => ['nullable', 'boolean'],
         ];
     }
 }

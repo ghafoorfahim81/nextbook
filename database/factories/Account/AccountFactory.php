@@ -24,7 +24,7 @@ class AccountFactory extends Factory
     {
         return [
             'name' => fake()->unique()->company(),
-            'number' => 'Ac-' . $this->faker->unique()->randomNumber(),
+            'number' => fake()->unique()->randomNumber(),
             'account_type_id' => AccountType::factory(),
             'is_active' => $this->faker->boolean(),
             'branch_id' => Branch::factory(),

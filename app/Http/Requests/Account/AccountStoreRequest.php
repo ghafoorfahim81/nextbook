@@ -22,9 +22,10 @@ class AccountStoreRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'unique:accounts,name'],
             'number' => ['required', 'string', 'unique:accounts,number'],
-            'account_type_id' => ['required', 'string', 'exists:account_types,id'],
+            'account_type_id' => ['required', 'string', 'exists:account_types,slug'],
             'is_active' => ['nullable', 'boolean'],
             'remark' => ['nullable', 'string'],
+            'slug' => ['nullable', 'string', 'unique:accounts,slug'],
         ];
     }
 }

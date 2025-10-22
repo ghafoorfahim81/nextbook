@@ -22,10 +22,11 @@ class AccountUpdateRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'unique:accounts,name'],
             'number' => ['required', 'string', 'unique:accounts,number'],
-            'account_type_id' => ['required', 'string', 'exists:account_types,id'],
+            'account_type_id' => ['required', 'string', 'exists:account_types,slug'],
+            'slug' => ['nullable', 'string', 'unique:accounts,slug'],
             'remark' => ['nullable', 'string'],
-            'created_by' => ['required'],
-            'updated_by' => ['nullable'],
+            'is_active' => ['nullable', 'boolean'],
+            'is_main' => ['nullable', 'boolean'],
         ];
     }
 }
