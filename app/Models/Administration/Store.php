@@ -13,10 +13,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\Ulid;
 use App\Traits\HasDependencyCheck;
-
+use App\Traits\HasCache;
 class Store extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch, SoftDeletes, HasDependencyCheck;
+    use HasFactory, HasUserAuditable, HasUlids, HasCache, HasSearch, HasSorting, HasBranch, SoftDeletes, HasDependencyCheck;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing

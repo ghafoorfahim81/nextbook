@@ -8,10 +8,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use App\Traits\HasCache;
 class Designation extends Model
 {
-    use HasFactory, HasUuids, HasUserAuditable, SoftDeletes;
+    use HasFactory, HasUuids, HasUserAuditable, HasCache, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -25,5 +25,5 @@ class Designation extends Model
         'updated_by',
     ];
 
- 
+
 }

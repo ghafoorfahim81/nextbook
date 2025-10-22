@@ -162,6 +162,7 @@ const handleSelectChange = (field, value) => {
 
 
 function handleSubmit() {
+    form.items = form.items.filter(item => item.selected_item);
     form.post('/purchases', {
         onSuccess: () => {
             form.reset();
@@ -178,6 +179,7 @@ const handlePaymentDialogConfirm = () => {
 const handlePaymentDialogCancel = () => {
     // Reset the sale/purchase type back to debit when dialog is cancelled
     if (props.salePurchaseTypes) {
+
         const debitType = props.salePurchaseTypes.find(type => type.id === 'debit');
         if (debitType) {
             form.selected_sale_purchase_type = debitType;

@@ -13,11 +13,12 @@ use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Support\Facades\Storage;
+use App\Traits\HasCache;
 
 
 class Company extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUlids, HasCache, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
 
 
     /**
