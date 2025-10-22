@@ -35,7 +35,9 @@ class AccountTypeController extends Controller
 
     public function store(AccountTypeStoreRequest $request)
     {
-        $accountType = AccountType::create($request->validated());
+        $validated = $request->validated();
+        $validated['slug'] = \Str::slug($validated['name']);
+        $accountType = AccountType::create($validated);
         return redirect()->route('account-types.index');
     }
 
@@ -51,13 +53,17 @@ class AccountTypeController extends Controller
 
     public function update(AccountTypeUpdateRequest $request, AccountType $accountType)
     {
-        $accountType->update($request->validated());
+        $validated = $request->validated();
+        $validated['slug'] = \Str::slug($validated['name']);
+        $accountType->update($validated);
         return redirect()->route('account-types.index')->with('success', 'Account type created successfully.');
-
     }
 
     public function destroy(Request $request, AccountType $accountType)
     {
+        if ($accountType->accounts()->count() > 0) {
+            return redirect()->route('account-types.index')->with('error', 'Account type cannot be deleted because it is used in accounts.');
+        }
         $accountType->delete();
 
         return redirect()->route('account-types.index');

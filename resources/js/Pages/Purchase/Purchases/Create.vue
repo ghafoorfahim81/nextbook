@@ -45,6 +45,7 @@ const form = useForm({
     selected_ledger: '',
     selected_sale_purchase_type: '',
     discount: '',
+    transaction_total: 0,
     discount_type: 'percentage',
     description: '',
     payment:{
@@ -125,6 +126,7 @@ watch(() => props.salePurchaseTypes, (salePurchaseTypes) => {
         const baseSalePurchaseType = salePurchaseTypes.find(c => c.id === 'cash');
         if (baseSalePurchaseType) {
             form.selected_sale_purchase_type = baseSalePurchaseType;
+            form.sale_purchase_type_id = baseSalePurchaseType.id;
         }
     }
 }, { immediate: true });
@@ -163,6 +165,7 @@ const handleSelectChange = (field, value) => {
 
 function handleSubmit() {
     form.items = form.items.filter(item => item.selected_item);
+    form.transaction_total = toNum(goodsTotal.value - totalDiscount.value + totalTax.value);
     form.post('/purchases', {
         onSuccess: () => {
             form.reset();

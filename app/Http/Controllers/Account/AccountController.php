@@ -37,7 +37,7 @@ class AccountController extends Controller
     public function store(AccountStoreRequest $request)
     {
         $validated = $request->validated();
-
+        $validated['slug'] = \Str::slug($validated['name']);
         $account = Account::create($validated);
         // Optionally create transaction + opening if opening amount exists
         if ($request->has('opening_amount') && $request->opening_amount > 0) {
@@ -74,7 +74,9 @@ class AccountController extends Controller
 
     public function update(AccountUpdateRequest $request, Account $account): Response
     {
-        $account->update($request->validated());
+        $validated = $request->validated();
+        $validated['slug'] = \Str::slug($validated['name']);
+        $account->update($validated);
 
         return new AccountResource($account);
     }
