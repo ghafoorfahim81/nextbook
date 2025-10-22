@@ -2,7 +2,7 @@
 
 namespace App\Models\Inventory;
 
-use App\Models\StockOut;
+use App\Models\Inventory\StockOut;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;

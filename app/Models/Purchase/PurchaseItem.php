@@ -5,7 +5,7 @@ namespace App\Models\Purchase;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes; 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -31,7 +31,7 @@ class PurchaseItem extends Model
         'expire_date',
         'quantity',
         'unit_measure_id',
-        'price',
+            'purchase_price',
         'discount',
         'free',
         'tax',
@@ -53,7 +53,7 @@ class PurchaseItem extends Model
             'expire_date' => 'date',
             'quantity' => 'decimal:2',
             'unit_measure_id' => 'string',
-            'price' => 'decimal:2',
+            'purchase_price' => 'decimal:2',
             'discount' => 'decimal:2',
             'free' => 'decimal:2',
             'tax' => 'decimal:2',
@@ -68,7 +68,7 @@ class PurchaseItem extends Model
             'batch',
             'expire_date',
             'quantity',
-            'price',
+            'purchase_price',
             'discount',
             'free',
             'tax',

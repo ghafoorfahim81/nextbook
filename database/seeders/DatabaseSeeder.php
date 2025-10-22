@@ -44,7 +44,7 @@ class DatabaseSeeder extends Seeder
         $this->call(AccountTypeSeeder::class);
         $this->call(CurrencySeeder::class);
         $this->call(LedgerSeeder::class);
-        //        $this->call(ItemSeeder::class);
+        $this->call(ItemSeeder::class);
         $this->call(AccountSeeder::class);
         // $this->call(PurchaseSeeder::class);
         // $this->call(PurchaseItemSeeder::class);

@@ -36,6 +36,8 @@ class Transaction extends Model
         'ledger_id',
         'amount',
         'currency_id',
+        'reference_type',
+        'reference_id',
         'rate',
         'date',
         'type',
@@ -85,7 +87,7 @@ class Transaction extends Model
     {
         return $this->belongsTo(Ledger::class);
     }
-    
+
     public function reference()
     {
         return $this->morphTo();

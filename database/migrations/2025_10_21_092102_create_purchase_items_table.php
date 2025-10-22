@@ -21,10 +21,10 @@ return new class extends Migration
             $table->date('expire_date')->nullable();
             $table->decimal('quantity', 10, 2);
             $table->char('unit_measure_id', 26)->nullable();
-            $table->decimal('price', 10, 2);
-            $table->decimal('discount', 10, 2)->default(0);
-            $table->decimal('free', 10, 2)->default(0);
-            $table->decimal('tax', 10, 2)->default(0);
+            $table->decimal('purchase_price', 10, 2);
+            $table->decimal('discount', 10, 2)->default(0)->nullable();
+            $table->decimal('free', 10, 2)->default(0)->nullable();
+            $table->decimal('tax', 10, 2)->default(0)->nullable();
             $table->char('created_by', 26);
             $table->char('updated_by', 26)->nullable();
             $table->timestamps();

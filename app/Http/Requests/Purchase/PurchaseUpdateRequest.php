@@ -21,9 +21,9 @@ class PurchaseUpdateRequest extends FormRequest
     {
         return [
             'number' => ['required', 'string'],
-            'supplier_id' => ['required', 'integer', 'exists:ledgers,id'],
+            'supplier_id' => ['required', 'string', 'exists:ledgers,id'],
             'date' => ['required', 'date'],
-            'transaction_id' => ['required', 'integer', 'exists:transactions,id'],
+            'store_id' => ['nullable', 'string', 'exists:stores,id'],
             'discount' => ['nullable', 'numeric'],
             'discount_type' => ['nullable', 'string'],
             'type' => ['required', 'string'],
