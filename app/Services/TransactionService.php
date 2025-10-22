@@ -21,52 +21,62 @@ class TransactionService
         });
     }
 
-    public function createPurchaseTransactions(Purchase $purchase, Ledger $ledger, float $transactionTotal, string $transactionType, float $paymentAmount)
+    public function createPurchaseTransactions(Purchase $purchase, Ledger $ledger, float $transactionTotal, string $transactionType, $payment,$currency_id,$rate)
     {
         $transactions = [];
 
         // ALWAYS: DEBIT Inventory (Inventory comes IN)
-        $transactions[] = [
+        $inventoryTransaction = $this->createTransaction([
             'account_id' => Account::where('slug', 'inventory-asset')->first()->id,
-            'ledger_id' => $ledger->id,
+            // 'ledger_id' => $ledger->id,
             'amount' => $transactionTotal,
+            'currency_id' => $currency_id,
+            'rate' => $rate,
             'date' => $purchase->date,
             'type' => 'debit',
             'remark' => "Purchase #{$purchase->number} from {$ledger->name}",
             'reference_type' => 'purchase',
             'reference_id' => $purchase->id,
-        ];
+        ]);
 
         // CONDITION: CREDIT based on payment method
         if ($transactionType === 'credit') {
-            $transactions[] = [
-                'account_id' => Account::where('slug', 'account-payable')->first()->id,
+            $payableTransaction = $this->createTransaction([
+                'account_id' => $payment['account_id'],
                 'ledger_id' => $ledger->id,
-                'amount' => $paymentAmount,
+                'amount' => $payment['amount'],
+                'currency_id' => $currency_id,
+                'rate' => $rate,
                 'date' => $purchase->date,
                 'type' => 'credit',
-                'remark' => "Credit owed to {$ledger->name}",
+                'remark' => $payment['note'],
                 'reference_type' => 'purchase',
                 'reference_id' => $purchase->id,
-            ];
+            ]);
         } else {
             // Cash purchase
-            $transactions[] = [
+            $cashTransaction = $this->createTransaction([
                 'account_id' => Account::where('slug', 'cash-in-hand')->first()->id,
                 'ledger_id' => $ledger->id,
                 'amount' => $transactionTotal,
+                'currency_id' => $currency_id,
+                'rate' => $rate,
                 'date' => $purchase->date,
                 'type' => 'credit',
                 'remark' => "Cash payment for purchase #{$purchase->number}",
                 'reference_type' => 'purchase',
                 'reference_id' => $purchase->id,
-            ];
+            ]);
         }
+        $purchase->update(['transaction_id' => $inventoryTransaction->id]);
+
+
+
 
         return $transactions;
     }
 
- 
+
 
     private function determinePurchaseType(string $purchaseType): string
     {

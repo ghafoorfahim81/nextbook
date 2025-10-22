@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
 use App\Models\Account\Account;
 use App\Models\Administration\Currency;
+use App\Services\StockService;
 
 class PurchaseController extends Controller
 {
@@ -37,26 +38,31 @@ class PurchaseController extends Controller
         return inertia('Purchase/Purchases/Create');
     }
 
-    public function store(PurchaseStoreRequest $request, TransactionService $transactionService)
+    public function store(PurchaseStoreRequest $request, TransactionService $transactionService, StockService $stockService)
     {
-        dd($request->all());
-        return $request->all();
-        $purchase = DB::transaction(function () use ($request, $transactionService) {
-            // Create purchase
-            $purchase = Purchase::create($request->validated());
 
+        // dd($request->validated());
+        // dd($request->all());
+        // return $request->all();
+        $purchase = DB::transaction(function () use ($request, $transactionService, $stockService) {
+            // Create purchase
+            $validated = $request->validated();
+            $validated['type']  = $request->sale_purchase_type_id;
+            $validated['status'] = 'pending';
+            $purchase = Purchase::create(attributes: $validated);
+            $purchase->items()->createMany($request->items);
+            $stockService->addStock($request->items, $request->store_id, 'purchase', $purchase->id);
             // Create accounting transactions
             $transactions = $transactionService->createPurchaseTransactions(
                 $purchase,
-                $request->supplier_id,
+                \App\Models\Ledger\Ledger::find($request->supplier_id),
                 $request->transaction_total,
                 $request->sale_purchase_type_id, // 'cash' or 'credit'
-                $request->payment->amount
+                $request->payment,
+                $request->currency_id,
+                $request->rate,
             );
-
-            dd($transactions);
-
-            return $purchase->load('transaction');
+            return $purchase;
         });
 
         // return response()->json($purchase, 201);

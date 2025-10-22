@@ -107,19 +107,22 @@ watch(() => props.currencies?.data, (currencies) => {
         if (baseCurrency) {
             form.selected_currency = baseCurrency;
             form.rate = baseCurrency.exchange_rate;
+            form.currency_id = baseCurrency.id;
         }
     }
 }, { immediate: true });
 
 // Watch for currency changes and automatically update rate
-watch(() => form.currency_id, (newCurrencyId) => {
-    if (newCurrencyId && props.currencies?.data) {
-        const selectedCurrency = props.currencies.data.find(currency => currency.id === newCurrencyId);
-        if (selectedCurrency && selectedCurrency.exchange_rate) {
-            form.rate = selectedCurrency.exchange_rate;
-        }
-    }
-});
+// watch(() => form.currency_id, (newCurrencyId) => {
+//     if (newCurrencyId && props.currencies?.data) {
+//         const selectedCurrency = props.currencies.data.find(currency => currency.id === newCurrencyId);
+//         if (selectedCurrency && selectedCurrency.exchange_rate) {
+//             form.rate = selectedCurrency.exchange_rate;
+//             form.currency_id = selectedCurrency.id;
+//             form.selected_currency = selectedCurrency;
+//         }
+//     }
+// });
 
 watch(() => props.salePurchaseTypes, (salePurchaseTypes) => {
     if (salePurchaseTypes && !form.selected_sale_purchase_type) {
@@ -166,6 +169,9 @@ const handleSelectChange = (field, value) => {
 function handleSubmit() {
     form.items = form.items.filter(item => item.selected_item);
     form.transaction_total = toNum(goodsTotal.value - totalDiscount.value + totalTax.value);
+    form.items.forEach(item => {
+        item.unit_measure_id = item.selected_measure.id;
+    });
     form.post('/purchases', {
         onSuccess: () => {
             form.reset();

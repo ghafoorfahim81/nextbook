@@ -7,7 +7,7 @@ use App\Models\Administration\UnitMeasure;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use App\Models\Inventory\StockOut;
 class Stock extends Model
 {
     use HasUlids, SoftDeletes;
@@ -32,9 +32,9 @@ class Stock extends Model
         return $this->belongsTo(UnitMeasure::class);
     }
 
-    public function purchase()
+    public function stockOuts()
     {
-        return $this->belongsTo(Purchase::class);
+        return $this->hasMany(StockOut::class);
     }
 
     public function store()
@@ -45,5 +45,10 @@ class Stock extends Model
     public function opening()
     {
         return $this->hasOne(StockOpening::class, 'stock_id'); // StockOpening has stock_id
+    }
+
+    public function source()
+    {
+        return $this->morphTo();
     }
 }
