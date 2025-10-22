@@ -14,6 +14,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class ItemController extends Controller
 {
@@ -50,7 +51,6 @@ class ItemController extends Controller
         DB::transaction(function () use ($validated, $request) {
             // 1) Create item
             $item = Item::create($validated);
-
             // 2) Create opening stocks (if any)
             $openings = collect($request->input('openings', []));
 

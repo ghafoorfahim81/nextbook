@@ -41,19 +41,19 @@ class PurchaseController extends Controller
             $purchase = Purchase::create($request->validated());
             $purchase->items()->createMany($request->items);
             // HIGH PERFORMANCE: Direct transaction creation
-            $transaction = $transactionService->createTransaction([
-                'account_id' => $request->account_id,
-                'ledger_id' => $request->ledger_id,
-                'amount' => $purchase->total_amount - $this->calculateDiscount($purchase),
-                'currency_id' => $request->currency_id,
-                'date' => $purchase->date,
-                'type' => $request->type === 'credit' ? 'credit' : 'debit',
-                'remark' => "Purchase #{$purchase->number}",
-                'reference_type' => 'purchase',
-                'reference_id' => $purchase->id,
-            ]);
+            // $transaction = $transactionService->createTransaction([
+            //     'account_id' => $request->account_id,
+            //     'ledger_id' => $request->ledger_id,
+            //     'amount' => $purchase->total_amount - $this->calculateDiscount($purchase),
+            //     'currency_id' => $request->currency_id,
+            //     'date' => $purchase->date,
+            //     'type' => $request->type === 'credit' ? 'credit' : 'debit',
+            //     'remark' => "Purchase #{$purchase->number}",
+            //     'reference_type' => 'purchase',
+            //     'reference_id' => $purchase->id,
+            // ]);
 
-            $purchase->update(['transaction_id' => $transaction->id]);
+            // $purchase->update(['transaction_id' => $transaction->id]);
 
             return $purchase;
         });

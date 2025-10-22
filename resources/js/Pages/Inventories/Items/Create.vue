@@ -123,7 +123,7 @@ const handleCancel = () => {
 }
 
 const handleSelectChange = (field, value) => {
-    form[field] = value; 
+    form[field] = value;
 };
 
 const handleOpeningSelectChange = (index, value) => {
@@ -143,10 +143,6 @@ const handleOpeningSelectChange = (index, value) => {
                 <NextInput :label="t('item.packing')" v-model="form.packing" :error="form.errors?.packing" :placeholder="t('general.enter', { text: t('item.packing') })" />
                 <NextInput :label="t('item.colors')" v-model="form.colors" :error="form.errors?.colors" :placeholder="t('general.enter', { text: t('item.colors') })" />
                 <NextInput :label="t('item.size')" v-model="form.size" :error="form.errors?.size" :placeholder="t('general.enter', { text: t('item.size') })" />
-
-
-                <NextInput :label="t('item.photo')" type="file"  @input="onPhotoChange" :error="form.errors?.photo" :placeholder="t('general.enter', { text: t('item.photo') })" />
-
                 <NextSelect
                     v-model="form.selected_unit_measure"
                     :options="unitMeasures"
@@ -187,6 +183,7 @@ const handleOpeningSelectChange = (index, value) => {
                     :search-fields="['name', 'legal_name', 'registration_number', 'email', 'phone', 'website', 'industry', 'type', 'city', 'country']"
                     :error="form.errors.brand_id"
                 />
+                <NextInput :label="t('item.photo')" type="file"  @input="onPhotoChange" :error="form.errors?.photo" :placeholder="t('general.enter', { text: t('item.photo') })" />
 
                 <NextInput :label="t('item.minimum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.minimum_stock') })" v-model="form.minimum_stock" :error="form.errors?.minimum_stock" />
                 <NextInput :label="t('item.maximum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.maximum_stock') })" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
