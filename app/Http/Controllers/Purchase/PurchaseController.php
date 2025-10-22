@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
 use App\Models\Account\Account;
 use App\Models\Administration\Currency;
+
 class PurchaseController extends Controller
 {
     public function index(Request $request)
@@ -38,6 +39,53 @@ class PurchaseController extends Controller
 
     public function store(PurchaseStoreRequest $request, TransactionService $transactionService)
     {
+        dd($request->all());
+        return $request->all();
+        $purchase = DB::transaction(function () use ($request, $transactionService) {
+            // Create purchase
+            $purchase = Purchase::create($request->validated());
+
+            // Create accounting transactions
+            $transactions = $transactionService->createPurchaseTransactions(
+                $purchase,
+                $request->supplier_id,
+                $request->transaction_total,
+                $request->sale_purchase_type_id, // 'cash' or 'credit'
+                $request->payment->amount
+            );
+
+            dd($transactions);
+
+            return $purchase->load('transaction');
+        });
+
+        // return response()->json($purchase, 201);
+    }
+
+    public function store3(PurchaseStoreRequest $request, TransactionService $transactionService)
+    {
+
+        DB::transaction(function () use ($request) {
+            $purchase = Purchase::create($request->validated());
+
+            $transactionService = app(TransactionService::class);
+            $purchaseTransactionService = app(PurchaseTransactionService::class);
+
+            // Create the accounting transactions
+            $transactions = $purchaseTransactionService->createPurchaseTransactions(
+                $purchase,
+                $request->supplier_id,
+                $request->payment_method
+            );
+
+            foreach ($transactions as $transactionData) {
+                $transactionService->createTransaction($transactionData);
+            }
+
+            // Store main transaction reference if needed
+            $purchase->update(['transaction_id' => $transactions[0]->id]);
+        });
+
         $purchase = DB::transaction(function () use ($request, $transactionService) {
             // Create purchase
             $purchase = Purchase::create($request->validated());
