@@ -5,22 +5,22 @@
         <div class="space-y-2">
             <div v-for="row in rows" :key="row.key" class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
                 <span class="text-muted-foreground hover:text-violet-500">{{ row.label }}:</span>
-                <span class="tabular-nums text-sm hover:text-violet-500">{{ row.value }}</span>
+                <span class="tabular-nums text-sm hover:text-violet-500">{{ row.value }} {{ row.value>0 ? summary.currencySymbol : '' }}</span>
             </div>
             <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
                 <span class="text-muted-foreground hover:text-violet-500"> {{ t('general.old_balance') }}:</span>
-                <span class="tabular-nums text-sm hover:text-violet-500">{{ format(summary.oldBalance) }}  {{ summary.balanceNature }}</span>
+                <span class="tabular-nums text-sm hover:text-violet-500">{{ format(summary.oldBalance) }} {{ summary.oldBalance ? summary.currencySymbol : '' }}  {{ summary.oldBalance ? summary.balanceNature : '' }}</span>
             </div>
             <div class="flex items-center justify-between font-semibold">
                 <span>{{ t('general.grand_total') }}:</span>
-                <span class="tabular-nums text-sm">{{ format(summary.grandTotal) }}</span>
+                <span class="tabular-nums text-sm">{{ format(summary.grandTotal) }} {{ summary.grandTotal ? summary.currencySymbol : '' }}</span>
             </div>
 
             <div class="border-t my-2"></div>
 
             <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
                 <span class="text-muted-foreground hover:text-violet-500"> {{ t('general.balance') }}:</span>
-                <span class="tabular-nums text-sm hover:text-violet-500">{{ format(summary.balance) }}  {{ summary.balanceNature }}</span>
+                <span class="tabular-nums text-sm hover:text-violet-500">{{ format(summary.balance) }} {{ summary.balance ? summary.currencySymbol : '' }}  {{ summary.balance ? summary.balanceNature : '' }}</span>
             </div>
         </div>
     </div>

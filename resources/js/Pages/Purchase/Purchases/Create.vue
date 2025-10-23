@@ -32,10 +32,11 @@ const props = defineProps({
     stores: Object,
     unitMeasures: Object,
     accounts: Object,
+    purchaseNumber: String,
 })
 
 const form = useForm({
-    number: '',
+    number: props.purchaseNumber,
     supplier_id: '',
     date: '',
     currency_id: '',
@@ -415,14 +416,14 @@ const totalFree = computed(() => form.items.reduce((acc, item) => acc + toNum(it
 
 // Transaction summary for card (spec-compliant)
 const transactionSummary = computed(() => {
-    const paid = toNum(form.paid_amount, 0)
+    const paid = toNum(form.payment.amount, 0)
     const oldBalance = toNum(form?.selected_ledger?.statement?.balance, 0)
     const nature = form?.selected_ledger?.statement?.balance_nature // 'Dr' | 'Cr'
     const hasSelectedItem = Array.isArray(form.items) && form.items.some(r => !!r.selected_item)
     const netAmount = goodsTotal.value - totalDiscount.value + totalTax.value
     const grandTotal = netAmount - paid;
     const balance = hasSelectedItem
-        ? (nature === 'dr' ? (grandTotal - oldBalance) : (grandTotal + oldBalance))
+        ? (nature === 'dr' ? (grandTotal + oldBalance) : (grandTotal - oldBalance))
         : 0
     return {
         valueOfGoods: goodsTotal.value,
@@ -434,6 +435,7 @@ const transactionSummary = computed(() => {
         grandTotal: grandTotal,
         oldBalance: oldBalance,
         balanceNature: nature,
+        currencySymbol: form.selected_currency?.symbol,
     }
 })
 
@@ -464,10 +466,10 @@ const addRow = () => {
                 <NextSelect
                     :options="ledgers.data"
                     v-model="form.selected_ledger"
-                    @update:modelValue="(value) => handleSelectChange('supplier_id', value)"
+                    @update:modelValue="(value) => handleSelectChange('supplier_id', value.id)"
                     label-key="name"
                     value-key="id"
-                    :reduce="ledger => ledger.id"
+                    :reduce="ledger => ledger"
                     :floating-text="t('ledger.supplier.supplier')"
                     :error="form.errors?.supplier_id"
                     :searchable="true"
@@ -483,8 +485,8 @@ const addRow = () => {
                     v-model="form.selected_currency"
                     label-key="code"
                     value-key="id"
-                    @update:modelValue="(value) => handleSelectChange('currency_id', value)"
-                    :reduce="currency => currency.id"
+                    @update:modelValue="(value) => handleSelectChange('currency_id', value.id)"
+                    :reduce="currency => currency"
                    :floating-text="t('admin.currency.currency')"
                     :error="form.errors?.currency_id"
                     :searchable="true"
@@ -647,7 +649,7 @@ const addRow = () => {
                                 />
                             </td>
                             <td class="text-center">
-                                 {{ rowTotal(index) }}
+                                 {{ rowTotal(index) }} {{ item.selected_item?transactionSummary?.currencySymbol:'' }}
                             </td>
                             <td class="w-10 text-center">
                                 <Trash2 class="w-4 h-4 cursor-pointer text-fuchsia-500 inline" @click="deleteRow(index)" />
