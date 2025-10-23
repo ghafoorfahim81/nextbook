@@ -1,7 +1,7 @@
 <template>
-	<component
-		:is="VuePersianDatetimePicker"
-		class="block w-full"
+    <component
+        :is="VuePersianDatetimePicker"
+        :class="['block w-full', { 'no-icon': !showIcon }]"
 		v-model="normalizedModel"
 		:format="resolvedFormat"
 		:display-format="resolvedDisplayFormat"
@@ -11,7 +11,7 @@
 		:min="min || undefined"
 		:max="max || undefined"
 		:clearable="clearable"
-		:input-attrs="{ placeholder, class: inputClass }"
+		:input-attrs="{ placeholder, class: inputClass, style: 'width:100%' }"
 		:locale="effectiveLocale"
 	>
 		<template v-if="isJalali" #header-date="{ vm }">
@@ -44,6 +44,8 @@ const props = defineProps({
 	clearable: { type: Boolean, default: true },
 	// 'fa' (shamsi/jalali) or 'en' (gregorian/miladi). If not provided, read from localStorage
 	locale: { type: String, default: '' },
+    // Toggle the calendar icon addon
+    showIcon: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['update:modelValue', 'change'])
@@ -113,3 +115,44 @@ function safeYear(m) {
 </script>
 
 
+<style scoped>
+/* Ensure the date input fits exactly inside its container (e.g., table cell) */
+:deep(.vpd-input-group) {
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+/* Compact the calendar icon addon so it doesn't expand the cell */
+:deep(.vpd-input-group .vpd-addon) {
+    margin: 0;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+}
+
+/* Hide addon when showIcon is false by class added to root */
+:deep(.no-icon .vpd-input-group .vpd-addon) {
+    display: none !important;
+}
+
+/* Make the text input fill remaining space and be compact */
+:deep(.vpd-input-group .vpd-input),
+:deep(.vpd-input-group input) {
+    width: 100%;
+    max-width: 100%;
+    height: 36px;
+    line-height: 36px;
+    padding: 0 8px;
+    box-sizing: border-box;
+}
+
+/* Prevent internal container from forcing a fixed width */
+:deep(.vpd-container) {
+    width: auto;
+    max-width: 100%;
+}
+</style>

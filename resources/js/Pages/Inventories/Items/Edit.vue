@@ -7,6 +7,7 @@ import NextTextarea from '@/Components/next/NextTextarea.vue'
 import { useForm } from '@inertiajs/vue3'
 import FloatingLabel from "@/Components/next/FloatingLabel.vue";
 import NextSelect from "@/Components/next/NextSelect.vue";
+import NextDatePicker from '@/Components/next/NextDatePicker.vue'
 import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
@@ -170,7 +171,7 @@ const handleOpeningSelectChange = (index, value) => {
                     class="mt-3 grid grid-cols-4 gap-x-2 gap-y-5 items-start"
                 >
                     <NextInput :label="t('item.batch')" @click="addRow(index)" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
-                    <NextInput :label="t('item.expire_date')" type="date" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]"/>
+                    <NextDatePicker v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
                     <NextInput :label="t('general.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
                     <NextSelect
                         v-model="opening.selected_store"

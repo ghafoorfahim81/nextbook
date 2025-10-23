@@ -8,7 +8,7 @@ import { useForm, router } from '@inertiajs/vue3'
 import { Label } from '@/Components/ui/label'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import FloatingLabel     from "@/Components/next/FloatingLabel.vue";
-import DatePicker from '@/Components/next/DatePicker.vue'
+import NextDate from '@/Components/next/NextDatePicker.vue'
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n()
 // keep props reactive
@@ -208,7 +208,7 @@ const handleOpeningSelectChange = (index, value) => {
                 >
                     <NextInput :label="t('item.batch')" @click="addRow(index)" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
 
-                        <DatePicker v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+                        <NextDate v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
 
                     <NextInput :label="t('item.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
 
