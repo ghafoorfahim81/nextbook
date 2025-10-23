@@ -15,18 +15,14 @@ return new class extends Migration
             $table->char('id', 26)->primary();
             $table->char('stock_id', 26)->nullable();
             $table->char('item_id', 26);
-            $table->double('qut_out')->unsigned();
+            $table->double('quantity')->unsigned();
             $table->double('unit_price')->unsigned();
             $table->double('free')->nullable();
             $table->double('tax')->nullable();
             $table->double('discount')->nullable();
-            $table->date('date_out');
-            $table->char('sale_id', 26)->nullable();
-            $table->integer('sale_number')->unsigned()->nullable();
+            $table->date('date');
             $table->string('batch')->nullable();
             $table->char('unit_measure_id', 26)->nullable();
-            $table->boolean('status')->default(false);
-            $table->char('issue_id', 26)->nullable();
             $table->char('store_id', 26)->nullable();
             $table->char('created_by', 26)->nullable();
             $table->char('updated_by', 26)->nullable();
@@ -37,9 +33,7 @@ return new class extends Migration
         Schema::table('stock_outs', function (Blueprint $table) {
             $table->foreign('stock_id')->references('id')->on('stocks');
             $table->foreign('item_id')->references('id')->on('items');
-            // $table->foreign('sale_id')->references('id')->on('sales');
             $table->foreign('unit_measure_id')->references('id')->on('unit_measures');
-            // $table->foreign('issue_id')->references('id')->on('issues');
             $table->foreign('store_id')->references('id')->on('stores');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
