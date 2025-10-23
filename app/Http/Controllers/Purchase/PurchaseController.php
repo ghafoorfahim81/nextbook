@@ -47,20 +47,22 @@ class PurchaseController extends Controller
         $purchase = DB::transaction(function () use ($request, $transactionService, $stockService) {
             // Create purchase
             $validated = $request->validated();
-            $validated['type']  = $request->sale_purchase_type_id;
+            $validated['type']  = $validated['sale_purchase_type_id'] ?? null;
             $validated['status'] = 'pending';
             $purchase = Purchase::create(attributes: $validated);
-            $purchase->items()->createMany($request->items);
-            $stockService->addStock($request->items, $request->store_id, 'purchase', $purchase->id);
+            $purchase->items()->createMany($validated['items']);
+            foreach ($validated['items'] as $item) {
+                $stockService->addStock($item, $validated['store_id'], 'purchase', $purchase->id);
+            }
             // Create accounting transactions
             $transactions = $transactionService->createPurchaseTransactions(
                 $purchase,
-                \App\Models\Ledger\Ledger::find($request->supplier_id),
-                $request->transaction_total,
-                $request->sale_purchase_type_id, // 'cash' or 'credit'
-                $request->payment,
-                $request->currency_id,
-                $request->rate,
+                \App\Models\Ledger\Ledger::find($validated['supplier_id']),
+                $validated['transaction_total'],
+                $validated['sale_purchase_type_id'] ?? 'cash',
+                $validated['payment'] ?? [],
+                $validated['currency_id'] ?? null,
+                $validated['rate'] ?? null,
             );
             return $purchase;
         });
@@ -80,7 +82,7 @@ class PurchaseController extends Controller
     {
         $purchase->update($request->validated());
 
-        return new PurchaseResource($purchase);
+        return response(new PurchaseResource($purchase));
     }
 
     public function destroy(Request $request, Purchase $purchase): Response

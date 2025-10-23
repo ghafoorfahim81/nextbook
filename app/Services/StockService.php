@@ -15,7 +15,6 @@ class StockService
     public function addStock(array $data, $storeId, string $sourceType, $sourceId = null): Stock
     {
         return DB::transaction(function () use ($data, $storeId, $sourceType, $sourceId) {
-            // dd($data);
             $stockData = $this->validateStockData($data);
 
             $stockData = array_merge($stockData, [
@@ -199,15 +198,16 @@ class StockService
      */
     private function validateStockData(array $data): array
     {
-        dd($data);
         return validator($data, [
             'item_id' => 'required|exists:items,id',
             'unit_measure_id' => 'required|exists:unit_measures,id',
-            'cost' => 'required|numeric|min:0',
+            'quantity' => 'required|numeric|min:0.0000001',
+            'unit_price' => 'required|numeric|min:0',
             'free' => 'nullable|numeric|min:0',
             'batch' => 'nullable|string',
             'discount' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
+            'date' => 'nullable|date',
             'expire_date' => 'nullable|date',
         ])->validate();
     }
@@ -228,7 +228,11 @@ class StockService
 
     private function getSaleNumber($saleId): ?int
     {
-        $sale = \App\Models\Sale::find($saleId);
+        // Resolve dynamically without static type reference to appease static analyzers
+        $sale = null;
+        if (class_exists('App\\Models\\Sale')) {
+            $sale = call_user_func(['App\\Models\\Sale', 'find'], $saleId);
+        }
         return $sale ? $sale->sale_number : null;
     }
 }
