@@ -16,6 +16,7 @@ import TaxSummary from '@/Components/next/TaxSummary.vue';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
+import NextDate from '@/Components/next/NextDatePicker.vue'
 const { t } = useI18n();
 const showFilter = () => {
     showFilter.value = true;
@@ -478,7 +479,7 @@ const addRow = () => {
                     :search-options="{ type: 'supplier' }"
                 />
                 <NextInput placeholder="Number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.number')" />
-                <NextInput placeholder="Date" :error="form.errors?.date" type="date" v-model="form.date" :label="t('general.date')" />
+                <NextDate v-model="form.date" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
                 <div class="grid grid-cols-2 gap-2">
                     <NextSelect
                     :options="currencies.data"
@@ -570,13 +571,7 @@ const addRow = () => {
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                                <NextInput
-                                    v-model="item.expire_date"
-                                    :disabled="!item.selected_item"
-                                    type="date"
-                                    :error="form.errors?.expire_date"
-                                    @input="notifyIfDuplicate(index)"
-                                />
+                                <NextDate v-model="item.expire_date" :error="form.errors?.[`items.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
