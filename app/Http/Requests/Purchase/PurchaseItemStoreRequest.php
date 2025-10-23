@@ -26,7 +26,7 @@ class PurchaseItemStoreRequest extends FormRequest
             'expire_date' => ['nullable', 'date'],
             'quantity' => ['required', 'numeric', 'min:0'],
             'unit_measure_id' => ['nullable', 'string', 'exists:unit_measures,id'],
-            'purchase_price' => ['required', 'numeric', 'min:0'],
+            'unit_price' => ['required', 'numeric', 'min:0'],
             'discount' => ['nullable', 'numeric', 'min:0'],
             'free' => ['nullable', 'numeric', 'min:0'],
             'tax' => ['nullable', 'numeric', 'min:0'],

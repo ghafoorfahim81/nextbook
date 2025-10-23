@@ -16,7 +16,7 @@ return new class extends Migration
             $table->char('stock_id', 26)->nullable();
             $table->char('item_id', 26);
             $table->double('qut_out')->unsigned();
-            $table->double('sale_price')->unsigned();
+            $table->double('unit_price')->unsigned();
             $table->double('free')->nullable();
             $table->double('tax')->nullable();
             $table->double('discount')->nullable();

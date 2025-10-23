@@ -12,9 +12,10 @@ class StockService
     /**
      * Add stock from various sources
      */
-    public function addStock(array $data,$storeId, string $sourceType, $sourceId = null): Stock
+    public function addStock(array $data, $storeId, string $sourceType, $sourceId = null): Stock
     {
         return DB::transaction(function () use ($data, $storeId, $sourceType, $sourceId) {
+            // dd($data);
             $stockData = $this->validateStockData($data);
 
             $stockData = array_merge($stockData, [
@@ -198,15 +199,15 @@ class StockService
      */
     private function validateStockData(array $data): array
     {
+        dd($data);
         return validator($data, [
             'item_id' => 'required|exists:items,id',
             'unit_measure_id' => 'required|exists:unit_measures,id',
-            'quantity' => 'required|numeric|min:0',
             'cost' => 'required|numeric|min:0',
             'free' => 'nullable|numeric|min:0',
             'batch' => 'nullable|string',
             'discount' => 'nullable|numeric|min:0',
-            'tax' => 'nullable|numeric|min:0', 
+            'tax' => 'nullable|numeric|min:0',
             'expire_date' => 'nullable|date',
         ])->validate();
     }
