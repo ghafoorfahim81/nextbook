@@ -24,11 +24,11 @@ class PurchaseItemResource extends JsonResource
             'quantity' => $this->quantity,
             'unit_measure_id' => $this->unit_measure_id,
             'unit_measure_name' => $this->unitMeasure?->name,
-            'purchase_price' => $this->purchase_price,
+            'unit_price' => $this->unit_price,
             'discount' => $this->discount,
             'free' => $this->free,
             'tax' => $this->tax,
-            'subtotal' => ($this->quantity * $this->purchase_price) - $this->discount + $this->tax,
+            'subtotal' => ($this->quantity * $this->unit_price) - $this->discount + $this->tax,
         ];
     }
 }
