@@ -35,7 +35,10 @@ class PurchaseController extends Controller
 
     public function create(Request $request)
     {
-        return inertia('Purchase/Purchases/Create');
+        $purchaseNumber = Purchase::max('number') ? Purchase::max('number') + 1 : '1';
+        return inertia('Purchase/Purchases/Create', [
+            'purchaseNumber' => $purchaseNumber,
+        ]);
     }
 
     public function store(PurchaseStoreRequest $request, TransactionService $transactionService, StockService $stockService)

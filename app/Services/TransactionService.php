@@ -9,7 +9,7 @@ use App\Models\Sale\Sale;
 use App\Models\Ledger\Ledger;
 use Illuminate\Support\Facades\DB;
 use App\Models\Account\Account;
-
+use Illuminate\Support\Facades\Cache;
 class TransactionService
 {
     // Core method - used directly for maximum performance
@@ -70,6 +70,7 @@ class TransactionService
         }
         $purchase->update(['transaction_id' => $inventoryTransaction->id]);
 
+        Cache::forget('ledgers');
 
 
 

@@ -6,7 +6,7 @@ namespace App\Services;
 use App\Models\Inventory\Stock;
 use App\Models\Inventory\StockOut;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Cache;
 class StockService
 {
     /**
@@ -25,6 +25,7 @@ class StockService
             ]);
 
             return Stock::create($stockData);
+            Cache::forget('items');
         });
     }
 
@@ -75,6 +76,7 @@ class StockService
 
                 if ($stockOutData['quantity'] <= 0) break;
             }
+            Cache::forget('items');
 
             return $stockOutRecords[0];
         });
