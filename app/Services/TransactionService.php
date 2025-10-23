@@ -21,14 +21,14 @@ class TransactionService
         });
     }
 
-    public function createPurchaseTransactions(Purchase $purchase, Ledger $ledger, float $transactionTotal, string $transactionType, $payment,$currency_id,$rate)
+    public function createPurchaseTransactions(Purchase $purchase, Ledger $ledger, float $transactionTotal, string $transactionType, $payment, $currency_id, $rate)
     {
         $transactions = [];
 
         // ALWAYS: DEBIT Inventory (Inventory comes IN)
         $inventoryTransaction = $this->createTransaction([
             'account_id' => Account::where('slug', 'inventory-asset')->first()->id,
-            // 'ledger_id' => $ledger->id,
+            'ledger_id' => $ledger->id,
             'amount' => $transactionTotal,
             'currency_id' => $currency_id,
             'rate' => $rate,
@@ -87,7 +87,7 @@ class TransactionService
     {
         return validator($data, [
             'account_id' => 'required|exists:accounts,id',
-            'ledger_id' => 'required|exists:ledgers,id',
+            'ledger_id' => 'nullable|exists:ledgers,id',
             'amount' => 'required|numeric|min:0',
             'currency_id' => 'required|exists:currencies,id',
             'rate' => 'required|numeric|min:0',

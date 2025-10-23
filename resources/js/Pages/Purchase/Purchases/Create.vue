@@ -593,6 +593,7 @@ const addRow = () => {
                                     :options="item.available_measures"
                                     v-model="item.selected_measure"
                                     label-key="name"
+                                    :error="form.errors?.unit_measure_id"
                                     value-key="id"
                                     :show-arrow="false"
                                     :reduce="unit => unit"
