@@ -68,53 +68,6 @@ class PurchaseController extends Controller
         // return response()->json($purchase, 201);
     }
 
-    public function store3(PurchaseStoreRequest $request, TransactionService $transactionService)
-    {
-
-        DB::transaction(function () use ($request) {
-            $purchase = Purchase::create($request->validated());
-
-            $transactionService = app(TransactionService::class);
-            $purchaseTransactionService = app(PurchaseTransactionService::class);
-
-            // Create the accounting transactions
-            $transactions = $purchaseTransactionService->createPurchaseTransactions(
-                $purchase,
-                $request->supplier_id,
-                $request->payment_method
-            );
-
-            foreach ($transactions as $transactionData) {
-                $transactionService->createTransaction($transactionData);
-            }
-
-            // Store main transaction reference if needed
-            $purchase->update(['transaction_id' => $transactions[0]->id]);
-        });
-
-        $purchase = DB::transaction(function () use ($request, $transactionService) {
-            // Create purchase
-            $purchase = Purchase::create($request->validated());
-            $purchase->items()->createMany($request->items);
-            // HIGH PERFORMANCE: Direct transaction creation
-            $transaction = $transactionService->createTransaction([
-                'account_id' => Account::where('name', 'Inventory asset')->first()->id,
-                'ledger_id' => $request->ledger_id,
-                'amount' => $purchase->total_amount - $this->calculateDiscount($purchase),
-                'currency_id' => $request->currency_id,
-                'date' => $purchase->date,
-                'type' => $request->type === 'credit' ? 'credit' : 'debit',
-                'remark' => "Purchase #{$purchase->number}",
-                'reference_type' => 'purchase',
-                'reference_id' => $purchase->id,
-            ]);
-
-            // $purchase->update(['transaction_id' => $transaction->id]);
-
-            return $purchase;
-        });
-        return redirect()->route('purchases.index')->with('success', 'Purchase created successfully.');
-    }
 
     public function show(Request $request, Purchase $purchase)
     {

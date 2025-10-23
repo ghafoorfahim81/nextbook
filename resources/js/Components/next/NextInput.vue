@@ -5,6 +5,7 @@
             :id="id"
             :type="type"
             v-model="model"
+            :step="step"
             :disabled="disabled"
             :autocomplete="autocomplete"
             :placeholder="placeholder"
@@ -50,6 +51,7 @@ const props = defineProps({
     isRequired: Boolean,
     autocomplete: { type: String, default: 'off' },
     error: String,
+    step: { type: String, default: 'any' },
     hint: String,
     placeholder: String,
     input: Function,

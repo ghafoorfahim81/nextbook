@@ -69,7 +69,7 @@ class ItemController extends Controller
                         'store_id'        => $o['store_id'],
                         'unit_measure_id' => $request->input('unit_measure_id'), // from item form
                         'quantity'        => (float) $o['quantity'],
-                        'cost'            => $cost,
+                        'unit_price'            => $cost,
                         'free'            => isset($o['free']) ? (float) $o['free'] : null,
                         'batch'           => $o['batch'] ?? null,
                         'discount'        => isset($o['discount']) ? (float) $o['discount'] : null,
@@ -138,7 +138,7 @@ class ItemController extends Controller
                         'store_id' => $o['store_id'],
                         'unit_measure_id' => $request->unit_measure_id,
                         'quantity' => (float) $o['quantity'],
-                        'cost' => $cost,
+                        'unit_price' => $cost,
                         'free' => isset($o['free']) ? (float) $o['free'] : null,
                         'batch' => $o['batch'] ?? null,
                         'discount' => isset($o['discount']) ? (float) $o['discount'] : null,
@@ -161,7 +161,6 @@ class ItemController extends Controller
 
     public function destroy(Request $request, Item $item)
     {
-
         // Check for dependencies before deletion
         if (!$item->canBeDeleted()) {
             $message = $item->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';

@@ -65,7 +65,7 @@ const form = useForm({
             unit_measure_id: '',
             batch: '',
             expire_date: '',
-            purchase_price: '',
+            unit_price: '',
             selected_measure: '',
             item_discount: '',
             free: '',
@@ -78,7 +78,7 @@ const form = useForm({
             unit_measure_id: '',
             batch: '',
             expire_date: '',
-            purchase_price: '',
+            unit_price: '',
             selected_measure: '',
             item_discount: '',
             free: '',
@@ -91,7 +91,7 @@ const form = useForm({
             unit_measure_id: '',
             batch: '',
             expire_date: '',
-            purchase_price: '',
+            unit_price: '',
             selected_measure: '',
             item_discount: '',
             free: '',
@@ -229,13 +229,24 @@ onUnmounted(() => {
     }
 })
 
+// Recalculate item unit prices when currency rate changes
+watch(() => form.rate, (newRate) => {
+    if (!Array.isArray(form.items)) return
+    form.items.forEach((row) => {
+        if (!row || !row.selected_item) return
+        const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
+        const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
+        const baseUnitPrice = Number(row.base_unit_price ?? row.selected_item?.unit_price ?? row.selected_item?.purchase_price ?? 0)
+        row.unit_price = (baseUnitPrice / (selectedUnit || 1)) * (Number(newRate) || 0)
+    })
+})
+
 const handleItemChange = async (index, selectedItem) => {
     const row = form.items[index]
-
     if (!row || !selectedItem){
         row.available_measures = []
         row.selected_measure = ''
-        row.purchase_price = ''
+        row.unit_price = ''
         row.quantity = ''
         row.batch = ''
         row.expire_date = ''
@@ -258,7 +269,13 @@ const handleItemChange = async (index, selectedItem) => {
     row.selected_measure = selectedItem.unitMeasure
     row.item_id = selectedItem.id
     row.on_hand = selectedItem.on_hand
-    row.purchase_price = selectedItem.purchase_price
+
+    // Set the base unit price - this is the price per base unit
+    row.base_unit_price = selectedItem.unit_price ?? selectedItem.purchase_price ?? 0
+
+    // Set the initial unit_price based on the base unit measure
+    const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1
+    row.unit_price = row.base_unit_price / baseUnit*form.rate;
 
     // Add a new empty row only when selecting into the last row
     if (index === form.items.length - 1) {
@@ -317,7 +334,8 @@ const resetRow = (index) => {
     r.batch = ''
     r.expire_date = ''
     r.quantity = ''
-    r.purchase_price = ''
+    r.unit_price = ''
+    r.base_unit_price = ''
     disabled =false;
 }
 
@@ -358,7 +376,7 @@ const rowTotal = (index) => {
     const item = form.items[index]
     if (!item || !item.selected_item) return ''
     const qty = toNum(item.quantity, 0)
-    const price = toNum(item.purchase_price, 0)
+    const price = toNum(item.unit_price, 0)
     const disc = toNum(item.item_discount, 0)
     const tax = toNum(item.tax, 0)
     return qty * price - disc + tax
@@ -373,7 +391,7 @@ const totalRows = computed(() => form.items.length)
 const totalItemDiscount = computed(() => form.items.reduce((acc, item) => acc + toNum(item.item_discount, 0), 0))
 const totalTax = computed(() => form.items.reduce((acc, item) => acc + toNum(item.tax, 0), 0))
 // Value of goods (sum of qty * price)
-const goodsTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.purchase_price, 0) * toNum(item.quantity, 0)), 0))
+const goodsTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0)), 0))
 // Bill discount currency and percent
 const billDiscountCurrency = computed(() => {
     const billDisc = toNum(form.discount, 0)
@@ -391,7 +409,7 @@ const billDiscountPercent = computed(() => {
     return gt > 0 ? (billDisc / gt) * 100 : 0
 })
 const totalDiscount = computed(() => billDiscountCurrency.value + totalItemDiscount.value)
-const totalRowTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.purchase_price, 0) * toNum(item.quantity, 0) - toNum(item.item_discount, 0) + toNum(item.tax, 0)), 0))
+const totalRowTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0) - toNum(item.item_discount, 0) + toNum(item.tax, 0)), 0))
 const totalQuantity = computed(() => form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0))
 const totalFree = computed(() => form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0))
 
@@ -412,9 +430,9 @@ const transactionSummary = computed(() => {
         billDiscount: billDiscountCurrency.value,
         itemDiscount: totalItemDiscount.value,
         cashReceived: paid,
-        balance,
-        grandTotal,
-        oldBalance,
+        balance: balance,
+        grandTotal: grandTotal,
+        oldBalance: oldBalance,
         balanceNature: nature,
     }
 })
@@ -427,7 +445,8 @@ const addRow = () => {
         unit_measure_id: '',
         batch: '',
         expire_date: '',
-        purchase_price: '',
+        unit_price: '',
+        base_unit_price: '',
         selected_measure: '',
         item_discount: '',
         free: '',
@@ -472,7 +491,7 @@ const addRow = () => {
                     resource-type="currencies"
                     :search-fields="['name', 'code', 'symbol']"
                 />
-                <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" v-model="form.rate" :label="t('general.rate')"/>
+                <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')"/>
                 </div>
 
                <div class="grid grid-cols-1 gap-2">
@@ -561,7 +580,7 @@ const addRow = () => {
                                 <NextInput
                                     v-model="item.quantity"
                                     :disabled="!item.selected_item"
-                                    type="number"
+                                    type="number" step="any"
                                     inputmode="decimal"
                                     :error="form.errors?.quantity"
                                 />
@@ -580,26 +599,30 @@ const addRow = () => {
                                     @update:modelValue="(measure) => {
                                         const baseUnit = Number(form.items[index]?.selected_item?.unitMeasure?.unit) || 1
                                         const selectedUnit = Number(measure?.unit) || baseUnit
-                                        const basePrice = Number(form.items[index]?.selected_item?.purchase_price) || 0
-                                        form.items[index].purchase_price = (basePrice / baseUnit) * selectedUnit
+                                        const baseUnitPrice = Number(form.items[index]?.base_unit_price) || 0
+
+                                        // Calculate unit price for the selected measure
+                                        // unit_price = base_unit_price / selected_unit
+                                        form.items[index].unit_price = baseUnitPrice / selectedUnit*form.rate;
+
                                         notifyIfDuplicate(index)
                                     }"
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
-                                    v-model="item.purchase_price"
+                                    v-model="item.unit_price"
                                     :disabled="!item.selected_item"
-                                    type="number"
+                                    type="number" step="any"
                                     inputmode="decimal"
-                                    :error="form.errors?.purchase_price"
+                                    :error="form.errors?.unit_price"
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
                                     v-model="item.item_discount"
                                     :disabled="!item.selected_item"
-                                    type="number"
+                                    type="number" step="any"
                                     inputmode="decimal"
                                     :error="form.errors?.item_discount"
                                 />
@@ -608,7 +631,7 @@ const addRow = () => {
                                 <NextInput
                                     v-model="item.free"
                                     :disabled="!item.selected_item"
-                                    type="number"
+                                    type="number" step="any"
                                     inputmode="decimal"
                                     :error="form.errors?.free"
                                 />
@@ -617,7 +640,7 @@ const addRow = () => {
                                 <NextInput
                                     v-model="item.tax"
                                     :disabled="!item.selected_item"
-                                    type="number"
+                                    type="number" step="any"
                                     inputmode="decimal"
                                     :error="form.errors?.tax"
                                 />
