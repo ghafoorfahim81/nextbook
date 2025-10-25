@@ -13,7 +13,9 @@
                 :loading="isLoading"
                 :placeholder="placeholder"
                 :close-on-select="true"
-                class="col-span-3 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm focus:border-violet-500 focus:outline-none focus:ring-violet-500 sm:text-sm "
+                :append-to-body="true"
+                :calculate-position="calculatePosition"
+                class="col-span-3 border border-gray-300 dark:border-gray-500 z-[1000] rounded-md shadow-sm focus:border-violet-500 focus:outline-none focus:ring-violet-500 sm:text-sm "
                 :class="[{ 'no-arrow': !showArrow }]"
                 v-bind="$attrs"
             />
@@ -150,6 +152,36 @@ const handleSearch = async (searchTerm) => {
         // Ensure selected is included after updating options
         ensureSelectedOptionInOptions();
     }
+};
+
+// Ensure the dropdown renders over parents with overflow and sticky headers.
+// This uses vue-select's append-to-body + a simple fixed positioning strategy.
+const calculatePosition = (dropdownEl, component) => {
+    const toggleEl = component?.$refs?.toggle;
+    if (!toggleEl || !dropdownEl) return () => {};
+
+    const rect = toggleEl.getBoundingClientRect();
+
+    dropdownEl.style.position = 'fixed';
+    dropdownEl.style.left = `${rect.left}px`;
+    dropdownEl.style.top = `${rect.bottom + 2}px`;
+    dropdownEl.style.width = `${rect.width}px`;
+    dropdownEl.style.zIndex = '9999';
+
+    const reposition = () => {
+        const r = toggleEl.getBoundingClientRect();
+        dropdownEl.style.left = `${r.left}px`;
+        dropdownEl.style.top = `${r.bottom + 2}px`;
+        dropdownEl.style.width = `${r.width}px`;
+    };
+
+    window.addEventListener('scroll', reposition, true);
+    window.addEventListener('resize', reposition, true);
+
+    return () => {
+        window.removeEventListener('scroll', reposition, true);
+        window.removeEventListener('resize', reposition, true);
+    };
 };
 
 // Optional: If you need to handle pre-set modelValue (e.g., editing forms) where the option isn't in initial props.options or cached yet,
