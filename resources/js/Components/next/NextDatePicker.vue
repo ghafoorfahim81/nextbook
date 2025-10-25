@@ -1,19 +1,24 @@
 <template>
     <component
         :is="VuePersianDatetimePicker"
-        :class="['block w-full', { 'no-icon': !showIcon }]"
+        :class="['block w-full z-5000 no-error-style', { 'no-icon': !showIcon, 'icon-only': showIcon && !showLabel }]"
 		v-model="normalizedModel"
 		:format="resolvedFormat"
 		:display-format="resolvedDisplayFormat"
 		:editable="editable"
 		:auto-submit="autoSubmit"
+        :popover="popover"
 		:type="type"
 		:min="min || undefined"
 		:max="max || undefined"
 		:clearable="clearable"
+		:label="showLabel ? undefined : ''"
 		:input-attrs="{ placeholder, class: inputClass, style: 'width:100%' }"
 		:locale="effectiveLocale"
 	>
+		<template v-if="!showLabel" #label>
+			<!-- Empty template to override any default label -->
+		</template>
 		<template v-if="isJalali" #header-date="{ vm }">
 			{{ vm.convertToLocaleNumber(vm.date.xFormat('ddd jD')) }} {{ monthLabel(vm.date) }}
 		</template>
@@ -35,7 +40,7 @@ const props = defineProps({
 	format: { type: String, default: '' },
 	displayFormat: { type: String, default: '' },
 	placeholder: { type: String, default: '' },
-	inputClass: { type: String, default: 'form-control' },
+	inputClass: { type: String, default: 'form-control z-5000' },
 	editable: { type: Boolean, default: false },
 	autoSubmit: { type: Boolean, default: true },
 	type: { type: String, default: 'date' },
@@ -46,6 +51,11 @@ const props = defineProps({
 	locale: { type: String, default: '' },
     // Toggle the calendar icon addon
     showIcon: { type: Boolean, default: true },
+    // Toggle showing the text label (e.g., "Date") next to the icon.
+    // When false, only the icon will be shown (default behavior).
+    // When true, both icon and label will be shown.
+    showLabel: { type: Boolean, default: false },
+    popover: { type: String, default: 'bottom-left' },
 })
 
 const emit = defineEmits(['update:modelValue', 'change'])
@@ -134,8 +144,21 @@ function safeYear(m) {
     padding: 0 8px;
 }
 
+/* v3 picker uses .vpd-icon-btn instead of .vpd-addon; style it similarly */
+:deep(.vpd-input-group .vpd-icon-btn) {
+    margin: 0;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+}
+
 /* Hide addon when showIcon is false by class added to root */
 :deep(.no-icon .vpd-input-group .vpd-addon) {
+    display: none !important;
+}
+/* Also hide v3 icon button when showIcon is false */
+:deep(.no-icon .vpd-input-group .vpd-icon-btn) {
     display: none !important;
 }
 
@@ -154,5 +177,58 @@ function safeYear(m) {
 :deep(.vpd-container) {
     width: auto;
     max-width: 100%;
+}
+
+/* Remove any red borders or error styling (no-error-style class is always applied) */
+:deep(.no-error-style .vpd-input-group) {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Remove red border from the input field (no-error-style class is always applied) */
+:deep(.no-error-style .vpd-input-group .vpd-input),
+:deep(.no-error-style .vpd-input-group input) {
+    border: 1px solid #d1d5db !important; /* Default gray border */
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Remove red border from the icon button (no-error-style class is always applied) */
+:deep(.no-error-style .vpd-input-group .vpd-icon-btn) {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Override any error state styling (no-error-style class is always applied) */
+:deep(.no-error-style .vpd-input-group.error),
+:deep(.no-error-style .vpd-input-group:has(.error)),
+:deep(.no-error-style .vpd-input-group:has([class*="error"])) {
+    border: 1px solid #d1d5db !important; /* Default gray border */
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* More aggressive override for any red borders */
+:deep(.vpd-input-group) {
+    border-color: #d1d5db !important;
+}
+
+:deep(.vpd-input-group .vpd-input),
+:deep(.vpd-input-group input) {
+    border-color: #d1d5db !important;
+}
+
+:deep(.vpd-input-group .vpd-icon-btn) {
+    border-color: #d1d5db !important;
+}
+
+/* Override any Tailwind CSS error classes */
+:deep(.vpd-input-group:has([class*="ring-red"])),
+:deep(.vpd-input-group:has([class*="border-red"])),
+:deep(.vpd-input-group:has([class*="text-red"])) {
+    border-color: #d1d5db !important;
+    box-shadow: none !important;
 }
 </style>
