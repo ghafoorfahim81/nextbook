@@ -35,7 +35,9 @@ class PurchaseController extends Controller
 
     public function create(Request $request)
     {
-        $purchaseNumber = Purchase::max('number') ? Purchase::max('number') + 1 : '1';
+        $purchaseNumber = Purchase::max('number') ? Purchase::max('number') + 1 : 1;
+
+
         return inertia('Purchase/Purchases/Create', [
             'purchaseNumber' => $purchaseNumber,
         ]);
@@ -55,9 +57,9 @@ class PurchaseController extends Controller
             $validated['date'] = $dateConversionService->toGregorian($validated['date']);
 
             $purchase = Purchase::create($validated);
-            $purchase->items()->createMany($validated['items']);
+            $purchase->items()->createMany($validated['item_list']);
 
-            foreach ($validated['items'] as $item) {
+            foreach ($validated['item_list'] as $item) {
                 $stockService->addStock($item, $validated['store_id'], 'purchase', $purchase->id);
             }
 
@@ -75,12 +77,9 @@ class PurchaseController extends Controller
             return $purchase;
         });
 
-        if ((bool) $request->stay || (bool) $request->create_and_new) {
-            return redirect()->route('purchases.create')->with([
-                'success',
-                'Purchase created successfully.',
-                'purchase_number' => $purchase->number + 1,
-            ]);
+        if ((bool) $request->create_and_new) {
+            // Stay on the same page; frontend will reset form and increment number
+            return redirect()->back()->with('success', 'Purchase created successfully.');
         }
 
         return redirect()->route('purchases.index')->with('success', 'Purchase created successfully.');
