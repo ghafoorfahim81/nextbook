@@ -10,14 +10,16 @@ class PurchaseResource extends JsonResource
     /**
      * Transform the resource into an array.
      */
+
     public function toArray(Request $request): array
     {
+        $dateConversionService = app(\App\Services\DateConversionService::class);
         return [
             'id' => $this->id,
             'number' => $this->number,
             'supplier_id' => $this->supplier_id,
             'supplier' => $this->supplier->name,
-            'date' => $this->date,
+            'date' => $dateConversionService->toDisplay($this->date),
             'transaction_id' => $this->transaction_id,
             'amount' => $this->transaction?->amount,
             'discount' => $this->discount,

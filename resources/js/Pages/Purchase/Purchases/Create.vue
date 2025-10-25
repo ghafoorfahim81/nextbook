@@ -169,17 +169,27 @@ const handleSelectChange = (field, value) => {
 };
 
 
-function handleSubmit() {
+function handleSubmit(createAndNew = false) {
     form.items = form.items.filter(item => item.selected_item);
     form.transaction_total = toNum(goodsTotal.value - totalDiscount.value + totalTax.value);
     form.items.forEach(item => {
         item.unit_measure_id = item.selected_measure.id;
     });
-    form.post('/purchases', {
-        onSuccess: () => {
-            form.reset();
-        }
-    })
+    if (createAndNew) {
+        form.transform((data) => ({ ...data, create_and_new: true })).post(route('purchases.store'), {
+            forceFormData: true,
+            onSuccess: () => {
+                form.reset();
+                form.number = props.purchaseNumber;
+            }
+        })
+        } else {
+            form.post(route('purchases.store'), {
+            onSuccess: () => {
+                form.reset();
+            }
+        })
+    }
 }
 
 // Payment dialog handlers
@@ -479,8 +489,8 @@ const addRow = () => {
                     :search-fields="['name', 'email', 'phone_no']"
                     :search-options="{ type: 'supplier' }"
                 />
-                <NextInput placeholder="Number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.number')" />
-                <NextDate v-model="form.date" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
+                <NextInput placeholder="Number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('purchase.purchase_number')" />
+                <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
                 <div class="grid grid-cols-2 gap-2">
                     <NextSelect
                     :options="currencies.data"
@@ -701,8 +711,9 @@ const addRow = () => {
 
             <div class="mt-4 flex gap-2">
                 <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white disabled:bg-gray-300" :disabled="disabled">{{ t('general.create') }}</button>
-                <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white disabled:bg-gray-300" :disabled="disabled" @click="() => { handleSubmit(); form.reset(); }">{{ t('general.create') }} & {{ t('general.new') }}</button>
-                <button type="button" class="btn px-4 py-2 rounded-md border" @click="() => $inertia.visit('/purchases')">{{ t('general.cancel') }}</button>
+                <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white disabled:bg-gray-300" :disabled="disabled"
+                 @click="() => handleSubmit(true)">{{ t('general.create') }} & {{ t('general.new') }}</button>
+                <button type="button" class="btn px-4 py-2 rounded-md border" @click="() => $inertia.visit(route('purchases.index'))">{{ t('general.cancel') }}</button>
             </div>
 
          </form>

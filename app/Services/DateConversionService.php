@@ -29,11 +29,40 @@ class DateConversionService
         }
 
         $result = ($this->calendarType === 'jalali')
-            ? Jalalian::fromFormat('Y-m-d', $date)->toCarbon()->format('Y-m-d')
+            ? $this->jalaliToGregorian($date) // Use custom method
             : $date;
 
         $this->conversionCache[$cacheKey] = $result;
         return $result;
+    }
+
+    /**
+     * Handle Jalali to Gregorian conversion with proper formatting
+     */
+    private function jalaliToGregorian(string $jalaliDate): string
+    {
+        // Normalize the date format - handle both 1404/08/18 and 1404-08-18
+        $normalizedDate = str_replace('/', '-', $jalaliDate);
+
+        try {
+            // Parse with correct format for Jalali dates with slashes
+            if (str_contains($jalaliDate, '/')) {
+                // Date is in format 1404/08/18
+                return Jalalian::fromFormat('Y/m/d', $jalaliDate)
+                    ->toCarbon()
+                    ->format('Y-m-d');
+            } else {
+                // Date is already in format 1404-08-18
+                return Jalalian::fromFormat('Y-m-d', $jalaliDate)
+                    ->toCarbon()
+                    ->format('Y-m-d');
+            }
+        } catch (\Exception $e) {
+            // Fallback: try to parse as is
+            return Jalalian::fromFormat('Y-m-d', $normalizedDate)
+                ->toCarbon()
+                ->format('Y-m-d');
+        }
     }
 
     /**
@@ -48,11 +77,24 @@ class DateConversionService
         }
 
         $result = ($this->calendarType === 'jalali')
-            ? Jalalian::fromCarbon(Carbon::parse($gregorianDate))->format('Y-m-d')
+            ? $this->gregorianToJalali($gregorianDate) // Use custom method
             : $gregorianDate;
 
         $this->conversionCache[$cacheKey] = $result;
         return $result;
+    }
+
+    /**
+     * Handle Gregorian to Jalali conversion
+     */
+    private function gregorianToJalali(string $gregorianDate): string
+    {
+        try {
+            return Jalalian::fromCarbon(Carbon::parse($gregorianDate))
+                ->format('Y/m/d'); // Return with slashes for display
+        } catch (\Exception $e) {
+            return $gregorianDate; // Fallback to original
+        }
     }
 
     /**
@@ -92,8 +134,8 @@ class DateConversionService
     private function getCompanyCalendarType(): string
     {
         // Your company detection logic
-        return auth()->check() && auth()->user()->company
-            ? auth()->user()->company->calendar_type
+        return auth()->check() && auth()->user()->company?->calendar_type
+            ? auth()->user()->company?->calendar_type
             : 'gregorian';
     }
 }

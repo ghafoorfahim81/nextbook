@@ -2,8 +2,8 @@
 
 return [
     'calendar_type' => [
-        'shamsi' => 'Shamsi',
-        'miladi' => 'Miladi',
+        'jalali' => 'Jalali',
+        'gregorian' => 'Gregorian',
     ],
     'working_style' => [
         'normal' => 'Normal (With Expiry, batch..)',

@@ -1,4 +1,5 @@
 <template>
+    <div class="relative">
     <component
         :is="VuePersianDatetimePicker"
         :class="['block w-full z-5000 no-error-style', { 'no-icon': !showIcon, 'icon-only': showIcon && !showLabel }]"
@@ -6,7 +7,7 @@
 		:format="resolvedFormat"
 		:display-format="resolvedDisplayFormat"
 		:editable="editable"
-		:auto-submit="autoSubmit" 
+		:auto-submit="autoSubmit"
 		:type="type"
 		:min="min || undefined"
 		:max="max || undefined"
@@ -28,10 +29,14 @@
 			<span>{{ monthLabel(date) }} {{ safeYear(date) }}</span>
 		</template>
 	</component>
+
+	<!-- Display error outside the component if present -->
+	<span v-if="error" class="mt-1 block text-red-500 text-sm">{{ error }}</span>
+    </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import VuePersianDatetimePicker from 'vue3-persian-datetime-picker'
 
 const props = defineProps({
@@ -41,7 +46,9 @@ const props = defineProps({
 	placeholder: { type: String, default: '' },
 	inputClass: { type: String, default: 'form-control z-5000' },
 	editable: { type: Boolean, default: false },
+    currentDate: { type: [Boolean, Date], default: false },
 	autoSubmit: { type: Boolean, default: true },
+    error: String,
 	type: { type: String, default: 'date' },
 	min: [String, Number, Date],
 	max: [String, Number, Date],
@@ -59,12 +66,42 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'change'])
 
+// Set initial value if currentDate is true and model is empty
+const shouldSetCurrentDate = computed(() => {
+    return props.currentDate === true && (!props.modelValue || props.modelValue === '')
+})
+
+// Enhanced model that sets current date as default when current-date is true
 const model = computed({
 	get: () => props.modelValue,
 	set: (value) => {
 		emit('update:modelValue', value)
 		emit('change', value)
 	},
+})
+
+// Helper function to set current date value
+function setCurrentDateValue() {
+	const currentDate = new Date()
+
+	// Always pass the current date as a Date object and let the VuePersianDatetimePicker
+	// handle the conversion based on its locale setting
+	console.log('Setting current date:', currentDate, 'Locale:', effectiveLocale.value)
+	emit('update:modelValue', currentDate)
+}
+
+// Set initial current date when component is mounted
+onMounted(() => {
+	if (shouldSetCurrentDate.value) {
+		setCurrentDateValue()
+	}
+})
+
+// Watch for changes that require setting current date
+watch([() => props.currentDate, () => props.modelValue], () => {
+	if (shouldSetCurrentDate.value) {
+		setCurrentDateValue()
+	}
 })
 
 // Avoid passing empty strings; the picker expects null/undefined when empty
@@ -75,10 +112,16 @@ const normalizedModel = computed({
 
 // Determine locale from prop or localStorage (fallback to 'fa')
 const effectiveLocale = computed(() => {
-	if (props.locale) return props.locale
+	if (props.locale) {
+		console.log('Using locale from props:', props.locale)
+		return props.locale
+	}
+
 	const stored = typeof localStorage !== 'undefined' ? (localStorage.getItem('calendar_type') || '') : ''
-	if (/miladi|gregorian|en/i.test(stored)) return 'en'
-	return 'fa'
+	console.log('Calendar type from localStorage:', stored, 'Effective locale will be:', stored === 'en' ? 'en' : 'fa')
+
+	if (stored === 'en') return 'en'
+	return 'fa' // Default to Persian (fa) for VuePersianDatetimePicker
 })
 
 const isJalali = computed(() => effectiveLocale.value === 'fa')

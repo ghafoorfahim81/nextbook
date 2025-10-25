@@ -43,20 +43,24 @@ class PurchaseController extends Controller
 
     public function store(PurchaseStoreRequest $request, TransactionService $transactionService, StockService $stockService)
     {
-
-        // dd($request->validated());
-        // dd($request->all());
-        // return $request->all();
         $purchase = DB::transaction(function () use ($request, $transactionService, $stockService) {
             // Create purchase
+            $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
+
             $validated['type']  = $validated['sale_purchase_type_id'] ?? null;
             $validated['status'] = 'pending';
-            $purchase = Purchase::create(attributes: $validated);
+
+            // Convert date properly
+            $validated['date'] = $dateConversionService->toGregorian($validated['date']);
+
+            $purchase = Purchase::create($validated);
             $purchase->items()->createMany($validated['items']);
+
             foreach ($validated['items'] as $item) {
                 $stockService->addStock($item, $validated['store_id'], 'purchase', $purchase->id);
             }
+
             // Create accounting transactions
             $transactions = $transactionService->createPurchaseTransactions(
                 $purchase,
@@ -67,11 +71,53 @@ class PurchaseController extends Controller
                 $validated['currency_id'] ?? null,
                 $validated['rate'] ?? null,
             );
+
             return $purchase;
         });
 
-        // return response()->json($purchase, 201);
+        if ((bool) $request->stay || (bool) $request->create_and_new) {
+            return redirect()->route('purchases.create')->with([
+                'success',
+                'Purchase created successfully.',
+                'purchase_number' => $purchase->number + 1,
+            ]);
+        }
+
+        return redirect()->route('purchases.index')->with('success', 'Purchase created successfully.');
     }
+
+    // public function store(PurchaseStoreRequest $request, TransactionService $transactionService, StockService $stockService)
+    // {
+    //     $dateConversionService = app(\App\Services\DateConversionService::class);
+    //     $validated['date'] = $dateConversionService->toGregorian($request->date);
+    //     dd($validated);
+    //     $purchase = DB::transaction(function () use ($request, $transactionService, $stockService) {
+    //         // Create purchase
+    //         $dateConversionService = app(\App\Services\DateConversionService::class);
+    //         $validated = $request->validated();
+    //         $validated['type']  = $validated['sale_purchase_type_id'] ?? null;
+    //         $validated['status'] = 'pending';
+    //         $validated['date'] = $dateConversionService->toGregorian($validated['date']);
+    //         $purchase = Purchase::create(attributes: $validated);
+    //         $purchase->items()->createMany($validated['items']);
+    //         foreach ($validated['items'] as $item) {
+    //             $stockService->addStock($item, $validated['store_id'], 'purchase', $purchase->id);
+    //         }
+    //         // Create accounting transactions
+    //         $transactions = $transactionService->createPurchaseTransactions(
+    //             $purchase,
+    //             \App\Models\Ledger\Ledger::find($validated['supplier_id']),
+    //             $validated['transaction_total'],
+    //             $validated['sale_purchase_type_id'] ?? 'cash',
+    //             $validated['payment'] ?? [],
+    //             $validated['currency_id'] ?? null,
+    //             $validated['rate'] ?? null,
+    //         );
+    //         return $purchase;
+    //     });
+
+    //     // return response()->json($purchase, 201);
+    // }
 
 
     public function show(Request $request, Purchase $purchase)
