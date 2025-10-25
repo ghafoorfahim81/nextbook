@@ -15,7 +15,7 @@
                 :close-on-select="true"
                 :append-to-body="true"
                 :calculate-position="calculatePosition"
-                class="col-span-3 border border-gray-300 dark:border-gray-500 z-10 rounded-md shadow-sm focus:border-violet-500 focus:outline-none focus:ring-violet-500 sm:text-sm "
+                class="col-span-3 sticky border border-gray-300 dark:border-gray-500 z-100 rounded-md shadow-sm focus:border-violet-500 focus:outline-none focus:ring-violet-500 sm:text-sm "
                 :class="[{ 'no-arrow': !showArrow }]"
                 v-bind="$attrs"
             />
@@ -166,13 +166,17 @@ const calculatePosition = (dropdownEl, component) => {
     dropdownEl.style.left = `${rect.left}px`;
     dropdownEl.style.top = `${rect.bottom + 2}px`;
     dropdownEl.style.width = `${rect.width}px`;
-    dropdownEl.style.zIndex = '50';
+    dropdownEl.style.zIndex = '10000';
+    dropdownEl.style.transform = 'translateZ(0)';
+    dropdownEl.style.willChange = 'transform';
 
     const reposition = () => {
         const r = toggleEl.getBoundingClientRect();
         dropdownEl.style.left = `${r.left}px`;
         dropdownEl.style.top = `${r.bottom + 2}px`;
         dropdownEl.style.width = `${r.width}px`;
+        dropdownEl.style.transform = 'translateZ(0)';
+        dropdownEl.style.willChange = 'transform';
     };
 
     window.addEventListener('scroll', reposition, true);
@@ -192,10 +196,12 @@ const calculatePosition = (dropdownEl, component) => {
 
 <!-- Styles specific to vue-select dropdown -->
 <style scoped>
-    /* Keep the menu above surrounding UI - higher z-index for modals */
+    /* Keep the menu above surrounding UI - higher z-index for modals and table headers */
 :deep(.vs__dropdown-menu) {
-    z-index: 50 !important;
-    position: absolute !important;
+    z-index: 10000 !important;
+    position: fixed !important;
+    transform: translateZ(0) !important;
+    will-change: transform !important;
 }
 
 /* Ensure the dropdown toggle is clickable */
@@ -318,13 +324,6 @@ const calculatePosition = (dropdownEl, component) => {
 :deep(.vs__dropdown-toggle:focus-within) {
     border-color: rgb(99 102 241);    /* indigo-500 */
     box-shadow: 0 0 0 1px rgba(99,102,241,.25);
-}
-
-/* Special handling for table headers and sticky elements */
-:deep(.vs__dropdown-menu) {
-    /* Force dropdown to render above table headers and sticky elements */
-    transform: translateZ(0) !important;
-    will-change: transform !important;
 }
 
 /* Ensure dropdown works in table contexts */
