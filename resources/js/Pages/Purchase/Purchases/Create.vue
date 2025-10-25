@@ -17,6 +17,7 @@ import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
+import { Trash2 } from 'lucide-vue-next';
 const { t } = useI18n();
 const showFilter = () => {
     showFilter.value = true;
@@ -462,7 +463,7 @@ const addRow = () => {
     <AppLayout :title="t('general.create', { name: t('purchase.purchase') })" :sidebar-collapsed="true">
          <form @submit.prevent="handleSubmit">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative ">
-            <div class="absolute -top-3 left-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('purchase.purchase') }) }}</div>
+            <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('purchase.purchase') }) }}</div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <NextSelect
                     :options="ledgers.data"
@@ -521,14 +522,14 @@ const addRow = () => {
                 />
             </div>
             </div>
-            <div class="rounded-xl border bg-card shadow-sm overflow-x-auto max-h-72">
+            <div class="rounded-xl border bg-card shadow-sm overflow-x-auto max-h-80">
                 <table class="w-full table-fixed min-w-[1000px] purchase-table border-separate">
                     <thead class=" " :class="form.sale_purchase_type_id === 'cash' ? 'bg-card sticky top-0 z-[200]' : ''">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
-                            <th class="px-1 py-1 w-5 min-w-5">{{form.sale_purchase_type_id}}</th>
+                            <th class="px-1 py-1 w-5 min-w-5">#</th>
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
                             <th class="px-1 py-1 w-32">{{ t('general.batch') }}</th>
-                            <th class="px-1 py-1 w-32">{{ t('general.expire_date') }}</th>
+                            <th class="px-1 py-1 w-36">{{ t('general.expire_date') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
                             <th class="px-1 py-1 w-24">{{ t('general.on_hand') }}</th>
                             <th class="px-1 py-1 w-24">{{ t('general.unit') }}</th>
@@ -537,7 +538,7 @@ const addRow = () => {
                             <th class="px-1 py-1 w-16">{{ t('general.free') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.tax') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.total') }}</th>
-                            <th class="px-1 py-1 w-10 min-w-10 text-center">
+                            <th class="px-1 py-1 w-10  ">
                                 <Trash2 class="w-4 h-4 text-red-500 inline" />
                             </th>
                         </tr>
@@ -570,10 +571,10 @@ const addRow = () => {
                                     @input="notifyIfDuplicate(index)"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none z-[1000px] relative relative wq': !isRowEnabled(index) }">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none relative relative wq': !isRowEnabled(index) }">
                                 <NextDate v-model="item.expire_date"
                                 :popover="popover"
-                                :error="form.errors?.[`items.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+                                :error="form.errors?.[`items.${index}.expire_date`]"   />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
