@@ -523,9 +523,9 @@ const addRow = () => {
             </div>
             <div class="rounded-xl border bg-card shadow-sm overflow-x-auto max-h-72">
                 <table class="w-full table-fixed min-w-[1000px] purchase-table border-separate">
-                    <thead class="bg-card sticky top-0" :class="form.selected_sale_purchase_type === 'cash' ? 'z-[200]' : ''">
+                    <thead class=" " :class="form.sale_purchase_type_id === 'cash' ? 'bg-card sticky top-0 z-[200]' : ''">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
-                            <th class="px-1 py-1 w-5 min-w-5">#</th>
+                            <th class="px-1 py-1 w-5 min-w-5">{{form.sale_purchase_type_id}}</th>
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
                             <th class="px-1 py-1 w-32">{{ t('general.batch') }}</th>
                             <th class="px-1 py-1 w-32">{{ t('general.expire_date') }}</th>
@@ -570,8 +570,10 @@ const addRow = () => {
                                     @input="notifyIfDuplicate(index)"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                                <NextDate v-model="item.expire_date" :error="form.errors?.[`items.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+                            <td :class="{ 'opacity-50 pointer-events-none select-none z-[1000px] relative relative wq': !isRowEnabled(index) }">
+                                <NextDate v-model="item.expire_date"
+                                :popover="popover"
+                                :error="form.errors?.[`items.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
