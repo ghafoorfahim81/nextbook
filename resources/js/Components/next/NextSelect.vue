@@ -15,15 +15,15 @@
                 :close-on-select="true"
                 :append-to-body="true"
                 :calculate-position="calculatePosition"
-                class="col-span-3 border border-gray-300 dark:border-gray-500 z-[1000] rounded-md shadow-sm focus:border-violet-500 focus:outline-none focus:ring-violet-500 sm:text-sm "
+                class="col-span-3 border border-gray-300 dark:border-gray-500 z-10 rounded-md shadow-sm focus:border-violet-500 focus:outline-none focus:ring-violet-500 sm:text-sm "
                 :class="[{ 'no-arrow': !showArrow }]"
                 v-bind="$attrs"
             />
-            <!-- Floating label sits *under* the dropdown and ignores pointer events -->
+            <!-- Floating label sits above the select and ignores pointer events -->
             <FloatingLabel
                 :id="id"
                 :label="floatingText"
-                class="pointer-events-none z-0 focus:text-violet-500 focus:outline-none focus:ring-violet-500"
+                class="pointer-events-none z-20 focus:text-violet-500 focus:outline-none focus:ring-violet-500"
             />
         </div>
 
@@ -166,7 +166,7 @@ const calculatePosition = (dropdownEl, component) => {
     dropdownEl.style.left = `${rect.left}px`;
     dropdownEl.style.top = `${rect.bottom + 2}px`;
     dropdownEl.style.width = `${rect.width}px`;
-    dropdownEl.style.zIndex = '9999';
+    dropdownEl.style.zIndex = '50';
 
     const reposition = () => {
         const r = toggleEl.getBoundingClientRect();
@@ -194,7 +194,7 @@ const calculatePosition = (dropdownEl, component) => {
 <style scoped>
     /* Keep the menu above surrounding UI - higher z-index for modals */
 :deep(.vs__dropdown-menu) {
-    z-index: 9999 !important;
+    z-index: 50 !important;
     position: absolute !important;
 }
 
