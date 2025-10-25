@@ -10,6 +10,7 @@
                 @update:modelValue="val => emit('update:modelValue', val)"
                 @search="handleSearch"
                 :filterable="false"
+                clearable="false"
                 :loading="isLoading"
                 :placeholder="placeholder"
                 :close-on-select="true"
@@ -54,6 +55,7 @@ const props = defineProps({
     searchFields: { type: Array, default: () => ['name'] },
     searchOptions: { type: Object, default: () => ({}) },
     showArrow: { type: Boolean, default: true },
+    clearable: { type: Boolean, default: true },
 });
 // ... existing imports and props ...
 

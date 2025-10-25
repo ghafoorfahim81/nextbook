@@ -20,7 +20,7 @@ class PurchaseStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['required'],
+            'number' => ['required', 'unique:purchases,number'],
             'supplier_id' => ['required', 'string', 'exists:ledgers,id'],
             'date' => ['required', 'date'],
             'transaction_total' => ['required', 'numeric'],
@@ -37,16 +37,16 @@ class PurchaseStoreRequest extends FormRequest
             'store_id' => ['nullable', 'string', 'exists:stores,id'],
             'description' => ['nullable', 'string'],
             'status' => ['nullable', 'string'],
-            'items' => ['required', 'array'],
-            'items.*.item_id' => ['required', 'string', 'exists:items,id'],
-            'items.*.batch' => ['nullable', 'string'],
-            'items.*.expire_date' => ['nullable', 'date'],
-            'items.*.quantity' => ['required', 'numeric'],
-            'items.*.unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
-            'items.*.unit_price' => ['required', 'numeric'],
-            'items.*.discount' => ['nullable', 'numeric'],
-            'items.*.free' => ['nullable', 'numeric'],
-            'items.*.tax' => ['nullable', 'numeric'],
+            'item_list' => ['required', 'array'],
+            'item_list.*.item_id' => ['required', 'string', 'exists:items,id'],
+            'item_list.*.batch' => ['nullable', 'string'],
+            'item_list.*.expire_date' => ['nullable', 'date'],
+            'item_list.*.quantity' => ['required', 'numeric'],
+            'item_list.*.unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
+            'item_list.*.unit_price' => ['required', 'numeric'],
+            'item_list.*.discount' => ['nullable', 'numeric'],
+            'item_list.*.free' => ['nullable', 'numeric'],
+            'item_list.*.tax' => ['nullable', 'numeric'],
         ];
     }
 }

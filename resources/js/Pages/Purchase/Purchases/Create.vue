@@ -60,6 +60,7 @@ const form = useForm({
     status: '',
     store_id: '',
     selected_store: '',
+    item_list:[],
     items: [
         {
             item_id: '',
@@ -102,6 +103,13 @@ const form = useForm({
         },
     ],
 })
+
+// Watch for purchaseNumber prop changes and update form.number
+watch(() => props.purchaseNumber, (newPurchaseNumber) => {
+    if (newPurchaseNumber) {
+        form.number = newPurchaseNumber;
+    }
+}, { immediate: true });
 
 // Set base currency as default
 watch(() => props.currencies?.data, (currencies) => {
@@ -170,23 +178,96 @@ const handleSelectChange = (field, value) => {
 
 
 function handleSubmit(createAndNew = false) {
-    form.items = form.items.filter(item => item.selected_item);
-    form.transaction_total = toNum(goodsTotal.value - totalDiscount.value + totalTax.value);
-    form.items.forEach(item => {
-        item.unit_measure_id = item.selected_measure.id;
-    });
+    if(form.items[0]?.selected_item === '' || form.items[0]?.selected_item === null) {
+        notifySound('error');
+        toast({
+            title: 'Please add items',
+            description: 'Please add at least one item to create a purchase',
+            variant: 'destructive',
+            class:'bg-yellow-600 text-white',
+        })
+        return;
+    }
+    else{
+        const FormItems = form.items.filter(item => item.selected_item && item.item_id);
+        form.item_list = FormItems;
+        form.transaction_total = toNum(goodsTotal.value - totalDiscount.value + totalTax.value);
+
+        // Filter out empty items and set unit_measure_id
+        form.item_list.forEach(item => {
+            item.unit_measure_id = item.selected_measure.id;
+        });
+    }
     if (createAndNew) {
         form.transform((data) => ({ ...data, create_and_new: true })).post(route('purchases.store'), {
-            forceFormData: true,
             onSuccess: () => {
                 form.reset();
-                form.number = props.purchaseNumber;
+                notifySound('success');
+                const currentNumber = Number(form.number ?? props.purchaseNumber ?? 0);
+                const nextNumber = isNaN(currentNumber) ? 0 : currentNumber + 1;
+                form.number = (nextNumber);
+                // Re-initialize currency field with default
+                if (props.currencies?.data) {
+                    const baseCurrency = props.currencies.data.find(c => c.is_base_currency);
+                    if (baseCurrency) {
+                        form.selected_currency = baseCurrency;
+                        form.rate = baseCurrency.exchange_rate;
+                        form.currency_id = baseCurrency.id;
+                    }
+                }
+                // Re-initialize sale_purchase_type with default
+                if (props.salePurchaseTypes) {
+                    const baseSalePurchaseType = props.salePurchaseTypes.find(c => c.id === 'cash');
+                    if (baseSalePurchaseType) {
+                        form.selected_sale_purchase_type = baseSalePurchaseType;
+                        form.sale_purchase_type_id = baseSalePurchaseType.id;
+                    }
+                }
+                // Re-initialize store with default
+                if (props.stores?.data) {
+                    const baseStore = props.stores.data.find(c => c.is_main === true);
+                    if (baseStore) {
+                        form.selected_store = baseStore;
+                        form.store_id = baseStore.id;
+                    }
+                }
+                toast({
+                    title: 'Success',
+                    description: 'Purchase created successfully',
+                    variant: 'success',
+                    class:'bg-green-600 text-white',
+                })
+            },
+            onError: () => {
+                notifySound('error');
+                toast({
+                    title: 'Error creating purchase',
+                    description: 'Error creating purchase',
+                    variant: 'destructive',
+                    class:'bg-pink-600 text-white',
+                })
             }
         })
         } else {
             form.post(route('purchases.store'), {
             onSuccess: () => {
-                form.reset();
+                notifySound('success');
+
+                toast({
+                    title: 'Purchase created successfully',
+                    description: 'Purchase created successfully',
+                    variant: 'success',
+                    class:'bg-green-600 text-white',
+                })
+            },
+            onError: () => {
+                notifySound('error');
+                toast({
+                    title: 'Error creating purchase',
+                    description: 'Error creating purchase',
+                    variant: 'destructive',
+                    class:'bg-pink-600 text-white',
+                })
             }
         })
     }
@@ -253,6 +334,17 @@ watch(() => form.rate, (newRate) => {
         row.unit_price = (baseUnitPrice / (selectedUnit || 1)) * (Number(newRate) || 0)
     })
 })
+
+const notifySound = (type) => {
+    if(type === 'success') {
+        const sound = new Audio('/notify_sounds/filling-your-inbox.mp3');
+        sound.play().catch(error => console.error('Error playing sound:', error));
+    }
+    else {
+        const sound = new Audio('/notify_sounds/glass-breaking.mp3');
+        sound.play().catch(error => console.error('Error playing sound:', error));
+    }
+}
 
 const handleItemChange = async (index, selectedItem) => {
     const row = form.items[index]
@@ -577,14 +669,14 @@ const addRow = () => {
                                 <NextInput
                                     v-model="item.batch"
                                     :disabled="!item.selected_item"
-                                    :error="form.errors?.batch"
+                                    :error="form.errors?.[`item_list.${index}.batch`]"
                                     @input="notifyIfDuplicate(index)"
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none relative relative wq': !isRowEnabled(index) }">
                                 <NextDate v-model="item.expire_date"
                                 :popover="popover"
-                                :error="form.errors?.[`items.${index}.expire_date`]"   />
+                                :error="form.errors?.[`item_list.${index}.expire_date`]"   />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
@@ -592,7 +684,7 @@ const addRow = () => {
                                     :disabled="!item.selected_item"
                                     type="number" step="any"
                                     inputmode="decimal"
-                                    :error="form.errors?.quantity"
+                                    :error="form.errors?.[`item_list.${index}.quantity`]"
                                 />
                             </td>
                             <td class="text-center">
@@ -603,7 +695,7 @@ const addRow = () => {
                                     :options="item.available_measures"
                                     v-model="item.selected_measure"
                                     label-key="name"
-                                    :error="form.errors?.unit_measure_id"
+                                    :error="form.errors?.[`item_list.${index}.unit_measure_id`]"
                                     value-key="id"
                                     :show-arrow="false"
                                     :reduce="unit => unit"
@@ -626,7 +718,7 @@ const addRow = () => {
                                     :disabled="!item.selected_item"
                                     type="number" step="any"
                                     inputmode="decimal"
-                                    :error="form.errors?.unit_price"
+                                    :error="form.errors?.[`item_list.${index}.unit_price`]"
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
@@ -635,7 +727,7 @@ const addRow = () => {
                                     :disabled="!item.selected_item"
                                     type="number" step="any"
                                     inputmode="decimal"
-                                    :error="form.errors?.item_discount"
+                                    :error="form.errors?.[`item_list.${index}.item_discount`]"
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
@@ -644,7 +736,7 @@ const addRow = () => {
                                     :disabled="!item.selected_item"
                                     type="number" step="any"
                                     inputmode="decimal"
-                                    :error="form.errors?.free"
+                                    :error="form.errors?.[`item_list.${index}.free`]"
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
@@ -653,7 +745,7 @@ const addRow = () => {
                                     :disabled="!item.selected_item"
                                     type="number" step="any"
                                     inputmode="decimal"
-                                    :error="form.errors?.tax"
+                                    :error="form.errors?.[`item_list.${index}.tax`]"
                                 />
                             </td>
                             <td class="text-center">

@@ -15,7 +15,7 @@ return new class extends Migration
 
         Schema::create('purchases', function (Blueprint $table) {
             $table->char('id', 26)->primary();
-            $table->string('number')->index();
+            $table->integer('number')->index();
             $table->char('supplier_id', 26);
             $table->date('date');
             $table->char('transaction_id', 26)->nullable();
