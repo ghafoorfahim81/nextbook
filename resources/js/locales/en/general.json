@@ -131,7 +131,8 @@
   "try_again":"Try again",
   "restore":"Restore",
   "restore_success":"{name} restored successfully",
-  "restore_error_message":"Failed to restore {name}"
+  "restore_error_message":"Failed to restore {name}",
+  "bill_number":"Bill Number"
 
 }
 
