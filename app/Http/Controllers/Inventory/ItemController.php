@@ -77,7 +77,6 @@ class ItemController extends Controller
                         'tax'             => isset($o['tax']) ? (float) $o['tax'] : null,
                         'date'            => $o['date'] ?? Carbon::now()->toDateString(),
                         'expire_date'     => $expire_date,
-                        'purchase_id'     => null, // opening, not a purchase
                     ]);
 
                     // mark it as an opening
