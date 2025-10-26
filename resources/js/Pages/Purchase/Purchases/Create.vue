@@ -581,7 +581,7 @@ const addRow = () => {
                     :search-fields="['name', 'email', 'phone_no']"
                     :search-options="{ type: 'supplier' }"
                 />
-                <NextInput placeholder="Number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('purchase.purchase_number')" />
+                <NextInput placeholder="Number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
                 <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
                 <div class="grid grid-cols-2 gap-2">
                     <NextSelect
