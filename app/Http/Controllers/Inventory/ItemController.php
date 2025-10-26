@@ -75,8 +75,7 @@ class ItemController extends Controller
                         'discount'        => isset($o['discount']) ? (float) $o['discount'] : null,
                         'tax'             => isset($o['tax']) ? (float) $o['tax'] : null,
                         'date'            => $o['date'] ?? Carbon::now()->toDateString(),
-                        'expire_date'     => $o['expire_date'] ?? null,
-                        'purchase_id'     => null, // opening, not a purchase
+                        'expire_date'     => $o['expire_date'] ?? null, 
                     ]);
 
                     // mark it as an opening
