@@ -88,6 +88,10 @@ class PurchaseItem extends Model
     {
         return $this->belongsTo(\App\Models\Inventory\Item::class);
     }
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Administration\Store::class);
+    }
 
     public function unitMeasure(): BelongsTo
     {

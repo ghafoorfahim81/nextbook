@@ -17,12 +17,11 @@ class TransactionResource extends JsonResource
             'transactionable' => $this->transactionable,
             'amount' => $this->amount,
             'currency_id' => $this->currency_id,
+            'currency' => $this->whenLoaded('currency', $this->currency),
             'rate' => $this->rate,
             'date' => $this->date,
             'type' => $this->type,
-            'remark' => $this->remark,
-            'created_by' => $this->created_by,
-            'updated_by' => $this->updated_by,
+            'remark' => $this->remark, 
         ];
     }
 }

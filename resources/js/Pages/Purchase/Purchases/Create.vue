@@ -27,14 +27,7 @@ const showFilter = () => {
 const { toast } = useToast()
 
 const props = defineProps({
-    ledgers: Object,
-    salePurchaseTypes: Object,
-    currencies: Object,
-    items: Object,
-    stores: Object,
-    unitMeasures: Object,
-    accounts: Object,
-    purchaseNumber: String,
+
 })
 
 const form = useForm({

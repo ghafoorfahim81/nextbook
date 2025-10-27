@@ -29,6 +29,23 @@ class PurchaseUpdateRequest extends FormRequest
             'type' => ['required', 'string'],
             'description' => ['nullable', 'string'],
             'status' => ['nullable', 'string'],
+            'sale_purchase_type_id' => ['nullable', 'string'],
+            'transaction_total' => ['nullable', 'numeric'],
+            'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
+            'rate' => ['nullable', 'numeric'],
+            'item_list' => ['nullable', 'array'],
+            'item_list.*.item_id' => ['required', 'string', 'exists:items,id'],
+            'item_list.*.quantity' => ['required', 'numeric', 'min:0.0000001'],
+            'item_list.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'item_list.*.free' => ['nullable', 'numeric', 'min:0'],
+            'item_list.*.batch' => ['nullable', 'string'],
+            'item_list.*.discount' => ['nullable', 'numeric', 'min:0'],
+            'item_list.*.tax' => ['nullable', 'numeric', 'min:0'],
+            'item_list.*.unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
+            'payment' => ['nullable', 'array'],
+            'payment.account_id' => ['nullable', 'string', 'exists:accounts,id'],
+            'payment.amount' => ['nullable', 'numeric', 'min:0'],
+            'payment.note' => ['nullable', 'string'],
         ];
     }
 }
