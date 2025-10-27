@@ -27,6 +27,7 @@ return new class extends Migration
             $table->decimal('tax', 10, 2)->default(0)->nullable();
             $table->char('created_by', 26);
             $table->char('updated_by', 26)->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
 

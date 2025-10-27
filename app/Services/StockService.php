@@ -12,13 +12,13 @@ class StockService
     /**
      * Add stock from various sources
      */
-    public function addStock(array $data, $storeId, string $sourceType, $sourceId = null): Stock
+    public function addStock(array $data, $storeId, string $sourceType, $sourceId = null, $date = null): Stock
     {
-        return DB::transaction(function () use ($data, $storeId, $sourceType, $sourceId) {
+        return DB::transaction(function () use ($data, $storeId, $sourceType, $sourceId, $date) {
             $stockData = $this->validateStockData($data);
 
             $stockData = array_merge($stockData, [
-                'date' => $stockData['date'] ?? now(),
+                'date' => $date,
                 'store_id' => $storeId,
                 'source_type' => $sourceType,
                 'source_id' => $sourceId,
@@ -32,10 +32,13 @@ class StockService
     /**
      * Remove stock for various reasons
      */
-    public function removeStock(array $data, string $sourceType, $sourceId = null): StockOut
+    public function removeStock(array $data, $storeId, string $sourceType, $sourceId = null): StockOut
     {
-        return DB::transaction(function () use ($data, $sourceType, $sourceId) {
+        return DB::transaction(function () use ($data, $storeId, $sourceType, $sourceId) {
             $stockOutData = $this->validateStockOutData($data);
+
+            // Override store_id with the passed parameter
+            $stockOutData['store_id'] = $storeId;
 
             $availableStock = $this->getAvailableStock(
                 $stockOutData['item_id'],
@@ -218,7 +221,7 @@ class StockService
     {
         return validator($data, [
             'item_id' => 'required|exists:items,id',
-            'store_id' => 'required|exists:stores,id',
+            'store_id' => 'nullable|exists:stores,id',
             'quantity' => 'required|numeric|min:0.01',
             'sale_price' => 'nullable|numeric|min:0',
             'free' => 'nullable|numeric|min:0',

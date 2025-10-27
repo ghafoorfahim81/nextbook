@@ -77,7 +77,95 @@ class TransactionService
         return $transactions;
     }
 
+    public function updatePurchaseTransactions(Purchase $purchase, Ledger $ledger, float $transactionTotal, string $transactionType, $payment, $currency_id, $rate)
+    {
+        return DB::transaction(function () use ($purchase, $ledger, $transactionTotal, $transactionType, $payment, $currency_id, $rate) {
+            // Find existing transactions for this purchase
+            $existingTransactions = Transaction::where('reference_type', 'purchase')
+                ->where('reference_id', $purchase->id)
+                ->get();
 
+            if ($existingTransactions->isEmpty()) {
+                // If no existing transactions, create new ones
+                return $this->createPurchaseTransactions($purchase, $ledger, $transactionTotal, $transactionType, $payment, $currency_id, $rate);
+            }
+
+            // Update existing inventory transaction
+            $inventoryTransaction = $existingTransactions->where('type', 'debit')->first();
+            if ($inventoryTransaction) {
+                $inventoryTransaction->update([
+                    'account_id' => Account::where('slug', 'inventory-asset')->first()->id,
+                    'ledger_id' => $ledger->id,
+                    'amount' => $transactionTotal,
+                    'currency_id' => $currency_id,
+                    'rate' => $rate,
+                    'date' => $purchase->date,
+                    'remark' => "Purchase #{$purchase->number} from {$ledger->name}",
+                ]);
+            }
+
+            // Handle payment transaction updates
+            if ($transactionType === 'credit' && $payment) {
+                // For credit purchases, update or create payment transaction
+                $payableTransaction = $existingTransactions->where('type', 'credit')->where('account_id', $payment['account_id'])->first();
+                if ($payableTransaction) {
+                    $payableTransaction->update([
+                        'ledger_id' => $ledger->id,
+                        'amount' => $payment['amount'],
+                        'currency_id' => $currency_id,
+                        'rate' => $rate,
+                        'date' => $purchase->date,
+                        'remark' => $payment['note'],
+                    ]);
+                } else {
+                    // Create new payment transaction if it doesn't exist
+                    $this->createTransaction([
+                        'account_id' => $payment['account_id'],
+                        'ledger_id' => $ledger->id,
+                        'amount' => $payment['amount'],
+                        'currency_id' => $currency_id,
+                        'rate' => $rate,
+                        'date' => $purchase->date,
+                        'type' => 'credit',
+                        'remark' => $payment['note'],
+                        'reference_type' => 'purchase',
+                        'reference_id' => $purchase->id,
+                    ]);
+                }
+            } else {
+                // For cash purchases, update cash transaction
+                $cashTransaction = $existingTransactions->where('type', 'credit')
+                    ->where('account_id', Account::where('slug', 'cash-in-hand')->first()->id)
+                    ->first();
+                if ($cashTransaction) {
+                    $cashTransaction->update([
+                        'ledger_id' => $ledger->id,
+                        'amount' => $transactionTotal,
+                        'currency_id' => $currency_id,
+                        'rate' => $rate,
+                        'date' => $purchase->date,
+                        'remark' => "Cash payment for purchase #{$purchase->number}",
+                    ]);
+                } else {
+                    // Create new cash transaction if it doesn't exist
+                    $this->createTransaction([
+                        'account_id' => Account::where('slug', 'cash-in-hand')->first()->id,
+                        'ledger_id' => $ledger->id,
+                        'amount' => $transactionTotal,
+                        'currency_id' => $currency_id,
+                        'rate' => $rate,
+                        'date' => $purchase->date,
+                        'type' => 'credit',
+                        'remark' => "Cash payment for purchase #{$purchase->number}",
+                        'reference_type' => 'purchase',
+                        'reference_id' => $purchase->id,
+                    ]);
+                }
+            }
+
+            Cache::forget('ledgers');
+        });
+    }
 
     private function determinePurchaseType(string $purchaseType): string
     {
