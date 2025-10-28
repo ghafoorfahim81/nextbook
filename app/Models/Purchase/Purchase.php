@@ -87,9 +87,9 @@ class Purchase extends Model
         return 'You cannot delete this purchase because it has dependencies.';
     }
 
-    public function stock()
+    public function stocks()
     {
-        return $this->hasOne(\App\Models\Inventory\Stock::class, 'source_id', 'id');
+        return $this->hasMany(\App\Models\Inventory\Stock::class, 'source_id', 'id');
     }
 
 }
