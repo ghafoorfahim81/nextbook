@@ -106,7 +106,6 @@ class PurchaseController extends Controller
     public function update(PurchaseUpdateRequest $request, Purchase $purchase, TransactionService $transactionService, StockService $stockService)
     {
 
-        // dd($request->validated());
         $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $stockService) {
             $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
@@ -157,15 +156,23 @@ class PurchaseController extends Controller
         return redirect()->route('purchases.index')->with('success', 'Purchase updated successfully.');
     }
 
-    public function destroy(Request $request, Purchase $purchase): Response
+    public function destroy(Request $request, Purchase $purchase)
     {
-        $purchase->delete();
 
-        return response()->noContent();
+        $purchase->items()->delete();
+        $purchase->stocks()->delete();
+        $purchase->transaction()->delete();
+        $purchase->delete();
+        return redirect()->route('purchases.index')->with('success', __('general.purchase_deleted_successfully'));
+
     }
     public function restore(Request $request, Purchase $purchase)
     {
+
         $purchase->restore();
-        return redirect()->route('purchases.index')->with('success', 'Purchase restored successfully.');
+        $purchase->items()->restore();
+        $purchase->stocks()->restore();
+        $purchase->transaction()->restore();
+        return redirect()->route('purchases.index')->with('success', __('general.purchase_restored_successfully'));
     }
 }

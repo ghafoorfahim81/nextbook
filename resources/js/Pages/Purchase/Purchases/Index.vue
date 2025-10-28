@@ -45,6 +45,7 @@ const columns = ref([
          :showEditButton="true"
          :showDeleteButton="true"
          @edit="editItem"
+         @delete="deleteItem"
          :addTitle="t('purchase.purchase')"
          :addAction="'redirect'"
          :addRoute="'purchases.create'"
