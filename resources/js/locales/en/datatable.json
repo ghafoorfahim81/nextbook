@@ -6,7 +6,8 @@
   "search": "Search",
   "showing": "Showing {from} to {to} of {total} entries",
   "previous": "Previous",
-  "next": "Next"
+  "next": "Next",
+  "show": "Show"
 }
 
 
