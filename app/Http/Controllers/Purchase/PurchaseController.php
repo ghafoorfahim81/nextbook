@@ -91,8 +91,10 @@ class PurchaseController extends Controller
 
     public function show(Request $request, Purchase $purchase)
     {
-        return inertia('Purchase/Purchases/Show', [
-            'purchase' => new PurchaseResource($purchase),
+        $purchase->load(['items.item', 'items.unitMeasure', 'supplier', 'transaction.currency']);
+
+        return response()->json([
+            'data' => new PurchaseResource($purchase),
         ]);
     }
 
@@ -174,5 +176,11 @@ class PurchaseController extends Controller
         $purchase->stocks()->restore();
         $purchase->transaction()->restore();
         return redirect()->route('purchases.index')->with('success', __('general.purchase_restored_successfully'));
+    }
+
+    public function updatePurchaseStatus(Request $request, Purchase $purchase)
+    {
+        $purchase->update(['status' => $request->status]);
+        return back()->with('success', __('general.purchase_status_updated_successfully'));
     }
 }

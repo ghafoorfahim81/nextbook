@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
+import PurchaseShowDialog from '@/Components/PurchaseShowDialog.vue';
 import { h, ref } from 'vue';
 import { Button } from '@/Components/ui/button';
 import { useI18n } from 'vue-i18n';
@@ -15,6 +16,9 @@ const props = defineProps({
     purchases: Object,
 })
 
+const showDialog = ref(false);
+const selectedPurchaseId = ref(null);
+
 const editItem = (item) => {
     window.location.href = `/purchases/${item.id}/edit`;
 }
@@ -25,6 +29,12 @@ const deleteItem = (id) => {
         title: t('general.delete', { name: t('purchase.purchase') }),
     })
 }
+
+const showItem = (id) => {
+    selectedPurchaseId.value = id;
+    showDialog.value = true;
+}
+
 const columns = ref([
     { key: 'number', label: t('general.number'), sortable: true },
     { key: 'supplier_name', label: t('ledger.supplier.supplier') },
@@ -44,12 +54,20 @@ const columns = ref([
          :showAddButton="true"
          :showEditButton="true"
          :showDeleteButton="true"
+         :hasShow="true"
          @edit="editItem"
          @delete="deleteItem"
+         @show="showItem"
          :addTitle="t('purchase.purchase')"
          :addAction="'redirect'"
          :addRoute="'purchases.create'"
          />
 
+        <!-- Purchase Show Dialog -->
+        <PurchaseShowDialog
+            :open="showDialog"
+            :purchase-id="selectedPurchaseId"
+            @update:open="showDialog = $event"
+        />
     </AppLayout>
 </template>
