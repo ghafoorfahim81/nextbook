@@ -29,23 +29,24 @@ class PurchaseResource extends JsonResource
             'type' => $this->type,
             'sale_purchase_type_id' => $this->type,
             'description' => $this->description,
-            'status' => $this->status, 
+            'status' => $this->status,
             'transaction_total' => $this->transaction?->amount,
             'transaction' => new TransactionResource($this->whenLoaded('transaction', $this->transaction)),
             'store' => $this->whenLoaded('stock', $this->stock?->store),
             'currency_id' => $this->transaction?->currency_id,
             'rate' => $this->transaction?->rate,
             'items' => $this->whenLoaded('items', PurchaseItemResource::collection($this->items)),
-            'item_list' => $this->whenLoaded('items', $this->items->map(function ($item) {
+            'item_list' => $this->whenLoaded('items', $this->items->map(function ($item) use ($dateConversionService) {
                 return [
                     'item_id' => $item->item_id,
                     'quantity' => $item->quantity,
                     'unit_price' => $item->unit_price,
+                    'expire_date' => $item->expire_date ? $dateConversionService->toDisplay($item->expire_date) : null,
                     'free' => $item->free,
                     'batch' => $item->batch,
-                    'discount' => $item->discount,
+                    'item_discount' => $item->discount,
                     'tax' => $item->tax,
-                    'unit_measure_id' => $item->unit_measure_id, 
+                    'unit_measure_id' => $item->unit_measure_id,
                 ];
             })),
         ];

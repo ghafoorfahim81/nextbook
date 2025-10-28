@@ -18,6 +18,7 @@ import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next';
+import { Spinner } from "@/components/ui/spinner";
 const { t } = useI18n();
 const showFilter = () => {
     showFilter.value = true;
@@ -27,7 +28,14 @@ const showFilter = () => {
 const { toast } = useToast()
 
 const props = defineProps({
-
+    ledgers: {type: Object, required: true},
+    salePurchaseTypes: {type: Object, required: true},
+    currencies: {type: Object, required: true},
+    items: {type: Object, required: true},
+    stores: {type: Object, required: true},
+    unitMeasures: {type: Object, required: true},
+    accounts: {type: Object, required: true},
+    purchaseNumber: {type: String, required: true},
 })
 
 const form = useForm({
@@ -797,7 +805,10 @@ const addRow = () => {
             <div class="mt-4 flex gap-2">
                 <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white disabled:bg-gray-300" :disabled="disabled">{{ t('general.create') }}</button>
                 <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white disabled:bg-gray-300" :disabled="disabled"
-                 @click="() => handleSubmit(true)">{{ t('general.create') }} & {{ t('general.new') }}</button>
+                 @click="() => handleSubmit(true)">
+                 {{ t('general.create') }} & {{ t('general.new') }}
+                 <Spinner v-show="submitting" />
+                </button>
                 <button type="button" class="btn px-4 py-2 rounded-md border" @click="() => $inertia.visit(route('purchases.index'))">{{ t('general.cancel') }}</button>
             </div>
 

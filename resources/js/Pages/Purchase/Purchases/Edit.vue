@@ -34,7 +34,6 @@ const props = defineProps({
 })
 
 const purchase = props.purchase.data;
-console.log('purchase', purchase);
 const form = useForm({
     number: purchase.number || '',
     supplier_id: purchase.supplier_id || '',
@@ -46,10 +45,11 @@ const form = useForm({
     rate: purchase?.transaction?.rate || '',
     sale_purchase_type_id: purchase?.sale_purchase_type_id || '',
     selected_sale_purchase_type: purchase?.type || '',
+    transaction_total: purchase.transaction_total,
     discount: purchase?.discount || '',
     discount_type: purchase?.discount_type || 'percentage',
     description: purchase?.description || '',
-    store_id: purchase?.store_id || '',
+    store_id: purchase?.store.id || '',
     item_list: purchase?.item_list || [],
     payment: purchase?.payment || {
         method: '',
@@ -93,9 +93,10 @@ onMounted(() => {
     }
 
     if (props.purchase?.sale_purchase_type_id && props.salePurchaseTypes) {
-        const selectedType = props.salePurchaseTypes.find(t => t.id === props.purchase.sale_purchase_type_id);
+        const selectedType = props.salePurchaseTypes.find(t => t.id === purchase.sale_purchase_type_id);
         if (selectedType) {
             form.selected_sale_purchase_type = selectedType;
+            form.sale_purchase_type_id = selectedType.id;
         }
     }
 
@@ -138,6 +139,7 @@ const handleSelectChange = (field, value) => {
 
 function handleSubmit() {
     if (form.items[0]?.selected_item === '' || form.items[0]?.selected_item === null) {
+        notifySound('error');
         toast({
             title: 'Please add items',
             description: 'Please add at least one item to update the purchase',
@@ -153,18 +155,18 @@ function handleSubmit() {
             unit_price: item.unit_price,
             free: item.free || 0,
             batch: item.batch || '',
+            expire_date:item.expire_date,
             discount: item.item_discount || 0,
             tax: item.tax || 0,
             unit_measure_id: item.selected_measure?.id || item.unit_measure_id,
         }));
+        form.transaction_total = toNum(goodsTotal.value - totalDiscount.value + totalTax.value);
 
-        form.transaction_total = form.items.reduce((acc, item) =>
-            acc + ((parseFloat(item.unit_price) || 0) * (parseFloat(item.quantity) || 0) - (parseFloat(item.item_discount) || 0) + (parseFloat(item.tax) || 0)), 0
-        );
     }
 
-    form.put(route('purchases.update', props.purchase.id), {
+    form.put(route('purchases.update', purchase.id), {
         onSuccess: () => {
+        notifySound('success');
             toast({
                 title: 'Success',
                 description: 'Purchase updated successfully',
@@ -173,6 +175,7 @@ function handleSubmit() {
             });
         },
         onError: () => {
+        notifySound('error');
             toast({
                 title: 'Error updating purchase',
                 description: 'Error updating purchase',
@@ -181,6 +184,18 @@ function handleSubmit() {
             });
         }
     });
+}
+
+
+const notifySound = (type) => {
+    if(type === 'success') {
+        const sound = new Audio('/notify_sounds/filling-your-inbox.mp3');
+        sound.play().catch(error => console.error('Error playing sound:', error));
+    }
+    else {
+        const sound = new Audio('/notify_sounds/glass-breaking.mp3');
+        sound.play().catch(error => console.error('Error playing sound:', error));
+    }
 }
 
 // Payment dialog handlers
@@ -328,6 +343,15 @@ const rowTotal = (index) => {
     return qty * price - disc + tax;
 };
 
+const billDiscountPercent = computed(() => {
+    const billDisc = toNum(form.discount, 0)
+    if (form.discount_type === 'percentage') {
+        return billDisc
+    }
+    const gt = goodsTotal.value
+    return gt > 0 ? (billDisc / gt) * 100 : 0
+})
+const totalDiscount = computed(() => billDiscountCurrency.value + totalItemDiscount.value)
 const totalRows = computed(() => form.items.length);
 const totalItemDiscount = computed(() => form.items.reduce((acc, item) => acc + toNum(item.item_discount, 0), 0));
 const totalTax = computed(() => form.items.reduce((acc, item) => acc + toNum(item.tax, 0), 0));
@@ -335,20 +359,27 @@ const goodsTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(
 const totalQuantity = computed(() => form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0));
 const totalFree = computed(() => form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0));
 const totalRowTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0) - toNum(item.item_discount, 0) + toNum(item.tax, 0)), 0));
-
+const billDiscountCurrency = computed(() => {
+    const billDisc = toNum(form.discount, 0)
+    if (form.discount_type === 'percentage') {
+        return goodsTotal.value * (billDisc / 100)
+    }
+    return billDisc
+})
 // Transaction summary
 const transactionSummary = computed(() => {
     const paid = toNum(form.payment.amount, 0);
     const oldBalance = toNum(form?.selected_ledger?.statement?.balance, 0);
     const nature = form?.selected_ledger?.statement?.balance_nature;
     const hasSelectedItem = Array.isArray(form.items) && form.items.some(r => !!r.selected_item);
-    const netAmount = goodsTotal.value - (form.discount_type === 'percentage' ? goodsTotal.value * (toNum(form.discount, 0) / 100) : toNum(form.discount, 0)) + totalTax.value;
+    const netAmount = goodsTotal.value - totalDiscount.value + totalTax.value
     const grandTotal = netAmount - paid;
     const balance = hasSelectedItem
         ? (nature === 'dr' ? (grandTotal + oldBalance) : (grandTotal - oldBalance))
         : 0;
     return {
         valueOfGoods: goodsTotal.value,
+        billDiscountPercent: billDiscountPercent.value,
         billDiscount: form.discount_type === 'percentage' ? goodsTotal.value * (toNum(form.discount, 0) / 100) : toNum(form.discount, 0),
         itemDiscount: totalItemDiscount.value,
         cashReceived: paid,

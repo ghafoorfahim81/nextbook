@@ -20,17 +20,16 @@ class PurchaseUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['required', 'string'],
+            'number' => ['required'],
             'supplier_id' => ['required', 'string', 'exists:ledgers,id'],
             'date' => ['required', 'date'],
-            'store_id' => ['nullable', 'string', 'exists:stores,id'],
+            'store_id' => ['required', 'string', 'exists:stores,id'],
             'discount' => ['nullable', 'numeric'],
             'discount_type' => ['nullable', 'string'],
-            'type' => ['required', 'string'],
             'description' => ['nullable', 'string'],
             'status' => ['nullable', 'string'],
             'sale_purchase_type_id' => ['nullable', 'string'],
-            'transaction_total' => ['nullable', 'numeric'],
+            'transaction_total' => ['required', 'numeric'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric'],
             'item_list' => ['nullable', 'array'],
@@ -39,6 +38,7 @@ class PurchaseUpdateRequest extends FormRequest
             'item_list.*.unit_price' => ['required', 'numeric', 'min:0'],
             'item_list.*.free' => ['nullable', 'numeric', 'min:0'],
             'item_list.*.batch' => ['nullable', 'string'],
+            'item_list.*.expire_date' => ['nullable', 'date'],
             'item_list.*.discount' => ['nullable', 'numeric', 'min:0'],
             'item_list.*.tax' => ['nullable', 'numeric', 'min:0'],
             'item_list.*.unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
