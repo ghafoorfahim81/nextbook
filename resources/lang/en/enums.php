@@ -34,4 +34,13 @@ return [
         'cash' => 'Cash',
         'credit' => 'Credit',
     ],
+    'discount_type' => [
+        'percentage' => 'Percentage',
+        'currency' => 'Currency',
+    ],
+    'transaction_status' => [
+        'pending' => 'Pending',
+        'approved' => 'Approved',
+        'rejected' => 'Rejected',
+    ],
 ];

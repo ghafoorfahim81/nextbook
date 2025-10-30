@@ -29,7 +29,8 @@ use App\Http\Resources\Administration\CurrencyResource;
 use App\Enums\SalesPurchaseType;
 use App\Http\Resources\Inventory\ItemResource;
 use App\Models\Inventory\Item;
-
+use App\Enums\DiscountType;
+use App\Enums\TransactionStatus;
 class HandleInertiaRequests extends Middleware
 {
     /**
@@ -174,6 +175,20 @@ class HandleInertiaRequests extends Middleware
                 Item::latest()->take(10)->get()
             )
         );
+        $discountTypes = Cache::rememberForever(
+            'discountTypes_' . app()->getLocale(),
+            fn() => collect(DiscountType::cases())->map(fn($item): array => [
+                'id' => $item->value,
+                'name' => $item->getLabel(),
+            ])
+        );
+        $transactionStatuses = Cache::rememberForever(
+            'transactionStatuses_' . app()->getLocale(),
+            fn() => collect(TransactionStatus::cases())->map(fn($item): array => [
+                'id' => $item->value,
+                'name' => $item->getLabel(),
+            ])
+        );
 
         return [
             ...parent::share($request),
@@ -199,6 +214,8 @@ class HandleInertiaRequests extends Middleware
             'ledgers' => $ledgers,
             'salePurchaseTypes' => $salePurchaseTypes,
             'items' => $items,
+            'discountTypes' => $discountTypes,
+            'transactionStatuses' => $transactionStatuses,
         ];
     }
 }
