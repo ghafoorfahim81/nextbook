@@ -328,6 +328,14 @@ const rowTotal = (index) => {
     return qty * price - disc + tax;
 };
 
+// Bill discount currency and percent
+const billDiscountCurrency = computed(() => {
+    const billDisc = toNum(form.discount, 0)
+    if (form.discount_type === 'percentage') {
+        return goodsTotal.value * (billDisc / 100)
+    }
+    return billDisc
+})
 const totalRows = computed(() => form.items.length);
 const totalItemDiscount = computed(() => form.items.reduce((acc, item) => acc + toNum(item.item_discount, 0), 0));
 const totalTax = computed(() => form.items.reduce((acc, item) => acc + toNum(item.tax, 0), 0));
@@ -351,6 +359,7 @@ const transactionSummary = computed(() => {
         valueOfGoods: goodsTotal.value,
         billDiscount: form.discount_type === 'percentage' ? goodsTotal.value * (toNum(form.discount, 0) / 100) : toNum(form.discount, 0),
         itemDiscount: totalItemDiscount.value,
+        billDiscountPercent: form.discount_type === 'percentage' ? toNum(form.discount, 0) : 0,
         cashReceived: paid,
         balance: balance,
         grandTotal: grandTotal,

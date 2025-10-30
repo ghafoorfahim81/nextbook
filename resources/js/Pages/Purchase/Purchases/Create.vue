@@ -498,7 +498,7 @@ const billDiscountCurrency = computed(() => {
     }
     return billDisc
 })
-const billDiscountPercent = computed(() => {
+const billDiscountPercent = computed(() => {    
     const billDisc = toNum(form.discount, 0)
     if (form.discount_type === 'percentage') {
         return billDisc
