@@ -26,7 +26,6 @@ class Purchase extends Model
         'supplier_id',
         'date',
         'transaction_id',
-        'store_id',
         'discount',
         'discount_type',
         'type',
@@ -47,7 +46,6 @@ class Purchase extends Model
             'supplier_id' => 'string',
             'date' => 'date',
             'transaction_id' => 'string',
-            'store_id' => 'string',
             'discount' => 'float',
             'created_by' => 'string',
             'updated_by' => 'string',
@@ -87,9 +85,9 @@ class Purchase extends Model
         return 'You cannot delete this purchase because it has dependencies.';
     }
 
-    public function stock()
+    public function stocks()
     {
-        return $this->hasOne(\App\Models\Inventory\Stock::class, 'source_id', 'id');
+        return $this->hasMany(\App\Models\Inventory\Stock::class, 'source_id', 'id');
     }
 
 }
