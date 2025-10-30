@@ -103,6 +103,7 @@
                                     'gap-2', '[&:hover]:bg-violet-400 [&:hover]:text-white [&:focus]:bg-violet-400 [&:focus]:text-white']"
                                     @click="$emit('edit', item)"><SquarePen /> {{ t('datatable.edit') }}</DropdownMenuItem>
                                     <DropdownMenuItem :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-400 [&:hover]:text-white [&:focus]:bg-violet-400 [&:focus]:text-white']" @click="$emit('delete', item.id)"><Trash2 /> {{ t('datatable.delete') }}</DropdownMenuItem>
+                                    <DropdownMenuItem v-if="props.hasShow" :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-400 [&:hover]:text-white [&:focus]:bg-violet-400 [&:focus]:text-white']" @click="$emit('show', item.id)"><Eye /> {{ t('datatable.show') }}</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </template>
@@ -209,6 +210,7 @@ import {
 import {
     Search, CircleX, ChevronUp, ChevronDown, SlidersHorizontal, Ellipsis, SquarePen, Trash,
     Trash2, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, FileX,
+    Eye,
 } from 'lucide-vue-next'
 import {
     DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -225,6 +227,7 @@ const props = defineProps({
     addTitle: { type: String, default: null },
     addAction: { type: String, default: 'modal' },
     hasEdit:{ type: Boolean, default: true },
+    hasShow:{ type: Boolean, default: false },
     // Hide delete action when the provided key path resolves to true on the row item
     hideDeleteOnKeyTrue: { type: String, default: null },
     addRoute: { type: String, default: null },

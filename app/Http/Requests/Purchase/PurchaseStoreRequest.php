@@ -44,7 +44,7 @@ class PurchaseStoreRequest extends FormRequest
             'item_list.*.quantity' => ['required', 'numeric'],
             'item_list.*.unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
             'item_list.*.unit_price' => ['required', 'numeric'],
-            'item_list.*.discount' => ['nullable', 'numeric'],
+            'item_list.*.item_discount' => ['nullable', 'numeric'],
             'item_list.*.free' => ['nullable', 'numeric'],
             'item_list.*.tax' => ['nullable', 'numeric'],
         ];
