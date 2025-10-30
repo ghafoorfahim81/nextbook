@@ -101,7 +101,7 @@ class PurchaseController extends Controller
     public function edit(Request $request, Purchase $purchase)
     {
         return inertia('Purchase/Purchases/Edit', [
-            'purchase' => new PurchaseResource($purchase->load(['items', 'supplier', 'transaction'])),
+            'purchase' => new PurchaseResource($purchase->load(['items', 'supplier', 'transaction', 'stocks'])),
         ]);
     }
 

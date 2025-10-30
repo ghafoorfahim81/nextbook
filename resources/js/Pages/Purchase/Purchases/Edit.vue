@@ -34,13 +34,13 @@ const props = defineProps({
 })
 
 const purchase = props.purchase.data;
+console.log('this is purchase',purchase);
 const form = useForm({
     number: purchase.number || '',
     supplier_id: purchase.supplier_id || '',
     selected_ledger: purchase.supplier || '',
     selected_currency: purchase.transaction?.currency || '',
     date: purchase.date || '',
-    selected_store: purchase.store || '',
     currency_id: purchase?.transaction?.currency_id || '',
     rate: purchase?.transaction?.rate || '',
     sale_purchase_type_id: purchase?.sale_purchase_type_id || '',
@@ -49,7 +49,8 @@ const form = useForm({
     discount: purchase?.discount || '',
     discount_type: purchase?.discount_type || 'percentage',
     description: purchase?.description || '',
-    store_id: purchase?.store.id || '',
+    store_id: purchase?.store_id || '',
+    selected_store: purchase?.store || '', 
     item_list: purchase?.item_list || [],
     payment: purchase?.payment || {
         method: '',
@@ -106,15 +107,17 @@ onMounted(() => {
             form.selected_store = selectedStore;
         }
     }
-    form.items.push({
-        item_id: '',
-        selected_item: '',
-        quantity: '',
-        unit_measure_id: '',
-        batch: '',
-        expire_date: '',
-        unit_price: '',
-    });
+    for (let i = 0; i < 3; i++) {
+        form.items.push({
+            item_id: '',
+            selected_item: '',
+            quantity: '',
+            unit_measure_id: '',
+            batch: '',
+            expire_date: '',
+            unit_price: '',
+        });
+    }
 });
 
 // Payment dialog state
@@ -321,6 +324,7 @@ const addRow = () => {
         free: '',
         tax: '',
     });
+ 
 };
 
 const deleteRow = (index) => {
