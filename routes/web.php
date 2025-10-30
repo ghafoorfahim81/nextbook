@@ -87,6 +87,10 @@ Route::middleware([
     //    Route::post('item_entry/Store', ['as' => 'item_entry.store', 'uses' => 'FastEntry\ItemEntryController@store'])->middleware(['dbconfig','auth:sanctum']);
     Route::get('/purchase-item-change', [NextController::class, 'purchaseItemChange'])->name('purchase.item.change');
 
+    Route::resource('/sales', \App\Http\Controllers\Sale\SaleController::class);
+    Route::patch('/update-sale-status/{sale}/status', [\App\Http\Controllers\Sale\SaleController::class, 'updateSaleStatus'])->name('sales.update-sale-status');
+    Route::patch('/sales/{sale}/restore', [\App\Http\Controllers\Sale\SaleController::class, 'restore'])->name('sales.restore')->withTrashed();
+
     // Company routes
     Route::get('/company', [\App\Http\Controllers\CompanyController::class, 'show'])
         ->name('company.show');

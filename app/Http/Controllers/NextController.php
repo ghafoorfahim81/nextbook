@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-
+use App\Models\Administration\Store;
+use App\Models\Inventory\Item;
+use App\Models\Inventory\Stock;
 class NextController extends Controller
 {
     public function purchaseItemChange(Request $request)
@@ -50,5 +52,18 @@ class NextController extends Controller
             'measure' => $measure,
             'purchasePrice' => $purchasePrice,
         ]);
+    }
+
+    public function getItemBatches(Request $request)
+    {
+        $storeId = $request->store_id??Store::main()->id;
+        $itemId  = $request->item_id;
+        $items   = Item::where('id', $itemId)->get();
+        if (!$items) {
+           $items = Item::get()->limit(10);
+           
+        }
+
+        return response()->json($items);
     }
 }

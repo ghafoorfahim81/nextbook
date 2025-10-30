@@ -8,6 +8,7 @@
     "inventory": "انبار",
     "account": "حسابداری",
     "purchase": "خرید",
+    "sale": "فروش",
     "ledger": "دفتر"
   },
   "administration": {
@@ -31,6 +32,15 @@
   "purchase": {
     "purchase": "خرید",
     "purchase_return": "برگشت خرید"
+  },
+  "sale": {
+    "sale": "فروش",
+    "sales": "فروشات",
+    "create_sale": "ایجاد فروش",
+    "edit_sale": "ویرایش فروش",
+    "sale_created_successfully": "فروش با موفقیت ایجاد شد",
+    "sale_updated_successfully": "فروش با موفقیت بروزرسانی شد",
+    "sale_return": "برگشت فروش"
   },
   "ledger": {
     "customer": "مشتری",
