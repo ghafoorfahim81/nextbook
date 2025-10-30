@@ -8,6 +8,7 @@
     "inventory": "ذخیره",
     "account": "حساب",
     "purchase": "پېرود",
+    "sale": "خرڅ",
     "ledger": "لیجر"
   },
   "administration": {
@@ -31,6 +32,15 @@
   "purchase": {
     "purchase": "پېرود",
     "purchase_return": "د پېرود ستنول"
+  },
+  "sale": {
+    "sale": "خرڅ",
+    "sales": "خرڅلاو",
+    "create_sale": "خرڅ جوړول",
+    "edit_sale": "خرڅ سمول",
+    "sale_created_successfully": "خرڅ په بریالیتوب سره جوړ شو",
+    "sale_updated_successfully": "خرڅ په بریالیتوب سره تازه شو",
+    "sale_return": "د خرڅ ستنول"
   },
   "ledger": {
     "customer": "پېرېدونکی",

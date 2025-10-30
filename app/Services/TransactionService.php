@@ -167,6 +167,89 @@ class TransactionService
         });
     }
 
+    public function createSaleTransactions(Sale $sale, Ledger $ledger, float $transactionTotal, string $transactionType, $payment, $currency_id, $rate)
+    {
+        $transactions = [];
+
+        // ALWAYS: CREDIT Sales Revenue (Money comes IN)
+        $salesTransaction = $this->createTransaction([
+            'account_id' => Account::where('slug', 'sales-revenue')->first()->id,
+            'ledger_id' => $ledger->id,
+            'amount' => $transactionTotal,
+            'currency_id' => $currency_id,
+            'rate' => $rate,
+            'date' => $sale->date,
+            'type' => 'credit',
+            'remark' => "Sale #{$sale->number} to {$ledger->name}",
+            'reference_type' => 'sale',
+            'reference_id' => $sale->id,
+        ]);
+
+        // CONDITION: DEBIT based on payment method
+        if ($transactionType === 'credit') {
+            $receivableTransaction = $this->createTransaction([
+                'account_id' => $payment['account_id'],
+                'ledger_id' => $ledger->id,
+                'amount' => $payment['amount'],
+                'currency_id' => $currency_id,
+                'rate' => $rate,
+                'date' => $sale->date,
+                'type' => 'debit',
+                'remark' => $payment['note'],
+                'reference_type' => 'sale',
+                'reference_id' => $sale->id,
+            ]);
+        } else {
+            // Cash sale
+            $cashTransaction = $this->createTransaction([
+                'account_id' => Account::where('slug', 'cash-in-hand')->first()->id,
+                'ledger_id' => $ledger->id,
+                'amount' => $transactionTotal,
+                'currency_id' => $currency_id,
+                'rate' => $rate,
+                'date' => $sale->date,
+                'type' => 'debit',
+                'remark' => "Cash receipt for sale #{$sale->number}",
+                'reference_type' => 'sale',
+                'reference_id' => $sale->id,
+            ]);
+        }
+
+        // ALWAYS: DEBIT Cost of Goods Sold (COGS) - Inventory goes OUT
+        $cogsTransaction = $this->createTransaction([
+            'account_id' => Account::where('slug', 'cost-of-goods-sold')->first()->id,
+            'ledger_id' => $ledger->id,
+            'amount' => $transactionTotal, // This should be the cost value, not selling price
+            'currency_id' => $currency_id,
+            'rate' => $rate,
+            'date' => $sale->date,
+            'type' => 'debit',
+            'remark' => "COGS for sale #{$sale->number}",
+            'reference_type' => 'sale',
+            'reference_id' => $sale->id,
+        ]);
+
+        // CREDIT Inventory (Inventory goes OUT)
+        $inventoryTransaction = $this->createTransaction([
+            'account_id' => Account::where('slug', 'inventory-asset')->first()->id,
+            'ledger_id' => $ledger->id,
+            'amount' => $transactionTotal, // This should be the cost value, not selling price
+            'currency_id' => $currency_id,
+            'rate' => $rate,
+            'date' => $sale->date,
+            'type' => 'credit',
+            'remark' => "Inventory reduction for sale #{$sale->number}",
+            'reference_type' => 'sale',
+            'reference_id' => $sale->id,
+        ]);
+
+        $sale->update(['transaction_id' => $salesTransaction->id]);
+
+        Cache::forget('ledgers');
+
+        return $transactions;
+    }
+
     private function determinePurchaseType(string $purchaseType): string
     {
         // type mapping logic

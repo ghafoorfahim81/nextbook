@@ -1,5 +1,8 @@
 ﻿{
     "supplier":{
         "supplier": "Supplier"
+    },
+    "customer":{
+        "customer": "Customer"
     }
 }

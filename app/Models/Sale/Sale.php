@@ -1,0 +1,95 @@
+<?php
+
+namespace App\Models\Sale;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\HasBranch;
+use App\Traits\HasDependencyCheck;
+use App\Traits\HasSearch;
+use App\Traits\HasSorting;
+use App\Traits\HasUserAuditable;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
+
+class Sale extends Model
+{
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasBranch, HasDependencyCheck, SoftDeletes;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
+    protected $fillable = [
+        'number',
+        'customer_id',
+        'date',
+        'transaction_id',
+        'discount',
+        'discount_type',
+        'type',
+        'description',
+        'status',
+        'store_id',
+        'created_by',
+        'updated_by',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'customer_id' => 'string',
+            'date' => 'date',
+            'transaction_id' => 'string',
+            'discount' => 'float',
+            'store_id' => 'string',
+            'created_by' => 'string',
+            'updated_by' => 'string',
+        ];
+    }
+
+    protected static function searchableColumns(): array
+    {
+        return [
+            'number',
+            'date',
+            'discount',
+            'discount_type',
+            'type',
+            'description',
+            'status',
+        ];
+    }
+
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Ledger\Ledger::class);
+    }
+
+    public function transaction(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Transaction\Transaction::class);
+    }
+
+    public function items()
+    {
+        return $this->hasMany(\App\Models\Sale\SaleItem::class);
+    }
+
+    public function stockOuts()
+    {
+        return $this->hasMany(\App\Models\Inventory\StockOut::class, 'source_id', 'id');
+    }
+
+    public function getDependencyMessage(): string
+    {
+        return 'You cannot delete this sale because it has dependencies.';
+    }
+}

@@ -94,7 +94,7 @@ import LanguageSwitcher from '@/Components/LanguageSwitcher.vue'
 import { usePage } from '@inertiajs/vue3'
 // @ts-ignore - Vue SFC default export shim
 import Toaster from '@/Components/ui/toast/Toaster.vue'
-import { HousePlug } from 'lucide-vue-next'
+import { HousePlug, ShoppingCart } from 'lucide-vue-next'
 // This is sample data.
 const data = {
     user: {
@@ -233,6 +233,15 @@ const navMain = computed(() => [
         items: [
             { title: t('sidebar.purchase.purchase'), url: '/purchases' },
             { title: t('sidebar.purchase.purchase_return'), url: '/purchase-returns' },
+        ],
+    },
+    {
+        title: t('sidebar.main.sale'),
+        url: '#',
+        icon: ShoppingCart,
+        items: [
+            { title: t('sidebar.sale.sale'), url: '/sales' },
+            { title: t('sidebar.sale.sale_return'), url: '/sale-returns' },
         ],
     },
     {

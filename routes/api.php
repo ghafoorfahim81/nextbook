@@ -12,3 +12,4 @@ Route::get('/user', function (Request $request) {
  
 Route::post('/search/{resourceType}', [App\Http\Controllers\SearchController::class, 'search']);
 Route::get('/search/resource-types', [App\Http\Controllers\SearchController::class, 'getResourceTypes']);
+Route::post('/search/items-for-sale', [App\Http\Controllers\SearchController::class, 'searchItemsForSale']);

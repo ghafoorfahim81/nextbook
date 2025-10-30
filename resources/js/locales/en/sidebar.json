@@ -8,6 +8,7 @@
     "inventory": "Inventory",
     "account": "Account",
     "purchase": "Purchase",
+    "sale": "Sale",
     "ledger": "Ledger"
   },
   "administration": {
@@ -31,6 +32,15 @@
   "purchase": {
     "purchase": "Purchase",
     "purchase_return": "Purchase Return"
+  },
+  "sale": {
+    "sale": "Sale",
+    "sales": "Sales",
+    "create_sale": "Create Sale",
+    "edit_sale": "Edit Sale",
+    "sale_created_successfully": "Sale created successfully",
+    "sale_updated_successfully": "Sale updated successfully",
+    "sale_return": "Sale Return"
   },
   "ledger": {
     "customer": "Customer",

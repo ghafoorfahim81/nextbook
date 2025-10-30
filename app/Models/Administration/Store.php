@@ -85,4 +85,8 @@ class Store extends Model
     {
         return $this->belongsTo(Branch::class);
     }
+    public static function main()
+    {
+        return self::where('is_main', true)->first();
+    }
 }
