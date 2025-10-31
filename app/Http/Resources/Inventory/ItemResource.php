@@ -43,9 +43,9 @@ class ItemResource extends JsonResource
             'branch_id' => $this->branch_id,
             'quantity' => $this->stocks->sum(('quantity')),
             'on_hand' => $this->stocks->sum(('quantity')) - $this->openings->sum(('quantity')) - $this->stockOut->sum(('quantity')),
-            'openings' => StockOpeningResource::collection($this->openings),
+            'openings' => StockOpeningResource::collection($this->openings), 
         ];
     }
 
-    
+
 }
