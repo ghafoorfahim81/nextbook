@@ -90,7 +90,7 @@ Route::middleware([
     Route::resource('/sales', \App\Http\Controllers\Sale\SaleController::class);
     Route::patch('/update-sale-status/{sale}/status', [\App\Http\Controllers\Sale\SaleController::class, 'updateSaleStatus'])->name('sales.update-sale-status');
     Route::patch('/sales/{sale}/restore', [\App\Http\Controllers\Sale\SaleController::class, 'restore'])->name('sales.restore')->withTrashed();
-
+    Route::get('/item-with-batches', [NextController::class, 'getItemWithBatches'])->name('item.with.batches');
     // Company routes
     Route::get('/company', [\App\Http\Controllers\CompanyController::class, 'show'])
         ->name('company.show');

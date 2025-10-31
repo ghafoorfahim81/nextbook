@@ -506,7 +506,7 @@ const billDiscountCurrency = computed(() => {
     }
     return billDisc
 })
-const billDiscountPercent = computed(() => {    
+const billDiscountPercent = computed(() => {
     const billDisc = toNum(form.discount, 0)
     if (form.discount_type === 'percentage') {
         return billDisc
@@ -518,7 +518,8 @@ const totalDiscount = computed(() => billDiscountCurrency.value + totalItemDisco
 const totalRowTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0) - toNum(item.item_discount, 0) + toNum(item.tax, 0)), 0))
 const totalQuantity = computed(() => form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0))
 const totalFree = computed(() => form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0))
-
+const totalPurchasePrice = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0)), 0))
+ 
 // Transaction summary for card (spec-compliant)
 const transactionSummary = computed(() => {
     const paid = toNum(form.payment.amount, 0)
@@ -773,7 +774,7 @@ const addRow = () => {
                             <!-- Unit blank -->
                             <td></td>
                             <!-- Value of goods (qty*price) total centered -->
-                            <td class="text-center">{{ goodsTotal || 0 }}</td>
+                            <td class="text-center">{{ totalPurchasePrice || 0 }}</td>
                             <!-- Discount total centered -->
                             <td class="text-center">{{ totalItemDiscount || 0 }}</td>
                             <!-- Free total centered -->

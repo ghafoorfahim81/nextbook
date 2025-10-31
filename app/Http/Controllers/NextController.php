@@ -8,6 +8,8 @@ use Illuminate\Validation\ValidationException;
 use App\Models\Administration\Store;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\Stock;
+use App\Models\Inventory\StockOut;
+
 class NextController extends Controller
 {
     public function purchaseItemChange(Request $request)
@@ -54,14 +56,56 @@ class NextController extends Controller
         ]);
     }
 
-    public function getItemBatches(Request $request)
+    public function getItemWithBatches(Request $request)
     {
         $storeId = $request->store_id??Store::main()->id;
         $itemId  = $request->item_id;
         $items   = Item::where('id', $itemId)->get();
         if (!$items) {
            $items = Item::get()->limit(10);
-           
+           $items = $items->map(function ($item) use ($storeId) {
+            $batchesIn = Stock::where('item_id', $item->id)
+                ->where('store_id', $storeId)
+                ->groupBy('batch')
+                ->get();
+            if($batchesIn){
+                $batchesOut = StockOut::where('item_id', $item->id)
+                    ->where('store_id', $storeId)
+                    ->get()
+                    ->groupBy('batch');
+
+                $batches = $batchesIn->map(function ($batch, $batchKey) use ($batchesOut) {
+                    $quantityIn = $batch->sum('quantity');
+                    $quantityOut = $batchesOut->get($batchKey, collect())->sum('quantity');
+                    return [
+                        'batch' => $batchKey,
+                        'expire_date' => $batch->first()->expire_date,
+                        'quantity' => $quantityIn - $quantityOut,
+                    ];
+                })->values();
+            }
+
+            return [
+                'id' => $item->id,
+                'name' => $item->name,
+                'barcode' => $item->barcode,
+                'unit_measure_id' => $item->unit_measure_id,
+                'unitMeasure'  => $item->unitMeasure,
+                'brand' => $item->brand,
+                'colors' => $item->colors,
+                'size' => $item->size,
+                'purchase_price' => $item->purchase_price,
+                'cost' => $item->cost,
+                'mrp_rate' => $item->mrp_rate,
+                'rate_a' => $item->rate_a,
+                'rate_b' => $item->rate_b,
+                'rate_c' => $item->rate_c,
+                'rack_no' => $item->rack_no,
+                'fast_search' => $item->fast_search,
+                'quantity' => $item->stocks->sum(('quantity')),
+        ];
+           });
+
         }
 
         return response()->json($items);

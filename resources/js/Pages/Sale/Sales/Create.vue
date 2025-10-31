@@ -30,7 +30,7 @@ const { toast } = useToast()
 const props = defineProps({
     ledgers: {type: Object, required: true},
     salePurchaseTypes: {type: Object, required: true},
-    currencies: {type: Object, required: true}, 
+    currencies: {type: Object, required: true},
     stores: {type: Object, required: true},
     unitMeasures: {type: Object, required: true},
     accounts: {type: Object, required: true},
@@ -75,7 +75,7 @@ const form = useForm({
             item_discount: '',
             free: '',
             tax: '',
-        }, 
+        },
         {
             item_id: '',
             selected_item: '',
@@ -107,6 +107,14 @@ const form = useForm({
     ],
 })
 
+const items=[];
+
+const loadItems = () => {
+    axios.get(route('sales.items')).then(response => {
+        items = response.data;
+    })
+}
+
 // Watch for purchaseNumber prop changes and update form.number
 watch(() => props.saleNumber, (newPurchaseNumber) => {
     if (newPurchaseNumber) {
@@ -126,7 +134,7 @@ watch(() => props.currencies?.data, (currencies) => {
     }
 }, { immediate: true });
 
- 
+
 watch(() => props.salePurchaseTypes, (salePurchaseTypes) => {
     if (salePurchaseTypes && !form.selected_sale_purchase_type) {
         const baseSalePurchaseType = salePurchaseTypes.find(c => c.id === 'cash');
@@ -497,7 +505,7 @@ const billDiscountCurrency = computed(() => {
     }
     return billDisc
 })
-const billDiscountPercent = computed(() => {    
+const billDiscountPercent = computed(() => {
     const billDisc = toNum(form.discount, 0)
     if (form.discount_type === 'percentage') {
         return billDisc
