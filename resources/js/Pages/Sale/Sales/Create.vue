@@ -107,13 +107,18 @@ const form = useForm({
     ],
 })
 
-const items=[];
+const items=ref([]);
 
 const loadItems = () => {
-    axios.get(route('sales.items')).then(response => {
-        items = response.data;
+    axios.get(route('item.with.batches', { store_id: form.store_id })).then(response => {
+        items.value = response.data;
+        console.log('items', items.value);
     })
 }
+
+onMounted(() => {
+    loadItems();
+})
 
 // Watch for purchaseNumber prop changes and update form.number
 watch(() => props.saleNumber, (newPurchaseNumber) => {
@@ -641,16 +646,16 @@ const addRow = () => {
                             <th class="px-1 py-1 w-16">{{ t('general.tax') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.total') }}</th>
                             <th class="px-1 py-1 w-10  ">
-                                <Trash2 class="w-4 h-4 text-red-500 inline" />
+                                <Trash2 class="w-4 h-4 text-fuchsia-700 inline" />
                             </th>
                         </tr>
                     </thead>
-                    <tbody class="p-2">
+                    <tbody class="p-2 ">
                         <tr v-for="(item, index) in form.items" :key="item.id" class="hover:bg-muted/40 transition-colors">
                             <td class="px-1 py-2 align-top w-5">{{ index + 1 }}</td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
-                                    :options="items.data"
+                                    :options="items"
                                     v-model="item.selected_item"
                                     label-key="name"
                                     :placeholder="t('general.search_or_select')"
@@ -757,7 +762,7 @@ const addRow = () => {
                         </tr>
                     </tbody>
                     <tfoot class="sticky bottom-0 bg-card">
-                        <tr class="bg-muted/40">
+                        <tr class="bg-violet-500/10 hover:bg-violet-500/30 transition-colors">
                             <!-- #: blank to align -->
                             <td></td>
                             <!-- Item total centered across item column -->
@@ -787,6 +792,7 @@ const addRow = () => {
                     </tfoot>
                 </table>
             </div>
+
             <div class="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 items-start">
                 <DiscountSummary :summary="form.summary" :total-item-discount="totalItemDiscount" :bill-discount="billDiscountCurrency" :total-discount="totalDiscount" />
                 <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />

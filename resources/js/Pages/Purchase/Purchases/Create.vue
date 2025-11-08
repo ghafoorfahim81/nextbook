@@ -519,7 +519,7 @@ const totalRowTotal = computed(() => form.items.reduce((acc, item) => acc + (toN
 const totalQuantity = computed(() => form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0))
 const totalFree = computed(() => form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0))
 const totalPurchasePrice = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0)), 0))
- 
+
 // Transaction summary for card (spec-compliant)
 const transactionSummary = computed(() => {
     const paid = toNum(form.payment.amount, 0)
@@ -759,7 +759,7 @@ const addRow = () => {
                         </tr>
                     </tbody>
                     <tfoot class="sticky bottom-0 bg-card">
-                        <tr class="bg-muted/40">
+                        <tr class="bg-violet-500/10 hover:bg-violet-500/30 transition-colors">
                             <!-- #: blank to align -->
                             <td></td>
                             <!-- Item total centered across item column -->

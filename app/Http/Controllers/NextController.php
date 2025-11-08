@@ -61,18 +61,29 @@ class NextController extends Controller
         $storeId = $request->store_id??Store::main()->id;
         $itemId  = $request->item_id;
         $items   = Item::where('id', $itemId)->get();
-        if (!$items) {
-           $items = Item::get()->limit(10);
-           $items = $items->map(function ($item) use ($storeId) {
+        $items = $this->mapItem($items, $storeId);
+        if (!$items->count()>0) {
+            $items = Item::limit(10)->get();
+           $items = $this->mapItem($items, $storeId);
+        }
+
+        return $items;
+    }
+
+    public function mapItem($items, $storeId)
+    {
+        return $items->map(function ($item) use ($storeId) {
             $batchesIn = Stock::where('item_id', $item->id)
                 ->where('store_id', $storeId)
-                ->groupBy('batch')
+                ->groupBy('batch','id')
                 ->get();
+            $batches = [];
+            $onHand = 0;
             if($batchesIn){
                 $batchesOut = StockOut::where('item_id', $item->id)
                     ->where('store_id', $storeId)
-                    ->get()
-                    ->groupBy('batch');
+                    ->groupBy('batch','id')
+                    ->get();
 
                 $batches = $batchesIn->map(function ($batch, $batchKey) use ($batchesOut) {
                     $quantityIn = $batch->sum('quantity');
@@ -83,8 +94,11 @@ class NextController extends Controller
                         'quantity' => $quantityIn - $quantityOut,
                     ];
                 })->values();
+                $onHand = $batchesIn->sum('quantity') - $batchesOut->sum('quantity');
+            } else {
+                $batches = [];
+                $onHand = $item->stocks->where('store_id', $storeId)->sum('quantity') - $item->stockOut->where('store_id', $storeId)->sum('quantity');
             }
-
             return [
                 'id' => $item->id,
                 'name' => $item->name,
@@ -95,6 +109,7 @@ class NextController extends Controller
                 'colors' => $item->colors,
                 'size' => $item->size,
                 'purchase_price' => $item->purchase_price,
+                'unit_price' => $item->stocks->where('store_id', $storeId)->avg('unit_price'),
                 'cost' => $item->cost,
                 'mrp_rate' => $item->mrp_rate,
                 'rate_a' => $item->rate_a,
@@ -102,12 +117,9 @@ class NextController extends Controller
                 'rate_c' => $item->rate_c,
                 'rack_no' => $item->rack_no,
                 'fast_search' => $item->fast_search,
-                'quantity' => $item->stocks->sum(('quantity')),
+                'onHand' => $onHand,
+                'batches' => $batches,
         ];
            });
-
-        }
-
-        return response()->json($items);
     }
 }

@@ -49,26 +49,22 @@ const columns = ref([
 
 <template>
     <AppLayout :title="t('sale.sale')">
-        <div class="flex flex-col gap-4 p-4">
-            <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-bold">{{ t('sale.sales') }}</h1>
-                <Button as-child>
-                    <a href="/sales/create">{{ t('general.create') }}</a>
-                </Button>
-            </div>
-
             <DataTable
-                :items="sales"
-                :columns="columns"
-                :searchable="true"
-                :filterable="true"
-                :sortable="true"
-                @edit="editItem"
-                @delete="deleteItem"
-                @show="showItem"
-                resource-name="sales"
+            :items="sales"
+            :columns="columns"
+            :title="t('sale.sale')"
+            :url="`sales.index`"
+            :showAddButton="true"
+            :showEditButton="true"
+            :showDeleteButton="true"
+            :hasShow="true"
+            @edit="editItem"
+            @delete="deleteItem"
+            @show="showItem"
+            :addTitle="t('sales.sale')"
+            :addAction="'redirect'"
+            :addRoute="'sales.create'"
             />
-        </div>
 
         <SaleShowDialog
             v-model="showDialog"
