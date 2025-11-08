@@ -1,1 +1,6 @@
-﻿{}
+﻿{
+    "receipt": "Receipt",
+    "bank_debit": "Debit (Bank)",
+    "receive_credit": "Credit (Receive)",
+    "cheque_no": "Cheque No"
+}
