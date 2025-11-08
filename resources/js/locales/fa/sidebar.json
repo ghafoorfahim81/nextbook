@@ -9,7 +9,8 @@
     "account": "حسابداری",
     "purchase": "خرید",
     "sale": "فروش",
-    "ledger": "دفتر"
+    "ledger": "دفتر",
+    "receipt": "رسید"
   },
   "administration": {
     "category": "دسته بندی",

@@ -101,4 +101,8 @@ Route::middleware([
     // Search routes
     Route::post('/search/{resourceType}', [\App\Http\Controllers\SearchController::class, 'search']);
     Route::get('/search/resource-types', [\App\Http\Controllers\SearchController::class, 'getResourceTypes']);
-});
+
+    // Receipts
+    Route::resource('/receipts', \App\Http\Controllers\Receipt\ReceiptController::class);
+    Route::patch('/receipts/{receipt}/restore', [\App\Http\Controllers\Receipt\ReceiptController::class, 'restore'])->name('receipts.restore')->withTrashed();
+   });

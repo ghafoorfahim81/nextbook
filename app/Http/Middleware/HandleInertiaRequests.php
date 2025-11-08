@@ -71,7 +71,7 @@ class HandleInertiaRequests extends Middleware
             'accounts',
             $cacheDuration,
             fn() => AccountResource::collection(
-                Account::latest()->take(10)->get()
+                Account::latest()->take(1000)->get()
             )
         );
 

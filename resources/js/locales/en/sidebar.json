@@ -9,7 +9,8 @@
     "account": "Account",
     "purchase": "Purchase",
     "sale": "Sale",
-    "ledger": "Ledger"
+    "ledger": "Ledger",
+    "receipt": "Receipt"
   },
   "administration": {
     "category": "Category",
