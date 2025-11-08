@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('batch')->nullable();
             $table->char('unit_measure_id', 26)->nullable();
             $table->char('store_id', 26)->nullable();
+            $table->index(['item_id', 'store_id', 'batch']);
             $table->char('created_by', 26)->nullable();
             $table->char('updated_by', 26)->nullable();
             $table->nullableUlidMorphs('source'); // adds source_type, source_id (ULID), nullable

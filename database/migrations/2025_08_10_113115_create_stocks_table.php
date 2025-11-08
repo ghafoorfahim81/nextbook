@@ -23,6 +23,7 @@ return new class extends Migration
             $table->double('discount')->nullable();
             $table->double('tax')->nullable();
             $table->date('date')->nullable();
+            $table->index(['item_id', 'store_id', 'batch']);
             $table->date('expire_date')->nullable();
             $table->nullableUlidMorphs('source'); // adds source_type, source_id (ULID), nullable
             $table->timestamps();

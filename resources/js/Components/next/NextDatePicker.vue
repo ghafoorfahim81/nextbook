@@ -10,6 +10,7 @@
             :auto-submit="autoSubmit"
             :type="type"
             :clearable="clearable"
+            :color="color"
             :label="showLabel ? undefined : ''"
             :input-attrs="{ placeholder, class: inputClass, style: 'width:100%' }"
             :locale="effectiveLocale"
@@ -56,6 +57,7 @@ const props = defineProps({
     showIcon: { type: Boolean, default: true },
     showLabel: { type: Boolean, default: false },
     popover: { type: String, default: 'bottom-left' },
+    color: { type: String, default: '#8b5cf6' }, // violet-500
 })
 
 const emit = defineEmits(['update:modelValue', 'change'])
@@ -153,6 +155,7 @@ function safeYear(m) {
     display: flex;
     align-items: center;
     padding: 0 8px;
+    background-color: #8b5cf6 !important; /* violet-500 */
 }
 
 /* v3 picker uses .vpd-icon-btn instead of .vpd-addon; style it similarly */
@@ -162,6 +165,7 @@ function safeYear(m) {
     display: flex;
     align-items: center;
     padding: 0 8px;
+    background-color: #8b5cf6 !important; /* violet-500 */
 }
 
 /* Hide addon when showIcon is false by class added to root */
@@ -241,5 +245,13 @@ function safeYear(m) {
 :deep(.vpd-input-group:has([class*="text-red"])) {
     border-color: #d1d5db !important;
     box-shadow: none !important;
+}
+
+/* Position clear icon at the end of the input */
+:deep(.vpd-input-group .vpd-clear-btn) {
+    position: absolute !important;
+    right: 0 !important;
+    left: auto !important;
+    color: #c026d3 !important; /* fuchsia-600 */
 }
 </style>
