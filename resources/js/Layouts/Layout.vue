@@ -70,19 +70,10 @@ import {
     ChevronsUpDown,
     Command,
     CreditCard,
-    Folder,
-    Forward,
-    Frame,
     GalleryVerticalEnd,
     LogOut,
-    Map,
-    MoreHorizontal,
-    PieChart,
     Plus,
-    Settings2,
     Sparkles,
-    SquareTerminal,
-    Trash2,
     Moon, Sun,
     ChartColumn,
     Cog,
@@ -94,7 +85,7 @@ import LanguageSwitcher from '@/Components/LanguageSwitcher.vue'
 import { usePage } from '@inertiajs/vue3'
 // @ts-ignore - Vue SFC default export shim
 import Toaster from '@/Components/ui/toast/Toaster.vue'
-import { HousePlug, ShoppingCart } from 'lucide-vue-next'
+import { HousePlug, ShoppingCart, Receipt as ReceiptIcon } from 'lucide-vue-next'
 // This is sample data.
 const data = {
     user: {
@@ -223,7 +214,7 @@ const navMain = computed(() => [
         icon: ChartColumn,
         items: [
             { title: t('sidebar.account.chart_of_account'), url: '/chart-of-accounts' },
-            { title: t('sidebar.account.account_type'), url: '/account-types' },
+            { title: t('sidebar.account.account_type'), url: '/account-types' }, 
         ],
     },
     {
@@ -252,6 +243,11 @@ const navMain = computed(() => [
             { title: t('sidebar.ledger.customer'), url: '/customers' },
             { title: t('sidebar.ledger.supplier'), url: '/suppliers' },
         ],
+    },
+    {
+        title: t('sidebar.main.receipt'),
+        url: '/receipts',
+        icon: ReceiptIcon,
     },
 ])
 
