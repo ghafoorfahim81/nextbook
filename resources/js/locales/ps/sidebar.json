@@ -10,7 +10,8 @@
     "purchase": "پېرود",
     "sale": "خرڅ",
     "ledger": "لیجر",
-    "receipt": "رسید"
+    "receipt": "رسید",
+    "payment": "پرېمینټ"
   },
   "administration": {
     "category": "کټګوري",

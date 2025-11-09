@@ -10,7 +10,8 @@
     "purchase": "خرید",
     "sale": "فروش",
     "ledger": "دفتر",
-    "receipt": "رسید"
+    "receipt": "رسید",
+    "payment": "پرداخت"
   },
   "administration": {
     "category": "دسته بندی",

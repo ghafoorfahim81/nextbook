@@ -249,6 +249,11 @@ const navMain = computed(() => [
         url: '/receipts',
         icon: ReceiptIcon,
     },
+    {
+        title: t('sidebar.main.payment'),
+        url: '/payments',
+        icon: CreditCard,
+    }, 
 ])
 
 // assign to data after computed is available
