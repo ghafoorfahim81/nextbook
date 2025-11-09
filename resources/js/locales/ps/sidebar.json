@@ -11,7 +11,8 @@
     "sale": "خرڅ",
     "ledger": "لیجر",
     "receipt": "رسید",
-    "payment": "پرېمینټ"
+    "payment": "پرېمینټ",
+    "transfer": "حساب لېږد"
   },
   "administration": {
     "category": "کټګوري",

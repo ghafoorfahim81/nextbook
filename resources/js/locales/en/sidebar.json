@@ -11,7 +11,8 @@
     "sale": "Sale",
     "ledger": "Ledger",
     "receipt": "Receipt",
-    "payment": "Payment"
+    "payment": "Payment",
+    "transfer": "Account Transfers"
 
   },
   "administration": {
