@@ -11,7 +11,8 @@
     "sale": "فروش",
     "ledger": "دفتر",
     "receipt": "رسید",
-    "payment": "پرداخت"
+    "payment": "پرداخت",
+    "transfer": "انتقال حساب"
   },
   "administration": {
     "category": "دسته بندی",

@@ -254,6 +254,11 @@ const navMain = computed(() => [
         url: '/payments',
         icon: CreditCard,
     }, 
+    {
+        title: t('sidebar.main.transfer'),
+        url: '/account-transfers',
+        icon: CreditCard,
+    }, 
 ])
 
 // assign to data after computed is available

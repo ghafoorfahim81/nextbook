@@ -104,11 +104,13 @@ Route::middleware([
 
     // Receipts
     Route::resource('/receipts', \App\Http\Controllers\Receipt\ReceiptController::class);
-    Route::get('/receipts/latest-number', [\App\Http\Controllers\Receipt\ReceiptController::class, 'latestNumber'])->name('receipts.latest-number');
     Route::patch('/receipts/{receipt}/restore', [\App\Http\Controllers\Receipt\ReceiptController::class, 'restore'])->name('receipts.restore')->withTrashed();
 
     // Payments
     Route::resource('/payments', \App\Http\Controllers\Payment\PaymentController::class);
-    Route::get('/payments/latest-number', [\App\Http\Controllers\Payment\PaymentController::class, 'latestNumber'])->name('payments.latest-number');
     Route::patch('/payments/{payment}/restore', [\App\Http\Controllers\Payment\PaymentController::class, 'restore'])->name('payments.restore')->withTrashed();
+
+    // Account Transfers
+    Route::resource('/account-transfers', \App\Http\Controllers\AccountTransfer\AccountTransferController::class);
+    Route::patch('/account-transfers/{accountTransfer}/restore', [\App\Http\Controllers\AccountTransfer\AccountTransferController::class, 'restore'])->name('account-transfers.restore')->withTrashed();
 });
