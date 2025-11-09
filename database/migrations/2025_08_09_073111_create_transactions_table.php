@@ -15,12 +15,12 @@ return new class extends Migration
 
         Schema::create('transactions', function (Blueprint $table) {
             $table->char('id', 26)->primary();
-            $table->char('account_id', 26);
-            $table->char('ledger_id', 26);
-            $table->float('amount');
-            $table->char('currency_id', 26);
-            $table->float('rate');
-            $table->date('date');
+            $table->char('account_id', 26)->index();
+            $table->char('ledger_id', 26)->index();
+            $table->decimal('amount', 19, 4);
+            $table->char('currency_id', 26)->index();
+            $table->decimal('rate', 10, 6);
+            $table->date('date')->index();
             $table->string('reference_type')->nullable()->index();
             $table->char('reference_id', 26)->nullable()->index();
             $table->enum('type', ['debit', 'credit']);
