@@ -1,8 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import { useForm, usePage, Link } from '@inertiajs/vue3'
-import { ref, watch, onMounted } from 'vue'
-import axios from 'axios'
+import { ref, watch } from 'vue'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
