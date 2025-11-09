@@ -48,7 +48,7 @@ class DateConversionService
             // Parse with correct format for Jalali dates with slashes
             if (str_contains($jalaliDate, '/')) {
                 // Date is in format 1404/08/18
-                return Jalalian::fromFormat('Y/m/d', $jalaliDate)
+                return Jalalian::fromFormat('Y-m-d', $jalaliDate)
                     ->toCarbon()
                     ->format('Y-m-d');
             } else {
@@ -91,7 +91,7 @@ class DateConversionService
     {
         try {
             return Jalalian::fromCarbon(Carbon::parse($gregorianDate))
-                ->format('Y/m/d'); // Return with slashes for display
+                ->format('Y-m-d'); // Return with slashes for display
         } catch (\Exception $e) {
             return $gregorianDate; // Fallback to original
         }
