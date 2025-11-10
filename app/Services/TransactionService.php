@@ -163,7 +163,7 @@ class TransactionService
                 }
             }
 
-            Cache::forget('ledgers');
+            Cache::tags(['ledgers', 'accounts'])->flush();
         });
     }
 
@@ -172,8 +172,9 @@ class TransactionService
         $transactions = [];
 
         // ALWAYS: CREDIT Sales Revenue (Money comes IN)
+        $glAccounts = Cache::get('gl_accounts');
         $salesTransaction = $this->createTransaction([
-            'account_id' => Account::where('slug', 'sales-revenue')->first()->id,
+            'account_id' => $glAccounts['sales-revenue']->id,
             'ledger_id' => $ledger->id,
             'amount' => $transactionTotal,
             'currency_id' => $currency_id,
@@ -202,7 +203,7 @@ class TransactionService
         } else {
             // Cash sale
             $cashTransaction = $this->createTransaction([
-                'account_id' => Account::where('slug', 'cash-in-hand')->first()->id,
+                'account_id' => $glAccounts['cash-in-hand'],
                 'ledger_id' => $ledger->id,
                 'amount' => $transactionTotal,
                 'currency_id' => $currency_id,
@@ -217,7 +218,7 @@ class TransactionService
 
         // ALWAYS: DEBIT Cost of Goods Sold (COGS) - Inventory goes OUT
         $cogsTransaction = $this->createTransaction([
-            'account_id' => Account::where('slug', 'cost-of-goods-sold')->first()->id,
+            'account_id' => $glAccounts['cost-of-goods-sold'],
             'ledger_id' => $ledger->id,
             'amount' => $transactionTotal, // This should be the cost value, not selling price
             'currency_id' => $currency_id,
@@ -231,7 +232,7 @@ class TransactionService
 
         // CREDIT Inventory (Inventory goes OUT)
         $inventoryTransaction = $this->createTransaction([
-            'account_id' => Account::where('slug', 'inventory-asset')->first()->id,
+            'account_id' => $glAccounts['inventory-asset'],
             'ledger_id' => $ledger->id,
             'amount' => $transactionTotal, // This should be the cost value, not selling price
             'currency_id' => $currency_id,
@@ -245,7 +246,7 @@ class TransactionService
 
         $sale->update(['transaction_id' => $salesTransaction->id]);
 
-        Cache::forget('ledgers');
+        Cache::tags(['ledgers', 'accounts'])->flush();
 
         return $transactions;
     }
