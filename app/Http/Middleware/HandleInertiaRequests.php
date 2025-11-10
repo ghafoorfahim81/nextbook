@@ -190,6 +190,16 @@ class HandleInertiaRequests extends Middleware
             ])
         );
 
+        $glAccounts = Cache::rememberForever('gl_accounts', function () {
+            return Account::whereIn('slug', [
+                'sales-revenue',
+                'accounts-receivable',
+                'cash-in-hand',
+                'cost-of-goods-sold',
+                'inventory-asset'
+            ])->pluck('id', 'slug');
+        });
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -206,6 +216,7 @@ class HandleInertiaRequests extends Middleware
             'currencies' => $currencies,
             'stores' => $stores,
             'brands' => $brands,
+            'glAccounts' => $glAccounts,
             'unitMeasures' => $unitMeasures,
             'businessTypes' => $businessTypes,
             'calendarTypes' => $calendarTypes,
