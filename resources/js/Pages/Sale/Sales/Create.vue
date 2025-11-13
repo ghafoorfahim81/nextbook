@@ -39,7 +39,7 @@ const props = defineProps({
 
 const form = useForm({
     number: props.saleNumber,
-    supplier_id: '',
+    ledger_id: '',
     date: '',
     currency_id: '',
     rate: '',
@@ -127,6 +127,15 @@ watch(() => props.saleNumber, (newPurchaseNumber) => {
     }
 }, { immediate: true });
 
+watch(() => props.ledgers?.data, (ledgers) => {
+    if (ledgers && !form.selected_ledger) {
+        const baseLedger = ledgers.find(c => c.code === 'CASH-CUST');
+        if (baseLedger) {
+            form.selected_ledger = baseLedger;
+            form.ledger_id = baseLedger.id;
+        }
+    }
+}, { immediate: true });
 // Set base currency as default
 watch(() => props.currencies?.data, (currencies) => {
     if (currencies && !form.currency_id) {
@@ -575,12 +584,12 @@ const addRow = () => {
                 <NextSelect
                     :options="ledgers.data"
                     v-model="form.selected_ledger"
-                    @update:modelValue="(value) => handleSelectChange('customer_id', value.id)"
+                    @update:modelValue="(value) => handleSelectChange('ledger_id', value.id)"
                     label-key="name"
                     value-key="id"
                     :reduce="ledger => ledger"
                     :floating-text="t('ledger.customer.customer')"
-                    :error="form.errors?.customer_id"
+                    :error="form.errors?.ledger_id"
                     :searchable="true"
                     resource-type="ledgers"
                     :search-fields="['name', 'email', 'phone_no']"
