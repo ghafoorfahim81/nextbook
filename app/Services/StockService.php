@@ -7,6 +7,7 @@ use App\Models\Inventory\Stock;
 use App\Models\Inventory\StockOut;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\ValidationException;
 class StockService
 {
     /**
@@ -46,6 +47,21 @@ class StockService
                 $stockOutData['quantity']
             );
 
+            // If there is no stock available in the selected store, stop early
+            if ($availableStock->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'item_id' => ['Stock not available in the selected store.'],
+                ]);
+            }
+
+            // If total available across batches is less than requested, stop
+            $totalAvailable = $availableStock->sum('available_quantity');
+            if ($totalAvailable < $stockOutData['quantity']) {
+                throw ValidationException::withMessages([
+                    'quantity' => ["Insufficient stock. Available: {$totalAvailable}, Required: {$stockOutData['quantity']}."],
+                ]);
+            }
+
             $stockOutRecords = [];
 
             foreach ($availableStock as $stock) {
@@ -66,14 +82,7 @@ class StockService
                     'source_type' => $sourceType,
                     'source_id' => $sourceId,
                 ]);
-
-                // Set sale_number only for sales
-                if ($sourceType === 'sale') {
-                    $stockOutRecord->update([
-                        'sale_number' => $this->getSaleNumber($sourceId),
-                    ]);
-                }
-
+ 
                 $stockOutRecords[] = $stockOutRecord;
                 $stockOutData['quantity'] -= $quantityToTake;
 
@@ -96,7 +105,7 @@ class StockService
 
         $totalOut = StockOut::where('item_id', $itemId)
             ->where('store_id', $storeId)
-            ->sum('qut_out');
+            ->sum('quantity');
 
         return [
             'available' => $totalStock - $totalOut,
@@ -108,7 +117,7 @@ class StockService
     /**
      * Get available stock batches (FIFO)
      */
-    private function getAvailableStock(string $itemId, string $storeId, float $requiredQuantity): array
+    private function getAvailableStock(string $itemId, string $storeId, float $requiredQuantity)
     {
         return Stock::where('item_id', $itemId)
             ->where('store_id', $storeId)
@@ -117,12 +126,11 @@ class StockService
             ->orderBy('created_at', 'asc')
             ->get()
             ->map(function ($stock) {
-                $stock->available_quantity = $stock->quantity - $stock->stockOuts->sum('qut_out');
+                $stock->available_quantity = $stock->quantity - $stock->stockOuts->sum('quantity');
                 return $stock;
             })
             ->where('available_quantity', '>', 0)
-            ->values()
-            ->toArray();
+            ->values();
     }
 
     /**
@@ -137,24 +145,23 @@ class StockService
                 'store_id' => $transferData['from_store_id'],
                 'quantity' => $transferData['quantity'],
                 'date_out' => $transferData['date'],
-            ], 'transfer', $transferData['transfer_id']);
+            ], $transferData['from_store_id'], 'transfer', $transferData['transfer_id']);
 
             // Add to destination store
             $sourceStock = Stock::find($stockOut->stock_id);
 
             $stockIn = $this->addStock([
                 'item_id' => $transferData['item_id'],
-                'store_id' => $transferData['to_store_id'],
                 'unit_measure_id' => $sourceStock->unit_measure_id,
                 'quantity' => $transferData['quantity'],
-                'cost' => $sourceStock->cost,
+                'unit_price' => $sourceStock->unit_price,
                 'free' => $sourceStock->free,
                 'batch' => $sourceStock->batch,
                 'discount' => $sourceStock->discount,
                 'tax' => $sourceStock->tax,
                 'date' => $transferData['date'],
                 'expire_date' => $sourceStock->expire_date,
-            ], 'transfer', $transferData['transfer_id']);
+            ], $transferData['to_store_id'], 'transfer', $transferData['transfer_id']);
 
             return [
                 'out' => $stockOut,
@@ -227,17 +234,9 @@ class StockService
             'free' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
-            'date_out' => 'required|date',
+            'date' => 'nullable|date',
         ])->validate();
     }
 
-    private function getSaleNumber($saleId): ?int
-    {
-        // Resolve dynamically without static type reference to appease static analyzers
-        $sale = null;
-        if (class_exists('App\\Models\\Sale')) {
-            $sale = call_user_func(['App\\Models\\Sale', 'find'], $saleId);
-        }
-        return $sale ? $sale->sale_number : null;
-    }
+
 }

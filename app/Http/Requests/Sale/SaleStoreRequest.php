@@ -37,7 +37,7 @@ class SaleStoreRequest extends FormRequest
             'store_id' => ['nullable', 'string', 'exists:stores,id'],
             'description' => ['nullable', 'string'],
             'status' => ['nullable', 'string'],
-            'item_list' => ['required', 'array'],
+            'item_list' => ['required', 'array','min:1'],
             'item_list.*.item_id' => ['required', 'string', 'exists:items,id'],
             'item_list.*.batch' => ['nullable', 'string'],
             'item_list.*.expire_date' => ['nullable', 'date'],

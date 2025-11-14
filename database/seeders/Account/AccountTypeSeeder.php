@@ -268,6 +268,12 @@ class AccountTypeSeeder extends Seeder
                 'remark' => 'Income Indirect Account Type',
                 'is_main' => true,
             ],
+            [
+                'name' => "Sales Revenue",
+                'slug' => 'sales-revenue',
+                'remark' => 'Sales Revenue Account Type',
+                'is_main' => true,
+            ],
 
 
         ];

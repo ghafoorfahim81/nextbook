@@ -124,7 +124,7 @@ function submit(createAndNew = false) {
             label-key="name"
             value-key="id"
             :reduce="acc => acc"
-            :floating-text="'Bank Account'"
+            :floating-text="'Debit from Account'"
             :error="form.errors?.bank_account_id"
             :searchable="true"
             resource-type="accounts"

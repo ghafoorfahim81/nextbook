@@ -41,7 +41,7 @@ watch(() => currencies, (list) => {
   }
 }, { immediate: true })
 
- 
+
 
 function handleSelectChange(field, value) {
   form[field] = value
@@ -67,7 +67,7 @@ function submit(createAndNew = false) {
         const latest = Number(form.number || 0)
         form.reset('date', 'amount', 'cheque_no', 'narration')
         form.number = String((isNaN(latest) ? 0 : latest) + 1)
-        
+
       }
       toast({
         title: t('general.success'),
@@ -76,7 +76,7 @@ function submit(createAndNew = false) {
         class:'bg-green-600 text-white',
       })
     }
-    
+
   })
 }
 </script>
@@ -126,7 +126,7 @@ function submit(createAndNew = false) {
             label-key="name"
             value-key="id"
             :reduce="acc => acc"
-            :floating-text="'Bank Account'"
+            :floating-text="'Add to Account'"
             :error="form.errors?.bank_account_id"
             :searchable="true"
             resource-type="accounts"
@@ -145,7 +145,7 @@ function submit(createAndNew = false) {
             </div>
           </div>
         </div>
-      </div> 
+      </div>
       <div class="mt-4 flex gap-2">
         <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white">{{ t('general.create') }}</button>
         <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white" @click="() => submit(true)">
