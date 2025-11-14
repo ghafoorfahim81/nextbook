@@ -209,33 +209,6 @@ const navMain = computed(() => [
         ],
     },
     {
-        title: t('sidebar.main.account'),
-        url: '#',
-        icon: ChartColumn,
-        items: [
-            { title: t('sidebar.account.chart_of_account'), url: '/chart-of-accounts' },
-            { title: t('sidebar.account.account_type'), url: '/account-types' }, 
-        ],
-    },
-    {
-        title: t('sidebar.main.purchase'),
-        url: '#',
-        icon: ChartColumn,
-        items: [
-            { title: t('sidebar.purchase.purchase'), url: '/purchases' },
-            { title: t('sidebar.purchase.purchase_return'), url: '/purchase-returns' },
-        ],
-    },
-    {
-        title: t('sidebar.main.sale'),
-        url: '#',
-        icon: ShoppingCart,
-        items: [
-            { title: t('sidebar.sale.sale'), url: '/sales' },
-            { title: t('sidebar.sale.sale_return'), url: '/sale-returns' },
-        ],
-    },
-    {
         title: t('sidebar.main.ledger'),
         url: '#',
         icon: UserCog,
@@ -245,6 +218,34 @@ const navMain = computed(() => [
         ],
     },
     {
+        title: t('sidebar.main.account'),
+        url: '#',
+        icon: ChartColumn,
+        items: [
+            { title: t('sidebar.account.chart_of_account'), url: '/chart-of-accounts' },
+            { title: t('sidebar.account.account_type'), url: '/account-types' },
+        ],
+    },
+    {
+        title: t('sidebar.main.purchase'),
+        url: '#',
+        icon: ChartColumn,
+        items: [
+            { title: t('sidebar.purchase.purchase'), url: '/purchases' },
+            // { title: t('sidebar.purchase.purchase_return'), url: '/purchase-returns' },
+        ],
+    },
+    {
+        title: t('sidebar.main.sale'),
+        url: '#',
+        icon: ShoppingCart,
+        items: [
+            { title: t('sidebar.sale.sale'), url: '/sales' },
+            // { title: t('sidebar.sale.sale_return'), url: '/sale-returns' },
+        ],
+    },
+
+    {
         title: t('sidebar.main.receipt'),
         url: '/receipts',
         icon: ReceiptIcon,
@@ -253,12 +254,12 @@ const navMain = computed(() => [
         title: t('sidebar.main.payment'),
         url: '/payments',
         icon: CreditCard,
-    }, 
+    },
     {
         title: t('sidebar.main.transfer'),
         url: '/account-transfers',
         icon: CreditCard,
-    }, 
+    },
 ])
 
 // assign to data after computed is available
