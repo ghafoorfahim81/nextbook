@@ -101,12 +101,12 @@ const isJalali = computed(() => effectiveLocale.value === 'fa')
 // Resolve formats based on calendar type so output is consistent
 const resolvedFormat = computed(() => {
     if (props.format && props.format !== 'date') return props.format
-    return isJalali.value ? 'jYYYY/jMM/jDD' : 'YYYY/MM/DD'
+    return isJalali.value ? 'jYYYY-jMM-jDD' : 'YYYY-MM-DD'
 })
 
 const resolvedDisplayFormat = computed(() => {
     if (props.displayFormat) return props.displayFormat
-    return isJalali.value ? 'jYYYY/jMM/jDD' : 'YYYY/MM/DD'
+    return isJalali.value ? 'jYYYY-jMM-jDD' : 'YYYY-MM-DD'
 })
 
 const afghanMonths = [

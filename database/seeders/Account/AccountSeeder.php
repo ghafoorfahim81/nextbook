@@ -138,6 +138,15 @@ class AccountSeeder extends Seeder
                 'remark' => 'Gains/Losses Account Type',
                 'is_main' => true,
             ],
+            [
+                'name' => 'Sales Revenue',
+                'number' => 'Sr-014',
+                'account_type_id' => AccountType::where('slug', 'sales-revenue')->first()->id,
+                'slug' => 'sales-revenue',
+                'branch_id' => $mainBranch->id,
+                'remark' => 'Sales Revenue Account Type',
+                'is_main' => true,
+            ],
 
         ];
 

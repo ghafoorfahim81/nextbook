@@ -35,11 +35,13 @@ const props = defineProps({
     unitMeasures: {type: Object, required: true},
     accounts: {type: Object, required: true},
     saleNumber: {type: String, required: true},
+    items: {type: Object, required: true},
 })
 
+console.log('this is items', props.items);
 const form = useForm({
     number: props.saleNumber,
-    ledger_id: '',
+    customer_id: '',
     date: '',
     currency_id: '',
     rate: '',
@@ -107,17 +109,17 @@ const form = useForm({
     ],
 })
 
-const items=ref([]);
+// const items=ref([]);
 
-const loadItems = () => {
-    axios.get(route('item.with.batches', { store_id: form.store_id })).then(response => {
-        items.value = response.data;
-        console.log('items', items.value);
-    })
-}
+// const loadItems = () => {
+//     axios.get(route('item.with.batches', { store_id: form.store_id })).then(response => {
+//         items.value = response.data;
+//         console.log('items', items.value);
+//     })
+// }
 
 onMounted(() => {
-    loadItems();
+    // loadItems();
 })
 
 // Watch for purchaseNumber prop changes and update form.number
@@ -132,7 +134,7 @@ watch(() => props.ledgers?.data, (ledgers) => {
         const baseLedger = ledgers.find(c => c.code === 'CASH-CUST');
         if (baseLedger) {
             form.selected_ledger = baseLedger;
-            form.ledger_id = baseLedger.id;
+            form.customer_id = baseLedger.id;
         }
     }
 }, { immediate: true });
@@ -344,7 +346,7 @@ watch(() => form.rate, (newRate) => {
         if (!row || !row.selected_item) return
         const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
         const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
-        const baseUnitPrice = Number(row.base_unit_price ?? row.selected_item?.unit_price ?? row.selected_item?.purchase_price ?? 0)
+        const baseUnitPrice = Number(row.base_unit_price ?? row.selected_item?.unit_price ?? row.selected_item?.mrp_rate ?? 0)
         row.unit_price = (baseUnitPrice / (selectedUnit || 1)) * (Number(newRate) || 0)
     })
 })
@@ -390,7 +392,7 @@ const handleItemChange = async (index, selectedItem) => {
     row.on_hand = selectedItem.on_hand
 
     // Set the base unit price - this is the price per base unit
-    row.base_unit_price = selectedItem.unit_price ?? selectedItem.purchase_price ?? 0
+    row.base_unit_price = selectedItem.unit_price ?? selectedItem.mrp_rate ?? 0
 
     // Set the initial unit_price based on the base unit measure
     const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1
@@ -579,17 +581,17 @@ const addRow = () => {
     <AppLayout :title="t('general.create', { name: t('sale.sale') })" :sidebar-collapsed="true">
          <form @submit.prevent="handleSubmit">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative ">
-            <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('sales.sale') }) }}</div>
+            <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('sale.sale') }) }}</div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <NextSelect
                     :options="ledgers.data"
                     v-model="form.selected_ledger"
-                    @update:modelValue="(value) => handleSelectChange('ledger_id', value.id)"
+                    @update:modelValue="(value) => handleSelectChange('customer_id', value.id)"
                     label-key="name"
                     value-key="id"
                     :reduce="ledger => ledger"
                     :floating-text="t('ledger.customer.customer')"
-                    :error="form.errors?.ledger_id"
+                    :error="form.errors?.customer_id"
                     :searchable="true"
                     resource-type="ledgers"
                     :search-fields="['name', 'email', 'phone_no']"
@@ -664,7 +666,7 @@ const addRow = () => {
                             <td class="px-1 py-2 align-top w-5">{{ index + 1 }}</td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
-                                    :options="items"
+                                    :options="items.data"
                                     v-model="item.selected_item"
                                     label-key="name"
                                     :placeholder="t('general.search_or_select')"

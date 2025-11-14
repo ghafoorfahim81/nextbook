@@ -174,7 +174,7 @@ class TransactionService
         // ALWAYS: CREDIT Sales Revenue (Money comes IN)
         $glAccounts = Cache::get('gl_accounts');
         $salesTransaction = $this->createTransaction([
-            'account_id' => $glAccounts['sales-revenue']->id,
+            'account_id' => $glAccounts['sales-revenue'],
             'ledger_id' => $ledger->id,
             'amount' => $transactionTotal,
             'currency_id' => $currency_id,
@@ -246,7 +246,7 @@ class TransactionService
 
         $sale->update(['transaction_id' => $salesTransaction->id]);
 
-        Cache::tags(['ledgers', 'accounts'])->flush();
+        // Cache::forget('key''ledgers', 'accounts')->flush();
 
         return $transactions;
     }

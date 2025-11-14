@@ -16,7 +16,6 @@ const props = defineProps({
     sales: Object,
 })
 
-console.log('this is sales',props.sales);
 const showDialog = ref(false);
 const selectedSaleId = ref(null);
 
@@ -27,7 +26,7 @@ const editItem = (item) => {
 const { deleteResource } = useDeleteResource()
 const deleteItem = (id) => {
     deleteResource('sales.destroy', id, {
-        title: t('general.delete', { name: t('sale.sale') }),
+        title: t('general.delete', { name: t('sale.sales') }),
     })
 }
 
@@ -48,11 +47,11 @@ const columns = ref([
 </script>
 
 <template>
-    <AppLayout :title="t('sale.sale')">
+    <AppLayout :title="t('sale.sales')">
             <DataTable
             :items="sales"
             :columns="columns"
-            :title="t('sale.sale')"
+            :title="t('sale.sales')"
             :url="`sales.index`"
             :showAddButton="true"
             :showEditButton="true"
@@ -61,7 +60,7 @@ const columns = ref([
             @edit="editItem"
             @delete="deleteItem"
             @show="showItem"
-            :addTitle="t('sales.sale')"
+            :addTitle="t('sale.sale')"
             :addAction="'redirect'"
             :addRoute="'sales.create'"
             />
