@@ -4,7 +4,9 @@ namespace App\Http\Resources\Inventory;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-
+use App\Http\Resources\Inventory\StockResource;
+use App\Http\Resources\Inventory\StockOutResource;
+use App\Http\Resources\Inventory\StockOpeningResource;
 class ItemResource extends JsonResource
 {
     /**
@@ -40,6 +42,8 @@ class ItemResource extends JsonResource
             'rate_c' => $this->rate_c,
             'rack_no' => $this->rack_no,
             'fast_search' => $this->fast_search,
+            'stocks' => StockResource::collection($this->stocks),
+            'stock_outs' => StockOutResource::collection($this->stockOut),
             'branch_id' => $this->branch_id,
             'quantity' => $this->stocks->sum(('quantity')),
             'on_hand' => $this->stocks->sum(('quantity')) - $this->openings->sum(('quantity')) - $this->stockOut->sum(('quantity')),
