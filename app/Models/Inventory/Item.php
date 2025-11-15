@@ -142,6 +142,15 @@ class Item extends Model
         return $this->hasMany(StockOut::class);
     }
 
+    // public function inRecords()
+    // {
+    //     return $this->hasMany(Stock::class);
+    // }
+    // public function outRecords()
+    // {
+    //     return $this->hasMany(StockOut::class);
+    // }
+
     /**
      * Get relationships configuration for dependency checking
      */

@@ -95,7 +95,10 @@ class ItemController extends Controller
 
     public function show(Request $request, Item $item)
     {
-        return new ItemResource($item);
+        
+        return inertia('Inventories/Items/Show', [
+            'item' => new ItemResource($item)
+        ]);
     }
 
     public function edit(Request $request, Item $item)
