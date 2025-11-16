@@ -1,0 +1,15 @@
+﻿{
+    "owner": "Owner",
+    "owners": "Owners",
+    "drawing": "Drawing",
+    "capital": "Capital",
+    "capital_account": "Capital Account",
+    "drawing_account": "Drawing Account",
+    "father_name": "Father Name",
+    "nic": "NIC",
+    "email": "Email",
+    "address": "Address",
+    "phone_number": "Phone Number",
+    "ownership_percentage": "Ownership Percentage",
+    "is_active": "Is Active"
+}

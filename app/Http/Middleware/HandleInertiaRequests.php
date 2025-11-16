@@ -200,6 +200,20 @@ class HandleInertiaRequests extends Middleware
             ])->pluck('id', 'slug');
         });
 
+        $capitalAccounts = Cache::rememberForever('capital_accounts', function () {
+            return Account::join('account_types', 'accounts.account_type_id', '=', 'account_types.id')
+            ->where('account_types.slug', 'equity')
+            ->select('accounts.id', 'accounts.name')
+            ->get();
+        });
+
+        $drawingAccounts = Cache::rememberForever('drawing_accounts', function () {
+            return Account::join('account_types', 'accounts.account_type_id', '=', 'account_types.id')
+            ->where('account_types.slug', 'equity')
+            ->select('accounts.id', 'accounts.name')
+            ->get();
+        });
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -227,6 +241,8 @@ class HandleInertiaRequests extends Middleware
             'items' => $items,
             'discountTypes' => $discountTypes,
             'transactionStatuses' => $transactionStatuses,
+            'capitalAccounts' => $capitalAccounts,
+            'drawingAccounts' => $drawingAccounts,
         ];
     }
 }
