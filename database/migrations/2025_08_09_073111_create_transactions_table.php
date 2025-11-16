@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('transactions', function (Blueprint $table) {
             $table->char('id', 26)->primary();
             $table->char('account_id', 26)->index();
-            $table->char('ledger_id', 26)->index();
+            $table->char('ledger_id', 26)->nullable()->index();
             $table->decimal('amount', 19, 4);
             $table->char('currency_id', 26)->index();
             $table->decimal('rate', 10, 6);
