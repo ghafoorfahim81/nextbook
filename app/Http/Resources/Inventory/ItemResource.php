@@ -41,17 +41,13 @@ class ItemResource extends JsonResource
             'rate_b' => $this->rate_b,
             'rate_c' => $this->rate_c,
             'rack_no' => $this->rack_no,
-            'fast_search' => $this->fast_search, 
-            'stock_count' => $this->whenLoaded('stocks', function () {
-                return $this->stocks->sum('quantity');
-            }),
-            'stock_out_count' => $this->whenLoaded('stockOut', function () {
-                return $this->stockOut->sum('quantity');
-            }), 
+            'fast_search' => $this->fast_search,
+            'stock_count' => $this->stocks->sum('quantity'),
+            'stock_out_count' => $this->stockOut->sum('quantity'),
             'branch_id' => $this->branch_id,
             'quantity' => $this->stocks->sum(('quantity')),
             'on_hand' => $this->stocks->sum(('quantity')) - $this->openings->sum(('quantity')) - $this->stockOut->sum(('quantity')),
-            'openings' => StockOpeningResource::collection($this->openings), 
+            'openings' => StockOpeningResource::collection($this->openings),
         ];
     }
 
