@@ -146,7 +146,34 @@ class AccountSeeder extends Seeder
                 'branch_id' => $mainBranch->id,
                 'remark' => 'Sales Revenue Account Type',
                 'is_main' => true,
+            ], 
+            [
+                'name' => 'Owner\'s Capital',
+                'number' => 'OC-015',
+                'account_type_id' => AccountType::where('slug', 'equity')->first()->id,
+                'slug' => 'owners-capital',
+                'branch_id' => $mainBranch->id,
+                'remark' => 'Owner capital contributions',
+                'is_main' => true,
             ],
+            [
+                'name' => 'Owner\'s Drawing',
+                'number' => 'OD-016',
+                'account_type_id' => AccountType::where('slug', 'equity')->first()->id,
+                'slug' => 'owners-drawing',
+                'branch_id' => $mainBranch->id,
+                'remark' => 'Owner personal withdrawals',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Retained Earnings',
+                'number' => 'RE-017',
+                'account_type_id' => AccountType::where('slug', 'equity')->first()->id,
+                'slug' => 'retained-earnings',
+                'branch_id' => $mainBranch->id,
+                'remark' => 'Accumulated profits/losses',
+                'is_main' => true,
+            ]
 
         ];
 
