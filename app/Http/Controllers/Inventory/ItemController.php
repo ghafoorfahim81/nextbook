@@ -63,7 +63,7 @@ class ItemController extends Controller
                 })
                 ->each(function ($o) use ($item, $request, $dateConversionService) {
                     // pick cost source (fallback to purchase_price or cost on item form)
-                    $cost = (float)($request->input('cost') ?? $request->input('purchase_price') ?? 0); 
+                    $cost = (float)($request->input('cost') ?? $request->input('purchase_price') ?? 0);
                     $expire_date = $dateConversionService->toGregorian($o['expire_date']);
                     // create stock
                     $stock = Stock::create([
@@ -96,19 +96,19 @@ class ItemController extends Controller
     }
 
     public function show(Request $request, Item $item)
-    { 
-        $item->load(['stock_count', 'stock_out_count']); 
+    {
+        // $item->load(['stock_count', 'stock_out_count']);
         return inertia('Inventories/Items/Show', [
-            'item' => new ItemResource($item), 
+            'item' => new ItemResource($item),
         ]);
     }
     public function inRecords(Request $request, Item $item)
-    { 
+    {
         $stocks = Stock::with(['store', 'unitMeasure', 'source.supplier'])
             ->where('item_id', $item->id)
             ->orderBy('date', 'desc')
             ->paginate($request->input('per_page', 10));
-        
+
         return response()->json([
             'data' => StockResource::collection($stocks),
             'meta' => [
@@ -119,14 +119,14 @@ class ItemController extends Controller
             ],
         ]);
     }
-    
+
     public function outRecords(Request $request, Item $item)
     {
         $stockOuts = StockOut::with(['store', 'unitMeasure', 'source.customer'])
             ->where('item_id', $item->id)
             ->orderBy('date', 'desc')
             ->paginate($request->input('per_page', 10));
-        
+
         return response()->json([
             'data' => StockOutResource::collection($stockOuts),
             'meta' => [
