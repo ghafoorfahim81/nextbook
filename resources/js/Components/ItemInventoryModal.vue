@@ -63,12 +63,15 @@ const resetState = () => {
   activeTab.value = 'in'
 }
 onMounted(() => {
-  fetchRecords('in', 1)
+  if (props.modelValue) {
+    resetState()
+    loadMore()
+  }
 })
 const fetchRecords = async (type, page) => {
   const res = await axios.get(`/items/${props.item.id}/${type}-records`, {
     params: { page, per_page: 10 },
-  }) 
+  })
   console.log('this is res', res.data)
   return {
     data: res.data.data || [],
@@ -194,7 +197,7 @@ watch(
                 </p>
               </div>
             </div>
-            
+
             <div class="flex items-start gap-2">
               <div class="bg-violet-500 text-white p-1.5 rounded">
                 <TrendingDown class="w-4 h-4" />
@@ -231,7 +234,7 @@ watch(
             "
             @click="switchTab('in')"
           >
-            In Records  
+            In Records
           </button>
           <button
             class="px-3 py-2 text-sm rounded-t-md border-b-2"
@@ -242,7 +245,7 @@ watch(
             "
             @click="switchTab('out')"
           >
-            Out Records  
+            Out Records
           </button>
         </div>
 
