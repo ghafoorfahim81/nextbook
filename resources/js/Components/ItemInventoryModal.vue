@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import axios from 'axios'
 import {
   Package, Hash, Pill, Box, Tag, Layers, TrendingUp, TrendingDown,
@@ -11,6 +11,7 @@ const props = defineProps({
   modelValue: { type: Boolean, default: false },
   item: { type: Object, required: true },
 })
+console.log('this is item data', props.item)
 const emit = defineEmits(['update:modelValue'])
 
 const activeTab = ref('in')
@@ -61,11 +62,14 @@ const resetState = () => {
   outHasMore.value = true
   activeTab.value = 'in'
 }
-
+onMounted(() => {
+  fetchRecords('in', 1)
+})
 const fetchRecords = async (type, page) => {
   const res = await axios.get(`/items/${props.item.id}/${type}-records`, {
     params: { page, per_page: 10 },
-  })
+  }) 
+  console.log('this is res', res.data)
   return {
     data: res.data.data || [],
     hasMore: res.data.meta?.current_page < res.data.meta?.last_page,
@@ -177,6 +181,43 @@ watch(
               </div>
             </div>
           </div>
+          <hr class="my-4 border-slate-200" />
+          <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3">
+            <div class="flex items-start gap-2">
+              <div class="bg-violet-500 text-white p-1.5 rounded">
+                <Target class="w-4 h-4" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs text-slate-500">On Hand</p>
+                <p class="text-sm font-medium text-slate-900 truncate">
+                  {{ item.on_hand ?? '—' }}
+                </p>
+              </div>
+            </div>
+            
+            <div class="flex items-start gap-2">
+              <div class="bg-violet-500 text-white p-1.5 rounded">
+                <TrendingDown class="w-4 h-4" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs text-slate-500">In Records</p>
+                <p class="text-sm font-medium text-slate-900 truncate">
+                  {{ item.stock_count ?? '—' }}
+                </p>
+              </div>
+            </div>
+            <div class="flex items-start gap-2">
+              <div class="bg-violet-500 text-white p-1.5 rounded">
+                <TrendingUp class="w-4 h-4" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs text-slate-500">Out Records</p>
+                <p class="text-sm font-medium text-slate-900 truncate">
+                  {{ item.stock_out_count ?? '—' }}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Tabs -->
@@ -190,7 +231,7 @@ watch(
             "
             @click="switchTab('in')"
           >
-            In Records
+            In Records  
           </button>
           <button
             class="px-3 py-2 text-sm rounded-t-md border-b-2"
@@ -201,7 +242,7 @@ watch(
             "
             @click="switchTab('out')"
           >
-            Out Records
+            Out Records  
           </button>
         </div>
 
@@ -211,57 +252,65 @@ watch(
           @scroll="onScroll"
 
         >
-          <table class="w-full border-collapse overflow-auto">
-            <thead class="sticky top-0 bg-white border-b border-slate-200">
-              <tr class="text-[11px] uppercase tracking-wide text-slate-500">
-                <th class="py-2 pr-3 text-left">#</th>
-                <th class="py-2 px-3 text-left">Bill No.</th>
-                <th class="py-2 px-3 text-right">Qty</th>
-                <th class="py-2 px-3 text-left">Measure</th>
-                <th class="py-2 px-3 text-left">Date</th>
-                <th class="py-2 px-3 text-left">Batch</th>
-                <th class="py-2 px-3 text-left">Expiry</th>
-                <th class="py-2 px-3 text-right">Unit Price</th>
-                <th class="py-2 pl-3 text-left">Store</th>
+          <table class="w-full border-collapse">
+            <thead class="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10">
+              <tr class="text-xs uppercase tracking-wide text-slate-600 font-semibold">
+                <th class="py-3 px-3 text-left whitespace-nowrap">#</th>
+                <th class="py-3 px-3 text-left whitespace-nowrap">Ledger</th>
+                <th class="py-3 px-3 text-left whitespace-nowrap">Bill Number</th>
+                <th class="py-3 px-3 text-center whitespace-nowrap">Qty</th>
+                <th class="py-3 px-3 text-left whitespace-nowrap">Source</th>
+                <th class="py-3 px-3 text-left whitespace-nowrap">Measure</th>
+                <th class="py-3 px-3 text-left whitespace-nowrap">Date</th>
+                <th class="py-3 px-3 text-left whitespace-nowrap">Batch</th>
+                <th class="py-3 px-3 text-left whitespace-nowrap">Expiry</th>
+                <th class="py-3 px-3 text-right whitespace-nowrap">Unit Price</th>
+                <th class="py-3 px-3 text-left whitespace-nowrap">Store</th>
               </tr>
             </thead>
             <tbody>
               <tr
                 v-for="(row, index) in currentRecords"
                 :key="row.id || index"
-                class="border-b border-slate-100 hover:bg-slate-50"
+                class="border-b border-slate-100 hover:bg-slate-50 transition"
               >
-                <td class="py-2 pr-3 align-middle">
+                <td class="py-3 px-3 align-middle whitespace-nowrap text-slate-500">
                   {{ index + 1 }}
                 </td>
-                <td class="py-2 px-3 align-middle">
-                  {{ row.bill_number }}
+                <td class="py-3 px-3 align-middle whitespace-nowrap font-medium text-slate-900">
+                  {{ row.ledger_name || row.bill_number || '—' }}
                 </td>
-                <td class="py-2 px-3 text-right align-middle">
+                <td class="py-3 px-3 text-center align-middle whitespace-nowrap font-semibold text-slate-800">
+                  {{ row.bill_number || '—' }}
+                </td>
+                <td class="py-3 px-3 text-center align-middle whitespace-nowrap font-semibold text-slate-800">
                   {{ row.quantity }}
                 </td>
-                <td class="py-2 px-3 align-middle">
+                <td class="py-3 px-3 align-middle whitespace-nowrap text-slate-600">
+                  {{ row.source_type }}
+                </td>
+                <td class="py-3 px-3 align-middle whitespace-nowrap text-slate-600">
                   {{ row.measure_unit }}
                 </td>
-                <td class="py-2 px-3 align-middle">
+                <td class="py-3 px-3 align-middle whitespace-nowrap text-slate-600">
                   {{ row.date }}
                 </td>
-                <td class="py-2 px-3 align-middle">
-                  {{ row.batch }}
+                <td class="py-3 px-3 align-middle whitespace-nowrap text-slate-600">
+                  {{ row.batch || '—' }}
                 </td>
-                <td class="py-2 px-3 align-middle">
-                  {{ row.expiry }}
+                <td class="py-3 px-3 align-middle whitespace-nowrap text-slate-600">
+                  {{ row.expiry || '—' }}
                 </td>
-                <td class="py-2 px-3 text-right align-middle">
+                <td class="py-3 px-3 text-right align-middle whitespace-nowrap font-semibold text-slate-900">
                   {{ row.unit_price }}
                 </td>
-                <td class="py-2 pl-3 align-middle">
+                <td class="py-3 px-3 align-middle whitespace-nowrap text-slate-600">
                   {{ row.store }}
                 </td>
               </tr>
 
               <tr v-if="!loading && currentRecords.length === 0">
-                <td colspan="9" class="py-6 text-center text-slate-400">
+                <td colspan="9" class="py-8 text-center text-slate-400">
                   {{ $t('general.no_record_available') }}
                 </td>
               </tr>

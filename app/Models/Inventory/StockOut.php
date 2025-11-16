@@ -43,6 +43,11 @@ class StockOut extends Model
         return $this->belongsTo(UnitMeasure::class);
     }
 
+    public function unitMeasure()
+    {
+        return $this->belongsTo(UnitMeasure::class, 'unit_measure_id');
+    }
+
     public function store()
     {
         return $this->belongsTo(Store::class);
@@ -51,5 +56,12 @@ class StockOut extends Model
     public function source()
     {
         return $this->morphTo();
+    }
+    public function ledgerName()
+    {
+        if($this->source_type == 'App\Models\Sale\Sale' && $this->source) {
+            return $this->source->customer->name ?? 'Unknown';
+        }
+        return 'Direct Sale';
     }
 }

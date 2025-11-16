@@ -9,13 +9,15 @@ use App\Http\Resources\Inventory\ItemResource;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\Stock;
 use App\Models\Inventory\StockOpening;
+use App\Models\Inventory\StockOut;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
-
+use App\Http\Resources\Inventory\StockResource;
+use App\Http\Resources\Inventory\StockOutResource;
 class ItemController extends Controller
 {
     public function index(Request $request)
@@ -94,10 +96,45 @@ class ItemController extends Controller
     }
 
     public function show(Request $request, Item $item)
-    {
-        
+    { 
+        $item->load(['stock_count', 'stock_out_count']); 
         return inertia('Inventories/Items/Show', [
-            'item' => new ItemResource($item)
+            'item' => new ItemResource($item), 
+        ]);
+    }
+    public function inRecords(Request $request, Item $item)
+    { 
+        $stocks = Stock::with(['store', 'unitMeasure', 'source.supplier'])
+            ->where('item_id', $item->id)
+            ->orderBy('date', 'desc')
+            ->paginate($request->input('per_page', 10));
+        
+        return response()->json([
+            'data' => StockResource::collection($stocks),
+            'meta' => [
+                'current_page' => $stocks->currentPage(),
+                'last_page' => $stocks->lastPage(),
+                'per_page' => $stocks->perPage(),
+                'total' => $stocks->total(),
+            ],
+        ]);
+    }
+    
+    public function outRecords(Request $request, Item $item)
+    {
+        $stockOuts = StockOut::with(['store', 'unitMeasure', 'source.customer'])
+            ->where('item_id', $item->id)
+            ->orderBy('date', 'desc')
+            ->paginate($request->input('per_page', 10));
+        
+        return response()->json([
+            'data' => StockOutResource::collection($stockOuts),
+            'meta' => [
+                'current_page' => $stockOuts->currentPage(),
+                'last_page' => $stockOuts->lastPage(),
+                'per_page' => $stockOuts->perPage(),
+                'total' => $stockOuts->total(),
+            ],
         ]);
     }
 
