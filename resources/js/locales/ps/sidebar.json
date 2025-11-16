@@ -48,6 +48,10 @@
   "ledger": {
     "customer": "پېرېدونکی",
     "supplier": "عرضه کوونکی"
+  },
+  "owners": {
+    "owners": "ماڼکان",
+    "drawing": "دریښتنل"
   }
 }
 

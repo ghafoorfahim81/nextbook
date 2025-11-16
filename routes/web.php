@@ -118,5 +118,8 @@ Route::middleware([
     Route::get('/items/{item}/in-records', [\App\Http\Controllers\Inventory\ItemController::class, 'inRecords'])->name('items.in-records');
     Route::get('/items/{item}/out-records', [\App\Http\Controllers\Inventory\ItemController::class, 'outRecords'])->name('items.out-records');
 
+    // Owners
+    Route::resource('/owners', \App\Http\Controllers\Administration\OwnerController::class);
+    Route::patch('/owners/{owner}/restore', [\App\Http\Controllers\Administration\OwnerController::class, 'restore'])->name('owners.restore')->withTrashed();
 
 });
