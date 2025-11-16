@@ -64,7 +64,7 @@ class SaleController extends Controller
 
             // Handle stock deductions (reverse of purchase - remove from inventory)
             foreach ($validated['item_list'] as $item) {
-                $stockService->removeStock($item, $validated['store_id'], 'sale', $sale->id);
+                $stockService->removeStock($item, $validated['store_id'], Sale::class, $sale->id);
             }
 
             // Create accounting transactions (reverse of purchase)

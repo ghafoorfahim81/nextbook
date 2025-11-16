@@ -32,6 +32,11 @@ class Stock extends Model
         return $this->belongsTo(UnitMeasure::class);
     }
 
+    public function unitMeasure()
+    {
+        return $this->belongsTo(UnitMeasure::class, 'unit_measure_id');
+    }
+
     public function stockOuts()
     {
         return $this->hasMany(StockOut::class);
@@ -50,5 +55,15 @@ class Stock extends Model
     public function source()
     {
         return $this->morphTo();
+    }
+ 
+    public function ledgerName()
+    {
+        if($this->source_type == 'App\Models\Purchase\Purchase' && $this->source) {
+            return $this->source->supplier->name ?? 'Unknown';
+        }
+        else{
+            return 'Unknown';
+        } 
     }
 }

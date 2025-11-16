@@ -3,7 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-
+use Illuminate\Database\Eloquent\Relations\Relation;
+use App\Models\Purchase\Purchase;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -19,6 +20,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Relation::enforceMorphMap([
+            'purchase' => 'App\Models\Purchase\Purchase',
+            'sale' => 'App\Models\Sale\Sale',
+            'expense' => 'App\Models\Expense\Expense',
+            'income' => 'App\Models\Income\Income',
+            'transfer' => 'App\Models\Transfer\Transfer',
+            'adjustment' => 'App\Models\Adjustment\Adjustment',
+            'opening' => 'App\Models\Inventory\StockOpening',
+            'stock_out' => 'App\Models\Inventory\StockOut',
+        ]);
     }
 }

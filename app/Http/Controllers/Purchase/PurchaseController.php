@@ -63,7 +63,7 @@ class PurchaseController extends Controller
             $purchase->items()->createMany($validated['item_list']);
 
             foreach ($validated['item_list'] as $item) {
-                $stockService->addStock($item, $validated['store_id'], 'purchase', $purchase->id, $validated['date']);
+                $stockService->addStock($item, $validated['store_id'], Purchase::class, $purchase->id, $validated['date']);
             }
 
             // Create accounting transactions
@@ -136,7 +136,7 @@ class PurchaseController extends Controller
                 $purchase->stock()->forceDelete();
                 // Add new stock entries
                 foreach ($validated['item_list'] as $item) {
-                    $stockService->addStock($item, $validated['store_id'], 'purchase', $purchase->id, $validated['date']);
+                    $stockService->addStock($item, $validated['store_id'], Purchase::class, $purchase->id, $validated['date']);
                 }
             }
 

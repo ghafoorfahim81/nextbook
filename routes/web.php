@@ -113,4 +113,10 @@ Route::middleware([
     // Account Transfers
     Route::resource('/account-transfers', \App\Http\Controllers\AccountTransfer\AccountTransferController::class);
     Route::patch('/account-transfers/{accountTransfer}/restore', [\App\Http\Controllers\AccountTransfer\AccountTransferController::class, 'restore'])->name('account-transfers.restore')->withTrashed();
+
+    // Item Inventory Modal
+    Route::get('/items/{item}/in-records', [\App\Http\Controllers\Inventory\ItemController::class, 'inRecords'])->name('items.in-records');
+    Route::get('/items/{item}/out-records', [\App\Http\Controllers\Inventory\ItemController::class, 'outRecords'])->name('items.out-records');
+
+
 });
