@@ -16,7 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Response;
-
+use App\Models\Transaction\Transaction;
 class OwnerController extends Controller
 {
     public function index(Request $request)
@@ -108,7 +108,14 @@ class OwnerController extends Controller
 
     public function show(Request $request, Owner $owner)
     {
-        $owner->load(['capitalAccount', 'drawingAccount', 'capitalTransaction', 'accountTransaction']);
+        $owner->load([
+            'capitalAccount',
+            'drawingAccount',
+            'capitalTransaction.currency',
+            'capitalTransaction.account',
+            'accountTransaction.currency',
+            'accountTransaction.account'
+        ]);
         return response()->json([
             'data' => new OwnerResource($owner),
         ]);
@@ -116,20 +123,63 @@ class OwnerController extends Controller
 
     public function edit(Request $request, Owner $owner): Response
     {
+        $owner->load(['accountTransaction.account', 'accountTransaction.currency']);
         return inertia('Administration/Owners/Edit', [
             'owner' => new OwnerResource($owner),
-            'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
         ]);
     }
 
     public function update(OwnerUpdateRequest $request, Owner $owner)
     {
-        $owner->update($request->validated());
+        // Use similar logic as the store method, but for updating
+
+        $validated = $request->validated();
+
+        DB::transaction(function () use ($owner, $validated) {
+            $amount = $validated['amount'] ?? 0;
+            $currencyId = $validated['currency_id'];
+            $rate = $validated['rate'];
+
+            // Update owner fields
+            $owner->update($validated);
+
+            // Update capital transaction
+            if ($owner->capital_transaction_id) {
+                Transaction::where('id', $owner->capital_transaction_id)->update([
+                    'account_id' => $validated['capital_account_id'],
+                    'amount' => $amount,
+                    'currency_id' => $currencyId,
+                    'rate' => $rate,
+                    'date' => now(),
+                    'type' => 'credit',
+                    'remark' => "Capital contribution by {$owner->name}",
+                    'reference_type' => Owner::class,
+                    'reference_id' => $owner->id,
+                ]);
+            }
+            // Update account transaction (cash-in-hand etc)
+            if ($owner->account_transaction_id) {
+                Transaction::where('id', $owner->account_transaction_id)->update([
+                    'account_id' => $validated['account_id'],
+                    'amount' => $amount,
+                    'currency_id' => $currencyId,
+                    'rate' => $rate,
+                    'date' => now(),
+                    'type' => 'debit',
+                    'remark' => "Cash received for {$owner->name} capital",
+                    'reference_type' => Owner::class,
+                    'reference_id' => $owner->id,
+                ]);
+            }
+        });
         return redirect()->route('owners.index')->with('success', 'Owner updated successfully.');
     }
 
     public function destroy(Request $request, Owner $owner)
     {
+        $owner->load(['capitalTransaction', 'accountTransaction']);
+        $owner->capitalTransaction->delete();
+        $owner->accountTransaction->delete();
         $owner->delete();
         return redirect()->route('owners.index')->with('success', 'Owner deleted successfully.');
     }
@@ -137,6 +187,12 @@ class OwnerController extends Controller
     public function restore(Request $request, Owner $owner)
     {
         $owner->restore();
+        if ($owner->capital_transaction_id) {
+            Transaction::where('id', $owner->capital_transaction_id)->restore();
+        }
+        if ($owner->account_transaction_id) {
+            Transaction::where('id', $owner->account_transaction_id)->restore();
+        }
         return redirect()->route('owners.index')->with('success', 'Owner restored successfully.');
     }
 }

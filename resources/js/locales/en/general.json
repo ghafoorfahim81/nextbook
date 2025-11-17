@@ -144,7 +144,9 @@
   "no_record_available_description":"There are currently no records to display. Add a new record to get started.",
   "no_record_available_button":"Add new record",
   "no_record_available_button_description":"Add a new record to get started.",
-  "address": "Address"
+  "address": "Address",
+  "email": "Email",
+  "active": "Active"
 }
 
 

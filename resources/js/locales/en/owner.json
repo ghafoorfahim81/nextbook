@@ -11,5 +11,7 @@
     "address": "Address",
     "phone_number": "Phone Number",
     "ownership_percentage": "Ownership Percentage",
-    "is_active": "Is Active"
+    "is_active": "Is Active",
+    "capital_contribution": "Capital Contribution",
+    "cash_received": "Cash Received"
 }
