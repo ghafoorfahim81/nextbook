@@ -29,6 +29,8 @@ const form = useForm({
     drawing_account_id: '',
     selected_drawing_account: null,
     name: '',
+    account_id: '',
+    selected_account: null,
     father_name: '',
     nic: '',
     email: '',
@@ -110,6 +112,19 @@ function submit(createAndNew = false) {
             resource-type="accounts"
             :search-fields="['name', 'number', 'slug']"
           />
+          <NextSelect
+            :options="allAccounts"
+            label-key="name"
+            value-key="id"
+            :reduce="account => account"
+            v-model="form.selected_account"
+            @update:modelValue="(value) => handleSelectChange('account_id', value?.id)"
+            :floating-text="t('general.account')"
+            :error="form.errors?.account_id"
+            :searchable="true"
+            resource-type="accounts"
+            :search-fields="['name', 'number', 'slug']"
+          />
           <div class="flex gap-3">
                 <NextSelect
                 :options="currencies"
@@ -130,11 +145,6 @@ function submit(createAndNew = false) {
             <label class="text-sm font-medium text-gray-700">{{ t('general.status') }}</label>
             <input type="checkbox" v-model="form.is_active" />
           </div>
-             <NextTextarea
-            :placeholder="t('general.enter', { text: t('general.remark') })"
-            v-model="form.remark"
-            :label="t('general.remark')"
-            :error="form.errors?.remark" />
         </div>
       </div>
       <div class="mt-4 flex gap-2">
