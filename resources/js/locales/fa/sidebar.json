@@ -48,6 +48,10 @@
   "ledger": {
     "customer": "مشتری",
     "supplier": "تامین کننده"
+  },
+  "owners": {
+    "owners": "صاحبان",
+    "drawing": "برداشت"
   }
 }
 
