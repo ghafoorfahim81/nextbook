@@ -26,7 +26,7 @@ class OwnerUpdateRequest extends FormRequest
             'drawing_account_id' => ['required', 'string', 'exists:accounts,id'],
             'account_id' => ['required', 'string', 'exists:accounts,id'],
             // Special create fields
-            'amount' => ['required', 'numeric', 'min:0'],
+            'amount' => ['nullable', 'numeric', 'min:0'],
             'currency_id' => ['required', 'string', 'exists:currencies,id'],
             'rate' => ['required', 'numeric', 'min:0'],
         ];
