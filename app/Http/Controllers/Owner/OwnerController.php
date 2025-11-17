@@ -1,16 +1,16 @@
 <?php
 
-namespace App\Http\Controllers\Administration;
+namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Administration\OwnerStoreRequest;
-use App\Http\Requests\Administration\OwnerUpdateRequest;
+use App\Http\Requests\Owner\OwnerStoreRequest;
+use App\Http\Requests\Owner\OwnerUpdateRequest;
 use App\Http\Resources\Administration\CurrencyResource;
-use App\Http\Resources\Administration\OwnerResource;
+use App\Http\Resources\Owner\OwnerResource;
 use App\Models\Account\Account;
 use App\Models\Account\AccountType;
 use App\Models\Administration\Currency;
-use App\Models\Administration\Owner;
+use App\Models\Owner\Owner;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +45,6 @@ class OwnerController extends Controller
     public function store(OwnerStoreRequest $request, TransactionService $transactionService)
     {
         $validated = $request->validated();
-
         DB::transaction(function () use ($validated, $transactionService) {
             $owner = Owner::create([
                 'name' => $validated['name'],
@@ -56,32 +55,8 @@ class OwnerController extends Controller
                 'phone_number' => $validated['phone_number'] ?? null,
                 'ownership_percentage' => $validated['ownership_percentage'] ?? 100,
                 'is_active' => $validated['is_active'] ?? true,
-            ]);
-
-            // Create dedicated capital and drawing accounts for this owner
-            $equityTypeId = AccountType::where('slug', 'equity')->firstOrFail()->id;
-            $suffix = Str::lower(Str::substr($owner->id, -6));
-
-            $capitalAccountName = "{$owner->name} - Capital";
-            $capitalAccount = Account::create([
-                'name' => $capitalAccountName,
-                'number' => "OWN-CAP-{$suffix}",
-                'account_type_id' => $equityTypeId,
-                'is_active' => true,
-                'is_main' => false,
-                'slug' => Str::slug($capitalAccountName) . '-' . $suffix,
-                'remark' => 'Owner capital account',
-            ]);
-
-            $drawingAccountName = "{$owner->name} - Drawing";
-            $drawingAccount = Account::create([
-                'name' => $drawingAccountName,
-                'number' => "OWN-DRW-{$suffix}",
-                'account_type_id' => $equityTypeId,
-                'is_active' => true,
-                'is_main' => false,
-                'slug' => Str::slug($drawingAccountName) . '-' . $suffix,
-                'remark' => 'Owner drawing account',
+                'capital_account_id' => $validated['capital_account_id'],
+                'drawing_account_id' => $validated['drawing_account_id'],
             ]);
 
             // Create financial transactions
@@ -92,7 +67,7 @@ class OwnerController extends Controller
 
             // Credit owner's capital account (capital contribution)
             $capitalTx = $transactionService->createTransaction([
-                'account_id' => $capitalAccount->id,
+                'account_id' => $validated['capital_account_id'],
                 'ledger_id' => null,
                 'amount' => $amount,
                 'currency_id' => $currencyId,
@@ -100,14 +75,14 @@ class OwnerController extends Controller
                 'date' => $today,
                 'type' => 'credit',
                 'remark' => "Capital contribution by {$owner->name}",
-                'reference_type' => 'owner',
+                'reference_type' => Owner::class,
                 'reference_id' => $owner->id,
             ]);
 
             // Debit cash-in-hand (money received)
             $cashAccountId = Account::where('slug', 'cash-in-hand')->value('id');
             $accountTx = $transactionService->createTransaction([
-                'account_id' => $cashAccountId,
+                'account_id' => $validated['account_id'],
                 'ledger_id' => null,
                 'amount' => $amount,
                 'currency_id' => $currencyId,
@@ -115,15 +90,13 @@ class OwnerController extends Controller
                 'date' => $today,
                 'type' => 'debit',
                 'remark' => "Cash received for {$owner->name} capital",
-                'reference_type' => 'owner',
+                'reference_type' => Owner::class,
                 'reference_id' => $owner->id,
             ]);
 
             $owner->update([
                 'capital_transaction_id' => $capitalTx->id,
                 'account_transaction_id' => $accountTx->id,
-                'capital_account_id' => $capitalAccount->id,
-                'drawing_account_id' => $drawingAccount->id,
             ]);
         });
 

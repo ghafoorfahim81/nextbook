@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Administration;
+namespace App\Models\Owner;
 
 use App\Models\Account\Account;
 use App\Models\Transaction\Transaction;

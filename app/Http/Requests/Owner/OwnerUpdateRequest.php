@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\Administration;
+namespace App\Http\Requests\Owner;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class OwnerStoreRequest extends FormRequest
+class OwnerUpdateRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -22,7 +22,9 @@ class OwnerStoreRequest extends FormRequest
             'phone_number' => ['nullable', 'string', 'max:255'],
             'ownership_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'is_active' => ['nullable', 'boolean'],
-
+            'capital_account_id' => ['required', 'string', 'exists:accounts,id'],
+            'drawing_account_id' => ['required', 'string', 'exists:accounts,id'],
+            'account_id' => ['required', 'string', 'exists:accounts,id'],
             // Special create fields
             'amount' => ['required', 'numeric', 'min:0'],
             'currency_id' => ['required', 'string', 'exists:currencies,id'],
