@@ -218,6 +218,15 @@ const navMain = computed(() => [
         ],
     },
     {
+        title: t('sidebar.owners.owners'),
+        url: '#',
+        icon: UserCog,
+        items: [
+            { title: t('sidebar.owners.owners'), url: '/owners' },
+            { title: t('sidebar.owners.drawing'), url: '/drawing' },
+        ],
+    },
+    {
         title: t('sidebar.main.account'),
         url: '#',
         icon: ChartColumn,

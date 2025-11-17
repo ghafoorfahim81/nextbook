@@ -146,9 +146,9 @@ class AccountSeeder extends Seeder
                 'branch_id' => $mainBranch->id,
                 'remark' => 'Sales Revenue Account Type',
                 'is_main' => true,
-            ], 
+            ],
             [
-                'name' => 'Owner\'s Capital',
+                'name' => "Owner's Capital",
                 'number' => 'OC-015',
                 'account_type_id' => AccountType::where('slug', 'equity')->first()->id,
                 'slug' => 'owners-capital',
@@ -157,7 +157,7 @@ class AccountSeeder extends Seeder
                 'is_main' => true,
             ],
             [
-                'name' => 'Owner\'s Drawing',
+                'name' => "Owner's Drawing",
                 'number' => 'OD-016',
                 'account_type_id' => AccountType::where('slug', 'equity')->first()->id,
                 'slug' => 'owners-drawing',

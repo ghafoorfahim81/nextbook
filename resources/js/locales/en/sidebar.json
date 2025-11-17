@@ -49,6 +49,10 @@
   "ledger": {
     "customer": "Customer",
     "supplier": "Supplier"
+  },
+  "owners": {
+    "owners": "Owners",
+    "drawing": "Drawing"
   }
 }
 
