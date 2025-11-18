@@ -31,7 +31,7 @@ class OwnerController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        return inertia('Administration/Owners/Index', [
+        return inertia('Owners/Owners/Index', [
             'owners' => OwnerResource::collection($owners),
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
         ]);
@@ -39,7 +39,7 @@ class OwnerController extends Controller
 
     public function create(Request $request): Response
     {
-        return inertia('Administration/Owners/Create');
+        return inertia('Owners/Owners/Create');
     }
 
     public function store(OwnerStoreRequest $request, TransactionService $transactionService)
@@ -124,7 +124,7 @@ class OwnerController extends Controller
     public function edit(Request $request, Owner $owner): Response
     {
         $owner->load(['accountTransaction.account', 'accountTransaction.currency']);
-        return inertia('Administration/Owners/Edit', [
+        return inertia('Owners/Owners/Edit', [
             'owner' => new OwnerResource($owner),
         ]);
     }
