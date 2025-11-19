@@ -269,6 +269,16 @@ const navMain = computed(() => [
         url: '/account-transfers',
         icon: CreditCard,
     },
+
+    {
+        title: t('sidebar.main.user_management'),
+        url: '#',
+        icon: UserCog,
+        items: [
+            { title: t('sidebar.user_management.user'), url: '/users' },
+            { title: t('sidebar.user_management.role'), url: '/roles' }, 
+        ],
+    },
 ])
 
 // assign to data after computed is available

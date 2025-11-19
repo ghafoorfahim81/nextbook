@@ -6,21 +6,24 @@ use App\Models\Administration\Company;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
 use Symfony\Component\Uid\Ulid;
-
+use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     use HasApiTokens;
 
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
+    use HasRoles;
     use HasProfilePhoto;
     use Notifiable;
+    use SoftDeletes;
     use TwoFactorAuthenticatable;
 
     protected static function boot()
