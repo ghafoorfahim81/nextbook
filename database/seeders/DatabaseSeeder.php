@@ -23,6 +23,7 @@ use Database\Seeders\Inventory\ItemSeeder;
 use Database\Seeders\Ledger\LedgerSeeder;
 use Database\Seeders\Purchase\PurchaseSeeder;
 use Database\Seeders\Purchase\PurchaseItemSeeder;
+use Database\Seeders\UserManagement\RolePermissionSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use App\Models\Account\Account;
@@ -46,6 +47,7 @@ class DatabaseSeeder extends Seeder
         $this->call(LedgerSeeder::class);
         $this->call(ItemSeeder::class);
         $this->call(AccountSeeder::class);
+        $this->call(RolePermissionSeeder::class);
         // $this->call(PurchaseSeeder::class);
         // $this->call(PurchaseItemSeeder::class);
     }

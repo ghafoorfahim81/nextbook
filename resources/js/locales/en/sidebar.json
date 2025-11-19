@@ -12,7 +12,8 @@
     "ledger": "Ledger",
     "receipt": "Receipt",
     "payment": "Payment",
-    "transfer": "Account Transfers"
+    "transfer": "Account Transfers",
+    "user_management": "User Management"
 
   },
   "administration": {
@@ -53,7 +54,11 @@
   "owners": {
     "owners": "Owners",
     "drawing": "Drawing"
-  }
+  },
+  "user_management": {
+    "user": "User",
+    "role": "Role"
+  } 
 }
 
 

@@ -122,4 +122,10 @@ Route::middleware([
     Route::resource('/owners', \App\Http\Controllers\Owner\OwnerController::class);
     Route::patch('/owners/{owner}/restore', [\App\Http\Controllers\Owner\OwnerController::class, 'restore'])->name('owners.restore')->withTrashed();
 
+    // User Management
+    Route::resource('/users', \App\Http\Controllers\UserManagement\UserController::class);
+    Route::patch('/users/{user}/restore', [\App\Http\Controllers\UserManagement\UserController::class, 'restore'])->name('users.restore')->withTrashed();
+    Route::resource('/roles', \App\Http\Controllers\UserManagement\RoleController::class);
+    Route::patch('/roles/{role}/restore', [\App\Http\Controllers\UserManagement\RoleController::class, 'restore'])->name('roles.restore')->withTrashed();
+   
 });

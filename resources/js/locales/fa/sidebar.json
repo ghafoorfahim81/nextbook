@@ -12,7 +12,8 @@
     "ledger": "دفتر",
     "receipt": "رسید",
     "payment": "پرداخت",
-    "transfer": "انتقال حساب"
+    "transfer": "انتقال حساب",
+    "user_management": "مدیریت کاربران"
   },
   "administration": {
     "category": "دسته بندی",
@@ -52,7 +53,11 @@
   "owners": {
     "owners": "صاحبان",
     "drawing": "برداشت"
-  }
+    },
+  "user_management": {
+    "user": "کاربر",
+    "role": "نقش"
+  } 
 }
 
 

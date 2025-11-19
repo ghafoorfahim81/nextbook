@@ -12,7 +12,8 @@
     "ledger": "لیجر",
     "receipt": "رسید",
     "payment": "پرېمینټ",
-    "transfer": "حساب لېږد"
+    "transfer": "حساب لېږد",
+    "user_management": "کارن شمیر"
   },
   "administration": {
     "category": "کټګوري",
@@ -52,7 +53,11 @@
   "owners": {
     "owners": "ماڼکان",
     "drawing": "دریښتنل"
-  }
+  },
+  "user_management": {
+    "user": "کارن",
+    "role": "نقش"
+  } 
 }
 
 
