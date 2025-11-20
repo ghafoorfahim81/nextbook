@@ -16,12 +16,19 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('password'); 
+            $table->char('created_by', 26)->nullable();
+            $table->char('updated_by', 26)->nullable(); 
             $table->rememberToken();
-            $table->string('profile_photo_path', 2048)->nullable();
-            $table->timestamps();
+            $table->timestamps(); 
         });
 
+        Schema::enableForeignKeyConstraints();
+
+        Schema::table('users', function (Blueprint $table) { 
+            $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('updated_by')->references('id')->on('users')->onDelete('cascade'); 
+        });
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');

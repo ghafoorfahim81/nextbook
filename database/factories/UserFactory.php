@@ -27,7 +27,8 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'id' => Str::uuid(),
+            // Use ULID-compatible ID (26 chars) to match users.id definition (char(26))
+            'id' => (string) Str::ulid(),
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),

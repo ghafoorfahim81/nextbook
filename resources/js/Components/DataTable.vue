@@ -107,6 +107,9 @@
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </template>
+                        <template v-else-if="column.render">
+                            {{ column.render(item) }}
+                        </template>
                         <template v-else>
                             {{ getNestedValue(item, column.key) }}
                         </template>

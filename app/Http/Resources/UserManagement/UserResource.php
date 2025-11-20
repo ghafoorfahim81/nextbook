@@ -22,10 +22,7 @@ class UserResource extends JsonResource
                     'name' => $role->name,
                 ]);
             }),
-            'profile_photo_url' => $this->profile_photo_url,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'permissions' => $this->getAllPermissions()->pluck('id'),
         ];
     }
 }
-

@@ -21,6 +21,8 @@ class UserStoreRequest extends FormRequest
             'company_id' => ['nullable', 'string', 'exists:companies,id'],
             'roles' => ['nullable', 'array'],
             'roles.*' => ['exists:roles,id'],
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['exists:permissions,id'],
         ];
     }
 }
