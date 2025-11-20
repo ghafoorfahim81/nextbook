@@ -3,15 +3,12 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { ref } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
-import CreateEditModal from '@/Pages/UserManagement/Users/CreateEditModal.vue';
 import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
     users: Object,
 });
 
-const isDialogOpen = ref(false);
-const editingUser = ref(null);
 const { t } = useI18n();
 
 const columns = ref([
@@ -25,11 +22,6 @@ const columns = ref([
     { key: 'actions', label: t('general.action') },
 ]);
 
-const editItem = (item) => {
-    editingUser.value = item;
-    isDialogOpen.value = true;
-};
-
 const { deleteResource } = useDeleteResource();
 
 const deleteItem = (id) => {
@@ -39,30 +31,26 @@ const deleteItem = (id) => {
         successMessage: t('general.delete_success', { name: 'User' }),
     });
 };
+
+const editItem = (item) => {
+    window.location.href = `/users/${item.id}/edit`;
+};
 </script>
 
 <template>
     <AppLayout :title="'Users'">
-        <CreateEditModal
-            :isDialogOpen="isDialogOpen"
-            :editingItem="editingUser"
-            @update:isDialogOpen="(value) => {
-                isDialogOpen = value;
-                if (!value) editingUser = null;
-            }"
-            @saved="() => { editingUser = null }"
-        />
         <DataTable
             :items="users"
             :columns="columns"
-            @edit="editItem"
             @delete="deleteItem"
-            @add="isDialogOpen = true"
+            @edit="editItem"
             :title="'Users'"
             :url="`users.index`"
             :showAddButton="true"
             :addTitle="'User'"
-            :addAction="'modal'"
+            :addAction="'redirect'"
+            :addRoute="'users.create'"
+            :hasEdit="true"
         />
     </AppLayout>
 </template>
