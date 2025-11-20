@@ -38,7 +38,7 @@ class RolePermissionSeeder extends Seeder
             'stock_transfer',
             'stock_receive',
             'stock_issue',
-            'stock_adjustment', 
+            'stock_adjustment',
         ];
 
         $transaction_resources = [
@@ -68,7 +68,7 @@ class RolePermissionSeeder extends Seeder
                 foreach ($actions as $action) {
                     $permissions[] = "{$action}_{$resource}";
                 }
-            } 
+            }
             else {
                 foreach ($actions as $action) {
                     $permissions[] = "{$action}_{$resource}";
@@ -128,5 +128,10 @@ class RolePermissionSeeder extends Seeder
             $accountant->givePermissionTo($permission);
             $clerk->givePermissionTo($permission);
         });
-    }
+
+        $superAdminUser = \App\Models\User::where('name', 'admin')->first();
+        if ($superAdminUser) {
+            $superAdminUser->assignRole('Super Admin');
+        }
+    }       
 }

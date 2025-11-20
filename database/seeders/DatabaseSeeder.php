@@ -2,10 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Administration\Branch;
-use App\Models\Administration\Category;
-use App\Models\Administration\Department;
-use App\Models\Administration\UnitMeasure;
 use App\Models\User;
 use Database\Seeders\Account\AccountSeeder;
 use Database\Seeders\Administration\BranchSeeder;
@@ -17,6 +13,7 @@ use Database\Seeders\Administration\QuantitySeeder;
 use Database\Seeders\Administration\StoreSeeder;
 use Database\Seeders\Administration\UnitMeasureSeeder;
 use Database\Seeders\Administration\UserSeeder;
+use Database\Seeders\Administration\CompanySeeder;
 use Database\Seeders\Account\AccountTypeSeeder;
 use Database\Seeders\Administration\CurrencySeeder;
 use Database\Seeders\Inventory\ItemSeeder;
@@ -48,6 +45,8 @@ class DatabaseSeeder extends Seeder
         $this->call(ItemSeeder::class);
         $this->call(AccountSeeder::class);
         $this->call(RolePermissionSeeder::class);
+        $this->call(CompanySeeder::class);
+
         // $this->call(PurchaseSeeder::class);
         // $this->call(PurchaseItemSeeder::class);
     }
