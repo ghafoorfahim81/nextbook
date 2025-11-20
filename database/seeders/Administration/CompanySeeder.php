@@ -1,6 +1,6 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\Seeders\Administration;
 
 use App\Models\Administration\Company;
 use Illuminate\Database\Seeder;
@@ -8,7 +8,7 @@ use App\Enums\CalendarType;
 use App\Enums\BusinessType;
 use App\Enums\Locale;
 use App\Enums\WorkingStyle;
-
+use Symfony\Component\Uid\Ulid;
 class CompanySeeder extends Seeder
 {
     /**
@@ -17,6 +17,7 @@ class CompanySeeder extends Seeder
     public function run(): void
     {
         $company = Company::create([
+            'id' => (string) new Ulid(),
             'name_en' => 'NextBook',
             'name_fa' => 'نکست بوک همراه',
             'name_pa' => 'نکست بوک همراه',
@@ -26,10 +27,16 @@ class CompanySeeder extends Seeder
             'country' => 'Pakistan',
             'city' => 'Karachi',
             'logo' => 'logo.png',
-            'calendar_type' => CalendarType::Gregorian,
-            'locale' => Locale::English,
-            'working_style' => WorkingStyle::pharmacy_shop,
-            'business_type' => BusinessType::pharmacy_shop,
+            'calendar_type' => CalendarType::GREGORIAN,
+            'locale' => Locale::EN,
+            'working_style' => WorkingStyle::NORMAL,
+            'business_type' => BusinessType::PHARMACY_SHOP,
         ]);
+        $user = \App\Models\User::where('name', 'admin')->first();
+        if ($user) {
+            $user->company_id = $company->id;
+            $user->save();
+        }
+         
     }
 }
