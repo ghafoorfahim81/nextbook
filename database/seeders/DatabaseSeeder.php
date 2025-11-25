@@ -32,22 +32,33 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(BranchSeeder::class);
-        $this->call(UserSeeder::class);
-        $this->call(CategorySeeder::class);
-        $this->call(StoreSeeder::class);
-        //        $this->call(QuantitySeeder::class);
-        $this->call(UnitMeasureSeeder::class);
-        $this->call(BrandSeeder::class);
-        $this->call(AccountTypeSeeder::class);
-        $this->call(CurrencySeeder::class);
-        $this->call(LedgerSeeder::class);
-        $this->call(ItemSeeder::class);
-        $this->call(AccountSeeder::class);
-        $this->call(RolePermissionSeeder::class);
-        $this->call(CompanySeeder::class);
 
-        // $this->call(PurchaseSeeder::class);
-        // $this->call(PurchaseItemSeeder::class);
+
+        if(app()->environment('local')){
+            $this->call(BranchSeeder::class);
+            $this->call(UserSeeder::class);
+            $this->call(CategorySeeder::class);
+            $this->call(StoreSeeder::class);
+            $this->call(UnitMeasureSeeder::class);
+            $this->call(BrandSeeder::class);
+            $this->call(AccountTypeSeeder::class);
+            $this->call(CurrencySeeder::class);
+            $this->call(LedgerSeeder::class);
+            $this->call(ItemSeeder::class);
+            $this->call(AccountSeeder::class);
+            $this->call(RolePermissionSeeder::class);
+            $this->call(CompanySeeder::class);
+        }
+        if(app()->environment('production')){
+            $this->call(UserSeeder::class);
+            $this->call(StoreSeeder::class);
+            $this->call(UnitMeasureSeeder::class);
+            $this->call(LedgerSeeder::class);
+            $this->call(AccountTypeSeeder::class);
+            $this->call(AccountSeeder::class);
+            $this->call(RolePermissionSeeder::class);
+            $this->call(CompanySeeder::class);
+        }
+
     }
 }
