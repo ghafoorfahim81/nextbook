@@ -14,12 +14,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Middleware\CheckCompany;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    return redirect()->route('login');
 });
 
 // Public routes that don't require company check
@@ -127,5 +122,5 @@ Route::middleware([
     Route::patch('/users/{user}/restore', [\App\Http\Controllers\UserManagement\UserController::class, 'restore'])->name('users.restore')->withTrashed();
     Route::resource('/roles', \App\Http\Controllers\UserManagement\RoleController::class);
     Route::patch('/roles/{role}/restore', [\App\Http\Controllers\UserManagement\RoleController::class, 'restore'])->name('roles.restore')->withTrashed();
-   
+
 });
