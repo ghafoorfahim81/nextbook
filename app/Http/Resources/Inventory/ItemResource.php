@@ -22,7 +22,7 @@ class ItemResource extends JsonResource
             'packing' => $this->packing,
             'barcode' => $this->barcode,
             'unit_measure_id' => $this->unit_measure_id,
-            'measure'  => $this->unitMeasure->name,
+            'measure'  => $this->unitMeasure?->name,
             'unitMeasure'  => $this->unitMeasure,
             'brand_id' => $this->brand_id,
             'brand' => $this->brand,
