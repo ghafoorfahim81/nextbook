@@ -13,7 +13,8 @@
     "receipt": "رسید",
     "payment": "پرداخت",
     "transfer": "انتقال حساب",
-    "user_management": "مدیریت کاربران"
+    "user_management": "مدیریت کاربران",
+    "settings": "تنظیمات"
   },
   "administration": {
     "category": "دسته بندی",

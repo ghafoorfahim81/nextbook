@@ -13,8 +13,8 @@
     "receipt": "Receipt",
     "payment": "Payment",
     "transfer": "Account Transfers",
-    "user_management": "User Management"
-
+    "user_management": "User Management",
+    "settings": "Settings"
   },
   "administration": {
     "category": "Category",

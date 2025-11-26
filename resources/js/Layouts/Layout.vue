@@ -279,6 +279,11 @@ const navMain = computed(() => [
             { title: t('sidebar.user_management.role'), url: '/roles' }, 
         ],
     },
+    {
+        title: t('sidebar.main.settings'),
+        url: '/settings',
+        icon: Cog,
+    },
 ])
 
 // assign to data after computed is available
