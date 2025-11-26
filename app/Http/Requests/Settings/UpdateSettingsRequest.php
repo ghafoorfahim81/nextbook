@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Settings;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateSettingsRequest extends FormRequest
 {
@@ -155,7 +156,7 @@ class UpdateSettingsRequest extends FormRequest
             'localization.date_format' => 'sometimes|in:Y-m-d,d/m/Y,m/d/Y,d-m-Y',
             'localization.time_format' => 'sometimes|in:12h,24h',
             'localization.timezone' => 'sometimes|string|max:50',
-            'localization.number_format' => 'sometimes|in:1,000.00,1.000,00',
+            'localization.number_format' => ['sometimes', Rule::in(['1,000.00', '1.000,00'])],
             'localization.first_day_of_week' => 'sometimes|in:sunday,monday,saturday',
 
             // Display

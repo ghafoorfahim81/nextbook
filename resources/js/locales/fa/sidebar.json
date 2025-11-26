@@ -52,13 +52,13 @@
     "supplier": "تامین کننده"
   },
   "owners": {
-    "owners": "صاحبان",
+    "owners": "مالکان",
     "drawing": "برداشت"
     },
   "user_management": {
     "user": "کاربر",
     "role": "نقش"
-  } 
+  }
 }
 
 
