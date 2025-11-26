@@ -3,63 +3,106 @@
 namespace App\Http\Controllers\UserManagement;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UserManagement\RoleStoreRequest;
+use App\Http\Requests\UserManagement\RoleUpdateRequest;
+use App\Http\Resources\UserManagement\RoleResource;
+use App\Models\Role;
+use App\Models\Permission;
 use Illuminate\Http\Request;
 
 class RoleController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request)
     {
-        
+        $perPage = $request->input('perPage', 10);
+        $sortField = $request->input('sortField', 'created_at');
+        $sortDirection = $request->input('sortDirection', 'desc');
+
+        $roles = Role::with('permissions')
+            ->when($request->query('search'), function ($query, $search) {
+                return $query->where('name', 'like', "%{$search}%");
+            })
+            ->orderBy($sortField, $sortDirection)
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return inertia('UserManagement/Roles/Index', [
+            'roles' => RoleResource::collection($roles),
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        return inertia('UserManagement/Roles/Create', [
+            'permissions' => Permission::orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(RoleStoreRequest $request)
     {
-        //
+        $data = $request->validated();
+
+        $role = Role::create([
+            'name' => $data['name'],
+            'guard_name' => 'web',
+        ]);
+
+        if (isset($data['permissions'])) {
+            $role->syncPermissions($data['permissions']);
+        }
+
+        if ($request->input('create_and_new')) {
+            return redirect()->route('roles.create')->with('success', 'Role created successfully.');
+        }
+
+        return redirect()->route('roles.index')->with('success', 'Role created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(Request $request, Role $role)
     {
-        //
+        $role->load('permissions');
+        return new RoleResource($role);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function edit(Role $role)
     {
-        //
+        $role->load('permissions');
+        return inertia('UserManagement/Roles/Edit', [
+            'role' => new RoleResource($role),
+            'permissions' => Permission::orderBy('name')->get(['id', 'name']),
+        ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(RoleUpdateRequest $request, Role $role)
     {
-        //
+        $data = $request->validated();
+
+        $role->update([
+            'name' => $data['name'],
+        ]);
+
+        if (array_key_exists('permissions', $data)) {
+            $role->syncPermissions($data['permissions'] ?? []);
+        }
+
+        return redirect()->route('roles.index')->with('success', 'Role updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(Request $request, Role $role)
     {
-        //
+        // Prevent deleting roles that have users
+        if ($role->users()->count() > 0) {
+            return redirect()->route('roles.index')->with('error', 'Cannot delete role that has users assigned.');
+        }
+
+        $role->delete();
+        return redirect()->route('roles.index')->with('success', 'Role deleted successfully.');
+    }
+
+    public function restore(Request $request, $id)
+    {
+        $role = Role::withTrashed()->findOrFail($id);
+        $role->restore();
+        return redirect()->route('roles.index')->with('success', 'Role restored successfully.');
     }
 }
