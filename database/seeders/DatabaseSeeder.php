@@ -50,6 +50,7 @@ class DatabaseSeeder extends Seeder
             $this->call(CompanySeeder::class);
         }
         if(app()->environment('production')){
+            $this->call(BranchSeeder::class);
             $this->call(UserSeeder::class);
             $this->call(StoreSeeder::class);
             $this->call(UnitMeasureSeeder::class);
