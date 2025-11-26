@@ -51,7 +51,11 @@ const save = () => {
     form.put(route('settings.update'), {
         preserveScroll: true,
         onSuccess: () => {
-            toast({ title: t('settings.saved'), description: t('settings.saved_description') })
+            toast({
+                 title: t('settings.saved'),
+                description: t('settings.saved_description'),
+                variant: 'success'
+            })
         },
     })
 }
@@ -80,10 +84,10 @@ const importSettings = () => {
 const handleFileUpload = (event) => {
     const file = event.target.files[0]
     if (!file) return
-    
+
     const formData = new FormData()
     formData.append('file', file)
-    
+
     router.post(route('settings.import'), formData, {
         onSuccess: () => {
             toast({ title: t('settings.import_success') })
