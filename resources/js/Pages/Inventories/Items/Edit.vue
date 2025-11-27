@@ -97,102 +97,104 @@ const handleOpeningSelectChange = (index, value) => {
 </script>
 <template>
     <AppLayout :title="t('general.edit', { name: t('item.item') })">
-        <form @submit.prevent="handleSubmit" class="space-y-6">
-            <div class="grid grid-cols-3 gap-x-2 gap-y-5">
-                <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name" :placeholder="t('general.enter', { text: t('general.name') })" />
-                <NextInput :label="t('admin.currency.code')" v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
-                <NextInput :label="t('item.generic_name')" v-model="form.generic_name" :error="form.errors?.generic_name" :placeholder="t('general.enter', { text: t('item.generic_name') })" />
-                <NextInput :label="t('item.packing')" v-model="form.packing" :error="form.errors?.packing" :placeholder="t('general.enter', { text: t('item.packing') })" />
-                <NextInput :label="t('general.colors')" v-model="form.colors" :error="form.errors?.colors" :placeholder="t('general.enter', { text: t('general.colors') })" />
-                <NextInput :label="t('item.size')" v-model="form.size" :error="form.errors?.size" :placeholder="t('general.enter', { text: t('item.size') })" />
-
-                <!-- Photo -->
-
-                <NextInput :label="t('item.photo')" type="file"  @input="onPhotoChange" :error="form.errors?.photo" :placeholder="t('general.enter', { text: t('item.photo') })" />
-
-                <NextSelect
-                    v-model="form.selected_unit_measure"
-                    :options="unitMeasures"
-                    @update:modelValue="(value) => handleSelectChange('unit_measure_id', value)"
-                    label-key="name"
-                    value-key="id"
-                    id="measure"
-                    :floating-text="t('admin.unit_measure.unit_measure')"
-                    :searchable="true"
-                    resource-type="unit_measures"
-                    :search-fields="['name','unit','symbol']"
-                    :error="form.errors.unit_measure_id"
-                />
-                <NextSelect
-                    v-model="form.selected_category"
-                    @update:modelValue="(value) => handleSelectChange('category_id', value)"
-                    :options="categories"
-                    label-key="name"
-                    value-key="id"
-                    id="category"
-                    :floating-text="t('admin.category.category')"
-                    :searchable="true"
-                    resource-type="categories"
-                    :search-fields="['name']"
-                    :error="form.errors.category_id"
-                />
-                <NextSelect
-                    v-model="form.selected_brand"
-                    @update:modelValue="(value) => handleSelectChange('brand_id', value)"
-                    :options="brands"
-                    label-key="name"
-                    value-key="id"
-                    id="brand"
-                    :floating-text="t('admin.brand.brand')"
-                    :searchable="true"
-                    resource-type="brands"
-                    :search-fields="['name', 'legal_name', 'registration_number', 'email', 'phone', 'website', 'industry', 'type', 'city', 'country']"
-                    :error="form.errors.brand_id"
-                />
-                <NextInput :label="t('item.minimum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.minimum_stock') })" v-model="form.minimum_stock" :error="form.errors?.minimum_stock" />
-                <NextInput :label="t('item.maximum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.maximum_stock') })" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
-                <NextInput :label="t('item.purchase_price')" type="number" :placeholder="t('general.enter', { text: t('item.purchase_price') })" v-model="form.purchase_price" :error="form.errors?.purchase_price" />
-                <NextInput :label="t('item.cost')" type="number" v-model="form.cost" :error="form.errors?.cost" />
-                <NextInput :label="t('item.mrp_rate')" type="number" :placeholder="t('general.enter', { text: t('item.mrp_rate') })" v-model="form.mrp_rate" :error="form.errors?.mrp_rate" />
-                <NextInput :label="t('item.rate_a')" type="number" :placeholder="t('general.enter', { text: t('item.rate_a') })" v-model="form.rate_a" :error="form.errors?.rate_a" />
-                <NextInput :label="t('item.rate_b')" type="number" :placeholder="t('general.enter', { text: t('item.rate_b') })" v-model="form.rate_b" :error="form.errors?.rate_b" />
-                <NextInput :label="t('item.rate_c')" type="number" :placeholder="t('general.enter', { text: t('item.rate_c') })" v-model="form.rate_c" :error="form.errors?.rate_c" />
-                <NextInput :label="t('item.barcode')" v-model="form.barcode" :placeholder="t('general.enter', { text: t('item.barcode') })" :error="form.errors?.barcode" />
-                <NextInput :label="t('item.rack_no')" v-model="form.rack_no" :placeholder="t('general.enter', { text: t('item.rack_no') })" :error="form.errors?.rack_no" />
-                <NextInput :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
-            </div>
-
-            <div class="pt-2">
-                <span class="font-bold">{{ t('item.openings') }}</span>
-                <separator> </separator>
-                <div
-                    v-for="(opening, index) in form.openings"
-                    :key="index"
-                    class="mt-3 grid grid-cols-4 gap-x-2 gap-y-5 items-start"
-                >
-                    <NextInput :label="t('item.batch')" @click="addRow(index)" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
-                    <NextDatePicker v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
-                    <NextInput :label="t('general.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
+        <form @submit.prevent="handleSubmit">
+            <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
+                <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
+                    {{ t('general.edit', { name: t('item.item') }) }}
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                    <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name" :placeholder="t('general.enter', { text: t('general.name') })" />
+                    <NextInput :label="t('admin.currency.code')" v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
+                    <NextInput :label="t('item.generic_name')" v-model="form.generic_name" :error="form.errors?.generic_name" :placeholder="t('general.enter', { text: t('item.generic_name') })" />
+                    <NextInput :label="t('item.packing')" v-model="form.packing" :error="form.errors?.packing" :placeholder="t('general.enter', { text: t('item.packing') })" />
+                    <NextInput :label="t('general.colors')" v-model="form.colors" :error="form.errors?.colors" :placeholder="t('general.enter', { text: t('general.colors') })" />
+                    <NextInput :label="t('item.size')" v-model="form.size" :error="form.errors?.size" :placeholder="t('general.enter', { text: t('item.size') })" />
+                    <NextInput :label="t('item.photo')" type="file"  @input="onPhotoChange" :error="form.errors?.photo" :placeholder="t('general.enter', { text: t('item.photo') })" />
                     <NextSelect
-                        v-model="opening.selected_store"
-                        @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
-                        :options="stores"
+                        v-model="form.selected_unit_measure"
+                        :options="unitMeasures"
+                        @update:modelValue="(value) => handleSelectChange('unit_measure_id', value)"
                         label-key="name"
                         value-key="id"
-                        id="store"
-                        :floating-text="t('admin.store.store')"
-                        :error="form.errors[`openings.${index}.store_id`]"
+                        id="measure"
+                        :floating-text="t('admin.unit_measure.unit_measure')"
                         :searchable="true"
-                        resource-type="stores"
-                        :search-fields="['name', 'address']"
+                        resource-type="unit_measures"
+                        :search-fields="['name','unit','symbol']"
+                        :error="form.errors.unit_measure_id"
                     />
+                    <NextSelect
+                        v-model="form.selected_category"
+                        @update:modelValue="(value) => handleSelectChange('category_id', value)"
+                        :options="categories"
+                        label-key="name"
+                        value-key="id"
+                        id="category"
+                        :floating-text="t('admin.category.category')"
+                        :searchable="true"
+                        resource-type="categories"
+                        :search-fields="['name']"
+                        :error="form.errors.category_id"
+                    />
+                    <NextSelect
+                        v-model="form.selected_brand"
+                        @update:modelValue="(value) => handleSelectChange('brand_id', value)"
+                        :options="brands"
+                        label-key="name"
+                        value-key="id"
+                        id="brand"
+                        :floating-text="t('admin.brand.brand')"
+                        :searchable="true"
+                        resource-type="brands"
+                        :search-fields="['name', 'legal_name', 'registration_number', 'email', 'phone', 'website', 'industry', 'type', 'city', 'country']"
+                        :error="form.errors.brand_id"
+                    />
+                    <NextInput :label="t('item.minimum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.minimum_stock') })" v-model="form.minimum_stock" :error="form.errors?.minimum_stock" />
+                    <NextInput :label="t('item.maximum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.maximum_stock') })" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
+                    <NextInput :label="t('item.purchase_price')" type="number" :placeholder="t('general.enter', { text: t('item.purchase_price') })" v-model="form.purchase_price" :error="form.errors?.purchase_price" />
+                    <NextInput :label="t('item.cost')" type="number" v-model="form.cost" :error="form.errors?.cost" />
+                    <NextInput :label="t('item.mrp_rate')" type="number" :placeholder="t('general.enter', { text: t('item.mrp_rate') })" v-model="form.mrp_rate" :error="form.errors?.mrp_rate" />
+                    <NextInput :label="t('item.rate_a')" type="number" :placeholder="t('general.enter', { text: t('item.rate_a') })" v-model="form.rate_a" :error="form.errors?.rate_a" />
+                    <NextInput :label="t('item.rate_b')" type="number" :placeholder="t('general.enter', { text: t('item.rate_b') })" v-model="form.rate_b" :error="form.errors?.rate_b" />
+                    <NextInput :label="t('item.rate_c')" type="number" :placeholder="t('general.enter', { text: t('item.rate_c') })" v-model="form.rate_c" :error="form.errors?.rate_c" />
+                    <NextInput :label="t('item.barcode')" v-model="form.barcode" :placeholder="t('general.enter', { text: t('item.barcode') })" :error="form.errors?.barcode" />
+                    <NextInput :label="t('item.rack_no')" v-model="form.rack_no" :placeholder="t('general.enter', { text: t('item.rack_no') })" :error="form.errors?.rack_no" />
+                    <NextInput :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
+                </div>
+
+                <div class="md:col-span-3 mt-4">
+                    <div class="pt-2">
+                        <span class="font-bold">{{ t('item.openings') }}</span>
+                        <div
+                            v-for="(opening, index) in form.openings"
+                            :key="index"
+                            class="mt-3 grid grid-cols-1 md:grid-cols-4 gap-4 items-start"
+                        >
+                            <NextInput :label="t('item.batch')" @click="addRow(index)" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
+                            <NextDatePicker v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+                            <NextInput :label="t('general.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
+                            <NextSelect
+                                v-model="opening.selected_store"
+                                @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
+                                :options="stores"
+                                label-key="name"
+                                value-key="id"
+                                id="store"
+                                :floating-text="t('admin.store.store')"
+                                :error="form.errors[`openings.${index}.store_id`]"
+                                :searchable="true"
+                                resource-type="stores"
+                                :search-fields="['name', 'address']"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
             <progress v-if="form.progress" :value="form.progress.percentage" max="100">
             {{ form.progress.percentage }}%
             </progress>
-            <div class="pt-4">
-                <Button type="submit" class="bg-blue-500 text-white">{{ t('general.update') }}</Button>
+            <div class="mt-4 flex gap-2">
+                <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white">{{ t('general.update') }}</button>
             </div>
         </form>
     </AppLayout>

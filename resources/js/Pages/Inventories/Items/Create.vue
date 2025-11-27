@@ -135,8 +135,12 @@ const handleOpeningSelectChange = (index, value) => {
 
 <template>
     <AppLayout :title="t('item.item')">
-        <form @submit.prevent="handleCreate" class="space-y-6">
-            <div class="grid grid-cols-3 gap-x-2 gap-y-5">
+        <form @submit.prevent="handleCreate">
+            <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
+                <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
+                    {{ t('general.create', { name: t('item.item') }) }}
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name"  :placeholder="t('general.enter', { text: t('general.name') })" />
                 <NextInput :label="t('admin.currency.code')" v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
                 <NextInput :label="t('item.generic_name')" v-model="form.generic_name" :error="form.errors?.generic_name" :placeholder="t('general.enter', { text: t('item.generic_name') })" />
@@ -195,36 +199,35 @@ const handleOpeningSelectChange = (index, value) => {
                 <NextInput :label="t('item.rate_c')" type="number" :placeholder="t('general.enter', { text: t('item.rate_c') })" v-model="form.rate_c" :error="form.errors?.rate_c" />
                 <NextInput :label="t('item.barcode')" v-model="form.barcode" :placeholder="t('general.enter', { text: t('item.barcode') })" :error="form.errors?.barcode" />
                 <NextInput :label="t('item.rack_no')" v-model="form.rack_no" :placeholder="t('general.enter', { text: t('item.rack_no') })" :error="form.errors?.rack_no" />
-                <NextInput :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
-            </div>
+                    <NextInput :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
+                </div>
 
-            <div class="pt-2">
-                <span class="font-bold">{{ t('item.opening') }}</span>
-                    <separator> </separator>
-                <div
-                    v-for="(opening, index) in form.openings"
-                    :key="index"
-                    class="mt-3 grid grid-cols-4 gap-x-2 gap-y-5 items-start"
-                >
-                    <NextInput :label="t('item.batch')" @click="addRow(index)" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
-
-                        <NextDate v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
-
-                    <NextInput :label="t('item.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
-
-                    <NextSelect
-                        v-model="opening.selected_store"
-                        :options="stores"
-                        label-key="name"
-                        @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
-                        value-key="id"
-                        id="store"
-                        :floating-text="t('admin.store.store')"
-                        :error="form.errors[`openings.${index}.store_id`]"
-                        :searchable="true"
-                        resource-type="stores"
-                        :search-fields="['name', 'address']"
-                    />
+                <div class="md:col-span-3 mt-4">
+                    <div class="pt-2">
+                        <span class="font-bold">{{ t('item.opening') }}</span>
+                        <div
+                            v-for="(opening, index) in form.openings"
+                            :key="index"
+                            class="mt-3 grid grid-cols-1 md:grid-cols-4 gap-4 items-start"
+                        >
+                            <NextInput :label="t('item.batch')" @click="addRow(index)" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
+                            <NextDate v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+                            <NextInput :label="t('item.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
+                            <NextSelect
+                                v-model="opening.selected_store"
+                                :options="stores"
+                                label-key="name"
+                                @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
+                                value-key="id"
+                                id="store"
+                                :floating-text="t('admin.store.store')"
+                                :error="form.errors[`openings.${index}.store_id`]"
+                                :searchable="true"
+                                resource-type="stores"
+                                :search-fields="['name', 'address']"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -232,10 +235,10 @@ const handleOpeningSelectChange = (index, value) => {
                 {{ form.progress.percentage }}%
             </progress>
 
-            <div class="pt-4 flex gap-2">
-                <Button type="submit" class="bg-blue-500 text-white">{{ t('general.create') }}</Button>
-                <Button type="button" class="bg-green-600 text-white" @click="handleCreateAndNew">{{ t('general.create_and_new') }}</Button>
-                <Button type="button" class="bg-gray-200 text-gray-700" @click="handleCancel">{{ t('general.cancel') }}</Button>
+            <div class="mt-4 flex gap-2">
+                <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white">{{ t('general.create') }}</button>
+                <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white" @click="handleCreateAndNew">{{ t('general.create_and_new') }}</button>
+                <button type="button" class="btn px-4 py-2 rounded-md border" @click="handleCancel">{{ t('general.cancel') }}</button>
             </div>
         </form>
     </AppLayout>

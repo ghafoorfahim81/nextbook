@@ -89,8 +89,8 @@ import { HousePlug, ShoppingCart, Receipt as ReceiptIcon } from 'lucide-vue-next
 // This is sample data.
 const data = {
     user: {
-        name: 'shadcn',
-        email: 'm@example.com',
+        name: 'NextBook',
+        email: 'admin@nextbook.com',
         avatar: null as string | null,
     },
     teams: [
@@ -276,7 +276,7 @@ const navMain = computed(() => [
         icon: UserCog,
         items: [
             { title: t('sidebar.user_management.user'), url: '/users' },
-            { title: t('sidebar.user_management.role'), url: '/roles' }, 
+            { title: t('sidebar.user_management.role'), url: '/roles' },
         ],
     },
     {
