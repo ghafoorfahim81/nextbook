@@ -47,7 +47,6 @@ const tabs = [
 
 const form = useForm({ ...props.preferences })
 
-console.log('this is form', form);
 const save = () => {
     form.put(route('settings.update'), {
         preserveScroll: true,
@@ -57,6 +56,11 @@ const save = () => {
                 description: t('settings.saved_description'),
                 variant: 'success'
             })
+        // Store form values to local storage after a successful save
+        localStorage.setItem('user_settings', JSON.stringify(form));
+        if(form.locale && form.locale !== 'en') {
+            localStorage.setItem('locale', form.locale)
+        }
         },
     })
 }
@@ -391,8 +395,8 @@ const receiptPaymentFields = [
                                 <div class="grid grid-cols-3 gap-6">
                                     <div class="flex items-center gap-3">
                                         <Switch
-                                            :checked="form.sales.auto_reminders"
-                                            @update:checked="(v) => form.sales.auto_reminders = v"
+                                            :model-value="form.sales.auto_reminders"
+                                            @update:model-value="(v) => form.sales.auto_reminders = v"
                                         />
                                         <Label>{{ t('settings.sales.auto_reminders') }}</Label>
                                     </div>
@@ -412,8 +416,8 @@ const receiptPaymentFields = [
                                     </div>
                                     <div class="flex items-center gap-3 pt-8">
                                         <Switch
-                                            :checked="form.sales.auto_calculate_tax"
-                                            @update:checked="(v) => form.sales.auto_calculate_tax = v"
+                                            :model-value="form.sales.auto_calculate_tax"
+                                            @update:model-value="(v) => form.sales.auto_calculate_tax = v"
                                         />
                                         <Label>{{ t('settings.sales.auto_calculate_tax') }}</Label>
                                     </div>
@@ -421,15 +425,15 @@ const receiptPaymentFields = [
                                 <div class="flex gap-6">
                                     <div class="flex items-center gap-3">
                                         <Switch
-                                            :checked="form.sales.show_ledger_transactions"
-                                            @update:checked="(v) => form.sales.show_ledger_transactions = v"
+                                            :model-value="form.sales.show_ledger_transactions"
+                                            @update:model-value="(v) => form.sales.show_ledger_transactions = v"
                                         />
                                         <Label>{{ t('settings.sales.show_ledger_transactions') }}</Label>
                                     </div>
                                     <div class="flex items-center gap-3">
                                         <Switch
-                                            :checked="form.sales.show_item_transactions"
-                                            @update:checked="(v) => form.sales.show_item_transactions = v"
+                                            :model-value="form.sales.show_item_transactions"
+                                            @update:model-value="(v) => form.sales.show_item_transactions = v"
                                         />
                                         <Label>{{ t('settings.sales.show_item_transactions') }}</Label>
                                     </div>
@@ -526,8 +530,8 @@ const receiptPaymentFields = [
                                 <div class="grid grid-cols-3 gap-6">
                                     <div class="flex items-center gap-3">
                                         <Switch
-                                            :checked="form.purchases.auto_reminders"
-                                            @update:checked="(v) => form.purchases.auto_reminders = v"
+                                            :model-value="form.purchases.auto_reminders"
+                                            @update:model-value="(v) => form.purchases.auto_reminders = v"
                                         />
                                         <Label>{{ t('settings.purchases.auto_reminders') }}</Label>
                                     </div>
@@ -543,15 +547,15 @@ const receiptPaymentFields = [
                                 <div class="flex gap-6">
                                     <div class="flex items-center gap-3">
                                         <Switch
-                                            :checked="form.purchases.show_ledger_transactions"
-                                            @update:checked="(v) => form.purchases.show_ledger_transactions = v"
+                                            :model-value="form.purchases.show_ledger_transactions"
+                                            @update:model-value="(v) => form.purchases.show_ledger_transactions = v"
                                         />
                                         <Label>{{ t('settings.purchases.show_ledger_transactions') }}</Label>
                                     </div>
                                     <div class="flex items-center gap-3">
                                         <Switch
-                                            :checked="form.purchases.show_item_transactions"
-                                            @update:checked="(v) => form.purchases.show_item_transactions = v"
+                                            :model-value="form.purchases.show_item_transactions"
+                                            @update:model-value="(v) => form.purchases.show_item_transactions = v"
                                         />
                                         <Label>{{ t('settings.purchases.show_item_transactions') }}</Label>
                                     </div>
@@ -608,15 +612,15 @@ const receiptPaymentFields = [
                             <div class="flex flex-wrap gap-6">
                                 <div class="flex items-center gap-3">
                                     <Switch
-                                        :checked="form.receipt_payment.auto_sequence"
-                                        @update:checked="(v) => form.receipt_payment.auto_sequence = v"
+                                        :model-value="form.receipt_payment.auto_sequence"
+                                        @update:model-value="(v) => form.receipt_payment.auto_sequence = v"
                                     />
                                     <Label>{{ t('settings.receipt_payment.auto_sequence') }}</Label>
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <Switch
-                                        :checked="form.receipt_payment.require_approval"
-                                        @update:checked="(v) => form.receipt_payment.require_approval = v"
+                                        :model-value="form.receipt_payment.require_approval"
+                                        @update:model-value="(v) => form.receipt_payment.require_approval = v"
                                     />
                                     <Label>{{ t('settings.receipt_payment.require_approval') }}</Label>
                                 </div>
@@ -637,25 +641,25 @@ const receiptPaymentFields = [
                             </Button>
                         </CardHeader>
                         <CardContent class="space-y-6">
-                            <div class="flex flex-wrap gap-6">
+                                <div class="flex flex-wrap gap-6">
                                 <div class="flex items-center gap-3">
                                     <Switch
-                                        :checked="form.tax_currency.tax_plus"
-                                        @update:checked="(v) => form.tax_currency.tax_plus = v"
+                                        :model-value="form.tax_currency.tax_plus"
+                                        @update:model-value="(v) => form.tax_currency.tax_plus = v"
                                     />
                                     <Label>{{ t('settings.tax_currency.tax_plus') }}</Label>
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <Switch
-                                        :checked="form.tax_currency.tax_minus"
-                                        @update:checked="(v) => form.tax_currency.tax_minus = v"
+                                        :model-value="form.tax_currency.tax_minus"
+                                        @update:model-value="(v) => form.tax_currency.tax_minus = v"
                                     />
                                     <Label>{{ t('settings.tax_currency.tax_minus') }}</Label>
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <Switch
-                                        :checked="form.tax_currency.multi_currency_opening"
-                                        @update:checked="(v) => form.tax_currency.multi_currency_opening = v"
+                                        :model-value="form.tax_currency.multi_currency_opening"
+                                        @update:model-value="(v) => form.tax_currency.multi_currency_opening = v"
                                     />
                                     <Label>{{ t('settings.tax_currency.multi_currency_opening') }}</Label>
                                 </div>
@@ -687,8 +691,8 @@ const receiptPaymentFields = [
                                         <p class="text-sm text-muted-foreground">{{ t('settings.notifications.email_notifications_desc') }}</p>
                                     </div>
                                     <Switch
-                                        :checked="form.notifications.email_notifications"
-                                        @update:checked="(v) => form.notifications.email_notifications = v"
+                                        :model-value="form.notifications.email_notifications"
+                                        @update:model-value="(v) => form.notifications.email_notifications = v"
                                     />
                                 </div>
                                 <div class="flex items-center justify-between py-2 border-b">
@@ -697,8 +701,8 @@ const receiptPaymentFields = [
                                         <p class="text-sm text-muted-foreground">{{ t('settings.notifications.low_balance_alert_desc') }}</p>
                                     </div>
                                     <Switch
-                                        :checked="form.notifications.low_balance_alert"
-                                        @update:checked="(v) => form.notifications.low_balance_alert = v"
+                                        :model-value="form.notifications.low_balance_alert"
+                                        @update:model-value="(v) => form.notifications.low_balance_alert = v"
                                     />
                                 </div>
                                 <div class="flex items-center justify-between py-2 border-b">
@@ -707,8 +711,8 @@ const receiptPaymentFields = [
                                         <p class="text-sm text-muted-foreground">{{ t('settings.notifications.overdue_invoice_alert_desc') }}</p>
                                     </div>
                                     <Switch
-                                        :checked="form.notifications.overdue_invoice_alert"
-                                        @update:checked="(v) => form.notifications.overdue_invoice_alert = v"
+                                        :model-value="form.notifications.overdue_invoice_alert"
+                                        @update:model-value="(v) => form.notifications.overdue_invoice_alert = v"
                                     />
                                 </div>
                                 <div class="flex items-center justify-between py-2 border-b">
@@ -717,8 +721,8 @@ const receiptPaymentFields = [
                                         <p class="text-sm text-muted-foreground">{{ t('settings.notifications.new_transaction_alert_desc') }}</p>
                                     </div>
                                     <Switch
-                                        :checked="form.notifications.new_transaction_alert"
-                                        @update:checked="(v) => form.notifications.new_transaction_alert = v"
+                                        :model-value="form.notifications.new_transaction_alert"
+                                        @update:model-value="(v) => form.notifications.new_transaction_alert = v"
                                     />
                                 </div>
                                 <div class="flex items-center justify-between py-2 border-b">
@@ -727,8 +731,8 @@ const receiptPaymentFields = [
                                         <p class="text-sm text-muted-foreground">{{ t('settings.notifications.daily_summary_report_desc') }}</p>
                                     </div>
                                     <Switch
-                                        :checked="form.notifications.daily_summary_report"
-                                        @update:checked="(v) => form.notifications.daily_summary_report = v"
+                                        :model-value="form.notifications.daily_summary_report"
+                                        @update:model-value="(v) => form.notifications.daily_summary_report = v"
                                     />
                                 </div>
                                 <div class="flex items-center justify-between py-2">
@@ -737,8 +741,8 @@ const receiptPaymentFields = [
                                         <p class="text-sm text-muted-foreground">{{ t('settings.notifications.weekly_financial_summary_desc') }}</p>
                                     </div>
                                     <Switch
-                                        :checked="form.notifications.weekly_financial_summary"
-                                        @update:checked="(v) => form.notifications.weekly_financial_summary = v"
+                                        :model-value="form.notifications.weekly_financial_summary"
+                                        @update:model-value="(v) => form.notifications.weekly_financial_summary = v"
                                     />
                                 </div>
                             </div>
@@ -776,16 +780,16 @@ const receiptPaymentFields = [
                                 </div>
                                 <div class="flex items-center gap-3 pt-8">
                                     <Switch
-                                        :checked="form.security.password_special_chars"
-                                        @update:checked="(v) => form.security.password_special_chars = v"
+                                        :model-value="form.security.password_special_chars"
+                                        @update:model-value="(v) => form.security.password_special_chars = v"
                                     />
                                     <Label>{{ t('settings.security.password_special_chars') }}</Label>
                                 </div>
                             </div>
                             <div class="flex items-center gap-3">
                                 <Switch
-                                    :checked="form.security.two_factor_auth"
-                                    @update:checked="(v) => form.security.two_factor_auth = v"
+                                    :model-value="form.security.two_factor_auth"
+                                    @update:model-value="(v) => form.security.two_factor_auth = v"
                                 />
                                 <Label>{{ t('settings.security.two_factor_auth') }}</Label>
                             </div>
@@ -793,8 +797,8 @@ const receiptPaymentFields = [
                                 <Label class="text-base font-medium">{{ t('settings.security.report_lock') }}</Label>
                                 <div class="flex items-center gap-3">
                                     <Switch
-                                        :checked="form.security.lock_reports"
-                                        @update:checked="(v) => form.security.lock_reports = v"
+                                        :model-value="form.security.lock_reports"
+                                        @update:model-value="(v) => form.security.lock_reports = v"
                                     />
                                     <Label>{{ t('settings.security.lock_reports') }}</Label>
                                 </div>
@@ -842,8 +846,8 @@ const receiptPaymentFields = [
                             <div class="space-y-4">
                                 <div class="flex items-center gap-3">
                                     <Switch
-                                        :checked="form.backup.cloud_backup"
-                                        @update:checked="(v) => form.backup.cloud_backup = v"
+                                        :model-value="form.backup.cloud_backup"
+                                        @update:model-value="(v) => form.backup.cloud_backup = v"
                                     />
                                     <Label>{{ t('settings.backup.cloud_backup') }}</Label>
                                 </div>
@@ -1041,8 +1045,8 @@ const receiptPaymentFields = [
                                         <p class="text-sm text-muted-foreground">{{ t('settings.display.dashboard_charts_desc') }}</p>
                                     </div>
                                     <Switch
-                                        :checked="form.display.dashboard_charts"
-                                        @update:checked="(v) => form.display.dashboard_charts = v"
+                                        :model-value="form.display.dashboard_charts"
+                                        @update:model-value="(v) => form.display.dashboard_charts = v"
                                     />
                                 </div>
                                 <div class="flex items-center justify-between py-2 border-b">
@@ -1051,8 +1055,8 @@ const receiptPaymentFields = [
                                         <p class="text-sm text-muted-foreground">{{ t('settings.display.show_currency_symbol_desc') }}</p>
                                     </div>
                                     <Switch
-                                        :checked="form.display.show_currency_symbol"
-                                        @update:checked="(v) => form.display.show_currency_symbol = v"
+                                        :model-value="form.display.show_currency_symbol"
+                                        @update:model-value="(v) => form.display.show_currency_symbol = v"
                                     />
                                 </div>
                                 <div class="flex items-center justify-between py-2 border-b">
@@ -1061,8 +1065,8 @@ const receiptPaymentFields = [
                                         <p class="text-sm text-muted-foreground">{{ t('settings.display.compact_view_desc') }}</p>
                                     </div>
                                     <Switch
-                                        :checked="form.display.compact_view"
-                                        @update:checked="(v) => form.display.compact_view = v"
+                                        :model-value="form.display.compact_view"
+                                        @update:model-value="(v) => form.display.compact_view = v"
                                     />
                                 </div>
                                 <div class="flex items-center justify-between py-2">
@@ -1071,8 +1075,8 @@ const receiptPaymentFields = [
                                         <p class="text-sm text-muted-foreground">{{ t('settings.display.sidebar_collapsed_desc') }}</p>
                                     </div>
                                     <Switch
-                                        :checked="form.display.sidebar_collapsed"
-                                        @update:checked="(v) => form.display.sidebar_collapsed = v"
+                                        :model-value="form.display.sidebar_collapsed"
+                                        @update:model-value="(v) => form.display.sidebar_collapsed = v"
                                     />
                                 </div>
                             </div>
