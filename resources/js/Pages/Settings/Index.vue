@@ -47,6 +47,7 @@ const tabs = [
 
 const form = useForm({ ...props.preferences })
 
+console.log('this is form', form);
 const save = () => {
     form.put(route('settings.update'), {
         preserveScroll: true,

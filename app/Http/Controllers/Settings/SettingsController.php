@@ -15,7 +15,7 @@ class SettingsController extends Controller
     {
         $user = $request->user();
         $preferences = $user->getAllPreferences();
-        
+
         // Get accounts for default cash account dropdown
         $cashAccounts = Account::select('id', 'name')
             ->where('is_active', true)
@@ -35,11 +35,11 @@ class SettingsController extends Controller
     {
         $user = $request->user();
         $validated = $request->validated();
-        
+
         // Merge validated preferences with existing ones
         $currentPreferences = $user->preferences ?? User::DEFAULT_PREFERENCES;
         $newPreferences = array_replace_recursive($currentPreferences, $validated);
-        
+
         $user->update(['preferences' => $newPreferences]);
 
         return redirect()->back()->with('success', __('settings.settings_saved'));
