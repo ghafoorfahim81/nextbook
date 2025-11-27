@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { Button } from '@/Components/ui/button'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
@@ -26,6 +26,8 @@ const stores = computed(() => props.stores?.data ?? props.stores ?? [])
 const unitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 const categories = computed(() => props.categories?.data ?? props.categories ?? [])
 const brands = computed(() => props.brands?.data ?? props.brands ?? [])
+
+
 
 const form = useForm({
     name: '',
@@ -59,6 +61,17 @@ const form = useForm({
         { batch: '', expire_date: '', quantity: '', store_id: null, selected_store: null },
     ],
 })
+
+// By default select the main store if available
+watch(() => props.stores?.data ?? props.stores, (stores) => {
+    if (stores && stores.length) {
+        const mainStore = stores.find(s => s.is_main === true)
+        if (mainStore) {
+            form.openings[0].selected_store = mainStore
+            form.openings[0].store_id = mainStore.id
+        }
+    }
+}, { immediate: true })
 
 // file handler (no v-model on file inputs)
 const onPhotoChange = (e) => {
