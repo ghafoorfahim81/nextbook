@@ -20,7 +20,7 @@ function setLocale(next) {
     document.documentElement.setAttribute('dir', ['fa','ps','pa'].includes(normalized) ? 'rtl' : 'ltr')
 }
 
-const current = computed({01
+const current = computed({
     get: () => locale.value,
     set: (val) => setLocale(val),
 })
