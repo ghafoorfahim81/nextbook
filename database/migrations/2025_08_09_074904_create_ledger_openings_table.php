@@ -24,14 +24,16 @@ return new class extends Migration
             $table->char('transaction_id', 26);
             $table->char('created_by', 26);
             $table->char('updated_by', 26)->nullable();
+            $table->char('deleted_by',26)->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::table('ledger_openings', function (Blueprint $table) {
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('transaction_id')->references('id')->on('transactions');
-//            $table->foreign('ledger_id')->references('id')->on('ledgers');
+            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
 
         });
 

@@ -15,6 +15,7 @@ const props = defineProps({
     stores: { type: [Array, Object], required: true },
     unitMeasures: { type: [Array, Object], required: true },
     brands: { type: [Array, Object], required: true },
+    maxCode: { type: Number, required: true },
 })
 
 let sidebar = null
@@ -37,13 +38,27 @@ onUnmounted(() => {
     }
 })
 
+
+
 const { toast } = useToast()
 const stores        = computed(() => props.stores?.data ?? props.stores ?? [])
 const unitMeasures  = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 
+// Format code with leading zeros based on the number
+const formatCode = (number) => {
+    const num = Number(number);
+    if (num < 10) {
+        return num.toString().padStart(3, '0'); // 001-009
+    } else if (num < 100) {
+        return num.toString().padStart(3, '0'); // 010-099
+    } else {
+        return num.toString(); // 100+
+    }
+}
+
 const blankRow = () => ({
     name: '',
-    code: '',
+    code: formatCode(props.maxCode),
     measure_id: null,
     purchase_price: '',
     mrp_rate: '',
@@ -54,23 +69,33 @@ const blankRow = () => ({
 })
 
 const form = useForm({
-    items: [blankRow(), blankRow()],
+    items: [blankRow()],
 })
 
 const fieldError = (idx, field) => form.errors?.[`items.${idx}.${field}`]
 
 const addRowAfter = (idx) => {
     // only add when user is on the last row (good UX), but feel free to remove this guard
-    if (idx === form.items.length - 1) form.items.push(blankRow())
+
+    if (idx === form.items.length - 1) {
+        // Get the code from the previous row and increment by 1
+        const previousCode = form.items[idx].code || 0;
+        const newCode = Number(previousCode) + 1;
+        const formattedCode = formatCode(newCode);
+        const newRow = { ...blankRow(), code: formattedCode };
+        form.items.push(newRow);
+    }
 }
 
 const removeRow = (idx) => {
     if (form.items.length <= 1) return
+    if (Number(form.items[idx].code) === props.maxCode) {
+        const currentCode = Number(form.items[idx].code);
+        form.items[idx].code = formatCode(currentCode - 1);
+    }
     form.items.splice(idx, 1)
 }
-const sss= (index) => {
-    console.log('ssss', index)
-}
+
 const normalize = () => {
         form.items = form.items
             .map(r => ({
@@ -107,6 +132,7 @@ const handleSubmit = () => {
             });
             form.reset('items')
         },
+
     })
 }
 
@@ -153,6 +179,7 @@ const handleSubmit = () => {
                             <td class="px-1 py-2 align-top">
                                 <NextInput
                                     v-model="item.code"
+                                    disabled="true"
                                     :error="fieldError(index, 'code')"
                                 />
                             </td>
@@ -182,10 +209,10 @@ const handleSubmit = () => {
                                 />
                             </td>
                             <td class="px-1 py-2 align-top">
-                                <NextInput
-                                    type="date"
+                                <NextDate
                                     v-model="item.expire_date"
                                     :error="fieldError(index, 'expire_date')"
+                                    :placeholder="t('general.enter', { text: t('item.expire_date') })"
                                 />
                             </td>
                             <td class="px-1 py-2 align-top">

@@ -20,8 +20,8 @@ class ItemUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('items')->ignore($this->route('item'))],
-            'code' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('items')->ignore($this->route('item'))],
+            'name' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('items')->ignore($this->route('item'))->whereNull('deleted_at')],
+            'code' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('items')->ignore($this->route('item'))->whereNull('deleted_at')],
             'generic_name' => ['nullable', 'string'],
             'packing' => ['nullable', 'string'],
             'barcode' => ['nullable', 'string'],

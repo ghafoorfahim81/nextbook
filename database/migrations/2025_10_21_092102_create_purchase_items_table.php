@@ -27,8 +27,9 @@ return new class extends Migration
             $table->decimal('tax', 10, 2)->default(0)->nullable();
             $table->char('created_by', 26);
             $table->char('updated_by', 26)->nullable();
-            $table->softDeletes();
+            $table->char('deleted_by',26)->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::enableForeignKeyConstraints();
@@ -39,6 +40,7 @@ return new class extends Migration
             $table->foreign('unit_measure_id')->references('id')->on('unit_measures');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
+            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

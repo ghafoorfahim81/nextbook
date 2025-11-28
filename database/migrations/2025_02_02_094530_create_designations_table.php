@@ -14,15 +14,25 @@ return new class extends Migration
         Schema::disableForeignKeyConstraints();
 
         Schema::create('designations', function (Blueprint $table) {
-            $table->uuid('id');
-//            $table->string('name')->unique();
-//            $table->text('remark')->nullable();
-//            $table->foreignUuid('created_by')->constrained('users');
-//            $table->foreignUuid('updated_by')->nullable()->constrained('users');
-//            $table->timestamps();
+            $table->char('id', 26)->primary();
+           $table->string('name')->index();
+           $table->text('remark')->nullable();
+           $table->char('branch_id', 26);
+           $table->char('created_by', 26);
+           $table->char('updated_by', 26)->nullable();
+           $table->unique(['branch_id', 'name', 'deleted_at']);
+           $table->timestamps();
+           $table->softDeletes();
+           $table->char('deleted_by', 26)->nullable();
         });
 
         Schema::enableForeignKeyConstraints();
+        Schema::table('designations', function (Blueprint $table) {
+            $table->foreign('created_by')->references('id')->on('users');
+            $table->foreign('updated_by')->references('id')->on('users');
+            $table->foreign('branch_id')->references('id')->on('branches');
+            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
+        });
     }
 
     /**

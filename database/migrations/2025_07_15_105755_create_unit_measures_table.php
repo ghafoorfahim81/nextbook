@@ -15,7 +15,7 @@ return new class extends Migration
 
         Schema::create('unit_measures', function (Blueprint $table) {
             $table->char('id', 26)->primary();
-            $table->string('name')->unique();
+            $table->string('name')->index();
             $table->string('unit')->index();
             $table->string('symbol')->index();
             $table->double('value')->nullable();
@@ -23,7 +23,10 @@ return new class extends Migration
             $table->char('branch_id',26);
             $table->char('created_by',26);
             $table->char('updated_by',26)->nullable();
+            $table->char('deleted_by',26)->nullable();
             $table->timestamps();
+            $table->softDeletes();
+            $table->unique(['branch_id', 'name', 'deleted_at']);
         });
 
         Schema::enableForeignKeyConstraints();
@@ -37,6 +40,7 @@ return new class extends Migration
             $table->foreign('quantity_id')->references('id')->on('quantities');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
+            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
         });
 
     }

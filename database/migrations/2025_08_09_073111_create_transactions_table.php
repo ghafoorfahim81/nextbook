@@ -27,8 +27,10 @@ return new class extends Migration
             $table->text('remark')->nullable();
             $table->char('created_by', 26);
             $table->char('updated_by', 26)->nullable();
+            $table->char('deleted_by',26)->nullable();
             $table->timestamps();
             $table->index(['reference_type', 'reference_id']);
+            $table->softDeletes();
         });
 
         Schema::table('transactions', function (Blueprint $table) {
@@ -37,6 +39,7 @@ return new class extends Migration
             $table->foreign('currency_id')->references('id')->on('currencies');
             $table->foreign('account_id')->references('id')->on('accounts');
             $table->foreign('ledger_id')->references('id')->on('ledgers');
+            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
         });
 
         Schema::enableForeignKeyConstraints();

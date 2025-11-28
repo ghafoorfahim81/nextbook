@@ -38,13 +38,19 @@ class ItemController extends Controller
 
     public function create()
     {
-        return inertia('Inventories/Items/Create');
+        // Get the maximum code as integer (cast to handle mixed formats like "3" and "004")
+        $maxCode = Item::query()->selectRaw('MAX(CAST(code AS INTEGER)) as max_code')->value('max_code');
+        $maxCode = $maxCode ? intval($maxCode) + 1 : 1;
+
+        return inertia('Inventories/Items/Create', [
+            'maxCode' => $maxCode,
+        ]);
     }
     public function store(ItemStoreRequest $request)
     {
         $validated = $request->validated();
         // dd($request->all());
-        // If you’re uploading a photo here, handle it first (optional)
+        // If you're uploading a photo here, handle it first (optional)
         if ($request->hasFile('photo')) {
             $path = $request->file('photo')->store('items', 'public');
             $validated['photo'] = $path;

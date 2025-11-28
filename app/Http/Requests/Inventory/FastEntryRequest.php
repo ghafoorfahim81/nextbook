@@ -15,8 +15,8 @@ class FastEntryRequest extends FormRequest
     {
         return [
             'items'                       => ['required','array','min:1'],
-            'items.*.name'                => ['required','string','max:255'],
-            'items.*.code'                => ['nullable','string','max:50'],
+            'items.*.name'                => ['required','string','max:255','unique:items,name,NULL,id,deleted_at,NULL'],
+            'items.*.code'                => ['nullable','string','max:50','unique:items,code,NULL,id,deleted_at,NULL'],
             'items.*.category_id'         => ['nullable','exists:categories,id'],
             'items.*.measure_id'          => ['required','exists:unit_measures,id'],
             'items.*.brand_id'            => ['nullable','exists:brands,id'],

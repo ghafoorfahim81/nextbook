@@ -9,10 +9,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
-
+use App\Traits\HasBranch;
 class AccountType extends Model
 {
-    use HasFactory, HasSearch, HasSorting, HasUserAuditable, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasSearch, HasSorting, HasBranch, HasUserAuditable, HasDependencyCheck, SoftDeletes;
 
     protected $table = 'account_types';
     protected $keyType = 'string';

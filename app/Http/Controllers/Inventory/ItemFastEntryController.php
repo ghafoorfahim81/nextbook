@@ -19,7 +19,13 @@ class ItemFastEntryController extends Controller
 
     public function create()
     {
-        return inertia('Inventories/Items/FasEntry'); // no “t”
+        // Get the maximum code as integer (cast to handle mixed formats like "3" and "004")
+        $maxCode = Item::query()->selectRaw('MAX(CAST(code AS INTEGER)) as max_code')->value('max_code');
+        $maxCode = $maxCode ? intval($maxCode) + 1 : 1;
+
+        return inertia('Inventories/Items/FasEntry',[
+            'maxCode' => $maxCode,
+        ]);
     }
 
     public function store(FastEntryRequest  $request)
@@ -48,21 +54,21 @@ class ItemFastEntryController extends Controller
                 $qty = (float) ($r['quantity'] ?? 0);
                 if (!empty($r['store_id']) && $qty > 0) {
                     $cost = (float) ($r['purchase_price'] ?? 0);
-
+                    $dateConversionService = app(\App\Services\DateConversionService::class);
+                    $expire_date = $dateConversionService->toGregorian($r['expire_date']);
                     $stock = Stock::create([
                         'id'              => (string) Str::ulid(), // if your Stock uses ULIDs
                         'item_id'         => $item->id,
                         'store_id'        => $r['store_id'],
                         'unit_measure_id' => $r['measure_id'],
                         'quantity'        => $qty,
-                        'cost'            => $cost,
+                        'unit_price'      => $cost,
                         'free'            => null,
                         'batch'           => $r['batch'] ?? null,
                         'discount'        => null,
                         'tax'             => null,
                         'date'            => $today,
-                        'expire_date'     => $r['expire_date'] ?? null,
-                        'purchase_id'     => null, // opening
+                        'expire_date'     => $expire_date ?? null,
                     ]);
 
                     StockOpening::create([

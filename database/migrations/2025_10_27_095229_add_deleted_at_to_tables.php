@@ -37,13 +37,13 @@ return new class extends Migration
             'unit_measures',
             'users',
         ];
-        foreach ($tables as $table) {
-            Schema::table($table, function (Blueprint $table) {
-                $table->softDeletes();
-                $table->char('deleted_by', 26)->nullable();
-                $table->foreign('deleted_by')->references('id')->on('users')->onDelete('set null');
-            });
-        }
+        // foreach ($tables as $table) {
+        //     Schema::table($table, function (Blueprint $table) {
+        //         $table->softDeletes();
+        //         $table->char('deleted_by', 26)->nullable();
+        //         $table->foreign('deleted_by')->references('id')->on('users')->onDelete('set null');
+        //     });
+        // }
     }
 
     /**

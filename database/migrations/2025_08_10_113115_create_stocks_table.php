@@ -27,12 +27,15 @@ return new class extends Migration
             $table->date('expire_date')->nullable();
             $table->nullableUlidMorphs('source'); // adds source_type, source_id (ULID), nullable
             $table->timestamps();
+            $table->softDeletes();
+            $table->char('deleted_by',26)->nullable();
         });
 
         schema::table('stocks', function (Blueprint $table) {
             $table->foreign('item_id')->references('id')->on('items');
             $table->foreign('store_id')->references('id')->on('stores');
             $table->foreign('unit_measure_id')->references('id')->on('unit_measures');
+            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
