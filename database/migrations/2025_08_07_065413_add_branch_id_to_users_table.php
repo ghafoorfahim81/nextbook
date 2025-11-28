@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->char('branch_id', 26)->nullable()->after('password');
+            $table->unique(['branch_id', 'email', 'deleted_at']);
         });
 
         Schema::table('users', function (Blueprint $table) {

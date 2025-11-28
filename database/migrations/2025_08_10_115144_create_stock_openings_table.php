@@ -16,11 +16,14 @@ return new class extends Migration
             $table->char('item_id');
             $table->char('stock_id',26);
             $table->timestamps();
+            $table->softDeletes();
+            $table->char('deleted_by',26)->nullable();
         });
 
         Schema::table('stock_openings', function (Blueprint $table) {
             $table->foreign('item_id')->references('id')->on('items');
             $table->foreign('stock_id')->references('id')->on('stocks');
+            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

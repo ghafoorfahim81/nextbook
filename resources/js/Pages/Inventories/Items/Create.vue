@@ -18,14 +18,27 @@ const props = defineProps({
     unitMeasures: { type: [Array, Object], required: true },
     categories: { type: [Array, Object], required: true },
     brands: { type: [Array, Object], required: true },
+    maxCode: { type: Number, required: true },
 })
 
-// normalize lists whether they’re paginated or not
+// normalize lists whether they're paginated or not
 const branches = computed(() => props.branches?.data ?? props.branches ?? [])
 const stores = computed(() => props.stores?.data ?? props.stores ?? [])
 const unitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 const categories = computed(() => props.categories?.data ?? props.categories ?? [])
 const brands = computed(() => props.brands?.data ?? props.brands ?? [])
+
+// Format code with leading zeros based on the number
+const formatCode = (number) => {
+    const num = Number(number);
+    if (num < 10) {
+        return num.toString().padStart(3, '0'); // 001-009
+    } else if (num < 100) {
+        return num.toString().padStart(3, '0'); // 010-099
+    } else {
+        return num.toString(); // 100+
+    }
+}
 
 
 
@@ -70,6 +83,12 @@ watch(() => props.stores?.data ?? props.stores, (stores) => {
             form.openings[0].selected_store = mainStore
             form.openings[0].store_id = mainStore.id
         }
+    }
+}, { immediate: true })
+
+watch(() => props.maxCode, (maxCode) => {
+    if (maxCode) {
+        form.code = formatCode(maxCode)
     }
 }, { immediate: true })
 
@@ -155,7 +174,7 @@ const handleOpeningSelectChange = (index, value) => {
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name"  :placeholder="t('general.enter', { text: t('general.name') })" />
-                <NextInput :label="t('admin.currency.code')" v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
+                <NextInput :label="t('admin.currency.code')" disabled="true"  v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
                 <NextInput :label="t('item.generic_name')" v-model="form.generic_name" :error="form.errors?.generic_name" :placeholder="t('general.enter', { text: t('item.generic_name') })" />
                 <NextInput :label="t('item.packing')" v-model="form.packing" :error="form.errors?.packing" :placeholder="t('general.enter', { text: t('item.packing') })" />
                 <NextInput :label="t('item.colors')" v-model="form.colors" :error="form.errors?.colors" :placeholder="t('general.enter', { text: t('item.colors') })" />

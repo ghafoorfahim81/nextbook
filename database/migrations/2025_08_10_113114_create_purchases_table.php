@@ -28,7 +28,9 @@ return new class extends Migration
             $table->char('branch_id', 26);
             $table->char('created_by', 26);
             $table->char('updated_by', 26)->nullable();
+            $table->char('deleted_by',26)->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::enableForeignKeyConstraints();
@@ -40,6 +42,7 @@ return new class extends Migration
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('branch_id')->references('id')->on('branches');
+            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

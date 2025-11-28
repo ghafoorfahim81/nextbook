@@ -21,7 +21,8 @@ return new class extends Migration
             $table->char('parent_id',26)->nullable();
             $table->char('created_by',26);
             $table->char('updated_by',26)->nullable();
-
+            $table->char('deleted_by', 26)->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
 
@@ -35,6 +36,7 @@ return new class extends Migration
 
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
+            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

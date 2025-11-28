@@ -14,8 +14,8 @@ return new class extends Migration
 
         Schema::create('accounts', function (Blueprint $table) {
             $table->char('id', 26)->primary();
-            $table->string('name')->unique();
-            $table->string('number')->unique();
+            $table->string('name')->index();
+            $table->string('number')->index();
             $table->char('account_type_id', 26);
             $table->boolean('is_active')->default(true);
             $table->boolean('is_main')->default(false);
@@ -24,7 +24,12 @@ return new class extends Migration
             $table->text('remark')->nullable();
             $table->char('created_by', 26);
             $table->char('updated_by', 26)->nullable();
+            $table->char('deleted_by',26)->nullable();
             $table->timestamps();
+            $table->softDeletes();
+            $table->unique(['branch_id', 'number', 'deleted_at']);
+            $table->unique(['branch_id', 'name', 'deleted_at']);
+            $table->unique(['branch_id', 'slug', 'deleted_at']);
         });
 
         Schema::enableForeignKeyConstraints();
@@ -41,6 +46,8 @@ return new class extends Migration
                 ->onDelete('CASCADE');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
+            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
+
         });
     }
 

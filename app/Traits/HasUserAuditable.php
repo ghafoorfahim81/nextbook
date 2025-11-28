@@ -30,13 +30,16 @@ trait HasUserAuditable
             $model->updated_by =  $firstUser->id;
         });
 
-        static::deleting(function ($model) use ($firstUser) {
-            $model->deleted_by =  $firstUser->id;
-            $model->save();
-        });
+        // Only register soft delete events if the model uses SoftDeletes
+        if (method_exists(static::class, 'bootSoftDeletes')) {
+            static::deleting(function ($model) use ($firstUser) {
+                $model->deleted_by = $firstUser->id;
+                $model->save();
+            });
 
-        static::restoring(function ($model) {
-            $model->deleted_by = null;
-        });
+            static::restoring(function ($model) {
+                $model->deleted_by = null;
+            });
+        }
     }
 }

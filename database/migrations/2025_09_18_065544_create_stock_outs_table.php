@@ -29,6 +29,8 @@ return new class extends Migration
             $table->char('updated_by', 26)->nullable();
             $table->nullableUlidMorphs('source'); // adds source_type, source_id (ULID), nullable
             $table->timestamps();
+            $table->softDeletes();
+            $table->char('deleted_by',26)->nullable();
         });
 
         Schema::table('stock_outs', function (Blueprint $table) {
@@ -38,6 +40,7 @@ return new class extends Migration
             $table->foreign('store_id')->references('id')->on('stores');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
+            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

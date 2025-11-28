@@ -7,7 +7,6 @@ use App\Traits\HasDependencyCheck;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -18,7 +17,7 @@ use App\Traits\HasCache;
 
 class Company extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasCache, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUlids, HasDependencyCheck;
 
 
     /**

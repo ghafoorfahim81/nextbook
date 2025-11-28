@@ -15,8 +15,8 @@ return new class extends Migration
 
         Schema::create('items', function (Blueprint $table) {
             $table->char('id', 26)->primary();
-            $table->string('name')->unique()->index();
-            $table->string('code')->unique()->index();
+            $table->string('name')->index();
+            $table->string('code')->index();
             $table->string('generic_name')->nullable();
             $table->string('packing')->nullable();
             $table->string('barcode')->nullable()->index();
@@ -39,7 +39,11 @@ return new class extends Migration
             $table->char('branch_id',26);
             $table->char('created_by');
             $table->char('updated_by')->nullable();
+            $table->char('deleted_by',26)->nullable();
+            $table->unique(['branch_id', 'name', 'deleted_at']);
+            $table->unique(['branch_id', 'code', 'deleted_at']);
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::table('items', function (Blueprint $table) {
@@ -49,6 +53,7 @@ return new class extends Migration
             $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
+            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
         });
 
         Schema::enableForeignKeyConstraints();

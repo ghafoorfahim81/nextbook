@@ -14,20 +14,23 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->char('id', 26)->primary();
             $table->string('name');
-            $table->string('email')->unique();
+            $table->string('email');
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password'); 
+            $table->string('password');
             $table->char('created_by', 26)->nullable();
-            $table->char('updated_by', 26)->nullable(); 
+            $table->char('updated_by', 26)->nullable();
+            $table->char('deleted_by', 26)->nullable(); 
             $table->rememberToken();
-            $table->timestamps(); 
+            $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::enableForeignKeyConstraints();
 
-        Schema::table('users', function (Blueprint $table) { 
+        Schema::table('users', function (Blueprint $table) {
             $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('updated_by')->references('id')->on('users')->onDelete('cascade'); 
+            $table->foreign('updated_by')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
         });
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();

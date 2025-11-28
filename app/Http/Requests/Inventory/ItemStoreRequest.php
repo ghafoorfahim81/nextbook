@@ -20,8 +20,8 @@ class ItemStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:items,name'],
-            'code' => ['required', 'string', 'unique:items,code'],
+            'name' => 'required|min:3|unique:items,name,NULL,id,deleted_at,NULL',
+            'code' => 'required|string|unique:items,code,NULL,id,deleted_at,NULL',
             'generic_name' => ['nullable', 'string'],
             'packing' => ['nullable', 'string'],
             'barcode' => ['nullable', 'string'],

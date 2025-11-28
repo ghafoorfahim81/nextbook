@@ -26,7 +26,13 @@ return new class extends Migration
             $table->string('type')->index()->default('customer');
             $table->char('created_by', 26);
             $table->char('updated_by', 26)->nullable();
+            $table->char('deleted_by',26)->nullable();
             $table->timestamps();
+            $table->softDeletes();
+            $table->unique(['branch_id', 'name', 'deleted_at']);
+            $table->unique(['branch_id', 'code', 'deleted_at']);
+            $table->unique(['branch_id', 'phone_no', 'deleted_at']);
+            $table->unique(['branch_id', 'email', 'deleted_at']);
         });
 
         Schema::table('ledgers', function (Blueprint $table) {
@@ -34,6 +40,7 @@ return new class extends Migration
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('currency_id')->references('id')->on('currencies');
             $table->foreign('branch_id')->references('id')->on('branches');
+            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
         });
 
         Schema::enableForeignKeyConstraints();

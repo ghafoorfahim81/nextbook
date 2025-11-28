@@ -15,19 +15,24 @@ return new class extends Migration
 
         Schema::create('currencies', function (Blueprint $table) {
             $table->char('id', 26)->primary();
-            $table->string('name')->unique();
-            $table->string('code')->unique();
+            $table->string('name')->index();
+            $table->string('code')->index();
             $table->string('symbol');
             $table->string('format')->nullable();
             $table->decimal('exchange_rate');
             $table->boolean('is_active')->default(true);
             $table->boolean('is_base_currency')->default(false);
-            $table->string('flag')->unique()->nullable();
+            $table->string('flag')->index()->nullable();
             $table->char('branch_id', 26);
             $table->char('tenant_id', 26)->nullable();
             $table->char('created_by', 26);
             $table->char('updated_by', 26)->nullable();
+            $table->char('deleted_by',26)->nullable();
             $table->timestamps();
+            $table->softDeletes();
+            $table->unique(['branch_id', 'name', 'deleted_at']);
+            $table->unique(['branch_id', 'code', 'deleted_at']);
+            $table->unique(['branch_id', 'flag', 'deleted_at']);
         });
 
         Schema::enableForeignKeyConstraints();
@@ -39,6 +44,7 @@ return new class extends Migration
                 ->onDelete('CASCADE');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
+            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
         });
     }
 
