@@ -71,21 +71,20 @@ class ItemController extends Controller
                     // pick cost source (fallback to purchase_price or cost on item form)
                     $cost = (float)($request->input('cost') ?? $request->input('purchase_price') ?? 0);
                     $expire_date = $dateConversionService->toGregorian($o['expire_date']);
+                    $date = $dateConversionService->toGregorian($o['date'] ?? Carbon::now()->toDateString());
                     // create stock
-                    $stock = Stock::create([
-                        'id'              => (string) Str::ulid(),
-                        'item_id'         => $item->id,
-                        'store_id'        => $o['store_id'],
+                    $stockService = app(\App\Services\StockService::class);
+                    $stock = $stockService->addStock([
+                        'item_id' => $item->id,
+                        'store_id' => $o['store_id'],
                         'unit_measure_id' => $request->input('unit_measure_id'), // from item form
                         'quantity'        => (float) $o['quantity'],
                         'unit_price'      => $cost,
                         'free'            => isset($o['free']) ? (float) $o['free'] : null,
                         'batch'           => $o['batch'] ?? null,
-                        'discount'        => isset($o['discount']) ? (float) $o['discount'] : null,
-                        'tax'             => isset($o['tax']) ? (float) $o['tax'] : null,
-                        'date'            => $o['date'] ?? Carbon::now()->toDateString(),
+                        'date'            => $date,
                         'expire_date'     => $expire_date,
-                    ]);
+                    ], $o['store_id'], 'opening', $item->id);
 
                     // mark it as an opening
                     StockOpening::create([
@@ -171,30 +170,30 @@ class ItemController extends Controller
             $dateConversionService = app(\App\Services\DateConversionService::class);
             // Remove old openings (optional: you may also soft-delete instead)
             $item->openings->each(function ($opening) {
-                $opening->delete();
-                $opening->stock()->delete();
+                $opening->forceDelete();
+                $opening->stock()->forceDelete();
             });
             $openings
                 ->filter(fn($o) => !empty($o['store_id']) && (float)($o['quantity'] ?? 0) > 0)
                 ->each(function ($o) use ($item, $request, $dateConversionService) {
                     $cost = (float)($request->input('cost') ?? $request->input('purchase_price') ?? 0);
                     $expire_date = $dateConversionService->toGregorian($o['expire_date']);
-                    $stock = Stock::create([
+                    $date = $dateConversionService->toGregorian($o['date'] ?? Carbon::now()->toDateString());
+                    $stockService = app(\App\Services\StockService::class);
+                    $stock = $stockService->addStock([
                         'item_id' => $item->id,
                         'store_id' => $o['store_id'],
-                        'unit_measure_id' => $request->unit_measure_id,
-                        'quantity' => (float) $o['quantity'],
-                        'unit_price' => $cost,
-                        'free' => isset($o['free']) ? (float) $o['free'] : null,
-                        'batch' => $o['batch'] ?? null,
-                        'discount' => isset($o['discount']) ? (float) $o['discount'] : null,
-                        'tax' => isset($o['tax']) ? (float) $o['tax'] : null,
-                        'date' => $o['date'] ?? now()->toDateString(),
-                        'expire_date' => $expire_date,
-                        'purchase_id' => null,
-                    ]);
+                        'unit_measure_id' => $request->input('unit_measure_id'), // from item form
+                        'quantity'        => (float) $o['quantity'],
+                        'unit_price'      => $cost,
+                        'free'            => isset($o['free']) ? (float) $o['free'] : null,
+                        'batch'           => $o['batch'] ?? null,
+                        'date'            => $date,
+                        'expire_date'     => $expire_date,
+                    ], $o['store_id'], 'opening', $item->id);
 
-                    $stock->opening()->create([
+                    StockOpening::create([
+                        'id'      => (string) Str::ulid(),
                         'item_id' => $item->id,
                         'stock_id' => $stock->id,
                     ]);

@@ -19,7 +19,7 @@ const columns = ref([
   { key: 'measure', label: t('admin.unit_measure.unit_measure') },
   { key: 'brand_name', label: t('admin.brand.brand') },
   { key: 'cost', label: t('item.cost') },
-  { key: 'quantity', label: t('general.quantity') },
+  { key: 'on_hand', label: t('general.on_hand') },
   { key: 'mrp_rate', label: t('item.mrp_rate') },
   { key: 'actions', label: t('general.actions') },
 ])

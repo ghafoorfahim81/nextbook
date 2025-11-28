@@ -146,7 +146,8 @@
   "no_record_available_button_description":"Add a new record to get started.",
   "address": "Address",
   "email": "Email",
-  "active": "Active"
+  "active": "Active",
+  "unit_price": "Unit Price"
 }
 
 

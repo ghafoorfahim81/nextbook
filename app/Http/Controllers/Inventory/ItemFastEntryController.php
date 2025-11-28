@@ -56,23 +56,24 @@ class ItemFastEntryController extends Controller
                     $cost = (float) ($r['purchase_price'] ?? 0);
                     $dateConversionService = app(\App\Services\DateConversionService::class);
                     $expire_date = $dateConversionService->toGregorian($r['expire_date']);
-                    $stock = Stock::create([
-                        'id'              => (string) Str::ulid(), // if your Stock uses ULIDs
-                        'item_id'         => $item->id,
-                        'store_id'        => $r['store_id'],
+                    $date = $dateConversionService->toGregorian($r['date'] ?? Carbon::now()->toDateString());
+                    $stockService = app(\App\Services\StockService::class);
+                    $stock = $stockService->addStock([
+                        'item_id' => $item->id,
+                        'store_id' => $r['store_id'],
                         'unit_measure_id' => $r['measure_id'],
-                        'quantity'        => $qty,
-                        'unit_price'      => $cost,
-                        'free'            => null,
-                        'batch'           => $r['batch'] ?? null,
-                        'discount'        => null,
-                        'tax'             => null,
-                        'date'            => $today,
-                        'expire_date'     => $expire_date ?? null,
-                    ]);
+                        'quantity' => $qty,
+                        'unit_price' => $cost,
+                        'free' => null,
+                        'batch' => $r['batch'] ?? null,
+                        'discount' => null,
+                        'tax' => null,
+                        'date' => $date,
+                        'expire_date' => $expire_date,
+                    ], $r['store_id'], 'opening', $item->id);
 
                     StockOpening::create([
-                        'id'       => (string) Str::ulid(), // if your model uses ULIDs
+                        'id'      => (string) Str::ulid(),
                         'item_id'  => $item->id,
                         'stock_id' => $stock->id,
                     ]);
