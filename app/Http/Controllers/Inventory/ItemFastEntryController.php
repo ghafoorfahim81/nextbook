@@ -56,7 +56,7 @@ class ItemFastEntryController extends Controller
                 if (!empty($r['store_id']) && $qty > 0) {
                     $cost = (float) ($r['purchase_price'] ?? 0);
                     $dateConversionService = app(\App\Services\DateConversionService::class);
-                    $expire_date = $dateConversionService->toGregorian($r['expire_date']);
+                    $expire_date = $r['expire_date']?$dateConversionService->toGregorian($r['expire_date']):null;
                     $date = $dateConversionService->toGregorian(Carbon::now()->toDateString());
                     $transactionService = app(\App\Services\TransactionService::class);
                     $stockService = app(\App\Services\StockService::class);

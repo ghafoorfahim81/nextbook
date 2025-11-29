@@ -25,9 +25,9 @@
   "list": "List",
   "back_to_the_list": "Back to the list",
   "select": "Select",
-  "create_success": "Created successfully {name}",
-  "update_success": "Updated successfully {name}",
-  "delete_success": "Deleted successfully {name}",
+  "create_success": "{name} created successfully ",
+  "update_success": "{name} updated successfully ",
+  "delete_success": "{name} deleted successfully ",
   "status": "Status",
   "enter": "Enter {text}",
   "text": "Text",
@@ -147,7 +147,8 @@
   "address": "Address",
   "email": "Email",
   "active": "Active",
-  "unit_price": "Unit Price"
+  "unit_price": "Unit Price",
+  "created_successfully": "created successfully"
 }
 
 
