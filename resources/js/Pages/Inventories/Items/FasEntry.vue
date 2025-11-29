@@ -9,7 +9,6 @@ import { useI18n } from 'vue-i18n';
 const { t } = useI18n()
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
-import { Trash2, Trash } from 'lucide-vue-next';
 
 const props = defineProps({
     stores: { type: [Array, Object], required: true },
@@ -68,6 +67,11 @@ const blankRow = () => ({
     store_id: null,
 })
 
+const addRow = () => {
+    const lastIndex = form.items.length - 1;
+    addRowAfter(lastIndex)
+}
+
 const form = useForm({
     items: [blankRow()],
 })
@@ -89,11 +93,12 @@ const addRowAfter = (idx) => {
 
 const removeRow = (idx) => {
     if (form.items.length <= 1) return
-    if (Number(form.items[idx].code) === props.maxCode) {
-        const currentCode = Number(form.items[idx].code);
-        form.items[idx].code = formatCode(currentCode - 1);
-    }
     form.items.splice(idx, 1)
+    // Renumber codes for all rows from idx onwards
+    for (let i = idx; i < form.items.length; i++) {
+        const prevCode = i === 0 ? props.maxCode - 1 : Number(form.items[i - 1].code)
+        form.items[i].code = formatCode(prevCode + 1)
+    }
 }
 
 const normalize = () => {
@@ -256,7 +261,7 @@ const handleSubmit = () => {
                         {{ t('general.rows') }}: <span class="font-medium text-foreground">{{ form.items.length }}</span>
                     </div>
                     <div class="flex gap-2">
-                        <Button type="button" variant="secondary" @click="form.items.push(blankRow())" >
+                        <Button type="button" variant="secondary" @click="addRow()" >
                             {{ t('general.add_row') }}
                         </Button>
                         <Button type="submit" :disabled="form.processing">

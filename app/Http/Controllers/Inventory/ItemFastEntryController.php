@@ -57,7 +57,7 @@ class ItemFastEntryController extends Controller
                     $cost = (float) ($r['purchase_price'] ?? 0);
                     $dateConversionService = app(\App\Services\DateConversionService::class);
                     $expire_date = $dateConversionService->toGregorian($r['expire_date']);
-                    $date = $dateConversionService->toGregorian($r['date'] ?? Carbon::now()->toDateString());
+                    $date = $dateConversionService->toGregorian(Carbon::now()->toDateString());
                     $transactionService = app(\App\Services\TransactionService::class);
                     $stockService = app(\App\Services\StockService::class);
                     $stock = $stockService->addStock([
@@ -92,7 +92,7 @@ class ItemFastEntryController extends Controller
                         'rate' => 1,
                         'date' => $date,
                         'type' => 'debit',
-                        'remark' => 'Opening balance for item ' . $item->name . ' in store ' . $r['store_id'],
+                        'remark' => 'Opening balance for item ' . $item->name ,
                         'reference_type' => Item::class,
                         'reference_id' => $item->id,
                     ]);
@@ -104,7 +104,7 @@ class ItemFastEntryController extends Controller
                         'rate' => 1,
                         'date' => $date,
                         'type' => 'credit',
-                        'remark' => 'Opening balance for item ' . $item->name . ' in store ' . $r['store_id'],
+                        'remark' => 'Opening balance for item ' . $item->name  ,
                         'reference_type' => Item::class,
                         'reference_id' => $item->id,
                     ]);
@@ -112,11 +112,8 @@ class ItemFastEntryController extends Controller
                         'id' => (string) Str::ulid(),
                         'item_id' => $item->id,
                         'inventory_transaction_id' => $inventoryTransaction->id,
-                        'opening_balance_transaction_id' => $openingBalanceTransaction->id, 
+                        'opening_balance_transaction_id' => $openingBalanceTransaction->id,
                     ]);
-
-
-
                 }
             });
         });
