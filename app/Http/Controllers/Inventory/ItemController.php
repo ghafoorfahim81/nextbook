@@ -291,43 +291,43 @@ class ItemController extends Controller
 
                 // Create opening transactions
                 if ($filteredOpenings->count() > 0) {
-                $glAccounts = Cache::get('gl_accounts');
-                $homeCurrency = Cache::get('home_currency');
-                $amount = $filteredOpenings->sum(function ($o) {
-                    return (float)($o['quantity'] ?? 0);
-                });
-                $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
-                $inventoryTransaction = $transactionService->createTransaction([
-                    'account_id' => $glAccounts['inventory-asset'],
-                    'ledger_id' =>  null,
-                    'amount' => $cost*$amount,
-                    'currency_id' => $homeCurrency->id,
-                    'rate' => 1,
-                    'date' => $date,
-                    'type' => 'debit',
-                    'remark' => 'Opening balance for item ' . $item->name,
-                    'reference_type' => Item::class,
-                    'reference_id' => $item->id,
-                ]);
-                $openingBalanceTransaction = $transactionService->createTransaction([
-                    'account_id' => $glAccounts['opening-balance-equity'],
-                    'ledger_id' =>  null,
-                    'amount' => $cost*$amount,
-                    'currency_id' => $homeCurrency->id,
-                    'rate' => 1,
-                    'date' => $date,
-                    'type' => 'credit',
-                    'remark' => 'Opening balance for item ' . $item->name,
-                    'reference_type' => Item::class,
-                    'reference_id' => $item->id,
-                ]);
-                ItemOpeningTransaction::create([
-                    'id' => (string) Str::ulid(),
-                    'item_id' => $item->id,
-                    'inventory_transaction_id' => $inventoryTransaction->id,
-                    'opening_balance_transaction_id' => $openingBalanceTransaction->id,
-                        'created_by' => auth()->id(),
+                    $glAccounts = Cache::get('gl_accounts');
+                    $homeCurrency = Cache::get('home_currency');
+                    $amount = $filteredOpenings->sum(function ($o) {
+                        return (float)($o['quantity'] ?? 0);
+                    });
+                    $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
+                    $inventoryTransaction = $transactionService->createTransaction([
+                        'account_id' => $glAccounts['inventory-asset'],
+                        'ledger_id' =>  null,
+                        'amount' => $cost*$amount,
+                        'currency_id' => $homeCurrency->id,
+                        'rate' => 1,
+                        'date' => $date,
+                        'type' => 'debit',
+                        'remark' => 'Opening balance for item ' . $item->name,
+                        'reference_type' => Item::class,
+                        'reference_id' => $item->id,
                     ]);
+                    $openingBalanceTransaction = $transactionService->createTransaction([
+                        'account_id' => $glAccounts['opening-balance-equity'],
+                        'ledger_id' =>  null,
+                        'amount' => $cost*$amount,
+                        'currency_id' => $homeCurrency->id,
+                        'rate' => 1,
+                        'date' => $date,
+                        'type' => 'credit',
+                        'remark' => 'Opening balance for item ' . $item->name,
+                        'reference_type' => Item::class,
+                        'reference_id' => $item->id,
+                    ]);
+                    ItemOpeningTransaction::create([
+                        'id' => (string) Str::ulid(),
+                        'item_id' => $item->id,
+                        'inventory_transaction_id' => $inventoryTransaction->id,
+                        'opening_balance_transaction_id' => $openingBalanceTransaction->id,
+                            'created_by' => auth()->id(),
+                        ]);
                 }
 
         });
@@ -338,28 +338,138 @@ class ItemController extends Controller
 
     public function destroy(Request $request, Item $item)
     {
-        // Check for dependencies before deletion
-        if (!$item->canBeDeleted()) {
-            $message = $item->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
-            return inertia('Inventories/Items/Index', [
-                'error' => $message
+        try {
+            // Check for dependencies before deletion
+            if (!$item->canBeDeleted()) {
+                $message = $item->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+                return inertia('Inventories/Items/Index', [
+                    'error' => $message
+                ]);
+            }
+    
+            DB::transaction(function () use ($item) {
+                // Delete openings with their stocks (with existence checks)
+                $item->openings()->with('stock')->each(function ($opening) {
+                    if ($opening->stock) {
+                        $opening->stock->delete();
+                    }
+                    $opening->delete();
+                });
+    
+                // Delete opening transactions with their related models
+                $item->openingTransactions()->with(['inventoryTransaction', 'openingBalanceTransaction'])->each(function ($openingTransaction) {
+                    if ($openingTransaction->inventoryTransaction) {
+                        $openingTransaction->inventoryTransaction->delete();
+                    }
+                    if ($openingTransaction->openingBalanceTransaction) {
+                        $openingTransaction->openingBalanceTransaction->delete();
+                    }
+                    $openingTransaction->delete();
+                });
+    
+                // Finally delete the main item
+                $item->delete();
+            });
+    
+            return redirect()->route('items.index')->with('success', 'Item deleted successfully.');
+    
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            \Log::error('Error deleting item: ' . $e->getMessage(), [
+                'item_id' => $item->id,
+                'exception' => $e
             ]);
+    
+            return redirect()->back()->with('error', 'Failed to delete item. Please try again.');
         }
-
-        foreach ($item->openings as $opening) {
-            $opening->stock()->delete();
-        }
-        $item->openings()->delete();
-        $item->delete();
-        return redirect()->route('items.index')->with('success', 'Item deleted successfully.');
     }
     public function restore(Request $request, Item $item)
     {
-        $item->restore();
-        foreach ($item->openings as $opening) {
-            $opening->stock()->restore();
+        try {
+            DB::transaction(function () use ($item) {
+                // Restore the main item first
+                $item->restore();
+    
+                // Restore openings with their stocks (only trashed records)
+                $item->openings()->with(['stock' => function ($query) {
+                    $query->withTrashed();
+                }])->withTrashed()->each(function ($opening) {
+                    if ($opening->stock) {
+                        $opening->stock->restore();
+                    }
+                    $opening->restore();
+                });
+    
+                // Restore opening transactions with their related models
+                $item->openingTransactions()->with([
+                    'inventoryTransaction' => function ($query) {
+                        $query->withTrashed();
+                    },
+                    'openingBalanceTransaction' => function ($query) {
+                        $query->withTrashed();
+                    }
+                ])->withTrashed()->each(function ($openingTransaction) {
+                    if ($openingTransaction->inventoryTransaction) {
+                        $openingTransaction->inventoryTransaction->restore();
+                    }
+                    if ($openingTransaction->openingBalanceTransaction) {
+                        $openingTransaction->openingBalanceTransaction->restore();
+                    }
+                    $openingTransaction->restore();
+                });
+            });
+    
+            return redirect()->route('items.index')->with('success', 'Item restored successfully.');
+    
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            \Log::error('Error restoring item: ' . $e->getMessage(), [
+                'item_id' => $item->id,
+                'exception' => $e
+            ]);
+    
+            return redirect()->back()->with('error', 'Failed to restore item. Please try again.');
         }
-        $item->openings()->restore();
-        return redirect()->route('items.index')->with('success', 'Item restored successfully.');
+    }
+    
+    // force delete item
+    public function forceDelete(Request $request, Item $item)
+    {
+        try {
+            DB::transaction(function () use ($item) {
+                // Force delete openings with their stocks
+                $item->openings()->with('stock')->each(function ($opening) {
+                    if ($opening->stock) {
+                        $opening->stock->forceDelete();
+                    }
+                    $opening->forceDelete();
+                });
+    
+                // Force delete opening transactions with their related models
+                $item->openingTransactions()->with(['inventoryTransaction', 'openingBalanceTransaction'])->each(function ($openingTransaction) {
+                    if ($openingTransaction->inventoryTransaction) {
+                        $openingTransaction->inventoryTransaction->forceDelete();
+                    }
+                    if ($openingTransaction->openingBalanceTransaction) {
+                        $openingTransaction->openingBalanceTransaction->forceDelete();
+                    }
+                    $openingTransaction->forceDelete();
+                });
+    
+                // Finally force delete the main item
+                $item->forceDelete();
+            });
+    
+            return redirect()->route('items.index')->with('success', 'Item permanently deleted successfully.');
+    
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            \Log::error('Error force deleting item: ' . $e->getMessage(), [
+                'item_id' => $item->id,
+                'exception' => $e
+            ]);
+    
+            return redirect()->back()->with('error', 'Failed to permanently delete item. Please try again.');
+        }
     }
 }
