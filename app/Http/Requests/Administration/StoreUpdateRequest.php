@@ -20,7 +20,7 @@ class StoreUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('stores')->ignore($this->route('store'))],
+            'name' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('stores')->ignore($this->route('store'))->whereNull('deleted_at')],
             'address' => ['nullable', 'string'],
             'is_main' => ['nullable', 'boolean'],
         ];

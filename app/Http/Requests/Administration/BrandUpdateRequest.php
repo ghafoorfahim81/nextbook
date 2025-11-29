@@ -14,7 +14,7 @@ class BrandUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', Rule::unique('brands')->ignore($this->route('brand'))],
+            'name' => ['required', 'string', Rule::unique('brands')->ignore($this->route('brand'))->whereNull('deleted_at')],
             'legal_name' => ['nullable', 'string'],
             'registration_number' => ['nullable', 'string'],
             'logo' => ['nullable', 'string'],

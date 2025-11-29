@@ -14,7 +14,7 @@ class BrandStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:brands,name'],
+            'name' => ['required', 'string', 'unique:brands,name,NULL,id,deleted_at,NULL'],
             'legal_name' => ['nullable', 'string'],
             'registration_number' => ['nullable', 'string'],
             'logo' => ['nullable', 'string'],

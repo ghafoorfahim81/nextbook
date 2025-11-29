@@ -15,7 +15,7 @@ class UserStoreRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:users,email', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email,NULL,id,deleted_at,NULL', 'max:255'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'branch_id' => ['nullable', 'string', 'exists:branches,id'],
             'company_id' => ['nullable', 'string', 'exists:companies,id'],

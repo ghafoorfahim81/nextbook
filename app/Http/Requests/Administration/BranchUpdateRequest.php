@@ -20,7 +20,7 @@ class BranchUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string'],
+            'name' => ['required', 'string' , \Illuminate\Validation\Rule::unique('branches')->ignore($this->route('branch'))->whereNull('deleted_at')],
             'is_main' => ['nullable', 'boolean'],
             'parent_id' => ['nullable', 'string', 'exists:branches,id'],
             'location' => ['nullable', 'string'],
