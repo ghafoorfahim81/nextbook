@@ -16,10 +16,7 @@ class CompanySeeder extends Seeder
      * Run the database seeds.
      */
     public function run(): void
-    {
-         $currency = Currency::where('code', 'AFN')->first();
-         $currency->is_base_currency = true;
-         $currency->save();
+    { 
         $company = Company::create([
             'id' => (string) new Ulid(),
             'name_en' => 'NextBook',
@@ -35,7 +32,7 @@ class CompanySeeder extends Seeder
             'locale' => Locale::EN,
             'working_style' => WorkingStyle::NORMAL,
             'business_type' => BusinessType::PHARMACY_SHOP,
-            'currency_id' => $currency->id,
+            'currency_id' => Currency::where('is_base_currency', true)->first()->id,
         ]);
         $user = \App\Models\User::where('name', 'admin')->first();
         if ($user) {
