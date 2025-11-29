@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('branches', function (Blueprint $table) {
             $table->char('id', 26)->primary();
-            $table->string('name')->unique();
+            $table->string('name');
             $table->text('remark')->nullable();
             $table->string('location')->nullable();
             $table->boolean('is_main')->default(false);
@@ -24,6 +24,7 @@ return new class extends Migration
             $table->char('deleted_by', 26)->nullable();
             $table->softDeletes();
             $table->timestamps();
+            $table->unique(['name', 'deleted_at']);
         });
 
         Schema::enableForeignKeyConstraints();

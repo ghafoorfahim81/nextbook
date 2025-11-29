@@ -20,7 +20,7 @@ class DepartmentStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:departments,name'],
+            'name' => ['required', 'string', 'unique:departments,name,NULL,id,deleted_at,NULL'],
             'remark' => ['nullable', 'string'],
             'parent_id' => ['nullable', 'exists:departments,id'],
             'created_by' => ['required'],

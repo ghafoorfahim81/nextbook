@@ -20,7 +20,7 @@ class BranchStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:branches,name'],
+            'name' => ['required', 'string', 'unique:branches,name,NULL,id,deleted_at,NULL'],
             'is_main' => ['nullable', 'boolean'],
             'parent_id' => ['nullable', 'string', 'exists:branches,id'],
             'location' => ['nullable', 'string'],

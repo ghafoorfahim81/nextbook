@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('account_types', function (Blueprint $table) {
             $table->char('id', 26)->primary();
             $table->string('name')->index();
-            $table->string('slug')->unique();
+            $table->string('slug')->unique()->nullable();
             $table->text('remark')->nullable();
             $table->boolean('is_main')->default(false);
             $table->char('created_by', 26);

@@ -20,14 +20,14 @@ class CurrencyUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
-            'code' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
-            'symbol' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
-            'format' => ['nullable', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
+            'name' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))->whereNull('deleted_at')],
+            'code' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))->whereNull('deleted_at')],
+            'symbol' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))->whereNull('deleted_at')],
+            'format' => ['nullable', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))->whereNull('deleted_at')],
             'exchange_rate' => ['nullable', 'numeric'],
             'is_active' => ['nullable', 'boolean'],
             'is_base_currency' => ['nullable', 'boolean'],
-            'flag' => ['nullable', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))],
+            'flag' => ['nullable', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))->whereNull('deleted_at')],
         ];
     }
 }
