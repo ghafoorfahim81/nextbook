@@ -17,7 +17,7 @@ use App\Models\Administration\Brand;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Store;
 use App\Http\Resources\Ledger\LedgerResource;
-use App\Http\Resources\UserManagement\RoleResource; 
+use App\Http\Resources\UserManagement\RoleResource;
 use App\Models\Role;
 use App\Models\Ledger\Ledger;
 use Illuminate\Http\Request;
@@ -58,8 +58,6 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $cacheDuration = 60 * 60;
-
-
 
         $categories = Cache::remember(
             'categories',
@@ -218,7 +216,12 @@ class HandleInertiaRequests extends Middleware
 
         $roles = Cache::rememberForever('roles', function () {
             return Role::latest()->take(10)->get();
-        }); 
+        });
+
+        $user_preferences  = Cache::rememberForever('user_preferences', function () use($request) {
+            return $request->user()?->preferences;
+        });
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -249,6 +252,7 @@ class HandleInertiaRequests extends Middleware
             'capitalAccounts' => $capitalAccounts,
             'drawingAccounts' => $drawingAccounts,
             'roles' => $roles,
+            'user_preferences' => $user_preferences,
         ];
     }
 }

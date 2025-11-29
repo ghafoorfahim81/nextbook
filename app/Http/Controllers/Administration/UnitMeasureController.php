@@ -99,6 +99,7 @@ class UnitMeasureController extends Controller
 
             // Create the measure (duplicate checking is handled by form request validation)
             $metric->measures()->create(attributes: $measureData);
+            
 
             DB::commit();
             return redirect()->route('unit-measures.index')->with('success', 'Unit measure created successfully.');

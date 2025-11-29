@@ -301,6 +301,10 @@ const receiptPaymentFields = [
                                     </div>
                                 </div>
                             </div>
+                            <div class="space-y-2 mt-3">
+                                <Label>{{ t('settings.tax_currency.spec_text') }}</Label>
+                                <Input v-model="form.item_management.spec_text" rows="3" />
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -664,10 +668,7 @@ const receiptPaymentFields = [
                                     <Label>{{ t('settings.tax_currency.multi_currency_opening') }}</Label>
                                 </div>
                             </div>
-                            <div class="space-y-2">
-                                <Label>{{ t('settings.tax_currency.spec_text') }}</Label>
-                                <Textarea v-model="form.tax_currency.spec_text" rows="3" />
-                            </div>
+
                         </CardContent>
                     </Card>
 
