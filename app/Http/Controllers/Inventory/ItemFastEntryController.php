@@ -11,9 +11,10 @@ use App\Models\Inventory\StockOpening;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
-
+use App\Models\Inventory\ItemOpeningTransaction;
 class ItemFastEntryController extends Controller
 {
 
@@ -57,6 +58,7 @@ class ItemFastEntryController extends Controller
                     $dateConversionService = app(\App\Services\DateConversionService::class);
                     $expire_date = $dateConversionService->toGregorian($r['expire_date']);
                     $date = $dateConversionService->toGregorian($r['date'] ?? Carbon::now()->toDateString());
+                    $transactionService = app(\App\Services\TransactionService::class);
                     $stockService = app(\App\Services\StockService::class);
                     $stock = $stockService->addStock([
                         'item_id' => $item->id,
@@ -77,6 +79,44 @@ class ItemFastEntryController extends Controller
                         'item_id'  => $item->id,
                         'stock_id' => $stock->id,
                     ]);
+
+                    $cost = (float)($r['purchase_price'] ?? 0);
+                    $amount = (float)($r['quantity'] ?? 0);
+                    $glAccounts      = Cache::get('gl_accounts');
+                    $homeCurrency = Cache::get('home_currency');
+                    $inventoryTransaction = $transactionService->createTransaction([
+                        'account_id' => $glAccounts['inventory-asset'],
+                        'ledger_id' =>  null,
+                        'amount' => $cost*$amount,
+                        'currency_id' => $homeCurrency->id,
+                        'rate' => 1,
+                        'date' => $date,
+                        'type' => 'debit',
+                        'remark' => 'Opening balance for item ' . $item->name . ' in store ' . $r['store_id'],
+                        'reference_type' => Item::class,
+                        'reference_id' => $item->id,
+                    ]);
+                    $openingBalanceTransaction = $transactionService->createTransaction([
+                        'account_id' => $glAccounts['opening-balance-equity'],
+                        'ledger_id' =>  null,
+                        'amount' => $cost*$amount,
+                        'currency_id' => $homeCurrency->id,
+                        'rate' => 1,
+                        'date' => $date,
+                        'type' => 'credit',
+                        'remark' => 'Opening balance for item ' . $item->name . ' in store ' . $r['store_id'],
+                        'reference_type' => Item::class,
+                        'reference_id' => $item->id,
+                    ]);
+                    ItemOpeningTransaction::create([
+                        'id' => (string) Str::ulid(),
+                        'item_id' => $item->id,
+                        'inventory_transaction_id' => $inventoryTransaction->id,
+                        'opening_balance_transaction_id' => $openingBalanceTransaction->id, 
+                    ]);
+
+
+
                 }
             });
         });
