@@ -8,9 +8,10 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Inventory\StockOut;
+use App\Traits\HasUserAuditable;
 class Stock extends Model
 {
-    use HasUlids, SoftDeletes;
+    use HasUlids, SoftDeletes, HasUserAuditable;
     protected $table = 'stocks';
     protected $primaryKey = 'id';
     protected $keyType = 'string';

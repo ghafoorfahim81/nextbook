@@ -29,14 +29,11 @@ trait HasUserAuditable
         static::updating(function ($model) use ($firstUser) {
             $model->updated_by =  $firstUser->id;
         });
-
-        // Only register soft delete events if the model uses SoftDeletes
-        if (method_exists(static::class, 'bootSoftDeletes')) {
+        if (in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive(static::class))) {
             static::deleting(function ($model) use ($firstUser) {
                 $model->deleted_by = $firstUser->id;
                 $model->save();
             });
-
             static::restoring(function ($model) {
                 $model->deleted_by = null;
             });
