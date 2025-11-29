@@ -41,6 +41,11 @@ class ItemUpdateRequest extends FormRequest
             'rate_c' => ['nullable', 'numeric'],
             'rack_no' => ['nullable', 'string'],
             'fast_search' => ['nullable', 'string'],
+            'openings' => ['nullable', 'array'],
+            'openings.*.batch' => ['nullable', 'string'],
+            'openings.*.expire_date' => ['nullable', 'date'],
+            'openings.*.quantity' => ['nullable', 'numeric'],
+            'openings.*.store_id' => ['nullable', 'string', 'exists:stores,id'],
         ];
     }
 }

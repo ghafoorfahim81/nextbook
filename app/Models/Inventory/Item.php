@@ -141,6 +141,10 @@ class Item extends Model
     {
         return $this->hasMany(StockOut::class);
     }
+    public function openingTransactions()
+    {
+        return $this->hasMany(ItemOpeningTransaction::class, 'item_id', 'id');
+    }
 
     // public function inRecords()
     // {

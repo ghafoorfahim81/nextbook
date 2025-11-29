@@ -9,6 +9,7 @@ use App\Enums\BusinessType;
 use App\Enums\Locale;
 use App\Enums\WorkingStyle;
 use Symfony\Component\Uid\Ulid;
+use App\Models\Administration\Currency;
 class CompanySeeder extends Seeder
 {
     /**
@@ -16,6 +17,9 @@ class CompanySeeder extends Seeder
      */
     public function run(): void
     {
+         $currency = Currency::where('code', 'AFN')->first();
+         $currency->is_base_currency = true;
+         $currency->save();
         $company = Company::create([
             'id' => (string) new Ulid(),
             'name_en' => 'NextBook',
@@ -31,6 +35,7 @@ class CompanySeeder extends Seeder
             'locale' => Locale::EN,
             'working_style' => WorkingStyle::NORMAL,
             'business_type' => BusinessType::PHARMACY_SHOP,
+            'currency_id' => $currency->id,
         ]);
         $user = \App\Models\User::where('name', 'admin')->first();
         if ($user) {

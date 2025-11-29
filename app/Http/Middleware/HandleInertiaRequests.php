@@ -196,7 +196,8 @@ class HandleInertiaRequests extends Middleware
                 'accounts-receivable',
                 'cash-in-hand',
                 'cost-of-goods-sold',
-                'inventory-asset'
+                'inventory-asset',
+                'opening-balance-equity',
             ])->pluck('id', 'slug');
         });
 
@@ -220,6 +221,9 @@ class HandleInertiaRequests extends Middleware
 
         $user_preferences  = Cache::rememberForever('user_preferences', function () use($request) {
             return $request->user()?->preferences;
+        });
+        $homeCurrency = Cache::rememberForever('home_currency', function () {
+            return Currency::where('is_base_currency', true)->first();
         });
 
         return [
@@ -253,6 +257,7 @@ class HandleInertiaRequests extends Middleware
             'drawingAccounts' => $drawingAccounts,
             'roles' => $roles,
             'user_preferences' => $user_preferences,
+            'homeCurrency' => $homeCurrency,
         ];
     }
 }

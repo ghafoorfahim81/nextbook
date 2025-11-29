@@ -267,6 +267,8 @@ class TransactionService
             'date' => 'required|date',
             'type' => 'required|string',
             'remark' => 'nullable|string',
+            'reference_type' => 'nullable|string',
+            'reference_id' => 'nullable|string',
         ])->validate();
     }
 }
