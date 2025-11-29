@@ -23,6 +23,7 @@ class CurrencySeeder extends Seeder
                 'exchange_rate' => 0.00,
                 'flag'     => 'af.png',
                 'is_active' => true,
+                'is_base_currency' => true,
                 'branch_id' => $branch->id,
             ],
             'USD' => [
