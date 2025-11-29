@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Http\Controllers\Settings;
+namespace App\Http\Controllers\Preferences;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Settings\UpdateSettingsRequest;
+use App\Http\Requests\Preferences\UpdatePreferencesRequest;
 use App\Models\Account\Account;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Cache;
-class SettingsController extends Controller
+class PreferencesController extends Controller
 {
     public function index(Request $request)
     {
@@ -22,7 +22,7 @@ class SettingsController extends Controller
             ->orderBy('name')
             ->get();
 
-        return Inertia::render('Settings/Index', [
+        return Inertia::render('Preferences/Index', [
             'preferences' => $preferences,
             'defaultPreferences' => User::DEFAULT_PREFERENCES,
             'cashAccounts' => $cashAccounts,
@@ -31,7 +31,7 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function update(UpdateSettingsRequest $request)
+    public function update(UpdatePreferencesRequest $request)
     {
         $user = $request->user();
         $validated = $request->validated();
@@ -42,28 +42,28 @@ class SettingsController extends Controller
 
         $user->update(['preferences' => $newPreferences]);
         Cache::forget('user_preferences');
-        return redirect()->back()->with('success', __('settings.settings_saved'));
+        return redirect()->back()->with('success', __('preferences.preferences_saved'));
     }
 
-    public function reset(Request $request, ?string $category = null)
+    public function resetPreferences(Request $request, ?string $category = null)
     {
         $user = $request->user();
         $user->resetPreferences($category)->save();
         Cache::forget('user_preferences');
-        return redirect()->back()->with('success', __('settings.settings_reset'));
+        return redirect()->back()->with('success', __('preferences.preferences_reset'));
     }
 
-    public function export(Request $request)
+    public function exportPreferences(Request $request)
     {
         $user = $request->user();
         $preferences = $user->getAllPreferences();
 
         return response()->json($preferences)
-            ->header('Content-Disposition', 'attachment; filename="settings.json"')
+            ->header('Content-Disposition', 'attachment; filename="preferences.json"')
             ->header('Content-Type', 'application/json');
     }
 
-    public function import(Request $request)
+    public function importPreferences(Request $request)
     {
         $request->validate([
             'file' => 'required|file|mimes:json|max:1024',
@@ -73,7 +73,7 @@ class SettingsController extends Controller
         $preferences = json_decode($content, true);
 
         if (!is_array($preferences)) {
-            return redirect()->back()->with('error', __('settings.invalid_settings_file'));
+            return redirect()->back()->with('error', __('preferences.invalid_preferences_file'));
         }
 
         $user = $request->user();

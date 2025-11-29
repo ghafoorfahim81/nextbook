@@ -280,8 +280,8 @@ const navMain = computed(() => [
         ],
     },
     {
-        title: t('sidebar.main.settings'),
-        url: '/settings',
+        title: t('sidebar.main.preferences'),
+        url: '/preferences',
         icon: Cog,
     },
 ])

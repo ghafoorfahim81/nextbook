@@ -124,10 +124,10 @@ Route::middleware([
     Route::patch('/roles/{role}/restore', [\App\Http\Controllers\UserManagement\RoleController::class, 'restore'])->name('roles.restore')->withTrashed();
 
     // Settings
-    Route::get('/settings', [\App\Http\Controllers\Settings\SettingsController::class, 'index'])->name('settings.index');
-    Route::put('/settings', [\App\Http\Controllers\Settings\SettingsController::class, 'update'])->name('settings.update');
-    Route::post('/settings/reset/{category?}', [\App\Http\Controllers\Settings\SettingsController::class, 'reset'])->name('settings.reset');
-    Route::get('/settings/export', [\App\Http\Controllers\Settings\SettingsController::class, 'export'])->name('settings.export');
-    Route::post('/settings/import', [\App\Http\Controllers\Settings\SettingsController::class, 'import'])->name('settings.import');
+    Route::get('/preferences', [\App\Http\Controllers\Preferences\PreferencesController::class, 'index'])->name('preferences.index');
+    Route::put('/preferences', [\App\Http\Controllers\Preferences\PreferencesController::class, 'update'])->name('preferences.update');
+    Route::post('/preferences/reset/{category?}', [\App\Http\Controllers\Preferences\PreferencesController::class, 'reset'])->name('preferences.reset');
+    Route::get('/preferences/export', [\App\Http\Controllers\Preferences\PreferencesController::class, 'export'])->name('preferences.export');
+    Route::post('/preferences/import', [\App\Http\Controllers\Preferences\PreferencesController::class, 'import'])->name('preferences.import');
 
 });

@@ -14,7 +14,7 @@
     "payment": "Payment",
     "transfer": "Account Transfers",
     "user_management": "User Management",
-    "settings": "Settings"
+    "preferences": "Preferences"
   },
   "administration": {
     "category": "Category",

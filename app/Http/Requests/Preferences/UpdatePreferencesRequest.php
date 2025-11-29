@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Requests\Settings;
+namespace App\Http\Requests\Preferences;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class UpdateSettingsRequest extends FormRequest
+    class UpdatePreferencesRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -28,7 +28,7 @@ class UpdateSettingsRequest extends FormRequest
             'item_management.visible_fields.*' => 'sometimes|boolean',
             'item_management.spec_text' => 'sometimes|nullable|string|max:500',
 
-            // Sales Settings
+            // Sales Preferences    
             'sales' => 'sometimes|array',
             'sales.general_fields' => 'sometimes|array',
             'sales.general_fields.*' => 'sometimes|boolean',
@@ -69,7 +69,7 @@ class UpdateSettingsRequest extends FormRequest
             'sales_quotation.invoice_prefix' => 'sometimes|string|max:20',
             'sales_quotation.start_number' => 'sometimes|integer|min:1',
 
-            // Purchase Settings
+            // Purchase Preferences
             'purchases' => 'sometimes|array',
             'purchases.general_fields' => 'sometimes|array',
             'purchases.general_fields.*' => 'sometimes|boolean',
@@ -115,13 +115,13 @@ class UpdateSettingsRequest extends FormRequest
             'receipt_payment.require_approval' => 'sometimes|boolean',
             'receipt_payment.lock_after_days' => 'sometimes|integer|min:0|max:365',
 
-            // Tax & Currency
+            // Tax & Currency Preferences
             'tax_currency' => 'sometimes|array',
             'tax_currency.tax_plus' => 'sometimes|boolean',
             'tax_currency.tax_minus' => 'sometimes|boolean',
             'tax_currency.multi_currency_opening' => 'sometimes|boolean',
 
-            // Notifications
+            // Notifications Preferences
             'notifications' => 'sometimes|array',
             'notifications.email_notifications' => 'sometimes|boolean',
             'notifications.low_balance_alert' => 'sometimes|boolean',
@@ -130,7 +130,7 @@ class UpdateSettingsRequest extends FormRequest
             'notifications.daily_summary_report' => 'sometimes|boolean',
             'notifications.weekly_financial_summary' => 'sometimes|boolean',
 
-            // Security
+            // Security Preferences
             'security' => 'sometimes|array',
             'security.session_timeout' => 'sometimes|integer|min:5|max:1440',
             'security.password_min_length' => 'sometimes|integer|min:6|max:32',
@@ -140,7 +140,7 @@ class UpdateSettingsRequest extends FormRequest
             'security.lock_reports' => 'sometimes|boolean',
             'security.lock_password' => 'sometimes|nullable|string|max:100',
 
-            // Backup
+            // Backup Preferences
             'backup' => 'sometimes|array',
             'backup.auto_backup' => 'sometimes|in:none,daily,weekly,monthly',
             'backup.backup_retention_days' => 'sometimes|integer|min:1|max:365',
@@ -150,7 +150,7 @@ class UpdateSettingsRequest extends FormRequest
             'backup.export_excel' => 'sometimes|boolean',
             'backup.export_csv' => 'sometimes|boolean',
 
-            // Localization
+            // Localization Preferences
             'localization' => 'sometimes|array',
             'localization.language' => 'sometimes|in:en,fa,ps',
             'localization.date_format' => 'sometimes|in:Y-m-d,d/m/Y,m/d/Y,d-m-Y',
