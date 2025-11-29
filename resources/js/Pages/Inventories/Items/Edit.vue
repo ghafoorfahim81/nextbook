@@ -73,7 +73,7 @@ const normalize = () => {
         quantity: toNum(o.quantity),
         expire_date: o.expire_date || null,
         batch: o.batch || null,
-        store_id: o.store_id || null,
+        store_id: o.selected_store ? o.selected_store.id : null,
     }))
 }
 
@@ -90,8 +90,10 @@ const handleSelectChange = (field, value) => {
 };
 
 const handleOpeningSelectChange = (index, value) => {
+    console.log('value', value);
     form.openings[index].selected_store = value;
     form.openings[index].store_id = value ? value.id : null;
+    console.log('form.openings', form.openings);
 };
 
 </script>
@@ -179,13 +181,14 @@ const handleOpeningSelectChange = (index, value) => {
                                 :options="stores"
                                 label-key="name"
                                 value-key="id"
+                                :reduce="store => store"
                                 id="store"
                                 :floating-text="t('admin.store.store')"
                                 :error="form.errors[`openings.${index}.store_id`]"
                                 :searchable="true"
                                 resource-type="stores"
                                 :search-fields="['name', 'address']"
-                            />
+                            /> 
                         </div>
                     </div>
                 </div>

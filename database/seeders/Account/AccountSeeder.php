@@ -58,12 +58,12 @@ class AccountSeeder extends Seeder
                 'is_main' => true,
             ],
             [
-                'name' => 'opening balance equity',
+                'name' => 'Opening Balance Equity',
                 'number' => 'OBE-005',
                 'account_type_id' => AccountType::where('slug', 'equity')->first()->id,
                 'slug' => 'opening-balance-equity',
                 'branch_id' => $mainBranch->id,
-                'remark' => 'opening balance equity Account',
+                'remark' => 'Opening Balance Equity Account',
                 'is_main' => true,
             ],
             [

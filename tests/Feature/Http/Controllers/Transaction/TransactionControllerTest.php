@@ -44,7 +44,8 @@ final class TransactionControllerTest extends TestCase
     #[Test]
     public function store_saves(): void
     {
-        $transactionable = fake()->word();
+        $reference_type = fake()->word();
+        $reference_id = (string) \Illuminate\Support\Str::ulid();
         $amount = fake()->randomFloat(/** float_attributes **/);
         $currency = Currency::factory()->create();
         $rate = fake()->randomFloat(/** float_attributes **/);
@@ -53,7 +54,8 @@ final class TransactionControllerTest extends TestCase
         $created_by = CreatedBy::factory()->create();
 
         $response = $this->post(route('transactions.store'), [
-            'transactionable' => $transactionable,
+            'reference_type' => $reference_type,
+            'reference_id' => $reference_id,
             'amount' => $amount,
             'currency_id' => $currency->id,
             'rate' => $rate,
@@ -63,7 +65,8 @@ final class TransactionControllerTest extends TestCase
         ]);
 
         $transactions = Transaction::query()
-            ->where('transactionable', $transactionable)
+            ->where('reference_type', $reference_type)
+            ->where('reference_id', $reference_id)
             ->where('amount', $amount)
             ->where('currency_id', $currency->id)
             ->where('rate', $rate)
@@ -105,7 +108,8 @@ final class TransactionControllerTest extends TestCase
     public function update_behaves_as_expected(): void
     {
         $transaction = Transaction::factory()->create();
-        $transactionable = fake()->word();
+        $reference_type = fake()->word();
+        $reference_id = (string) \Illuminate\Support\Str::ulid();
         $amount = fake()->randomFloat(/** float_attributes **/);
         $currency = Currency::factory()->create();
         $rate = fake()->randomFloat(/** float_attributes **/);
@@ -114,7 +118,8 @@ final class TransactionControllerTest extends TestCase
         $created_by = CreatedBy::factory()->create();
 
         $response = $this->put(route('transactions.update', $transaction), [
-            'transactionable' => $transactionable,
+            'reference_type' => $reference_type,
+            'reference_id' => $reference_id,
             'amount' => $amount,
             'currency_id' => $currency->id,
             'rate' => $rate,
@@ -128,7 +133,8 @@ final class TransactionControllerTest extends TestCase
         $response->assertOk();
         $response->assertJsonStructure([]);
 
-        $this->assertEquals($transactionable, $transaction->transactionable);
+        $this->assertEquals($reference_type, $transaction->reference_type);
+        $this->assertEquals($reference_id, $transaction->reference_id);
         $this->assertEquals($amount, $transaction->amount);
         $this->assertEquals($currency->id, $transaction->currency_id);
         $this->assertEquals($rate, $transaction->rate);

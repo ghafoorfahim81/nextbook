@@ -20,13 +20,14 @@ class TransactionStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'transactionable' => ['required', 'string'],
+            'reference_type' => ['nullable', 'string'],
+            'reference_id' => ['nullable', 'string'],
             'amount' => ['required', 'numeric'],
-            'account_id' => ['required', 'integer', 'exists:accounts,id'],
-            'currency_id' => ['required', 'integer', 'exists:currencies,id'],
+            'account_id' => ['required', 'string', 'exists:accounts,id'],
+            'currency_id' => ['required', 'string', 'exists:currencies,id'],
             'rate' => ['required', 'numeric'],
             'date' => ['required', 'date'],
-            'ledger_id' => ['nullable', 'integer', 'exists:ledgers,id'],
+            'ledger_id' => ['nullable', 'string', 'exists:ledgers,id'],
             'type' => ['required', 'string'],
             'remark' => ['nullable', 'string'],
             'created_by' => ['required'],

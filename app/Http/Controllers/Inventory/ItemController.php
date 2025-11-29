@@ -10,6 +10,7 @@ use App\Models\Inventory\Item;
 use App\Models\Inventory\Stock;
 use App\Models\Inventory\StockOpening;
 use App\Models\Inventory\StockOut;
+use App\Models\Transaction\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,8 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Resources\Inventory\StockResource;
 use App\Http\Resources\Inventory\StockOutResource;
+use App\Models\Account\Account;
+use App\Models\Inventory\ItemOpeningTransaction;
 class ItemController extends Controller
 {
     public function index(Request $request)
@@ -48,6 +51,7 @@ class ItemController extends Controller
     }
     public function store(ItemStoreRequest $request)
     {
+  
         $validated = $request->validated();
         // dd($request->all());
         // If you're uploading a photo here, handle it first (optional)
@@ -60,24 +64,25 @@ class ItemController extends Controller
             // 1) Create item
             $item = Item::create($validated);
             // 2) Create opening stocks (if any)
-            $openings = collect($request->input('openings', []));
+            $openings = collect($validated['openings'] ?? []);
             $dateConversionService = app(\App\Services\DateConversionService::class);
+            $transactionService = app(\App\Services\TransactionService::class);
+            $date = $dateConversionService->toGregorian(Carbon::now()->toDateString());
 
             $openings
                 ->filter(function ($o) {
                     return !empty($o['store_id']) && (float)($o['quantity'] ?? 0) > 0;
                 })
-                ->each(function ($o) use ($item, $request, $dateConversionService) {
+                ->each(function ($o) use ($item, $validated, $dateConversionService, $transactionService, $date) {
                     // pick cost source (fallback to purchase_price or cost on item form)
-                    $cost = (float)($request->input('cost') ?? $request->input('purchase_price') ?? 0);
-                    $expire_date = $dateConversionService->toGregorian($o['expire_date']);
-                    $date = $dateConversionService->toGregorian($o['date'] ?? Carbon::now()->toDateString());
+                    $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
+                    $expire_date = $o['expire_date'] ? $dateConversionService->toGregorian($o['expire_date']) : null;
                     // create stock
                     $stockService = app(\App\Services\StockService::class);
                     $stock = $stockService->addStock([
                         'item_id' => $item->id,
                         'store_id' => $o['store_id'],
-                        'unit_measure_id' => $request->input('unit_measure_id'), // from item form
+                        'unit_measure_id' => $validated['unit_measure_id'], // from item form
                         'quantity'        => (float) $o['quantity'],
                         'unit_price'      => $cost,
                         'free'            => isset($o['free']) ? (float) $o['free'] : null,
@@ -92,7 +97,49 @@ class ItemController extends Controller
                         'item_id' => $item->id,
                         'stock_id' => $stock->id,
                     ]);
+
                 });
+                // Create opening transactions
+                if ($openings->count() > 0) {
+                    $glAccounts      = Cache::get('gl_accounts');
+                    $homeCurrency = Cache::get('home_currency');
+                    $amount = $openings->sum(function ($o) {
+                        return (float)($o['quantity'] ?? 0);
+                    });
+                    $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
+                    $inventoryTransaction = $transactionService->createTransaction([
+                        'account_id' => $glAccounts['inventory-asset'],
+                        'ledger_id' =>  null,
+                        'amount' => $cost*$amount,
+                        'currency_id' => $homeCurrency->id,
+                        'rate' => 1,
+                        'date' => $date,
+                        'type' => 'debit',
+                        'remark' => 'Opening balance for item ' . $item->name,
+                        'reference_type' => Item::class,
+                        'reference_id' => $item->id,
+                    ]);
+                    $openingBalanceTransaction = $transactionService->createTransaction([
+                        'account_id' => $glAccounts['opening-balance-equity'],
+                        'ledger_id' =>  null,
+                        'amount' => $cost*$amount,
+                        'currency_id' => $homeCurrency->id,
+                        'rate' => 1,
+                        'date' => $date,
+                        'type' => 'credit',
+                        'remark' => 'Opening balance for item ' . $item->name,
+                        'reference_type' => Item::class,
+                        'reference_id' => $item->id,
+                    ]);
+                    ItemOpeningTransaction::create([
+                        'id' => (string) Str::ulid(),
+                        'item_id' => $item->id,
+                        'inventory_transaction_id' => $inventoryTransaction->id,
+                        'opening_balance_transaction_id' => $openingBalanceTransaction->id,
+                        'created_by' => auth()->id(),
+                    ]);
+                }
+                
         });
         if ((bool) $request->input('stay') || (bool) $request->input('create_and_new')) {
             return redirect()->route('items.create')->with('success', 'Item created successfully.');
@@ -153,21 +200,21 @@ class ItemController extends Controller
 
     public function update(ItemUpdateRequest $request, Item $item)
     {
-        $validated = $request->validated();
-
+        $validated = $request->validated(); 
         // Handle photo update
         if ($request->hasFile('photo')) {
             $path = $request->file('photo')->store('items', 'public');
             $validated['photo'] = $path;
-        }
-
-        DB::transaction(function () use ($validated, $request, $item) {
+        }  
+        DB::transaction(function () use ($validated, $item) {
             // 1) Update item
             $item->update($validated);
 
             // 2) Handle openings
-            $openings = collect($request->input('openings', []));
+            $openings = collect($validated['openings'] ?? []);
             $dateConversionService = app(\App\Services\DateConversionService::class);
+            $date =   $dateConversionService->toGregorian(Carbon::now()->toDateString());
+            $transactionService = app(\App\Services\TransactionService::class);
             // Remove old openings (optional: you may also soft-delete instead)
             $item->openings->each(function ($opening) {
                 $opening->forceDelete();
@@ -175,15 +222,15 @@ class ItemController extends Controller
             });
             $openings
                 ->filter(fn($o) => !empty($o['store_id']) && (float)($o['quantity'] ?? 0) > 0)
-                ->each(function ($o) use ($item, $request, $dateConversionService) {
-                    $cost = (float)($request->input('cost') ?? $request->input('purchase_price') ?? 0);
-                    $expire_date = $dateConversionService->toGregorian($o['expire_date']);
-                    $date = $dateConversionService->toGregorian($o['date'] ?? Carbon::now()->toDateString());
+                ->each(function ($o) use ($item, $validated, $dateConversionService, $date) {
+
+                    $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
+                    $expire_date = $o['expire_date'] ? $dateConversionService->toGregorian($o['expire_date']) : null;
                     $stockService = app(\App\Services\StockService::class);
                     $stock = $stockService->addStock([
                         'item_id' => $item->id,
                         'store_id' => $o['store_id'],
-                        'unit_measure_id' => $request->input('unit_measure_id'), // from item form
+                        'unit_measure_id' => $validated['unit_measure_id'], // from item form
                         'quantity'        => (float) $o['quantity'],
                         'unit_price'      => $cost,
                         'free'            => isset($o['free']) ? (float) $o['free'] : null,
@@ -198,6 +245,91 @@ class ItemController extends Controller
                         'stock_id' => $stock->id,
                     ]);
                 });
+
+                // Delete opening stocks
+                $filteredOpenings = $openings->filter(fn($o) => !empty($o['store_id']) && (float)($o['quantity'] ?? 0) > 0); 
+                if ($filteredOpenings->count() == 0 && $item->openings()->count() > 0) {
+                    $item->openings()->each(function ($opening) {
+                        $opening->forceDelete();
+                        $opening->stock->forceDelete();
+                    }); 
+
+                    // Delete opening transactions
+                    $item->openingTransactions()->each(function ($openingTransaction) {
+                        $inventoryTransactionId = $openingTransaction->inventory_transaction_id;
+                        $openingBalanceTransactionId = $openingTransaction->opening_balance_transaction_id;
+
+                        // Delete the opening transaction first to remove foreign key constraints
+                        $openingTransaction->forceDelete();
+
+                        // Then safely delete the related transactions
+                        if ($inventoryTransactionId) {
+                            Transaction::where('id', $inventoryTransactionId)->forceDelete();
+                        }
+                        if ($openingBalanceTransactionId) {
+                            Transaction::where('id', $openingBalanceTransactionId)->forceDelete();
+                        }
+                    });
+                } 
+                
+                $item->openingTransactions()->each(function ($openingTransaction) {
+                    // Store transaction IDs before deleting the opening transaction
+                    $inventoryTransactionId = $openingTransaction->inventory_transaction_id;
+                    $openingBalanceTransactionId = $openingTransaction->opening_balance_transaction_id;
+
+                    // Delete the opening transaction first to remove foreign key constraints
+                    $openingTransaction->forceDelete();
+
+                    // Then safely delete the related transactions
+                    if ($inventoryTransactionId) {
+                        Transaction::where('id', $inventoryTransactionId)->forceDelete();
+                    }
+                    if ($openingBalanceTransactionId) {
+                        Transaction::where('id', $openingBalanceTransactionId)->forceDelete();
+                    }
+                });
+
+                // Create opening transactions
+                if ($filteredOpenings->count() > 0) {
+                $glAccounts = Cache::get('gl_accounts');
+                $homeCurrency = Cache::get('home_currency');
+                $amount = $filteredOpenings->sum(function ($o) {
+                    return (float)($o['quantity'] ?? 0);
+                });
+                $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
+                $inventoryTransaction = $transactionService->createTransaction([
+                    'account_id' => $glAccounts['inventory-asset'],
+                    'ledger_id' =>  null,
+                    'amount' => $cost*$amount,
+                    'currency_id' => $homeCurrency->id,
+                    'rate' => 1,
+                    'date' => $date,
+                    'type' => 'debit',
+                    'remark' => 'Opening balance for item ' . $item->name,
+                    'reference_type' => Item::class,
+                    'reference_id' => $item->id,
+                ]);
+                $openingBalanceTransaction = $transactionService->createTransaction([
+                    'account_id' => $glAccounts['opening-balance-equity'],
+                    'ledger_id' =>  null,
+                    'amount' => $cost*$amount,
+                    'currency_id' => $homeCurrency->id,
+                    'rate' => 1,
+                    'date' => $date,
+                    'type' => 'credit',
+                    'remark' => 'Opening balance for item ' . $item->name,
+                    'reference_type' => Item::class,
+                    'reference_id' => $item->id,
+                ]);
+                ItemOpeningTransaction::create([
+                    'id' => (string) Str::ulid(),
+                    'item_id' => $item->id,
+                    'inventory_transaction_id' => $inventoryTransaction->id,
+                    'opening_balance_transaction_id' => $openingBalanceTransaction->id,
+                        'created_by' => auth()->id(),
+                    ]);
+                }
+
         });
 
         return redirect()->route('items.index')->with('success', 'Item updated successfully.');
