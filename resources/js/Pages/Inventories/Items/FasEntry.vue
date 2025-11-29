@@ -118,6 +118,18 @@ const normalize = () => {
             .filter(r => Object.values({ ...r, _key: undefined }).some(v => v !== '' && v !== null))
 }
 
+
+const notifySound = (type) => {
+    if(type === 'success') {
+        const sound = new Audio('/notify_sounds/filling-your-inbox.mp3');
+        sound.play().catch(error => console.error('Error playing sound:', error));
+    }
+    else {
+        const sound = new Audio('/notify_sounds/glass-breaking.mp3');
+        sound.play().catch(error => console.error('Error playing sound:', error));
+    }
+}
+
 const handleSubmit = () => {
     normalize()
 
@@ -126,17 +138,27 @@ const handleSubmit = () => {
         items: (data.items ?? []).map(({ _key, ...r }) => r)
     }))
 
+    const itemCount = form.items.length;
     form.post(route('item.fast.store'), {
         preserveScroll: true,
         // preserveState: true, // optional
         onSuccess: () => {
+            notifySound('success');
             toast({
                 title: t('general.success'),
                 variant: 'success',
-                description: t('general.create_success', { name: t('item.item') }),
+                description: itemCount + ' ' + t('item.items') + ' ' + t('general.created_successfully'),
             });
             form.reset('items')
         },
+        onError: () => {
+            notifySound('error');
+            toast({
+                title: t('general.error'),
+                variant: 'error',
+                description: t('general.create_error_message'),
+            });
+        }
 
     })
 }

@@ -19,7 +19,7 @@
   "info": "اطلاعات",
   "warning": "هشدار",
   "errors": "خطاها",
-  "error": "خطا",       
+  "error": "خطا",
   "success": "موفقیت",
   "date": "تاریخ",
   "list": "فهرست",
@@ -143,7 +143,12 @@
   "no_record_available": "رکوردی یافت نشد",
   "no_record_available_description": "هیچ رکوردی برای نمایش وجود ندارد. برای شروع اضافه کردن یک رکورد جدید.",
   "no_record_available_button": "افزودن رکورد جدید",
-  "no_record_available_button_description": "برای شروع اضافه کردن یک رکورد جدید."
+  "no_record_available_button_description": "برای شروع اضافه کردن یک رکورد جدید.",
+  "address": "آدرس",
+  "email": "ایمیل",
+  "active": "فعال",
+  "unit_price": "قیمت واحد",
+  "created_successfully": "موفقانه ثبت شد"
 }
 
 
