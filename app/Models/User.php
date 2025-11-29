@@ -48,10 +48,9 @@ class User extends Authenticatable
      */
     public const DEFAULT_PREFERENCES = [
         'appearance' => [
-            'font_size' => 14,
-            'theme' => 'system',
+            'font_size' => 14, 
             'decimal_places' => 2,
-            'sidebar_menus' => [],
+            'sidebar_menus' => ['dashboard', 'sales', 'purchases', 'ledger', 'owners', 'account', 'purchase', 'sale', 'receipt', 'payment', 'transfer', 'user_management', 'preferences'],
         ],
         'item_management' => [
             'visible_fields' => [
@@ -62,20 +61,20 @@ class User extends Authenticatable
                 'size' => false,
                 'brand' => true,
                 'minimum_stock' => true,
-                'maximum_stock' => false,
-                'file_upload' => false,
+                'maximum_stock' => true,
+                'file_upload' => true,
                 'rate_a' => true,
                 'rate_b' => false,
                 'rate_c' => false,
                 'barcode' => true,
                 'rack_no' => false,
-                'fast_search' => false,
+                'fast_search' => true,
             ],
             'spec_text' => '',
         ],
         'sales' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
-            'item_columns' => ['packing' => true, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => false, 'discount' => true, 'tax' => true, 'free' => false],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'store' => true],
+            'item_columns' => ['packing' => false, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => true, 'discount' => true, 'tax' => false, 'free' => false],
             'invoice_prefix' => 'INV-',
             'start_number' => 1,
             'terms' => '',
@@ -90,7 +89,7 @@ class User extends Authenticatable
         ],
         'sales_order' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
-            'item_columns' => ['packing' => true, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => false, 'discount' => true, 'tax' => true, 'free' => false],
+            'item_columns' => ['packing' => false, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => true, 'discount' => true, 'tax' => false, 'free' => false],
             'invoice_prefix' => 'SO-',
             'start_number' => 1,
             'terms' => '',
@@ -98,19 +97,19 @@ class User extends Authenticatable
         ],
         'sales_return' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
-            'item_columns' => ['packing' => true, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => false, 'discount' => true, 'tax' => true, 'free' => false],
+            'item_columns' => ['packing' => false, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => true, 'discount' => true, 'tax' => false, 'free' => false],
             'invoice_prefix' => 'SR-',
             'start_number' => 1,
         ],
         'sales_quotation' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
-            'item_columns' => ['packing' => true, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => false, 'discount' => true, 'tax' => true, 'free' => false],
+            'item_columns' => ['packing' => false, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => true, 'discount' => true, 'tax' => false, 'free' => false],
             'invoice_prefix' => 'SQ-',
             'start_number' => 1,
         ],
         'purchases' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
-            'item_columns' => ['packing' => true, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => false, 'discount' => true, 'tax' => true, 'free' => false],
+            'item_columns' => ['packing' => false, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => true, 'discount' => true, 'tax' => false, 'free' => false],
             'invoice_prefix' => 'PUR-',
             'start_number' => 1,
             'terms' => '',
@@ -123,19 +122,19 @@ class User extends Authenticatable
         ],
         'purchase_order' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
-            'item_columns' => ['packing' => true, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => false, 'discount' => true, 'tax' => true, 'free' => false],
+            'item_columns' => ['packing' => false, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => true, 'discount' => true, 'tax' => false, 'free' => false],
             'invoice_prefix' => 'PO-',
             'start_number' => 1,
         ],
         'purchase_return' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
-            'item_columns' => ['packing' => true, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => false, 'discount' => true, 'tax' => true, 'free' => false],
+            'item_columns' => ['packing' => false, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => true, 'discount' => true, 'tax' => false, 'free' => false],
             'invoice_prefix' => 'PR-',
             'start_number' => 1,
         ],
         'purchase_quotation' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
-            'item_columns' => ['packing' => true, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => false, 'discount' => true, 'tax' => true, 'free' => false],
+            'item_columns' => ['packing' => false, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => true, 'discount' => true, 'tax' => false, 'free' => false],
             'invoice_prefix' => 'PQ-',
             'start_number' => 1,
         ],
@@ -183,7 +182,7 @@ class User extends Authenticatable
             'time_format' => '24h',
             'timezone' => 'UTC',
             'number_format' => '1,000.00',
-            'first_day_of_week' => 'monday',
+            'first_day_of_week' => 'saturday',
         ],
         'display' => [
             'theme' => 'system',

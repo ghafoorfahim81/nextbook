@@ -465,7 +465,7 @@ const setCalendarLocaleStorage = (selected) => {
                         <!-- Company Settings Section -->
                         <div class="mb-8">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                                Company Settings
+                                Company Preferences
                             </h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>

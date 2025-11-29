@@ -163,7 +163,7 @@ const handleSelectChange = (field, value) => {
 
                             <!-- Settings -->
                             <div class="pt-6 mt-6 border-t border-gray-200">
-                                <h3 class="text-lg font-medium">{{ t('company.settings') }}</h3>
+                                <h3 class="text-lg font-medium">{{ t('company.preferences') }}</h3>
 
                                 <div class="grid grid-cols-1 gap-6 mt-4 md:grid-cols-3">
 
