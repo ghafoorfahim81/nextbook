@@ -3,12 +3,12 @@
 namespace App\Models;
 
 use App\Models\Administration\Company;
-// use Illuminate\Contracts\Auth\MustVerifyEmail; 
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Foundation\Auth\User as Authenticatable; 
-use Laravel\Fortify\TwoFactorAuthenticatable; 
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Fortify\TwoFactorAuthenticatable;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -17,13 +17,13 @@ use App\Traits\HasDependencyCheck;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 
 class User extends Authenticatable
-{ 
+{
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasDependencyCheck, SoftDeletes, HasRoles;
 
     use TwoFactorAuthenticatable;
 
-   
+
     /**
      * The attributes that are mass assignable.
      *
@@ -71,6 +71,7 @@ class User extends Authenticatable
                 'rack_no' => false,
                 'fast_search' => false,
             ],
+            'spec_text' => '',
         ],
         'sales' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
@@ -149,7 +150,6 @@ class User extends Authenticatable
             'tax_plus' => true,
             'tax_minus' => false,
             'multi_currency_opening' => false,
-            'spec_text' => '',
         ],
         'notifications' => [
             'email_notifications' => true,

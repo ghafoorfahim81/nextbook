@@ -26,6 +26,7 @@ class UpdateSettingsRequest extends FormRequest
             'item_management' => 'sometimes|array',
             'item_management.visible_fields' => 'sometimes|array',
             'item_management.visible_fields.*' => 'sometimes|boolean',
+            'item_management.spec_text' => 'sometimes|nullable|string|max:500',
 
             // Sales Settings
             'sales' => 'sometimes|array',
@@ -119,7 +120,6 @@ class UpdateSettingsRequest extends FormRequest
             'tax_currency.tax_plus' => 'sometimes|boolean',
             'tax_currency.tax_minus' => 'sometimes|boolean',
             'tax_currency.multi_currency_opening' => 'sometimes|boolean',
-            'tax_currency.spec_text' => 'sometimes|nullable|string|max:500',
 
             // Notifications
             'notifications' => 'sometimes|array',

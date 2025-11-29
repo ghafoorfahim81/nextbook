@@ -19,6 +19,7 @@ const props = defineProps({
     categories: { type: [Array, Object], required: true },
     brands: { type: [Array, Object], required: true },
     maxCode: { type: Number, required: true },
+    user_preferences: { type: Object, required: true },
 })
 
 // normalize lists whether they're paginated or not
@@ -40,7 +41,10 @@ const formatCode = (number) => {
     }
 }
 
-
+const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
+const visibleFields = computed(() => user_preferences.value.item_management.visible_fields ?? []).value
+const specText = computed(() => user_preferences.value.item_management.spec_text ?? '')
+console.log('ssss',visibleFields);
 
 const form = useForm({
     name: '',
@@ -173,12 +177,12 @@ const handleOpeningSelectChange = (index, value) => {
                     {{ t('general.create', { name: t('item.item') }) }}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name"  :placeholder="t('general.enter', { text: t('general.name') })" />
-                <NextInput :label="t('admin.currency.code')" disabled="true"  v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
-                <NextInput :label="t('item.generic_name')" v-model="form.generic_name" :error="form.errors?.generic_name" :placeholder="t('general.enter', { text: t('item.generic_name') })" />
-                <NextInput :label="t('item.packing')" v-model="form.packing" :error="form.errors?.packing" :placeholder="t('general.enter', { text: t('item.packing') })" />
-                <NextInput :label="t('item.colors')" v-model="form.colors" :error="form.errors?.colors" :placeholder="t('general.enter', { text: t('item.colors') })" />
-                <NextInput :label="t('item.size')" v-model="form.size" :error="form.errors?.size" :placeholder="t('general.enter', { text: t('item.size') })" />
+                <NextInput  :label="t('general.name')" v-model="form.name" :error="form.errors?.name"  :placeholder="t('general.enter', { text: t('general.name') })" />
+                <NextInput v-show="visibleFields.code" :label="t('admin.currency.code')" disabled="true"  v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
+                <NextInput v-show="visibleFields.generic_name" :label="t('item.generic_name')" v-model="form.generic_name" :error="form.errors?.generic_name" :placeholder="t('general.enter', { text: t('item.generic_name') })" />
+                <NextInput v-show="visibleFields.packing" :label="t('item.packing')" v-model="form.packing" :error="form.errors?.packing" :placeholder="t('general.enter', { text: t('item.packing') })" />
+                <NextInput v-show="visibleFields.colors" packing:label="t('item.colors')" v-model="form.colors" :error="form.errors?.colors" :placeholder="t('general.enter', { text: t('item.colors') })" />
+                <NextInput v-show="visibleFields.size" :label="t('item.size')" v-model="form.size" :error="form.errors?.size" :placeholder="t('general.enter', { text: t('item.size') })" />
                 <NextSelect
                     v-model="form.selected_unit_measure"
                     :options="unitMeasures"
@@ -211,6 +215,7 @@ const handleOpeningSelectChange = (index, value) => {
                     v-model="form.selected_brand"
                     @update:modelValue="(value) => handleSelectChange('brand_id', value)"
                     label-key="name"
+                    v-show="visibleFields.brand"
                     value-key="id"
                     id="brand"
                     :floating-text="t('admin.brand.brand')"
@@ -219,19 +224,19 @@ const handleOpeningSelectChange = (index, value) => {
                     :search-fields="['name', 'legal_name', 'registration_number', 'email', 'phone', 'website', 'industry', 'type', 'city', 'country']"
                     :error="form.errors.brand_id"
                 />
-                <NextInput :label="t('item.photo')" type="file"  @input="onPhotoChange" :error="form.errors?.photo" :placeholder="t('general.enter', { text: t('item.photo') })" />
+                <NextInput v-show="visibleFields.photo" :label="t('item.photo')" type="file"  @input="onPhotoChange" :error="form.errors?.photo" :placeholder="t('general.enter', { text: t('item.photo') })" />
 
-                <NextInput :label="t('item.minimum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.minimum_stock') })" v-model="form.minimum_stock" :error="form.errors?.minimum_stock" />
-                <NextInput :label="t('item.maximum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.maximum_stock') })" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
+                <NextInput v-show="visibleFields.minimum_stock" :label="t('item.minimum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.minimum_stock') })" v-model="form.minimum_stock" :error="form.errors?.minimum_stock" />
+                <NextInput v-show="visibleFields.maximum_stock" :label="t('item.maximum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.maximum_stock') })" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
                 <NextInput :label="t('item.purchase_price')" type="number" :placeholder="t('general.enter', { text: t('item.purchase_price') })" v-model="form.purchase_price" :error="form.errors?.purchase_price" />
                 <NextInput :label="t('item.cost')" type="number" v-model="form.cost" :error="form.errors?.cost" />
                 <NextInput :label="t('item.mrp_rate')" type="number" :placeholder="t('general.enter', { text: t('item.mrp_rate') })" v-model="form.mrp_rate" :error="form.errors?.mrp_rate" />
-                <NextInput :label="t('item.rate_a')" type="number" :placeholder="t('general.enter', { text: t('item.rate_a') })" v-model="form.rate_a" :error="form.errors?.rate_a" />
-                <NextInput :label="t('item.rate_b')" type="number" :placeholder="t('general.enter', { text: t('item.rate_b') })" v-model="form.rate_b" :error="form.errors?.rate_b" />
-                <NextInput :label="t('item.rate_c')" type="number" :placeholder="t('general.enter', { text: t('item.rate_c') })" v-model="form.rate_c" :error="form.errors?.rate_c" />
-                <NextInput :label="t('item.barcode')" v-model="form.barcode" :placeholder="t('general.enter', { text: t('item.barcode') })" :error="form.errors?.barcode" />
-                <NextInput :label="t('item.rack_no')" v-model="form.rack_no" :placeholder="t('general.enter', { text: t('item.rack_no') })" :error="form.errors?.rack_no" />
-                    <NextInput :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
+                <NextInput v-show="visibleFields.rate_a" :label="t('item.rate_a')" type="number" :placeholder="t('general.enter', { text: t('item.rate_a') })" v-model="form.rate_a" :error="form.errors?.rate_a" />
+                <NextInput v-show="visibleFields.rate_b" :label="t('item.rate_b')" type="number" :placeholder="t('general.enter', { text: t('item.rate_b') })" v-model="form.rate_b" :error="form.errors?.rate_b" />
+                <NextInput v-show="visibleFields.rate_c" :label="t('item.rate_c')" type="number" :placeholder="t('general.enter', { text: t('item.rate_c') })" v-model="form.rate_c" :error="form.errors?.rate_c" />
+                <NextInput v-show="visibleFields.barcode" :label="t('item.barcode')" v-model="form.barcode" :placeholder="t('general.enter', { text: t('item.barcode') })" :error="form.errors?.barcode" />
+                <NextInput v-show="visibleFields.rack_no" :label="t('item.rack_no')" v-model="form.rack_no" :placeholder="t('general.enter', { text: t('item.rack_no') })" :error="form.errors?.rack_no" />
+                    <NextInput v-show="visibleFields.fast_search" :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
                 </div>
 
                 <div class="md:col-span-3 mt-4">
@@ -242,7 +247,7 @@ const handleOpeningSelectChange = (index, value) => {
                             :key="index"
                             class="mt-3 grid grid-cols-1 md:grid-cols-4 gap-4 items-start"
                         >
-                            <NextInput :label="t('item.batch')" @click="addRow(index)" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
+                            <NextInput :label="specText?? t('item.batch')" @click="addRow(index)" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
                             <NextDate v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
                             <NextInput :label="t('item.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
                             <NextSelect

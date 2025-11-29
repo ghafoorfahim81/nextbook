@@ -90,7 +90,6 @@ const effectiveLocale = computed(() => {
     }
 
     const stored = typeof localStorage !== 'undefined' ? (localStorage.getItem('calendar_type') || '') : ''
-    console.log('Calendar type from localStorage:', stored, 'Effective locale will be:', stored === 'en' ? 'en' : 'fa')
 
     if (stored === 'en') return 'en'
     return 'fa' // Default to Persian (fa) for VuePersianDatetimePicker
