@@ -17,6 +17,17 @@ class CompanySeeder extends Seeder
      */
     public function run(): void
     { 
+        // Resolve base currency (prefer explicit base, fall back to first currency)
+        $currencyId = Currency::where('is_base_currency', true)->value('id');
+
+        if (!$currencyId) {
+            $currencyId = Currency::value('id');
+        }
+
+        if (!$currencyId) {
+            throw new \RuntimeException('No currencies found. Please run CurrencySeeder before CompanySeeder.');
+        }
+
         $company = Company::create([
             'id' => (string) new Ulid(),
             'name_en' => 'NextBook',
@@ -32,7 +43,7 @@ class CompanySeeder extends Seeder
             'locale' => Locale::EN,
             'working_style' => WorkingStyle::NORMAL,
             'business_type' => BusinessType::PHARMACY_SHOP,
-            'currency_id' => Currency::where('is_base_currency', true)->first()->id,
+            'currency_id' => $currencyId,
         ]);
         $user = \App\Models\User::where('name', 'admin')->first();
         if ($user) {
