@@ -53,6 +53,7 @@ class DatabaseSeeder extends Seeder
             $this->call(BranchSeeder::class);
             $this->call(UserSeeder::class);
             $this->call(StoreSeeder::class);
+            $this->call(CurrencySeeder::class);
             $this->call(UnitMeasureSeeder::class);
             $this->call(LedgerSeeder::class);
             $this->call(AccountTypeSeeder::class);
