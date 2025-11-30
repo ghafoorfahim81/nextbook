@@ -20,7 +20,7 @@ class CurrencySeeder extends Seeder
                 'name' => 'Afghanistan, Afghani',
                 'symbol' => '؋',
                 'format' => '؋1,0.00',
-                'exchange_rate' => 0.00,
+                'exchange_rate' => 1,
                 'flag'     => 'af.png',
                 'is_active' => true,
                 'is_base_currency' => true,

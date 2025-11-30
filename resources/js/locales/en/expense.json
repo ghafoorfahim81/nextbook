@@ -1,0 +1,19 @@
+{
+  "expense": "Expense",
+  "expenses": "Expenses",
+  "category": "Expense Category",
+  "categories": "Expense Categories",
+  "expense_account": "Expense Account",
+  "bank_account": "Bank/Cash Account",
+  "detail_lines": "Expense Details",
+  "title": "Title",
+  "enter_title": "Enter title",
+  "expense_details": "Expense Details",
+  "base_currency_total": "Base Currency Total",
+  "accounting_entries": "Accounting Entries",
+  "create_error": "Error creating expense",
+  "update_error": "Error updating expense",
+  "error": "Error",
+  "at_least_one_detail": "At least one expense detail is required"
+}
+

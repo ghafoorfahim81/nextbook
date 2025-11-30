@@ -130,4 +130,12 @@ Route::middleware([
     Route::get('/preferences/export', [\App\Http\Controllers\Preferences\PreferencesController::class, 'export'])->name('preferences.export');
     Route::post('/preferences/import', [\App\Http\Controllers\Preferences\PreferencesController::class, 'import'])->name('preferences.import');
 
+    // Expense Categories
+    Route::resource('/expense-categories', \App\Http\Controllers\Expense\ExpenseCategoryController::class);
+    Route::patch('/expense-categories/{expenseCategory}/restore', [\App\Http\Controllers\Expense\ExpenseCategoryController::class, 'restore'])->name('expense-categories.restore')->withTrashed();
+
+    // Expenses
+    Route::resource('/expenses', \App\Http\Controllers\Expense\ExpenseController::class);
+    Route::patch('/expenses/{expense}/restore', [\App\Http\Controllers\Expense\ExpenseController::class, 'restore'])->name('expenses.restore')->withTrashed();
+
 });

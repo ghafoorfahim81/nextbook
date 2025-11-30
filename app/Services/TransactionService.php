@@ -6,6 +6,7 @@ namespace App\Services;
 use App\Models\Transaction\Transaction;
 use App\Models\Purchase\Purchase;
 use App\Models\Sale\Sale;
+use App\Models\Expense\Expense;
 use App\Models\Ledger\Ledger;
 use Illuminate\Support\Facades\DB;
 use App\Models\Account\Account;
@@ -254,6 +255,72 @@ class TransactionService
     private function determinePurchaseType(string $purchaseType): string
     {
         // type mapping logic
+        return $purchaseType;
+    }
+
+    /**
+     * Create expense transactions (DR: Expense Account, CR: Bank/Cash Account)
+     * 
+     * @param Expense $expense The expense record
+     * @param float $total Total expense amount
+     * @param string $currencyId Currency ID
+     * @param float $rate Exchange rate
+     * @return array Array containing 'expense' and 'bank' transactions
+     */
+    public function createExpenseTransactions(Expense $expense, float $total, string $currencyId, float $rate, string $expenseAccountId, string $bankAccountId): array
+    {
+        return DB::transaction(function () use ($expense, $total, $currencyId, $rate, $expenseAccountId, $bankAccountId) {
+            // Transaction 1: DEBIT Expense Account (expense increases)
+            $expenseTransaction = $this->createTransaction([
+                'account_id' => $expenseAccountId,
+                'ledger_id' => null,
+                'amount' => $total*$rate,
+                'currency_id' => $currencyId,
+                'rate' => $rate,
+                'date' => $expense->date,
+                'type' => 'debit',
+                'remark' => "Expense: {$expense->category->name} - {$expense->remarks}",
+                'reference_type' => 'expense',
+                'reference_id' => $expense->id,
+            ]);
+
+            // Transaction 2: CREDIT Bank/Cash Account (money goes out)
+            $bankTransaction = $this->createTransaction([
+                'account_id' => $bankAccountId,
+                'ledger_id' => null,
+                'amount' => $total*$rate,
+                'currency_id' => $currencyId,
+                'rate' => $rate,
+                'date' => $expense->date,
+                'type' => 'credit',
+                'remark' => "Payment for expense: {$expense->category->name}",
+                'reference_type' => 'expense',
+                'reference_id' => $expense->id,
+            ]);
+
+            Cache::forget('accounts');
+
+            return [
+                'expense' => $expenseTransaction,
+                'bank' => $bankTransaction,
+            ];
+        });
+    }
+
+    /**
+     * Update expense transactions
+     */
+    public function updateExpenseTransactions(Expense $expense, float $total, string $currencyId, float $rate): array
+    {
+        return DB::transaction(function () use ($expense, $total, $currencyId, $rate) {
+            // Delete existing transactions
+            Transaction::where('reference_type', 'expense')
+                ->where('reference_id', $expense->id)
+                ->forceDelete();
+
+            // Create new transactions
+            return $this->createExpenseTransactions($expense, $total, $currencyId, $rate);
+        });
     }
 
     protected function validateTransactionData(array $data): array
