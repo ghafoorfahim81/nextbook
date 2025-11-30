@@ -108,6 +108,12 @@ class SearchController extends Controller
             case 'stores':
                 return $this->searchStores($searchTerm, $fields, $limit, $additionalParams);
 
+            case 'expense_categories':
+                return $this->searchExpenseCategories($searchTerm, $fields, $limit, $additionalParams);
+
+            case 'accounts':
+                return $this->searchAccounts($searchTerm, $fields, $limit, $additionalParams);
+
             default:
                 throw new \InvalidArgumentException("Unsupported resource type: {$resourceType}");
         }
@@ -446,6 +452,55 @@ class SearchController extends Controller
     }
 
     /**
+     * Search expense categories
+     */
+    private function searchExpenseCategories(string $searchTerm, array $fields, int $limit, array $additionalParams): array
+    {
+        $query = DB::table('expense_categories')
+            ->select('id', 'name', 'remarks', 'is_active')
+            ->where('is_active', true)
+            ->where(function ($q) use ($searchTerm, $fields) {
+                foreach ($fields as $field) {
+                    if (in_array($field, ['name', 'remarks'])) {
+                        $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
+                    }
+                }
+            });
+
+        return $query->limit($limit)->get()->toArray();
+    }
+
+    /**
+     * Search accounts
+     */
+    private function searchAccounts(string $searchTerm, array $fields, int $limit, array $additionalParams): array
+    {
+        $query = DB::table('accounts')
+            ->join('account_types', 'accounts.account_type_id', '=', 'account_types.id')
+            ->select('accounts.id', 'accounts.name', 'accounts.number', 'account_types.name as type_name', 'account_types.slug as type_slug')
+            ->where('accounts.is_active', true)
+            ->where(function ($q) use ($searchTerm, $fields) {
+                foreach ($fields as $field) {
+                    if (in_array($field, ['name', 'number'])) {
+                        $q->orWhereRaw('LOWER(accounts.' . $field . ') iLike ?', [$searchTerm]);
+                    }
+                }
+            });
+
+        // Filter by account type slug
+        if (isset($additionalParams['type'])) {
+            $query->where('account_types.slug', $additionalParams['type']);
+        }
+
+        // Filter by multiple types
+        if (isset($additionalParams['types']) && is_array($additionalParams['types'])) {
+            $query->whereIn('account_types.slug', $additionalParams['types']);
+        }
+
+        return $query->limit($limit)->get()->toArray();
+    }
+
+    /**
      * Get available resource types
      */
     public function getResourceTypes(): JsonResponse
@@ -460,7 +515,9 @@ class SearchController extends Controller
             'unit_measures' => 'Unit measures',
             'brands' => 'Brands',
             'categories' => 'Categories',
-            'stores' => 'Stores'
+            'stores' => 'Stores',
+            'expense_categories' => 'Expense categories',
+            'accounts' => 'Chart of accounts',
         ];
 
         return response()->json([

@@ -236,6 +236,15 @@ const navMain = computed(() => [
         ],
     },
     {
+        title: t('sidebar.main.expense'),
+        url: '#',
+        icon: ChartColumn,
+        items: [
+            { title: t('sidebar.expense.expense_category'), url: '/expense-categories' },
+            { title: t('sidebar.expense.expense'), url: '/expenses' },
+        ],
+    },
+    {
         title: t('sidebar.main.purchase'),
         url: '#',
         icon: ChartColumn,
