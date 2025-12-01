@@ -11,7 +11,7 @@ class ExpenseResource extends JsonResource
     public function toArray(Request $request): array
     {
         $dateConversionService = app(\App\Services\DateConversionService::class);
-        
+
         return [
             'id' => $this->id,
             'date' => $this->date?->format('Y-m-d'),
