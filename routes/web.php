@@ -89,7 +89,7 @@ Route::middleware([
     // Company routes
     Route::get('/company', [\App\Http\Controllers\CompanyController::class, 'show'])
         ->name('company.show');
-    Route::patch('/company/{company}', [\App\Http\Controllers\CompanyController::class, 'update'])
+    Route::put('/company/{company}', [\App\Http\Controllers\CompanyController::class, 'update'])
         ->name('company.update');
     Route::patch('/company/{company}/restore', [\App\Http\Controllers\CompanyController::class, 'restore'])->name('company.restore')->withTrashed();
 
