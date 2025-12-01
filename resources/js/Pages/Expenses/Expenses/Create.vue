@@ -134,7 +134,7 @@ const handleSubmit = (createAndNew = false) => {
     formData.append('currency_id', form.currency_id);
     formData.append('rate', form.rate);
     formData.append('remarks', form.remarks || '');
-    
+
     if (form.attachment) {
         formData.append('attachment', form.attachment);
     }
@@ -214,11 +214,11 @@ onUnmounted(() => {
                     {{ t('general.general_info') }}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                    <NextDate 
-                        v-model="form.date" 
-                        :current-date="true" 
-                        :error="form.errors?.date" 
-                        :label="t('general.date')" 
+                    <NextDate
+                        v-model="form.date"
+                        :current-date="true"
+                        :error="form.errors?.date"
+                        :label="t('general.date')"
                     />
                     <NextSelect
                         :options="categories.data || categories"
@@ -265,12 +265,12 @@ onUnmounted(() => {
                             :error="form.errors?.currency_id"
                             :searchable="true"
                         />
-                        <NextInput 
-                            v-model="form.rate" 
-                            type="number" 
+                        <NextInput
+                            v-model="form.rate"
+                            type="number"
                             step="any"
-                            :label="t('general.rate')" 
-                            :error="form.errors?.rate" 
+                            :label="t('general.rate')"
+                            :error="form.errors?.rate"
                         />
                     </div>
                     <NextTextarea
@@ -280,7 +280,7 @@ onUnmounted(() => {
                         rows="2"
                     />
                 </div>
-                
+
                 <!-- Attachment -->
                 <div class="mt-4">
                     <label class="block text-sm font-medium mb-2">{{ t('general.attachment') }}</label>
@@ -302,8 +302,8 @@ onUnmounted(() => {
                         </Button>
                         <span v-if="form.attachment" class="text-sm text-muted-foreground">
                             {{ form.attachment.name }}
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 @click="removeAttachment"
                                 class="ml-2 text-red-500 hover:text-red-700"
                             >
@@ -311,9 +311,9 @@ onUnmounted(() => {
                             </button>
                         </span>
                     </div>
-                    <img 
-                        v-if="attachmentPreview" 
-                        :src="attachmentPreview" 
+                    <img
+                        v-if="attachmentPreview"
+                        :src="attachmentPreview"
                         class="mt-2 max-h-32 rounded border"
                     />
                 </div>
@@ -357,7 +357,7 @@ onUnmounted(() => {
                                     class="text-right"
                                 />
                             </td>
-                            
+
                             <td class="px-4 py-2 text-center">
                                 <button
                                     type="button"
@@ -393,24 +393,24 @@ onUnmounted(() => {
 
             <!-- Action Buttons -->
             <div class="mt-6 flex gap-3">
-                <Button 
-                    type="submit" 
+                <Button
+                    type="submit"
                     :disabled="form.processing"
                     class="bg-primary"
                 >
                     {{ t('general.create') }}
                     <Spinner v-if="form.processing" class="ml-2" />
                 </Button>
-                <Button 
-                    type="button" 
+                <Button
+                    type="button"
                     variant="outline"
                     :disabled="form.processing"
                     @click="handleSubmit(true)"
                 >
                     {{ t('general.create') }} & {{ t('general.new') }}
                 </Button>
-                <Button 
-                    type="button" 
+                <Button
+                    type="button"
                     variant="ghost"
                     @click="$inertia.visit(route('expenses.index'))"
                 >

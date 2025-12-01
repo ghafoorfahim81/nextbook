@@ -17,23 +17,23 @@ const selectedExpense = ref(null);
 
 const columns = computed(() => [
     { key: 'formatted_date', label: t('general.date'), sortable: true },
-    { 
-        key: 'category.name', 
+    {
+        key: 'category.name',
         label: t('expense.category'),
         render: (row) => row.category?.name,
     },
-    { 
-        key: 'expense_account.name', 
+    {
+        key: 'expense_account.name',
         label: t('expense.expense_account'),
         render: (row) => row.expense_account?.name,
     },
-    { 
-        key: 'bank_account.name', 
+    {
+        key: 'bank_account.name',
         label: t('expense.bank_account'),
         render: (row) => row.bank_account?.name,
     },
-    { 
-        key: 'total', 
+    {
+        key: 'total',
         label: t('general.total'),
         render: (row) => `${row.currency?.symbol || ''} ${Number(row.total || 0).toLocaleString()}`,
     },
@@ -42,8 +42,9 @@ const columns = computed(() => [
 ]);
 
 const viewItem = async (item) => {
+    console.log('item', item);
     try {
-        const response = await fetch(route('expenses.show', item.id));
+        const response = await fetch(route('expenses.show', item));
         const data = await response.json();
         selectedExpense.value = data.data;
         showDialogOpen.value = true;
@@ -81,7 +82,7 @@ const addExpense = () => {
         <DataTable
             :items="expenses"
             :columns="columns"
-            @view="viewItem"
+            @show="viewItem"
             @edit="editItem"
             @delete="deleteItem"
             @add="addExpense"
@@ -93,7 +94,7 @@ const addExpense = () => {
             :addAction="'redirect'"
             :addRoute="'expenses.create'"
         />
- 
+
     </AppLayout>
 </template>
 

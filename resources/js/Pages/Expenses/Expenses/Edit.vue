@@ -33,13 +33,14 @@ const form = useForm({
     rate: expense.bank_transaction.rate || 1,
     remarks: expense.remarks || '',
     attachment: null,
-    details: expense.details?.length 
+    details: expense.details?.length
         ? expense.details.map(d => ({
             amount: d.amount,
             title: d.title,
             }))
         : [{ amount: '', title: '' }],
     // For UI state
+    _method: 'put',
     selected_category: expense.category,
     selected_expense_account: expense.expense_transaction.account,
     selected_bank_account: expense.bank_transaction.account,
@@ -82,8 +83,12 @@ const removeDetailLine = (index) => {
 const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
+        // Make sure to set form.attachment to the File object
         form.attachment = file;
         existingAttachment.value = null;
+
+        console.log('File selected:', file.name, file.size, file.type);
+
         if (file.type.startsWith('image/')) {
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -93,6 +98,8 @@ const handleFileChange = (event) => {
         } else {
             attachmentPreview.value = null;
         }
+    } else {
+        form.attachment = null;
     }
 };
 
@@ -105,8 +112,8 @@ const removeAttachment = () => {
     }
 };
 
-const handleSubmit = async () => {
-    // Validate at least one detail
+const handleSubmit = () => {
+    // ... validation code ...
     const validDetails = form.details.filter(d => d.title && d.amount);
     if (validDetails.length === 0) {
         toast({
@@ -116,43 +123,36 @@ const handleSubmit = async () => {
         });
         return;
     }
+    const formData = new FormData();
 
-    // Prepare the data
-    const data = {
-        date: form.date,
-        category_id: form.category_id,
-        expense_account_id: form.expense_account_id,
-        bank_account_id: form.bank_account_id,
-        currency_id: form.currency_id,
-        rate: form.rate,
-        remarks: form.remarks || '',
-        details: validDetails,
-    };
+    // Add all required fields
+    formData.append('date', form.date);
+    formData.append('category_id', form.category_id);
+    formData.append('expense_account_id', form.expense_account_id);
+    formData.append('bank_account_id', form.bank_account_id);
+    formData.append('currency_id', form.currency_id);
+    formData.append('rate', form.rate);
+    formData.append('remarks', form.remarks || '');
 
-    // Use transform to handle FormData
-    form.transform((data) => {
-        const formData = new FormData();
-        
-        // Add all fields
-        Object.keys(data).forEach(key => {
-            if (key === 'details') {
-                // Handle details array
-                formData.append(key, JSON.stringify(data[key]));
-            } else if (key !== 'attachment' && data[key] !== null && data[key] !== undefined) {
-                // Add regular fields
-                formData.append(key, data[key]);
-            }
-        });
-        
-        // Add attachment if exists
-        if (form.attachment instanceof File) {
-            formData.append('attachment', form.attachment);
-        }
-        
-        return formData;
-    }).put(route('expenses.update', expense.id), {
+    // Add attachment if new file is selected
+    if (form.attachment instanceof File) {
+        formData.append('attachment', form.attachment);
+        console.log('File added to FormData:', form.attachment.name, form.attachment.size);
+    } else {
+        console.log('No file to attach');
+    }
+
+    // Debug: Log FormData contents
+    for (let [key, value] of formData.entries()) {
+        console.log(`${key}:`, value);
+    }
+
+    // Add details
+    formData.append('details', JSON.stringify(validDetails));
+
+    // Submit the form
+    form.post(route('expenses.update', expense.id), formData, {
         forceFormData: true,
-        preserveScroll: true,
         onSuccess: () => {
             toast({
                 title: t('general.success'),
@@ -162,6 +162,7 @@ const handleSubmit = async () => {
         },
         onError: (errors) => {
             console.error('Update errors:', errors);
+            // Also check network tab in browser dev tools
             toast({
                 title: t('general.error'),
                 description: t('expense.update_error'),
@@ -203,10 +204,10 @@ onUnmounted(() => {
                     {{ t('general.general_info') }}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                    <NextDate 
-                        v-model="form.date" 
-                        :error="form.errors?.date" 
-                        :label="t('general.date')" 
+                    <NextDate
+                        v-model="form.date"
+                        :error="form.errors?.date"
+                        :label="t('general.date')"
                     />
                     <NextSelect
                         :options="categories.data || categories"
@@ -253,12 +254,12 @@ onUnmounted(() => {
                             :error="form.errors?.currency_id"
                             :searchable="true"
                         />
-                        <NextInput 
-                            v-model="form.rate" 
-                            type="number" 
+                        <NextInput
+                            v-model="form.rate"
+                            type="number"
                             step="any"
-                            :label="t('general.rate')" 
-                            :error="form.errors?.rate" 
+                            :label="t('general.rate')"
+                            :error="form.errors?.rate"
                         />
                     </div>
                     <NextTextarea
@@ -268,7 +269,7 @@ onUnmounted(() => {
                         rows="2"
                     />
                 </div>
-                
+
                 <!-- Attachment -->
                 <div class="mt-4">
                     <label class="block text-sm font-medium mb-2">{{ t('general.attachment') }}</label>
@@ -290,8 +291,8 @@ onUnmounted(() => {
                         </Button>
                         <span v-if="form.attachment" class="text-sm text-muted-foreground">
                             {{ form.attachment.name }}
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 @click="removeAttachment"
                                 class="ml-2 text-red-500 hover:text-red-700"
                             >
@@ -303,8 +304,8 @@ onUnmounted(() => {
                             <a :href="props.expense.attachment_url" target="_blank" class="text-violet-600 hover:underline ml-1">
                                 {{ t('general.view') }}
                             </a>
-                            <button 
-                                type="button" 
+                            <button
+                                type="button"
                                 @click="removeAttachment"
                                 class="ml-2 text-red-500 hover:text-red-700"
                             >
@@ -312,9 +313,9 @@ onUnmounted(() => {
                             </button>
                         </span>
                     </div>
-                    <img 
-                        v-if="attachmentPreview" 
-                        :src="attachmentPreview" 
+                    <img
+                        v-if="attachmentPreview"
+                        :src="attachmentPreview"
                         class="mt-2 max-h-32 rounded border"
                     />
                 </div>
@@ -393,16 +394,16 @@ onUnmounted(() => {
 
             <!-- Action Buttons -->
             <div class="mt-6 flex gap-3">
-                <Button 
-                    type="submit" 
+                <Button
+                    type="submit"
                     :disabled="form.processing"
                     class="bg-primary"
                 >
                     {{ t('general.update') }}
                     <Spinner v-if="form.processing" class="ml-2" />
                 </Button>
-                <Button 
-                    type="button" 
+                <Button
+                    type="button"
                     variant="ghost"
                     @click="$inertia.visit(route('expenses.index'))"
                 >

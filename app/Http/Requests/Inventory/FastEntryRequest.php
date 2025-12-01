@@ -10,7 +10,7 @@ class FastEntryRequest extends FormRequest
     {
         return true; // or Gate/Policy
     }
-
+ 
     public function rules(): array
     {
         return [
