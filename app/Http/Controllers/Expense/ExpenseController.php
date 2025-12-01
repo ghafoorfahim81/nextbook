@@ -140,14 +140,14 @@ class ExpenseController extends Controller
 
     public function update(ExpenseUpdateRequest $request, Expense $expense, TransactionService $transactionService)
     {
+        // dd($request->all());
         DB::transaction(function () use ($request, $expense, $transactionService) {
             $validated = $request->validated();
             $dateService = app(\App\Services\DateConversionService::class);
             
-            if (isset($validated['date'])) {
-                $validated['date'] = $dateService->toGregorian($validated['date']);
-            }
-
+            // Convert date if needed
+            $validated['date'] = $dateService->toGregorian($validated['date']);
+    
             // Handle file upload
             if ($request->hasFile('attachment')) {
                 // Delete old attachment
@@ -157,52 +157,59 @@ class ExpenseController extends Controller
                 $validated['attachment'] = $request->file('attachment')
                     ->store('expenses', 'public');
             }
-
+    
             // Update expense record
             $expense->update([
-                'date' => $validated['date'] ?? $expense->date,
-                'remarks' => $validated['remarks'] ?? $expense->remarks,
-                'category_id' => $validated['category_id'] ?? $expense->category_id,
+                'date' => $validated['date'],
+                'remarks' => $validated['remarks'] ?? null,
+                'category_id' => $validated['category_id'],
                 'attachment' => $validated['attachment'] ?? $expense->attachment,
             ]);
-
-            // Update details if provided
-            if (isset($validated['details'])) {
-                $expense->details()->delete();
-                $expense->details()->createMany($validated['details']);
-            }
-
+    
+            // Update details
+            $expense->details()->delete();
+            $expense->details()->createMany($validated['details']);
+    
             // Calculate total
             $total = $expense->details()->sum('amount');
-
-            // Delete old transactions
-            if ($expense->expenseTransaction) {
-                $expense->expenseTransaction->forceDelete();
+    
+            // Store old transaction IDs before nulling them
+            $oldExpenseTransactionId = $expense->expense_transaction_id;
+            $oldBankTransactionId = $expense->bank_transaction_id;
+    
+            // Null out transaction IDs first to avoid foreign key constraint issues
+            $expense->update([
+                'expense_transaction_id' => null,
+                'bank_transaction_id' => null,
+            ]);
+    
+            // Delete old transactions using stored IDs
+            if ($oldExpenseTransactionId) {
+                \App\Models\Transaction\Transaction::find($oldExpenseTransactionId)?->forceDelete();
             }
-            if ($expense->bankTransaction) {
-                $expense->bankTransaction->forceDelete();
+            if ($oldBankTransactionId) {
+                \App\Models\Transaction\Transaction::find($oldBankTransactionId)?->forceDelete();
             }
-
+    
             // Create new transactions
             $transactions = $transactionService->createExpenseTransactions(
                 $expense->fresh(),
                 $total,
                 $validated['currency_id'],
-                $validated['rate'] ?? 1,
+                $validated['rate'],
                 $validated['expense_account_id'],
                 $validated['bank_account_id']
             );
-
+    
             // Update expense with new transaction IDs
             $expense->update([
                 'expense_transaction_id' => $transactions['expense']->id,
                 'bank_transaction_id' => $transactions['bank']->id,
             ]);
         });
-
+    
         return redirect()->route('expenses.index')->with('success', 'Expense updated successfully.');
     }
-
     public function destroy(Request $request, Expense $expense)
     {
         DB::transaction(function () use ($expense) {
