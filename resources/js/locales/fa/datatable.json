@@ -6,7 +6,8 @@
   "search": "جستجو",
   "showing": "نمایش {from} تا {to} از {total} مورد",
   "previous": "قبلی",
-  "next": "بعدی"
+  "next": "بعدی",
+  "show": "نمایش"
 }
 
 

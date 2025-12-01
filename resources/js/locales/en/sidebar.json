@@ -16,6 +16,7 @@
     "expense": "Expense",
     "user_management": "User Management",
     "preferences": "Preferences"
+
   },
   "expense": {
     "expense": "Expense",
@@ -64,7 +65,7 @@
   "user_management": {
     "user": "User",
     "role": "Role"
-  } 
+  }
 }
 
 
