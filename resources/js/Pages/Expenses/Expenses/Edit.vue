@@ -29,8 +29,8 @@ const form = useForm({
     category_id: expense.category_id || '',
     expense_account_id: expense.expense_account_id || '',
     bank_account_id: expense.bank_account_id || '',
-    currency_id: expense.currency_id || '',
-    rate: expense.rate || 1,
+    currency_id: expense.bank_transaction.currency_id || '',
+    rate: expense.bank_transaction.rate || 1,
     remarks: expense.remarks || '',
     attachment: null,
     details: expense.details?.length 
@@ -49,22 +49,6 @@ const form = useForm({
 const fileInput = ref(null);
 const attachmentPreview = ref(expense.attachment_url || null);
 const existingAttachment = ref(expense.attachment || null);
-
-// Initialize selected values
-onMounted(() => {
-    // Set category
-    const categories = props.categories.data || props.categories;
-    form.selected_category = categories.find(c => c.id === expense.category_id) || null;
-    
-    // Set expense account
-    form.selected_expense_account = props.expenseAccounts.find(a => a.id === expense.expense_account_id) || null;
-    
-    // Set bank account
-    form.selected_bank_account = props.bankAccounts.find(a => a.id === expense.bank_account_id) || null;
-    
-    // Set currency
-    form.selected_currency = props.currencies.find(c => c.id === expense.currency_id) || null;
-});
 
 // Update rate when currency changes
 const handleCurrencyChange = (currency) => {
@@ -121,8 +105,7 @@ const removeAttachment = () => {
     }
 };
 
-// Submit form
-const handleSubmit = () => {
+const handleSubmit = async () => {
     // Validate at least one detail
     const validDetails = form.details.filter(d => d.title && d.amount);
     if (validDetails.length === 0) {
@@ -134,25 +117,42 @@ const handleSubmit = () => {
         return;
     }
 
+    // Prepare the data
+    const data = {
+        date: form.date,
+        category_id: form.category_id,
+        expense_account_id: form.expense_account_id,
+        bank_account_id: form.bank_account_id,
+        currency_id: form.currency_id,
+        rate: form.rate,
+        remarks: form.remarks || '',
+        details: validDetails,
+    };
+
+    // Use transform to handle FormData
     form.transform((data) => {
-        const formData = {
-            date: data.date,
-            category_id: data.category_id,
-            expense_account_id: data.expense_account_id,
-            bank_account_id: data.bank_account_id,
-            currency_id: data.currency_id,
-            rate: data.rate,
-            remarks: data.remarks || '',
-            details: validDetails,
-        };
+        const formData = new FormData();
         
-        if (data.attachment) {
-            formData.attachment = data.attachment;
+        // Add all fields
+        Object.keys(data).forEach(key => {
+            if (key === 'details') {
+                // Handle details array
+                formData.append(key, JSON.stringify(data[key]));
+            } else if (key !== 'attachment' && data[key] !== null && data[key] !== undefined) {
+                // Add regular fields
+                formData.append(key, data[key]);
+            }
+        });
+        
+        // Add attachment if exists
+        if (form.attachment instanceof File) {
+            formData.append('attachment', form.attachment);
         }
         
         return formData;
     }).put(route('expenses.update', expense.id), {
         forceFormData: true,
+        preserveScroll: true,
         onSuccess: () => {
             toast({
                 title: t('general.success'),
@@ -160,7 +160,8 @@ const handleSubmit = () => {
                 class: 'bg-green-600 text-white',
             });
         },
-        onError: () => {
+        onError: (errors) => {
+            console.error('Update errors:', errors);
             toast({
                 title: t('general.error'),
                 description: t('expense.update_error'),

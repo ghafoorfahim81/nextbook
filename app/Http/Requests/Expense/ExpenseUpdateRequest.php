@@ -27,5 +27,6 @@ class ExpenseUpdateRequest extends FormRequest
             'details.*.title' => ['required', 'string', 'max:255'], 
         ];
     }
+    
 }
 
