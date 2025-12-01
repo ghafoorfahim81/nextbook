@@ -2,11 +2,16 @@
 import { ref, computed, watch } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/Layout.vue';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/button';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
-import { Edit, Save, X, Building2 } from 'lucide-vue-next';
+import { Edit, Save, X, Building2, Upload } from 'lucide-vue-next';
+import { useToast } from '@/Components/ui/toast/use-toast';
+import { useI18n } from 'vue-i18n';
+
+const { toast } = useToast();
+const { t } = useI18n();
 
 const props = defineProps({
     company: Object,
@@ -21,6 +26,8 @@ const props = defineProps({
 const isEditing = ref(false);
 const originalData = ref({});
 const logoPreview = ref(null);
+const fileInput = ref(null);
+const existingLogo = ref(null);
 
 
 
@@ -33,7 +40,7 @@ const form = useForm({
     phone: '',
     country: '',
     city: '',
-    logo: '',
+    logo: null, // will only ever be a File or null
     calendar_type: '',
     selected_calendar_type: '',
     currency_id: '',
@@ -46,6 +53,7 @@ const form = useForm({
     email: '',
     website: '',
     invoice_description: '',
+    _method: 'put',
 }, {
     forceFormData: true
 });
@@ -61,7 +69,7 @@ watch(() => props.company, (company) => {
         form.phone = company.phone || '';
         form.country = company.country || '';
         form.city = company.city || '';
-        form.logo = company.logo || null;
+        // Don't set form.logo to existing filename; it should only hold a File when user selects one
         form.selected_calendar_type = props.calendarTypes.find(type => type.id === company.calendar_type)  || '';
         form.calendar_type = company.calendar_type || '';
         form.selected_currency = company.currency || null;
@@ -75,6 +83,10 @@ watch(() => props.company, (company) => {
         form.email = company.email || '';
         form.website = company.website || '';
         form.invoice_description = company.invoice_description || '';
+
+        // Initialize logo state
+        existingLogo.value = company.logo || null;
+        logoPreview.value = null;
 
         originalData.value = {
             name_en: company.name_en || '',
@@ -100,6 +112,7 @@ watch(() => props.company, (company) => {
             email: company.email || '',
             website: company.website || '',
             invoice_description: company.invoice_description || '',
+            logo: company.logo || null,
         };
     }
 }, { immediate: true });
@@ -115,18 +128,34 @@ const cancelEditing = () => {
     Object.keys(originalData.value).forEach(key => {
         form[key] = originalData.value[key];
     });
-    // Clear logo preview
+    // Reset logo state
     logoPreview.value = null;
+    existingLogo.value = originalData.value.logo || null;
+    form.logo = null;
+    if (fileInput.value) {
+        fileInput.value.value = '';
+    }
     form.clearErrors();
 };
 
 const saveChanges = () => {
-    form.patch(route('company.update', props.company.id), {
+    // Ensure logo is only ever a File or null before submit
+    if (!(form.logo instanceof File)) {
+        form.logo = null;
+    }
+
+    form.post(route('company.update', props.company.id), {
         onSuccess: () => {
+            console.log('Company information updated successfully');
             isEditing.value = false;
-            originalData.value = { ...form.data() };
+            originalData.value = { ...form.data(), logo: existingLogo.value };
             logoPreview.value = null;
-            setCalendarLocaleStorage(form.calendar_type) // Clear preview after successful save
+            setCalendarLocaleStorage(form.calendar_type)
+            toast({
+                title: t('general.success'),
+                description: t('general.update_success', { name: 'Company' }),
+                class: 'bg-green-600 text-white',
+            });
         },
         onError: () => {
             // Errors will be handled by the form
@@ -134,9 +163,8 @@ const saveChanges = () => {
     });
 };
 
-const previewImage = (event) => {
+const handleFileChange = (event) => {
     const file = event.target.files[0];
-
     if (file) {
         // Validate file size (2MB max)
         if (file.size > 2 * 1024 * 1024) {
@@ -155,19 +183,27 @@ const previewImage = (event) => {
 
         // Set the file for upload
         form.logo = file;
-        console.log('form', form);
+        existingLogo.value = null;
+
+        console.log('Logo selected:', file.name, file.size, file.type);
 
         // Create preview
         const reader = new FileReader();
         reader.onload = (e) => {
-            // Store preview URL for display
             logoPreview.value = e.target.result;
         };
         reader.readAsDataURL(file);
     } else {
-        // Clear the form if no file selected
         form.logo = null;
-        logoPreview.value = null;
+    }
+};
+
+const removeLogo = () => {
+    form.logo = null;
+    existingLogo.value = null;
+    logoPreview.value = null;
+    if (fileInput.value) {
+        fileInput.value.value = '';
     }
 };
 
@@ -606,9 +642,12 @@ const setCalendarLocaleStorage = (selected) => {
                             </h3>
                             <div class="flex items-center gap-6">
                                 <div class="flex-shrink-0">
-                                    <div v-if="logoPreview || form.logo || company?.logo_url" class="w-24 h-24 overflow-hidden bg-gray-200 rounded-full">
+                                    <div
+                                        v-if="logoPreview || company?.logo_url || company?.logo"
+                                        class="w-24 h-24 overflow-hidden bg-gray-200 rounded-full"
+                                    >
                                         <img
-                                            :src="logoPreview || (company?.logo_url || (company?.logo ? `/storage/${company.logo}` : null))"
+                                            :src="logoPreview || company?.logo_url || (company?.logo ? `/storage/${company.logo}` : null)"
                                             alt="Company Logo"
                                             class="object-cover w-full h-full"
                                         />
@@ -617,18 +656,44 @@ const setCalendarLocaleStorage = (selected) => {
                                         <Building2 class="w-12 h-12 text-gray-400" />
                                     </div>
                                 </div>
-                                <div v-if="isEditing">
-                                    <label class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                        <span>Upload Logo</span>
+                                <div v-if="isEditing" class="flex-1">
+                                    <div class="flex items-center gap-4">
                                         <input
-                                            id="logo"
-                                            name="logo"
+                                            ref="fileInput"
                                             type="file"
-                                            class="sr-only"
-                                            @change="previewImage"
+                                            @change="handleFileChange"
+                                            class="hidden"
                                             accept="image/*"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            @click="() => fileInput?.click()"
                                         >
-                                    </label>
+                                            <Upload class="w-4 h-4 mr-2" />
+                                            {{ existingLogo ? 'Change Logo' : 'Upload Logo' }}
+                                        </Button>
+                                        <span v-if="form.logo" class="text-sm text-muted-foreground">
+                                            {{ form.logo.name }}
+                                            <button
+                                                type="button"
+                                                @click="removeLogo"
+                                                class="ml-2 text-red-500 hover:text-red-700"
+                                            >
+                                                <X class="w-4 h-4 inline" />
+                                            </button>
+                                        </span>
+                                        <span v-else-if="existingLogo" class="text-sm text-muted-foreground">
+                                            Current logo
+                                            <button
+                                                type="button"
+                                                @click="removeLogo"
+                                                class="ml-2 text-red-500 hover:text-red-700"
+                                            >
+                                                <X class="w-4 h-4 inline" />
+                                            </button>
+                                        </span>
+                                    </div>
                                     <p class="mt-1 text-xs text-gray-500">PNG, JPG, GIF up to 2MB</p>
                                 </div>
                                 <div v-else class="text-sm text-gray-500">
