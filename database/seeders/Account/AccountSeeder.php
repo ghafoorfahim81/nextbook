@@ -173,6 +173,15 @@ class AccountSeeder extends Seeder
                 'branch_id' => $mainBranch->id,
                 'remark' => 'Accumulated profits/losses',
                 'is_main' => true,
+            ],
+            [
+                'name' => 'Office Expense',
+                'number' => 'Ex-018',
+                'account_type_id' => AccountType::where('slug', 'office-expenses')->first()->id,
+                'slug' => 'office-expense',
+                'branch_id' => $mainBranch->id,
+                'remark' => 'Office Expense Account',
+                'is_main' => true,
             ]
 
         ];

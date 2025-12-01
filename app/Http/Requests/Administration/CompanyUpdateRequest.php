@@ -32,7 +32,7 @@ class CompanyUpdateRequest extends FormRequest
             'phone' => ['nullable', 'string'],
             'country' => ['nullable', 'string'],
             'city' => ['nullable', 'string'],
-            'logo' => ['nullable', 'image'],
+            'logo' => 'nullable|image|max:2048',
             'calendar_type' => ['required', 'in:' . implode(',', array_column(CalendarType::cases(), 'value'))],
             'working_style' => ['required', 'in:' . implode(',', array_column(WorkingStyle::cases(), 'value'))],
             'business_type' => ['required', 'in:' . implode(',', array_column(BusinessType::cases(), 'value'))],

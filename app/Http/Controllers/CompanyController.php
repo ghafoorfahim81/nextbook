@@ -32,7 +32,7 @@ class CompanyController extends Controller
     {
 
         $validated = $request->validated();
-        
+
         $validated['created_by'] = Auth::id();
         $validated['updated_by'] = Auth::id();
 
@@ -78,7 +78,7 @@ class CompanyController extends Controller
      */
     public function update(CompanyUpdateRequest $request, Company $company)
     {
-        // return $request->all();
+        // dd($request->all());
         // Ensure the user can only update their own company
         if (Auth::user()->company_id !== $company->id) {
             abort(403, 'Unauthorized to update this company.');
@@ -121,6 +121,7 @@ class CompanyController extends Controller
         return redirect()->back()
             ->with('success', 'Company information updated successfully.');
     }
+
     public function destroy(Company $company)
     {
         $company->delete();

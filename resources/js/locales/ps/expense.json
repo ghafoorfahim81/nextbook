@@ -1,0 +1,19 @@
+{
+  "expense": "مصرف",
+  "expenses": "مصارف",
+  "category": "د مصرف کتګوري",
+  "categories": "د مصرف کتګوریګانې",
+  "expense_account": "د مصرف حساب",
+  "bank_account": "د بانک/نقدي حساب",
+  "detail_lines": "د مصرف توضیحات",
+  "title": "سرلیک",
+  "enter_title": "سرلیک ولیکئ",
+  "expense_details": "د مصرف توضیحات",
+  "base_currency_total": "د اساسي اسعارو مجموعه",
+  "accounting_entries": "محاسباتي ثبتونه",
+  "create_error": "د مصرف جوړولو کې تېروتنه",
+  "update_error": "د مصرف تازه کولو کې تېروتنه",
+  "error": "تېروتنه",
+  "at_least_one_detail": "لږ تر لږه یو د مصرف توضیحات ضروري دي"
+}
+

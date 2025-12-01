@@ -13,8 +13,14 @@
     "receipt": "Receipt",
     "payment": "Payment",
     "transfer": "Account Transfers",
+    "expense": "Expense",
     "user_management": "User Management",
     "preferences": "Preferences"
+  },
+  "expense": {
+    "expense": "Expense",
+    "expenses": "Expenses",
+    "expense_category": "Expense Category"
   },
   "administration": {
     "category": "Category",
