@@ -1,0 +1,19 @@
+{
+  "expense": "مصرف",
+  "expenses": "مصارف",
+  "category": "دسته‌بندی مصرف",
+  "categories": "دسته‌بندی‌های مصرف",
+  "expense_account": "حساب مصرف",
+  "bank_account": "حساب بانک/نقد",
+  "detail_lines": "جزئیات مصرف",
+  "title": "عنوان",
+  "enter_title": "عنوان را وارد کنید",
+  "expense_details": "جزئیات مصرف",
+  "base_currency_total": "مجموع ارز پایه",
+  "accounting_entries": "ثبت‌های حسابداری",
+  "create_error": "خطا در ایجاد مصرف",
+  "update_error": "خطا در به‌روزرسانی مصرف",
+  "error": "خطا",
+  "at_least_one_detail": "حداقل یک جزئیات مصرف لازم است"
+}
+

@@ -89,7 +89,7 @@ Route::middleware([
     // Company routes
     Route::get('/company', [\App\Http\Controllers\CompanyController::class, 'show'])
         ->name('company.show');
-    Route::patch('/company/{company}', [\App\Http\Controllers\CompanyController::class, 'update'])
+    Route::put('/company/{company}', [\App\Http\Controllers\CompanyController::class, 'update'])
         ->name('company.update');
     Route::patch('/company/{company}/restore', [\App\Http\Controllers\CompanyController::class, 'restore'])->name('company.restore')->withTrashed();
 
@@ -129,5 +129,13 @@ Route::middleware([
     Route::post('/preferences/reset/{category?}', [\App\Http\Controllers\Preferences\PreferencesController::class, 'reset'])->name('preferences.reset');
     Route::get('/preferences/export', [\App\Http\Controllers\Preferences\PreferencesController::class, 'export'])->name('preferences.export');
     Route::post('/preferences/import', [\App\Http\Controllers\Preferences\PreferencesController::class, 'import'])->name('preferences.import');
+
+    // Expense Categories
+    Route::resource('/expense-categories', \App\Http\Controllers\Expense\ExpenseCategoryController::class);
+    Route::patch('/expense-categories/{expenseCategory}/restore', [\App\Http\Controllers\Expense\ExpenseCategoryController::class, 'restore'])->name('expense-categories.restore')->withTrashed();
+
+    // Expenses
+    Route::resource('/expenses', \App\Http\Controllers\Expense\ExpenseController::class);
+    Route::patch('/expenses/{expense}/restore', [\App\Http\Controllers\Expense\ExpenseController::class, 'restore'])->name('expenses.restore')->withTrashed();
 
 });

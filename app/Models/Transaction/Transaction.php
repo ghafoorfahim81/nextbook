@@ -104,11 +104,11 @@ class Transaction extends Model
     //     return $this->belongsTo(\App\Models\Sale\Sale::class, 'reference_id')
     //         ->where('reference_type', 'sale');
     // }
-    // public function expense(): BelongsTo
-    // {
-    //     return $this->belongsTo(\App\Models\Expense\Expense::class, 'reference_id')
-    //         ->where('reference_type', 'expense');
-    // }
+    public function expense(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Expense\Expense::class, 'reference_id')
+            ->where('reference_type', 'expense');
+    }
     // public function income(): BelongsTo
     // {
     //     return $this->belongsTo(\App\Models\Income\Income::class, 'reference_id')

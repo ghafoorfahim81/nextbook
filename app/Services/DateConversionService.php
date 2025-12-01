@@ -28,8 +28,19 @@ class DateConversionService
             return $this->conversionCache[$cacheKey];
         }
 
-        $result = ($this->calendarType === 'jalali')
-            ? $this->jalaliToGregorian($date) // Use custom method
+        // Detect if the incoming date looks like a Jalali date (year 13xx–14xx)
+        $normalized = str_replace('/', '-', trim($date));
+        $isJalaliInput = false;
+        if (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})/', $normalized, $matches)) {
+            $year = (int) $matches[1];
+            $isJalaliInput = $year >= 1300 && $year <= 1499;
+        }
+
+        // Convert when:
+        // - company calendar is explicitly Jalali, OR
+        // - the incoming value clearly looks like a Jalali year
+        $result = ($this->calendarType === 'jalali' || $isJalaliInput)
+            ? $this->jalaliToGregorian($date)
             : $date;
 
         $this->conversionCache[$cacheKey] = $result;
@@ -45,23 +56,21 @@ class DateConversionService
         $normalizedDate = str_replace('/', '-', $jalaliDate);
 
         try {
-            // Parse with correct format for Jalali dates with slashes
-            if (str_contains($jalaliDate, '/')) {
-                // Date is in format 1404/08/18
-                return Jalalian::fromFormat('Y-m-d', $jalaliDate)
-                    ->toCarbon()
-                    ->format('Y-m-d');
-            } else {
-                // Date is already in format 1404-08-18
-                return Jalalian::fromFormat('Y-m-d', $jalaliDate)
-                    ->toCarbon()
-                    ->format('Y-m-d');
-            }
-        } catch (\Exception $e) {
-            // Fallback: try to parse as is
+            // Parse the normalized date (always in Y-m-d format with dashes)
             return Jalalian::fromFormat('Y-m-d', $normalizedDate)
                 ->toCarbon()
                 ->format('Y-m-d');
+        } catch (\Exception $e) {
+            // If parsing fails, try alternative formats
+            try {
+                // Try parsing as Y/m/d format directly
+                return Jalalian::fromFormat('Y/m/d', $jalaliDate)
+                    ->toCarbon()
+                    ->format('Y-m-d');
+            } catch (\Exception $e2) {
+                // Last resort: return original date
+                return $jalaliDate;
+            }
         }
     }
 

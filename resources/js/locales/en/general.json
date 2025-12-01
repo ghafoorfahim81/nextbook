@@ -147,8 +147,17 @@
   "address": "Address",
   "email": "Email",
   "active": "Active",
+  "inactive": "Inactive",
   "unit_price": "Unit Price",
-  "created_successfully": "created successfully"
+  "created_successfully": "created successfully",
+  "general_info": "General Information",
+  "add_more": "Add More",
+  "attachment": "Attachment",
+  "upload_file": "Upload File",
+  "change_file": "Change File",
+  "current_file": "Current file",
+  "view_attachment": "View Attachment",
+  "note": "Note"
 }
 
 
