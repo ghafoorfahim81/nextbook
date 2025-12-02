@@ -14,7 +14,13 @@
     "payment": "پرداخت",
     "transfer": "انتقال حساب",
     "user_management": "مدیریت کاربران",
-    "preferences": "تنظیمات"
+    "preferences": "تنظیمات",
+    "expense": "مصارف"
+  },
+  "expense": {
+    "expense": "مصارف",
+    "expenses": "مصارف ها",
+    "expense_category": "دسته بندی مصارف"
   },
   "administration": {
     "category": "دسته بندی",

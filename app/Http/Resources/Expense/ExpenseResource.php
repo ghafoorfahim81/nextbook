@@ -13,9 +13,8 @@ class ExpenseResource extends JsonResource
         $dateConversionService = app(\App\Services\DateConversionService::class);
 
         return [
-            'id' => $this->id,
-            'date' => $this->date?->format('Y-m-d'),
-            'formatted_date' => $dateConversionService->toDisplay($this->date),
+            'id' => $this->id, 
+            'date' => $dateConversionService->toDisplay($this->date),
             'remarks' => $this->remarks,
             'category_id' => $this->category_id,
             'category' => $this->whenLoaded('category', fn() => [
