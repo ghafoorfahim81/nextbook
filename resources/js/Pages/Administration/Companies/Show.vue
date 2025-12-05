@@ -568,7 +568,6 @@ const setCalendarLocaleStorage = (selected) => {
                                         </div>
                                     </div>
                                 </div>
-
                                 <div>
                                     <NextSelect
                                         v-if="isEditing"
