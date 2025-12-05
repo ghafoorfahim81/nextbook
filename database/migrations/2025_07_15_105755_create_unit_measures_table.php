@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('symbol')->index();
             $table->double('value')->nullable();
             $table->char('quantity_id',26);
+            $table->boolean('is_system')->default(false);
             $table->char('branch_id',26);
             $table->char('created_by',26);
             $table->char('updated_by',26)->nullable();

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('quantity')->index();
             $table->string('unit');
             $table->string('symbol');
+            $table->boolean('is_system')->default(false);
             $table->char('branch_id',26);
             $table->char('created_by',26);
             $table->char('updated_by',26)->nullable();

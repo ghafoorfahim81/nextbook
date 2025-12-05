@@ -19,6 +19,7 @@ class UnitMeasureSeeder extends Seeder
             'unit'       => "Pcs",
             'symbol'     => "ea",
             'branch_id'  => $branch_id,
+            'is_system'  => true,
         ]);
 
         UnitMeasure::create([
@@ -27,6 +28,7 @@ class UnitMeasureSeeder extends Seeder
             'symbol'      => "ea",
             'quantity_id' => $pcs->id,
             'branch_id'   => $branch_id,
+            'is_system'   => true,
         ]);
         UnitMeasure::create([
             'name'        => 'Pair',
@@ -34,6 +36,7 @@ class UnitMeasureSeeder extends Seeder
             'symbol'      => "pr",
             'quantity_id' => $pcs->id,
             'branch_id'   => $branch_id,
+            'is_system'   => true,
         ]);
         UnitMeasure::create([
             'name'        => 'Dozen',
@@ -41,6 +44,7 @@ class UnitMeasureSeeder extends Seeder
             'symbol'      => "dz",
             'quantity_id' => $pcs->id,
             'branch_id'   => $branch_id,
+            'is_system'   => true,
         ]);
 
         $length = Quantity::create([
@@ -48,6 +52,7 @@ class UnitMeasureSeeder extends Seeder
             'unit'       => "Centimetre",
             'symbol'     => "cm",
             'branch_id'  => $branch_id,
+            'is_system'  => true,
         ]);
 
         UnitMeasure::create([
@@ -56,6 +61,7 @@ class UnitMeasureSeeder extends Seeder
             'symbol'      => "cm",
             'quantity_id' => $length->id,
             'branch_id'   => $branch_id,
+            'is_system'   => true,
         ]);
         UnitMeasure::create([
             'name'        => 'Inch',
@@ -63,6 +69,7 @@ class UnitMeasureSeeder extends Seeder
             'symbol'      => "in",
             'quantity_id' => $length->id,
             'branch_id'   => $branch_id,
+            'is_system'   => true,
         ]);
         UnitMeasure::create([
             'name'        => 'Meter',
@@ -70,6 +77,7 @@ class UnitMeasureSeeder extends Seeder
             'symbol'      => "m",
             'quantity_id' => $length->id,
             'branch_id'   => $branch_id,
+            'is_system'   => true,
         ]);
 
         $area = Quantity::create([
@@ -77,6 +85,7 @@ class UnitMeasureSeeder extends Seeder
             'unit'       => "SquareCentimetre",
             'symbol'     => "cm2",
             'branch_id'  => $branch_id,
+            'is_system'  => true,
         ]);
 
         UnitMeasure::create([
@@ -85,6 +94,7 @@ class UnitMeasureSeeder extends Seeder
             'symbol'      => "cm2",
             'quantity_id' => $area->id,
             'branch_id'   => $branch_id,
+            'is_system'   => true,
         ]);
         UnitMeasure::create([
             'name'        => 'SquareDecimeter',
@@ -92,6 +102,7 @@ class UnitMeasureSeeder extends Seeder
             'symbol'      => "dm2",
             'quantity_id' => $area->id,
             'branch_id'   => $branch_id,
+            'is_system'   => true,
         ]);
         UnitMeasure::create([
             'name'        => 'SquareMeter',
@@ -99,6 +110,7 @@ class UnitMeasureSeeder extends Seeder
             'symbol'      => "m2",
             'quantity_id' => $area->id,
             'branch_id'   => $branch_id,
+            'is_system'   => true,
         ]);
 
         $weight = Quantity::create([
@@ -106,6 +118,7 @@ class UnitMeasureSeeder extends Seeder
             'unit'       => "Gram",
             'symbol'     => "g",
             'branch_id'  => $branch_id,
+            'is_system'  => true,
         ]);
 
         UnitMeasure::create([
@@ -114,6 +127,7 @@ class UnitMeasureSeeder extends Seeder
             'symbol'      => "g",
             'quantity_id' => $weight->id,
             'branch_id'   => $branch_id,
+            'is_system'   => true,
         ]);
         UnitMeasure::create([
             'name'        => 'Kilogram',
@@ -121,6 +135,7 @@ class UnitMeasureSeeder extends Seeder
             'symbol'      => "kg",
             'quantity_id' => $weight->id,
             'branch_id'   => $branch_id,
+            'is_system'   => true,
         ]);
         UnitMeasure::create([
             'name'        => 'Ton',
@@ -128,6 +143,51 @@ class UnitMeasureSeeder extends Seeder
             'symbol'      => "ton",
             'quantity_id' => $weight->id,
             'branch_id'   => $branch_id,
+            'is_system'   => true,
+                ]);
+        // volume
+        $volume = Quantity::create([
+            'quantity' => 'Volume',
+            'unit'       => "Millilitre",
+            'symbol'     => "ml",
+            'branch_id'  => $branch_id,
+            'is_system'  => true,
+        ]);
+
+        UnitMeasure::create([
+            'name'        => 'Millilitre',
+            'unit'        => 1,
+            'symbol'      => "ml",
+            'quantity_id' => $volume->id,
+            'branch_id'   => $branch_id,
+            'is_system'   => true,
+        ]);
+
+        UnitMeasure::create([
+            'name'        => 'Litre',
+            'unit'        => 1000,
+            'symbol'      => "L",
+            'quantity_id' => $volume->id,
+            'branch_id'   => $branch_id,
+            'is_system'   => true,
+        ]);
+
+        UnitMeasure::create([
+            'name'        => 'Gallon',
+            'unit'        => 3785.41, // US Gallon to ml
+            'symbol'      => "gal",
+            'quantity_id' => $volume->id,
+            'branch_id'   => $branch_id,
+            'is_system'   => true,
+        ]);
+
+        UnitMeasure::create([
+            'name'        => 'Barrel',
+            'unit'        => 158987.294928, // نفت خام به ml
+            'symbol'      => "bbl",
+            'quantity_id' => $volume->id,
+            'branch_id'   => $branch_id,
+            'is_system'   => true,
         ]);
     }
 }

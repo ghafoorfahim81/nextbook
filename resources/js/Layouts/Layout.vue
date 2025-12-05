@@ -77,7 +77,14 @@ import {
     Moon, Sun,
     ChartColumn,
     Cog,
-    Layers, UserCog, Database
+    Layers, UserCog, Database,
+    User2Icon,
+    ContactRound,
+    BookUser,
+    UserRound,
+    Banknote,
+    ShoppingBasket,
+    ArrowLeftRight
 } from 'lucide-vue-next'
 import { ref, computed } from 'vue'
 // @ts-ignore - Vue SFC default export shim
@@ -220,7 +227,7 @@ const navMain = computed(() => [
     {
         title: t('sidebar.owners.owners'),
         url: '#',
-        icon: UserCog,
+        icon: BookUser,
         items: [
             { title: t('sidebar.owners.owners'), url: '/owners' },
             { title: t('sidebar.owners.drawing'), url: '/drawing' },
@@ -238,7 +245,7 @@ const navMain = computed(() => [
     {
         title: t('sidebar.main.expense'),
         url: '#',
-        icon: ChartColumn,
+        icon: Banknote,
         items: [
             { title: t('sidebar.expense.expense_category'), url: '/expense-categories' },
             { title: t('sidebar.expense.expense'), url: '/expenses' },
@@ -247,7 +254,7 @@ const navMain = computed(() => [
     {
         title: t('sidebar.main.purchase'),
         url: '#',
-        icon: ChartColumn,
+        icon: ShoppingBasket,
         items: [
             { title: t('sidebar.purchase.purchase'), url: '/purchases' },
             // { title: t('sidebar.purchase.purchase_return'), url: '/purchase-returns' },
@@ -276,13 +283,13 @@ const navMain = computed(() => [
     {
         title: t('sidebar.main.transfer'),
         url: '/account-transfers',
-        icon: CreditCard,
+        icon: ArrowLeftRight,
     },
 
     {
         title: t('sidebar.main.user_management'),
         url: '#',
-        icon: UserCog,
+        icon: UserRound,
         items: [
             { title: t('sidebar.user_management.user'), url: '/users' },
             { title: t('sidebar.user_management.role'), url: '/roles' },
