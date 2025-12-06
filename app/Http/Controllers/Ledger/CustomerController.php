@@ -65,7 +65,7 @@ class CustomerController extends Controller
             ]);
             $transaction->opening()->create([
                 'ledgerable_id' => $ledger->id,
-                'ledgerable_type' => Ledger::class,
+                'ledgerable_type' => 'ledger',
             ]);
         }
         return to_route('customers.index')->with('success', 'Customer created successfully.');
