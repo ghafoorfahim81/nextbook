@@ -35,6 +35,10 @@ const showItem = (id) => {
     showDialog.value = true;
 }
 
+const printItem = (id) => {
+    window.location.href = `/sales/${id}/print`;
+}
+
 const columns = ref([
     { key: 'number', label: t('general.number'), sortable: true },
     { key: 'customer_name', label: t('ledger.customer.customer') },
@@ -57,9 +61,11 @@ const columns = ref([
             :showEditButton="true"
             :showDeleteButton="true"
             :hasShow="true"
+            :hasPrint="true"
             @edit="editItem"
             @delete="deleteItem"
             @show="showItem"
+            @print="printItem"
             :addTitle="t('sale.sale')"
             :addAction="'redirect'"
             :addRoute="'sales.create'"

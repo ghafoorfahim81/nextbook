@@ -13,7 +13,7 @@ use App\Services\TransactionService;
 use App\Models\Account\Account;
 use App\Models\Administration\Currency;
 use App\Services\StockService;
-
+use Mpdf\Mpdf;
 class SaleController extends Controller
 {
     public function index(Request $request)
@@ -178,5 +178,46 @@ class SaleController extends Controller
     {
         $sale->update(['status' => $request->status]);
         return back()->with('success', __('general.sale_status_updated_successfully'));
+    }
+
+    public function print(Request $request, Sale $sale)
+    {
+        $sale->load([
+            'items.item',
+            'items.unitMeasure',
+            'customer',
+            'transaction.currency',
+            'stockOuts.store',
+        ]);
+
+        $company = auth()->user()?->company;
+
+        $html = view('sales.print', [
+            'sale' => $sale,
+            'company' => $company,
+        ])->render();
+
+        $tempDir = storage_path('app/mpdf-temp');
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0775, true);
+        }
+
+        $mpdf = new Mpdf([
+            'default_font_size' => 10,
+            'default_font' => 'dejavusans',
+            'tempDir' => $tempDir,
+            'margin_top' => 15,
+            'margin_bottom' => 15,
+            'margin_left' => 10,
+            'margin_right' => 10,
+        ]);
+
+        $mpdf->SetTitle('Sale #' . $sale->number);
+        $mpdf->WriteHTML($html);
+
+        return response($mpdf->Output('sale-'.$sale->number.'.pdf', 'S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="sale-'.$sale->number.'.pdf"',
+        ]);
     }
 }
