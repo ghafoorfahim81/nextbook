@@ -10,6 +10,10 @@ import { useI18n } from 'vue-i18n';
 const { t } = useI18n()
 const props = defineProps({
     unitMeasures: Object,
+    quantities: {
+        type: [Array, Object],
+        default: () => [],
+    },
 });
 const isDialogOpen = ref(false)
 const editingMeasure = ref(null)
@@ -54,6 +58,7 @@ const deleteItem = (id) => {
                 <CreateEditModal
                     :isDialogOpen="isDialogOpen"
                     :editingItem="editingMeasure"
+                    :quantities="props.quantities"
                     @update:isDialogOpen="(value) => {
                         isDialogOpen = value;
                         if (!value) editingMeasure = null;
