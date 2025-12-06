@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use App\Models\Purchase\Purchase;
+use App\Models\Account\Account;
+use App\Models\Ledger\Ledger;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -24,6 +26,10 @@ class AppServiceProvider extends ServiceProvider
             'user' => 'App\Models\User',
             'role' => 'App\Models\Role',
             'permission' => 'App\Models\Permission',
+            'account' => Account::class,
+            Account::class => Account::class,
+            'ledger' => Ledger::class,
+            Ledger::class => Ledger::class,
             'purchase' => 'App\Models\Purchase\Purchase',
             'sale' => 'App\Models\Sale\Sale',
             'expense' => 'App\Models\Expense\Expense',
