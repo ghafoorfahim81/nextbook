@@ -184,6 +184,31 @@ const  metricList = {
             },
           ],
         },
+        volume: {
+          name: t('admin.unit_measure.volume'),
+          unit: "Litre",
+          symbol: "l",
+          measure: [
+            {
+              text: t('admin.unit_measure.litre'),
+              name: "Litre",
+              unit: 1,
+              symbol: "l",
+            },
+            {
+              text: t('admin.unit_measure.millilitre'),
+              name: "Millilitre",
+              unit: 0.001,
+              symbol: "ml",
+            },
+            {
+              text: t('admin.unit_measure.other'),
+              name: "",
+              unit: 1,
+              symbol: "",
+            },
+          ],
+        },
       }
 
 const handleSubmit = () => {

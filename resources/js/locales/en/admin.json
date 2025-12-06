@@ -76,7 +76,10 @@
         "other": "Other",
         "pcs": "Pcs",
         "other_measure": "Other Measure",
-        "select_quantity_type_first": "Select a quantity type first"
+        "select_quantity_type_first": "Select a quantity type first",
+        "litre": "Litre",
+        "millilitre": "Millilitre",
+        "volume": "Volume"
     },
     "branch": {
         "branch": "Branch",
