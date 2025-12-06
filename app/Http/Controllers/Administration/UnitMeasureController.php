@@ -16,7 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-
+use Illuminate\Support\Facades\Cache;
 class UnitMeasureController extends Controller
 {
     protected $metric;
@@ -108,7 +108,7 @@ class UnitMeasureController extends Controller
             // Create the measure (duplicate checking is handled by form request validation)
             $metric->measures()->create(attributes: $measureData);
 
-
+            Cache::forget('unitMeasures');
             DB::commit();
             return redirect()->route('unit-measures.index')->with('success', 'Unit measure created successfully.');
         } catch (\Throwable $th) {
@@ -168,6 +168,7 @@ class UnitMeasureController extends Controller
             ]);
 
             DB::commit();
+            Cache::forget('unitMeasures');
             return redirect()->route('unit-measures.index')->with('success', 'Unit measure updated successfully.');
         } catch (\Throwable $th) {
             DB::rollBack();
@@ -187,12 +188,14 @@ class UnitMeasureController extends Controller
 
         $unitMeasure->delete();
 
+        Cache::forget('unitMeasures');
         return redirect()->route('unit-measures.index')->with('success', 'Unit measure deleted successfully.');
     }
 
     public function restore(Request $request, UnitMeasure $unitMeasure)
     {
         $unitMeasure->restore();
+        Cache::forget('unitMeasures');
         return redirect()->route('unit-measures.index')->with('success', 'Unit measure restored successfully.');
     }
 }
