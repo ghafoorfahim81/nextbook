@@ -118,7 +118,7 @@ class HandleInertiaRequests extends Middleware
             'unitMeasures',
             $cacheDuration,
             fn() => UnitMeasureResource::collection(
-                \App\Models\Administration\UnitMeasure::latest()->take(10)->get()
+                \App\Models\Administration\UnitMeasure::latest()->take(1000)->get()
             )
         );
 
