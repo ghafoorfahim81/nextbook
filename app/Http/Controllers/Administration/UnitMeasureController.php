@@ -82,6 +82,7 @@ class UnitMeasureController extends Controller
                     'quantity' => $metricType['name'],
                     'unit' => $metricType['unit'],
                     'symbol' => $metricType['symbol'],
+                    'is_system' => false,
                     'created_by' => Auth::id()
                 ]);
             }
@@ -93,13 +94,14 @@ class UnitMeasureController extends Controller
                 'symbol' => $measure['symbol'],
                 'branch_id' => Auth::user()->branch_id ?? 1,
                 'quantity_id' => $metric->id,
+                'is_system' => false,
                 'created_by' => Auth::id(),
                 'updated_by' => null,
             ];
 
             // Create the measure (duplicate checking is handled by form request validation)
             $metric->measures()->create(attributes: $measureData);
-            
+
 
             DB::commit();
             return redirect()->route('unit-measures.index')->with('success', 'Unit measure created successfully.');
@@ -140,6 +142,7 @@ class UnitMeasureController extends Controller
                     'unit' => $metricType['unit'],
                     'symbol' => $metricType['symbol'],
                     'description' => $metricType['description'],
+                    'is_system' => false,
                     'created_by' => Auth::id()
                 ]);
             }
@@ -154,6 +157,7 @@ class UnitMeasureController extends Controller
                 'symbol' => $measure['symbol'],
                 'description' => $measure['description'],
                 'quantity_id' => $metric->id,
+                'is_system' => false,
                 'updated_by' => Auth::id()
             ]);
 
