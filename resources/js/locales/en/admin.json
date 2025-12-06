@@ -79,7 +79,10 @@
         "select_quantity_type_first": "Select a quantity type first",
         "litre": "Litre",
         "millilitre": "Millilitre",
-        "volume": "Volume"
+        "volume": "Volume",
+        "custom_quantity": "Create new quantity",
+        "custom_measure": "Create new measure",
+        "suggested_measures": "Suggested measures"
     },
     "branch": {
         "branch": "Branch",

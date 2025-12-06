@@ -4,6 +4,7 @@ namespace App\Http\Resources\Administration;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Administration\UnitMeasureResource;
 
 class QuantityResource extends JsonResource
 {
@@ -21,6 +22,9 @@ class QuantityResource extends JsonResource
             'branch_id' => $this->branch_id,
             'created_by' => $this->created_by,
             'updated_by' => $this->updated_by,
+            'measures' => UnitMeasureResource::collection(
+                $this->whenLoaded('measures')
+            ),
         ];
     }
 }
