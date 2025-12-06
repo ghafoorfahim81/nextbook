@@ -483,7 +483,7 @@ const onhand = (index) => {
     const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
     const onHand = Number(item.on_hand) || 0
-    const converted = (onHand * baseUnit) / selectedUnit
+    const converted = (onHand * baseUnit) * selectedUnit
     const free = Number(item.free) || 0
     return converted + free;
 }
@@ -722,7 +722,7 @@ const addRow = () => {
 
                                         // Calculate unit price for the selected measure
                                         // unit_price = base_unit_price / selected_unit
-                                        form.items[index].unit_price = baseUnitPrice / selectedUnit*form.rate;
+                                        form.items[index].unit_price = baseUnitPrice * selectedUnit*form.rate;
 
                                         notifyIfDuplicate(index)
                                     }"
