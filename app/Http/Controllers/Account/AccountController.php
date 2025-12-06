@@ -52,7 +52,7 @@ class AccountController extends Controller
             ]);
             $transaction->opening()->create([
                 'ledgerable_id' => $account->id,
-                'ledgerable_type' => Account::class,
+                'ledgerable_type' => 'account',
             ]);
         }
 

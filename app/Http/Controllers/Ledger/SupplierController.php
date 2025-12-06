@@ -73,7 +73,7 @@ class SupplierController extends Controller
 
             $transaction->opening()->create([
                 'ledgerable_id'   => $ledger->id,
-                'ledgerable_type' => \App\Models\Ledger\Ledger::class,
+                'ledgerable_type' => 'ledger',
                 'created_by'      => auth()->id(),
             ]);
         }

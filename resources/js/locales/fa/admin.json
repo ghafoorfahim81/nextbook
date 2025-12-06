@@ -77,7 +77,13 @@
         "other": "دیگر",
         "pcs": "تعداد",
         "other_measure": "واحد اندازه گیری دیگر",
-        "select_quantity_type_first": "لطفا یک نوع مقدار انتخاب کنید"
+        "select_quantity_type_first": "لطفا یک نوع مقدار انتخاب کنید",
+        "litre": "لیتر",
+        "millilitre": "میلی لیتر",
+        "volume": "حجم",
+        "custom_quantity": "ساخت کمیت جدید",
+        "custom_measure": "ساخت واحد جدید",
+        "suggested_measures": "واحدهای پیشنهادی"
     },
     "branch": {
         "branch": "شعبه",
