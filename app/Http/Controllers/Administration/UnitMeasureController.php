@@ -9,6 +9,7 @@ use App\Http\Resources\Administration\UnitMeasureCollection;
 use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Administration\Quantity;
+use App\Http\Resources\Administration\QuantityResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
@@ -34,8 +35,13 @@ class UnitMeasureController extends Controller
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
+
+        $quantities = Quantity::with('measures')
+            ->orderBy('quantity')
+            ->get();
         return inertia('Administration/UnitMeasures/Index', [
             'unitMeasures' => UnitMeasureResource::collection($unitMeasures),
+            'quantities' => QuantityResource::collection($quantities),
         ]);
     }
 

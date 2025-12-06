@@ -1,14 +1,20 @@
 <script setup>
-import { computed, ref, reactive, watch } from 'vue'
-import { useForm, router } from '@inertiajs/vue3'
+import { computed, ref, watch } from 'vue'
+import { useForm } from '@inertiajs/vue3'
 import ModalDialog from '@/Components/next/Dialog.vue'
 import NextInput from "@/Components/next/NextInput.vue";
 import NextRadio from "@/Components/next/NextRadio.vue";
 import { useI18n } from 'vue-i18n';
+import { useToast } from '@/Components/ui/toast/use-toast'
 const { t } = useI18n()
+const { toast } = useToast()
 const props = defineProps({
     isDialogOpen: Boolean,
     editingItem: Object, // ✅ this is passed from Index.vue
+    quantities: {
+        type: [Array, Object],
+        default: () => [],
+    },
     branches: {
         type: Array,
         default: () => [],
@@ -32,8 +38,17 @@ watch(() => localDialogOpen.value, (val) => {
 const isEditing = computed(() => !!props.editingItem?.id)
 
 const form = useForm({
-    metric: {},
-    measure: {},
+    metric: {
+        id: null,
+        name: '',
+        unit: '',
+        symbol: '',
+    },
+    measure: {
+        name: '',
+        unit: '',
+        symbol: '',
+    },
 })
 
 const submit = ref(false)
@@ -42,154 +57,66 @@ const closeModal = () => {
     localDialogOpen.value = false
 }
 
-const onMetricChange = () => {
-    form.measure = {}
+const isCustomMetric = ref(false)
+const selectedQuantityId = ref(null)
+
+const quantityOptions = computed(() => props.quantities?.data ?? props.quantities ?? [])
+
+watch(quantityOptions, (list) => {
+    if (!selectedQuantityId.value) {
+        selectedQuantityId.value = list.length ? list[0].id : 'custom'
+    }
+}, { immediate: true })
+
+watch(() => selectedQuantityId.value, (val) => {
+    if (!val) return
+    if (val === 'custom') {
+        isCustomMetric.value = true
+        form.metric = { id: null, name: '', unit: '', symbol: '' }
+    } else {
+        const selected = quantityOptions.value.find((q) => q.id === val)
+        if (selected) {
+            isCustomMetric.value = false
+            form.metric = {
+                id: selected.id,
+                name: selected.quantity,
+                unit: selected.unit,
+                symbol: selected.symbol,
+            }
+        }
+    }
+    form.measure = { name: '', unit: '', symbol: '' }
+})
+
+const suggestedMeasures = computed(() => {
+    if (isCustomMetric.value) return []
+    const selected = quantityOptions.value.find((q) => q.id === selectedQuantityId.value)
+    return selected?.measures ?? []
+})
+
+const applySuggestion = (measure) => {
+    form.measure = {
+        name: measure.name,
+        unit: measure.unit,
+        symbol: measure.symbol,
+    }
 }
 
-const  metricList = {
-        count: {
-          name: t('admin.unit_measure.count'),
-          unit: 'Pcs',
-          symbol: "ea",
-          measure: [
-            {
-              text: t('admin.unit_measure.pcs'),
-              name: "pcs",
-              unit: 1,
-              symbol: "ea",
-            },
-            {
-              text: t('admin.unit_measure.pair'),
-              name: "Pair",
-              unit: 2,
-              symbol: "pr",
-
-            },
-            {
-              text: t('admin.unit_measure.dozen'),
-              name: "Dozen",
-              unit: 12,
-              symbol: "dz",
-
-            },
-            {
-              text: t('admin.unit_measure.other'),
-              name: "",
-              unit: 1,
-              symbol: "",
-
-            },
-          ],
-        },
-        length: {
-          name: t('admin.unit_measure.length'),
-          unit: "Centimetre",
-          symbol: "cm",
-
-          measure: [
-            {
-              text: t('admin.unit_measure.centimetre'),
-              name: "Centimetre",
-              unit: 1,
-              symbol: "cm",
-
-            },
-            {
-              text: t('admin.unit_measure.inch'),
-              name: "Inch",
-              unit: 2.5,
-              symbol: "in",
-
-            },
-            {
-              text: t('admin.unit_measure.metre'),
-              name: "Meter",
-              unit: 100,
-              symbol: "m",
-
-            },
-            {
-              text: t('admin.unit_measure.other'),
-              name: "",
-              unit: 1,
-              symbol: "",
-
-            },
-          ],
-        },
-        Area: {
-          name: t('admin.unit_measure.area'),
-          unit: "SquareCentimetre",
-          symbol: "cm2",
-
-          measure: [
-            {
-              text: t('admin.unit_measure.square_centimetre'),
-              name: "SquareCentimetre",
-              unit: 1,
-              symbol: "cm2",
-
-            },
-            {
-                text: t('admin.unit_measure.square_decimeter'),
-              name: "SquareDecimeter",
-              unit: 0.01,
-              symbol: "dm2",
-
-            },
-            {
-              text: t('admin.unit_measure.square_meter'),
-              name: "SquareMeter",
-              unit: 0.0001,
-              symbol: "m2",
-
-            },
-            {
-              text: t('admin.unit_measure.other'),
-              name: "",
-              unit: 1,
-              symbol: "",
-
-            },
-          ],
-        },
-        Weight: {
-          name: t('admin.unit_measure.weight'),
-          unit: "Gram",
-          symbol: "g",
-          measure: [
-            {
-              text: t('admin.unit_measure.gram'),
-              name: "Gram",
-              unit: 1,
-              symbol: "g",
-            },
-            {
-              text: t('admin.unit_measure.kilogram'),
-              name: "Kilogram",
-              unit: 1000,
-              symbol: "kg",
-            },
-            {
-              text: t('admin.unit_measure.ton'),
-              name: "Ton",
-              unit: 1000000,
-              symbol: "ton",
-            },
-            {
-              text: t('admin.unit_measure.other'),
-              name: "",
-              unit: 1,
-              symbol: "",
-            },
-          ],
-        },
-      }
-
 const handleSubmit = () => {
-    if (!form.metric || !form.measure) {
-        // Show validation error - you can add a toast notification here
-        console.warn('Please select both a quantity type and measure')
+    if (
+        !form.metric?.name ||
+        !form.metric?.unit ||
+        !form.metric?.symbol ||
+        !form.measure?.name ||
+        form.measure?.unit === '' ||
+        !form.measure?.symbol
+    ) {
+        toast({
+            title: t('admin.unit_measure.select_quantity_type_first'),
+            description: t('admin.unit_measure.select_quantity_type_first'),
+            variant: 'destructive',
+            class:'bg-yellow-600 text-white',
+        })
         return
     }
 
@@ -268,84 +195,101 @@ const handleSubmit = () => {
                     <li v-for="(msg, key) in props.errors" :key="key">{{ msg }}</li>
                 </ul>
             </div>
-            <div class="py-4">
-                <div class="grid grid-cols-3 gap-6">
+            <div class="py-4 space-y-8">
+                <div class="grid grid-cols-2 gap-6">
                     <!-- Quantity Types Column -->
                     <div class="space-y-4">
                         <h3 class="text-lg font-semibold text-foreground">{{ t('admin.unit_measure.quantity') }}</h3>
                         <div class="space-y-2">
                             <NextRadio
-                                v-for="(metric, key) in metricList"
-                                :key="key"
-                                v-model="form.metric"
-                                :error="form.errors.metric || props.errors?.metric"
-                                :value="metric"
-                                :label="metric.name"
+                                v-for="quantity in quantityOptions"
+                                :key="quantity.id"
+                                v-model="selectedQuantityId"
+                                :value="quantity.id"
+                                :label="quantity.quantity"
                                 name="metric"
-                                @update:modelValue="onMetricChange"
+                                :error="form.errors.metric || props.errors?.metric"
                             />
+                            <NextRadio
+                                v-model="selectedQuantityId"
+                                value="custom"
+                                :label="t('admin.unit_measure.custom_quantity')"
+                                name="metric"
+                                :error="form.errors.metric || props.errors?.metric"
+                            />
+                        </div>
+                        <div v-if="isCustomMetric" class="space-y-4">
+                            <NextInput
+                                v-model="form.metric.name"
+                                :label="t('general.name')"
+                                :error="form.errors['metric.name'] || props.errors?.['metric.name']"
+                                type="text"
+                                :placeholder="t('general.enter', { text: t('general.name') })"
+                            />
+                            <NextInput
+                                v-model="form.metric.unit"
+                                :label="t('admin.unit_measure.base_unit')"
+                                :error="form.errors['metric.unit'] || props.errors?.['metric.unit']"
+                                type="text"
+                                :placeholder="t('general.enter', { text: t('admin.unit_measure.unit') })"
+                            />
+                            <NextInput
+                                v-model="form.metric.symbol"
+                                :label="t('admin.shared.symbol')"
+                                :error="form.errors['metric.symbol'] || props.errors?.['metric.symbol']"
+                                type="text"
+                                :placeholder="t('general.enter', { text: t('admin.shared.symbol') })"
+                            />
+                        </div>
+                        <div v-else class="text-sm text-muted-foreground" v-if="form.metric.name">
+                            {{ t('admin.unit_measure.base_unit') }}: {{ form.metric.unit }} ({{ form.metric.symbol }})
                         </div>
                     </div>
 
                     <!-- Measures Column -->
                     <div class="space-y-4">
-                        <h3 class="text-lg font-semibold text-foreground">{{ t('admin.unit_measure.unit_measure') }}</h3>
-                        <div class="space-y-2" v-if="form.metric && form.metric.measure">
-                            <NextRadio
-                                v-for="measure in form.metric.measure"
-                                :key="measure.text"
-                                v-model="form.measure"
-                                :error="form.errors.measure || props.errors?.measure"
-                                :value="measure"
-                                :label="measure.text"
-                                name="measure"
-                            />
-                        </div>
-                        <div v-else class="text-sm text-muted-foreground">
-                            {{ t('admin.unit_measure.select_quantity_type_first') }}
-                        </div>
-                    </div>
-
-                    <!-- Other Measures Column -->
-                    <div class="space-y-4" v-if="form.measure && form.measure.text === t('admin.unit_measure.other')">
-                        <h3 class="text-lg font-semibold text-foreground">{{ t('admin.unit_measure.other_measure') }}</h3>
+                        <h3 class="text-lg font-semibold text-foreground">{{ t('admin.unit_measure.custom_measure') }}</h3>
                         <div class="space-y-4">
                             <NextInput
                                 v-model="form.measure.name"
                                 :label="t('general.name')"
-                                :error="form.errors.name || props.errors?.name"
+                                :error="form.errors['measure.name'] || props.errors?.['measure.name']"
                                 type="text"
                                 :placeholder="t('general.enter', { text: t('general.name') })"
                             />
                             <NextInput
                                 v-model="form.measure.unit"
                                 :label="t('admin.unit_measure.unit')"
-                                :error="form.errors.unit || props.errors?.unit"
+                                :error="form.errors['measure.unit'] || props.errors?.['measure.unit']"
                                 type="number"
                                 :placeholder="t('general.enter', { text: t('admin.unit_measure.unit') })"
                             />
                             <NextInput
                                 v-model="form.measure.symbol"
                                 :label="t('admin.shared.symbol')"
-                                :error="form.errors.symbol || props.errors?.symbol"
+                                :error="form.errors['measure.symbol'] || props.errors?.['measure.symbol']"
                                 type="text"
                                 :placeholder="t('general.enter', { text: t('admin.shared.symbol') })"
                             />
                         </div>
+
+                        <div v-if="suggestedMeasures.length" class="space-y-2">
+                            <p class="text-sm font-medium text-foreground">{{ t('admin.unit_measure.suggested_measures') }}</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button
+                                    v-for="measure in suggestedMeasures"
+                                    :key="measure.id || measure.name"
+                                    type="button"
+                                    class="border rounded-md px-3 py-2 text-left hover:border-primary"
+                                    @click="applySuggestion(measure)"
+                                >
+                                    <div class="font-semibold">{{ measure.name }}</div>
+                                    <div class="text-xs text-muted-foreground">{{ measure.unit }} {{ measure.symbol }}</div>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <!-- Selected Values Display -->
-                <!-- <div v-if="form.metric && form.measure" class="mt-6 p-4 bg-gray-50 rounded-lg">
-                    <h4 class="text-sm font-medium text-gray-700 mb-2">Selected Configuration:</h4>
-                    <div class="text-sm text-gray-600">
-                        <p><strong>Quantity Type:</strong> {{ form.metric.name }}</p>
-                        <p><strong>Measure:</strong> {{ form.measure.text }}</p>
-                        <p v-if="form.measure.name"><strong>Custom Name:</strong> {{ form.measure.name }}</p>
-                        <p><strong>Unit:</strong> {{ form.measure.unit }}</p>
-                        <p><strong>Symbol:</strong> {{ form.measure.symbol }}</p>
-                    </div>
-                </div> -->
             </div>
         </form>
     </ModalDialog>
