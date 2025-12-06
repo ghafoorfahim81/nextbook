@@ -86,6 +86,9 @@ Route::middleware([
     Route::patch('/update-sale-status/{sale}/status', [\App\Http\Controllers\Sale\SaleController::class, 'updateSaleStatus'])->name('sales.update-sale-status');
     Route::patch('/sales/{sale}/restore', [\App\Http\Controllers\Sale\SaleController::class, 'restore'])->name('sales.restore')->withTrashed();
     Route::get('/item-with-batches', [NextController::class, 'getItemWithBatches'])->name('item.with.batches');
+    Route::get('/sales/{sale}/print', [\App\Http\Controllers\Sale\SaleController::class, 'print'])->name('sales.print');
+
+
     // Company routes
     Route::get('/company', [\App\Http\Controllers\CompanyController::class, 'show'])
         ->name('company.show');
