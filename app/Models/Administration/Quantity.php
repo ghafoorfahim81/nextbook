@@ -41,6 +41,7 @@ class Quantity extends Model
         'unit',
         'symbol',
         'branch_id',
+        'is_system',
         'created_by',
         'updated_by',
     ];
@@ -55,6 +56,7 @@ class Quantity extends Model
     protected $casts = [
         'id' => 'string',
         'branch_id' => 'string',
+        'is_system' => 'boolean',
         'created_by' => 'string',
         'updated_by' => 'string',
         'parent_id' => 'string',
