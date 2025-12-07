@@ -11,7 +11,7 @@ trait HasUserAuditable
 {
     public static function bootHasUserAuditable()
     {
-        $firstUser = \App\Models\User::first();
+        $firstUser = \App\Models\User::where('email', 'admin@nextbook.com')->first();
         $branch = \App\Models\Administration\Branch::first();
         if (!$firstUser) {
             $firstUser = User::create([
