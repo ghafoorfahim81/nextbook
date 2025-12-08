@@ -19,6 +19,10 @@ const props = defineProps({
         type: String,
         default: "w-[500px] max-w-[500px]"
     },
+    contentClass: {
+        type: String,
+        default: '',
+    },
   confirmText: String,
   cancelText: String,
   showCancel: Boolean,
@@ -38,7 +42,7 @@ const emit = defineEmits(["update:open", "confirm", "cancel"]);
     <div v-if="open" class="fixed inset-0 bg-white/5" />
 
     <DialogContent
-        :class="width"
+        :class="[width, 'max-h-[90vh] overflow-y-auto', contentClass]"
     >
       <DialogHeader>
         <DialogTitle>{{ title }}</DialogTitle>
