@@ -195,7 +195,7 @@ const handleSubmit = () => {
                     <li v-for="(msg, key) in props.errors" :key="key">{{ msg }}</li>
                 </ul>
             </div>
-            <div class="py-4 space-y-8 overflow-y-auto max-h-[400px]">
+            <div class="py-4 space-y-8">
                 <div class="grid grid-cols-2 gap-6">
                     <!-- Quantity Types Column -->
                     <div class="space-y-4 p-1">
