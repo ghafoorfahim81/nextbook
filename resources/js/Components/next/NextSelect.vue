@@ -7,7 +7,11 @@
                 :label="labelKey"
                 :reduce="reduceInternal"
                 :modelValue="modelValue"
-                @update:modelValue="val => emit('update:modelValue', val)"
+
+                @update:modelValue="val => {
+                    console.log('NextSelect emitting:', val); // Debug log
+                    emit('update:modelValue', val);
+                }"
                 @search="handleSearch"
                 :filterable="false"
                 clearable="false"

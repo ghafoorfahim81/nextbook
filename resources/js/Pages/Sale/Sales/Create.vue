@@ -397,7 +397,7 @@ const handleItemChange = async (index, selectedItem) => {
     row.base_unit_price = selectedItem.unit_price ?? selectedItem.mrp_rate ?? 0
 
     // Set the initial unit_price based on the base unit measure
-    const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1 
+    const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1
     row.unit_price = (row.base_unit_price * Number(row.selected_measure.unit)*form.rate)/baseUnit;
 
     // Add a new empty row only when selecting into the last row
@@ -600,6 +600,7 @@ const addRow = () => {
                     :search-fields="['name', 'email', 'phone_no']"
                     :search-options="{ type: 'supplier' }"
                 />
+
                 <NextInput placeholder="Number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
                 <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
                 <div class="grid grid-cols-2 gap-2">
@@ -832,16 +833,20 @@ const addRow = () => {
 
          <!-- Payment Dialog for Credit Transactions -->
          <PaymentDialog
-             :open="showPaymentDialog"
+             :isDialogOpen="showPaymentDialog"
              :payment="form.payment"
              :errors="form.errors"
              :accounts="props.accounts?.data || []"
              :submitting="false"
-             @update:open="(value) => showPaymentDialog = value"
+             @update:isDialogOpen="(value) => {
+                isDialogOpen = value;
+                if (!value) form.payment = null;
+            }"
              @confirm="handlePaymentDialogConfirm"
              @cancel="handlePaymentDialogCancel"
              @update:payment="(payment) => form.payment = payment"
          />
+ 
 
     </AppLayout>
 </template>
