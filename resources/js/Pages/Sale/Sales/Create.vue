@@ -397,8 +397,7 @@ const handleItemChange = async (index, selectedItem) => {
     row.base_unit_price = selectedItem.unit_price ?? selectedItem.mrp_rate ?? 0
 
     // Set the initial unit_price based on the base unit measure
-    const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1
-console.log('row.selected_measure.unit', row.selected_measure.unit);
+    const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1 
     row.unit_price = (row.base_unit_price * Number(row.selected_measure.unit)*form.rate)/baseUnit;
 
     // Add a new empty row only when selecting into the last row
