@@ -50,7 +50,7 @@ const form = useForm({
     discount_type: purchase?.discount_type || 'percentage',
     description: purchase?.description || '',
     store_id: purchase?.store_id || '',
-    selected_store: purchase?.store || '', 
+    selected_store: purchase?.store || '',
     item_list: purchase?.item_list || [],
     payment: purchase?.payment || {
         method: '',
@@ -324,7 +324,7 @@ const addRow = () => {
         free: '',
         tax: '',
     });
- 
+
 };
 
 const deleteRow = (index) => {
@@ -533,10 +533,11 @@ const transactionSummary = computed(() => {
                                     :show-arrow="false"
                                     :reduce="unit => unit"
                                     @update:modelValue="(measure) => {
-                                        const baseUnit = Number(form.items[index]?.selected_item?.unitMeasure?.unit) || 1;
-                                        const selectedUnit = Number(measure?.unit) || baseUnit;
-                                        const baseUnitPrice = Number(form.items[index]?.base_unit_price) || 0;
-                                        form.items[index].unit_price = baseUnitPrice / selectedUnit * form.rate;
+                                        const baseUnit = Number(form.items[index]?.selected_item?.unitMeasure?.unit) || 1
+                                        const selectedUnit = Number(measure?.unit) || baseUnit
+                                        const baseUnitPrice = Number(form.items[index]?.base_unit_price) || 0
+                                        form.items[index].unit_price = (baseUnitPrice * selectedUnit*form.rate)/baseUnit;
+
                                     }"
                                 />
                             </td>

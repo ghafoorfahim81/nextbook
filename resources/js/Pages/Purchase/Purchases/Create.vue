@@ -381,7 +381,7 @@ const handleItemChange = async (index, selectedItem) => {
 
     // Set the initial unit_price based on the base unit measure
     const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1
-    row.unit_price = row.base_unit_price / baseUnit*form.rate;
+    row.unit_price = (row.base_unit_price * Number(row.selected_measure.unit)*form.rate)/baseUnit;
 
     // Add a new empty row only when selecting into the last row
     if (index === form.items.length - 1) {
@@ -470,7 +470,8 @@ const onhand = (index) => {
     const onHand = Number(item.on_hand) || 0
     const converted = (onHand * baseUnit) / selectedUnit
     const free = Number(item.free) || 0
-    return converted + free;
+    const qty = Number(item.quantity) || 0
+    return converted + free + qty;
 }
 
 const toNum = (v, d = 0) => {
@@ -701,14 +702,11 @@ const addRow = () => {
                                     value-key="id"
                                     :show-arrow="false"
                                     :reduce="unit => unit"
-                                    @update:modelValue="(measure) => {
-                                        const baseUnit = Number(form.items[index]?.selected_item?.unitMeasure?.unit) || 1
-                                        const selectedUnit = Number(measure?.unit) || baseUnit
-                                        const baseUnitPrice = Number(form.items[index]?.base_unit_price) || 0
-
-                                        // Calculate unit price for the selected measure
-                                        // unit_price = base_unit_price / selected_unit
-                                        form.items[index].unit_price = baseUnitPrice / selectedUnit*form.rate;
+                                    @update:modelValue="(measure) => { 
+                                            const baseUnit = Number(form.items[index]?.selected_item?.unitMeasure?.unit) || 1
+                                            const selectedUnit = Number(measure?.unit) || baseUnit
+                                            const baseUnitPrice = Number(form.items[index]?.base_unit_price) || 0
+                                            form.items[index].unit_price = (baseUnitPrice * selectedUnit*form.rate)/baseUnit;
 
                                         notifyIfDuplicate(index)
                                     }"
