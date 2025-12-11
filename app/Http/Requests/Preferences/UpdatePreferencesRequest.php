@@ -61,7 +61,7 @@ use Illuminate\Validation\Rule;
             'sales_return.item_columns' => 'sometimes|array',
             'sales_return.invoice_prefix' => 'sometimes|string|max:20',
             'sales_return.start_number' => 'sometimes|integer|min:1',
-
+            'sales_return.accepted_return_days' => 'sometimes|integer|min:0|max:365',
             // Sales Quotation
             'sales_quotation' => 'sometimes|array',
             'sales_quotation.general_fields' => 'sometimes|array',

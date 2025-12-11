@@ -100,6 +100,7 @@ class User extends Authenticatable
             'item_columns' => ['packing' => false, 'batch' => false, 'expiry' => false, 'on_hand' => true, 'measure' => true, 'discount' => true, 'tax' => false, 'free' => false],
             'invoice_prefix' => 'SR-',
             'start_number' => 1,
+            'accepted_return_days' => 30,
         ],
         'sales_quotation' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
