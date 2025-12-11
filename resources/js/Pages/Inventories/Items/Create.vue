@@ -43,8 +43,7 @@ const formatCode = (number) => {
 
 const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
 const visibleFields = computed(() => user_preferences.value.item_management.visible_fields ?? []).value
-const specText = computed(() => user_preferences.value.item_management.spec_text ?? '')
-console.log('ssss',visibleFields);
+const specText = computed(() => user_preferences.value.item_management.spec_text ?? '') 
 
 const form = useForm({
     name: '',

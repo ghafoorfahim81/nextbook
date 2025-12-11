@@ -56,8 +56,23 @@
     watch(() => localDialogOpen.value, (val) => {
         emit('update:isDialogOpen', val)
     })
+    const localPayment = reactive({
+    method: '',
+    amount: '',
+    account_id: '',
+    note: '',
+})
 
-    const localPayment = ref({ ...props.payment });
+// Sync from props when dialog opens or props change
+watch(() => props.payment, (newPayment) => {
+    Object.assign(localPayment, {
+        method: newPayment?.method || '',
+        amount: newPayment?.amount || '',
+        account_id: newPayment?.account_id || '',
+        note: newPayment?.note || '',
+    })
+}, { immediate: true, deep: true })
+
     const bankAccounts = ref([]);
 
     // Watch for accounts prop changes and update bankAccounts
@@ -123,7 +138,7 @@
     </script>
 
 <template>
-    <ModalDialog
+ <ModalDialog
         :open="localDialogOpen"
         :title="t('general.payment')"
         :confirmText="t('general.confirm')"
@@ -144,16 +159,18 @@
                 step="any"
             />
             <NextSelect
-                :modelValue="localPayment.method"
-                @update:modelValue="(value) => updatePayment('method', value)"
+                v-model="localPayment.method"
                 :options="paymentMethods"
                 label-key="name"
                 value-key="id"
+                :reduce="paymentMethod => paymentMethod"
                 floating-text="Payment Method"
                 placeholder="Select payment method"
+                @update:modelValue="(value) => localPayment.method = value"
                 :error="errors?.method"
-                :isRequired="true"
-            />
+                :isRequired="true" 
+            /> 
+
             <NextSelect
                 :modelValue="localPayment.account_id"
                 @update:modelValue="(value) => updatePayment('account_id', value)"

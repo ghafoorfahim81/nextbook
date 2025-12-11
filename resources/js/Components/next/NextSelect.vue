@@ -18,8 +18,8 @@
                 :loading="isLoading"
                 :placeholder="placeholder"
                 :close-on-select="true"
-                :append-to-body="true"
-                :calculate-position="calculatePosition"
+                :append-to-body="appendToBody"
+                :calculate-position="appendToBody ? calculatePosition : null"
                 class="col-span-3 sticky z-100 rounded-md shadow-sm border border-gray-300 dark:border-gray-500 focus:border-violet-500 focus:outline-none focus:ring-violet-500 sm:text-sm"
                 :class="[{ 'no-arrow': !showArrow }]"
                 v-bind="$attrs"
@@ -60,6 +60,7 @@ const props = defineProps({
     searchOptions: { type: Object, default: () => ({}) },
     showArrow: { type: Boolean, default: true },
     clearable: { type: Boolean, default: true },
+    appendToBody: { type: Boolean, default: true },
 });
 // ... existing imports and props ...
 
