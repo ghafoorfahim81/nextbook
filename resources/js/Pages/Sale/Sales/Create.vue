@@ -857,6 +857,18 @@ console.log('user_preferences', sales_preferences);
          />
  
 
+         <CreateEditModal
+            :isDialogOpen="isDialogOpen"
+            :editingItem="editingItem"
+            :branches="branches"
+            @update:isDialogOpen="(value) => {
+                isDialogOpen = value;
+                if (!value) editingItem = null;
+            }"
+            @saved="() => { editingItem = null }"
+        />
+        
+
     </AppLayout>
 </template>
 

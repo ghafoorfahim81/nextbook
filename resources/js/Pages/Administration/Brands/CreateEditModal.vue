@@ -43,8 +43,7 @@ const form = useForm({
     branch_id: '',
 });
 
-watch(() => props.editingItem, (item) => {
-        console.log('itemssssssssssss', item);
+watch(() => props.editingItem, (item) => { 
     if (item) {
         Object.assign(form, {
             name: item.name ?? '',
