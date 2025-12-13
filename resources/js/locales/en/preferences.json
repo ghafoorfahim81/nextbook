@@ -72,7 +72,15 @@
         "measure": "Measure",
         "discount": "Discount",
         "tax": "Tax",
-        "free": "Free"
+        "free": "Free",
+        "colors": "Colors",
+        "size": "Size",
+        "brand": "Brand",
+        "minimum_stock": "Minimum Stock",
+        "maximum_stock": "Maximum Stock",
+        "rack_no": "Rack No",
+        "category": "Category",
+        "rates": "Rates"
     },
     "sales": {
         "description": "Configure sales transaction preferences",

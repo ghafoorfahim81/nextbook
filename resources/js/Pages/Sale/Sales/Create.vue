@@ -185,12 +185,21 @@ watch(() => form.selected_sale_purchase_type, (newType) => {
 
 let disabled = (false);
 
-const handleSelectChange = (field, value) => {
-    console.log('value 123', value);
+const handleResetPayment = () => {
+    form.payment = {
+        method: '',
+        amount: '',
+        account_id: '',
+        note: '',
+    }
+}
+const handleSelectChange = (field, value) => { 
     if(field === 'currency_id') {
         form.rate = value.exchange_rate;
     }
-
+    if(field === 'sale_purchase_type_id' && value === 'cash') {
+        handleResetPayment();
+    } 
     form[field] = value;
 };
 
@@ -301,7 +310,7 @@ const handlePaymentDialogCancel = () => {
     // Reset the sale/purchase type back to debit when dialog is cancelled
     if (props.salePurchaseTypes) {
 
-        const debitType = props.salePurchaseTypes.find(type => type.id === 'debit');
+        const debitType = props.salePurchaseTypes.find(type => type.id === 'cash');
         if (debitType) {
             form.selected_sale_purchase_type = debitType;
         }
@@ -842,19 +851,16 @@ console.log('user_preferences', sales_preferences);
 
          <!-- Payment Dialog for Credit Transactions -->
          <PaymentDialog
-             :isDialogOpen="showPaymentDialog"
-             :form="form"
-             :errors="form.errors"
-             :accounts="props.accounts?.data || []"
-             :submitting="false"
-             @update:isDialogOpen="(value) => {
-                isDialogOpen = value;
-                if (!value) form.payment = null;
-            }"
-             @confirm="handlePaymentDialogConfirm"
-             @cancel="handlePaymentDialogCancel"
-             @update:payment="(payment) => form.payment = payment"
-         />
+                 :open="showPaymentDialog"
+                 :payment="form.payment"
+                 :errors="form.errors"
+                 :accounts="props.accounts?.data || []"
+                 :submitting="false"
+                 @update:open="(value) => showPaymentDialog = value"
+                 @confirm="handlePaymentDialogConfirm"
+                 @cancel="handlePaymentDialogCancel"
+                 @update:payment="(payment) => form.payment = payment"
+             />
  
 
          <CreateEditModal

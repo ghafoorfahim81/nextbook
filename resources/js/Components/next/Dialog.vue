@@ -29,11 +29,16 @@ const props = defineProps({
   showConfirm: Boolean,
   closeable: {
     type: Boolean,
-    default: true, // ✅ Controls closing behavior
+    // Kept for backward compatibility / future control, but outside-click is always prevented below.
+    default: true,
   },
 });
 
 const emit = defineEmits(["update:open", "confirm", "cancel"]);
+
+const preventOutsideDismiss = (event: any) => {
+  event?.preventDefault?.();
+};
 </script>
 
 <template>
@@ -43,6 +48,8 @@ const emit = defineEmits(["update:open", "confirm", "cancel"]);
 
     <DialogContent
         :class="[width, 'max-h-[90vh] p-0 flex flex-col overflow-hidden', contentClass]"
+        @pointer-down-outside="preventOutsideDismiss"
+        @interact-outside="preventOutsideDismiss"
     >
         <div class="flex flex-col max-h-[90vh]">
             <div class="sticky top-0 z-10 bg-background px-6 pt-6 pb-4">

@@ -168,12 +168,21 @@ watch(() => form.selected_sale_purchase_type, (newType) => {
 
 let disabled = (false);
 
-const handleSelectChange = (field, value) => {
-    console.log('value 123', value);
+const handleResetPayment = () => {
+    form.payment = {
+        method: '',
+        amount: '',
+        account_id: '',
+        note: '',
+    }
+}
+const handleSelectChange = (field, value) => { 
     if(field === 'currency_id') {
         form.rate = value.exchange_rate;
     }
-
+    if(field === 'sale_purchase_type_id' && value === 'cash') {
+        handleResetPayment();
+    } 
     form[field] = value;
 };
 

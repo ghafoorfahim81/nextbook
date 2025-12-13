@@ -7,7 +7,8 @@
   "showing": "Showing {from} to {to} of {total} entries",
   "previous": "Previous",
   "next": "Next",
-  "show": "Show"
+  "show": "Show",
+  "print": "Print"
 }
 
 
