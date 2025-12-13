@@ -18,8 +18,8 @@
     "tabs": {
         "appearance": "Appearance",
         "item_management": "Item Management",
-        "sales": "Sales",
-        "purchases": "Purchases",
+        "sale": "Sale",
+        "purchase": "Purchase",
         "receipt_payment": "Receipt & Payment",
         "tax_currency": "Tax & Currency",
         "notifications": "Notifications",
@@ -82,13 +82,13 @@
         "category": "Category",
         "rates": "Rates"
     },
-    "sales": {
-        "description": "Configure sales transaction preferences",
+    "sale": {
+        "description": "Configure sale transaction preferences",
         "types": {
-            "sales": "Sales",
-            "sales_order": "Sales Order",
-            "sales_return": "Sales Return",
-            "sales_quotation": "Sales Quotation"
+            "sale": "Sale",
+            "sale_order": "Sale Order",
+            "sale_return": "Sale Return",
+            "sale_quotation": "Sale Quotation"
         },
         "general_fields": "General Fields",
         "item_columns": "Item Columns",
@@ -104,10 +104,10 @@
         "show_ledger_transactions": "Show Ledger Latest Transactions",
         "show_item_transactions": "Show Item Latest Transactions"
     },
-    "purchases": {
+    "purchase": {
         "description": "Configure purchase transaction preferences",
         "types": {
-            "purchases": "Purchase",
+            "purchase": "Purchase",
             "purchase_order": "Purchase Order",
             "purchase_return": "Purchase Return",
             "purchase_quotation": "Purchase Quotation"

@@ -36,6 +36,7 @@ const props = defineProps({
     unitMeasures: {type: Object, required: true},
     accounts: {type: Object, required: true},
     purchaseNumber: {type: String, required: true},
+    user_preferences: {type: Object, required: true},
 })
 
 const form = useForm({
@@ -123,18 +124,7 @@ watch(() => props.currencies?.data, (currencies) => {
         }
     }
 }, { immediate: true });
-
-// Watch for currency changes and automatically update rate
-// watch(() => form.currency_id, (newCurrencyId) => {
-//     if (newCurrencyId && props.currencies?.data) {
-//         const selectedCurrency = props.currencies.data.find(currency => currency.id === newCurrencyId);
-//         if (selectedCurrency && selectedCurrency.exchange_rate) {
-//             form.rate = selectedCurrency.exchange_rate;
-//             form.currency_id = selectedCurrency.id;
-//             form.selected_currency = selectedCurrency;
-//         }
-//     }
-// });
+ 
 
 watch(() => props.salePurchaseTypes, (salePurchaseTypes) => {
     if (salePurchaseTypes && !form.selected_sale_purchase_type) {
@@ -315,16 +305,7 @@ onMounted(() => {
         sidebar.setOpen(false)
     }
     // Auto-generate bill number: latest + 1
-    ;(async () => {
-        // try {
-        //     const { data } = await axios.get('/purchases/latest-number')
-        //     const latest = Number((data && (data.number ?? data.latest ?? data.data)) ?? 0)
-        //     if (!isNaN(latest) && latest >= 0) {
-        //         form.number = String(latest + 1)
-        //     }
-        // } catch (e) {
-        //     // ignore if endpoint not available
-        // }
+    ;(async () => { 
     })()
 })
 onUnmounted(() => {
@@ -397,14 +378,7 @@ const handleItemChange = async (index, selectedItem) => {
         addRow()
     }
 
-    notifyIfDuplicate(index)
-    // Duplicate check after selection
-    // if (isDuplicateRow(index)) {
-    //     notifyIfDuplicate(index)
-    //     // Automatically clear the duplicate item
-    //     resetRow(index)
-    //     return
-    // }
+    notifyIfDuplicate(index) 
 }
 const isRowEnabled = (index) => {
     if (!form.selected_ledger) return false
@@ -571,6 +545,14 @@ const addRow = () => {
         tax: '',
     })
 }
+const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
+const general_fields = computed(() =>  user_preferences.value?.purchase.general_fields ?? user_preferences.value.purchase.general_fields ?? []).value
+const item_columns = computed(() => user_preferences.value?.purchase.item_columns ?? user_preferences.value.purchase.item_columns ?? []).value
+const purchase_preferences = computed(() => user_preferences.value?.purchase ?? user_preferences.value.purchase ?? []).value
+const item_management = computed(() => user_preferences.value?.item_management ?? user_preferences.value.item_management ?? []).value 
+const spec_text = computed(() => item_management?.spec_text ?? item_management?.spec_text ?? 'batch').value
+
+console.log('item_columns', item_columns);
 </script>
 
 <template>
@@ -593,14 +575,15 @@ const addRow = () => {
                     :search-fields="['name', 'email', 'phone_no']"
                     :search-options="{ type: 'supplier' }"
                 />
-                <NextInput placeholder="Number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
-                <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
-                <div class="grid grid-cols-2 gap-2">
+                <NextInput placeholder="Number" v-if="general_fields.number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
+                <NextDate v-if="general_fields.date" v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
+                <div class="grid grid-cols-2 gap-2" v-if="general_fields.currency">
                     <NextSelect
                     :options="currencies.data"
                     v-model="form.selected_currency"
                     label-key="code"
                     value-key="id"
+                    :clearable="false"
                     @update:modelValue="(value) => handleSelectChange('currency_id', value.id)"
                     :reduce="currency => currency"
                    :floating-text="t('admin.currency.currency')"
@@ -612,10 +595,11 @@ const addRow = () => {
                 <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')"/>
                 </div>
 
-               <div class="grid grid-cols-1 gap-2">
+               <div class="grid grid-cols-1 gap-2" v-if="general_fields.type">
                 <NextSelect
                     :options="salePurchaseTypes"
                     v-model="form.selected_sale_purchase_type"
+                    :clearable="false"
                     @update:modelValue="(value) => handleSelectChange('sale_purchase_type_id', value)"
                     label-key="name"
                     value-key="id"
@@ -624,8 +608,9 @@ const addRow = () => {
                     :error="form.errors?.sale_purchase_type_id"
                 />
                 </div>
-                <NextSelect
+                <NextSelect v-if="general_fields.store"
                     :options="stores.data"
+                    :clearable="false"
                     v-model="form.selected_store"
                     @update:modelValue="(value) => handleSelectChange('store_id', value)"
                     label-key="name"
@@ -642,18 +627,18 @@ const addRow = () => {
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 min-w-5">#</th>
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
-                            <th class="px-1 py-1 w-32">{{ t('general.batch') }}</th>
-                            <th class="px-1 py-1 w-36">{{ t('general.expire_date') }}</th>
+                            <th class="px-1 py-1 w-32" v-if="item_columns.batch">{{ t(spec_text) }}</th>
+                            <th class="px-1 py-1 w-36" v-if="item_columns.expiry">{{ t('general.expire_date') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
-                            <th class="px-1 py-1 w-24">{{ t('general.on_hand') }}</th>
-                            <th class="px-1 py-1 w-24">{{ t('general.unit') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="item_columns.on_hand">{{ t('general.on_hand') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="item_columns.measure">{{ t('general.unit') }}</th>
                             <th class="px-1 py-1 w-24">{{ t('general.price') }}</th>
-                            <th class="px-1 py-1 w-24">{{ t('general.discount') }}</th>
-                            <th class="px-1 py-1 w-16">{{ t('general.free') }}</th>
-                            <th class="px-1 py-1 w-16">{{ t('general.tax') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="item_columns.discount">{{ t('general.discount') }}</th>
+                            <th class="px-1 py-1 w-16" v-if="item_columns.free">{{ t('general.free') }}</th>
+                            <th class="px-1 py-1 w-16" v-if="item_columns.tax">{{ t('general.tax') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.total') }}</th>
                             <th class="px-1 py-1 w-10  ">
-                                <Trash2 class="w-4 h-4 text-red-500 inline" />
+                                <Trash2 class="w-4 h-4 text-fuchsia-700 inline" />
                             </th>
                         </tr>
                     </thead>
@@ -677,16 +662,16 @@ const addRow = () => {
                                     @update:modelValue=" value => { handleItemChange(index, value); }"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                                <NextInput
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.batch">
+                                <NextInput 
                                     v-model="item.batch"
                                     :disabled="!item.selected_item"
                                     :error="form.errors?.[`item_list.${index}.batch`]"
                                     @input="notifyIfDuplicate(index)"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none relative relative wq': !isRowEnabled(index) }">
-                                <NextDate v-model="item.expire_date"
+                            <td :class="{ 'opacity-50 pointer-events-none select-none relative relative wq': !isRowEnabled(index) }" v-if="item_columns.expiry">
+                                <NextDate v-if="item_columns.expire_date" v-model="item.expire_date"
                                 :popover="popover"
                                 :error="form.errors?.[`item_list.${index}.expire_date`]"   />
                             </td>
@@ -699,8 +684,8 @@ const addRow = () => {
                                     :error="form.errors?.[`item_list.${index}.quantity`]"
                                 />
                             </td>
-                            <td class="text-center">
-                                 <span :title="String(onhand(index))">{{ Number(onhand(index)).toFixed(1) }}</span>
+                            <td class="text-center" v-if="item_columns.on_hand">
+                                 <span :title="String(onhand(index))" >{{ Number(onhand(index)).toFixed(1) }}</span>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
@@ -730,7 +715,7 @@ const addRow = () => {
                                     :error="form.errors?.[`item_list.${index}.unit_price`]"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.discount">
                                 <NextInput
                                     v-model="item.item_discount"
                                     :disabled="!item.selected_item"
@@ -739,7 +724,7 @@ const addRow = () => {
                                     :error="form.errors?.[`item_list.${index}.item_discount`]"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.free">
                                 <NextInput
                                     v-model="item.free"
                                     :disabled="!item.selected_item"
@@ -748,7 +733,7 @@ const addRow = () => {
                                     :error="form.errors?.[`item_list.${index}.free`]"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.tax">
                                 <NextInput
                                     v-model="item.tax"
                                     :disabled="!item.selected_item"
@@ -772,22 +757,22 @@ const addRow = () => {
                             <!-- Item total centered across item column -->
                             <td class="text-center">{{ totalRows }}</td>
                             <!-- Batch, Expiry blank -->
-                            <td></td>
-                            <td></td>
+                            <td v-if="item_columns.batch"></td>
+                            <td v-if="item_columns.expiry"></td>
                             <!-- Qty total centered -->
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
                             <!-- On hand blank -->
-                            <td></td>
+                            <td v-if="item_columns.on_hand"></td>
                             <!-- Unit blank -->
-                            <td></td>
+                            <td v-if="item_columns.measure"></td>
                             <!-- Value of goods (qty*price) total centered -->
-                            <td class="text-center">{{ totalPurchasePrice || 0 }}</td>
+                            <td class="text-center">{{ goodsTotal || 0 }}</td>
                             <!-- Discount total centered -->
-                            <td class="text-center">{{ totalItemDiscount || 0 }}</td>
+                            <td class="text-center" v-if="item_columns.discount">{{ totalItemDiscount || 0 }}</td>
                             <!-- Free total centered -->
-                            <td class="text-center">{{ totalFree || 0 }}</td>
+                            <td class="text-center" v-if="item_columns.free">{{ totalFree || 0 }}</td>
                             <!-- Tax total centered -->
-                            <td class="text-center">{{ totalTax || 0 }}</td>
+                            <td class="text-center" v-if="item_columns.tax" >{{ totalTax || 0 }}</td>
                             <!-- Grand total centered -->
                             <td class="text-center">{{ totalRowTotal || 0 }}</td>
                             <!-- Delete column blank -->

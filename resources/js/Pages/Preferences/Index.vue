@@ -34,8 +34,8 @@ const activeTab = ref('appearance')
 const tabs = [
     { id: 'appearance', label: 'preferences.tabs.appearance', icon: Palette },
     { id: 'item_management', label: 'preferences.tabs.item_management', icon: Package },
-    { id: 'sales', label: 'preferences.tabs.sales', icon: ShoppingCart },
-    { id: 'purchases', label: 'preferences.tabs.purchases', icon: ShoppingBag },
+    { id: 'sale', label: 'preferences.tabs.sale', icon: ShoppingCart },
+    { id: 'purchase', label: 'preferences.tabs.purchase', icon: ShoppingBag },
     { id: 'receipt_payment', label: 'preferences.tabs.receipt_payment', icon: CreditCard },
     { id: 'tax_currency', label: 'preferences.tabs.tax_currency', icon: Calculator },
     { id: 'notifications', label: 'preferences.tabs.notifications', icon: Bell },
@@ -104,10 +104,10 @@ const handleFileUpload = (event) => {
 }
 
 // Transaction Types for Sales and Purchases
-const salesTransactionTypes = ['sales', 'sales_order', 'sales_return', 'sales_quotation']
-const purchaseTransactionTypes = ['purchases', 'purchase_order', 'purchase_return', 'purchase_quotation']
+const salesTransactionTypes = ['sale', 'sales_order', 'sales_return', 'sales_quotation']
+const purchaseTransactionTypes = ['purchase', 'purchase_order', 'purchase_return', 'purchase_quotation']
 const activeSalesType = ref('sales')
-const activePurchaseType = ref('purchases')
+const activePurchaseType = ref('purchase')
 
 const generalFields = [
     { key: 'number', label: 'preferences.fields.number' },
@@ -315,11 +315,11 @@ const receiptPaymentFields = [
                     </Card>
 
                     <!-- Sales preferences -->
-                    <Card v-show="activeTab === 'sales'" class="animate-in fade-in duration-200">
+                    <Card v-show="activeTab === 'sale'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-row items-center justify-between">
                             <div>
-                                <CardTitle>{{ t('preferences.tabs.sales') }}</CardTitle>
-                                <CardDescription>{{ t('preferences.sales.description') }}</CardDescription>
+                                <CardTitle>{{ t('preferences.tabs.sale') }}</CardTitle>
+                                <CardDescription>{{ t('preferences.sale.description') }}</CardDescription>
                             </div>
                             <Button variant="ghost" size="sm" @click="resetCategory(activeSalesType)">
                                 <RotateCcw class="w-4 h-4 mr-2" />
@@ -336,13 +336,13 @@ const receiptPaymentFields = [
                                     size="sm"
                                     @click="activeSalesType = type"
                                 >
-                                        {{ t(`preferences.sales.types.${type}`) }}
+                                        {{ t(`preferences.sale.types.${type}`) }}
                                 </Button>
                             </div>
 
                             <!-- General Fields -->
                             <div class="space-y-3">
-                                <Label class="text-base font-medium">{{ t('preferences.sales.general_fields') }}</Label>
+                                <Label class="text-base font-medium">{{ t('preferences.sale.general_fields') }}</Label>
                                 <div class="flex flex-wrap gap-4">
                                     <div v-for="field in generalFields" :key="field.key" class="flex items-center gap-2">
                                         <Checkbox
@@ -360,7 +360,7 @@ const receiptPaymentFields = [
 
                             <!-- Item Columns -->
                             <div class="space-y-3">
-                                <Label class="text-base font-medium">{{ t('preferences.sales.item_columns') }}</Label>
+                                <Label class="text-base font-medium">{{ t('preferences.sale.item_columns') }}</Label>
                                 <div class="flex flex-wrap gap-4">
                                     <div v-for="col in itemColumns" :key="col.key" class="flex items-center gap-2">
                                         <Checkbox
@@ -379,11 +379,11 @@ const receiptPaymentFields = [
                             <!-- Additional preferences -->
                             <div class="grid grid-cols-2 gap-6">
                                 <div class="space-y-2">
-                                    <Label>{{ t('preferences.sales.invoice_prefix') }}</Label>
+                                    <Label>{{ t('preferences.sale.invoice_prefix') }}</Label>
                                     <Input v-model="form[activeSalesType].invoice_prefix" />
                                 </div>
                                 <div class="space-y-2">
-                                    <Label>{{ t('preferences.sales.start_number') }}</Label>
+                                    <Label>{{ t('preferences.sale.start_number') }}</Label>
                                     <Input v-model.number="form[activeSalesType].start_number" type="number" min="1" />
                                 </div>
                             </div>
@@ -391,11 +391,11 @@ const receiptPaymentFields = [
                             <template v-if="activeSalesType === 'sales' || activeSalesType === 'sales_order'">
                                 <div class="grid grid-cols-2 gap-6">
                                     <div class="space-y-2">
-                                        <Label>{{ t('preferences.sales.due_days') }}</Label>
+                                        <Label>{{ t('preferences.sale.due_days') }}</Label>
                                         <Input v-model.number="form[activeSalesType].due_days" type="number" min="0" />
                                     </div>
                                     <div class="space-y-2">
-                                        <Label>{{ t('preferences.sales.terms') }}</Label>
+                                        <Label>{{ t('preferences.sale.terms') }}</Label>
                                         <Textarea v-model="form[activeSalesType].terms" rows="2" />
                                     </div>
                                 </div>
@@ -408,20 +408,20 @@ const receiptPaymentFields = [
                                             :model-value="form.sales.auto_reminders"
                                             @update:model-value="(v) => form.sales.auto_reminders = v"
                                         />
-                                        <Label>{{ t('preferences.sales.auto_reminders') }}</Label>
+                                        <Label>{{ t('preferences.sale.auto_reminders') }}</Label>
                                     </div>
                                     <div class="space-y-2">
-                                        <Label>{{ t('preferences.sales.reminder_days') }}</Label>
+                                        <Label>{{ t('preferences.sale.reminder_days') }}</Label>
                                         <Input v-model.number="form.sales.reminder_days" type="number" min="1" :disabled="!form.sales.auto_reminders" />
                                     </div>
                                     <div class="space-y-2">
-                                        <Label>{{ t('preferences.sales.late_fee_percentage') }}</Label>
+                                        <Label>{{ t('preferences.sale.late_fee_percentage') }}</Label>
                                         <Input v-model.number="form.sales.late_fee_percentage" type="number" min="0" max="100" step="0.1" />
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-6">
                                     <div class="space-y-2">
-                                        <Label>{{ t('preferences.sales.tax_percentage') }}</Label>
+                                        <Label>{{ t('preferences.sale.tax_percentage') }}</Label>
                                         <Input v-model.number="form.sales.tax_percentage" type="number" min="0" max="100" step="0.1" />
                                     </div>
                                     <div class="flex items-center gap-3 pt-8">
@@ -429,7 +429,7 @@ const receiptPaymentFields = [
                                             :model-value="form.sales.auto_calculate_tax"
                                             @update:model-value="(v) => form.sales.auto_calculate_tax = v"
                                         />
-                                        <Label>{{ t('preferences.sales.auto_calculate_tax') }}</Label>
+                                        <Label>{{ t('preferences.sale.auto_calculate_tax') }}</Label>
                                     </div>
                                 </div>
                                 <div class="flex gap-6">
@@ -438,14 +438,14 @@ const receiptPaymentFields = [
                                             :model-value="form.sales.show_ledger_transactions"
                                             @update:model-value="(v) => form.sales.show_ledger_transactions = v"
                                         />
-                                        <Label>{{ t('preferences.sales.show_ledger_transactions') }}</Label>
+                                        <Label>{{ t('preferences.sale.show_ledger_transactions') }}</Label>
                                     </div>
                                     <div class="flex items-center gap-3">
                                         <Switch
                                             :model-value="form.sales.show_item_transactions"
                                             @update:model-value="(v) => form.sales.show_item_transactions = v"
                                         />
-                                        <Label>{{ t('preferences.sales.show_item_transactions') }}</Label>
+                                        <Label>{{ t('preferences.sale.show_item_transactions') }}</Label>
                                     </div>
                                 </div>
                             </template>
@@ -453,11 +453,11 @@ const receiptPaymentFields = [
                     </Card>
 
                     <!-- Purchase preferences -->
-                    <Card v-show="activeTab === 'purchases'" class="animate-in fade-in duration-200">
+                    <Card v-show="activeTab === 'purchase'" class="animate-in fade-in duration-200">
                         <CardHeader class="flex flex-row items-center justify-between">
                             <div>
-                                <CardTitle>{{ t('preferences.tabs.purchases') }}</CardTitle>
-                                <CardDescription>{{ t('preferences.purchases.description') }}</CardDescription>
+                                <CardTitle>{{ t('preferences.tabs.purchase') }}</CardTitle>
+                                <CardDescription>{{ t('preferences.purchase.description') }}</CardDescription>
                             </div>
                             <Button variant="ghost" size="sm" @click="resetCategory(activePurchaseType)">
                                 <RotateCcw class="w-4 h-4 mr-2" />
@@ -474,13 +474,13 @@ const receiptPaymentFields = [
                                     size="sm"
                                     @click="activePurchaseType = type"
                                 >
-                                    {{ t(`preferences.purchases.types.${type}`) }}
+                                    {{ t(`preferences.purchase.types.${type}`) }}
                                 </Button>
                             </div>
 
                             <!-- General Fields -->
                             <div class="space-y-3">
-                                <Label class="text-base font-medium">{{ t('preferences.purchases.general_fields') }}</Label>
+                                <Label class="text-base font-medium">{{ t('preferences.purchase.general_fields') }}</Label>
                                 <div class="flex flex-wrap gap-4">
                                     <div v-for="field in generalFields" :key="field.key" class="flex items-center gap-2">
                                         <Checkbox
@@ -498,7 +498,7 @@ const receiptPaymentFields = [
 
                             <!-- Item Columns -->
                             <div class="space-y-3">
-                                <Label class="text-base font-medium">{{ t('preferences.purchases.item_columns') }}</Label>
+                                <Label class="text-base font-medium">{{ t('preferences.purchase.item_columns') }}</Label>
                                 <div class="flex flex-wrap gap-4">
                                     <div v-for="col in itemColumns" :key="col.key" class="flex items-center gap-2">
                                         <Checkbox
@@ -517,57 +517,57 @@ const receiptPaymentFields = [
                             <!-- Additional preferences -->
                             <div class="grid grid-cols-2 gap-6">
                                 <div class="space-y-2">
-                                    <Label>{{ t('preferences.purchases.invoice_prefix') }}</Label>
+                                    <Label>{{ t('preferences.purchase.invoice_prefix') }}</Label>
                                     <Input v-model="form[activePurchaseType].invoice_prefix" />
                                 </div>
                                 <div class="space-y-2">
-                                    <Label>{{ t('preferences.purchases.start_number') }}</Label>
+                                    <Label>{{ t('preferences.purchase.start_number') }}</Label>
                                     <Input v-model.number="form[activePurchaseType].start_number" type="number" min="1" />
                                 </div>
                             </div>
 
-                            <template v-if="activePurchaseType === 'purchases'">
+                            <template v-if="activePurchaseType === 'purchase'">
                                 <div class="grid grid-cols-2 gap-6">
                                     <div class="space-y-2">
-                                        <Label>{{ t('preferences.purchases.due_days') }}</Label>
-                                        <Input v-model.number="form.purchases.due_days" type="number" min="0" />
+                                            <Label>{{ t('preferences.purchase.due_days') }}</Label>
+                                        <Input v-model.number="form.purchase.due_days" type="number" min="0" />
                                     </div>
                                     <div class="space-y-2">
-                                        <Label>{{ t('preferences.purchases.terms') }}</Label>
-                                        <Textarea v-model="form.purchases.terms" rows="2" />
+                                        <Label>{{ t('preferences.purchase.terms') }}</Label>
+                                        <Textarea v-model="form.purchase.terms" rows="2" />
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-3 gap-6">
                                     <div class="flex items-center gap-3">
                                         <Switch
-                                            :model-value="form.purchases.auto_reminders"
-                                            @update:model-value="(v) => form.purchases.auto_reminders = v"
+                                                :model-value="form.purchase.auto_reminders"
+                                            @update:model-value="(v) => form.purchase.auto_reminders = v"
                                         />
-                                        <Label>{{ t('preferences.purchases.auto_reminders') }}</Label>
+                                        <Label>{{ t('preferences.purchase.auto_reminders') }}</Label>
                                     </div>
                                     <div class="space-y-2">
-                                        <Label>{{ t('preferences.purchases.reminder_days') }}</Label>
-                                        <Input v-model.number="form.purchases.reminder_days" type="number" min="1" :disabled="!form.purchases.auto_reminders" />
+                                        <Label>{{ t('preferences.purchase.reminder_days') }}</Label>
+                                        <Input v-model.number="form.purchase.reminder_days" type="number" min="1" :disabled="!form.purchase.auto_reminders" />
                                     </div>
                                     <div class="space-y-2">
-                                        <Label>{{ t('preferences.purchases.late_fee_percentage') }}</Label>
-                                        <Input v-model.number="form.purchases.late_fee_percentage" type="number" min="0" max="100" step="0.1" />
+                                            <Label>{{ t('preferences.purchase.late_fee_percentage') }}</Label>
+                                        <Input v-model.number="form.purchase.late_fee_percentage" type="number" min="0" max="100" step="0.1" />
                                     </div>
                                 </div>
                                 <div class="flex gap-6">
                                     <div class="flex items-center gap-3">
                                         <Switch
-                                            :model-value="form.purchases.show_ledger_transactions"
-                                            @update:model-value="(v) => form.purchases.show_ledger_transactions = v"
+                                                :model-value="form.purchase.show_ledger_transactions"
+                                            @update:model-value="(v) => form.purchase.show_ledger_transactions = v"
                                         />
-                                        <Label>{{ t('preferences.purchases.show_ledger_transactions') }}</Label>
+                                        <Label>{{ t('preferences.purchase.show_ledger_transactions') }}</Label>
                                     </div>
                                     <div class="flex items-center gap-3">
                                         <Switch
-                                            :model-value="form.purchases.show_item_transactions"
-                                            @update:model-value="(v) => form.purchases.show_item_transactions = v"
+                                            :model-value="form.purchase.show_item_transactions"
+                                            @update:model-value="(v) => form.purchase.show_item_transactions = v"
                                         />
-                                        <Label>{{ t('preferences.purchases.show_item_transactions') }}</Label>
+                                        <Label>{{ t('preferences.purchase.show_item_transactions') }}</Label>
                                     </div>
                                 </div>
                             </template>

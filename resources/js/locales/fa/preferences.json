@@ -18,8 +18,8 @@
     "tabs": {
         "appearance": "ظاهر",
         "item_management": "مدیریت اقلام",
-        "sales": "فروش",
-        "purchases": "خرید",
+        "sale": "فروش",
+        "purchase": "خرید",
         "receipt_payment": "دریافت و پرداخت",
         "tax_currency": "مالیات و ارز",
         "notifications": "اعلان‌ها",
@@ -78,13 +78,13 @@
         "tax": "مالیات",
         "free": "رایگان"
     },
-    "sales": {
+    "sale": {
         "description": "پیکربندی تنظیمات تراکنش‌های فروش",
         "types": {
-            "sales": "فروش",
-            "sales_order": "سفارش فروش",
-            "sales_return": "برگشت فروش",
-            "sales_quotation": "پیش‌فاکتور فروش"
+            "sale": "فروش",
+            "sale_order": "سفارش فروش",
+            "sale_return": "برگشت فروش",
+            "sale_quotation": "پیش‌فاکتور فروش"
         },
         "general_fields": "فیلدهای عمومی",
         "item_columns": "ستون‌های اقلام",
@@ -100,10 +100,10 @@
         "show_ledger_transactions": "نمایش آخرین تراکنش‌های دفتر",
         "show_item_transactions": "نمایش آخرین تراکنش‌های کالا"
     },
-    "purchases": {
+    "purchase": {
         "description": "پیکربندی تنظیمات تراکنش‌های خرید",
         "types": {
-            "purchases": "خرید",
+            "purchase": "خرید",
             "purchase_order": "سفارش خرید",
             "purchase_return": "برگشت خرید",
             "purchase_quotation": "استعلام خرید"

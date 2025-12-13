@@ -332,16 +332,7 @@ onMounted(() => {
         sidebar.setOpen(false)
     }
     // Auto-generate bill number: latest + 1
-    ;(async () => {
-        // try {
-        //     const { data } = await axios.get('/purchases/latest-number')
-        //     const latest = Number((data && (data.number ?? data.latest ?? data.data)) ?? 0)
-        //     if (!isNaN(latest) && latest >= 0) {
-        //         form.number = String(latest + 1)
-        //     }
-        // } catch (e) {
-        //     // ignore if endpoint not available
-        // }
+    ;(async () => { 
     })()
 })
 onUnmounted(() => {
@@ -384,11 +375,9 @@ const handleItemChange = async (index, selectedItem) => {
         row.expire_date = ''
         row.discount = ''
         row.free = ''
-        row.tax = ''
-        // do not add a new row on deselect
+        row.tax = '' 
         return
-    }
-
+    } 
     // Build available measures robustly by matching quantity id
     const selUM = selectedItem?.unitMeasure || {}
     const selectedQuantityId = selUM.quantity_id ?? selUM.quantity?.id
@@ -400,10 +389,7 @@ const handleItemChange = async (index, selectedItem) => {
     })
     row.selected_measure = selectedItem.unitMeasure
     row.item_id = selectedItem.id
-    row.on_hand = (selectedItem.on_hand * selectedItem.unitMeasure?.unit)/(selectedItem.unitMeasure?.unit) - row.quantity;
-
-    // row.on_hand = selectedItem.on_hand
-
+    row.on_hand = (selectedItem.on_hand * selectedItem.unitMeasure?.unit)/(selectedItem.unitMeasure?.unit) - row.quantity; 
     // Set the base unit price - this is the price per base unit
     row.base_unit_price = selectedItem.unit_price ?? selectedItem.mrp_rate ?? 0
 
@@ -416,14 +402,7 @@ const handleItemChange = async (index, selectedItem) => {
         addRow()
     }
 
-    notifyIfDuplicate(index)
-    // Duplicate check after selection
-    // if (isDuplicateRow(index)) {
-    //     notifyIfDuplicate(index)
-    //     // Automatically clear the duplicate item
-    //     resetRow(index)
-    //     return
-    // }
+    notifyIfDuplicate(index) 
 }
 const isRowEnabled = (index) => {
     if (!form.selected_ledger) return false
@@ -444,6 +423,7 @@ const buildRowKey = (r) => {
         (r?.selected_measure?.id || r?.selected_measure?.id || '').toString()
     ].join('|')
 }
+
 const isDuplicateRow = (index) => {
     const r = form.items[index]
     if (!r || !r.selected_item || !r.selected_measure) return false
@@ -594,9 +574,9 @@ const user_preferences = computed(() => props.user_preferences?.data ?? props.us
 const general_fields = computed(() =>  user_preferences.value?.sales.general_fields ?? user_preferences.value.sales.general_fields ?? []).value
 const item_columns = computed(() => user_preferences.value?.sales.item_columns ?? user_preferences.value.sales.item_columns ?? []).value
 const sales_preferences = computed(() => user_preferences.value?.sales ?? user_preferences.value.sales ?? []).value
-console.log('user_preferences', sales_preferences);
-
-
+const item_management = computed(() => user_preferences.value?.item_management ?? user_preferences.value.item_management ?? []).value 
+const spec_text = computed(() => item_management?.spec_text ?? item_management?.spec_text ?? 'batch').value
+ 
 </script>
 
 <template>
@@ -628,6 +608,7 @@ console.log('user_preferences', sales_preferences);
                     v-model="form.selected_currency"
                     label-key="code"
                     value-key="id"
+                    :clearable="false"
                     @update:modelValue="(value) => handleSelectChange('currency_id', value.id)"
                     :reduce="currency => currency"
                    :floating-text="t('admin.currency.currency')"
@@ -641,6 +622,7 @@ console.log('user_preferences', sales_preferences);
                     :options="salePurchaseTypes"   
                     v-if="general_fields.type"
                     v-model="form.selected_sale_purchase_type"
+                    :clearable="false"
                     @update:modelValue="(value) => handleSelectChange('sale_purchase_type_id', value)"
                     label-key="name"
                     value-key="id"
@@ -652,6 +634,7 @@ console.log('user_preferences', sales_preferences);
                     v-if="general_fields.store"
                     :options="stores.data"
                     v-model="form.selected_store"
+                    :clearable="false"
                     @update:modelValue="(value) => handleSelectChange('store_id', value)"
                     label-key="name"
                     value-key="id"
@@ -667,7 +650,7 @@ console.log('user_preferences', sales_preferences);
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 min-w-5">#</th>
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
-                            <th class="px-1 py-1 w-32" v-if="item_columns.batch">{{ t('general.batch') }}</th>
+                            <th class="px-1 py-1 w-32" v-if="item_columns.batch">{{ t(spec_text) }}</th>
                             <th class="px-1 py-1 w-36" v-if="item_columns.expiry">{{ t('general.expire_date') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
                             <th class="px-1 py-1 w-24" v-if="item_columns.on_hand">{{ t('general.on_hand') }}</th>
@@ -844,7 +827,7 @@ console.log('user_preferences', sales_preferences);
                  {{ t('general.create') }} & {{ t('general.new') }}
                  <Spinner v-show="submitting" />
                 </button>
-                <button type="button" class="btn px-4 py-2 rounded-md border" @click="() => $inertia.visit(route('purchases.index'))">{{ t('general.cancel') }}</button>
+                <button type="button" class="btn px-4 py-2 rounded-md border" @click="() => $inertia.visit(route('sales.index'))">{{ t('general.cancel') }}</button>
             </div>
 
          </form>
