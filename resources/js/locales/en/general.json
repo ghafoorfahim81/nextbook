@@ -114,6 +114,7 @@
   "search_or_select": "Search or select item...",
   "grand_total": "Grand Total",
   "transaction_summary": "Transaction Summary",
+  "transaction_type": "Transaction Type",
   "value_of_goods": "Value of Goods",
   "bill_disc":"Bill Disc",
   "bill_discount":"Bill Discount",

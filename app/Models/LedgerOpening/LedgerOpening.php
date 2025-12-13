@@ -27,9 +27,7 @@ class LedgerOpening extends Model
     protected $fillable = [
         'ledgerable_id',
         'ledgerable_type',
-        'transaction_id',
-        'created_by',
-        'updated_by',
+        'transaction_id', 
     ];
 
     /**
@@ -44,8 +42,6 @@ class LedgerOpening extends Model
             'ledgerable_id' => 'string',
             'ledgerable_type' => 'string',
             'transaction_id' => 'string',
-            'created_by' => 'string',
-            'updated_by' => 'string',
         ];
     }
 

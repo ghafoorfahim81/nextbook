@@ -1,40 +1,59 @@
 <script setup>
-import AppLayout from '@/Layouts/Layout.vue';
-import DataTable from '@/Components/DataTable.vue';
-import { h, ref } from 'vue';
-import { Button } from '@/Components/ui/button';
+    import AppLayout from '@/Layouts/Layout.vue';
+    import DataTable from '@/Components/DataTable.vue';
+    import { h, ref } from 'vue';
+    import { useDeleteResource } from '@/composables/useDeleteResource';
+    import { useI18n } from 'vue-i18n';
 
-const isDialogOpen = ref(false);
+    const props = defineProps({
+        customers: Object   ,
+    });
+    const isDialogOpen = ref(false)
+    const editingStore = ref(null)
+    const { t } = useI18n()
 
-const showFilter = () => {
-    showFilter.value = true;
-}
+    const columns = ref([
+        { key: 'name', label: t('general.name') },
+        { key: 'code', label: t('admin.currency.code') },
+        { key: 'contact_person', label: t('ledger.contact_person') },
+        { key: 'phone_no', label: t('general.phone') },
+        { key: 'email', label: t('general.email') },
+        { key: 'actions', label: t('general.actions') },
 
-const props = defineProps({
-    customers: Object,
-})
+    ]);
 
-const columns = ref([
-    { key: 'name', label: 'Name' },
-    { key: 'code', label: 'Code' },
-    { key: 'contact_person', label:"Contact Person" },
-    { key: 'phone_no', label: 'Phone Number' },
-    { key: 'email', label: 'Email' },
-])
-</script>
+    const editItem = (item) => {
+     window.location.href = `/customers/${item.id}/edit`
+    }
+    const { deleteResource } = useDeleteResource()
+    const deleteItem = (id) => {
+        deleteResource('stores.destroy', id, {
+            title: t('general.delete', { name: t('admin.store.store') }),
+            description: t('general.delete_description', { name: t('admin.store.store') }),
+            successMessage: t('general.delete_success', { name: t('admin.store.store') }),
+        })
 
-<template>
-    <AppLayout title="Designations">
-        <div class="flex gap-2 items-center">
-            <div class="ml-auto gap-3">
-                <Link :href="route('customers.create')">
-                    <Button  variant="outline" class="bg-gray-100
-                    hover:bg-gray-200 dark:border-gray-50 dark:text-green-300">Add New</Button>
-                </Link>
+    };
 
-            </div>
-        </div>
-        <DataTable :items="customers" :columns="columns" :title="`Customers`" :url="`customers.index`" />
+    </script>
 
-    </AppLayout>
-</template>
+    <template>
+        <AppLayout :title="t('admin.store.stores')">
+
+            <DataTable
+                :items="customers"
+                :columns="columns"
+                @delete="deleteItem"
+                @edit="editItem"
+                @show="showItem"
+                @add="isDialogOpen = true"
+                :title="t('ledger.customer.customers')"
+                :url="`customers.index`"
+                :hasShow="true"
+                :showAddButton="true"
+                :addTitle="t('ledger.customer.customer')"
+                :addAction="'redirect'"
+                :addRoute="'customers.create'"
+            />
+        </AppLayout>
+    </template>

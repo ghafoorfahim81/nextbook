@@ -24,6 +24,7 @@ class LedgerResource extends JsonResource
             'currency_id' => $this->currency_id,
             'currency' => $this->currency,
             'type' => $this->type,
+            'opening' => $this->whenLoaded('opening'), 
         ];
     }
 }
