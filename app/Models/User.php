@@ -50,7 +50,7 @@ class User extends Authenticatable
         'appearance' => [
             'font_size' => 14, 
             'decimal_places' => 2,
-            'sidebar_menus' => ['dashboard', 'sales', 'purchases', 'ledger', 'owners', 'account', 'purchase', 'sale', 'receipt', 'payment', 'transfer', 'user_management', 'preferences'],
+            'sidebar_menus' => ['dashboard', 'sale', 'purchase', 'ledger', 'owners', 'account', 'purchase', 'sale', 'receipt', 'payment', 'transfer', 'user_management', 'preferences'],
         ],
         'item_management' => [
             'visible_fields' => [
@@ -70,9 +70,9 @@ class User extends Authenticatable
                 'rack_no' => false,
                 'fast_search' => true,
             ],
-            'spec_text' => '',
+            'spec_text' => 'batch',
         ],
-        'sales' => [
+        'sale' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'store' => true],
             'item_columns' => [
                 'packing' => false, 
@@ -104,7 +104,7 @@ class User extends Authenticatable
             'show_ledger_transactions' => true,
             'show_item_transactions' => true,
         ],
-        'sales_order' => [
+        'sale_order' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
             'item_columns' => [
                 'packing' => false, 
@@ -128,7 +128,7 @@ class User extends Authenticatable
             'terms' => '',
             'due_days' => 30,
         ],
-        'sales_return' => [
+        'sale_return' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
             'item_columns' => [
                 'packing' => false, 
@@ -151,7 +151,7 @@ class User extends Authenticatable
             'start_number' => 1,
             'accepted_return_days' => 30,
         ],
-        'sales_quotation' => [
+        'sale_quotation' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
             'item_columns' => [
                 'packing' => false, 
@@ -173,7 +173,7 @@ class User extends Authenticatable
             'invoice_prefix' => 'SQ-',
             'start_number' => 1,
         ],
-        'purchases' => [
+        'purchase' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
             'item_columns' => [
                 'packing' => false, 
