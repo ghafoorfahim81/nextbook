@@ -3,6 +3,8 @@
         "supplier": "Supplier"
     },
     "customer":{
-        "customer": "Customer"
-    }
+        "customer": "Customer",
+        "customers": "Customers"
+    },
+    "contact_person": "Contact Person"
 }

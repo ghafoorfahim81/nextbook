@@ -6,53 +6,26 @@ import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from "@/Components/next/NextTextarea.vue";
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-const { t } = useI18n();
 
-
-const { currencies, accountTypes,branches } = defineProps({
-    accountTypes: {
-        type: Array,
-        required: true,
-    },
-    currencies: {
-        type: Array,
-        required: true,
-    },
-    branches: {
-        type: Array,
-        required: true,
-    },
+const props = defineProps({
+    customer: { type: Object, required: true },
+    currencies: { type: Array, required: true },
+    branches: { type: Array, required: true },
 });
 
+const { t } = useI18n();
+
 const form = useForm({
-    name: '',
-    code: '',
-    phone_no: '',
-    contact_person: '',
-    email: '',
-    address: '',
-    currency_id: null,
-    opening_currency_id: null,
-    transaction_type: '',
-    opening_amount: '',
-    branch_id: '',
+    ...props.customer.data,
+    currency_id: props.customer.data.currency_id,
+    opening_currency_id: props.customer.data.opening_currency_id,
+    branch_id: props.customer.data.branch_id,
 })
 
 const transactionType = ['Credit','Debit'];
 
-const handleCreate = () => {
-    form.post(route('customers.store'))
-}
-
-const handleCreateAndNew = () => {
-    form
-        .transform((data) => ({ ...data, stay: true }))
-        .post(route('customers.store'), {
-            onSuccess: () => {
-                form.reset()
-                form.transform((d) => d)
-            },
-        })
+const handleUpdate = () => {
+    form.patch(route('customers.update', form.id))
 }
 
 const handleCancel = () => {
@@ -61,11 +34,11 @@ const handleCancel = () => {
 </script>
 
 <template>
-    <AppLayout :title="t('ledger.customer.customer')">
-        <form @submit.prevent="handleCreate">
+    <AppLayout :title="t('general.edit', { name: t('ledger.customer.customer') })">
+        <form @submit.prevent="handleUpdate">
             <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
-                    {{ t('general.create', { name: t('ledger.customer.customer') }) }}
+                    {{ t('general.edit', { name: t('ledger.customer.customer') }) }}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name" :placeholder="t('general.enter', { text: t('general.name') })" />
@@ -128,8 +101,7 @@ const handleCancel = () => {
             </progress>
 
             <div class="mt-4 flex gap-2">
-                <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white">{{ t('general.create') }}</button>
-                <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white" @click="handleCreateAndNew">{{ t('general.create_and_new') }}</button>
+                <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white">{{ t('general.update') }}</button>
                 <button type="button" class="btn px-4 py-2 rounded-md border" @click="handleCancel">{{ t('general.cancel') }}</button>
             </div>
         </form>
