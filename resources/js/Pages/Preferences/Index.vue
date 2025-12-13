@@ -119,6 +119,12 @@ const generalFields = [
 
 const itemColumns = [
     { key: 'packing', label: 'preferences.fields.packing' },
+    { key: 'colors', label: 'preferences.fields.colors' },
+    { key: 'size', label: 'preferences.fields.size' },
+    { key: 'brand', label: 'preferences.fields.brand' }, 
+    { key: 'rack_no', label: 'preferences.fields.rack_no' },
+    { key: 'category', label: 'preferences.fields.category' },
+    { key: 'rates', label: 'preferences.fields.rates' },
     { key: 'batch', label: 'preferences.fields.batch' },
     { key: 'expiry', label: 'preferences.fields.expiry' },
     { key: 'on_hand', label: 'preferences.fields.on_hand' },

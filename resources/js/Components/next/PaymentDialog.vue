@@ -1,121 +1,174 @@
 <script setup>
-  import { computed, ref, reactive, watch } from 'vue'
-  import { useForm, router } from '@inertiajs/vue3'
-  import { Input } from '@/Components/ui/input'
-  import { Textarea } from '@/Components/ui/textarea'
-  import { Label } from '@/Components/ui/label'
-  import ModalDialog from '@/Components/next/Dialog.vue'
-  import vSelect from 'vue-select'
-  import NextInput from "@/Components/next/NextInput.vue";
-  import FloatingLabel from "@/Components/next/FloatingLabel.vue";
-  import NextTextarea from "@/Components/next/NextTextarea.vue";
-  import NextSelect from "@/Components/next/NextSelect.vue";
-  import { useI18n } from 'vue-i18n';
-  const { t } = useI18n()
-  const props = defineProps({
-      isDialogOpen: Boolean,
-      editingItem: Object, // ✅ this is passed from Index.vue
+    import { ref, computed, watch, onMounted  } from 'vue';
+    import { Separator } from "@/Components/ui/separator";
+    import { Button } from "@/Components/ui/button";
+    import NextInput from '@/Components/next/NextInput.vue';
+    import NextSelect from '@/Components/next/NextSelect.vue';
+    import NextTextarea from '@/Components/next/NextTextarea.vue';
+    import ModalDialog from '@/Components/next/Dialog.vue';
+    import { useI18n } from 'vue-i18n';
+    const { t } = useI18n();
+    const props = defineProps({
+      open: Boolean,
+      payment: {
+        type: Object,
+        default: () => ({
+          method: '',
+          amount: '',
+          account_id: '',
+          note: '',
+        })
+      },
+      errors: {
+        type: Object,
+        default: () => ({})
+      },
+      submitting: Boolean,
       accounts: {
         type: Array,
-        default: () => [],
+        default: () => []
       },
-      errors: Object,
-  })
-  
-  const emit = defineEmits(['update:isDialogOpen', 'saved'])
-  
-  const accounts = computed(() => props.accounts ?? props.accounts)
-  
-  const localDialogOpen = ref(props.isDialogOpen)
-  
-  watch(() => props.isDialogOpen, (val) => {
-      localDialogOpen.value = val
-  })
-  
-  watch(() => localDialogOpen.value, (val) => {
-      emit('update:isDialogOpen', val)
-  })
-  
-  const isEditing = computed(() => !!props.editingItem?.id)
-  
-  const form = useForm({
-      name: '',
-      remark: '',
-      parent_id: null,
-  })
-  
-  
-  watch(() => props.editingItem, (item) => {
-      if (item) {
-          form.name = item.name || ''
-          form.remark = item.remark || ''
-          form.parent_id = item.parent_id || null
-      } else {
-          form.reset() // ✅ reset when switching from edit to create
-      }
-  }, { immediate: true })
-  
-  const closeModal = () => {
-      localDialogOpen.value = false
-  }
-  
-  const handleParentSelectChange = (value) => {
-      form.parent_id = value
-  }
-  
-  const handleSubmit = async () => {
-      if (isEditing.value) {
-          form.patch(route('categories.update', props.editingItem.id), {
-              onSuccess: () => {
-                  emit('saved')
-                  form.reset();
-                  closeModal()
-              },
-          })
-      } else {
-          form.post('/categories', {
-              onSuccess: () => {
-                  emit('saved')
-                  form.reset();
-                  closeModal()
-              },
-          })
-      }
-  }
-  
-  
-  </script>
-  
-  <template>
-      <ModalDialog
-          :open="localDialogOpen"
-          :title="isEditing ? t('general.edit', { name: t('admin.category.category') }) : t('general.create', { name: t('admin.category.category') })"
-          :confirmText="isEditing ? t('general.update') : t('general.create')"
-          :cancel-text="t('general.close')"
-          @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
-          :closeable="true"
-          @confirm="handleSubmit"
-          @cancel="closeModal"
-      >
-  
-          <form @submit.prevent="handleSubmit" id="modalForm">
-              <div class="grid gap-4 py-4"> 
-                   <NextSelect
-                      v-model="form.account_id"
-                      :options="accounts"
-                      label-key="name"
-                      @update:modelValue="(value) => handleAccountSelectChange(value)"
-                      value-key="id"
-                      id="account"
-                      :floating-text="t('admin.shared.account')"
-                      :error="form.errors?.account_id"
-                      :searchable="true"
-                      resource-type="accounts"
-                      :search-fields="['name']"
-                      /> 
-                  
-              </div>
-          </form>
-      </ModalDialog>
-  </template>
-  
+    });
+    
+    const emit = defineEmits(["update:open", "confirm", "cancel", "update:payment"]);
+    
+    // Local form state
+    const localPayment = ref({ ...props.payment });
+    const bankAccounts = ref([]);
+    const isLoading = ref(false);
+    
+    // Watch for accounts prop changes and update bankAccounts
+    watch(() => props.accounts, (accounts) => {
+      bankAccounts.value = accounts || [];
+    }, { immediate: true });
+    
+    // Payment method options
+    const paymentMethods = [
+      { id: 'cash', name: 'Cash' },
+      { id: 'bank_transfer', name: 'Bank Transfer' },
+      { id: 'check', name: 'Check' },
+      { id: 'card', name: 'Card' },
+    ];
+    
+    // Form validation
+    const isFormValid = computed(() => {
+      return localPayment.value.amount &&
+             localPayment.value.method &&
+             localPayment.value.account_id;
+    });
+    
+    // Watch for prop changes and sync local state
+    watch(() => props.payment, (newPayment) => {
+      localPayment.value = { ...newPayment };
+    }, { deep: true });
+    
+    // No need to fetch accounts since they're passed as props
+
+
+    const closeModal = () => {
+    emit('update:open', false)
+}
+
+    // Handle form submission
+    const handleSubmit = () => {
+      if (!isFormValid.value) return;
+    
+      emit('update:payment', { ...localPayment.value });
+      emit('confirm');
+      closeModal();
+    };
+    
+    // Handle dialog cancel
+    const handleCancel = () => {
+      // Reset local form to original values
+      localPayment.value = { ...props.payment };
+      emit('cancel');
+      emit('update:open', false);
+    };
+    
+    // Update local payment when props change
+    const updatePayment = (field, value) => {
+      localPayment.value[field] = value;
+      emit('update:payment', { ...localPayment.value });
+    };
+    
+    // Reset form when dialog opens
+    const resetForm = () => {
+      localPayment.value = {
+        method: '',
+        amount: '',
+        account_id: '',
+        note: '',
+      };
+    };
+    </script>
+    
+    <template>
+          <ModalDialog
+            :open="open"
+            :title="t('general.credit_payment_details')"
+            :confirmText="t('general.save')"
+            @update:open="open = $event; emit('update:open', $event)"
+            :closeable="true"
+            width="w-[500px] max-w-[500px]"
+            @confirm="handleSubmit"
+            @cancel="handleCancel"
+            :cancel-text="t('general.cancel')"
+        >
+    
+          <div class="space-y-4 mt-3">
+            <!-- Amount Field -->
+            <NextInput
+              v-model="localPayment.amount"
+              label="Amount"
+              type="number"
+              step="0.01"
+              placeholder="Enter payment amount"
+              :error="errors.amount"
+              :isRequired="true"
+              @update:modelValue="(value) => updatePayment('amount', value)"
+            />
+    
+            <!-- Payment Method Field -->
+            <NextSelect
+              v-model="localPayment.method"
+              :options="paymentMethods"
+              label-key="name"
+              value-key="id"
+              floating-text="Payment Method"
+              placeholder="Select payment method"
+              :error="errors.method"
+              :isRequired="true"
+              @update:modelValue="(value) => updatePayment('method', value)"
+            />
+    
+            <!-- Bank Account Field -->
+            <NextSelect
+              v-model="localPayment.account_id"
+              :options="bankAccounts"
+              label-key="name"
+              value-key="id"
+              floating-text="Bank Account"
+              placeholder="Select bank account"
+              :error="errors.account_id"
+              :isRequired="true"
+              @update:modelValue="(value) => updatePayment('account_id', value)"
+            />
+    
+            <!-- Note Field -->
+            <NextTextarea
+              v-model="localPayment.note"
+              label="Note (Optional)"
+              placeholder="Add any additional notes"
+              :error="errors.note"
+              rows="3"
+              @update:modelValue="(value) => updatePayment('note', value)"
+            />
+          </div> 
+        </ModalDialog>
+    </template>
+    
+    <style scoped>
+    /* Additional styles if needed */
+    </style>
+    
