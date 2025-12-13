@@ -53,7 +53,7 @@
         <Table>
             <TableHeader class="bg-violet-300">
                 <TableRow class="bg-violet-500 hover:bg-violet-600 ">
-                    <TableHead v-for="column in derivedColumns" :key="column.key">
+                    <TableHead v-for="column in derivedColumns" :key="column.key" class="h-9">
                         <div :class="isRTL ? 'flex items-center space-x-reverse space-x-1 text-white' : 'flex items-center space-x-1 text-white text-nowrap'">
                             <span>{{ column.label }}</span>
                             <div v-if="column.sortable">
