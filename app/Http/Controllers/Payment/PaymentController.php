@@ -90,7 +90,7 @@ class PaymentController extends Controller
             $creditRemark = "Bank payment for payment #{$payment->number}";
             $creditTxn = $transactionService->createTransaction([
                 'account_id' => $bankAccountId,
-                'ledger_id' => $ledger->id,
+                'ledger_id' => null,
                 'amount' => $amount,
                 'currency_id' => $currencyId,
                 'rate' => $rate,
@@ -172,7 +172,7 @@ class PaymentController extends Controller
             if ($payment->bank_transaction_id) {
                 Transaction::where('id', $payment->bank_transaction_id)->update([
                     'account_id' => $bankAccountId,
-                    'ledger_id' => $ledger->id,
+                    'ledger_id' => null,
                     'amount' => $amount,
                     'currency_id' => $currencyId,
                     'rate' => $rate,

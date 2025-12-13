@@ -85,7 +85,7 @@ class ReceiptController extends Controller
             $debitRemark = "Bank receive for receipt #{$receipt->number}";
             $debitTxn = $transactionService->createTransaction([
                 'account_id' => $bankAccountId,
-                'ledger_id' => $ledger->id,
+                'ledger_id' => null,
                 'amount' => $amount,
                 'currency_id' => $currencyId,
                 'rate' => $rate,
@@ -169,7 +169,7 @@ class ReceiptController extends Controller
             if ($receipt->bank_transaction_id) {
                 Transaction::where('id', $receipt->bank_transaction_id)->update([
                     'account_id' => $bankAccountId,
-                    'ledger_id' => $ledger->id,
+                    'ledger_id' => null,
                     'amount' => $amount,
                     'currency_id' => $currencyId,
                     'rate' => $rate,
