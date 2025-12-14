@@ -14,8 +14,10 @@ class LedgerOpeningResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'amount' => $this->transaction()?->amount,
-            'currency' => $this->transaction()?->currency,
+            'amount' => $this->transaction?->amount,
+            'currency' => $this->transaction?->currency,
+            'date' => $this->transaction?->date,
+            'type' => $this->transaction?->type,
         ];
     }
 }
