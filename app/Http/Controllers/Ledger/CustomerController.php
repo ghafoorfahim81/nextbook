@@ -91,7 +91,8 @@ class CustomerController extends Controller
      * Show the form for editing the specified resource.
      */
     public function edit(Request $request, Ledger $customer)
-    {
+    { 
+        $customer->load('opening');
         return inertia('Ledgers/Customers/Edit', [
             'customer' => new LedgerResource($customer), 
         ]);

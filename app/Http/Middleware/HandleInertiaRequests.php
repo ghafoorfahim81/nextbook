@@ -33,6 +33,7 @@ use App\Http\Resources\Inventory\ItemResource;
 use App\Models\Inventory\Item;
 use App\Enums\DiscountType;
 use App\Enums\TransactionStatus;
+use App\Enums\TransactionType;
 class HandleInertiaRequests extends Middleware
 {
     /**
@@ -226,6 +227,13 @@ class HandleInertiaRequests extends Middleware
             return Currency::where('is_base_currency', true)->first();
         });
 
+        $transactionTypes = Cache::rememberForever('transaction_types', function () {
+            return collect(TransactionType::cases())->map(fn($item): array => [
+                'id' => $item->value,
+                'name' => $item->name,
+            ]);
+        });
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -258,6 +266,7 @@ class HandleInertiaRequests extends Middleware
             'roles' => $roles,
             'user_preferences' => $user_preferences,
             'homeCurrency' => $homeCurrency,
+            'transactionTypes' => $transactionTypes,
         ];
     }
 }

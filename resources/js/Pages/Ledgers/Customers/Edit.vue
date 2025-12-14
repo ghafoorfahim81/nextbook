@@ -11,6 +11,7 @@ const props = defineProps({
     customer: { type: Object, required: true },
     currencies: { type: Array, required: true },
     branches: { type: Array, required: true },
+    transactionTypes: { type: Array, required: true },
 });
 
 const { t } = useI18n();
@@ -18,11 +19,10 @@ const { t } = useI18n();
 const form = useForm({
     ...props.customer.data,
     currency_id: props.customer.data.currency_id,
-    opening_currency_id: props.customer.data.opening_currency_id,
-    branch_id: props.customer.data.branch_id,
+    opening_currency_id: props.customer.data.opening?.currency,
+    opening_amount: props.customer.data.opening?.amount, 
+    transaction_type: props.customer.data.opening?.type,
 })
-
-const transactionType = ['Credit','Debit'];
 
 const handleUpdate = () => {
     form.patch(route('customers.update', form.id))
@@ -70,13 +70,14 @@ const handleCancel = () => {
                             <NextInput :label="t('general.amount')" type="number" v-model="form.opening_amount" :error="form.errors?.opening_amount" :placeholder="t('general.enter', { text: t('general.amount') })" />
 
                             <NextSelect
-                                :options="transactionType"
+                                :options="transactionTypes"
                                 v-model="form.transaction_type"
                                 label-key="name"
                                 value-key="id"
+                                :reduce="transactionType => transactionType.id"
                                 id="transaction_type"
                                 :floating-text="t('general.transaction_type')"
-                                :error="form.errors.transaction_type"
+                                :error="form.errors?.transaction_type"
                             />
 
                             <NextSelect
@@ -84,6 +85,7 @@ const handleCancel = () => {
                                 v-model="form.opening_currency_id"
                                 label-key="name"
                                 value-key="id"
+                                :reduce="currency => currency"
                                 id="opening_currency"
                                 :floating-text="t('admin.currency.currency')"
                                 :searchable="true"

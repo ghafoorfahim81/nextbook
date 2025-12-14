@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Ledger;
 
+use App\Http\Resources\LedgerOpening\LedgerOpeningResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,8 +24,9 @@ class LedgerResource extends JsonResource
             'email' => $this->email,
             'currency_id' => $this->currency_id,
             'currency' => $this->currency,
-            'type' => $this->type,
-            'opening' => $this->whenLoaded('opening'), 
+            'type' => $this->type, 
+            'opening' => new LedgerOpeningResource($this->whenLoaded('opening')),
+
         ];
     }
 }
