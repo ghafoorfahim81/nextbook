@@ -138,26 +138,28 @@ const closeDialog = () => {
                             </div>
 
                             <!-- Statement summary -->
-                            <div class="w-full grid grid-cols-3 gap-2 mt-4">
-                                <div class="border rounded-lg px-3 py-2 text-center">
-                                    <div class="text-xs text-gray-500">{{ t('general.credit') }}</div>
-                                    <div class="text-sm font-semibold text-emerald-600">
-                                        {{ formatAmount(statement.total_credit) }}
+                            <div class="w-full bg-white border rounded-xl overflow-hidden mt-4">
+                                <div class="flex flex-col divide-y">
+                                    <div class="flex items-center px-5 py-2">
+                                        <div class="flex-1 text-base text-black dark:text-white">{{ t('general.credit') }}</div>
+                                        <div class="text-base font-medium text-green-600">
+                                            {{ formatAmount(statement.total_credit) }}
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="border rounded-lg px-3 py-2 text-center">
-                                    <div class="text-xs text-gray-500">{{ t('general.debit') }}</div>
-                                    <div class="text-sm font-semibold text-blue-600">
-                                        {{ formatAmount(statement.total_debit) }}
+                                    <div class="flex items-center px-5 py-2 mt-1">
+                                        <div class="flex-1 text-base text-black dark:text-white">{{ t('general.debit') }}</div>
+                                        <div class="text-base font-medium text-green-600">
+                                            {{ formatAmount(statement.total_debit) }}
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="border rounded-lg px-3 py-2 text-center">
-                                    <div class="text-xs text-gray-500">{{ t('general.balance') }}</div>
-                                    <div
-                                        class="text-sm font-semibold"
-                                        :class="statement.balance_nature === 'cr' ? 'text-emerald-600' : 'text-blue-600'"
-                                    >
-                                        {{ formatAmount(statement.balance) }}{{ statement.balance_nature }}
+                                    <div class="flex items-center px-5 py-2">
+                                        <div class="flex-1 text-base text-black dark:text-white">{{ t('general.balance') }}</div>
+                                        <div
+                                            class="text-base font-medium"
+                                            :class="statement.balance_nature === 'cr' ? 'text-green-600' : 'text-green-600'"
+                                        >
+                                            {{ formatAmount(statement.balance) }} {{statement.balance > 0 ? statement.balance_nature : '' }}
+                                        </div> 
                                     </div>
                                 </div>
                             </div>
@@ -245,7 +247,7 @@ const closeDialog = () => {
                                 <tbody>
                                     <tr v-if="!purchases.length">
                                         <td colspan="5" class="py-4 text-center text-gray-400">
-                                            {{ t('general.no_data') }}
+                                            {{ t('general.no_data_found') }}
                                         </td>
                                     </tr>
                                     <tr
@@ -253,12 +255,12 @@ const closeDialog = () => {
                                         :key="row.id"
                                         class="border-b last:border-b-0"
                                     >
-                                        <td class="py-2 pr-4">{{ row.reference_id || row.id || index + 1 }}</td>
-                                        <td class="py-2 pr-4 capitalize">{{ row.type }}</td>
-                                        <td class="py-2 pr-4">{{ row.date }}</td>
+                                        <td class="py-2 pr-4">{{  index + 1 }}</td>
+                                        <td class="py-2 pr-4 capitalize">{{ row.transaction?.type }}</td>
+                                        <td class="py-2 pr-4">{{ row?.date }}</td>
                                         <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
                                         <td class="py-2 pr-4">
-                                            {{ row.currency?.code || row.currency?.name || '' }}
+                                            {{ row.transaction?.currency?.code || row.transaction?.currency?.name || '' }}
                                         </td>
                                     </tr>
                                 </tbody>
@@ -279,7 +281,7 @@ const closeDialog = () => {
                                 <tbody>
                                     <tr v-if="!payments.length">
                                         <td colspan="5" class="py-4 text-center text-gray-400">
-                                            {{ t('general.no_data') }}
+                                            {{ t('general.no_data_found') }}
                                         </td>
                                     </tr>
                                     <tr
@@ -287,12 +289,12 @@ const closeDialog = () => {
                                         :key="row.id"
                                         class="border-b last:border-b-0"
                                     >
-                                        <td class="py-2 pr-4">{{ row.reference_id || row.id || index + 1 }}</td>
-                                        <td class="py-2 pr-4 capitalize">{{ row.type }}</td>
+                                        <td class="py-2 pr-4">{{  index + 1 }}</td>
+                                        <td class="py-2 pr-4 capitalize">{{ row.bank_transaction?.type }}</td>
                                         <td class="py-2 pr-4">{{ row.date }}</td>
                                         <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
                                         <td class="py-2 pr-4">
-                                            {{ row.currency?.code || row.currency?.name || '' }}
+                                            {{ row.bank_transaction?.currency?.code || row.bank_transaction?.currency?.name || '' }}
                                         </td>
                                     </tr>
                                 </tbody>

@@ -208,6 +208,12 @@ class CustomerController extends Controller
      */
     public function destroy(Request $request, Ledger $customer)
     {
+
+        if (!$customer->canBeDeleted()) {
+            return inertia('Ledgers/Customers/Index', [
+                'error' => $customer->getDependencyMessage()
+            ]);
+        }
         $customer->transactions()->whereHas('opening')->get()->each(function ($transaction) {
             $transaction->opening()->forceDelete();
             $transaction->forceDelete();

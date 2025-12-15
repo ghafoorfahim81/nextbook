@@ -1,1 +1,8 @@
-﻿{}
+﻿{
+    "purchase": "خرید",
+    "purchases": "خریدها",
+    "purchase_number": "شماره خرید",
+    "purchase_date": "تاریخ خرید",
+    "purchase_type": "نوع خرید",
+    "purchase_status": "وضعیت خرید"
+}
