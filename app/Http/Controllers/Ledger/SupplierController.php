@@ -13,6 +13,8 @@ use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Branch;
+use App\Http\Resources\Purchase\PurchaseResource;
+use App\Http\Resources\Payment\PaymentResource;
 use Illuminate\Http\Request;
 
 class SupplierController extends Controller
@@ -110,23 +112,21 @@ class SupplierController extends Controller
             'transactions.currency',
         ]);
 
-        $transactions = $supplier->transactions;
-
-        $purchases = $transactions->where('reference_type', 'purchase')->values();
-        $payments = $transactions->where('reference_type', 'payment')->values();
-
+        $purchases = $supplier->purchases->load('transaction.currency');
+        $payments = $supplier->payments->load('bankTransaction.currency');
+ 
         if ($request->expectsJson()) {
             return response()->json([
                 'supplier' => new LedgerResource($supplier),
-                'purchases' => TransactionResource::collection($purchases),
-                'payments' => TransactionResource::collection($payments),
+                'purchases' => PurchaseResource::collection($purchases),
+                'payments' => PaymentResource::collection($payments),
             ]);
         }
 
         return inertia('Ledgers/Suppliers/Show', [
             'supplier' => new LedgerResource($supplier),
-            'purchases' => TransactionResource::collection($purchases),
-            'payments' => TransactionResource::collection($payments),
+            'purchases' => PurchaseResource::collection($purchases),
+            'payments' => PaymentResource::collection($payments),
         ]);
     }
 
@@ -207,6 +207,12 @@ class SupplierController extends Controller
      */
     public function destroy(Request $request, Ledger $supplier)
     {
+        
+        if (!$supplier->canBeDeleted()) {
+            return inertia('Ledgers/Suppliers/Index', [
+                'error' => $supplier->getDependencyMessage()
+            ]);
+        }
         $supplier->transactions()->whereHas('opening')->get()->each(function ($transaction) {
             $transaction->opening()->forceDelete();
             $transaction->forceDelete();

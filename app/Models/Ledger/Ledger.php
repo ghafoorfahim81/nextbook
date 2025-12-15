@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use App\Traits\HasCache;
+use App\Models\Purchase\Purchase;
+use App\Models\Payment\Payment;
 class Ledger extends Model
 {
     use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasUserAuditable, HasBranch, HasDependencyCheck, SoftDeletes;
@@ -137,6 +139,15 @@ class Ledger extends Model
         return $this->hasMany(Receipt::class, 'ledger_id', 'id');
     }
 
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class, 'supplier_id', 'id');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class, 'ledger_id', 'id');
+    }
     /**
      * Get relationships configuration for dependency checking
      */
