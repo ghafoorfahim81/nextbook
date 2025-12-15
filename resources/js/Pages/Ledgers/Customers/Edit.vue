@@ -16,13 +16,41 @@ const props = defineProps({
 
 const { t } = useI18n();
 
+const buildOpenings = () => {
+    const existing = props.customer.data.openings || [];
+    const byCurrency = existing.reduce((acc, o) => {
+        const currencyId = o.currency_id || o.currency?.id;
+        if (currencyId) {
+            acc[currencyId] = o;
+        }
+        return acc;
+    }, {});
+
+    return (props.currencies?.data || []).map(currency => {
+        const found = byCurrency[currency.id] || {};
+        return {
+            currency_id: currency.id,
+            currency_name: currency.name,
+            amount: found.amount ?? 0,
+            rate: found.rate ?? 0,
+            type: found.type ?? 'debit',
+        };
+    });
+};
+
+const isBaseCurrency = (currencyId) => {
+    return (props.currencies?.data || []).some(
+        (currency) => currency.id === currencyId && currency.is_base_currency
+    );
+};
+
 const form = useForm({
     ...props.customer.data,
     currency_id: props.customer.data.currency_id,
-    opening_currency_id: props.customer.data.opening?.currency,
-    opening_amount: props.customer.data.opening?.amount, 
-    transaction_type: props.customer.data.opening?.type,
+    openings: buildOpenings(),
 })
+
+console.log('transactionTypes', props.transactionTypes);
 
 const handleUpdate = () => {
     form.patch(route('customers.update', form.id))
@@ -60,39 +88,48 @@ const handleCancel = () => {
                         :search-fields="['name', 'code', 'symbol']"
                         :error="form.errors.currency_id"
                     />
- 
+
                 </div>
 
-                <div class="md:col-span-3 mt-4">
+                <div class="md:col-span-4 mt-4">
                     <div class="pt-2">
                         <span class="font-bold">{{ t('item.opening') }}</span>
-                        <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-                            <NextInput :label="t('general.amount')" type="number" v-model="form.opening_amount" :error="form.errors?.opening_amount" :placeholder="t('general.enter', { text: t('general.amount') })" />
+                        <div class="mt-3 space-y-3">
+                            <div
+                                v-for="(opening, index) in form.openings"
+                                :key="opening.currency_id"
+                                class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start"
+                            >
+                                <NextInput
+                                    :label="`${t('general.amount')} (${opening.currency_name})`"
+                                    type="number"
+                                    step="any"
+                                    v-model="opening.amount"
+                                    :placeholder="t('general.enter', { text: t('general.amount') })"
+                                />
+                                <NextInput
+                                    :label="`${t('general.rate')} (${opening.currency_name})`"
+                                    type="number"
+                                    :disabled="isBaseCurrency(opening.currency_id)"
+                                    step="any"
+                                    v-model="opening.rate"
+                                    :placeholder="t('general.enter', { text: t('general.rate') })"
+                                />
 
-                            <NextSelect
-                                :options="transactionTypes"
-                                v-model="form.transaction_type"
-                                label-key="name"
-                                value-key="id"
-                                :reduce="transactionType => transactionType.id"
-                                id="transaction_type"
-                                :floating-text="t('general.transaction_type')"
-                                :error="form.errors?.transaction_type"
-                            />
+                                <NextSelect
+                                    :options="transactionTypes"
+                                    v-model="opening.type"
+                                    label-key="name"
+                                    value-key="id"
+                                    :reduce="transactionType => transactionType.id"
+                                    :id="`transaction_type_${index}`"
+                                    :floating-text="t('general.transaction_type')"
+                                />
 
-                            <NextSelect
-                                :options="currencies.data"
-                                v-model="form.opening_currency_id"
-                                label-key="name"
-                                value-key="id"
-                                :reduce="currency => currency"
-                                id="opening_currency"
-                                :floating-text="t('admin.currency.currency')"
-                                :searchable="true"
-                                resource-type="currencies"
-                                :search-fields="['name', 'code', 'symbol']"
-                                :error="form.errors.opening_currency_id"
-                            />
+                                <div class=" text-sm text-gray-700 border rounded-md p-2">
+                                    {{ opening.currency_name }}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

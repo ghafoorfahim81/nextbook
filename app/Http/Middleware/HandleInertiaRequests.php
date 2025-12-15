@@ -155,13 +155,9 @@ class HandleInertiaRequests extends Middleware
             ])
         );
 
-        $ledgers = Cache::remember(
-            'ledgers',
-            $cacheDuration,
-            fn() => LedgerResource::collection(
-                Ledger::latest()->take(1000)->get()
-            )
-        );
+        $ledgers = Cache::remember('ledgers', $cacheDuration, function () {
+            return Ledger::with('statement')->latest()->take(1000)->get();
+        });
         $salePurchaseTypes = Cache::rememberForever(
             'salePurchaseTypes_' . app()->getLocale(),
             fn() => collect(SalesPurchaseType::cases())->map(fn($item): array => [
@@ -256,7 +252,7 @@ class HandleInertiaRequests extends Middleware
             'calendarTypes' => $calendarTypes,
             'workingStyles' => $workingStyles,
             'locales' => $locales,
-            'ledgers' => $ledgers,
+            'ledgers' => LedgerResource::collection($ledgers),
             'salePurchaseTypes' => $salePurchaseTypes,
             'items' => $items,
             'discountTypes' => $discountTypes,
