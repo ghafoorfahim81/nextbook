@@ -11,7 +11,7 @@ use App\Models\Account\Account;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
-class AccountController extends Controller
+class ChartOfAccountController extends Controller
 {
     public function index(Request $request)
     {
@@ -24,14 +24,14 @@ class AccountController extends Controller
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
-        return inertia('Accounts/Accounts/Index', [
-            'items' => AccountResource::collection($accounts),
+        return inertia('Accounts/ChartOfAccounts/Index', [
+            'chartOfAccounts' => AccountResource::collection($accounts),
         ]);
     }
 
     public function create()
     {
-        return inertia('Accounts/Accounts/Create');
+        return inertia('Accounts/ChartOfAccounts/Create');
     }
 
     public function store(AccountStoreRequest $request)
@@ -60,14 +60,14 @@ class AccountController extends Controller
     }
 
 
-    public function show(Request $request, Account $account): Response
+    public function show(Request $request, Account $account)
     {
-        return new AccountResource($account);
+
     }
 
     public function edit(Request $request, Account $account)
     {
-        inertia('Accounts/Accounts/Edit', [
+        inertia('Accounts/ChartOfAccounts/Edit', [
             'account' => new AccountResource($account),
         ]);
     }

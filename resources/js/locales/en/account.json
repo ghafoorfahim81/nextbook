@@ -1,1 +1,5 @@
-﻿{}
+﻿{
+    "account": "Account",
+    "account_type": "Account Type",
+    "chart_of_accounts": "Chart of Accounts"
+}
