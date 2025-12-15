@@ -1,0 +1,69 @@
+<script setup>
+    import AppLayout from '@/Layouts/Layout.vue';
+    import DataTable from '@/Components/DataTable.vue';
+    import CustomerShowDialog from '@/Components/CustomerShowDialog.vue';
+    import { ref } from 'vue';
+    import { useDeleteResource } from '@/composables/useDeleteResource';
+    import { useI18n } from 'vue-i18n';
+
+    const props = defineProps({
+        chartOfAccounts: Object   ,
+    });
+    const { t } = useI18n()
+
+    const columns = ref([
+        { key: 'name', label: t('general.name') },
+        { key: 'number', label: t('general.number') },
+        { key: 'account_type.name', label: t('account.account_type') },
+        { key: 'balance', label:t('general.balance') },
+        { key: 'actions', label: t('general.actions') },
+
+    ]);
+
+    const editItem = (item) => {
+        window.location.href = `/chart-of-accounts/${item.id}/edit`
+    }
+
+    const showDialog = ref(false)
+    const selectedChartOfAccountId = ref(null)
+
+    const showItem = (item) => {
+        selectedChartOfAccountId.value = item
+        showDialog.value = true
+    }
+    const { deleteResource } = useDeleteResource()
+    const deleteItem = (id) => {
+        deleteResource('chart-of-accounts.destroy', id, {
+            title: t('general.delete', { name: t('account.account') }),
+            description: t('general.delete_description', { name: t('account.account') }),
+            successMessage: t('general.delete_success', { name: t('account.account') }),
+        })
+
+    };
+
+    </script>
+
+    <template>
+    <AppLayout :title="t('account.chart_of_accounts')">
+
+        <DataTable
+            :items="chartOfAccounts"
+            :columns="columns"
+            @delete="deleteItem"
+            @edit="editItem"
+            @show="showItem"
+            :title="t('account.chart_of_accounts')"
+            :url="`chart-of-accounts.index`"
+            :hasShow="true"
+            :showAddButton="true"
+            :addTitle="t('account.account')"
+            :addAction="'redirect'"
+            :addRoute="'chart-of-accounts.create'"
+        />
+
+        <CustomerShowDialog
+            v-model:open="showDialog"
+            :chart-of-account-id="selectedChartOfAccountId"
+        />
+    </AppLayout>
+</template>
