@@ -4,6 +4,8 @@ namespace App\Models\Ledger;
 
 use App\Models\Administration\Branch;
 use App\Models\LedgerOpening\LedgerOpening;
+use App\Models\Sale\Sale;
+use App\Models\Receipt\Receipt;
 use App\Models\Transaction\Transaction;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
@@ -123,6 +125,16 @@ class Ledger extends Model
     public function transactions()
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function sales()
+    {
+        return $this->hasMany(Sale::class, 'customer_id', 'id');
+    }
+
+    public function receipts()
+    {
+        return $this->hasMany(Receipt::class, 'ledger_id', 'id');
     }
 
     /**

@@ -148,7 +148,8 @@
   "email": "ایمیل",
   "active": "فعال",
   "unit_price": "قیمت واحد",
-  "created_successfully": "موفقانه ثبت شد"
+  "created_successfully": "موفقانه ثبت شد",
+  "general":"عمومی"
 }
 
 

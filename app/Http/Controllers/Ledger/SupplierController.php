@@ -4,9 +4,15 @@ namespace App\Http\Controllers\Ledger;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Ledger\LedgerStoreRequest;
+use App\Http\Requests\Ledger\LedgerUpdateRequest;
 use App\Http\Resources\Ledger\LedgerResource;
+use App\Http\Resources\Transaction\TransactionResource;
+use App\Http\Resources\Administration\CurrencyResource;
+use App\Http\Resources\Administration\BranchResource;
 use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
+use App\Models\Administration\Currency;
+use App\Models\Administration\Branch;
 use Illuminate\Http\Request;
 
 class SupplierController extends Controller
@@ -38,7 +44,11 @@ class SupplierController extends Controller
      */
     public function create()
     {
-        return inertia('Ledgers/Suppliers/Create');
+        return inertia('Ledgers/Suppliers/Create', [
+            'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
+            'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
+            'accountTypes' => [],
+        ]);
     }
 
     /**
@@ -49,71 +59,168 @@ class SupplierController extends Controller
         $validated = $request->validated();
         $validated['type'] = 'supplier';
         $ledger = Ledger::create($validated);
-        if ($request->filled('opening_amount') && $request->opening_amount > 0) {
-            // Prefer stable identifiers (code/slug) over name to find system accounts
-            $arId = Account::where('name', 'Account Receivable')->value('id'); // or ->where('code','AR')
-            $apId = Account::where('name', 'Account Payable')->value('id');    // or ->where('code','AP')
+        $openings = collect($request->input('openings', []))
+            ->filter(function ($opening) {
+                return !empty($opening['currency_id']) && (float)($opening['amount'] ?? 0) > 0;
+            });
+
+        if ($openings->isNotEmpty()) {
+            $arId = Account::where('name', 'Account Receivable')->value('id');
+            $apId = Account::where('name', 'Account Payable')->value('id');
 
             abort_unless($arId && $apId, 500, 'System accounts (AR/AP) are missing.');
 
-            // For customers: debit => AR (asset), credit => AP (liability)
-            $accountId = $request->transaction_type === 'debit' ? $arId : $apId;
+            $openings->each(function ($opening) use ($ledger, $arId, $apId) {
+                $type = $opening['type'] ?? 'debit';
+                $accountId = $type === 'credit' ? $arId : $apId;
 
-            $transaction = $ledger->transactions()->create([
-                'account_id'   => $accountId,
-                'amount'       => (float) $request->opening_amount,
-                'transactionable_type' => Ledger::class,
-                'currency_id'  => $request->opening_currency_id,   // ensure this exists/validated
-                'rate'         => (float) ($request->rate ?? 1),
-                'date'         => $request->date ?? now(),
-                'type'         => $request->transaction_type ?? 'debit',
-                'remark'       => 'Opening balance for customer',
-                'created_by'   => auth()->id(),
-            ]);
+                $transaction = $ledger->transactions()->create([
+                    'amount' => (float) $opening['amount'],
+                    'account_id' => $accountId,
+                    'currency_id' => $opening['currency_id'],
+                    'transactionable_type' => Ledger::class,
+                    'transactionable_id' => $ledger->id,
+                    'rate' => (float) $opening['rate'],
+                    'date' => now(),
+                    'type' => $type,
+                    'remark' => 'Opening balance for supplier',
+                    'created_by' => auth()->id(),
+                ]);
 
-            $transaction->opening()->create([
-                'ledgerable_id'   => $ledger->id,
-                'ledgerable_type' => 'ledger',
-                'created_by'      => auth()->id(),
-            ]);
+                $transaction->opening()->create([
+                    'ledgerable_id' => $ledger->id,
+                    'ledgerable_type' => 'ledger',
+                ]);
+            });
         }
 
-        return to_route('suppliers.index')->with('success', 'Customer created successfully.');
+        return to_route('suppliers.index')->with('success', 'Supplier created successfully.');
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Request $request, Ledger $supplier)
     {
-        //
+        $supplier->load([
+            'currency',
+            'branch',
+            'openings.transaction.currency',
+            'transactions.account',
+            'transactions.currency',
+        ]);
+
+        $transactions = $supplier->transactions;
+
+        $purchases = $transactions->where('reference_type', 'purchase')->values();
+        $payments = $transactions->where('reference_type', 'payment')->values();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'supplier' => new LedgerResource($supplier),
+                'purchases' => TransactionResource::collection($purchases),
+                'payments' => TransactionResource::collection($payments),
+            ]);
+        }
+
+        return inertia('Ledgers/Suppliers/Show', [
+            'supplier' => new LedgerResource($supplier),
+            'purchases' => TransactionResource::collection($purchases),
+            'payments' => TransactionResource::collection($payments),
+        ]);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Request $request, Ledger $supplier)
     {
-        //
+        $supplier->load(['currency', 'branch', 'openings.transaction.currency']);
+
+        $transactionTypes = [
+            ['id' => 'debit', 'name' => 'Debit'],
+            ['id' => 'credit', 'name' => 'Credit'],
+        ];
+
+        return inertia('Ledgers/Suppliers/Edit', [
+            'supplier' => new LedgerResource($supplier),
+            'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
+            'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
+            'transactionTypes' => $transactionTypes,
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(LedgerUpdateRequest $request, Ledger $supplier)
     {
-        //
+        $validated = $request->validated();
+        $supplier->update($validated);
+
+        // Remove existing opening balances
+        $supplier->transactions()->whereHas('opening')->get()->each(function ($transaction) {
+            $transaction->opening()->forceDelete();
+            $transaction->forceDelete();
+        });
+
+        $openings = collect($request->input('openings', []))
+            ->filter(function ($opening) {
+                return !empty($opening['currency_id']) && (float)($opening['amount'] ?? 0) > 0;
+            });
+
+        if ($openings->isNotEmpty()) {  // Update existing opening balances
+            $arId = Account::where('name', 'Account Receivable')->value('id');
+            $apId = Account::where('name', 'Account Payable')->value('id');
+
+            abort_unless($arId && $apId, 500, 'System accounts (AR/AP) are missing.');
+
+            $openings->each(function ($opening) use ($supplier, $arId, $apId) {
+                $type = $opening['type'] ?? 'debit';
+                $accountId = $type === 'credit' ? $arId : $apId;
+
+                $transaction = $supplier->transactions()->create([
+                    'amount' => (float) $opening['amount'],
+                    'account_id' => $accountId,
+                    'currency_id' => $opening['currency_id'],
+                    'transactionable_type' => Ledger::class,
+                    'transactionable_id' => $supplier->id,
+                    'rate' => (float) $opening['rate'],
+                    'date' => now(),
+                    'type' => $type,
+                    'remark' => 'Opening balance for supplier',
+                    'created_by' => auth()->id(),
+                ]);
+
+                $transaction->opening()->create([
+                    'ledgerable_id' => $supplier->id,
+                    'ledgerable_type' => 'ledger',
+                ]);
+            });
+        }
+
+        return to_route('suppliers.index')->with('success', 'Supplier updated successfully.');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, Ledger $supplier)
     {
-        //
+        $supplier->transactions()->whereHas('opening')->get()->each(function ($transaction) {
+            $transaction->opening()->forceDelete();
+            $transaction->forceDelete();
+        });
+        $supplier->delete();
+
+        return redirect()->route('suppliers.index')->with('success', 'Supplier deleted successfully.');
     }
-    public function restore(Request $request, Supplier $supplier)
+    public function restore(Request $request, Ledger $supplier)
     {
+        $supplier->transactions()->whereHas('opening')->get()->each(function ($transaction) {
+            $transaction->opening()->restore();
+            $transaction->restore();
+        });
         $supplier->restore();
         return redirect()->route('suppliers.index')->with('success', 'Supplier restored successfully.');
     }
