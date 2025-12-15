@@ -19,14 +19,13 @@ class LedgerResource extends JsonResource
             'code' => $this->code,
             'address' => $this->address,
             'contact_person' => $this->contact_person,
-            'statement' => $this->statement,
+            'statement' => $this->whenLoaded('statement'),
             'phone_no' => $this->phone_no,
             'email' => $this->email,
             'currency_id' => $this->currency_id,
             'currency' => $this->currency,
             'type' => $this->type, 
-            'opening' => new LedgerOpeningResource($this->whenLoaded('opening')),
-
+            'openings' => LedgerOpeningResource::collection($this->whenLoaded('openings')),
         ];
     }
 }

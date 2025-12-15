@@ -115,6 +115,11 @@ class Ledger extends Model
         return $this->morphOne(LedgerOpening::class, 'ledgerable');
     }
 
+    public function openings()
+    {
+        return $this->morphMany(LedgerOpening::class, 'ledgerable');
+    }
+
     public function transactions()
     {
         return $this->hasMany(Transaction::class);

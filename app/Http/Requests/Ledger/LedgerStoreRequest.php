@@ -28,6 +28,11 @@ class LedgerStoreRequest extends FormRequest
             'email' => ['nullable', 'email'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'type' => ['nullable', 'string'],
+            'openings' => ['nullable', 'array'],
+            'openings.*.currency_id' => ['nullable', 'string', 'exists:currencies,id'],
+            'openings.*.amount' => ['nullable', 'numeric'],
+            'openings.*.rate' => ['required', 'numeric'],
+            'openings.*.type' => ['nullable', 'string', 'in:debit,credit'],
         ];
     }
 }

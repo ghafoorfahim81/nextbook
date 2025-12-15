@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Ledger;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Ledger\LedgerStoreRequest;
+use App\Http\Requests\Ledger\LedgerUpdateRequest;
 use App\Http\Resources\Ledger\LedgerResource;
 use App\Http\Resources\Administration\CurrencyResource;
 use App\Http\Resources\Administration\BranchResource;
@@ -45,6 +46,7 @@ class CustomerController extends Controller
         return inertia('Ledgers/Customers/Create', [
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
             'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
+            'accountTypes' => [],
         ]);
     }
 
@@ -56,24 +58,39 @@ class CustomerController extends Controller
         $validated = $request->validated();
         $validated['type'] = 'customer';
         $ledger = Ledger::create($validated);
-        if ($request->has('opening_amount') && $request->opening_amount > 0) {
-            $account_id = $request->transaction_type == 'credit' ? Account::where('name','Account Receivable')->first()->id : Account::where('name','Account Payable')->first()->id;
-            $transaction = $ledger->transactions()->create([
-                'amount' => $request->opening_amount,
-                'account_id' => $account_id,
-                'currency_id' => $request->opening_currency_id,
-                'transactionable_type' => Ledger::class,
-                'transactionable_id' => $ledger->id,
-                'rate' => 1,
-                'date' => now(),
-                'type' => $request->transaction_type ?? 'debit',
-                'remark' => 'Opening balance for customer',
-                'created_by' => auth()->id(),
-            ]);
-            $transaction->opening()->create([
-                'ledgerable_id' => $ledger->id,
-                'ledgerable_type' => 'ledger',
-            ]);
+        $openings = collect($request->input('openings', []))
+            ->filter(function ($opening) {
+                return !empty($opening['currency_id']) && (float)($opening['amount'] ?? 0) > 0;
+            });
+
+        if ($openings->isNotEmpty()) {
+            $arId = Account::where('name', 'Account Receivable')->value('id');
+            $apId = Account::where('name', 'Account Payable')->value('id');
+
+            abort_unless($arId && $apId, 500, 'System accounts (AR/AP) are missing.');
+
+            $openings->each(function ($opening) use ($ledger, $arId, $apId) {
+                $type = $opening['type'] ?? 'debit';
+                $accountId = $type === 'credit' ? $arId : $apId;
+
+                $transaction = $ledger->transactions()->create([
+                    'amount' => (float) $opening['amount'],
+                    'account_id' => $accountId,
+                    'currency_id' => $opening['currency_id'],
+                    'transactionable_type' => Ledger::class,
+                    'transactionable_id' => $ledger->id,
+                    'rate' => (float) $opening['rate'],
+                    'date' => now(),
+                    'type' => $type,
+                    'remark' => 'Opening balance for customer',
+                    'created_by' => auth()->id(),
+                ]);
+
+                $transaction->opening()->create([
+                    'ledgerable_id' => $ledger->id,
+                    'ledgerable_type' => 'ledger',
+                ]);
+            });
         }
         return to_route('customers.index')->with('success', 'Customer created successfully.');
 
@@ -91,75 +108,60 @@ class CustomerController extends Controller
      * Show the form for editing the specified resource.
      */
     public function edit(Request $request, Ledger $customer)
-    { 
-        $customer->load('opening');
+    {
+        $customer->load(['openings.transaction.currency']);
         return inertia('Ledgers/Customers/Edit', [
-            'customer' => new LedgerResource($customer), 
+            'customer' => new LedgerResource($customer),
         ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(LedgerUpdateRequest $request, Ledger $customer)
     {
-        $ledger = Ledger::findOrFail($id);
+        $validated = $request->validated();
+        $customer->update($validated);
 
-        $validated = $request->validate([
-            'name' => ['required', 'string'],
-            'code' => ['nullable', 'string'],
-            'address' => ['nullable', 'string'],
-            'contact_person' => ['nullable', 'string'],
-            'phone_no' => ['nullable', 'string'],
-            'email' => ['nullable', 'email'],
-            'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
-            'branch_id' => ['nullable', 'string', 'exists:branches,id'],
-            'opening_amount' => ['nullable', 'numeric'],
-            'opening_currency_id' => ['nullable', 'string', 'exists:currencies,id'],
-            'transaction_type' => ['nullable', 'string', 'in:Credit,Debit'],
-        ]);
+        // Remove existing opening balances
+        $customer->transactions()->whereHas('opening')->get()->each(function ($transaction) {
+            $transaction->opening()->forceDelete();
+            $transaction->forceDelete();
+        });
 
-        $ledger->update($validated);
+        $openings = collect($request->input('openings', []))
+            ->filter(function ($opening) {
+                return !empty($opening['currency_id']) && (float)($opening['amount'] ?? 0) > 0;
+            });
 
-        // Handle opening balance
-        $existingOpening = $ledger->transactions()->whereHas('opening')->first();
+        if ($openings->isNotEmpty()) {  // Update existing opening balances
+            $arId = Account::where('name', 'Account Receivable')->value('id');
+            $apId = Account::where('name', 'Account Payable')->value('id');
 
-        if ($request->has('opening_amount') && $request->opening_amount > 0) {
-            $account_id = $request->transaction_type == 'credit'
-                ? Account::where('name','Account Receivable')->first()->id
-                : Account::where('name','Account Payable')->first()->id;
+            abort_unless($arId && $apId, 500, 'System accounts (AR/AP) are missing.');
 
-            if ($existingOpening) {
-                // Update existing opening transaction
-                $existingOpening->update([
-                    'amount' => $request->opening_amount,
-                    'account_id' => $account_id,
-                    'currency_id' => $request->opening_currency_id,
-                    'type' => $request->transaction_type ?? 'debit',
-                ]);
-            } else {
-                // Create new opening transaction
-                $transaction = $ledger->transactions()->create([
-                    'amount' => $request->opening_amount,
-                    'account_id' => $account_id,
-                    'currency_id' => $request->opening_currency_id,
+            $openings->each(function ($opening) use ($customer, $arId, $apId) {
+                $type = $opening['type'] ?? 'debit';
+                $accountId = $type === 'credit' ? $arId : $apId;
+
+                $transaction = $customer->transactions()->create([
+                    'amount' => (float) $opening['amount'],
+                    'account_id' => $accountId,
+                    'currency_id' => $opening['currency_id'],
                     'transactionable_type' => Ledger::class,
-                    'transactionable_id' => $ledger->id,
-                    'rate' => 1,
+                    'transactionable_id' => $customer->id,
+                    'rate' => (float) $opening['rate'],
                     'date' => now(),
-                    'type' => $request->transaction_type ?? 'debit',
+                    'type' => $type,
                     'remark' => 'Opening balance for customer',
                     'created_by' => auth()->id(),
                 ]);
+
                 $transaction->opening()->create([
-                    'ledgerable_id' => $ledger->id,
+                    'ledgerable_id' => $customer->id,
                     'ledgerable_type' => 'ledger',
                 ]);
-            }
-        } elseif ($existingOpening) {
-            // Remove opening balance if amount is 0 or not provided
-            $existingOpening->opening()->delete();
-            $existingOpening->delete();
+            });
         }
 
         return to_route('customers.index')->with('success', 'Customer updated successfully.');
