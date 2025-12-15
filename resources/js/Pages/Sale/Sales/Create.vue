@@ -571,9 +571,9 @@ const addRow = () => {
 }
 
 const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
-const general_fields = computed(() =>  user_preferences.value?.sales.general_fields ?? user_preferences.value.sales.general_fields ?? []).value
-const item_columns = computed(() => user_preferences.value?.sales.item_columns ?? user_preferences.value.sales.item_columns ?? []).value
-const sales_preferences = computed(() => user_preferences.value?.sales ?? user_preferences.value.sales ?? []).value
+const general_fields = computed(() =>  user_preferences.value?.sale.general_fields ?? user_preferences.value.sale.general_fields ?? []).value
+const item_columns = computed(() => user_preferences.value?.sale.item_columns ?? user_preferences.value.sale.item_columns ?? []).value
+const sale_preferences = computed(() => user_preferences.value?.sale ?? user_preferences.value.sale ?? []).value
 const item_management = computed(() => user_preferences.value?.item_management ?? user_preferences.value.item_management ?? []).value 
 const spec_text = computed(() => item_management?.spec_text ?? item_management?.spec_text ?? 'batch').value
  

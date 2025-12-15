@@ -1,6 +1,7 @@
 ﻿{
     "supplier":{
-        "supplier": "Supplier"
+        "supplier": "Supplier",
+        "suppliers": "Suppliers"
     },
     "customer":{
         "customer": "Customer",

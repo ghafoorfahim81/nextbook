@@ -5,68 +5,51 @@ import NextSelect from '@/Components/next/NextSelect.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 
-const { t } = useI18n();
-
-const { currencies, accountTypes, branches } = defineProps({
-    accountTypes: {
-        type: Array,
-        required: true,
-    },
-    currencies: {
-        type: Array,
-        required: true,
-    },
-    branches: {
-        type: Array,
-        required: true,
-    },
+const props = defineProps({
+    supplier: { type: Object, required: true },
+    currencies: { type: Array, required: true },
+    branches: { type: Array, required: true },
+    transactionTypes: { type: Array, required: true },
 });
 
+const { t } = useI18n();
+
+const buildOpenings = () => {
+    const existing = props.supplier.data.openings || [];
+    const byCurrency = existing.reduce((acc, o) => {
+        const currencyId = o.currency_id || o.currency?.id;
+        if (currencyId) {
+            acc[currencyId] = o;
+        }
+        return acc;
+    }, {});
+
+    return (props.currencies?.data || []).map(currency => {
+        const found = byCurrency[currency.id] || {};
+        return {
+            currency_id: currency.id,
+            currency_name: currency.name,
+            amount: found.amount ?? 0,
+            rate: found.rate ?? 0,
+            type: found.type ?? 'credit',
+        };
+    });
+};
+
 const isBaseCurrency = (currencyId) => {
-    return (currencies?.data || []).some(
+    return (props.currencies?.data || []).some(
         (currency) => currency.id === currencyId && currency.is_base_currency
     );
 };
 
-const buildOpenings = () => {
-    return (currencies?.data || []).map(currency => ({
-        currency_id: currency.id,
-        currency_name: currency.name,
-        amount: '',
-        rate: isBaseCurrency(currency.id) ? 1 : currency.exchange_rate,
-        type: 'credit',
-    }));
-};
-
 const form = useForm({
-    name: '',
-    code: '',
-    phone_no: '',
-    contact_person: '',
-    email: '',
-    address: '',
-    currency_id: null,
+    ...props.supplier.data,
+    currency_id: props.supplier.data.currency_id,
     openings: buildOpenings(),
 });
 
-const transactionTypes = [
-    { id: 'debit', name: 'Debit' },
-    { id: 'credit', name: 'Credit' },
-];
-
-const handleCreate = () => {
-    form.post(route('suppliers.store'));
-};
-
-const handleCreateAndNew = () => {
-    form
-        .transform((data) => ({ ...data, stay: true }))
-        .post(route('suppliers.store'), {
-            onSuccess: () => {
-                form.reset();
-                form.transform((d) => d);
-            },
-        });
+const handleUpdate = () => {
+    form.patch(route('suppliers.update', form.id));
 };
 
 const handleCancel = () => {
@@ -75,11 +58,11 @@ const handleCancel = () => {
 </script>
 
 <template>
-    <AppLayout :title="t('ledger.supplier.supplier')">
-        <form @submit.prevent="handleCreate">
+    <AppLayout :title="t('general.edit', { name: t('ledger.supplier.supplier') })">
+        <form @submit.prevent="handleUpdate">
             <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
-                    {{ t('general.create', { name: t('ledger.supplier.supplier') }) }}
+                    {{ t('general.edit', { name: t('ledger.supplier.supplier') }) }}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name" :placeholder="t('general.enter', { text: t('general.name') })" />
@@ -115,6 +98,7 @@ const handleCancel = () => {
                                 <NextInput
                                     :label="`${t('general.amount')} (${opening.currency_name})`"
                                     type="number"
+                                    step="any"
                                     v-model="opening.amount"
                                     :placeholder="t('general.enter', { text: t('general.amount') })"
                                 />
@@ -132,6 +116,7 @@ const handleCancel = () => {
                                     v-model="opening.type"
                                     label-key="name"
                                     value-key="id"
+                                    :reduce="transactionType => transactionType.id"
                                     :id="`transaction_type_${index}`"
                                     :floating-text="t('general.transaction_type')"
                                 />
@@ -150,10 +135,10 @@ const handleCancel = () => {
             </progress>
 
             <div class="mt-4 flex gap-2">
-                <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white">{{ t('general.create') }}</button>
-                <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white" @click="handleCreateAndNew">{{ t('general.create_and_new') }}</button>
+                <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white">{{ t('general.update') }}</button>
                 <button type="button" class="btn px-4 py-2 rounded-md border" @click="handleCancel">{{ t('general.cancel') }}</button>
             </div>
         </form>
     </AppLayout>
 </template>
+

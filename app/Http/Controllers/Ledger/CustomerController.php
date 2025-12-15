@@ -6,8 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Ledger\LedgerStoreRequest;
 use App\Http\Requests\Ledger\LedgerUpdateRequest;
 use App\Http\Resources\Ledger\LedgerResource;
+use App\Http\Resources\Transaction\TransactionResource;
 use App\Http\Resources\Administration\CurrencyResource;
 use App\Http\Resources\Administration\BranchResource;
+use App\Http\Resources\Sale\SaleResource;
+use App\Http\Resources\Receipt\ReceiptResource;
+use App\Http\Resources\LedgerOpening\LedgerOpeningResource;
 use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
@@ -99,9 +103,32 @@ class CustomerController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Request $request, Ledger $customer)
     {
-        //
+        $customer->load([
+            'currency',
+            'branch', 
+            'transactions.account',
+            'transactions.currency',
+        ]); 
+        $sales = $customer->sales->load('transaction.currency');
+        $receipts = $customer->receipts->load('bankTransaction.currency');
+        $openings = $customer->openings->load('transaction.currency');
+        if ($request->expectsJson()) {
+            return response()->json([
+                'customer' => new LedgerResource($customer),
+                'sales' => SaleResource::collection($sales),
+                'receipts' => ReceiptResource::collection($receipts),
+                'openings' => LedgerOpeningResource::collection($openings),
+            ]);
+        }
+
+        return inertia('Ledgers/Customers/Show', [
+            'customer' => new LedgerResource($customer),
+            'sales' => SaleResource::collection($sales),
+            'receipts' => ReceiptResource::collection($receipts),
+            'openings' => LedgerOpeningResource::collection($openings),
+        ]);
     }
 
     /**
@@ -109,9 +136,18 @@ class CustomerController extends Controller
      */
     public function edit(Request $request, Ledger $customer)
     {
-        $customer->load(['openings.transaction.currency']);
+        $customer->load(['currency', 'branch', 'openings.transaction.currency']);
+
+        $transactionTypes = [
+            ['id' => 'debit', 'name' => 'Debit'],
+            ['id' => 'credit', 'name' => 'Credit'],
+        ];
+
         return inertia('Ledgers/Customers/Edit', [
             'customer' => new LedgerResource($customer),
+            'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
+            'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
+            'transactionTypes' => $transactionTypes,
         ]);
     }
 
@@ -170,15 +206,22 @@ class CustomerController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, Ledger $customer)
     {
-        $ledger = Ledger::findOrFail($id);
-        $ledger->delete();
+        $customer->transactions()->whereHas('opening')->get()->each(function ($transaction) {
+            $transaction->opening()->forceDelete();
+            $transaction->forceDelete();
+        });
+        $customer->delete();
 
         return redirect()->route('customers.index')->with('success', 'Customer deleted successfully.');
     }
     public function restore(Request $request, Ledger $customer)
     {
+        $customer->transactions()->whereHas('opening')->get()->each(function ($transaction) {
+            $transaction->opening()->restore();
+            $transaction->restore();
+        });
         $customer->restore();
         return redirect()->route('customers.index')->with('success', 'Customer restored successfully.');
     }

@@ -156,7 +156,7 @@ class HandleInertiaRequests extends Middleware
         );
 
         $ledgers = Cache::remember('ledgers', $cacheDuration, function () {
-            return Ledger::with('statement')->latest()->take(1000)->get();
+            return Ledger::latest()->take(1000)->get();
         });
         $salePurchaseTypes = Cache::rememberForever(
             'salePurchaseTypes_' . app()->getLocale(),
