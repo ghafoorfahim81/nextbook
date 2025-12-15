@@ -5,7 +5,7 @@ namespace App\Http\Resources\Receipt;
 use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\Account\AccountResource;
+use App\Http\Resources\Account\ChartOFAccountResource;
 class ReceiptResource extends JsonResource
 {
     /**
@@ -26,11 +26,11 @@ class ReceiptResource extends JsonResource
             'currency_code' => $this->bankTransaction?->currency?->code,
             'rate' => $this->bankTransaction?->rate,
             'bank_account_id' => $this->bankTransaction?->account?->id,
-            'bank_account' => new AccountResource($this->bankTransaction?->account),
+            'bank_account' => new ChartOFAccountResource($this->bankTransaction?->account),
             'cheque_no' => $this->cheque_no,
             'narration' => $this->narration,
             'receive_transaction_id' => $this->receive_transaction_id,
-            'bank_transaction_id' => $this->bank_transaction_id, 
+            'bank_transaction_id' => $this->bank_transaction_id,
             'bank_transaction' => new TransactionResource($this->bankTransaction),
             'receive_transaction' => new TransactionResource($this->receiveTransaction),
         ];
