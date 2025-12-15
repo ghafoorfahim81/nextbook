@@ -4,7 +4,7 @@ namespace App\Http\Requests\Account;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class AccountUpdateRequest extends FormRequest
+class ChartOfAccountStoreRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,11 +22,15 @@ class AccountUpdateRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'unique:accounts,name'],
             'number' => ['required', 'string', 'unique:accounts,number'],
-            'account_type_id' => ['required', 'string', 'exists:account_types,slug'],
-            'slug' => ['nullable', 'string', 'unique:accounts,slug'],
-            'remark' => ['nullable', 'string'],
+            'account_type_id' => ['required', 'string', 'exists:account_types,id'],
             'is_active' => ['nullable', 'boolean'],
-            'is_main' => ['nullable', 'boolean'],
+            'remark' => ['nullable', 'string'],
+            'slug' => ['nullable', 'string', 'unique:accounts,slug'],
+            'openings' => ['nullable', 'array'],
+            'openings.*.currency_id' => ['nullable', 'string', 'exists:currencies,id'],
+            'openings.*.amount' => ['nullable', 'numeric'],
+            'openings.*.rate' => ['required', 'numeric'],
+            'openings.*.type' => ['nullable', 'string', 'in:debit,credit'],
         ];
     }
 }

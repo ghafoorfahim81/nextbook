@@ -1,51 +1,48 @@
 <script setup>
-    import AppLayout from '@/Layouts/Layout.vue';
-    import DataTable from '@/Components/DataTable.vue';
-    import CustomerShowDialog from '@/Components/CustomerShowDialog.vue';
-    import { ref } from 'vue';
-    import { useDeleteResource } from '@/composables/useDeleteResource';
-    import { useI18n } from 'vue-i18n';
+import AppLayout from '@/Layouts/Layout.vue';
+import DataTable from '@/Components/DataTable.vue';
+import AccountShowDialog from '@/Components/AccountShowDialog.vue';
+import { ref } from 'vue';
+import { useDeleteResource } from '@/composables/useDeleteResource';
+import { useI18n } from 'vue-i18n';
 
-    const props = defineProps({
-        chartOfAccounts: Object   ,
+const props = defineProps({
+    chartOfAccounts: Object,
+});
+const { t } = useI18n();
+
+const columns = ref([
+    { key: 'name', label: t('general.name') },
+    { key: 'number', label: t('general.number') },
+    { key: 'account_type.name', label: t('account.account_type') },
+    { key: 'balance', label: t('general.balance') },
+    { key: 'actions', label: t('general.actions') },
+]);
+
+const editItem = (item) => {
+    window.location.href = `/chart-of-accounts/${item.id}/edit`;
+};
+
+const showDialog = ref(false);
+const selectedAccountId = ref(null);
+
+const showItem = (id) => { 
+    selectedAccountId.value = id;
+    showDialog.value = true;
+};
+
+const { deleteResource } = useDeleteResource();
+const deleteItem = (id) => {
+    deleteResource('chart-of-accounts.destroy', id, {
+        title: t('general.delete', { name: t('account.account') }),
+        description: t('general.delete_description', { name: t('account.account') }),
+        successMessage: t('general.delete_success', { name: t('account.account') }),
     });
-    const { t } = useI18n()
+};
+</script>
 
-    const columns = ref([
-        { key: 'name', label: t('general.name') },
-        { key: 'number', label: t('general.number') },
-        { key: 'account_type.name', label: t('account.account_type') },
-        { key: 'balance', label:t('general.balance') },
-        { key: 'actions', label: t('general.actions') },
-
-    ]);
-
-    const editItem = (item) => {
-        window.location.href = `/chart-of-accounts/${item.id}/edit`
-    }
-
-    const showDialog = ref(false)
-    const selectedChartOfAccountId = ref(null)
-
-    const showItem = (item) => {
-        selectedChartOfAccountId.value = item
-        showDialog.value = true
-    }
-    const { deleteResource } = useDeleteResource()
-    const deleteItem = (id) => {
-        deleteResource('chart-of-accounts.destroy', id, {
-            title: t('general.delete', { name: t('account.account') }),
-            description: t('general.delete_description', { name: t('account.account') }),
-            successMessage: t('general.delete_success', { name: t('account.account') }),
-        })
-
-    };
-
-    </script>
-
-    <template>
+<template>
     <AppLayout :title="t('account.chart_of_accounts')">
-
         <DataTable
             :items="chartOfAccounts"
             :columns="columns"
@@ -61,9 +58,9 @@
             :addRoute="'chart-of-accounts.create'"
         />
 
-        <CustomerShowDialog
+        <AccountShowDialog
             v-model:open="showDialog"
-            :chart-of-account-id="selectedChartOfAccountId"
+            :account-id="selectedAccountId"
         />
     </AppLayout>
 </template>

@@ -6,7 +6,7 @@ use App\Http\Resources\LedgerOpening\LedgerOpeningResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class AccountResource extends JsonResource
+class ChartOFAccountResource extends JsonResource
 {
     /**
      * Transform the resource into an array.

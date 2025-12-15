@@ -9,7 +9,7 @@ use App\Http\Resources\Administration\StoreResource;
 use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Category;
-use App\Http\Resources\Account\AccountResource;
+use App\Http\Resources\Account\ChartOFAccountResource;
 use App\Models\Account\Account;
 use App\Http\Resources\Account\AccountTypeResource;
 use App\Models\Account\AccountType;
@@ -71,7 +71,7 @@ class HandleInertiaRequests extends Middleware
         $accounts = Cache::remember(
             'accounts',
             $cacheDuration,
-            fn() => AccountResource::collection(
+            fn() => ChartOFAccountResource::collection(
                 Account::latest()->take(1000)->get()
             )
         );

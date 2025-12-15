@@ -28,9 +28,13 @@ class DateConversionService
             return $this->conversionCache[$cacheKey];
         }
 
+        // Clean the input date - remove time portion if present
+        $cleanedDate = $this->extractDatePart($date);
+
         // Detect if the incoming date looks like a Jalali date (year 13xx–14xx)
-        $normalized = str_replace('/', '-', trim($date));
+        $normalized = str_replace('/', '-', trim($cleanedDate));
         $isJalaliInput = false;
+
         if (preg_match('/^(\d{4})-(\d{1,2})-(\d{1,2})/', $normalized, $matches)) {
             $year = (int) $matches[1];
             $isJalaliInput = $year >= 1300 && $year <= 1499;
@@ -40,11 +44,47 @@ class DateConversionService
         // - company calendar is explicitly Jalali, OR
         // - the incoming value clearly looks like a Jalali year
         $result = ($this->calendarType === 'jalali' || $isJalaliInput)
-            ? $this->jalaliToGregorian($date)
-            : $date;
+            ? $this->jalaliToGregorian($cleanedDate)
+            : $this->formatGregorianDate($cleanedDate); // Format Gregorian dates too
 
         $this->conversionCache[$cacheKey] = $result;
         return $result;
+    }
+
+    /**
+     * Extract just the date part from a datetime string
+     */
+    private function extractDatePart(string $dateTime): string
+    {
+        // If it contains 'T' or has time portion, extract just the date
+        if (strpos($dateTime, 'T') !== false) {
+            $parts = explode('T', $dateTime);
+            return $parts[0];
+        }
+
+        // If it has time portion with space separator
+        if (strpos($dateTime, ' ') !== false) {
+            $parts = explode(' ', $dateTime);
+            return $parts[0];
+        }
+
+        // Already just a date
+        return $dateTime;
+    }
+
+    /**
+     * Format a Gregorian date to Y-m-d
+     */
+    private function formatGregorianDate(string $date): string
+    {
+        try {
+            // Parse and format to ensure consistent Y-m-d format
+            return Carbon::parse($date)->format('Y-m-d');
+        } catch (\Exception $e) {
+            // If parsing fails, try to extract date part
+            $datePart = $this->extractDatePart($date);
+            return $datePart;
+        }
     }
 
     /**
@@ -68,8 +108,8 @@ class DateConversionService
                     ->toCarbon()
                     ->format('Y-m-d');
             } catch (\Exception $e2) {
-                // Last resort: return original date
-                return $jalaliDate;
+                // Last resort: return original date (formatted)
+                return $this->formatGregorianDate($jalaliDate);
             }
         }
     }
@@ -85,9 +125,12 @@ class DateConversionService
             return $this->conversionCache[$cacheKey];
         }
 
+        // Always format Gregorian dates to Y-m-d first
+        $formattedDate = $this->formatGregorianDate($gregorianDate);
+
         $result = ($this->calendarType === 'jalali')
-            ? $this->gregorianToJalali($gregorianDate) // Use custom method
-            : $gregorianDate;
+            ? $this->gregorianToJalali($formattedDate) // Use custom method
+            : $formattedDate; // Return formatted Gregorian date
 
         $this->conversionCache[$cacheKey] = $result;
         return $result;
@@ -99,8 +142,11 @@ class DateConversionService
     private function gregorianToJalali(string $gregorianDate): string
     {
         try {
-            return Jalalian::fromCarbon(Carbon::parse($gregorianDate))
-                ->format('Y-m-d'); // Return with slashes for display
+            // First ensure the input is properly formatted
+            $formattedDate = $this->formatGregorianDate($gregorianDate);
+
+            return Jalalian::fromCarbon(Carbon::parse($formattedDate))
+                ->format('Y-m-d'); // Return with dashes for consistency
         } catch (\Exception $e) {
             return $gregorianDate; // Fallback to original
         }
@@ -126,18 +172,38 @@ class DateConversionService
     public function convertCollection(Collection $models, string $dateField = 'date'): Collection
     {
         if ($this->calendarType === 'gregorian') {
-            return $models; // No conversion needed
+            // Even for Gregorian, we should format dates consistently
+            return $models->map(function ($model) use ($dateField) {
+                if (isset($model->{$dateField})) {
+                    $model->display_date = $this->formatGregorianDate($model->{$dateField});
+                }
+                return $model;
+            });
         }
 
-        // Batch convert all dates at once
-        $dates = $models->pluck($dateField)->toArray();
-        $convertedDates = $this->batchToDisplay($dates);
-
-        // Map back to models
-        return $models->map(function ($model, $index) use ($convertedDates, $dateField) {
-            $model->display_date = $convertedDates[$index];
+        // For Jalali calendar, convert dates
+        return $models->map(function ($model) use ($dateField) {
+            if (isset($model->{$dateField})) {
+                $model->display_date = $this->toDisplay($model->{$dateField});
+            }
             return $model;
         });
+    }
+
+    /**
+     * Get display format for dates (useful for forms, etc.)
+     */
+    public function getDisplayFormat(): string
+    {
+        return $this->calendarType === 'jalali' ? 'Y-m-d' : 'Y-m-d';
+    }
+
+    /**
+     * Get storage format for dates (always Y-m-d)
+     */
+    public function getStorageFormat(): string
+    {
+        return 'Y-m-d';
     }
 
     private function getCompanyCalendarType(): string
