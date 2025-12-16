@@ -7,7 +7,7 @@ import { useDeleteResource } from '@/composables/useDeleteResource';
 import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
-    chartOfAccounts: Object,
+    accounts: Object,
 });
 const { t } = useI18n();
 
@@ -20,7 +20,7 @@ const columns = ref([
 ]);
 
 const editItem = (item) => {
-    window.location.href = `/chart-of-accounts/${item.id}/edit`;
+    window.location.href = `/chart_of_accounts/${item.id}/edit`;
 };
 
 const showDialog = ref(false);
@@ -33,7 +33,7 @@ const showItem = (id) => {
 
 const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {
-    deleteResource('chart-of-accounts.destroy', id, {
+    deleteResource('chart_of_accounts.destroy', id, {
         title: t('general.delete', { name: t('account.account') }),
         description: t('general.delete_description', { name: t('account.account') }),
         successMessage: t('general.delete_success', { name: t('account.account') }),
@@ -44,18 +44,18 @@ const deleteItem = (id) => {
 <template>
     <AppLayout :title="t('account.chart_of_accounts')">
         <DataTable
-            :items="chartOfAccounts"
+            :items="accounts"
             :columns="columns"
             @delete="deleteItem"
             @edit="editItem"
             @show="showItem"
             :title="t('account.chart_of_accounts')"
-            :url="`chart-of-accounts.index`"
+            :url="`chart_of_accounts.index`"
             :hasShow="true"
             :showAddButton="true"
             :addTitle="t('account.account')"
             :addAction="'redirect'"
-            :addRoute="'chart-of-accounts.create'"
+            :addRoute="'chart_of_accounts.create'"
         />
 
         <AccountShowDialog

@@ -5,7 +5,7 @@ namespace App\Http\Resources\AccountTransfer;
 use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\Account\ChartOFAccountResource;
+use App\Http\Resources\Account\AccountResource;
 
 class AccountTransferResource extends JsonResource
 {

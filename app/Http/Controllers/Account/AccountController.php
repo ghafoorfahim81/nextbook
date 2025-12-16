@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Account\ChartOfAccountStoreRequest;
-use App\Http\Requests\Account\ChartOfAccountUpdateRequest;
-use App\Http\Resources\Account\ChartOFAccountResource;
+use App\Http\Requests\Account\AccountStoreRequest;
+use App\Http\Requests\Account\AccountUpdateRequest;
+use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\Account\AccountTypeResource;
 use App\Http\Resources\Administration\BranchResource;
 use App\Http\Resources\Administration\CurrencyResource;
@@ -20,10 +20,10 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
-class ChartOfAccountController extends Controller
+class AccountController extends Controller
 {
     public function index(Request $request)
-    {
+    { 
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
@@ -33,21 +33,21 @@ class ChartOfAccountController extends Controller
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
-        return inertia('Accounts/ChartOfAccounts/Index', [
-            'chartOfAccounts' => ChartOFAccountResource::collection($accounts),
+        return inertia('Accounts/Accounts/Index', [
+            'accounts' => AccountResource::collection($accounts),
         ]);
     }
 
     public function create()
     {
-        return inertia('Accounts/ChartOfAccounts/Create', [
+        return inertia('Accounts/Accounts/Create', [
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
             'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
             'accountTypes' => AccountTypeResource::collection(AccountType::orderBy('name')->get()),
         ]);
     }
 
-    public function store(ChartOfAccountStoreRequest $request)
+    public function store(AccountStoreRequest $request)
     {
         $validated = $request->validated();
         $validated['slug'] = Str::slug($validated['name']);
@@ -79,7 +79,7 @@ class ChartOfAccountController extends Controller
             });
         }
 
-        return to_route('chart-of-accounts.index')->with('success', 'Account created successfully.');
+        return to_route('chart_of_accounts.index')->with('success', 'Account created successfully.');
     }
 
 
@@ -96,14 +96,14 @@ class ChartOfAccountController extends Controller
 
         if ($request->expectsJson()) {
             return response()->json([
-                'account' => new ChartOFAccountResource($chart_of_account),
+                'account' => new AccountResource($chart_of_account),
                 'transactions' => TransactionResource::collection($chart_of_account->transactions),
                 'openings' => LedgerOpeningResource::collection($chart_of_account->openings),
             ]);
         }
 
-        return inertia('Accounts/ChartOfAccounts/Show', [
-            'account' => new ChartOFAccountResource($chart_of_account),
+        return inertia('Accounts/Accounts/Show', [
+            'account' => new AccountResource($chart_of_account),
             'transactions' => TransactionResource::collection($transactions),
             'openings' => LedgerOpeningResource::collection($openings),
         ]);
@@ -111,12 +111,12 @@ class ChartOfAccountController extends Controller
 
     public function edit(Request $request, Account $chart_of_account)
     {
-        return inertia('Accounts/ChartOfAccounts/Edit', [
-            'account' => new ChartOFAccountResource($chart_of_account),
+        return inertia('Accounts/Accounts/Edit', [
+            'account' => new AccountResource($chart_of_account),
         ]);
     }
 
-    public function update(ChartOfAccountUpdateRequest $request, Account $chart_of_account)
+    public function update(AccountUpdateRequest $request, Account $chart_of_account)
     {
         $validated = $request->validated();
         $validated['slug'] = Str::slug($validated['name']);
@@ -154,7 +154,7 @@ class ChartOfAccountController extends Controller
             });
         }
 
-        return to_route('chart-of-accounts.index')->with('success', 'Account updated successfully.');
+        return to_route('chart_of_accounts.index')->with('success', 'Account updated successfully.');
     }
 
     public function destroy(Request $request, Account $chart_of_account): Response
@@ -166,6 +166,6 @@ class ChartOfAccountController extends Controller
     public function restore(Request $request, Account $account)
     {
         $account->restore();
-        return redirect()->route('chart-of-accounts.index')->with('success', 'Account restored successfully.');
+        return redirect()->route('chart_of_accounts.index')->with('success', 'Account restored successfully.');
     }
 }
