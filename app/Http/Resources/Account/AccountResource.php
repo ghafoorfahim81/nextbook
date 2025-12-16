@@ -27,6 +27,8 @@ class AccountResource extends JsonResource
             'branch_id' => $this->branch_id,
             'branch'    => $this->branch,
             'remark' => $this->remark,
+            'openings' => LedgerOpeningResource::collection($this->whenLoaded('openings')),
+
         ];
     }
 }

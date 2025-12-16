@@ -53,13 +53,13 @@ const transactionTypes = [
 ];
 
 const handleCreate = () => {
-    form.post(route('chart_of_accounts.store'));
+    form.post(route('chart-of-accounts.store'));
 };
 
 const handleCreateAndNew = () => {
     form
         .transform((data) => ({ ...data, stay: true }))
-        .post(route('chart_of_accounts.store'), {
+        .post(route('chart-of-accounts.store'), {
             onSuccess: () => {
                 form.reset();
                 form.openings = buildOpenings();
@@ -69,7 +69,7 @@ const handleCreateAndNew = () => {
 };
 
 const handleCancel = () => {
-    router.visit(route('chart_of_accounts.index'));
+    router.visit(route('chart-of-accounts.index'));
 };
 </script>
 

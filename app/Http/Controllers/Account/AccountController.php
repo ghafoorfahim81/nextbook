@@ -25,7 +25,7 @@ class AccountController extends Controller
     public function index(Request $request)
     { 
         $perPage = $request->input('perPage', 10);
-        $sortField = $request->input('sortField', 'id');
+        $sortField = $request->input('sortField', 'created_at');
         $sortDirection = $request->input('sortDirection', 'desc');
 
         $accounts = Account::with('transactions')
@@ -79,7 +79,7 @@ class AccountController extends Controller
             });
         }
 
-        return to_route('chart_of_accounts.index')->with('success', 'Account created successfully.');
+        return to_route('chart-of-accounts.index')->with('success', 'Account created successfully.');
     }
 
 
@@ -111,8 +111,10 @@ class AccountController extends Controller
 
     public function edit(Request $request, Account $chart_of_account)
     {
+        $chart_of_account->load(['accountType', 'transactions.currency', 'openings.transaction.currency']);
+
         return inertia('Accounts/Accounts/Edit', [
-            'account' => new AccountResource($chart_of_account),
+            'account' => new AccountResource($chart_of_account),  
         ]);
     }
 
@@ -154,18 +156,34 @@ class AccountController extends Controller
             });
         }
 
-        return to_route('chart_of_accounts.index')->with('success', 'Account updated successfully.');
+        return to_route('chart-of-accounts.index')->with('success', 'Account updated successfully.');
     }
 
-    public function destroy(Request $request, Account $chart_of_account): Response
+    public function destroy(Request $request, Account $chart_of_account)
     {
+        if (!$chart_of_account->canBeDeleted()) {
+            $message = $chart_of_account->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            return redirect()->route('chart-of-accounts.index')->with('error', $message);
+        }
+        if($chart_of_account->is_main) {
+            return redirect()->route('chart-of-accounts.index')->with('error', 'You cannot delete the main account.');
+        }
+
+        $chart_of_account->transactions()->whereHas('opening')->get()->each(function ($transaction) {
+            $transaction->opening()->delete();
+            $transaction->delete();
+        });
         $chart_of_account->delete();
 
-        return response()->noContent();
+        return redirect()->route('chart-of-accounts.index')->with('success', 'Chart of account deleted successfully.');
     }
-    public function restore(Request $request, Account $account)
+    public function restore(Request $request, Account $chart_of_account)
     {
-        $account->restore();
-        return redirect()->route('chart_of_accounts.index')->with('success', 'Account restored successfully.');
+        $chart_of_account->transactions()->whereHas('opening')->get()->each(function ($transaction) {
+            $transaction->opening()->restore();
+            $transaction->restore();
+        });
+        $chart_of_account->restore();
+        return redirect()->route('chart-of-accounts.index')->with('success', 'Chart of account restored successfully.');
     }
 }

@@ -16,8 +16,8 @@ class AccountTypeController extends Controller
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);
-        $sortField = $request->input('sortField', 'id');
-        $sortDirection = $request->input('sortDirection', 'asc');
+        $sortField = $request->input('sortField', 'created_at');
+        $sortDirection = $request->input('sortDirection', 'desc');
 
         $accountTypes = AccountType::search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
@@ -30,7 +30,7 @@ class AccountTypeController extends Controller
 
     public function create(Request $request)
     {
-        return view('accountType.create');
+         
     }
 
     public function store(AccountTypeStoreRequest $request)

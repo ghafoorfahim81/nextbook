@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Account;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class AccountUpdateRequest extends FormRequest
 {
@@ -19,11 +20,26 @@ class AccountUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        // The route-model-bound account instance (parameter name: chart_of_account)
+        $chartOfAccount = $this->route('chart_of_account');
+
         return [
-            'name' => ['required', 'string', 'unique:accounts,name'],
-            'number' => ['required', 'string', 'unique:accounts,number'],
+            'name' => [
+                'required',
+                'string',
+                Rule::unique('accounts', 'name')->ignore($chartOfAccount),
+            ],
+            'number' => [
+                'required',
+                'string',
+                Rule::unique('accounts', 'number')->ignore($chartOfAccount),
+            ],
             'account_type_id' => ['required', 'string', 'exists:account_types,id'],
-            'slug' => ['nullable', 'string', 'unique:accounts,slug'],
+            'slug' => [
+                'nullable',
+                'string',
+                Rule::unique('accounts', 'slug')->ignore($chartOfAccount),
+            ],
             'remark' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
             'is_main' => ['nullable', 'boolean'],
