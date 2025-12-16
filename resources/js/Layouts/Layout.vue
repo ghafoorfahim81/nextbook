@@ -238,7 +238,7 @@ const navMain = computed(() => [
         url: '#',
         icon: ChartColumn,
         items: [
-            { title: t('sidebar.account.chart_of_account'), url: '/chart-of-accounts' },
+            { title: t('sidebar.account.chart_of_account'), url: '/chart_of_accounts' },
             { title: t('sidebar.account.account_type'), url: '/account-types' },
         ],
     },

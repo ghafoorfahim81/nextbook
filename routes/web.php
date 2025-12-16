@@ -54,7 +54,7 @@ Route::middleware([
     Route::patch('/branches/{branch}/restore', [\App\Http\Controllers\Administration\BranchController::class, 'restore'])->name('branches.restore')->withTrashed();
     Route::resource('account-types', \App\Http\Controllers\Account\AccountTypeController::class);
     Route::patch('/account-types/{accountType}/restore', [\App\Http\Controllers\Account\AccountTypeController::class, 'restore'])->name('account-types.restore')->withTrashed();
-    Route::resource('chart-of-accounts', \App\Http\Controllers\Account\ChartOfAccountController::class);
+    Route::resource('chart_of_accounts', \App\Http\Controllers\Account\AccountController::class);
     Route::resource('/currencies', \App\Http\Controllers\Administration\CurrencyController::class);
     Route::patch('/currencies/{currency}/restore', [\App\Http\Controllers\Administration\CurrencyController::class, 'restore'])->name('currencies.restore')->withTrashed();
     Route::resource('/unit-measures', \App\Http\Controllers\Administration\UnitMeasureController::class);
