@@ -33,6 +33,7 @@ return [
     'sales_purchase_type' => [
         'cash' => 'Cash',
         'credit' => 'Credit',
+        'on_loan' => 'On Loan',
     ],
     'discount_type' => [
         'percentage' => 'Percentage',

@@ -141,3 +141,22 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* =========================
+   shadcn Switch RTL fix
+   ========================= */
+
+   [dir="rtl"] .switch-root {
+    direction: rtl;
+  }
+  
+  /* unchecked → checked movement */
+  [dir="rtl"] .switch-root[data-state="checked"] .switch-thumb {
+    transform: translateX(-100%);
+  }
+  
+  /* reset default LTR transform */
+  [dir="rtl"] .switch-thumb {
+    transform: translateX(0);
+  }
+  

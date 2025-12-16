@@ -149,7 +149,20 @@
   "active": "فعال",
   "unit_price": "قیمت واحد",
   "created_successfully": "موفقانه ثبت شد",
-  "general":"عمومی"
+  "credit_payment_details": "جزئیات پرداخت اعتباری",
+  "payment_amount": "مبلغ پرداخت",
+  "payment_method": "روش پرداخت",
+  "bank_account": "حساب بانکی",
+  "select_payment_method": "انتخاب روش پرداخت",
+  "select_bank_account": "انتخاب حساب بانکی",
+  "general":"عمومی",
+  "add_any_additional_notes": "اضافه کردن یادداشت های اضافی",
+  "enter_loan_amount": "وارد کردن مبلغ قرض",
+  "on_loan": "به قرض",
+  "paid_amount": "مبلغ پرداخت شده",
+  "remaining_balance": "مانده باقی مانده",
+  "bill_amount": "مبلغ فاکتور",
+  "any_notes": "یادداشت های اضافی"
 }
 
 

@@ -2,6 +2,8 @@
     import { ref, computed, watch, onMounted  } from 'vue';
     import { Separator } from "@/Components/ui/separator";
     import { Button } from "@/Components/ui/button";
+    import { Label } from '@/components/ui/label'
+    import { Switch } from '@/components/ui/switch'
     import NextInput from '@/Components/next/NextInput.vue';
     import NextSelect from '@/Components/next/NextSelect.vue';
     import NextTextarea from '@/Components/next/NextTextarea.vue';
@@ -19,6 +21,10 @@
           note: '',
         })
       },
+      billTotal: {
+        type: Number,
+        default: 0
+      },
       errors: {
         type: Object,
         default: () => ({})
@@ -31,6 +37,7 @@
     });
     
     const emit = defineEmits(["update:open", "confirm", "cancel", "update:payment"]);
+    const isOnLoan = ref(false);
     
     // Local form state
     const localPayment = ref({ ...props.payment });
@@ -52,7 +59,7 @@
     
     // Form validation
     const isFormValid = computed(() => {
-      return localPayment.value.amount &&
+      return  localPayment.value.amount &&
              localPayment.value.method &&
              localPayment.value.account_id;
     });
@@ -71,12 +78,13 @@
 
     // Handle form submission
     const handleSubmit = () => {
-      if (!isFormValid.value) return;
-    
+      if(!isOnLoan.value) {
+        if (!isFormValid.value) return;
+      }
       emit('update:payment', { ...localPayment.value });
       emit('confirm');
       closeModal();
-    };
+    }
     
     // Handle dialog cancel
     const handleCancel = () => {
@@ -101,6 +109,11 @@
         note: '',
       };
     };
+
+    const handleOnLoan = () => {
+      isOnLoan.value = !isOnLoan.value;
+      resetForm();
+    }
     </script>
     
     <template>
@@ -110,24 +123,23 @@
             :confirmText="t('general.save')"
             @update:open="open = $event; emit('update:open', $event)"
             :closeable="true"
-            width="w-[500px] max-w-[500px]"
+            width="w-[600px] max-w-[600px]"
             @confirm="handleSubmit"
             @cancel="handleCancel"
             :cancel-text="t('general.cancel')"
         >
     
-          <div class="space-y-4 mt-3">
-            <!-- Amount Field -->
-            <NextInput
-              v-model="localPayment.amount"
-              label="Amount"
-              type="number"
-              step="0.01"
-              placeholder="Enter payment amount"
-              :error="errors.amount"
-              :isRequired="true"
-              @update:modelValue="(value) => updatePayment('amount', value)"
-            />
+          <div class="space-y-4 mt-3"> 
+                <NextInput
+                  v-model="localPayment.amount"
+                  :label="t('general.payment_amount')"
+                  type="number"
+                  step="0.01"
+                  :placeholder="t('general.enter', { text: t('general.payment_amount') })"
+                  :error="errors.amount"
+                  :isRequired="true"
+                  @update:modelValue="(value) => updatePayment('amount', value)"
+                />  
     
             <!-- Payment Method Field -->
             <NextSelect
@@ -135,8 +147,8 @@
               :options="paymentMethods"
               label-key="name"
               value-key="id"
-              floating-text="Payment Method"
-              placeholder="Select payment method"
+              :floating-text="t('general.payment_method')"
+              :placeholder="t('general.select_payment_method')"
               :error="errors.method"
               :isRequired="true"
               @update:modelValue="(value) => updatePayment('method', value)"
@@ -148,22 +160,36 @@
               :options="bankAccounts"
               label-key="name"
               value-key="id"
-              floating-text="Bank Account"
-              placeholder="Select bank account"
+              :floating-text="t('general.bank_account')"
+              :placeholder="t('general.select_bank_account')"
               :error="errors.account_id"
               :isRequired="true"
               @update:modelValue="(value) => updatePayment('account_id', value)"
             />
-    
-            <!-- Note Field -->
-            <NextTextarea
-              v-model="localPayment.note"
-              label="Note (Optional)"
-              placeholder="Add any additional notes"
-              :error="errors.note"
-              rows="3"
-              @update:modelValue="(value) => updatePayment('note', value)"
-            />
+
+            <NextInput
+                  v-model="localPayment.note"
+                  :label="t('general.add_any_additional_notes')"
+                  type="text"
+                  step="0.01"
+                  :placeholder="t('general.enter', { text: t('general.any_notes') })" 
+                  @update:modelValue="(value) => updatePayment('note', value)"
+                />  
+            <div class="flex items-center gap-2">
+              <Switch id="on-loan" @update:modelValue="handleOnLoan" />
+            <Label for="on-loan">{{ t('general.on_loan') }}</Label>
+          </div>
+            <div class="grid grid-cols-4 gap-4 text-nowrap border rounded-md pt-2 mt-2 divide-x divide-gray-200 p-2"> 
+              <div class="col-span-1 text-sm text-gray-700 mt-2">
+                  <span class="font-bold">{{ t('general.bill_amount') }}:</span> {{ (props.billTotal) }}
+                </div>
+                <div class="col-span-1 text-sm text-gray-700 mt-2">
+                  <span class="font-bold">{{ t('general.paid_amount') }}:</span> {{ (localPayment.amount) }}
+                </div>
+                <div class="col-span-1 text-sm text-gray-700 mt-2">
+                  <span class="font-bold">{{ t('general.remaining_balance') }}:</span> {{ (props.billTotal - localPayment.amount) }}
+                </div>
+            </div>
           </div> 
         </ModalDialog>
     </template>

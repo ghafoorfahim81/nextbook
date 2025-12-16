@@ -160,7 +160,20 @@
   "view_attachment": "View Attachment",
   "note": "Note",
   "credit_payment_details": "Credit Payment Details",
-  "general":"General"
+  "payment_amount": "Payment Amount",
+  "payment_method": "Payment Method",
+  "bank_account": "Bank Account",
+  "select_payment_method": "Select payment method",
+  "select_bank_account": "Select bank account",
+  "general":"General",
+  "add_any_additional_notes": "Add any additional notes",
+  "enter_loan_amount": "Enter loan amount",
+  "on_loan": "On Loan",
+  "paid_amount": "Paid Amount",
+  "remaining_balance": "Remaining Balance",
+  "bill_amount": "Bill Amount",
+  "any_notes": "Any notes"
+  
 }
 
 
