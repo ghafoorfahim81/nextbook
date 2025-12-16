@@ -839,6 +839,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                  :errors="form.errors"
                  :accounts="props.accounts?.data || []"
                  :submitting="false"
+                :billTotal="transactionSummary.valueOfGoods" 
                  @update:open="(value) => showPaymentDialog = value"
                  @confirm="handlePaymentDialogConfirm"
                  @cancel="handlePaymentDialogCancel"
@@ -849,7 +850,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
          <CreateEditModal
             :isDialogOpen="isDialogOpen"
             :editingItem="editingItem"
-            :branches="branches"
+            :billTotal="form.transaction_total" 
             @update:isDialogOpen="(value) => {
                 isDialogOpen = value;
                 if (!value) editingItem = null;
