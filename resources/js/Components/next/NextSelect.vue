@@ -60,9 +60,9 @@
   
     showArrow: { type: Boolean, default: true },
     clearable: { type: Boolean, default: true },
-  
-    /* default ON — auto-disabled in dialogs */
-    appendToBody: { type: Boolean, default: true },
+
+    /* default OFF — can be enabled per-usage if needed */
+    appendToBody: { type: Boolean, default: false },
   })
   
   const emit = defineEmits(['update:modelValue'])
@@ -189,11 +189,16 @@
     display: none;
   }
   
-  /* NO fixed positioning — critical fix */
+  /* Force dropdown to open *below* the control (never as a drop-up) */
   :deep(.vs__dropdown-menu) {
-    position: absolute;
+    position: absolute;   /* anchor just under the toggle */
+    bottom: auto !important;
+    left: 0;
+    width: 100%;
+    margin-top: 2px;
     max-height: 200px;
     overflow-y: auto;
+    z-index: 50;
   }
   
   /* focus parity with inputs */
