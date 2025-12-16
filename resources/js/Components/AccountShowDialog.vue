@@ -76,7 +76,7 @@ const loadAccount = async (id) => {
     if (!id) return;
     loading.value = true;
     try {
-        const response = await axios.get(`/chart_of_accounts/${id}`);
+        const response = await axios.get(`/chart-of-accounts/${id}`);
         const data = response.data;
         console.log('this is data', data);
         account.value = data.account?.data ?? data.account ?? null;

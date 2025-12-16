@@ -20,7 +20,7 @@ const columns = ref([
 ]);
 
 const editItem = (item) => {
-    window.location.href = `/chart_of_accounts/${item.id}/edit`;
+    window.location.href = `/chart-of-accounts/${item.id}/edit`;
 };
 
 const showDialog = ref(false);
@@ -33,7 +33,7 @@ const showItem = (id) => {
 
 const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {
-    deleteResource('chart_of_accounts.destroy', id, {
+    deleteResource('chart-of-accounts.destroy', id, {
         title: t('general.delete', { name: t('account.account') }),
         description: t('general.delete_description', { name: t('account.account') }),
         successMessage: t('general.delete_success', { name: t('account.account') }),
@@ -50,12 +50,12 @@ const deleteItem = (id) => {
             @edit="editItem"
             @show="showItem"
             :title="t('account.chart_of_accounts')"
-            :url="`chart_of_accounts.index`"
+            :url="`chart-of-accounts.index`"
             :hasShow="true"
             :showAddButton="true"
             :addTitle="t('account.account')"
             :addAction="'redirect'"
-            :addRoute="'chart_of_accounts.create'"
+            :addRoute="'chart-of-accounts.create'"
         />
 
         <AccountShowDialog

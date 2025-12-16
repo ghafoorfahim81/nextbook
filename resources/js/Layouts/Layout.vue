@@ -192,6 +192,15 @@ const navMain = computed(() => [
         icon: HousePlug,
     },
     {
+        title: t('sidebar.main.account'),
+        url: '#',
+        icon: ChartColumn,
+        items: [
+            { title: t('sidebar.account.chart_of_account'), url: '/chart-of-accounts' },
+            { title: t('sidebar.account.account_type'), url: '/account-types' },
+        ],
+    },
+    {
         title: t('sidebar.main.administration'),
         url: '#',
         icon: Cog,
@@ -231,15 +240,6 @@ const navMain = computed(() => [
         items: [
             { title: t('sidebar.owners.owners'), url: '/owners' },
             { title: t('sidebar.owners.drawing'), url: '/drawing' },
-        ],
-    },
-    {
-        title: t('sidebar.main.account'),
-        url: '#',
-        icon: ChartColumn,
-        items: [
-            { title: t('sidebar.account.chart_of_account'), url: '/chart_of_accounts' },
-            { title: t('sidebar.account.account_type'), url: '/account-types' },
         ],
     },
     {
