@@ -2,8 +2,8 @@
     import { ref, computed, watch, onMounted  } from 'vue';
     import { Separator } from "@/Components/ui/separator";
     import { Button } from "@/Components/ui/button";
-    import { Label } from '@/components/ui/label'
-    import { Switch } from '@/components/ui/switch'
+    import { Label } from '@/Components/ui/label'
+    import { Switch } from '@/Components/ui/switch'
     import NextInput from '@/Components/next/NextInput.vue';
     import NextSelect from '@/Components/next/NextSelect.vue';
     import NextTextarea from '@/Components/next/NextTextarea.vue';
@@ -18,6 +18,7 @@
           method: '',
           amount: '',
           account_id: '',
+          is_on_loan: false,  // if true, the payment is on loan
           note: '',
         })
       },
@@ -36,13 +37,11 @@
       },
     });
     
-    const emit = defineEmits(["update:open", "confirm", "cancel", "update:payment"]);
-    const isOnLoan = ref(false);
+    const emit = defineEmits(["update:open", "confirm", "cancel", "update:payment"]);   
     
     // Local form state
     const localPayment = ref({ ...props.payment });
     const bankAccounts = ref([]);
-    const isLoading = ref(false);
     
     // Watch for accounts prop changes and update bankAccounts
     watch(() => props.accounts, (accounts) => {
@@ -78,7 +77,7 @@
 
     // Handle form submission
     const handleSubmit = () => {
-      if(!isOnLoan.value) {
+      if(!localPayment.value.is_on_loan) {
         if (!isFormValid.value) return;
       }
       emit('update:payment', { ...localPayment.value });
@@ -105,13 +104,13 @@
       localPayment.value = {
         method: '',
         amount: '',
-        account_id: '',
+        account_id: '', 
         note: '',
       };
     };
 
     const handleOnLoan = () => {
-      isOnLoan.value = !isOnLoan.value;
+      localPayment.value.is_on_loan = !localPayment.value.is_on_loan;
       resetForm();
     }
     </script>
