@@ -46,6 +46,7 @@ const form = useForm({
     customer_id: '',
     date: '',
     currency_id: '',
+    is_on_loan: false,
     rate: '',
     sale_purchase_type_id: '',
     selected_currency: '',
@@ -304,12 +305,12 @@ function handleSubmit(createAndNew = false) {
 const handlePaymentDialogConfirm = () => {
     // Payment data is already updated in the form.payment object via the dialog's update:payment event
     showPaymentDialog.value = false;
+    console.log(form.payment);
 };
 
 const handlePaymentDialogCancel = () => {
     // Reset the sale/purchase type back to debit when dialog is cancelled
     if (props.salePurchaseTypes) {
-
         const debitType = props.salePurchaseTypes.find(type => type.id === 'cash');
         if (debitType) {
             form.selected_sale_purchase_type = debitType;
@@ -844,21 +845,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                  @confirm="handlePaymentDialogConfirm"
                  @cancel="handlePaymentDialogCancel"
                  @update:payment="(payment) => form.payment = payment"
-             />
- 
-
-         <CreateEditModal
-            :isDialogOpen="isDialogOpen"
-            :editingItem="editingItem"
-            :billTotal="form.transaction_total" 
-            @update:isDialogOpen="(value) => {
-                isDialogOpen = value;
-                if (!value) editingItem = null;
-            }"
-            @saved="() => { editingItem = null }"
-        />
-        
-
+             /> 
     </AppLayout>
 </template>
 
