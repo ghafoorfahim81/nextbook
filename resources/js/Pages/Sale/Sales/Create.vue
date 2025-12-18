@@ -46,7 +46,6 @@ const form = useForm({
     customer_id: '',
     date: '',
     currency_id: '',
-    is_on_loan: false,
     rate: '',
     sale_purchase_type_id: '',
     selected_currency: '',
@@ -56,6 +55,7 @@ const form = useForm({
     transaction_total: 0,
     discount_type: 'percentage',
     description: '',
+    is_on_loan: false,
     payment:{
         method: '',
         amount: '',
@@ -191,7 +191,7 @@ const handleResetPayment = () => {
         method: '',
         amount: '',
         account_id: '',
-        note: '',
+        note: '', 
     }
 }
 const handleSelectChange = (field, value) => { 

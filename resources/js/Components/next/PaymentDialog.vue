@@ -17,8 +17,7 @@
         default: () => ({
           method: '',
           amount: '',
-          account_id: '',
-          is_on_loan: false,  // if true, the payment is on loan
+          account_id: '', 
           note: '',
         })
       },
@@ -76,10 +75,8 @@
 }
 
     // Handle form submission
-    const handleSubmit = () => {
-      if(!localPayment.value.is_on_loan) {
-        if (!isFormValid.value) return;
-      }
+    const handleSubmit = () => {  
+      if (!isFormValid.value) return; 
       emit('update:payment', { ...localPayment.value });
       emit('confirm');
       closeModal();
@@ -107,12 +104,7 @@
         account_id: '', 
         note: '',
       };
-    };
-
-    const handleOnLoan = () => {
-      localPayment.value.is_on_loan = !localPayment.value.is_on_loan;
-      resetForm();
-    }
+    }; 
     </script>
     
     <template>
@@ -174,10 +166,7 @@
                   :placeholder="t('general.enter', { text: t('general.any_notes') })" 
                   @update:modelValue="(value) => updatePayment('note', value)"
                 />  
-            <div class="flex items-center gap-2">
-              <Switch id="on-loan" @update:modelValue="handleOnLoan" />
-            <Label for="on-loan">{{ t('general.on_loan') }}</Label>
-          </div>
+            
             <div class="grid grid-cols-4 gap-4 text-nowrap border rounded-md pt-2 mt-2 divide-x divide-gray-200 p-2"> 
               <div class="col-span-1 text-sm text-gray-700 mt-2">
                   <span class="font-bold">{{ t('general.bill_amount') }}:</span> {{ (props.billTotal) }}
