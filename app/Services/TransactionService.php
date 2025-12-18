@@ -201,10 +201,28 @@ class TransactionService
                 'reference_type' => 'sale',
                 'reference_id' => $sale->id,
             ]);
-        } else {
+        } 
+        
+        // CONDITION: Loan based on payment method
+        elseif ($transactionType === 'on_loan') {
+            $loanTransaction = $this->createTransaction([
+                'account_id' => $glAccounts['account-receivable'],
+                'ledger_id' => $ledger->id,
+                'amount' => $transactionTotal,
+                'currency_id' => $currency_id,
+                'rate' => $rate,
+                'date' => $sale->date,
+                'type' => 'debit',
+                'remark' => "Loan receipt for sale #{$sale->number}",
+                'reference_type' => 'sale',
+                'reference_id' => $sale->id,
+            ]);
+        }
+        else {
             // Cash sale
+            $cashAccountId = User::find(auth()->user()->id)->getPreference('sale_cash_account_id');
             $cashTransaction = $this->createTransaction([
-                'account_id' => $glAccounts['cash-in-hand'],
+                'account_id' => $cashAccountId,
                 'ledger_id' => $ledger->id,
                 'amount' => $transactionTotal,
                 'currency_id' => $currency_id,
@@ -216,6 +234,8 @@ class TransactionService
                 'reference_id' => $sale->id,
             ]);
         }
+        
+        
 
         // ALWAYS: DEBIT Cost of Goods Sold (COGS) - Inventory goes OUT
         $cogsTransaction = $this->createTransaction([
