@@ -1,12 +1,12 @@
 <script setup>
 import { computed, ref, reactive, watch } from 'vue'
-import { useForm, router } from '@inertiajs/vue3'
-import { Input } from '@/Components/ui/input'
-import { Textarea } from '@/Components/ui/textarea'
-import { Label } from '@/Components/ui/label'
+import { useForm, router } from '@inertiajs/vue3' 
 import ModalDialog from '@/Components/next/Dialog.vue'
 import NextInput from "@/Components/next/NextInput.vue";
 import NextTextarea from "@/Components/next/NextTextarea.vue";
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n()
 
 const props = defineProps({
     isDialogOpen: Boolean,
@@ -50,8 +50,7 @@ const closeModal = () => {
     emit('saved');
 }
 
-const handleSubmit = async () => {
-    console.log('this is remark', form.remark)
+const handleSubmit = async () => { 
     if (isEditing.value) {
         form.patch(route('account-types.update', props.editingItem.id), {
             onSuccess: () => {
@@ -77,8 +76,8 @@ const handleSubmit = async () => {
 <template>
     <ModalDialog
         :open="localDialogOpen"
-        :title="isEditing ? 'Edit account type' : 'Create account type'"
-        :confirmText="isEditing ? 'Update' : 'Create'"
+        :title="isEditing ? t('general.edit', { name: t('account.account_type') }) : t('general.create', { name: t('account.account_type') })"
+        :confirmText="isEditing ? t('general.update') : t('general.create')"
         @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
         :closeable="true"
         @confirm="handleSubmit"
@@ -88,23 +87,9 @@ const handleSubmit = async () => {
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid gap-4 py-4">
                 <!-- Name -->
-                <NextInput label="Name" id="name" v-model="form.name" placeholder="Enter name" :error="form.errors.name" />
-                <NextTextarea label="Remark" v-model="form.remark" placeholder="Enter remark" />
-            </div>
-<!--                <div class="grid items-center grid-cols-4 gap-4">-->
-<!--                    <Label for="name" class="text-nowrap">Name</Label>-->
-<!--                    <Input id="name" v-model="form.name" placeholder="Enter name" class="col-span-3" />-->
-<!--                    <div v-if="form.errors.name" class="text-red-500 text-sm col-span-4">-->
-<!--                        {{ form.errors.name }}-->
-<!--                    </div>-->
-<!--                    -->
-
-<!--                </div>-->
-<!--                <div class="grid items-center grid-cols-4 gap-4">-->
-<!--                    <Label for="remark" class="text-nowrap">Remark</Label>-->
-<!--                    <Textarea id="remark" v-model="form.remark" rows="3" class="col-span-3" />-->
-<!--                </div>-->
-<!--            </div>-->
+                <NextInput :label="t('general.name')" id="name" v-model="form.name" :placeholder="t('general.enter', { text: t('general.name') })" :error="form.errors.name" />
+                <NextTextarea :label="t('general.remark')" v-model="form.remark" :placeholder="t('general.enter', { text: t('general.remark') })" />
+            </div> 
         </form>
     </ModalDialog>
 </template>
