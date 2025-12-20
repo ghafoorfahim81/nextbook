@@ -76,7 +76,7 @@
                                 <FileX class="h-12 w-12 text-violet-600" />
                             </div>
                             <div class="space-y-2">
-                                <h3 class="text-lg font-semibold text-gray-900">{{ t('general.no_record_available') }}</h3>
+                                <h3 class="text-lg font-semibold ">{{ t('general.no_record_available') }}</h3>
                                 <p class="text-sm text-gray-500 max-w-sm">
                                     {{ t('general.no_record_available_description') }}
                                 </p>
