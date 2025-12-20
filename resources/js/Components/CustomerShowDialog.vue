@@ -175,35 +175,35 @@ const closeDialog = () => {
                         <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl shadow-sm border p-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <div class="text-xs text-gray-500">{{ t('general.name') }}</div>
+                                    <div class="text-sm text-gray-500">{{ t('general.name') }}</div>
                                     <div class="font-medium">{{ customerData.name }}</div>
                                 </div>
                                 <div>
-                                    <div class="text-xs text-gray-500">{{ t('ledger.contact_person') }}</div>
+                                    <div class="text-sm text-gray-500">{{ t('ledger.contact_person') }}</div>
                                     <div class="font-medium">{{ customerData.contact_person }}</div>
                                 </div>
                                 <div>
-                                    <div class="text-xs text-gray-500">{{ t('general.phone') }}</div>
+                                    <div class="text-sm text-gray-500">{{ t('general.phone') }}</div>
                                     <div class="font-medium">{{ customerData.phone_no }}</div>
                                 </div>
                                 <div>
-                                    <div class="text-xs text-gray-500">{{ t('general.email') }}</div>
+                                    <div class="text-sm text-gray-500">{{ t('general.email') }}</div>
                                     <div class="font-medium">{{ customerData.email }}</div>
                                 </div>
                                 <div>
-                                    <div class="text-xs text-gray-500">{{ t('admin.currency.currency') }}</div>
+                                    <div class="text-sm text-gray-500">{{ t('admin.currency.currency') }}</div>
                                     <div class="font-medium">
                                         {{ customerData.currency?.name || '' }}
                                     </div>
                                 </div>
                                 <div>
-                                    <div class="text-xs text-gray-500">{{ t('admin.branch.branch') }}</div>
+                                    <div class="text-sm text-gray-500">{{ t('admin.branch.branch') }}</div>
                                     <div class="font-medium">
                                         {{ customerData.branch?.name || '' }}
                                     </div>
                                 </div>
                                 <div class="md:col-span-2">
-                                    <div class="text-xs text-gray-500">{{ t('general.address') }}</div>
+                                    <div class="text-sm text-gray-500">{{ t('general.address') }}</div>
                                     <div class="font-medium">
                                         {{ customerData.address }}
                                     </div>

@@ -28,6 +28,7 @@ const emit = defineEmits(['update:open']);
 const supplier = ref(null);
 const purchases = ref([]);
 const payments = ref([]);
+const receipts = ref([]);
 const loading = ref(false);
 
 const activeMainTab = ref('general');
@@ -51,6 +52,7 @@ const loadSupplier = async (id) => {
         supplier.value = data.supplier?.data ?? data.supplier ?? null;
         purchases.value = data.purchases?.data ?? data.purchases ?? [];
         payments.value = data.payments?.data ?? data.payments ?? [];
+        receipts.value = data.receipts?.data ?? data.receipts ?? [];
     } catch (error) {
         console.error('Error loading supplier:', error);
     } finally {
@@ -67,6 +69,7 @@ watch(
             supplier.value = null;
             purchases.value = [];
             payments.value = [];
+            receipts.value = [];
             activeMainTab.value = 'general';
             activeTxnTab.value = 'purchases';
         }
@@ -169,35 +172,35 @@ const closeDialog = () => {
                         <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl shadow-sm border p-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <div class="text-xs text-gray-500">{{ t('general.name') }}</div>
+                                    <div class="text-sm text-gray-500">{{ t('general.name') }}</div>
                                     <div class="font-medium">{{ supplierData.name }}</div>
                                 </div>
                                 <div>
-                                    <div class="text-xs text-gray-500">{{ t('ledger.contact_person') }}</div>
+                                    <div class="text-sm text-gray-500">{{ t('ledger.contact_person') }}</div>
                                     <div class="font-medium">{{ supplierData.contact_person }}</div>
                                 </div>
                                 <div>
-                                    <div class="text-xs text-gray-500">{{ t('general.phone') }}</div>
+                                    <div class="text-sm text-gray-500">{{ t('general.phone') }}</div>
                                     <div class="font-medium">{{ supplierData.phone_no }}</div>
                                 </div>
                                 <div>
-                                    <div class="text-xs text-gray-500">{{ t('general.email') }}</div>
+                                    <div class="text-sm text-gray-500">{{ t('general.email') }}</div>
                                     <div class="font-medium">{{ supplierData.email }}</div>
                                 </div>
                                 <div>
-                                    <div class="text-xs text-gray-500">{{ t('admin.currency.currency') }}</div>
+                                    <div class="text-sm text-gray-500">{{ t('admin.currency.currency') }}</div>
                                     <div class="font-medium">
                                         {{ supplierData.currency?.name || '' }}
                                     </div>
                                 </div>
                                 <div>
-                                    <div class="text-xs text-gray-500">{{ t('general.branch') }}</div>
+                                    <div class="text-sm text-gray-500">{{ t('general.branch') }}</div>
                                     <div class="font-medium">
                                         {{ supplierData.branch?.name || '' }}
                                     </div>
                                 </div>
                                 <div class="md:col-span-2">
-                                    <div class="text-xs text-gray-500">{{ t('general.address') }}</div>
+                                    <div class="text-sm text-gray-500">{{ t('general.address') }}</div>
                                     <div class="font-medium">
                                         {{ supplierData.address }}
                                     </div>
@@ -223,6 +226,16 @@ const closeDialog = () => {
                                 <button
                                     type="button"
                                     class="px-3 py-1.5 text-sm rounded-full"
+                                    :class="activeTxnTab === 'receipts'
+                                        ? 'bg-primary text-white'
+                                        : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
+                                    @click="activeTxnTab = 'receipts'"
+                                >
+                                    {{ t('receipt.receipts') }}
+                                </button>
+                                <button
+                                    type="button"
+                                    class="px-3 py-1.5 text-sm rounded-full"
                                     :class="activeTxnTab === 'payments'
                                         ? 'bg-primary text-white'
                                         : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
@@ -236,8 +249,9 @@ const closeDialog = () => {
                         <div v-if="activeTxnTab === 'purchases'">
                             <table class="min-w-full text-sm">
                                 <thead>
-                                    <tr class="border-b text-left text-gray-500">
+                                    <tr class="border-b text-left rtl:text-right text-gray-500">
                                         <th class="py-2 pr-4">#</th>
+                                        <th class="py-2 pr-4">{{ t('general.number') }}</th>
                                         <th class="py-2 pr-4">{{ t('general.type') }}</th>
                                         <th class="py-2 pr-4">{{ t('general.date') }}</th>
                                         <th class="py-2 pr-4">{{ t('general.amount') }}</th>
@@ -256,6 +270,7 @@ const closeDialog = () => {
                                         class="border-b last:border-b-0"
                                     >
                                         <td class="py-2 pr-4">{{  index + 1 }}</td>
+                                        <td class="py-2 pr-4">{{ row.number }}</td>
                                         <td class="py-2 pr-4 capitalize">{{ row.transaction?.type }}</td>
                                         <td class="py-2 pr-4">{{ row?.date }}</td>
                                         <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
@@ -267,11 +282,48 @@ const closeDialog = () => {
                             </table>
                         </div>
 
-                        <div v-else>
+                        <div v-else-if="activeTxnTab === 'receipts'">
                             <table class="min-w-full text-sm">
                                 <thead>
-                                    <tr class="border-b text-left text-gray-500">
+                                    <tr class="border-b text-left rtl:text-right text-gray-500">
                                         <th class="py-2 pr-4">#</th>
+                                        <th class="py-2 pr-4">{{ t('general.number') }}</th>
+                                        <th class="py-2 pr-4">{{ t('general.type') }}</th>
+                                        <th class="py-2 pr-4">{{ t('general.date') }}</th>
+                                        <th class="py-2 pr-4">{{ t('general.amount') }}</th>
+                                        <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-if="!receipts.length">
+                                        <td colspan="5" class="py-4 text-center text-gray-400">
+                                            {{ t('general.no_data_found') }}
+                                        </td>
+                                    </tr>
+                                    <tr
+                                        v-for="(row, index) in receipts"
+                                        :key="row.id"
+                                        class="border-b last:border-b-0"
+                                    >
+                                        <td class="py-2 pr-4">{{  index + 1 }}</td>
+                                        <td class="py-2 pr-4">{{ row.number }}</td>
+                                        <td class="py-2 pr-4 capitalize">{{ row.receive_transaction?.type }}</td>
+                                        <td class="py-2 pr-4">{{ row.date }}</td>
+                                        <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
+                                        <td class="py-2 pr-4">
+                                            {{ row.receive_transaction?.currency?.code || row.receive_transaction?.currency?.name || '' }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div v-else="activeTxnTab === 'payments'">
+                            <table class="min-w-full text-sm">
+                                <thead>
+                                    <tr class="border-b text-left rtl:text-right text-gray-500">
+                                        <th class="py-2 pr-4">#</th>
+                                        <th class="py-2 pr-4">{{ t('general.number') }}</th>
                                         <th class="py-2 pr-4">{{ t('general.type') }}</th>
                                         <th class="py-2 pr-4">{{ t('general.date') }}</th>
                                         <th class="py-2 pr-4">{{ t('general.amount') }}</th>
@@ -290,11 +342,12 @@ const closeDialog = () => {
                                         class="border-b last:border-b-0"
                                     >
                                         <td class="py-2 pr-4">{{  index + 1 }}</td>
-                                        <td class="py-2 pr-4 capitalize">{{ row.bank_transaction?.type }}</td>
+                                        <td class="py-2 pr-4">{{ row.number }}</td>
+                                        <td class="py-2 pr-4 capitalize">{{ row.payment_transaction?.type }}</td>
                                         <td class="py-2 pr-4">{{ row.date }}</td>
                                         <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
                                         <td class="py-2 pr-4">
-                                            {{ row.bank_transaction?.currency?.code || row.bank_transaction?.currency?.name || '' }}
+                                            {{ row.payment_transaction?.currency?.code || row.payment_transaction?.currency?.name || '' }}
                                         </td>
                                     </tr>
                                 </tbody>
@@ -310,7 +363,7 @@ const closeDialog = () => {
                     </div>
                     <table class="min-w-full text-sm">
                         <thead>
-                            <tr class="border-b text-left text-gray-500">
+                            <tr class="border-b text-left rtl:text-right text-gray-500">
                                 <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
                                 <th class="py-2 pr-4">{{ t('general.amount') }}</th>
                                 <th class="py-2 pr-4">{{ t('general.rate') }}</th>
@@ -321,7 +374,7 @@ const closeDialog = () => {
                         <tbody>
                             <tr v-if="!openings.length">
                                 <td colspan="5" class="py-4 text-center text-gray-400">
-                                    {{ t('general.no_data') }}
+                                    {{ t('general.no_data_found') }}
                                 </td>
                             </tr>
                             <tr
