@@ -43,6 +43,23 @@
   font-display: swap;
 }
 
+ 
+/* @font-face {
+  font-family: 'Dana';
+  src: url('/fonts/fa/Dana/dana regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+} */
+
+@font-face {
+  font-family: 'iranyekan';
+  src: url('/fonts/fa/iranyekan/Qs_Iranyekan.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @layer base {
     :root {
       /* Main Background Colors - Clean whites */
@@ -132,7 +149,7 @@
       --chart-5: 210 70% 60%;
     }
   }
-
+ 
 @layer base {
   * {
     @apply border-border;
@@ -160,3 +177,11 @@
     transform: translateX(0);
   }
   
+
+  /* direction based font family */
+  [dir="rtl"] body {
+    font-family: 'iranyekan', sans-serif !important;
+  }
+  [dir="ltr"] body {
+    font-family: 'Poppins', sans-serif !important;
+  }
