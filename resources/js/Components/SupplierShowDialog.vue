@@ -124,7 +124,7 @@ const closeDialog = () => {
                 <div v-if="activeMainTab === 'general'" class="space-y-4">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                         <!-- Left: avatar + summary -->
-                        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border p-4 flex flex-col items-center gap-4">
+                        <div class="bg-card rounded-xl shadow-sm border p-4 flex flex-col items-center gap-4">
                             <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white text-xl font-bold">
                                 {{ (supplierData.name || '').charAt(0).toUpperCase() }}
                             </div>
@@ -141,22 +141,22 @@ const closeDialog = () => {
                             </div>
 
                             <!-- Statement summary -->
-                            <div class="w-full bg-white border rounded-xl overflow-hidden mt-4">
+                            <div class="w-full bg-card border rounded-xl overflow-hidden mt-4">
                                 <div class="flex flex-col divide-y">
                                     <div class="flex items-center px-5 py-2">
-                                        <div class="flex-1 text-base text-black dark:text-white">{{ t('general.credit') }}</div>
+                                        <div class="flex-1 text-base dark:text-white">{{ t('general.credit') }}</div>
                                         <div class="text-base font-medium text-green-600">
                                             {{ formatAmount(statement.total_credit) }}
                                         </div>
                                     </div>
                                     <div class="flex items-center px-5 py-2 mt-1">
-                                        <div class="flex-1 text-base text-black dark:text-white">{{ t('general.debit') }}</div>
+                                        <div class="flex-1 text-base dark:text-white">{{ t('general.debit') }}</div>
                                         <div class="text-base font-medium text-green-600">
                                             {{ formatAmount(statement.total_debit) }}
                                         </div>
                                     </div>
                                     <div class="flex items-center px-5 py-2">
-                                        <div class="flex-1 text-base text-black dark:text-white">{{ t('general.balance') }}</div>
+                                        <div class="flex-1 text-base dark:text-white">{{ t('general.balance') }}</div>
                                         <div
                                             class="text-base font-medium"
                                             :class="statement.balance_nature === 'cr' ? 'text-green-600' : 'text-green-600'"
@@ -169,7 +169,7 @@ const closeDialog = () => {
                         </div>
 
                         <!-- Right: basic info -->
-                        <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl shadow-sm border p-4">
+                        <div class="lg:col-span-2 bg-card rounded-xl shadow-sm border p-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <div class="text-sm text-gray-500">{{ t('general.name') }}</div>
@@ -210,7 +210,7 @@ const closeDialog = () => {
                     </div>
 
                     <!-- Purchases / Payments tables -->
-                    <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border p-4">
+                    <div class="bg-card rounded-xl shadow-sm border p-4">
                         <div class="flex items-center justify-between mb-4">
                             <div class="flex gap-4">
                                 <button
@@ -357,7 +357,7 @@ const closeDialog = () => {
                 </div>
 
                 <!-- OPENING TAB -->
-                <div v-else class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border p-4">
+                <div v-else class="bg-card rounded-xl shadow-sm border p-4">
                     <div class="text-sm font-semibold mb-3">
                         {{ t('item.opening') }}
                     </div>
