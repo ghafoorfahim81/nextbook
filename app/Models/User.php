@@ -48,7 +48,15 @@ class User extends Authenticatable
      */
     public const DEFAULT_PREFERENCES = [
         'appearance' => [
-            'font_size' => 14, 
+            'sidebar_font_size' => 14,
+            'heading_font_size' =>14,
+            'table_header_font_size' => 16,
+            'table_content_font_size' =>14,
+            'button_font_size' => 14,
+            'label_font_size' => 14,
+            'input_font_size' => 14,
+            'select_font_size' => 14,
+            'textarea_font_size' => 14,
             'decimal_places' => 2,
             'sidebar_menus' => ['dashboard', 'sale', 'purchase', 'ledger', 'owners', 'account', 'purchase', 'sale', 'receipt', 'payment', 'transfer', 'user_management', 'preferences'],
         ],
@@ -75,7 +83,7 @@ class User extends Authenticatable
         'sale' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'store' => true],
             'item_columns' => [
-                'packing' => false, 
+                'packing' => false,
                 'colors' => false,
                 'size' => false,
                 'brand' => true,
@@ -83,7 +91,7 @@ class User extends Authenticatable
                 'category' => true,
                 'rates' => false,
                 'batch' => false,
-                'expiry' => false, 
+                'expiry' => false,
                 'on_hand' => true,
                 'measure' => true,
                 'discount' => true,
@@ -97,6 +105,7 @@ class User extends Authenticatable
             'terms' => '',
             'due_days' => 30,
             'auto_reminders' => false,
+            'cash_account_id' => null,
             'reminder_days' => 7,
             'late_fee_percentage' => 0,
             'tax_percentage' => 0,
@@ -107,7 +116,7 @@ class User extends Authenticatable
         'sale_order' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
             'item_columns' => [
-                'packing' => false, 
+                'packing' => false,
                 'colors' => false,
                 'size' => false,
                 'brand' => true,
@@ -115,7 +124,7 @@ class User extends Authenticatable
                 'category' => true,
                 'rates' => false,
                 'batch' => false,
-                'expiry' => false, 
+                'expiry' => false,
                 'on_hand' => true,
                 'measure' => true,
                 'discount' => true,
@@ -131,7 +140,7 @@ class User extends Authenticatable
         'sale_return' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
             'item_columns' => [
-                'packing' => false, 
+                'packing' => false,
                 'colors' => false,
                 'size' => false,
                 'brand' => true,
@@ -139,7 +148,7 @@ class User extends Authenticatable
                 'category' => true,
                 'rates' => false,
                 'batch' => false,
-                'expiry' => false, 
+                'expiry' => false,
                 'on_hand' => true,
                 'measure' => true,
                 'discount' => true,
@@ -154,7 +163,7 @@ class User extends Authenticatable
         'sale_quotation' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
             'item_columns' => [
-                'packing' => false, 
+                'packing' => false,
                 'colors' => false,
                 'size' => false,
                 'brand' => true,
@@ -162,7 +171,7 @@ class User extends Authenticatable
                 'category' => true,
                 'rates' => false,
                 'batch' => false,
-                'expiry' => false, 
+                'expiry' => false,
                 'on_hand' => true,
                 'measure' => true,
                 'discount' => true,
@@ -176,7 +185,7 @@ class User extends Authenticatable
         'purchase' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
             'item_columns' => [
-                'packing' => false, 
+                'packing' => false,
                 'colors' => false,
                 'size' => false,
                 'brand' => true,
@@ -184,7 +193,7 @@ class User extends Authenticatable
                 'category' => true,
                 'rates' => false,
                 'batch' => false,
-                'expiry' => false, 
+                'expiry' => false,
                 'on_hand' => true,
                 'measure' => true,
                 'discount' => true,
@@ -205,7 +214,7 @@ class User extends Authenticatable
         'purchase_order' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
             'item_columns' => [
-                'packing' => false, 
+                'packing' => false,
                 'colors' => false,
                 'size' => false,
                 'brand' => true,
@@ -213,7 +222,7 @@ class User extends Authenticatable
                 'category' => true,
                 'rates' => false,
                 'batch' => false,
-                'expiry' => false, 
+                'expiry' => false,
                 'on_hand' => true,
                 'measure' => true,
                 'discount' => true,
@@ -227,7 +236,7 @@ class User extends Authenticatable
         'purchase_return' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
             'item_columns' => [
-                'packing' => false, 
+                'packing' => false,
                 'colors' => false,
                 'size' => false,
                 'brand' => true,
@@ -235,7 +244,7 @@ class User extends Authenticatable
                 'category' => true,
                 'rates' => false,
                 'batch' => false,
-                'expiry' => false, 
+                'expiry' => false,
                 'on_hand' => true,
                 'measure' => true,
                 'discount' => true,
@@ -249,7 +258,7 @@ class User extends Authenticatable
         'purchase_quotation' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
             'item_columns' => [
-                'packing' => false, 
+                'packing' => false,
                 'colors' => false,
                 'size' => false,
                 'brand' => true,
@@ -257,7 +266,7 @@ class User extends Authenticatable
                 'category' => true,
                 'rates' => false,
                 'batch' => false,
-                'expiry' => false, 
+                'expiry' => false,
                 'on_hand' => true,
                 'measure' => true,
                 'discount' => true,
