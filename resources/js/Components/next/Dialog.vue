@@ -9,6 +9,9 @@ import {
 } from "@/Components/ui/dialog";
 import { Separator } from "@/Components/ui/separator";
 import { Button } from "@/Components/ui/button";
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n()
 
 const props = defineProps({
   open: Boolean,
@@ -73,7 +76,7 @@ const preventOutsideDismiss = (event: any) => {
                 <DialogFooter class="justify-end gap-2">
                     <Button type="button" variant="outline"
                             @click="$emit('cancel'); $emit('update:open', false)">
-                        {{ cancelText || "Close" }}
+                        {{ cancelText || t('general.close') }}
                     </Button>
                     <Button
                         variant="outline"
@@ -81,8 +84,8 @@ const preventOutsideDismiss = (event: any) => {
                         class="bg-primary text-white"
                         @click="$emit('confirm')"
                     >
-                        <span v-if="submitting">Saving...</span>
-                        <span v-else>{{ confirmText || "Save" }}</span>
+                        <span v-if="submitting">{{ t('general.saving') }}</span>
+                        <span v-else>{{ confirmText || t('general.save') }}</span>
                     </Button>
                 </DialogFooter>
             </div>
