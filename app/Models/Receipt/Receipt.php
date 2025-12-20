@@ -68,6 +68,7 @@ class Receipt extends Model
     {
         return $this->belongsTo(Transaction::class, 'receive_transaction_id');
     }
+    
 
     public function bankTransaction(): BelongsTo
     {
