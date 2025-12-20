@@ -114,6 +114,7 @@
   "search_or_select": "جستجو یا انتخاب آیتم...",
   "grand_total": "جمع کل",
   "transaction_summary": "خلاصه تراکنش",
+  "transaction_type": "نوع تراکنش", 
   "value_of_goods": "مقدار کالا",
   "bill_disc": "تخفیف فاکتور",
   "bill_discount": "تخفیف فاکتور",
@@ -147,8 +148,17 @@
   "address": "آدرس",
   "email": "ایمیل",
   "active": "فعال",
+  "inactive": "غیرفعال",
   "unit_price": "قیمت واحد",
   "created_successfully": "موفقانه ثبت شد",
+  "general_info": "اطلاعات عمومی",
+  "add_more": "افزودن بیشتر",
+  "attachment": "پیوست",
+  "upload_file": "بارگذاری فایل",
+  "change_file": "تغییر فایل",
+  "current_file": "فایل فعلی",
+  "view_attachment": "مشاهده پیوست",
+  "note": "یادداشت",
   "credit_payment_details": "جزئیات پرداخت اعتباری",
   "payment_amount": "مبلغ پرداخت",
   "payment_method": "روش پرداخت",
@@ -166,5 +176,3 @@
   "owe_to": "طلبکار",
   "owe_you": "بدهکار"
 }
-
-
