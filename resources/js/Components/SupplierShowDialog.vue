@@ -158,7 +158,7 @@ const closeDialog = () => {
                                             class="text-base font-medium"
                                             :class="statement.balance_nature === 'cr' ? 'text-green-600' : 'text-green-600'"
                                         >
-                                            {{ formatAmount(statement.balance) }} {{statement.balance > 0 ? statement.balance_nature : '' }}
+                                            {{ formatAmount(statement.balance) }} {{statement.balance > 0 ? (statement.balance_nature === 'cr' ? t('general.owe_to') : t('general.owe_you')) : '' }}
                                         </div> 
                                     </div>
                                 </div>

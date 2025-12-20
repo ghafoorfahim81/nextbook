@@ -1,1 +1,11 @@
-﻿{}
+﻿{
+    "supplier":{
+        "supplier": "تامین کننده",
+        "suppliers": "تامین کنندگان"
+    },
+    "customer":{
+        "customer": "مشتری",
+        "customers": "مشتریان"
+    },
+    "contact_person": "شخصی ارتباطی"
+}

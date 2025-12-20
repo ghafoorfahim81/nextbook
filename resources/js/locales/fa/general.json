@@ -60,10 +60,10 @@
   "free": "رایگان",
   "paid": "پرداخت‌شده",
   "cash": "نقد",
-  "debit": "بدهکار",
-  "credit": "بستانکار",
-  "cr": "بستانکار",
-  "dr": "بدهکار",
+  "debit": "پرداختی",
+  "credit": "دریافتی",
+  "cr": "دریافتی",
+  "dr": "دریافتی",
   "pdf": "PDF",
   "excel": "Excel",
   "print": "چاپ",
@@ -120,8 +120,8 @@
   "item_disc": "تخفیف آیتم",
   "cash_paid": "پرداخت نقدی",
   "cash_received": "دریافت نقدی",
-  "balance": "مانده",
-  "old_balance": "مانده قبلی",
+  "balance": "بلانس",
+  "old_balance": "بلانس قبلی",
   "tax_summary": "خلاصه مالیات",
   "discount_summary": "خلاصه تخفیف",
   "total_item_discount": "جمع تخفیف آیتم ها",
@@ -162,7 +162,9 @@
   "paid_amount": "مبلغ پرداخت شده",
   "remaining_balance": "مانده باقی مانده",
   "bill_amount": "مبلغ فاکتور",
-  "any_notes": "یادداشت های اضافی"
+  "any_notes": "یادداشت های اضافی",
+  "owe_to": "طلبکار",
+  "owe_you": "بدهکار"
 }
 
 

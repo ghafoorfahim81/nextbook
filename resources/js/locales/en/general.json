@@ -172,8 +172,9 @@
   "paid_amount": "Paid Amount",
   "remaining_balance": "Remaining Balance",
   "bill_amount": "Bill Amount",
-  "any_notes": "Any notes"
-  
+  "any_notes": "Any notes",
+  "owe_to": "Owe to",
+  "owe_you": "Owe you"
 }
 
 

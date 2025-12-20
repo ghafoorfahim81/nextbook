@@ -5,12 +5,12 @@ namespace App\Http\Controllers\Ledger;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Ledger\LedgerStoreRequest;
 use App\Http\Requests\Ledger\LedgerUpdateRequest;
-use App\Http\Resources\Ledger\LedgerResource;
-use App\Http\Resources\Transaction\TransactionResource;
+use App\Http\Resources\Ledger\LedgerResource; 
 use App\Http\Resources\Administration\CurrencyResource;
 use App\Http\Resources\Administration\BranchResource;
 use App\Http\Resources\Sale\SaleResource;
 use App\Http\Resources\Receipt\ReceiptResource;
+use App\Http\Resources\Payment\PaymentResource;
 use App\Http\Resources\LedgerOpening\LedgerOpeningResource;
 use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
@@ -112,13 +112,15 @@ class CustomerController extends Controller
             'transactions.currency',
         ]); 
         $sales = $customer->sales->load('transaction.currency');
-        $receipts = $customer->receipts->load('bankTransaction.currency');
+        $receipts = $customer->receipts->load('receiveTransaction.currency');
+        $payments = $customer->payments->load('bankTransaction.currency');
         $openings = $customer->openings->load('transaction.currency');
         if ($request->expectsJson()) {
             return response()->json([
                 'customer' => new LedgerResource($customer),
                 'sales' => SaleResource::collection($sales),
                 'receipts' => ReceiptResource::collection($receipts),
+                'payments' => PaymentResource::collection($payments),
                 'openings' => LedgerOpeningResource::collection($openings),
             ]);
         }
@@ -127,6 +129,7 @@ class CustomerController extends Controller
             'customer' => new LedgerResource($customer),
             'sales' => SaleResource::collection($sales),
             'receipts' => ReceiptResource::collection($receipts),
+            'payments' => PaymentResource::collection($payments),
             'openings' => LedgerOpeningResource::collection($openings),
         ]);
     }

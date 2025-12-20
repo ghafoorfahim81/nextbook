@@ -28,6 +28,7 @@ const emit = defineEmits(['update:open']);
 const customer = ref(null);
 const sales = ref([]);
 const receipts = ref([]);
+const payments = ref([]);
 const loading = ref(false);
 
 const activeMainTab = ref('general');
@@ -53,6 +54,7 @@ const loadCustomer = async (id) => {
         customer.value = data.customer?.data ?? data.customer ?? null;
         sales.value = data.sales?.data ?? data.sales ?? [];
         receipts.value = data.receipts?.data ?? data.receipts ?? [];
+        payments.value = data.payments?.data ?? data.payments ?? [];
     } catch (error) {
         console.error('Error loading customer:', error);
     } finally {
@@ -70,6 +72,7 @@ watch(
             customer.value = null;
             sales.value = [];
             receipts.value = [];
+            payments.value = [];
             activeMainTab.value = 'general';
             activeTxnTab.value = 'sales';
         }
@@ -159,9 +162,9 @@ const closeDialog = () => {
                                         <div class="flex-1 text-base text-black dark:text-white">{{ t('general.balance') }}</div>
                                         <div
                                             class="text-base font-medium"
-                                            :class="statement.balance_nature === 'cr' ? 'text-green-600' : 'text-green-600'"
+                                            :class="statement.balance_nature === 'cr' ? 'text-green-600' : 'text-red-600'"
                                         >
-                                            {{ formatAmount(statement.balance) }} {{statement.balance > 0 ? statement.balance_nature : '' }}
+                                            {{ formatAmount(statement.balance) }} {{statement.balance > 0 ? (statement.balance_nature === 'cr' ? t('general.owe_to') : t('general.owe_you')) : '' }}
                                         </div> 
                                     </div>
                                 </div>
@@ -221,7 +224,7 @@ const closeDialog = () => {
                                         : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
                                     @click="activeTxnTab = 'sales'"
                                 >
-                                    {{ t('sale.sales') }}
+                                    {{ t('sales.sales') }}
                                 </button>
                                 <button
                                     type="button"
@@ -233,14 +236,25 @@ const closeDialog = () => {
                                 >
                                     {{ t('receipt.receipts') }}
                                 </button>
+                                <button
+                                    type="button"
+                                    class="px-3 py-1.5 text-sm rounded-full"
+                                    :class="activeTxnTab === 'payments'
+                                        ? 'bg-primary text-white'
+                                        : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
+                                    @click="activeTxnTab = 'payments'"
+                                >
+                                    {{ t('payment.payments') }}
+                                </button>
                             </div>
                         </div>
 
                         <div v-if="activeTxnTab === 'sales'">
                             <table class="min-w-full text-sm">
                                 <thead>
-                                    <tr class="border-b text-left text-gray-500">
+                                    <tr class="border-b text-left rtl:text-right text-gray-500">
                                         <th class="py-2 pr-4">#</th>
+                                        <th class="py-2 pr-4">{{ t('general.number') }}</th>
                                         <th class="py-2 pr-4">{{ t('general.type') }}</th>
                                         <th class="py-2 pr-4">{{ t('general.date') }}</th>
                                         <th class="py-2 pr-4">{{ t('general.amount') }}</th>
@@ -259,6 +273,7 @@ const closeDialog = () => {
                                         class="border-b last:border-b-0"
                                     >
                                         <td class="py-2 pr-4">{{  index + 1 }}</td>
+                                        <td class="py-2 pr-4">{{ row.number }}</td>
                                         <td class="py-2 pr-4 capitalize">{{ row.type }}</td>
                                         <td class="py-2 pr-4">{{ row.date }}</td>
                                         <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
@@ -270,11 +285,12 @@ const closeDialog = () => {
                             </table>
                         </div>
 
-                        <div v-else>
+                        <div v-else-if="activeTxnTab === 'receipts'">
                             <table class="min-w-full text-sm">
                                 <thead>
-                                    <tr class="border-b text-left text-gray-500">
+                                    <tr class="border-b text-left rtl:text-right text-gray-500">
                                         <th class="py-2 pr-4">#</th>
+                                        <th class="py-2 pr-4">{{ t('general.number') }}</th>
                                         <th class="py-2 pr-4">{{ t('general.type') }}</th>
                                         <th class="py-2 pr-4">{{ t('general.date') }}</th>
                                         <th class="py-2 pr-4">{{ t('general.amount') }}</th>
@@ -293,16 +309,52 @@ const closeDialog = () => {
                                         class="border-b last:border-b-0"
                                     >
                                         <td class="py-2 pr-4">{{   index + 1 }}</td>
-                                        <td class="py-2 pr-4 capitalize">{{ row.bank_transaction?.type }}</td>
+                                        <td class="py-2 pr-4">{{ row.number }}</td>
+                                        <td class="py-2 pr-4 capitalize">{{ row.receive_transaction?.type }}</td>
                                         <td class="py-2 pr-4">{{ row.date }}</td>
                                         <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
                                         <td class="py-2 pr-4">
-                                            {{ row.bank_transaction?.currency?.code || row.bank_transaction?.currency?.name || '' }}
+                                            {{ row.receive_transaction?.currency?.code || row.receive_transaction?.currency?.name || '' }}
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
+                        <div v-else-if="activeTxnTab === 'payments'">
+                            <table class="min-w-full text-sm">
+                                <thead>
+                                    <tr class="border-b text-left rtl:text-right text-gray-500">
+                                        <th class="py-2 pr-4">#</th>
+                                        <th class="py-2 pr-4">{{ t('general.number') }}</th>
+                                        <th class="py-2 pr-4">{{ t('general.type') }}</th>
+                                        <th class="py-2 pr-4">{{ t('general.date') }}</th>
+                                        <th class="py-2 pr-4">{{ t('general.amount') }}</th>
+                                        <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-if="!payments.length">
+                                        <td colspan="5" class="py-4 text-center text-gray-400">
+                                            {{ t('general.no_data_found') }}
+                                        </td>
+                                    </tr>
+                                    <tr
+                                        v-for="(row, index) in payments"
+                                        :key="row.id"
+                                        class="border-b last:border-b-0"
+                                    >
+                                        <td class="py-2 pr-4">{{   index + 1 }}</td>
+                                        <td class="py-2 pr-4">{{ row.number }}</td>
+                                        <td class="py-2 pr-4 capitalize">{{ row.payment_transaction?.type }}</td>
+                                        <td class="py-2 pr-4">{{ row.date }}</td>
+                                        <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
+                                        <td class="py-2 pr-4">
+                                            {{ row.payment_transaction?.currency?.code || row.payment_transaction?.currency?.name || '' }}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div> 
                     </div>
                 </div>
 
@@ -313,7 +365,7 @@ const closeDialog = () => {
                     </div>
                     <table class="min-w-full text-sm">
                         <thead>
-                            <tr class="border-b text-left text-gray-500">
+                            <tr class="border-b text-left rtl:text-right text-gray-500">
                                 <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
                                 <th class="py-2 pr-4">{{ t('general.amount') }}</th>
                                 <th class="py-2 pr-4">{{ t('general.rate') }}</th>
