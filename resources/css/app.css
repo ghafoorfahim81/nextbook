@@ -43,7 +43,7 @@
   font-display: swap;
 }
 
- 
+
 /* @font-face {
   font-family: 'Dana';
   src: url('/fonts/fa/Dana/dana regular.ttf') format('truetype');
@@ -54,7 +54,7 @@
 
 @font-face {
   font-family: 'iranyekan';
-  src: url('/fonts/fa/iranyekan/Qs_Iranyekan.ttf') format('truetype');
+  src: url('/fonts/fa/Qs_Iranyekan.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -149,7 +149,7 @@
       --chart-5: 210 70% 60%;
     }
   }
- 
+
 @layer base {
   * {
     @apply border-border;
@@ -166,17 +166,17 @@
    [dir="rtl"] .switch-root {
     direction: rtl;
   }
-  
+
   /* unchecked → checked movement */
   [dir="rtl"] .switch-root[data-state="checked"] .switch-thumb {
     transform: translateX(-100%);
   }
-  
+
   /* reset default LTR transform */
   [dir="rtl"] .switch-thumb {
     transform: translateX(0);
   }
-  
+
 
   /* direction based font family */
   [dir="rtl"] body {
