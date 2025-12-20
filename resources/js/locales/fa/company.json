@@ -1,6 +1,7 @@
 {
     "basic_information": "اطلاعات اصلی",
     "contact_information": "اطلاعات تماس",
+    "company_information": "اطلاعات شرکت",
     "preferences": "تنظیمات شرکت",
     "logo": "لوگو شرکت",
     "company": "شرکت",
@@ -25,5 +26,6 @@
     "selected_currency": "واحد پول انتخاب شده",
     "selected_business_type": "نوع عملیات انتخاب شده",
     "upload_logo": "بارگذاری لوگو",
-    "upload_logo_description": "PNG, JPG, GIF حداکثر 2 مگابایت"
+    "upload_logo_description": "PNG, JPG, GIF حداکثر 2 مگابایت",
+    "logo_can_be_updated_in_edit_mode": "لوگو می تواند در حالت ویرایش به روز شود"
 }

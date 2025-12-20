@@ -1,1 +1,17 @@
-﻿{}
+﻿{
+    "owner": "مالک",
+    "owners": "مالکین",
+    "drawing": "برداشت",
+    "capital": "سرمایه",
+    "capital_account": "حساب سرمایه",
+    "drawing_account": "حساب برداشت",
+    "father_name": "نام پدر",
+    "nic": "کد ملی",
+    "email": "ایمیل",
+    "address": "آدرس",
+    "phone_number": "تلفن",
+    "ownership_percentage": "درصد سهام",
+    "is_active": "فعال",
+    "capital_contribution": "سرمایه",
+    "cash_received": "دریافت نقدی"
+}

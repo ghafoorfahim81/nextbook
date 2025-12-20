@@ -240,7 +240,7 @@ class TransactionService
         // ALWAYS: DEBIT Cost of Goods Sold (COGS) - Inventory goes OUT
         $cogsTransaction = $this->createTransaction([
             'account_id' => $glAccounts['cost-of-goods-sold'],
-            'ledger_id' => $ledger->id,
+            'ledger_id' => null,
             'amount' => $transactionTotal, // This should be the cost value, not selling price
             'currency_id' => $currency_id,
             'rate' => $rate,
@@ -254,7 +254,7 @@ class TransactionService
         // CREDIT Inventory (Inventory goes OUT)
         $inventoryTransaction = $this->createTransaction([
             'account_id' => $glAccounts['inventory-asset'],
-            'ledger_id' => $ledger->id,
+            'ledger_id' => null,
             'amount' => $transactionTotal, // This should be the cost value, not selling price
             'currency_id' => $currency_id,
             'rate' => $rate,

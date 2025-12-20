@@ -4,6 +4,7 @@ namespace App\Models\Owner;
 
 use App\Models\Account\Account;
 use App\Models\Transaction\Transaction;
+use App\Traits\HasBranch;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 
 class Owner extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasBranch, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;

@@ -46,7 +46,7 @@ const showItem = (id) => {
 </script>
 
 <template>
-    <AppLayout :title="'Owners'">
+    <AppLayout :title="t('owner.owners')">
         <DataTable
             :items="owners"
             :columns="columns"
@@ -54,10 +54,10 @@ const showItem = (id) => {
             @edit="editItem"
             @delete="deleteItem"
             @show="showItem"
-            :title="'Owners'"
+            :title="t('owner.owners')"
             :url="`owners.index`"
             :showAddButton="true"
-            :addTitle="'Owner'"
+            :addTitle="t('owner.owner')"
             :addAction="'redirect'"
             :addRoute="'owners.create'"
         />
