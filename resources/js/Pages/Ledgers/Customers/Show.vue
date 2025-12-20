@@ -171,6 +171,7 @@ const formatAmount = (value) => {
                             <thead>
                                 <tr class="border-b text-left text-gray-500">
                                     <th class="py-2 pr-4">#</th>
+                                    <th class="py-2 pr-4">{{ t('general.number') }}</th>
                                     <th class="py-2 pr-4">{{ t('general.type') }}</th>
                                     <th class="py-2 pr-4">{{ t('general.date') }}</th>
                                     <th class="py-2 pr-4">{{ t('general.amount') }}</th>

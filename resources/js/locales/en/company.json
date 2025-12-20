@@ -1,6 +1,7 @@
 ﻿{
     "basic_information": "Basic Information",
     "contact_information": "Contact Information",
+    "company_information": "Company Information",
     "preferences": "Company Preferences",
     "logo": "Company Logo",
     "company": "Company",
@@ -25,5 +26,7 @@
     "selected_currency": "Selected Currency",
     "selected_business_type": "Selected Business Type",
     "upload_logo": "Upload Logo",
-    "upload_logo_description": "PNG, JPG, GIF up to 2MB"
+    "upload_logo_description": "PNG, JPG, GIF up to 2MB",
+    "logo_can_be_updated_in_edit_mode": "Logo can be updated in edit mode"
+
 }

@@ -9,6 +9,7 @@ use App\Http\Resources\Ledger\LedgerResource;
 use App\Http\Resources\Transaction\TransactionResource;
 use App\Http\Resources\Administration\CurrencyResource;
 use App\Http\Resources\Administration\BranchResource;
+use App\Http\Resources\Receipt\ReceiptResource;
 use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
@@ -113,13 +114,15 @@ class SupplierController extends Controller
         ]);
 
         $purchases = $supplier->purchases->load('transaction.currency');
-        $payments = $supplier->payments->load('bankTransaction.currency');
+        $payments = $supplier->payments->load('paymentTransaction.currency');
+        $receipts = $supplier->receipts->load('receiveTransaction.currency');
  
         if ($request->expectsJson()) {
             return response()->json([
                 'supplier' => new LedgerResource($supplier),
                 'purchases' => PurchaseResource::collection($purchases),
                 'payments' => PaymentResource::collection($payments),
+                'receipts' => ReceiptResource::collection($receipts),
             ]);
         }
 

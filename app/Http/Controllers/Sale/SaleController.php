@@ -13,6 +13,7 @@ use App\Services\TransactionService;
 use App\Models\Account\Account;
 use App\Models\Administration\Currency;
 use App\Services\StockService;
+use App\Models\Transaction\Transaction;
 use Mpdf\Mpdf;
 class SaleController extends Controller
 {
@@ -160,6 +161,7 @@ class SaleController extends Controller
     {
         $sale->items()->delete();
         $sale->stockOuts()->delete();
+        Transaction::where('reference_type', 'sale')->where('reference_id', $sale->id)->delete();
         $sale->transaction()->delete();
         $sale->delete();
         return redirect()->route('sales.index')->with('success', __('general.sale_deleted_successfully'));

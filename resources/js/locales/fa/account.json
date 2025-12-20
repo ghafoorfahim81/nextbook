@@ -1,4 +1,6 @@
 ﻿{
     "account_type": "نوع حساب",
-    "account_types": "نوع های حساب"
+    "account_types": "نوع های حساب",
+    "account": "حساب",
+    "chart_of_accounts": "چارت حساب ها"
 }

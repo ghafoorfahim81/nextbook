@@ -71,21 +71,21 @@ function submit(createAndNew = false) {
 </script>
 
 <template>
-    <AppLayout :title="t('general.create', { name: 'owner' })">
+    <AppLayout :title="t('general.create', { name: t('owner.owner') })">
     <form @submit.prevent="submit()">
       <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
-          {{ t('general.create', { name: 'owner' }) }}
+          {{ t('general.create', { name: t('owner.owner') }) }}
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name" />
           <NextInput :label="t('owner.father_name')" v-model="form.father_name" :error="form.errors?.father_name" />
-          <NextInput label="NIC" v-model="form.nic" :error="form.errors?.nic" />
+          <NextInput :label="t('owner.nic')" v-model="form.nic" :error="form.errors?.nic" />
           <NextInput :label="t('owner.email')" v-model="form.email" type="email" :error="form.errors?.email"/>
           <NextInput :label="t('owner.phone_number')" v-model="form.phone_number" type="text" :error="form.errors?.phone_number"/>
           <NextInput :label="t('general.address')" v-model="form.address" type="text" :error="form.errors?.address"/>
           <NextInput :label="t('owner.ownership_percentage')" v-model="form.ownership_percentage" type="number" :error="form.errors?.ownership_percentage"/>
-          <NextInput label="Amount" v-model="form.amount" type="number" :error="form.errors?.amount"/>
+          <NextInput :label="t('general.amount')" v-model="form.amount" type="number" :error="form.errors?.amount"/>
           <NextSelect
             :options="capitalAccounts"
             label-key="name"
@@ -139,7 +139,7 @@ function submit(createAndNew = false) {
                 resource-type="currencies"
                 :search-fields="['name', 'code', 'symbol']"
               />
-              <NextInput label="Rate" v-model="form.rate" type="number" :error="form.errors?.rate"/>
+              <NextInput :label="t('general.rate')" v-model="form.rate" type="number" :error="form.errors?.rate"/>
             </div>
           <div class="col-span-1 flex items-center gap-2">
             <label class="text-sm font-medium text-gray-700">{{ t('general.status') }}</label>

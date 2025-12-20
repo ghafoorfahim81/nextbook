@@ -145,8 +145,7 @@ const saveChanges = () => {
     }
 
     form.post(route('company.update', props.company.id), {
-        onSuccess: () => {
-            console.log('Company information updated successfully');
+        onSuccess: () => { 
             isEditing.value = false;
             originalData.value = { ...form.data(), logo: existingLogo.value };
             logoPreview.value = null;
@@ -259,13 +258,13 @@ const setCalendarLocaleStorage = (selected) => {
 </script>
 
 <template>
-    <AppLayout title="Company Information">
+    <AppLayout :title="t('company.company_information')">
         <div class="">
             <!-- Header -->
             <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center gap-3">
                     <Building2 class="w-8 h-8 text-primary" />
-                    <h1 class="text-2xl font-bold text-gray-900">Company Information</h1>
+                    <h1 class="text-2xl font-bold text-foreground">{{ t('company.company_information') }}</h1>
                 </div>
                 <div class="flex gap-2">
                     <Button
@@ -275,7 +274,7 @@ const setCalendarLocaleStorage = (selected) => {
                         class="bg-primary text-white"
                     >
                         <Edit class="w-4 h-4" />
-                        Edit
+                        {{ t('general.edit', { name: t('admin.company.company') }) }}
                     </Button>
                     <template v-else>
                         <Button
@@ -284,7 +283,7 @@ const setCalendarLocaleStorage = (selected) => {
                             class="flex items-center gap-2  hover:bg-primary/90"
                         >
                             <Save class="w-4 h-4" />
-                            {{ form.processing ? 'Saving...' : 'Save' }}
+                            {{ form.processing ? t('general.saving') : t('general.save') }}
                         </Button>
                         <Button
                             @click="cancelEditing"
@@ -292,20 +291,20 @@ const setCalendarLocaleStorage = (selected) => {
                             class="flex items-center gap-2"
                         >
                             <X class="w-4 h-4" />
-                            Cancel
+                            {{ t('general.cancel') }}
                         </Button>
                     </template>
                 </div>
             </div>
 
             <!-- Company Information Card -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div class="bg-card rounded-lg shadow-sm border border-border">
                 <div class="p-6">
                     <form @submit.prevent="saveChanges">
                         <!-- Basic Information Section -->
                         <div class="mb-8">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                                Basic Information
+                            <h3 class="text-lg font-semibold text-foreground mb-4 pb-2 border-b border-border">
+                                {{ t('company.basic_information') }}
                             </h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
@@ -313,14 +312,14 @@ const setCalendarLocaleStorage = (selected) => {
                                         v-if="isEditing"
                                         v-model="form.name_en"
                                         :error="form.errors?.name_en"
-                                        label="Company Name (English)"
+                                        :label="t('company.name_en')"
                                         type="text"
                                     />
                                     <div v-else>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Company Name (English)
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('company.name_en') }}
                                         </label>
-                                        <div class="py-2 px-3 text-gray-900 bg-gray-50 rounded-md">
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md">
                                             {{ getDisplayValue('name_en') }}
                                         </div>
                                     </div>
@@ -331,14 +330,14 @@ const setCalendarLocaleStorage = (selected) => {
                                         v-if="isEditing"
                                         v-model="form.name_fa"
                                         :error="form.errors?.name_fa"
-                                        label="Company Name (Persian)"
+                                        :label="t('company.name_fa')"
                                         type="text"
                                     />
                                     <div v-else>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Company Name (Persian)
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('company.name_fa') }}
                                         </label>
-                                        <div class="py-2 px-3 text-gray-900 bg-gray-50 rounded-md">
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md">
                                             {{ getDisplayValue('name_fa') }}
                                         </div>
                                     </div>
@@ -349,14 +348,14 @@ const setCalendarLocaleStorage = (selected) => {
                                         v-if="isEditing"
                                         v-model="form.name_pa"
                                         :error="form.errors?.name_pa"
-                                        label="Company Name (Pashto)"
+                                        :label="t('company.name_pa')"
                                         type="text"
                                     />
                                     <div v-else>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Company Name (Pashto)
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('company.name_pa') }}
                                         </label>
-                                        <div class="py-2 px-3 text-gray-900 bg-gray-50 rounded-md">
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md">
                                             {{ getDisplayValue('name_pa') }}
                                         </div>
                                     </div>
@@ -367,14 +366,14 @@ const setCalendarLocaleStorage = (selected) => {
                                         v-if="isEditing"
                                         v-model="form.abbreviation"
                                         :error="form.errors?.abbreviation"
-                                        label="Abbreviation"
+                                        :label="t('company.abbreviation')"
                                         type="text"
                                     />
                                     <div v-else>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Abbreviation
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('company.abbreviation') }}
                                         </label>
-                                        <div class="py-2 px-3 text-gray-900 bg-gray-50 rounded-md">
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md">
                                             {{ getDisplayValue('abbreviation') }}
                                         </div>
                                     </div>
@@ -384,8 +383,8 @@ const setCalendarLocaleStorage = (selected) => {
 
                         <!-- Contact Information Section -->
                         <div class="mb-8">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                                Contact Information
+                            <h3 class="text-lg font-semibold text-foreground mb-4 pb-2 border-b border-border">
+                                {{ t('company.contact_information') }}
                             </h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
@@ -393,14 +392,14 @@ const setCalendarLocaleStorage = (selected) => {
                                         v-if="isEditing"
                                         v-model="form.email"
                                         :error="form.errors?.email"
-                                        label="Email"
+                                        :label="t('general.email')"
                                         type="email"
                                     />
                                     <div v-else>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Email
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('general.email') }}
                                         </label>
-                                        <div class="py-2 px-3 text-gray-900 bg-gray-50 rounded-md">
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md">
                                             {{ getDisplayValue('email') }}
                                         </div>
                                     </div>
@@ -411,14 +410,14 @@ const setCalendarLocaleStorage = (selected) => {
                                         v-if="isEditing"
                                         v-model="form.phone"
                                         :error="form.errors?.phone"
-                                        label="Phone"
+                                        :label="t('general.phone')"
                                         type="text"
                                     />
                                     <div v-else>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Phone
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('general.phone') }}
                                         </label>
-                                        <div class="py-2 px-3 text-gray-900 bg-gray-50 rounded-md">
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md">
                                             {{ getDisplayValue('phone') }}
                                         </div>
                                     </div>
@@ -429,14 +428,14 @@ const setCalendarLocaleStorage = (selected) => {
                                         v-if="isEditing"
                                         v-model="form.country"
                                         :error="form.errors?.country"
-                                        label="Country"
+                                        :label="t('company.country')"
                                         type="text"
                                     />
                                     <div v-else>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Country
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('company.country') }}
                                         </label>
-                                        <div class="py-2 px-3 text-gray-900 bg-gray-50 rounded-md">
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md">
                                             {{ getDisplayValue('country') }}
                                         </div>
                                     </div>
@@ -447,14 +446,14 @@ const setCalendarLocaleStorage = (selected) => {
                                         v-if="isEditing"
                                         v-model="form.city"
                                         :error="form.errors?.city"
-                                        label="City"
+                                        :label="t('company.city')"
                                         type="text"
                                     />
                                     <div v-else>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            City
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('company.city') }}
                                         </label>
-                                        <div class="py-2 px-3 text-gray-900 bg-gray-50 rounded-md">
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md">
                                             {{ getDisplayValue('city') }}
                                         </div>
                                     </div>
@@ -465,14 +464,14 @@ const setCalendarLocaleStorage = (selected) => {
                                         v-if="isEditing"
                                         v-model="form.address"
                                         :error="form.errors?.address"
-                                        label="Address"
+                                        :label="t('general.address')"
                                         type="text"
                                     />
                                     <div v-else>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Address
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('company.address') }}
                                         </label>
-                                        <div class="py-2 px-3 text-gray-900 bg-gray-50 rounded-md">
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md">
                                             {{ getDisplayValue('address') }}
                                         </div>
                                     </div>
@@ -483,14 +482,14 @@ const setCalendarLocaleStorage = (selected) => {
                                         v-if="isEditing"
                                         v-model="form.website"
                                         :error="form.errors?.website"
-                                        label="Website"
+                                        :label="t('company.website')"
                                         type="url"
                                     />
                                     <div v-else>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Website
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('company.website') }}
                                         </label>
-                                        <div class="py-2 px-3 text-gray-900 bg-gray-50 rounded-md">
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md">
                                             {{ getDisplayValue('website') }}
                                         </div>
                                     </div>
@@ -500,8 +499,8 @@ const setCalendarLocaleStorage = (selected) => {
 
                         <!-- Company Settings Section -->
                         <div class="mb-8">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                                Company Preferences
+                            <h3 class="text-lg font-semibold text-foreground mb-4 pb-2 border-b border-border">
+                                {{ t('company.preferences') }}
                             </h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
@@ -512,14 +511,14 @@ const setCalendarLocaleStorage = (selected) => {
                                         label-key="name"
                                         @update:modelValue="(value) => handleSelectChange('business_type', value)"
                                         :reduce="type => type.id"
-                                        floating-text="Business Type"
+                                        :floating-text="t('company.business_type')"
                                         :error="form.errors?.business_type"
                                     />
                                     <div v-else>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Business Type
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('company.business_type') }}
                                         </label>
-                                        <div class="py-2 px-3 text-gray-900 bg-gray-50 rounded-md">
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md">
                                             {{ getDisplayValue('business_type') }}
                                         </div>
                                     </div>
@@ -534,14 +533,14 @@ const setCalendarLocaleStorage = (selected) => {
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('calendar_type', value)"
                                         :reduce="type => type.id"
-                                        floating-text="Calendar Type"
+                                        :floating-text="t('company.calendar_type')"
                                         :error="form.errors?.calendar_type"
                                     />
                                     <div v-else>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Calendar Type
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('company.calendar_type') }}
                                         </label>
-                                        <div class="py-2 px-3 text-gray-900 bg-gray-50 rounded-md">
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md">
                                             {{ getDisplayValue('calendar_type') }}
                                         </div>
                                     </div>
@@ -556,14 +555,14 @@ const setCalendarLocaleStorage = (selected) => {
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('working_style', value)"
                                         :reduce="type => type.id"
-                                        floating-text="Working Style"
+                                        :floating-text="t('company.working_style')"
                                         :error="form.errors?.working_style"
                                     />
                                     <div v-else>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Working Style
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('company.working_style') }}
                                         </label>
-                                        <div class="py-2 px-3 text-gray-900 bg-gray-50 rounded-md">
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md">
                                             {{ getDisplayValue('working_style') }}
                                         </div>
                                     </div>
@@ -577,14 +576,14 @@ const setCalendarLocaleStorage = (selected) => {
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('locale', value)"
                                         :reduce="type => type.id"
-                                        floating-text="Default Language"
+                                        :floating-text="t('company.locale')"
                                         :error="form.errors?.locale"
                                     />
                                     <div v-else>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Default Language
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('company.locale') }}
                                         </label>
-                                        <div class="py-2 px-3 text-gray-900 bg-gray-50 rounded-md">
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md">
                                             {{ getDisplayValue('locale') }}
                                         </div>
                                     </div>
@@ -599,17 +598,17 @@ const setCalendarLocaleStorage = (selected) => {
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('currency_id', value)"
                                         :reduce="currency => currency.id"
-                                        floating-text="Currency"
+                                        :floating-text="t('company.currency')"
                                         :error="form.errors?.currency_id"
                                         :searchable="true"
                                         resource-type="currencies"
                                         :search-fields="['name', 'code', 'symbol']"
                                     />
                                     <div v-else>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Currency
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('company.currency') }}
                                         </label>
-                                        <div class="py-2 px-3 text-gray-900 bg-gray-50 rounded-md">
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md">
                                             {{ getDisplayValue('currency_id') }}
                                         </div>
                                     </div>
@@ -620,13 +619,13 @@ const setCalendarLocaleStorage = (selected) => {
                                         v-if="isEditing"
                                         v-model="form.invoice_description"
                                         name="invoice_description"
-                                        label="Invoice Description"
+                                        :label="t('company.invoice_description')"
                                     />
                                     <div v-else>
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                                            Invoice Description
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('company.invoice_description') }}
                                         </label>
-                                        <div class="py-2 px-3 text-gray-900 bg-gray-50 rounded-md min-h-[80px]">
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md min-h-[80px]">
                                             {{ getDisplayValue('invoice_description') }}
                                         </div>
                                     </div>
@@ -636,14 +635,14 @@ const setCalendarLocaleStorage = (selected) => {
 
                         <!-- Company Logo Section -->
                         <div class="mb-8">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                                Company Logo
+                            <h3 class="text-lg font-semibold text-foreground mb-4 pb-2 border-b border-border">
+                                {{ t('company.logo') }}
                             </h3>
                             <div class="flex items-center gap-6">
                                 <div class="flex-shrink-0">
                                     <div
                                         v-if="logoPreview || company?.logo_url || company?.logo"
-                                        class="w-24 h-24 overflow-hidden bg-gray-200 rounded-full"
+                                        class="w-24 h-24 overflow-hidden bg-muted rounded-full"
                                     >
                                         <img
                                             :src="logoPreview || company?.logo_url || (company?.logo ? `/storage/${company.logo}` : null)"
@@ -651,8 +650,8 @@ const setCalendarLocaleStorage = (selected) => {
                                             class="object-cover w-full h-full"
                                         />
                                     </div>
-                                    <div v-else class="flex items-center justify-center w-24 h-24 bg-gray-200 rounded-full">
-                                        <Building2 class="w-12 h-12 text-gray-400" />
+                                    <div v-else class="flex items-center justify-center w-24 h-24 bg-muted rounded-full">
+                                        <Building2 class="w-12 h-12 text-muted-foreground" />
                                     </div>
                                 </div>
                                 <div v-if="isEditing" class="flex-1">
@@ -670,7 +669,7 @@ const setCalendarLocaleStorage = (selected) => {
                                             @click="() => fileInput?.click()"
                                         >
                                             <Upload class="w-4 h-4 mr-2" />
-                                            {{ existingLogo ? 'Change Logo' : 'Upload Logo' }}
+                                            {{ existingLogo ? t('general.change_file') : t('general.upload_file') }}
                                         </Button>
                                         <span v-if="form.logo" class="text-sm text-muted-foreground">
                                             {{ form.logo.name }}
@@ -683,7 +682,7 @@ const setCalendarLocaleStorage = (selected) => {
                                             </button>
                                         </span>
                                         <span v-else-if="existingLogo" class="text-sm text-muted-foreground">
-                                            Current logo
+                                            {{ t('general.current_file') }}
                                             <button
                                                 type="button"
                                                 @click="removeLogo"
@@ -693,10 +692,10 @@ const setCalendarLocaleStorage = (selected) => {
                                             </button>
                                         </span>
                                     </div>
-                                    <p class="mt-1 text-xs text-gray-500">PNG, JPG, GIF up to 2MB</p>
+                                    <p class="mt-1 text-xs text-muted-foreground">{{ t('company.upload_logo_description') }}</p>
                                 </div>
-                                <div v-else class="text-sm text-gray-500">
-                                    Logo can be updated in edit mode
+                                <div v-else class="text-sm text-muted-foreground">
+                                    {{ t('company.logo_can_be_updated_in_edit_mode') }}
                                 </div>
                             </div>
                         </div>
