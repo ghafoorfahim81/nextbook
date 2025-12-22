@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import DataTable from '@/Components/DataTable.vue'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDeleteResource } from '@/composables/useDeleteResource'
 import ShowDialog from '@/Pages/AccountTransfers/ShowDialog.vue'
@@ -30,7 +30,7 @@ const showItem = (id) => {
   showDialog.value = true
 }
 
-const columns = ref([
+const columns = computed(() => ([
   { key: 'number', label: t('general.number'), sortable: true },
   { key: 'from_account_name', label: t('general.from_account') },
   { key: 'to_account_name', label: t('general.to_account') },
@@ -38,7 +38,7 @@ const columns = ref([
   { key: 'currency_code', label: t('admin.currency.currency') },
   { key: 'date', label: t('general.date'), sortable: true },
   { key: 'actions', label: t('general.actions') },
-])
+]))
 </script>
 
 <template>

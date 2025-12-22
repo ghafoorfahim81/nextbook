@@ -2,7 +2,7 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import PurchaseShowDialog from '@/Components/PurchaseShowDialog.vue';
-import { h, ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Button } from '@/Components/ui/button';
 import { useI18n } from 'vue-i18n';
 import { useDeleteResource } from '@/composables/useDeleteResource';
@@ -35,7 +35,7 @@ const showItem = (id) => {
     showDialog.value = true;
 }
 
-const columns = ref([
+const columns = computed(() => ([
     { key: 'number', label: t('general.number'), sortable: true },
     { key: 'supplier_name', label: t('ledger.supplier.supplier') },
     { key: 'amount', label: t('general.amount'), sortable: true },
@@ -43,7 +43,7 @@ const columns = ref([
     { key: 'type', label: t('general.type'), sortable: true },
     { key: 'status', label: t('general.status') },
     { key: 'actions', label: t('general.actions') },
-])
+]))
 </script>
 
 <template>

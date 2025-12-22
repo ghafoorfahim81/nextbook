@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import CreateEditModal from './CreateEditModal.vue';
 import { useI18n } from 'vue-i18n';
@@ -18,13 +18,13 @@ const isDialogOpen = ref(false);
 const editingItem = ref(null);
 const { t } = useI18n();
 
-const columns = ref([
+const columns = computed(() => ([
     { key: 'name', label: t('general.name'), sortable: true },
     { key: 'description', label: t('admin.shared.remark') },
     { key: 'website', label: t('admin.brand.website') },
     { key: 'logo', label: t('admin.shared.logo') },
     { key: 'actions', label: t('general.action') },
-]);
+]));
 
 const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {

@@ -225,7 +225,7 @@ const navMain = computed(() => [
         ],
     },
     {
-        title: t('sidebar.main.ledgers'),
+        title: t('sidebar.main.ledger'),
         url: '#',
         icon: UserCog,
         items: [

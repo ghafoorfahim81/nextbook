@@ -2,7 +2,7 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import SaleShowDialog from '@/Components/SaleShowDialog.vue';
-import { h, ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Button } from '@/Components/ui/button';
 import { useI18n } from 'vue-i18n';
 import { useDeleteResource } from '@/composables/useDeleteResource';
@@ -36,10 +36,10 @@ const showItem = (id) => {
 }
 
 const printItem = (id) => {
-    window.location.href = `/sales/${id}/print`;
+    router.visit(route('sales.print', id));
 }
 
-const columns = ref([
+const columns = computed(() => ([
     { key: 'number', label: t('general.number'), sortable: true },
     { key: 'customer_name', label: t('ledger.customer.customer') },
     { key: 'amount', label: t('general.amount'), sortable: true },
@@ -47,7 +47,7 @@ const columns = ref([
     { key: 'type', label: t('general.type'), sortable: true },
     { key: 'status', label: t('general.status') },
     { key: 'actions', label: t('general.actions') },
-])
+]))
 </script>
 
 <template>

@@ -2,7 +2,7 @@
 import AppLayout from '@/Layouts/Layout.vue'
 import DataTable from '@/Components/DataTable.vue'
 import ItemInventoryModal from '@/Components/ItemInventoryModal.vue'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useDeleteResource } from '@/composables/useDeleteResource.js'
 import { useI18n } from 'vue-i18n'
 
@@ -12,7 +12,7 @@ const props = defineProps({
   items: Object,
 })
 
-const columns = ref([
+const columns = computed(() => ([
   { key: 'name', label: t('general.name') },
   { key: 'code', label: t('admin.currency.code') },
   { key: 'category', label: t('admin.category.category') },
@@ -22,7 +22,7 @@ const columns = ref([
   { key: 'on_hand', label: t('general.on_hand') },
   { key: 'mrp_rate', label: t('item.mrp_rate') },
   { key: 'actions', label: t('general.actions') },
-])
+]))
 
 const { deleteResource } = useDeleteResource()
 const showInventory = ref(false)

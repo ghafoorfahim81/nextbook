@@ -2,7 +2,7 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import AccountShowDialog from '@/Components/AccountShowDialog.vue';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { useI18n } from 'vue-i18n';
 
@@ -11,13 +11,13 @@ const props = defineProps({
 });
 const { t } = useI18n();
 
-const columns = ref([
+const columns = computed(() => ([
     { key: 'name', label: t('general.name') },
     { key: 'number', label: t('general.number') },
     { key: 'account_type.name', label: t('account.account_type') },
     { key: 'balance', label: t('general.balance') },
     { key: 'actions', label: t('general.actions') },
-]);
+]));
 
 const editItem = (item) => {
     window.location.href = `/chart-of-accounts/${item.id}/edit`;

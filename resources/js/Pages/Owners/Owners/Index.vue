@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import OwnerShowDialog from './ShowDialog.vue';
 import { useI18n } from 'vue-i18n';
@@ -16,7 +16,7 @@ const showDialog = ref(false);
 const selectedOwnerId = ref(null);
 const { t } = useI18n();
 
-const columns = ref([
+const columns = computed(() => ([
     { key: 'name', label: t('general.name'), sortable: true },
     { key: 'father_name', label: t('owner.father_name') },
     { key: 'nic', label: t('owner.nic') },
@@ -24,7 +24,7 @@ const columns = ref([
     { key: 'ownership_percentage', label: t('owner.ownership_percentage') },
     { key: 'is_active', label: t('general.status') },
     { key: 'actions', label: t('general.action') },
-]);
+]));
 
 const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {

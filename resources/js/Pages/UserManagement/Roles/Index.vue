@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { useI18n } from 'vue-i18n';
 
@@ -11,7 +11,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 
-const columns = ref([
+const columns = computed(() => ([
     { key: 'name', label: t('general.name'), sortable: true },
     {
         key: 'permissions',
@@ -24,7 +24,7 @@ const columns = ref([
         },
     },
     { key: 'actions', label: t('general.action') },
-]);
+]));
 
 const { deleteResource } = useDeleteResource();
 
