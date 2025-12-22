@@ -3,7 +3,10 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-
+use App\Enums\CalendarType;
+use App\Enums\BusinessType;
+use App\Enums\Locale;
+use App\Enums\WorkingStyle;
 return new class extends Migration
 {
     /**
@@ -24,10 +27,10 @@ return new class extends Migration
             $table->string('country')->nullable();
             $table->string('city')->nullable();
             $table->string('logo')->nullable();
-            $table->string('calendar_type')->nullable();
-            $table->string('working_style')->nullable();
-            $table->string('business_type')->nullable();
-            $table->string('locale')->nullable();
+            $table->enum('calendar_type', CalendarType::values())->nullable()->default(CalendarType::JALALI->value);
+            $table->enum('working_style', WorkingStyle::values())->nullable()->default(WorkingStyle::NORMAL->value);
+            $table->enum('business_type', BusinessType::values())->nullable()->default(BusinessType::PHARMACY_SHOP->value);
+            $table->enum('locale', Locale::values())->nullable()->default(Locale::EN->value);
             $table->char('currency_id', 26)->nullable();
             $table->string('email')->nullable();
             $table->string('website')->nullable();

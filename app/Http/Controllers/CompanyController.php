@@ -1,11 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
-use App\Enums\BusinessType;
-use App\Enums\CalendarType;
-use App\Enums\Locale;
-use App\Enums\WorkingStyle;
+ 
 use App\Http\Requests\Administration\CompanyUpdateRequest;
 use App\Http\Requests\Administration\CompanyStoreRequest;
 use App\Models\Administration\Company;

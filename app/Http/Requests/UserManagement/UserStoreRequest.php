@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\UserManagement;
 
+use App\Enums\UserStatus;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UserStoreRequest extends FormRequest
@@ -17,6 +18,7 @@ class UserStoreRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email,NULL,id,deleted_at,NULL', 'max:255'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'status' => ['required', 'in:' . implode(',', array_column(UserStatus::cases(), 'value'))],
             'branch_id' => ['nullable', 'string', 'exists:branches,id'],
             'company_id' => ['nullable', 'string', 'exists:companies,id'],
             'roles' => ['nullable', 'array'],

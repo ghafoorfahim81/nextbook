@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-
+use App\Enums\TransactionType;
 return new class extends Migration
 {
     /**
@@ -23,7 +23,7 @@ return new class extends Migration
             $table->date('date')->index();
             $table->string('reference_type')->nullable()->index();
             $table->char('reference_id', 26)->nullable()->index();
-            $table->enum('type', ['debit', 'credit']);
+            $table->enum('type', TransactionType::values())->default(TransactionType::CREDIT->value);
             $table->text('remark')->nullable();
             $table->char('created_by', 26);
             $table->char('updated_by', 26)->nullable();

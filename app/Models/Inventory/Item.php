@@ -76,6 +76,7 @@ class Item extends Model
             'branch_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
+            'colors' => 'array',
         ];
     }
 
@@ -93,8 +94,7 @@ class Item extends Model
             'minimum_stock',
             'maximum_stock',
             'colors',
-            'size',
-            'photo',
+            'size', 
             'purchase_price',
             'cost',
             'sale_price',

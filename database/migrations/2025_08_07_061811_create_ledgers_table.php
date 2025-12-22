@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-
+use App\Enums\LedgerType;
 return new class extends Migration
 {
     /**
@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->char('currency_id', 26)->nullable();
             $table->char('branch_id', 26)->nullable()->index();
-            $table->string('type')->index()->default('customer');
+            $table->enum('type', LedgerType::values())->default(LedgerType::CUSTOMER->value);
             $table->char('created_by', 26);
             $table->char('updated_by', 26)->nullable();
             $table->char('deleted_by',26)->nullable();
