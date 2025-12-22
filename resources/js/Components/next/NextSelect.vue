@@ -1,5 +1,5 @@
 <template>
-    <div class="relative w-full dark:bg-slate-50 dark:text-slate-500">
+    <div class="relative w-full">
       <div class="relative">
         <v-select
           :id="id"
@@ -17,7 +17,7 @@
           :close-on-select="true"
           :append-to-body="shouldAppendToBody"
           :calculate-position="shouldAppendToBody ? calculatePosition : null"
-          class="col-span-3 rounded-md border border-gray-300 dark:border-gray-500 sm:text-sm"
+          class="col-span-3 w-full sm:text-sm"
           :class="[{ 'no-arrow': !showArrow }]"
           v-bind="$attrs"
         />
@@ -179,16 +179,37 @@
   <style scoped>
   /* ---------------- SAFE STYLES ---------------- */
 
+  /* match app input look (light + dark via CSS vars) */
+  :deep(.vs__dropdown-toggle) {
+    background-color: hsl(var(--background));
+    border: 2px solid hsl(var(--border));
+    border-radius: var(--radius);
+    min-height: 2.5rem;
+    padding: 0.25rem 0.75rem 0.5rem;
+    color: hsl(var(--foreground));
+  }
+
+  :deep(.vs__selected),
+  :deep(.vs__search) {
+    color: hsl(var(--foreground));
+  }
+
+  :deep(.vs__open-indicator),
+  :deep(.vs__clear) {
+    fill: hsl(var(--muted-foreground));
+  }
+
   /* dropdown always clickable */
   :deep(.vs__dropdown-option) {
     cursor: pointer;
+    color: hsl(var(--popover-foreground));
   }
 
   /* hover / highlight */
   :deep(.vs__dropdown-option--highlight),
   :deep(.vs__dropdown-option:hover) {
-    background: rgb(139 92 246);
-    color: white;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
   }
 
   /* no arrow option */
@@ -206,6 +227,10 @@
     max-height: 200px;
     overflow-y: auto;
     z-index: 50;
+    background-color: hsl(var(--popover));
+    color: hsl(var(--popover-foreground));
+    border-color: hsl(var(--border));
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.45);
   }
 
   /* focus parity with inputs */
