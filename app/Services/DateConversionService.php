@@ -209,8 +209,13 @@ class DateConversionService
     private function getCompanyCalendarType(): string
     {
         // Your company detection logic
-        return auth()->check() && auth()->user()->company?->calendar_type
+        $calendarType = auth()->check() && auth()->user()->company?->calendar_type
             ? auth()->user()->company?->calendar_type
+            : null;
+
+        // Return the string value of the enum or default to 'gregorian'
+        return $calendarType instanceof \App\Enums\CalendarType
+            ? $calendarType->value
             : 'gregorian';
     }
 }
