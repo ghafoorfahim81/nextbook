@@ -18,16 +18,16 @@ return new class extends Migration
         Schema::create('purchases', function (Blueprint $table) {
             $table->char('id', 26)->primary();
             $table->integer('number')->index();
-            $table->char('supplier_id', 26);
+            $table->char('supplier_id', 26)->index();
             $table->date('date');
-            $table->char('transaction_id', 26)->nullable();
-            $table->decimal('discount', 10, 2)->nullable();
-            $table->enum('discount_type', DiscountType::values())->nullable();
+            $table->char('transaction_id', 26)->nullable()->index();
+            $table->decimal('discount', 10, 2)->nullable()->default(0);
+            $table->enum('discount_type', DiscountType::values())->nullable()->default(DiscountType::PERCENTAGE->value);
             $table->enum('type', SalesPurchaseType::values())->default(SalesPurchaseType::Cash->value);
-            $table->char('store_id', 26)->nullable();
+            $table->char('store_id', 26)->index();
             $table->text('description')->nullable();
             $table->enum('status', TransactionStatus::values())->default(TransactionStatus::PENDING->value);
-            $table->char('branch_id', 26);
+            $table->char('branch_id', 26)->index();
             $table->char('created_by', 26);
             $table->char('updated_by', 26)->nullable();
             $table->char('deleted_by',26)->nullable();

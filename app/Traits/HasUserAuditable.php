@@ -16,10 +16,11 @@ trait HasUserAuditable
         if (!$firstUser) {
             $firstUser = User::create([
                 'id' => (string) new Ulid(),
-                'name' => 'admin_1',
-                'email' => 'admin@nextbook1.com',
+                'name' => 'admin',
+                'email' => 'admin@nextbook.com',
                 'branch_id' => $branch?->id,
                 'password' => bcrypt('password'),
+                'preferences' => User::DEFAULT_PREFERENCES,
             ]);
         }
         static::creating(function ($model) use ($firstUser, $branch) {

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->char('id', 26)->primary();
             $table->string('name')->index();
             $table->string('father_name');
-            $table->string('nic')->nullable();
+            $table->string('nic')->nullable()->index();
             $table->string('email')->nullable();
             $table->text('address')->nullable();
             $table->string('phone_number')->nullable();
@@ -25,8 +25,8 @@ return new class extends Migration
             $table->char('account_transaction_id', 26)->nullable()->index();
             $table->char('capital_account_id', 26)->nullable()->index();
             $table->char('drawing_account_id', 26)->nullable()->index();
-            $table->char('branch_id', 26);
-            $table->char('created_by', 26);
+            $table->char('branch_id', 26)->index();
+            $table->char('created_by', 26)->index();
             $table->char('updated_by', 26)->nullable();
             $table->char('deleted_by',26)->nullable();
             $table->timestamps();

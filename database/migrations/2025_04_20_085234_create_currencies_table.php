@@ -23,9 +23,8 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->boolean('is_base_currency')->default(false);
             $table->string('flag')->index()->nullable();
-            $table->char('branch_id', 26);
-            $table->char('tenant_id', 26)->nullable();
-            $table->char('created_by', 26);
+            $table->char('branch_id', 26)->index(); 
+            $table->char('created_by', 26)->index();
             $table->char('updated_by', 26)->nullable();
             $table->char('deleted_by',26)->nullable();
             $table->timestamps();

@@ -20,7 +20,7 @@ class PurchaseStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['required', 'unique:purchases,number'],
+            'number' => ['required', 'integer', 'min:1'],
             'supplier_id' => ['required', 'string', 'exists:ledgers,id'],
             'date' => ['required', 'date'],
             'transaction_total' => ['required', 'numeric'],

@@ -16,13 +16,13 @@ return new class extends Migration
             $table->char('id', 26)->primary();
             $table->string('name')->index();
             $table->string('number')->index();
-            $table->char('account_type_id', 26);
+            $table->char('account_type_id', 26)->index();
             $table->boolean('is_active')->default(true);
             $table->boolean('is_main')->default(false);
             $table->string('slug')->unique()->nullable();
-            $table->char('branch_id', 26);
+            $table->char('branch_id', 26)->index();
             $table->text('remark')->nullable();
-            $table->char('created_by', 26);
+            $table->char('created_by', 26)->index();
             $table->char('updated_by', 26)->nullable();
             $table->char('deleted_by',26)->nullable();
             $table->timestamps();

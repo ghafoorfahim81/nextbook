@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('stock_outs', function (Blueprint $table) {
             $table->char('id', 26)->primary();
-            $table->char('stock_id', 26)->nullable();
-            $table->char('item_id', 26);
+            $table->char('stock_id', 26)->nullable()->index();
+            $table->char('item_id', 26)->index();
             $table->double('quantity')->unsigned();
             $table->double('unit_price')->unsigned();
             $table->double('free')->nullable();
@@ -22,11 +22,10 @@ return new class extends Migration
             $table->double('discount')->nullable();
             $table->date('date');
             $table->string('batch')->nullable();
-            $table->char('unit_measure_id', 26)->nullable();
-            $table->char('store_id', 26)->nullable();
-            $table->nullableUlidMorphs('source'); // adds source_type, source_id (ULID), nullable
-            $table->index(['item_id', 'store_id', 'batch']);
-            $table->char('created_by', 26)->nullable();
+            $table->char('unit_measure_id', 26)->index();
+            $table->char('store_id', 26)->index();
+            $table->nullableUlidMorphs('source'); // adds source_type, source_id (ULID), nullable 
+            $table->char('created_by', 26)->index();
             $table->char('updated_by', 26)->nullable();
             $table->timestamps();
             $table->softDeletes();

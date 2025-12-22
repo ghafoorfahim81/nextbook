@@ -20,9 +20,9 @@ return new class extends Migration
             $table->string('generic_name')->nullable();
             $table->string('packing')->nullable();
             $table->string('barcode')->nullable()->index();
-            $table->char('unit_measure_id',26);
-            $table->char('brand_id',26)->nullable();
-            $table->char('category_id',26)->nullable();
+            $table->char('unit_measure_id',26)->index();
+            $table->char('brand_id',26)->nullable()->index();
+            $table->char('category_id',26)->nullable()->index();
             $table->double('minimum_stock')->nullable();
             $table->double('maximum_stock')->nullable();
             $table->json('colors')->nullable()->default('[]');
@@ -35,8 +35,8 @@ return new class extends Migration
             $table->double('rate_c')->nullable();
             $table->string('rack_no')->nullable();
             $table->string('fast_search')->nullable()->index();
-            $table->char('branch_id',26);
-            $table->char('created_by');
+            $table->char('branch_id',26)->index();
+            $table->char('created_by')->index();
             $table->char('updated_by')->nullable();
             $table->char('deleted_by',26)->nullable();
             $table->unique(['branch_id', 'name', 'deleted_at']);

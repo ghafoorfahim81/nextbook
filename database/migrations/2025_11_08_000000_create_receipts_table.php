@@ -17,13 +17,13 @@ return new class extends Migration
             $table->char('id', 26)->primary();
             $table->string('number')->index();
             $table->date('date');
-            $table->char('ledger_id', 26);
-            $table->char('receive_transaction_id', 26)->nullable();
-            $table->char('bank_transaction_id', 26)->nullable();
+            $table->char('ledger_id', 26)->index();
+            $table->char('receive_transaction_id', 26)->nullable()->index();
+            $table->char('bank_transaction_id', 26)->nullable()->index();
             $table->string('cheque_no')->nullable();
             $table->text('narration')->nullable(); 
-            $table->char('branch_id', 26)->nullable()->index();
-            $table->char('created_by', 26);
+            $table->char('branch_id', 26)->index();
+            $table->char('created_by', 26)->index();
             $table->char('updated_by', 26)->nullable();
             $table->timestamps();
             $table->softDeletes();

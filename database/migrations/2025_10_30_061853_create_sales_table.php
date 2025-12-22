@@ -18,17 +18,17 @@ return new class extends Migration
         Schema::create('sales', function (Blueprint $table) {
             $table->char('id', 26)->primary();
             $table->integer('number')->index();
-            $table->char('customer_id', 26);
+            $table->char('customer_id', 26)->index();
             $table->date('date');
-            $table->char('transaction_id', 26)->nullable();
+            $table->char('transaction_id', 26)->nullable()->index();
             $table->decimal('discount', 10, 2)->nullable();
             $table->enum('discount_type', DiscountType::values())->nullable();
             $table->enum('type', SalesPurchaseType::values())->default(SalesPurchaseType::Cash->value);
             $table->text('description')->nullable();
             $table->enum('status', TransactionStatus::values())->default(TransactionStatus::PENDING->value);
-            $table->char('store_id', 26)->nullable();
-            $table->char('branch_id', 26);
-            $table->char('created_by', 26);
+            $table->char('store_id', 26)->index();
+            $table->char('branch_id', 26)->index();
+            $table->char('created_by', 26)->index();
             $table->char('updated_by', 26)->nullable();
             $table->char('deleted_by',26)->nullable();
             $table->softDeletes();

@@ -17,10 +17,10 @@ return new class extends Migration
             $table->string('slug')->unique()->nullable();
             $table->text('remark')->nullable();
             $table->boolean('is_main')->default(false);
-            $table->char('created_by', 26);
+            $table->char('created_by', 26)->index();
             $table->char('updated_by', 26)->nullable();
             $table->char('deleted_by',26)->nullable();
-            $table->char('branch_id',26);
+            $table->char('branch_id',26)->index();
             $table->timestamps();
             $table->softDeletes();
             $table->unique(['branch_id', 'name', 'deleted_at']);
