@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import { h, ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import CreateEditModal from '@/Pages/Administration/Currencies/CreateEditModal.vue';
 import { useI18n } from 'vue-i18n';
@@ -17,14 +17,14 @@ const isDialogOpen = ref(false)
 const editingCurrency = ref(null)
 const { t } = useI18n()
 
-const columns = ref([ 
+const columns = computed(() => ([ 
     { key: 'name', label: t('general.name'), sortable: true },
     { key: 'code', label: t('admin.currency.code'), sortable: true },
     { key: 'exchange_rate', label: t('admin.currency.exchange_rate'), sortable: true },
     { key: 'symbol', label: t('admin.shared.symbol') },
     { key: 'format', label: t('admin.currency.format') },
     { key: 'actions', label: t('general.action') },
-]);
+]));
 
 const editItem = (item) => {
     editingCurrency.value = item

@@ -1,7 +1,7 @@
 <script setup>
     import AppLayout from '@/Layouts/Layout.vue';
     import DataTable from '@/Components/DataTable.vue';
-    import { h, ref } from 'vue';
+    import { ref, computed } from 'vue';
     import { useDeleteResource } from '@/composables/useDeleteResource';
     import CreateEditModal from '@/Pages/Accounts/AccountTypes/CreateEditModal.vue';
     import { useI18n } from 'vue-i18n';
@@ -13,11 +13,11 @@
     const editingAccountType = ref(null)
     const { t } = useI18n()
     
-    const columns = ref([ 
+    const columns = computed(() => ([ 
         { key: 'name', label: t('general.name'),sortable: true },
         { key: 'remark', label: t('general.remark') },
         { key: 'actions', label: t('general.action') },
-    ]);
+    ]));
     
     const editItem = (item) => {
         editingAccountType.value = item

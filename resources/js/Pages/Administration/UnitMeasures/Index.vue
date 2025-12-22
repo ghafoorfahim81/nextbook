@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import { h, ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Button } from '@/Components/ui/button';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import CreateEditModal from '@/Pages/Administration/UnitMeasures/CreateEditModal.vue';
@@ -19,7 +19,7 @@ const isDialogOpen = ref(false)
 const editingMeasure = ref(null)
 
 
-const columns = ref([
+const columns = computed(() => ([
     {
         key: 'quantity.quantity',
         label: '',
@@ -36,7 +36,7 @@ const columns = ref([
     { key: 'unit', label: t('admin.unit_measure.unit') },
     { key: 'symbol', label: t('admin.shared.symbol') },
     { key: 'actions', label: t('general.action') },
-]);
+]));
 
 
 const { deleteResource } = useDeleteResource()

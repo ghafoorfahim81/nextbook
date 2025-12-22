@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import { h, ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import CreateEditModal from '@/Pages/Administration/Departments/CreateEditModal.vue';
 import { useI18n } from 'vue-i18n';
@@ -14,7 +14,7 @@ const isDialogOpen = ref(false)
 const editingDepartment = ref(null)
 const { t } = useI18n()
 
-const columns = ref([
+const columns = computed(() => ([
     { key: 'id', label: 'ID' },
     { key: 'name', label: t('general.name'), sortable: true },
     { key: 'code', label: t('general.code'), sortable: true },
@@ -25,7 +25,7 @@ const columns = ref([
         render: (row) => row.parent?.name ?? '-',
     },
     { key: 'actions', label: t('general.action') },
-])
+]))
 
 const editItem = (item) => {
     editingDepartment.value = item

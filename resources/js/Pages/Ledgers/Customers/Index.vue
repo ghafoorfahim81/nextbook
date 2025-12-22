@@ -2,7 +2,7 @@
     import AppLayout from '@/Layouts/Layout.vue';
     import DataTable from '@/Components/DataTable.vue';
     import CustomerShowDialog from '@/Components/CustomerShowDialog.vue';
-    import { ref } from 'vue';
+    import { ref, computed } from 'vue';
     import { useDeleteResource } from '@/composables/useDeleteResource';
     import { useI18n } from 'vue-i18n';
 
@@ -11,7 +11,7 @@
     });
     const { t } = useI18n()
 
-    const columns = ref([
+    const columns = computed(() => ([
         { key: 'name', label: t('general.name') },
         { key: 'code', label: t('admin.currency.code') },
         { key: 'contact_person', label: t('ledger.contact_person') },
@@ -19,7 +19,7 @@
         { key: 'email', label: t('general.email') },
         { key: 'actions', label: t('general.actions') },
 
-    ]);
+    ]));
 
     const editItem = (item) => {
         window.location.href = `/customers/${item.id}/edit`
