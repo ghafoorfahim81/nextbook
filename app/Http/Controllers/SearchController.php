@@ -276,7 +276,7 @@ class SearchController extends Controller
                     'category_name' => $item->category?->name,
                     'purchase_price' => $item->purchase_price,
                     'cost' => $item->cost,
-                    'mrp_rate' => $item->mrp_rate,
+                    'sale_price' => $item->sale_price,
                     'rate_a' => $item->rate_a,
                     'rate_b' => $item->rate_b,
                     'rate_c' => $item->rate_c,

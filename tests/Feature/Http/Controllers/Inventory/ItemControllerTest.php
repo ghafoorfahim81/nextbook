@@ -51,7 +51,7 @@ final class ItemControllerTest extends TestCase
         $unit_measure = UnitMeasure::factory()->create();
         $brand = Brand::factory()->create();
         $category = Category::factory()->create();
-        $mrp_rate = fake()->randomFloat(/** double_attributes **/);
+        $sale_price = fake()->randomFloat(/** double_attributes **/);
         $branch = Branch::factory()->create();
         $created_by = CreatedBy::factory()->create();
 
@@ -61,7 +61,7 @@ final class ItemControllerTest extends TestCase
             'unit_measure_id' => $unit_measure->id,
             'brand_id' => $brand->id,
             'category_id' => $category->id,
-            'mrp_rate' => $mrp_rate,
+            'sale_price' => $sale_price,
             'branch_id' => $branch->id,
             'created_by' => $created_by->id,
         ]);
@@ -72,7 +72,7 @@ final class ItemControllerTest extends TestCase
             ->where('unit_measure_id', $unit_measure->id)
             ->where('brand_id', $brand->id)
             ->where('category_id', $category->id)
-            ->where('mrp_rate', $mrp_rate)
+            ->where('sale_price', $sale_price)
             ->where('branch_id', $branch->id)
             ->where('created_by', $created_by->id)
             ->get();
@@ -115,7 +115,7 @@ final class ItemControllerTest extends TestCase
         $unit_measure = UnitMeasure::factory()->create();
         $brand = Brand::factory()->create();
         $category = Category::factory()->create();
-        $mrp_rate = fake()->randomFloat(/** double_attributes **/);
+        $sale_price = fake()->randomFloat(/** double_attributes **/);
         $branch = Branch::factory()->create();
         $created_by = CreatedBy::factory()->create();
 
@@ -125,7 +125,7 @@ final class ItemControllerTest extends TestCase
             'unit_measure_id' => $unit_measure->id,
             'brand_id' => $brand->id,
             'category_id' => $category->id,
-            'mrp_rate' => $mrp_rate,
+            'sale_price' => $sale_price,
             'branch_id' => $branch->id,
             'created_by' => $created_by->id,
         ]);
@@ -140,7 +140,7 @@ final class ItemControllerTest extends TestCase
         $this->assertEquals($unit_measure->id, $item->unit_measure_id);
         $this->assertEquals($brand->id, $item->brand_id);
         $this->assertEquals($category->id, $item->category_id);
-        $this->assertEquals($mrp_rate, $item->mrp_rate);
+        $this->assertEquals($sale_price, $item->sale_price);
         $this->assertEquals($branch->id, $item->branch_id);
         $this->assertEquals($created_by->id, $item->created_by);
     }

@@ -3,7 +3,6 @@
     "items": "Items",
     "cost": "Cost",
     "quantity": "Quantity",
-    "mrp_rate": "MRP Rate",
     "purchase_price": "Purchase Price",
     "sale_price": "Sale Price",
     "minimum_stock": "Minimum Stock",

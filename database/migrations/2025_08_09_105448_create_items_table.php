@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('photo')->nullable();
             $table->double('purchase_price')->nullable();
             $table->double('cost')->nullable();
-            $table->double('mrp_rate');
+            $table->double('sale_price');
             $table->double('rate_a')->nullable();
             $table->double('rate_b')->nullable();
             $table->double('rate_c')->nullable();

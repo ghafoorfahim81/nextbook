@@ -44,7 +44,7 @@ const itemDetails = computed(() => [
   { label: t('item.size'), value: props.item?.size, icon: Ruler },
   { label: t('item.purchase_price'), value: props.item?.purchase_price, icon: DollarSign },
   { label: t('item.cost'), value: props.item?.cost, icon: DollarSign },
-  { label: t('item.mrp_rate'), value: props.item?.mrp_rate, icon: DollarSign },
+  { label: t('item.sale_price'), value: props.item?.sale_price, icon: DollarSign },
   { label: t('item.rate_a'), value: props.item?.rate_a, icon: DollarSign },
   { label: t('item.rate_b'), value: props.item?.rate_b, icon: DollarSign },
   { label: t('item.rate_c'), value: props.item?.rate_c, icon: DollarSign },

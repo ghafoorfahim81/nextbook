@@ -7,7 +7,7 @@ Notation:
 - Searchable columns where present
 
 #### `App\Models\Inventory\Item`
-- Attributes: `name, code, generic_name, packing, barcode, unit_measure_id, brand_id, category_id, minimum_stock, maximum_stock, colors, size, photo, purchase_price, cost, mrp_rate, rate_a, rate_b, rate_c, rack_no, fast_search, branch_id, created_by, updated_by`
+- Attributes: `name, code, generic_name, packing, barcode, unit_measure_id, brand_id, category_id, minimum_stock, maximum_stock, colors, size, photo, purchase_price, cost, sale_price, rate_a, rate_b, rate_c, rack_no, fast_search, branch_id, created_by, updated_by`
 - Casts: numeric casts for stock/cost/rates; IDs as string
 - Relationships:
   - `unitMeasure(): BelongsTo(Administration\UnitMeasure)`

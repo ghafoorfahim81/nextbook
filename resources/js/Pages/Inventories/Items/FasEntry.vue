@@ -60,7 +60,7 @@ const blankRow = () => ({
     code: formatCode(props.maxCode),
     measure_id: null,
     purchase_price: '',
-    mrp_rate: '',
+    sale_price: '',
     batch: '',
     expire_date: '',
     quantity: '',
@@ -107,7 +107,7 @@ const normalize = () => {
                 ...r,
                 quantity: r.quantity === '' ? null : Number(r.quantity),
                 purchase_price: r.purchase_price === '' ? null : Number(r.purchase_price),
-                mrp_rate: r.mrp_rate === '' ? null : Number(r.mrp_rate),
+                sale_price: r.sale_price === '' ? null : Number(r.sale_price),
                 category_id: r.category_id ?? null,
                 measure_id: r.measure_id ?? null,
                 company_id: r.company_id ?? null,
@@ -187,7 +187,7 @@ const handleSubmit = () => {
                             <th class="px-1 py-1 w-36">{{ t('item.expire_date') }}</th>
                             <th class="px-1 py-1 w-32">{{ t('admin.store.store') }}</th>
                             <th class="px-1 py-1 w-28">{{ t('item.purchase_price') }}</th>
-                            <th class="px-1 py-1 w-20">{{ t('item.mrp_rate') }}</th>
+                            <th class="px-1 py-1 w-20">{{ t('item.sale_price') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.actions') }}</th>
                         </tr>
                         </thead>
@@ -265,8 +265,8 @@ const handleSubmit = () => {
                                 <NextInput
                                     type="number"
                                     inputmode="decimal"
-                                    v-model="item.mrp_rate"
-                                    :error="fieldError(index, 'mrp_rate')"
+                                    v-model="item.sale_price"
+                                    :error="fieldError(index, 'sale_price')"
                                 />
                             </td>
                             <td class="px-1 py-2 align-top">

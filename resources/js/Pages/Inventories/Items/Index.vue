@@ -20,7 +20,7 @@ const columns = computed(() => ([
   { key: 'brand_name', label: t('admin.brand.brand') },
   { key: 'cost', label: t('item.cost') },
   { key: 'on_hand', label: t('general.on_hand') },
-  { key: 'mrp_rate', label: t('item.mrp_rate') },
+  { key: 'sale_price', label: t('item.sale_price') },
   { key: 'actions', label: t('general.actions') },
 ]))
 
