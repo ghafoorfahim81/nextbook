@@ -2,7 +2,7 @@
     <div class="relative">
         <component
             :is="VuePersianDatetimePicker"
-            :class="['block w-full z-5000 no-error-style', { 'no-icon': !showIcon, 'icon-only': showIcon && !showLabel }]"
+            :class="['block w-full z-5000 no-error-style dark:text-black', { 'no-icon': !showIcon, 'icon-only': showIcon && !showLabel }]"
             v-model="normalizedModel"
             :format="resolvedFormat"
             :display-format="resolvedDisplayFormat"

@@ -1,4 +1,6 @@
 ﻿{
+    "ledger": "Ledger",
+    "ledgers": "Ledgers",
     "supplier":{
         "supplier": "Supplier",
         "suppliers": "Suppliers"

@@ -31,5 +31,8 @@
     "fast_opening": "Fast Opening",
     "code": "Code",
     "add_multiple_items_quickly": "Add multiple items quickly. Use the “+” on the last row to append more.",
-    "remove_unwanted_items": "Remove unwanted items using the “-” symbol."
+    "remove_unwanted_items": "Remove unwanted items using the “-” symbol.",
+    "current_stock": "Current Stock",
+    "in_records": "In Records",
+    "out_records": "Out Records"
 }
