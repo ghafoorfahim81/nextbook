@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('branches', function (Blueprint $table) {
             $table->char('id', 26)->primary();
-            $table->string('name');
+            $table->string('name')->index();
             $table->text('remark')->nullable();
             $table->string('location')->nullable();
             $table->boolean('is_main')->default(false);
             $table->string('sub_domain')->nullable();
-            $table->char('parent_id',26)->nullable();
-            $table->char('created_by',26);
+            $table->char('parent_id',26)->nullable()->index();
+            $table->char('created_by',26)->nullable()->index();
             $table->char('updated_by',26)->nullable();
             $table->char('deleted_by', 26)->nullable();
             $table->softDeletes();

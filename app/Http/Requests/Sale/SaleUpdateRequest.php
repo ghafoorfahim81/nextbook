@@ -20,7 +20,7 @@ class SaleUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['required', 'unique:sales,number,' . $this->route('sale')->id],
+            'number' => ['required', 'integer', 'min:1'],
             'customer_id' => ['required', 'string', 'exists:ledgers,id'],
             'date' => ['required', 'date'],
             'transaction_total' => ['required', 'numeric'],

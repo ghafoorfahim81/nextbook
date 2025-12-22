@@ -31,11 +31,11 @@ return new class extends Migration
             $table->enum('working_style', WorkingStyle::values())->nullable()->default(WorkingStyle::NORMAL->value);
             $table->enum('business_type', BusinessType::values())->nullable()->default(BusinessType::PHARMACY_SHOP->value);
             $table->enum('locale', Locale::values())->nullable()->default(Locale::EN->value);
-            $table->char('currency_id', 26)->nullable();
+            $table->char('currency_id', 26)->index();
             $table->string('email')->nullable();
             $table->string('website')->nullable();
             $table->text('invoice_description')->nullable();
-            $table->char('created_by', 26);
+            $table->char('created_by', 26)->index();
             $table->char('updated_by', 26)->nullable();
             $table->timestamps();
         });

@@ -15,12 +15,12 @@ return new class extends Migration
             $table->string('number')->index();
             $table->date('date');
             $table->char('ledger_id', 26)->index();
-            $table->char('payment_transaction_id', 26)->nullable();
-            $table->char('bank_transaction_id', 26)->nullable();
+            $table->char('payment_transaction_id', 26)->nullable()->index();
+            $table->char('bank_transaction_id', 26)->nullable()->index();
             $table->string('cheque_no')->nullable();
             $table->text('description')->nullable();
-            $table->char('branch_id', 26)->nullable()->index();
-            $table->char('created_by', 26);
+            $table->char('branch_id', 26)->index();
+            $table->char('created_by', 26)->index();
             $table->char('updated_by', 26)->nullable();
             $table->char('deleted_by',26)->nullable();
             $table->timestamps();

@@ -17,11 +17,11 @@ return new class extends Migration
             $table->char('id', 26)->primary();
             $table->string('number')->nullable()->index();
             $table->date('date');
-            $table->char('from_transaction_id', 26)->nullable();
-            $table->char('to_transaction_id', 26)->nullable();
+            $table->char('from_transaction_id', 26)->nullable()->index();
+            $table->char('to_transaction_id', 26)->nullable()->index();
             $table->text('remark')->nullable();
-            $table->char('branch_id', 26)->nullable()->index();
-            $table->char('created_by', 26);
+            $table->char('branch_id', 26)->index();
+            $table->char('created_by', 26)->index();
             $table->char('updated_by', 26)->nullable();
             $table->char('deleted_by', 26)->nullable();
             $table->timestamps();

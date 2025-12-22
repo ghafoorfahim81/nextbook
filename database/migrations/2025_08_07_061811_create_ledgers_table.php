@@ -21,10 +21,10 @@ return new class extends Migration
             $table->string('contact_person')->nullable()->index();
             $table->string('phone_no')->nullable();
             $table->string('email')->nullable();
-            $table->char('currency_id', 26)->nullable();
+            $table->char('currency_id', 26)->nullable()->index();
             $table->char('branch_id', 26)->nullable()->index();
             $table->enum('type', LedgerType::values())->default(LedgerType::CUSTOMER->value);
-            $table->char('created_by', 26);
+            $table->char('created_by', 26)->index();
             $table->char('updated_by', 26)->nullable();
             $table->char('deleted_by',26)->nullable();
             $table->timestamps();

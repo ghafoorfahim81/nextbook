@@ -16,13 +16,13 @@ return new class extends Migration
         Schema::create('ledger_openings', function (Blueprint $table) {
             $table->char('id', 26)->primary();
             // Polymorphic relation to ledger: Customer, Supplier, Account, etc.
-            $table->char('ledgerable_id', 26);
+            $table->char('ledgerable_id', 26)->index();
             $table->string('ledgerable_type');
             $table->index(['ledgerable_id', 'ledgerable_type']);
 
             // Transaction morph relation
-            $table->char('transaction_id', 26);
-            $table->char('created_by', 26);
+            $table->char('transaction_id', 26)->index();
+            $table->char('created_by', 26)->index();
             $table->char('updated_by', 26)->nullable();
             $table->char('deleted_by',26)->nullable();
             $table->timestamps();

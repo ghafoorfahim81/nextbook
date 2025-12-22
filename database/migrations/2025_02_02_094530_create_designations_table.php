@@ -17,8 +17,8 @@ return new class extends Migration
             $table->char('id', 26)->primary();
            $table->string('name')->index();
            $table->text('remark')->nullable();
-           $table->char('branch_id', 26);
-           $table->char('created_by', 26);
+           $table->char('branch_id', 26)->index();
+           $table->char('created_by', 26)->index();
            $table->char('updated_by', 26)->nullable();
            $table->unique(['branch_id', 'name', 'deleted_at']);
            $table->timestamps();

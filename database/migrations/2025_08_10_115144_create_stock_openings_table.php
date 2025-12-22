@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('stock_openings', function (Blueprint $table) {
             $table->char('id', 26)->primary();
-            $table->char('item_id');
-            $table->char('stock_id',26);
-            $table->char('created_by',26);
+            $table->char('item_id')->index();
+            $table->char('stock_id',26)->index();
+            $table->char('created_by',26)->index();
             $table->char('updated_by',26)->nullable();
             $table->timestamps();
             $table->softDeletes();

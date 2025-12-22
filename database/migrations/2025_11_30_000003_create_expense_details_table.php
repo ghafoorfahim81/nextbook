@@ -10,10 +10,10 @@ return new class extends Migration
     {
         Schema::create('expense_details', function (Blueprint $table) {
             $table->char('id', 26)->primary();
-            $table->char('expense_id', 26);
+            $table->char('expense_id', 26)->index();
             $table->decimal('amount', 15, 2);
             $table->string('title'); 
-            $table->char('created_by', 26);
+            $table->char('created_by', 26)->index();
             $table->char('updated_by', 26)->nullable();
             $table->char('deleted_by', 26)->nullable(); 
             $table->timestamps();

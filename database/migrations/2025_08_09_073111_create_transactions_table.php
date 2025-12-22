@@ -25,7 +25,7 @@ return new class extends Migration
             $table->char('reference_id', 26)->nullable()->index();
             $table->enum('type', TransactionType::values())->default(TransactionType::CREDIT->value);
             $table->text('remark')->nullable();
-            $table->char('created_by', 26);
+            $table->char('created_by', 26)->index();
             $table->char('updated_by', 26)->nullable();
             $table->char('deleted_by',26)->nullable();
             $table->timestamps();

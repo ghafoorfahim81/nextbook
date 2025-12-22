@@ -20,12 +20,12 @@ return new class extends Migration
             $table->string('batch')->nullable();
             $table->date('expire_date')->nullable();
             $table->decimal('quantity', 10, 2);
-            $table->char('unit_measure_id', 26)->nullable();
+            $table->char('unit_measure_id', 26)->nullable()->index();
             $table->decimal('unit_price', 10, 2);
             $table->decimal('discount', 10, 2)->default(0)->nullable();
             $table->decimal('free', 10, 2)->default(0)->nullable();
             $table->decimal('tax', 10, 2)->default(0)->nullable();
-            $table->char('created_by', 26);
+            $table->char('created_by', 26)->index();
             $table->char('updated_by', 26)->nullable();
             $table->char('deleted_by',26)->nullable();
             $table->timestamps();

@@ -19,8 +19,8 @@ return new class extends Migration
             $table->string('unit');
             $table->string('symbol');
             $table->boolean('is_system')->default(false);
-            $table->char('branch_id',26);
-            $table->char('created_by',26);
+            $table->char('branch_id',26)->index();
+            $table->char('created_by',26)->index();
             $table->char('updated_by',26)->nullable();
             $table->char('deleted_by',26)->nullable();
             $table->timestamps();

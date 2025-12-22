@@ -13,19 +13,18 @@ return new class extends Migration
     {
         Schema::create('stocks', function (Blueprint $table) {
             $table->char('id', 26)->primary();
-            $table->char('item_id');
-            $table->char('store_id', 26);
-            $table->char('unit_measure_id', 26);
+            $table->char('item_id')->index();
+            $table->char('store_id', 26)->index();
+            $table->char('unit_measure_id', 26)->index();
             $table->double('quantity');
             $table->double('unit_price')->unsigned();
             $table->double('free')->nullable();
             $table->string('batch')->nullable();
             $table->double('discount')->nullable();
             $table->double('tax')->nullable();
-            $table->date('date')->nullable();
-            $table->index(['item_id', 'store_id', 'batch']);
+            $table->date('date')->nullable(); 
             $table->date('expire_date')->nullable();
-            $table->char('created_by');
+            $table->char('created_by')->index();
             $table->char('updated_by')->nullable();
             $table->char('deleted_by',26)->nullable();
             $table->nullableUlidMorphs('source'); // adds source_type, source_id (ULID), nullable
