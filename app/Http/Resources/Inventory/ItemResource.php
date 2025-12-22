@@ -36,7 +36,7 @@ class ItemResource extends JsonResource
             'photo' => $this->photo,
             'purchase_price' => $this->purchase_price,
             'cost' => $this->cost,
-            'mrp_rate' => $this->mrp_rate,
+            'sale_price' => $this->sale_price, 
             'rate_a' => $this->rate_a,
             'rate_b' => $this->rate_b,
             'rate_c' => $this->rate_c,

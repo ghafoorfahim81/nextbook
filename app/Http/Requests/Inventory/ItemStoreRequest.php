@@ -35,7 +35,7 @@ class ItemStoreRequest extends FormRequest
             'photo' => ['nullable', 'string'],
             'purchase_price' => ['nullable', 'numeric'],
             'cost' => ['nullable', 'numeric'],
-            'mrp_rate' => ['required', 'numeric'],
+            'sale_price' => ['required', 'numeric'],
             'rate_a' => ['nullable', 'numeric'],
             'rate_b' => ['nullable', 'numeric'],
             'rate_c' => ['nullable', 'numeric'],

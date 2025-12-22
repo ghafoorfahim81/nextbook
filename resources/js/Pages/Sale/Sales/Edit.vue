@@ -161,9 +161,9 @@ const handleItemSelect = (index, item) => {
         const firstBatch = item.batches[0];
         form.items[index].batch = firstBatch.batch;
         form.items[index].expire_date = firstBatch.expire_date;
-        form.items[index].unit_price = firstBatch.unit_price || item.rate_c || item.rate_b || item.rate_a || item.mrp_rate;
+        form.items[index].unit_price = firstBatch.unit_price || item.rate_c || item.rate_b || item.rate_a || item.sale_price;
     } else {
-        form.items[index].unit_price = item.rate_c || item.rate_b || item.rate_a || item.mrp_rate;
+        form.items[index].unit_price = item.rate_c || item.rate_b || item.rate_a || item.sale_price;
     }
 };
 

@@ -21,7 +21,7 @@ class FastEntryRequest extends FormRequest
             'items.*.measure_id'          => ['required','exists:unit_measures,id'],
             'items.*.brand_id'            => ['nullable','exists:brands,id'],
             'items.*.purchase_price'      => ['nullable','numeric','min:0'],
-            'items.*.mrp_rate'            => ['nullable','numeric','min:0'],
+            'items.*.sale_price'          => ['nullable','numeric','min:0'],
             'items.*.batch'               => ['nullable','string','max:100'],
             'items.*.expire_date'         => ['nullable','date'],
             'items.*.quantity'            => ['nullable','numeric','min:0'],
@@ -35,7 +35,7 @@ class FastEntryRequest extends FormRequest
 //        $items = collect($this->input('items', []))
 //            ->map(function($r) {
 //                $r['purchase_price'] = $r['purchase_price'] === '' ? null : $r['purchase_price'];
-//                $r['mrp_rate']       = $r['mrp_rate'] === '' ? null : $r['mrp_rate'];
+//                $r['sale_price']     = $r['sale_price'] === '' ? null : $r['sale_price'];
 //                $r['quantity']       = $r['quantity'] === '' ? null : $r['quantity'];
 //                return $r;
 //            })

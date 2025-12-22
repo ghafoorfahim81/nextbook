@@ -47,7 +47,7 @@ class ItemFastEntryController extends Controller
                     'code'           => $r['code'] ?? null,
                     'unit_measure_id'=> $r['measure_id'],     // align with your schema
                     'purchase_price' => $r['purchase_price'] ?? null,
-                    'mrp_rate'       => $r['mrp_rate'] ?? null,
+                    'sale_price'     => $r['sale_price'] ?? null,
                     // add any other default columns your Item requires
                 ]);
 

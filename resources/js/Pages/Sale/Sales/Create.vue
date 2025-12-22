@@ -349,7 +349,7 @@ watch(() => form.rate, (newRate) => {
         if (!row || !row.selected_item) return
         const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
         const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
-        const baseUnitPrice = Number(row.base_unit_price ?? row.selected_item?.unit_price ?? row.selected_item?.mrp_rate ?? 0)
+        const baseUnitPrice = Number(row.base_unit_price ?? row.selected_item?.unit_price ?? row.selected_item?.sale_price ?? 0)
         row.unit_price = (baseUnitPrice / (selectedUnit || 1)) * (Number(newRate) || 0)
     })
 })
@@ -392,7 +392,7 @@ const handleItemChange = async (index, selectedItem) => {
     row.item_id = selectedItem.id
     row.on_hand = (selectedItem.on_hand * selectedItem.unitMeasure?.unit)/(selectedItem.unitMeasure?.unit) - row.quantity; 
     // Set the base unit price - this is the price per base unit
-    row.base_unit_price = selectedItem.unit_price ?? selectedItem.mrp_rate ?? 0
+    row.base_unit_price = selectedItem.unit_price ?? selectedItem.sale_price ?? 0
 
     // Set the initial unit_price based on the base unit measure
     const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1

@@ -111,7 +111,7 @@ class NextController extends Controller
                 'purchase_price' => $item->purchase_price,
                 'unit_price' => $item->stocks->where('store_id', $storeId)->avg('unit_price'),
                 'cost' => $item->cost,
-                'mrp_rate' => $item->mrp_rate,
+                'sale_price' => $item->sale_price,
                 'rate_a' => $item->rate_a,
                 'rate_b' => $item->rate_b,
                 'rate_c' => $item->rate_c,

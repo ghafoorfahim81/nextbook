@@ -41,7 +41,7 @@ class ItemFactory extends Factory
             'photo' => fake()->word(),
             'purchase_price' => fake()->randomFloat(2, 0, 999999.99),
             'cost' => fake()->randomFloat(2, 0, 999999.99),
-            'mrp_rate' => fake()->randomFloat(2, 0, 999999.99),
+            'sale_price' => fake()->randomFloat(2, 0, 999999.99),
             'rate_a' => fake()->randomFloat(2, 0, 999999.99),
             'rate_b' => fake()->randomFloat(2, 0, 999999.99),
             'rate_c' => fake()->randomFloat(2, 0, 999999.99),

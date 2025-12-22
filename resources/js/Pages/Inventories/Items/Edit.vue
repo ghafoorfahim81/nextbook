@@ -64,7 +64,7 @@ const normalize = () => {
     form.maximum_stock = toNum(form.maximum_stock)
     form.purchase_price = toNum(form.purchase_price)
     form.cost = toNum(form.cost)
-    form.mrp_rate = toNum(form.mrp_rate)
+    form.sale_price = toNum(form.sale_price)
     form.rate_a = toNum(form.rate_a)
     form.rate_b = toNum(form.rate_b)
     form.rate_c = toNum(form.rate_c)
@@ -155,7 +155,7 @@ const handleOpeningSelectChange = (index, value) => {
                     <NextInput :label="t('item.maximum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.maximum_stock') })" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
                     <NextInput :label="t('item.purchase_price')" type="number" :placeholder="t('general.enter', { text: t('item.purchase_price') })" v-model="form.purchase_price" :error="form.errors?.purchase_price" />
                     <NextInput :label="t('item.cost')" type="number" v-model="form.cost" :error="form.errors?.cost" />
-                    <NextInput :label="t('item.mrp_rate')" type="number" :placeholder="t('general.enter', { text: t('item.mrp_rate') })" v-model="form.mrp_rate" :error="form.errors?.mrp_rate" />
+                    <NextInput :label="t('item.sale_price')" type="number" :placeholder="t('general.enter', { text: t('item.sale_price') })" v-model="form.sale_price" :error="form.errors?.sale_price" />
                     <NextInput :label="t('item.rate_a')" type="number" :placeholder="t('general.enter', { text: t('item.rate_a') })" v-model="form.rate_a" :error="form.errors?.rate_a" />
                     <NextInput :label="t('item.rate_b')" type="number" :placeholder="t('general.enter', { text: t('item.rate_b') })" v-model="form.rate_b" :error="form.errors?.rate_b" />
                     <NextInput :label="t('item.rate_c')" type="number" :placeholder="t('general.enter', { text: t('item.rate_c') })" v-model="form.rate_c" :error="form.errors?.rate_c" />
