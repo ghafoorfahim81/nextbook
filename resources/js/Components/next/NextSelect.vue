@@ -7,6 +7,7 @@
           :label="labelKey"
           :reduce="reduceInternal"
           :modelValue="modelValue"
+          :dir="isRTL ? 'rtl' : 'ltr'"
           @update:modelValue="val => emit('update:modelValue', val)"
           @search="handleSearch"
           :filterable="false"
@@ -20,7 +21,7 @@
           :class="[{ 'no-arrow': !showArrow }]"
           v-bind="$attrs"
         />
-  
+
         <!-- Floating label (does NOT block clicks) -->
         <FloatingLabel
           :id="id"
@@ -28,20 +29,21 @@
           class="pointer-events-none z-20"
         />
       </div>
-  
+
       <span v-if="error" class="mt-1 block text-red-500 text-sm">
         {{ error }}
       </span>
     </div>
   </template>
-  
+
   <script setup>
   import { ref, computed, watch, onMounted, getCurrentInstance } from 'vue'
+  import { useI18n } from 'vue-i18n'
   import FloatingLabel from '@/Components/next/FloatingLabel.vue'
   import { useSearchResources } from '@/composables/useSearchResources.js'
-  
+
   /* ---------------- PROPS ---------------- */
-  
+
   const props = defineProps({
     modelValue: [String, Number, Object, Array, null],
     options: { type: Array, default: () => [] },
@@ -52,26 +54,31 @@
     floatingText: { type: String, default: '' },
     error: { type: String, default: '' },
     placeholder: { type: String, default: '' },
-  
+
     searchable: { type: Boolean, default: false },
     resourceType: { type: String, default: null },
     searchFields: { type: Array, default: () => ['name'] },
     searchOptions: { type: Object, default: () => ({}) },
-  
+
     showArrow: { type: Boolean, default: true },
     clearable: { type: Boolean, default: true },
 
     /* default OFF — can be enabled per-usage if needed */
     appendToBody: { type: Boolean, default: false },
   })
-  
+
   const emit = defineEmits(['update:modelValue'])
-  
+
+  /* ---------------- I18N / DIRECTION ---------------- */
+
+  const { locale } = useI18n()
+  const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
+
   /* ---------------- DIALOG AUTO DETECTION ---------------- */
-  
+
   const instance = getCurrentInstance()
   const isInDialog = ref(false)
-  
+
   onMounted(() => {
     let el = instance?.proxy?.$el?.parentElement
     while (el) {
@@ -86,22 +93,22 @@
       el = el.parentElement
     }
   })
-  
+
   const shouldAppendToBody = computed(() => {
     return props.appendToBody && !isInDialog.value
   })
-  
+
   /* ---------------- SEARCH & OPTIONS ---------------- */
-  
+
   const cachedOptions = ref(new Map())
   const searchableOptions = ref([...props.options])
   const { searchResources, isLoading } = useSearchResources()
-  
+
   const reduceInternal = (option) => {
     if (props.reduce) return props.reduce(option)
     return option ? option[props.valueKey] : null
   }
-  
+
   const ensureSelectedOptionInOptions = () => {
     if (!props.modelValue) return
     const selectedValue = props.modelValue
@@ -112,7 +119,7 @@
       const found =
         props.options.find(o => reduceInternal(o) === selectedValue) ||
         cachedOptions.value.get(selectedValue)
-  
+
       if (found) {
         searchableOptions.value = [
           found,
@@ -121,14 +128,14 @@
       }
     }
   }
-  
+
   watch(() => props.options, (opts) => {
     searchableOptions.value = [...opts]
     ensureSelectedOptionInOptions()
   }, { immediate: true })
-  
+
   watch(() => props.modelValue, ensureSelectedOptionInOptions, { immediate: true })
-  
+
   const handleSearch = async (term) => {
     if (!props.searchable || !props.resourceType) return
     try {
@@ -143,11 +150,11 @@
           ...props.searchOptions,
         }
       )
-  
+
       results.forEach(o => {
         cachedOptions.value.set(reduceInternal(o), o)
       })
-  
+
       searchableOptions.value = results
     } catch {
       searchableOptions.value = [...props.options]
@@ -155,40 +162,40 @@
       ensureSelectedOptionInOptions()
     }
   }
-  
+
   /* ---------------- PAGE-ONLY POSITIONING ---------------- */
-  
+
   const calculatePosition = (dropdownEl, component) => {
     const toggle = component?.$refs?.toggle
     if (!toggle) return
-  
+
     const rect = toggle.getBoundingClientRect()
     dropdownEl.style.left = `${rect.left}px`
     dropdownEl.style.top = `${rect.bottom + 2}px`
     dropdownEl.style.width = `${rect.width}px`
   }
   </script>
-  
+
   <style scoped>
   /* ---------------- SAFE STYLES ---------------- */
-  
+
   /* dropdown always clickable */
   :deep(.vs__dropdown-option) {
     cursor: pointer;
   }
-  
+
   /* hover / highlight */
   :deep(.vs__dropdown-option--highlight),
   :deep(.vs__dropdown-option:hover) {
     background: rgb(139 92 246);
     color: white;
   }
-  
+
   /* no arrow option */
   .no-arrow :deep(.vs__open-indicator) {
     display: none;
   }
-  
+
   /* Force dropdown to open *below* the control (never as a drop-up) */
   :deep(.vs__dropdown-menu) {
     position: absolute;   /* anchor just under the toggle */
@@ -200,7 +207,7 @@
     overflow-y: auto;
     z-index: 50;
   }
-  
+
   /* focus parity with inputs */
   :deep(.vs--open .vs__dropdown-toggle),
   :deep(.vs__dropdown-toggle:focus-within) {
@@ -208,4 +215,3 @@
     box-shadow: 0 0 0 1px rgba(99,102,241,.25);
   }
   </style>
-  

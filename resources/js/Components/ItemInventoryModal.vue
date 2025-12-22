@@ -6,6 +6,7 @@ import {
   DollarSign, Palette, Ruler, Image, MapPin, Barcode, Search,
   Building, Target
 } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -13,7 +14,7 @@ const props = defineProps({
 })
 console.log('this is item data', props.item)
 const emit = defineEmits(['update:modelValue'])
-
+const { t } = useI18n()
 const activeTab = ref('in')
 const inRecords = ref([])
 const outRecords = ref([])
@@ -28,27 +29,27 @@ const currentRecords = computed(() =>
 )
 
 const itemDetails = computed(() => [
-  { label: 'Name', value: props.item?.name, icon: Package },
-  { label: 'Code', value: props.item?.code, icon: Hash },
-  { label: 'Generic Name', value: props.item?.generic_name, icon: Pill },
-  { label: 'Packing', value: props.item?.packing, icon: Box },
-  { label: 'Barcode', value: props.item?.barcode, icon: Barcode },
-  { label: 'Unit Measure', value: props.item?.measure, icon: Ruler },
-  { label: 'Brand', value: props.item?.brand_name, icon: Tag },
-  { label: 'Category', value: props.item?.category, icon: Layers },
-  { label: 'Minimum Stock', value: props.item?.minimum_stock, icon: TrendingDown },
-  { label: 'Maximum Stock', value: props.item?.maximum_stock, icon: TrendingUp },
-  { label: 'Current Stock', value: props.item?.quantity, icon: Target },
-  { label: 'Colors', value: props.item?.colors, icon: Palette },
-  { label: 'Size', value: props.item?.size, icon: Ruler },
-  { label: 'Purchase Price', value: props.item?.purchase_price, icon: DollarSign },
-  { label: 'Cost', value: props.item?.cost, icon: DollarSign },
-  { label: 'MRP Rate', value: props.item?.mrp_rate, icon: DollarSign },
-  { label: 'Rate A', value: props.item?.rate_a, icon: DollarSign },
-  { label: 'Rate B', value: props.item?.rate_b, icon: DollarSign },
-  { label: 'Rate C', value: props.item?.rate_c, icon: DollarSign },
-  { label: 'Rack No', value: props.item?.rack_no, icon: MapPin },
-  { label: 'Fast Search', value: props.item?.fast_search, icon: Search },
+  { label: t('general.name'), value: props.item?.name, icon: Package },
+  { label: t('item.code'), value: props.item?.code, icon: Hash },
+  { label: t('item.generic_name'), value: props.item?.generic_name, icon: Pill },
+  { label: t('item.packing'), value: props.item?.packing, icon: Box },
+  { label: t('item.barcode'), value: props.item?.barcode, icon: Barcode },
+  { label: t('item.unit_measure'), value: props.item?.measure, icon: Ruler },
+  { label: t('item.brand'), value: props.item?.brand_name, icon: Tag },
+  { label: t('item.category'), value: props.item?.category, icon: Layers },
+  { label: t('item.minimum_stock'), value: props.item?.minimum_stock, icon: TrendingDown },
+  { label: t('item.maximum_stock'), value: props.item?.maximum_stock, icon: TrendingUp },
+  { label: t('item.current_stock'), value: props.item?.quantity, icon: Target },
+  { label: t('item.colors'), value: props.item?.colors, icon: Palette },
+  { label: t('item.size'), value: props.item?.size, icon: Ruler },
+  { label: t('item.purchase_price'), value: props.item?.purchase_price, icon: DollarSign },
+  { label: t('item.cost'), value: props.item?.cost, icon: DollarSign },
+  { label: t('item.mrp_rate'), value: props.item?.mrp_rate, icon: DollarSign },
+  { label: t('item.rate_a'), value: props.item?.rate_a, icon: DollarSign },
+  { label: t('item.rate_b'), value: props.item?.rate_b, icon: DollarSign },
+  { label: t('item.rate_c'), value: props.item?.rate_c, icon: DollarSign },
+  { label: t('item.rack_no'), value: props.item?.rack_no, icon: MapPin },
+  { label: t('item.fast_search'), value: props.item?.fast_search, icon: Search },
 ])
 
 const close = () => emit('update:modelValue', false)
@@ -165,7 +166,7 @@ watch(
             <div class="bg-violet-500 text-white p-1.5 rounded">
               <Layers class="w-4 h-4" />
             </div>
-            <h3 class="text-sm font-semibold text-slate-700">Info</h3>
+            <h3 class="text-sm font-semibold text-slate-700">{{ t('general.info') }}</h3>
           </div>
 
           <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3">
@@ -191,7 +192,7 @@ watch(
                 <Target class="w-4 h-4" />
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-xs text-slate-500">On Hand</p>
+                <p class="text-xs text-slate-500">{{ t('general.on_hand') }}</p>
                 <p class="text-sm font-medium text-slate-900 truncate">
                   {{ item.on_hand ?? '—' }}
                 </p>
@@ -203,7 +204,7 @@ watch(
                 <TrendingDown class="w-4 h-4" />
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-xs text-slate-500">In Records</p>
+                <p class="text-xs text-slate-500">{{ t('item.in_records') }}</p>
                 <p class="text-sm font-medium text-slate-900 truncate">
                   {{ item.stock_count ?? '—' }}
                 </p>
@@ -214,7 +215,7 @@ watch(
                 <TrendingUp class="w-4 h-4" />
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-xs text-slate-500">Out Records</p>
+                <p class="text-xs text-slate-500">{{ t('item.out_records') }}</p>
                 <p class="text-sm font-medium text-slate-900 truncate">
                   {{ item.stock_out_count ?? '—' }}
                 </p>
@@ -234,7 +235,7 @@ watch(
             "
             @click="switchTab('in')"
           >
-            In Records
+            {{ t('item.in_records') }}
           </button>
           <button
             class="px-3 py-2 text-sm rounded-t-md border-b-2"
@@ -245,7 +246,7 @@ watch(
             "
             @click="switchTab('out')"
           >
-            Out Records
+            {{ t('item.out_records') }}
           </button>
         </div>
 
@@ -259,12 +260,12 @@ watch(
             <thead class="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10">
               <tr class="text-xs uppercase tracking-wide text-slate-600 font-semibold">
                 <th class="py-3 px-3 text-left whitespace-nowrap">#</th>
-                <th class="py-3 px-3 text-left whitespace-nowrap">Ledger</th>
+                <th class="py-3 px-3 text-left whitespace-nowrap">{{ t('general.ledger') }}</th>
                 <th class="py-3 px-3 text-left whitespace-nowrap">Bill Number</th>
                 <th class="py-3 px-3 text-center whitespace-nowrap">Qty</th>
-                <th class="py-3 px-3 text-left whitespace-nowrap">Source</th>
-                <th class="py-3 px-3 text-left whitespace-nowrap">Measure</th>
-                <th class="py-3 px-3 text-left whitespace-nowrap">Date</th>
+                <th class="py-3 px-3 text-left whitespace-nowrap">{{ t('general.source') }}</th>
+                <th class="py-3 px-3 text-left whitespace-nowrap">{{ t('general.measure') }}</th>
+                <th class="py-3 px-3 text-left whitespace-nowrap">{{ t('general.date') }}</th>
                 <th class="py-3 px-3 text-left whitespace-nowrap">Batch</th>
                 <th class="py-3 px-3 text-left whitespace-nowrap">Expiry</th>
                 <th class="py-3 px-3 text-right whitespace-nowrap">Unit Price</th>
