@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 use App\Models\Administration\Currency;
 use App\Models\Ledger\Ledger;
 use App\Models\User;
-
+use App\Enums\LedgerType;
 class LedgerFactory extends Factory
 {
     /**
@@ -33,7 +33,7 @@ class LedgerFactory extends Factory
             'email' => fake()->safeEmail(),
             'currency_id' => $currency_id,
             'branch_id' => Branch::factory(),
-            'type' => fake()->randomElement(['customer', 'supplier']),
+            'type' => fake()->randomElement(LedgerType::cases()),
             'created_by' => User::factory(),
             'updated_by' => User::factory(),
         ];

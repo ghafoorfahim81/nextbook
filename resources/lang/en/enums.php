@@ -44,4 +44,13 @@ return [
         'approved' => 'Approved',
         'rejected' => 'Rejected',
     ],
-];
+    'user_status' => [
+        'active' => 'Active',
+        'inactive' => 'Inactive',
+        'blocked' => 'Blocked',
+    ],
+    'ledger_type' => [
+        'customer' => 'Customer',
+        'supplier' => 'Supplier',
+    ],
+    ];

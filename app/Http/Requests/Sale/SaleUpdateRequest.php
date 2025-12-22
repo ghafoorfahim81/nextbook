@@ -26,7 +26,7 @@ class SaleUpdateRequest extends FormRequest
             'transaction_total' => ['required', 'numeric'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric'],
-            'sale_purchase_type_id' => ['nullable', 'string'],
+            'sale_purchase_type_id' => ['nullable', 'string', 'in:cash,credit,on_loan'],
             'payment' => ['nullable', 'array'],
             'payment.method' => ['nullable', 'string'],
             'payment.amount' => ['nullable', 'numeric'],

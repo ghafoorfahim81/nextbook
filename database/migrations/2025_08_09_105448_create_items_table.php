@@ -25,9 +25,8 @@ return new class extends Migration
             $table->char('category_id',26)->nullable();
             $table->double('minimum_stock')->nullable();
             $table->double('maximum_stock')->nullable();
-            $table->string('colors')->nullable();
+            $table->json('colors')->nullable()->default('[]');
             $table->string('size')->nullable();
-            $table->string('photo')->nullable();
             $table->double('purchase_price')->nullable();
             $table->double('cost')->nullable();
             $table->double('sale_price');

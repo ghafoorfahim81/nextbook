@@ -73,7 +73,7 @@ class SaleController extends Controller
                 $sale,
                 \App\Models\Ledger\Ledger::find($validated['customer_id']),
                 $validated['transaction_total'],
-                $validated['sale_purchase_type_id'] ?? 'cash',
+                $validated['sale_purchase_type_id'],
                 $validated['payment'] ?? [],
                 $validated['currency_id'] ?? null,
                 $validated['rate'] ?? null,

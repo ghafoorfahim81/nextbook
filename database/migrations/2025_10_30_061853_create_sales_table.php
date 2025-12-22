@@ -3,7 +3,9 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-
+use App\Enums\SalesPurchaseType;
+use App\Enums\TransactionStatus;
+use App\Enums\DiscountType;
 return new class extends Migration
 {
     /**
@@ -20,10 +22,10 @@ return new class extends Migration
             $table->date('date');
             $table->char('transaction_id', 26)->nullable();
             $table->decimal('discount', 10, 2)->nullable();
-            $table->enum('discount_type', ['percentage', 'currency'])->nullable();
-            $table->enum('type', ['cash', 'credit'])->default('cash');
+            $table->enum('discount_type', DiscountType::values())->nullable();
+            $table->enum('type', SalesPurchaseType::values())->default(SalesPurchaseType::Cash->value);
             $table->text('description')->nullable();
-            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->enum('status', TransactionStatus::values())->default(TransactionStatus::PENDING->value);
             $table->char('store_id', 26)->nullable();
             $table->char('branch_id', 26);
             $table->char('created_by', 26);

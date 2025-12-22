@@ -13,7 +13,10 @@ use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Support\Facades\Storage;
 use App\Traits\HasCache;
-
+use App\Enums\CalendarType;
+use App\Enums\BusinessType;
+use App\Enums\Locale;
+use App\Enums\WorkingStyle;
 
 class Company extends Model
 {
@@ -57,6 +60,10 @@ class Company extends Model
         return [
             'created_by' => 'integer',
             'updated_by' => 'integer',
+            'calendar_type' => CalendarType::class,
+            'working_style' => WorkingStyle::class,
+            'business_type' => BusinessType::class,
+            'locale' => Locale::class,
         ];
     }
 

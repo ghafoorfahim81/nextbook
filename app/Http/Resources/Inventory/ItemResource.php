@@ -33,7 +33,7 @@ class ItemResource extends JsonResource
             'maximum_stock' => $this->maximum_stock,
             'colors' => $this->colors,
             'size' => $this->size,
-            'photo' => $this->photo,
+            'colors' => $this->colors,
             'purchase_price' => $this->purchase_price,
             'cost' => $this->cost,
             'sale_price' => $this->sale_price, 

@@ -15,7 +15,7 @@ use App\Traits\HasUserAuditable;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
-
+use App\Enums\UserStatus;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -33,6 +33,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'status',
         'branch_id',
         'company_id',
         'preferences',
@@ -374,6 +375,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'preferences' => 'array',
+            'status' => UserStatus::class,
         ];
     }
 

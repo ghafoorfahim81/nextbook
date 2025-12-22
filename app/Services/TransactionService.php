@@ -10,6 +10,7 @@ use App\Models\Expense\Expense;
 use App\Models\Ledger\Ledger;
 use Illuminate\Support\Facades\DB;
 use App\Models\Account\Account;
+use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 class TransactionService
 {
@@ -220,7 +221,8 @@ class TransactionService
         }
         else {
             // Cash sale
-            $cashAccountId = User::find(auth()->user()->id)->getPreference('sale_cash_account_id');
+            $cashAccountId = User::find(auth()->user()->id)->getPreference('sale_cash_account_id')??
+            $glAccounts['cash-in-hand'];
             $cashTransaction = $this->createTransaction([
                 'account_id' => $cashAccountId,
                 'ledger_id' => $ledger->id,

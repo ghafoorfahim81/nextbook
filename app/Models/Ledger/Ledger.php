@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use App\Traits\HasCache;
 use App\Models\Purchase\Purchase;
 use App\Models\Payment\Payment;
+use App\Enums\LedgerType;
 class Ledger extends Model
 {
     use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasUserAuditable, HasBranch, HasDependencyCheck, SoftDeletes;
@@ -101,6 +102,7 @@ class Ledger extends Model
             'created_by' => 'string',
             'updated_by' => 'string',
             'branch_id' => 'string',
+            'type' => LedgerType::class,
         ];
     }
 
