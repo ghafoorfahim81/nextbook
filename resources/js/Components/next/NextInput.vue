@@ -10,10 +10,9 @@
             :autocomplete="autocomplete"
             :placeholder="placeholder"
             @click="$emit('click')"
-        class="peer block w-full border-gray-300 rounded-md border border-1   bg-background px-3 py-3 text-sm shadow-sm
-        placeholder:text-transparent focus:placeholder:text-muted-foreground
-        focus:border-none
-        disabled:cursor-not-allowed disabled:opacity-50"
+            class="peer block w-full border-2 border-border bg-background px-3 py-3 text-sm shadow-sm
+            placeholder:text-transparent focus:placeholder:text-muted-foreground
+            disabled:cursor-not-allowed disabled:opacity-50"
         />
 
         <!-- floating label -->
@@ -65,8 +64,22 @@ const model = computed({
 </script>
 
 <style scoped>
+/* Match focus style with NextSelect */
+:deep(input:focus),
+:deep(input:focus-visible) {
+    border-color: rgb(99 102 241);
+    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.25);
+}
+
 /* Hide number input spinners only inside NextInput */
-:deep(input[type="number"]) { appearance: textfield; -moz-appearance: textfield; }
+:deep(input[type="number"]) {
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
 :deep(input[type="number"])::-webkit-outer-spin-button,
-:deep(input[type="number"])::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+:deep(input[type="number"])::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
 </style>
