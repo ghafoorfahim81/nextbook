@@ -190,7 +190,7 @@ class HandleInertiaRequests extends Middleware
         $glAccounts = Cache::rememberForever('gl_accounts', function () {
             return Account::whereIn('slug', [
                 'sales-revenue',
-                'accounts-receivable',
+                'account-receivable',
                 'cash-in-hand',
                 'cost-of-goods-sold',
                 'inventory-asset',
