@@ -177,7 +177,7 @@ class TransactionService
         $glAccounts = Cache::get('gl_accounts');
         $salesTransaction = $this->createTransaction([
             'account_id' => $glAccounts['sales-revenue'],
-            'ledger_id' => $ledger->id,
+            'ledger_id' => null,
             'amount' => $transactionTotal,
             'currency_id' => $currency_id,
             'rate' => $rate,
@@ -202,8 +202,8 @@ class TransactionService
                 'reference_type' => 'sale',
                 'reference_id' => $sale->id,
             ]);
-        } 
-        
+        }
+
         // CONDITION: Loan based on payment method
         elseif ($transactionType === 'on_loan') {
             $loanTransaction = $this->createTransaction([
@@ -236,8 +236,8 @@ class TransactionService
                 'reference_id' => $sale->id,
             ]);
         }
-        
-        
+
+
 
         // ALWAYS: DEBIT Cost of Goods Sold (COGS) - Inventory goes OUT
         $cogsTransaction = $this->createTransaction([
@@ -282,7 +282,7 @@ class TransactionService
 
     /**
      * Create expense transactions (DR: Expense Account, CR: Bank/Cash Account)
-     * 
+     *
      * @param Expense $expense The expense record
      * @param float $total Total expense amount
      * @param string $currencyId Currency ID

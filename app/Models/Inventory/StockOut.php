@@ -9,9 +9,11 @@ use App\Models\Administration\UnitMeasure;
 use App\Models\Administration\Store;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\Stock;
+use App\Traits\HasUserAuditable;
+
 class StockOut extends Model
 {
-        use HasUlids, SoftDeletes;
+        use HasUlids,HasUserAuditable, SoftDeletes;
 
     protected $table = 'stock_outs';
     protected $primaryKey = 'id';
