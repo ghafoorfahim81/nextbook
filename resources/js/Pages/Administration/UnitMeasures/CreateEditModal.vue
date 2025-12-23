@@ -103,6 +103,8 @@ const applySuggestion = (measure) => {
 }
 
 const handleSubmit = () => {
+    console.log('form.metric', form.metric)
+    console.log('form.measure', form.measure)
     if (
         !form.metric?.name ||
         !form.metric?.unit ||
