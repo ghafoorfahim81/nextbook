@@ -4,7 +4,7 @@ import DataTable from '@/Components/DataTable.vue';
 import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { useI18n } from 'vue-i18n';
-
+import { router } from '@inertiajs/vue3'
 const props = defineProps({
     roles: Object,
 });
@@ -37,7 +37,7 @@ const deleteItem = (id) => {
 };
 
 const editItem = (item) => {
-    window.location.href = `/roles/${item.id}/edit`;
+    router.visit(route('roles.edit', item.id));
 };
 </script>
 
