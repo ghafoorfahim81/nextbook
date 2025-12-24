@@ -70,11 +70,11 @@ HousePlug,
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useColorMode } from '@vueuse/core'
-// import { route } from 'ziggy';
+import { router } from '@inertiajs/vue3'
 
-// const logout = () => {
-//     router.post(route('logout'));
-// };
+const logout = () => {
+    router.post(route('logout'));
+};
 
 // This is sample data.
 const data = {
@@ -374,12 +374,10 @@ const mode = useColorMode()
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <form method="POST" @submit.prevent="logout">
-                <DropdownMenuItem>
+                <DropdownMenuItem @click="logout">
                   <LogOut/>
                   Log out
                 </DropdownMenuItem>
-            </form>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>

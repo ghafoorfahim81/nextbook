@@ -3,6 +3,9 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
 
 defineProps({
     canResetPassword: Boolean,
@@ -75,7 +78,7 @@ const submit = () => {
                 <!-- Logo / brand -->
                 <div>
                     <div class="text-4xl font-semibold tracking-tight text-[#5531ff] mb-10">
-                        next<span class="font-normal text-[#ff5ca8]">book</span>
+                        Next<span class="font-normal text-[#ff5ca8]">book</span>
                     </div>
 
                     <!-- Slider card -->
@@ -148,12 +151,12 @@ const submit = () => {
             <!-- Right side - Login form -->
             <div class="w-1/2 px-16 py-12 flex flex-col">
                 <div>
-                    <h1 class="text-3xl font-semibold text-slate-900 mb-6">
-                        Log In to your account
+                    <h1 class="text-3xl font-semibold text-center text-slate-900 mb-6">
+                        {{ t('auth.login') }}
                     </h1>
 
                     <!-- Google button -->
-                    <button
+                    <!-- <button
                         type="button"
                         class="w-full border border-slate-200 rounded-xl py-3.5 mb-6 flex items-center justify-center gap-3 text-[15px] font-medium text-slate-700 hover:bg-slate-50 transition-colors"
                     >
@@ -161,19 +164,19 @@ const submit = () => {
                             <span class="h-3 w-3 rounded-full bg-[#ea4335]" />
                         </span>
                         <span>Sign in with Google</span>
-                    </button>
+                    </button> -->
 
                     <!-- Divider -->
-                    <div class="flex items-center gap-3 mb-6">
+                    <!-- <div class="flex items-center gap-3 mb-6">
                         <span class="flex-1 h-px bg-slate-200" />
                         <span class="text-xs font-medium text-slate-400 uppercase">or</span>
                         <span class="flex-1 h-px bg-slate-200" />
-                    </div>
+                    </div> -->
 
                     <form @submit.prevent="submit" class="space-y-5">
                         <div>
                             <label for="email" class="block text-sm font-medium text-slate-700 mb-1">
-                                Email
+                                {{ t('auth.email') }}
                             </label>
                             <TextInput
                                 id="email"
@@ -189,7 +192,7 @@ const submit = () => {
 
                         <div>
                             <label for="password" class="block text-sm font-medium text-slate-700 mb-1">
-                                Password
+                                {{ t('auth.password') }}
                             </label>
                             <div class="relative">
                                 <TextInput
@@ -216,7 +219,7 @@ const submit = () => {
                                     v-model="form.remember"
                                     class="w-4 h-4 rounded border-slate-300 text-[#6c4dff] focus:ring-[#6c4dff]"
                                 >
-                                <span class="text-sm text-slate-600">Remember Me</span>
+                                <span class="text-sm text-slate-600">{{ t('auth.remember_me') }}</span>
                             </label>
 
                             <Link
@@ -224,7 +227,7 @@ const submit = () => {
                                 :href="route('password.request')"
                                 class="text-sm font-medium text-[#6c4dff] hover:text-[#5531ff]"
                             >
-                                Forgot Your Password?
+                                {{ t('auth.forgot_password') }}
                             </Link>
                         </div>
 
@@ -233,28 +236,20 @@ const submit = () => {
                             class="w-full bg-[#6c4dff] hover:bg-[#5531ff] text-white py-3.5 rounded-xl font-semibold text-[15px] shadow-md shadow-[#6c4dff]/30 transition-colors"
                             :disabled="form.processing"
                         >
-                            Log In
+                            {{ t('auth.sign_in') }}
                         </button>
                     </form>
 
                     <p class="mt-6 text-sm text-slate-600">
-                        Don't have an account?
+                        {{ t('auth.dont_have_an_account') }}
                         <Link
                             :href="route('register')"
                             class="font-semibold text-[#6c4dff] hover:text-[#5531ff]"
                         >
-                            Sign Up
+                            {{ t('auth.sign_up') }}
                         </Link>
                     </p>
-                </div>
-
-                <!-- Language selector -->
-                <div class="mt-auto pt-10 flex items-center justify-center gap-2 text-sm text-slate-400">
-                    <span class="h-5 w-5 rounded-full border border-slate-300 flex items-center justify-center text-[11px]">
-                        🌐
-                    </span>
-                    <span>English</span>
-                </div>
+                </div> 
             </div>
 
             <!-- Chat bubble placeholder -->
