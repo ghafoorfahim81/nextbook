@@ -198,6 +198,7 @@ const navMain = computed(() => [
         items: [
             { title: t('sidebar.account.chart_of_account'), url: '/chart-of-accounts' },
             { title: t('sidebar.account.account_type'), url: '/account-types' },
+            {title: t('sidebar.main.transfer'), url: '/account-transfers', icon: ArrowLeftRight}
         ],
     },
     {
@@ -208,6 +209,7 @@ const navMain = computed(() => [
             { title: t('sidebar.administration.category'), url: '/categories' },
             { title: t('sidebar.administration.currency'), url: '/currencies' },
             { title: t('sidebar.administration.unit_measure'), url: '/unit-measures' },
+            { title: t('sidebar.administration.size'), url: '/sizes' },
             { title: t('sidebar.administration.branch'), url: '/branches' },
             { title: t('sidebar.administration.brand'), url: '/brands' },
             { title: t('sidebar.administration.store'), url: '/stores' },
@@ -279,11 +281,6 @@ const navMain = computed(() => [
         title: t('sidebar.main.payment'),
         url: '/payments',
         icon: CreditCard,
-    },
-    {
-        title: t('sidebar.main.transfer'),
-        url: '/account-transfers',
-        icon: ArrowLeftRight,
     },
 
     {

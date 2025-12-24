@@ -5,7 +5,7 @@ import ItemInventoryModal from '@/Components/ItemInventoryModal.vue'
 import { ref, computed } from 'vue'
 import { useDeleteResource } from '@/composables/useDeleteResource.js'
 import { useI18n } from 'vue-i18n'
-
+import { router } from '@inertiajs/vue3'
 const { t } = useI18n()
 
 const props = defineProps({
@@ -29,7 +29,7 @@ const showInventory = ref(false)
 const selectedItem = ref(null)
 
 const editItem = (item) => {
-  window.location.href = `/items/${item.id}/edit`
+  router.visit(route('items.edit', item.id));
 }
 
 const deleteItem = (id) => {

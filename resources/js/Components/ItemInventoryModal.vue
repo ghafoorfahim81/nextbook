@@ -41,7 +41,7 @@ const itemDetails = computed(() => [
   { label: t('item.maximum_stock'), value: props.item?.maximum_stock, icon: TrendingUp },
   { label: t('item.current_stock'), value: props.item?.quantity, icon: Target },
   { label: t('item.colors'), value: props.item?.colors, icon: Palette },
-  { label: t('item.size'), value: props.item?.size, icon: Ruler },
+  { label: t('item.size'), value: props.item?.size.name, icon: Ruler },
   { label: t('item.purchase_price'), value: props.item?.purchase_price, icon: DollarSign },
   { label: t('item.cost'), value: props.item?.cost, icon: DollarSign },
   { label: t('item.sale_price'), value: props.item?.sale_price, icon: DollarSign },
@@ -259,17 +259,17 @@ watch(
           <table class="w-full border-collapse">
             <thead class="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10">
               <tr class="text-xs uppercase tracking-wide text-slate-600 font-semibold">
-                <th class="py-3 px-3 text-left whitespace-nowrap">#</th>
-                <th class="py-3 px-3 text-left whitespace-nowrap">{{ t('general.ledger') }}</th>
-                <th class="py-3 px-3 text-left whitespace-nowrap">Bill Number</th>
-                <th class="py-3 px-3 text-center whitespace-nowrap">Qty</th>
-                <th class="py-3 px-3 text-left whitespace-nowrap">{{ t('general.source') }}</th>
-                <th class="py-3 px-3 text-left whitespace-nowrap">{{ t('general.measure') }}</th>
-                <th class="py-3 px-3 text-left whitespace-nowrap">{{ t('general.date') }}</th>
-                <th class="py-3 px-3 text-left whitespace-nowrap">Batch</th>
-                <th class="py-3 px-3 text-left whitespace-nowrap">Expiry</th>
-                <th class="py-3 px-3 text-right whitespace-nowrap">Unit Price</th>
-                <th class="py-3 px-3 text-left whitespace-nowrap">Store</th>
+                <th class="py-3 px-3 text-left rtl:text-right whitespace-nowrap">#</th>
+                <th class="py-3 px-3 text-left rtl:text-right whitespace-nowrap">{{ t('general.ledger') }}</th>
+                <th class="py-3 px-3 text-left rtl:text-right whitespace-nowrap">{{ t('general.bill_number') }}</th>
+                <th class="py-3 px-3 text-center rtl:text-right whitespace-nowrap">{{ t('general.quantity') }}</th>
+                <th class="py-3 px-3 text-left rtl:text-right whitespace-nowrap">{{ t('general.source') }}</th>
+                <th class="py-3 px-3 text-left rtl:text-right whitespace-nowrap">{{ t('admin.unit_measure.unit_measure') }}</th>
+                <th class="py-3 px-3 text-left rtl:text-right whitespace-nowrap">{{ t('general.date') }}</th>
+                <th class="py-3 px-3 text-left rtl:text-right whitespace-nowrap">{{ t('item.batch') }}</th>
+                <th class="py-3 px-3 text-left rtl:text-right whitespace-nowrap">{{ t('item.expire_date') }}</th>
+                <th class="py-3 px-3 text-right rtl:text-right whitespace-nowrap">{{ t('general.unit_price') }}</th>
+                <th class="py-3 px-3 text-left rtl:text-right whitespace-nowrap">{{ t('admin.store.store') }}</th>
               </tr>
             </thead>
             <tbody>

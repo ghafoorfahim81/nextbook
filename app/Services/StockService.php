@@ -23,6 +23,7 @@ class StockService
                 'store_id' => $storeId,
                 'source_type' => $sourceType,
                 'source_id' => $sourceId,
+                'size_id' => $data['size_id'] ?? null,  // from item form
             ]);
 
             return Stock::create($stockData);
@@ -40,11 +41,12 @@ class StockService
 
             // Override store_id with the passed parameter
             $stockOutData['store_id'] = $storeId;
-
+            $stockOutData['size_id'] = $data['size_id'] ?? null; // from item form
             $availableStock = $this->getAvailableStock(
                 $stockOutData['item_id'],
                 $stockOutData['store_id'],
-                $stockOutData['quantity']
+                $stockOutData['quantity'],
+                $stockOutData['size_id']
             );
 
             // If there is no stock available in the selected store, stop early
@@ -81,8 +83,9 @@ class StockService
                     'store_id' => $stock->store_id,
                     'source_type' => $sourceType,
                     'source_id' => $sourceId,
+                    'size_id' => $stockOutData['size_id'] ?? null,
                 ]);
- 
+
                 $stockOutRecords[] = $stockOutRecord;
                 $stockOutData['quantity'] -= $quantityToTake;
 
@@ -161,6 +164,7 @@ class StockService
                 'tax' => $sourceStock->tax,
                 'date' => $transferData['date'],
                 'expire_date' => $sourceStock->expire_date,
+                'size_id' => $sourceStock->size_id,
             ], $transferData['to_store_id'], 'transfer', $transferData['transfer_id']);
 
             return [
@@ -191,6 +195,7 @@ class StockService
                     'tax' => $adjustmentData['tax'] ?? 0,
                     'date' => $adjustmentData['date'],
                     'expire_date' => $adjustmentData['expire_date'] ?? null,
+                    'size_id' => $adjustmentData['size_id'] ?? null,
                 ], 'adjustment', $adjustmentData['adjustment_id']);
             } else {
                 $results['out'] = $this->removeStock([
@@ -221,6 +226,7 @@ class StockService
             'tax' => 'nullable|numeric|min:0',
             'date' => 'nullable|date',
             'expire_date' => 'nullable|date',
+            'size_id' => 'nullable|exists:sizes,id',
         ])->validate();
     }
 
@@ -235,6 +241,7 @@ class StockService
             'tax' => 'nullable|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
             'date' => 'nullable|date',
+            'size_id' => 'nullable|exists:sizes,id',
         ])->validate();
     }
 

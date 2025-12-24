@@ -28,6 +28,7 @@ class StockOut extends Model
         'unit_price' => 'decimal:2',
         'free' => 'decimal:2',
         'tax' => 'decimal:2',
+        'size_id' => 'string',
     ];
 
     public function stock()

@@ -23,8 +23,9 @@ return new class extends Migration
             $table->date('date');
             $table->string('batch')->nullable();
             $table->ulid('unit_measure_id')->index();
+            $table->ulid('size_id')->nullable()->index();
             $table->ulid('store_id')->index();
-            $table->nullableUlidMorphs('source'); // adds source_type, source_id (ULID), nullable 
+            $table->nullableUlidMorphs('source'); // adds source_type, source_id (ULID), nullable
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->timestamps();

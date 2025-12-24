@@ -85,6 +85,11 @@
         "custom_measure": "ساخت واحد جدید",
         "suggested_measures": "واحدهای پیشنهادی"
     },
+    "size": {
+        "size": "اندازه",
+        "sizes": "اندازه ها",
+        "code": "کد"
+    },
     "branch": {
         "branch": "شعبه",
         "branches": "شعبه ها",

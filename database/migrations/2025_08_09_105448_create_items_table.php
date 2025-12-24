@@ -26,7 +26,7 @@ return new class extends Migration
             $table->double('minimum_stock')->nullable();
             $table->double('maximum_stock')->nullable();
             $table->json('colors')->nullable()->default('[]');
-            $table->string('size')->nullable();
+            $table->ulid('size_id')->nullable()->index();
             $table->double('purchase_price')->nullable();
             $table->double('cost')->nullable();
             $table->double('sale_price');
@@ -49,6 +49,7 @@ return new class extends Migration
             $table->foreign('unit_measure_id')->references('id')->on('unit_measures');
             $table->foreign('brand_id')->references('id')->on('brands');
             $table->foreign('category_id')->references('id')->on('categories');
+            $table->foreign('size_id')->references('id')->on('sizes');
             $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');

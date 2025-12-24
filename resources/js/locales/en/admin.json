@@ -84,6 +84,11 @@
         "custom_measure": "Create new measure",
         "suggested_measures": "Suggested measures"
     },
+    "size": {
+        "size": "Size",
+        "sizes": "Sizes",
+        "code": "Code"
+    },
     "branch": {
         "branch": "Branch",
         "branches": "Branches",

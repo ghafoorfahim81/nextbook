@@ -59,6 +59,8 @@ Route::middleware([
     Route::patch('/currencies/{currency}/restore', [\App\Http\Controllers\Administration\CurrencyController::class, 'restore'])->name('currencies.restore')->withTrashed();
     Route::resource('/unit-measures', \App\Http\Controllers\Administration\UnitMeasureController::class);
     Route::patch('/unit-measures/{unitMeasure}/restore', [\App\Http\Controllers\Administration\UnitMeasureController::class, 'restore'])->name('unit-measures.restore')->withTrashed();
+    Route::resource('/sizes', \App\Http\Controllers\Administration\SizeController::class);
+    Route::patch('/sizes/{size}/restore', [\App\Http\Controllers\Administration\SizeController::class, 'restore'])->name('sizes.restore')->withTrashed();
 
     Route::resource('/items', \App\Http\Controllers\Inventory\ItemController::class);
     Route::patch('/items/{item}/restore', [\App\Http\Controllers\Inventory\ItemController::class, 'restore'])->name('items.restore')->withTrashed();

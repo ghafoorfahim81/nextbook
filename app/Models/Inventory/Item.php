@@ -39,7 +39,7 @@ class Item extends Model
         'minimum_stock',
         'maximum_stock',
         'colors',
-        'size',
+        'size_id',
         'photo',
         'purchase_price',
         'cost',
@@ -65,6 +65,7 @@ class Item extends Model
             'unit_measure_id' => 'string',
             'brand_id' => 'string',
             'category_id' => 'string',
+            'size_id' => 'string',
             'minimum_stock' => 'double',
             'maximum_stock' => 'double',
             'purchase_price' => 'double',
@@ -94,7 +95,7 @@ class Item extends Model
             'minimum_stock',
             'maximum_stock',
             'colors',
-            'size', 
+            'size.name',
             'purchase_price',
             'cost',
             'sale_price',
@@ -120,6 +121,11 @@ class Item extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Administration\Category::class);
+    }
+
+    public function size(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Administration\Size::class);
     }
 
     public function branch(): BelongsTo

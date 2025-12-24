@@ -20,6 +20,7 @@
     "category": "کټګوري",
     "currency": "اسعار",
     "unit_measure": "یونټ اندازه",
+    "size": "اندازه",
     "branch": "څانګه",
     "brand": "برنډ",
     "store": "ګودام",
@@ -58,7 +59,7 @@
   "user_management": {
     "user": "کارن",
     "role": "نقش"
-  } 
+  }
 }
 
 

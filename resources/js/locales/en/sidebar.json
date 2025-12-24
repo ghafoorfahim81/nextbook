@@ -27,6 +27,7 @@
     "category": "Category",
     "currency": "Currency",
     "unit_measure": "Unit Measure",
+    "size": "Size",
     "branch": "Branch",
     "brand": "Brand",
     "store": "Store",

@@ -29,7 +29,7 @@ class ItemController extends Controller
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $items = Item::with('category', 'unitMeasure')
+        $items = Item::with('category', 'unitMeasure', 'size')
             ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -51,9 +51,8 @@ class ItemController extends Controller
     }
     public function store(ItemStoreRequest $request)
     {
-  
+
         $validated = $request->validated();
-        // dd($request->all());
         // If you're uploading a photo here, handle it first (optional)
         if ($request->hasFile('photo')) {
             $path = $request->file('photo')->store('items', 'public');
@@ -89,6 +88,7 @@ class ItemController extends Controller
                         'batch'           => $o['batch'] ?? null,
                         'date'            => $date,
                         'expire_date'     => $expire_date,
+                        'size_id'         => $validated['size_id'] ?? null,
                     ], $o['store_id'], 'opening', $item->id);
 
                     // mark it as an opening
@@ -137,7 +137,7 @@ class ItemController extends Controller
                         'created_by' => auth()->id(),
                     ]);
                 }
-                
+
         });
         if ((bool) $request->input('stay') || (bool) $request->input('create_and_new')) {
             return redirect()->route('items.create')->with('success', 'Item created successfully.');
@@ -190,7 +190,7 @@ class ItemController extends Controller
 
     public function edit(Request $request, Item $item)
     {
-        $item = Item::with('unitMeasure', 'brand', 'category')->find($item->id);
+        $item = Item::with('unitMeasure', 'brand', 'category', 'size')->find($item->id);
         return inertia('Inventories/Items/Edit', [
             'item' => new ItemResource($item)
         ]);
@@ -198,12 +198,13 @@ class ItemController extends Controller
 
     public function update(ItemUpdateRequest $request, Item $item)
     {
-        $validated = $request->validated(); 
+        $validated = $request->validated();
         // Handle photo update
+        // dd($request->all());
         if ($request->hasFile('photo')) {
             $path = $request->file('photo')->store('items', 'public');
             $validated['photo'] = $path;
-        }  
+        }
         DB::transaction(function () use ($validated, $item) {
             // 1) Update item
             $item->update($validated);
@@ -235,6 +236,7 @@ class ItemController extends Controller
                         'batch'           => $o['batch'] ?? null,
                         'date'            => $date,
                         'expire_date'     => $expire_date,
+                        'size_id'         => $validated['size_id'] ?? null,
                     ], $o['store_id'], 'opening', $item->id);
 
                     StockOpening::create([
@@ -245,12 +247,12 @@ class ItemController extends Controller
                 });
 
                 // Delete opening stocks
-                $filteredOpenings = $openings->filter(fn($o) => !empty($o['store_id']) && (float)($o['quantity'] ?? 0) > 0); 
+                $filteredOpenings = $openings->filter(fn($o) => !empty($o['store_id']) && (float)($o['quantity'] ?? 0) > 0);
                 if ($filteredOpenings->count() == 0 && $item->openings()->count() > 0) {
                     $item->openings()->each(function ($opening) {
                         $opening->forceDelete();
                         $opening->stock->forceDelete();
-                    }); 
+                    });
 
                     // Delete opening transactions
                     $item->openingTransactions()->each(function ($openingTransaction) {
@@ -268,8 +270,8 @@ class ItemController extends Controller
                             Transaction::where('id', $openingBalanceTransactionId)->forceDelete();
                         }
                     });
-                } 
-                
+                }
+
                 $item->openingTransactions()->each(function ($openingTransaction) {
                     // Store transaction IDs before deleting the opening transaction
                     $inventoryTransactionId = $openingTransaction->inventory_transaction_id;
@@ -342,7 +344,7 @@ class ItemController extends Controller
                     'error' => $message
                 ]);
             }
-    
+
             DB::transaction(function () use ($item) {
                 // Delete openings with their stocks (with existence checks)
                 $item->openings()->with('stock')->each(function ($opening) {
@@ -351,7 +353,7 @@ class ItemController extends Controller
                     }
                     $opening->delete();
                 });
-    
+
                 // Delete opening transactions with their related models
                 $item->openingTransactions()->with(['inventoryTransaction', 'openingBalanceTransaction'])->each(function ($openingTransaction) {
                     if ($openingTransaction->inventoryTransaction) {
@@ -362,20 +364,20 @@ class ItemController extends Controller
                     }
                     $openingTransaction->delete();
                 });
-    
+
                 // Finally delete the main item
                 $item->delete();
             });
-    
+
             return redirect()->route('items.index')->with('success', 'Item deleted successfully.');
-    
+
         } catch (\Exception $e) {
             // Log the error for debugging
             \Log::error('Error deleting item: ' . $e->getMessage(), [
                 'item_id' => $item->id,
                 'exception' => $e
             ]);
-    
+
             return redirect()->back()->with('error', 'Failed to delete item. Please try again.');
         }
     }
@@ -385,7 +387,7 @@ class ItemController extends Controller
             DB::transaction(function () use ($item) {
                 // Restore the main item first
                 $item->restore();
-    
+
                 // Restore openings with their stocks (only trashed records)
                 $item->openings()->with(['stock' => function ($query) {
                     $query->withTrashed();
@@ -395,7 +397,7 @@ class ItemController extends Controller
                     }
                     $opening->restore();
                 });
-    
+
                 // Restore opening transactions with their related models
                 $item->openingTransactions()->with([
                     'inventoryTransaction' => function ($query) {
@@ -414,20 +416,20 @@ class ItemController extends Controller
                     $openingTransaction->restore();
                 });
             });
-    
+
             return redirect()->route('items.index')->with('success', 'Item restored successfully.');
-    
+
         } catch (\Exception $e) {
             // Log the error for debugging
             \Log::error('Error restoring item: ' . $e->getMessage(), [
                 'item_id' => $item->id,
                 'exception' => $e
             ]);
-    
+
             return redirect()->back()->with('error', 'Failed to restore item. Please try again.');
         }
     }
-    
+
     // force delete item
     public function forceDelete(Request $request, Item $item)
     {
@@ -440,7 +442,7 @@ class ItemController extends Controller
                     }
                     $opening->forceDelete();
                 });
-    
+
                 // Force delete opening transactions with their related models
                 $item->openingTransactions()->with(['inventoryTransaction', 'openingBalanceTransaction'])->each(function ($openingTransaction) {
                     if ($openingTransaction->inventoryTransaction) {
@@ -451,20 +453,20 @@ class ItemController extends Controller
                     }
                     $openingTransaction->forceDelete();
                 });
-    
+
                 // Finally force delete the main item
                 $item->forceDelete();
             });
-    
+
             return redirect()->route('items.index')->with('success', 'Item permanently deleted successfully.');
-    
+
         } catch (\Exception $e) {
             // Log the error for debugging
             \Log::error('Error force deleting item: ' . $e->getMessage(), [
                 'item_id' => $item->id,
                 'exception' => $e
             ]);
-    
+
             return redirect()->back()->with('error', 'Failed to permanently delete item. Please try again.');
         }
     }
