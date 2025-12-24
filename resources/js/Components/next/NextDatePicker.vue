@@ -1,8 +1,8 @@
-<template>
+ف<template>
     <div class="relative">
         <component
             :is="VuePersianDatetimePicker"
-            :class="['block w-full z-5000 no-error-style dark:text-black', { 'no-icon': !showIcon, 'icon-only': showIcon && !showLabel }]"
+            :class="['block w-full z-5000 no-error-style dark:text-white', { 'no-icon': !showIcon, 'icon-only': showIcon && !showLabel }]"
             v-model="normalizedModel"
             :format="resolvedFormat"
             :display-format="resolvedDisplayFormat"
@@ -253,4 +253,6 @@ function safeYear(m) {
     left: auto !important;
     color: #c026d3 !important; /* fuchsia-600 */
 }
+
+
 </style>

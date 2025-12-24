@@ -4,6 +4,7 @@ import { ref, onMounted, onBeforeUnmount } from 'vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import { useI18n } from 'vue-i18n';
+import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
 
 const { t } = useI18n();
 
@@ -249,6 +250,9 @@ const submit = () => {
                             {{ t('auth.sign_up') }}
                         </Link>
                     </p>
+                </div>
+                <div class="mt-auto pt-10 flex items-center justify-center gap-2 text-sm text-slate-400">
+                     <LanguageSwitcher />
                 </div> 
             </div>
 

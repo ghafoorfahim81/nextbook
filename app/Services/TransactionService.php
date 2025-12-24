@@ -175,6 +175,7 @@ class TransactionService
 
         // ALWAYS: CREDIT Sales Revenue (Money comes IN)
         $glAccounts = Cache::get('gl_accounts');
+        $transactionId = null;
         $salesTransaction = $this->createTransaction([
             'account_id' => $glAccounts['sales-revenue'],
             'ledger_id' => null,
@@ -193,7 +194,7 @@ class TransactionService
             $receivableTransaction = $this->createTransaction([
                 'account_id' => $payment['account_id'],
                 'ledger_id' => $ledger->id,
-                'amount' => $payment['amount'],
+                'amount' => $transactionTotal-$payment['amount'],
                 'currency_id' => $currency_id,
                 'rate' => $rate,
                 'date' => $sale->date,
@@ -202,10 +203,11 @@ class TransactionService
                 'reference_type' => 'sale',
                 'reference_id' => $sale->id,
             ]);
+            $transactionId = $receivableTransaction->id;
         }
 
         // CONDITION: Loan based on payment method
-        elseif ($transactionType === 'on_loan') {
+        elseif ($transactionType === 'on_loan') {+
             $loanTransaction = $this->createTransaction([
                 'account_id' => $glAccounts['account-receivable'],
                 'ledger_id' => $ledger->id,
@@ -218,6 +220,7 @@ class TransactionService
                 'reference_type' => 'sale',
                 'reference_id' => $sale->id,
             ]);
+            $transactionId = $loanTransaction->id;
         }
         else {
             // Cash sale
@@ -225,7 +228,7 @@ class TransactionService
             $glAccounts['cash-in-hand'];
             $cashTransaction = $this->createTransaction([
                 'account_id' => $cashAccountId,
-                'ledger_id' => $ledger->id,
+                'ledger_id' => null,
                 'amount' => $transactionTotal,
                 'currency_id' => $currency_id,
                 'rate' => $rate,
@@ -235,6 +238,7 @@ class TransactionService
                 'reference_type' => 'sale',
                 'reference_id' => $sale->id,
             ]);
+            $transactionId = $cashTransaction->id;
         }
 
 
@@ -267,7 +271,7 @@ class TransactionService
             'reference_id' => $sale->id,
         ]);
 
-        $sale->update(['transaction_id' => $salesTransaction->id]);
+        $sale->update(['transaction_id' => $transactionId]);
 
         // Cache::forget('key''ledgers', 'accounts')->flush();
 
