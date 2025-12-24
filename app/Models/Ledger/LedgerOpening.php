@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\LedgerOpening;
+namespace App\Models\Ledger;
 
 use App\Models\Transaction\Transaction;
 use App\Traits\HasSearch;

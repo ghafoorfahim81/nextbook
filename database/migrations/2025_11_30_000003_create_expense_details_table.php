@@ -9,13 +9,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('expense_details', function (Blueprint $table) {
-            $table->char('id', 26)->primary();
-            $table->char('expense_id', 26)->index();
+            $table->ulid('id')->primary();
+            $table->ulid('expense_id')->index();
             $table->decimal('amount', 15, 2);
             $table->string('title'); 
-            $table->char('created_by', 26)->index();
-            $table->char('updated_by', 26)->nullable();
-            $table->char('deleted_by', 26)->nullable(); 
+            $table->ulid('created_by')->index();
+            $table->ulid('updated_by')->nullable();
+            $table->ulid('deleted_by')->nullable(); 
             $table->timestamps();
             $table->softDeletes();
         });

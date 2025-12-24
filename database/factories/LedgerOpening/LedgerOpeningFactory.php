@@ -1,10 +1,10 @@
 <?php
 
-namespace Database\Factories\LedgerOpening;
+namespace Database\Factories\Ledger;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
-use App\Models\LedgerOpening\LedgerOpening;
+use App\Models\Ledger\LedgerOpening;
 use App\Models\User;
 
 class LedgerOpeningFactory extends Factory

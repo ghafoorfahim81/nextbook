@@ -12,16 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('branches', function (Blueprint $table) {
-            $table->char('id', 26)->primary();
+            $table->ulid('id')->primary();
             $table->string('name')->index();
             $table->text('remark')->nullable();
             $table->string('location')->nullable();
             $table->boolean('is_main')->default(false);
             $table->string('sub_domain')->nullable();
-            $table->char('parent_id',26)->nullable()->index();
-            $table->char('created_by',26)->nullable()->index();
-            $table->char('updated_by',26)->nullable();
-            $table->char('deleted_by', 26)->nullable();
+            $table->ulid('parent_id')->nullable()->index();
+            $table->ulid('created_by')->nullable()->index();
+            $table->ulid('updated_by')->nullable();
+            $table->ulid('deleted_by')->nullable();
             $table->softDeletes();
             $table->timestamps();
             $table->unique(['name', 'deleted_at']);

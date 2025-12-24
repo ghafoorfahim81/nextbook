@@ -14,20 +14,20 @@ return new class extends Migration
         Schema::disableForeignKeyConstraints();
 
         Schema::create('purchase_items', function (Blueprint $table) {
-            $table->char('id', 26)->primary();
-            $table->char('purchase_id', 26)->index();
-            $table->char('item_id', 26)->index();
+            $table->ulid('id')->primary();
+            $table->ulid('purchase_id')->index();
+            $table->ulid('item_id')->index();
             $table->string('batch')->nullable();
             $table->date('expire_date')->nullable();
             $table->decimal('quantity', 10, 2);
-            $table->char('unit_measure_id', 26)->nullable()->index();
+            $table->ulid('unit_measure_id')->nullable()->index();
             $table->decimal('unit_price', 10, 2);
             $table->decimal('discount', 10, 2)->default(0)->nullable();
             $table->decimal('free', 10, 2)->default(0)->nullable();
             $table->decimal('tax', 10, 2)->default(0)->nullable();
-            $table->char('created_by', 26)->index();
-            $table->char('updated_by', 26)->nullable();
-            $table->char('deleted_by',26)->nullable();
+            $table->ulid('created_by')->index();
+            $table->ulid('updated_by')->nullable();
+            $table->ulid('deleted_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

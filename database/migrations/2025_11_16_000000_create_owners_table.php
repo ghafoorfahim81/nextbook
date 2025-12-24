@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('owners', function (Blueprint $table) {
-            $table->char('id', 26)->primary();
+            $table->ulid('id')->primary();
             $table->string('name')->index();
             $table->string('father_name');
             $table->string('nic')->nullable()->index();
@@ -21,14 +21,14 @@ return new class extends Migration
             $table->string('phone_number')->nullable();
             $table->decimal('ownership_percentage', 5, 2)->default(100);
             $table->boolean('is_active')->default(true);
-            $table->char('capital_transaction_id', 26)->nullable()->index();
-            $table->char('account_transaction_id', 26)->nullable()->index();
-            $table->char('capital_account_id', 26)->nullable()->index();
-            $table->char('drawing_account_id', 26)->nullable()->index();
-            $table->char('branch_id', 26)->index();
-            $table->char('created_by', 26)->index();
-            $table->char('updated_by', 26)->nullable();
-            $table->char('deleted_by',26)->nullable();
+            $table->ulid('capital_transaction_id')->nullable()->index();
+            $table->ulid('account_transaction_id')->nullable()->index();
+            $table->ulid('capital_account_id')->nullable()->index();
+            $table->ulid('drawing_account_id')->nullable()->index();
+            $table->ulid('branch_id')->index();
+            $table->ulid('created_by')->index();
+            $table->ulid('updated_by')->nullable();
+            $table->ulid('deleted_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
             $table->unique(['branch_id', 'name', 'deleted_at']);

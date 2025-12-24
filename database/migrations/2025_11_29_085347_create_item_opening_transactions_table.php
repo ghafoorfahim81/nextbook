@@ -12,13 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('item_opening_transactions', function (Blueprint $table) {
-            $table->char('id', 26)->primary();
-            $table->char('item_id', 26)->index(); 
-            $table->char('inventory_transaction_id', 26)->index();
-            $table->char('opening_balance_transaction_id', 26)->index();
-            $table->char('created_by', 26)->index();
-            $table->char('updated_by', 26)->nullable();
-            $table->char('deleted_by', 26)->nullable();
+            $table->ulid('id')->primary();
+            $table->ulid('item_id')->index(); 
+            $table->ulid('inventory_transaction_id')->index();
+            $table->ulid('opening_balance_transaction_id')->index();
+            $table->ulid('created_by')->index();
+            $table->ulid('updated_by')->nullable();
+            $table->ulid('deleted_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

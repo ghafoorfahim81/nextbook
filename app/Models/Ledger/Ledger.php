@@ -3,10 +3,9 @@
 namespace App\Models\Ledger;
 
 use App\Models\Administration\Branch;
-use App\Models\LedgerOpening\LedgerOpening;
+use App\Models\Ledger\LedgerOpening;
 use App\Models\Sale\Sale;
-use App\Models\Receipt\Receipt;
-use App\Models\Transaction\Transaction;
+use App\Models\Receipt\Receipt; 
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
@@ -35,10 +34,14 @@ class Ledger extends Model
     {
         return Attribute::make(
             get: function () {
-                // Calculate totals (this is where 95% of time is spent)
-                $totals = $this->transactions->reduce(function ($carry, $transaction) {
-                    $amount = $transaction->amount * $transaction->rate;
-                    $carry[$transaction->type] += $amount;
+                // Use the new ledger_transactions pivot table to get all related transactions
+                // Assume you have a 'transactions' relationship through the pivot table (LedgerTransaction model)
+                $transactions = $this->ledgerTransactions()->get();
+
+                // Calculate totals
+                $totals = $transactions->reduce(function ($carry, $transaction) {
+                    $amount = $transaction->transaction->amount * $transaction->transaction->rate;
+                    $carry[$transaction->transaction->type] += $amount;
                     return $carry;
                 }, ['debit' => 0, 'credit' => 0]);
 
@@ -47,7 +50,6 @@ class Ledger extends Model
                 $balanceNature = $netBalance >= 0 ? 'dr' : 'cr';
                 $isSupplier = $this->type === 'supplier';
 
-                // Single array creation with ternary operations
                 return [
                     'balance' => $balanceAmount,
                     'balance_nature' => $balanceNature,
@@ -116,19 +118,9 @@ class Ledger extends Model
         return $this->belongsTo(Branch::class);
     }
 
-    public function opening()
-    {
-        return $this->morphOne(LedgerOpening::class, 'ledgerable');
-    }
-
     public function openings()
     {
         return $this->morphMany(LedgerOpening::class, 'ledgerable');
-    }
-
-    public function transactions()
-    {
-        return $this->hasMany(Transaction::class);
     }
 
     public function sales()
@@ -149,6 +141,11 @@ class Ledger extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class, 'ledger_id', 'id');
+    }
+
+    public function ledgerTransactions()
+    {
+        return $this->hasMany(LedgerTransaction::class);
     }
     /**
      * Get relationships configuration for dependency checking

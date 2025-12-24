@@ -16,21 +16,21 @@ return new class extends Migration
         Schema::disableForeignKeyConstraints();
 
         Schema::create('sales', function (Blueprint $table) {
-            $table->char('id', 26)->primary();
+            $table->ulid('id')->primary();
             $table->integer('number')->index();
-            $table->char('customer_id', 26)->index();
+            $table->ulid('customer_id')->index();
             $table->date('date');
-            $table->char('transaction_id', 26)->nullable()->index();
+            $table->ulid('transaction_id')->nullable()->index();
             $table->decimal('discount', 10, 2)->nullable();
             $table->enum('discount_type', DiscountType::values())->nullable();
             $table->enum('type', SalesPurchaseType::values())->default(SalesPurchaseType::Cash->value);
             $table->text('description')->nullable();
             $table->enum('status', TransactionStatus::values())->default(TransactionStatus::PENDING->value);
-            $table->char('store_id', 26)->index();
-            $table->char('branch_id', 26)->index();
-            $table->char('created_by', 26)->index();
-            $table->char('updated_by', 26)->nullable();
-            $table->char('deleted_by',26)->nullable();
+            $table->ulid('store_id')->index();
+            $table->ulid('branch_id')->index();
+            $table->ulid('created_by')->index();
+            $table->ulid('updated_by')->nullable();
+            $table->ulid('deleted_by')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

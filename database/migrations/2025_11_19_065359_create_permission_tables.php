@@ -22,7 +22,7 @@ return new class extends Migration
 
         Schema::create($tableNames['permissions'], static function (Blueprint $table) {
             // $table->engine('InnoDB');
-            $table->char('id', 26)->primary(); // permission id
+            $table->ulid('id')->primary(); // permission id
             $table->string('name');       // For MyISAM use string('name', 225); // (or 166 for InnoDB with Redundant/Compact row format)
             $table->string('guard_name'); // For MyISAM use string('guard_name', 25);
             $table->timestamps();
@@ -32,7 +32,7 @@ return new class extends Migration
 
         Schema::create($tableNames['roles'], static function (Blueprint $table) use ($teams, $columnNames) {
             // $table->engine('InnoDB');
-            $table->char('id', 26)->primary(); // role id
+            $table->ulid('id')->primary(); // role id
             if ($teams || config('permission.testing')) { // permission.testing is a fix for sqlite testing
                 $table->unsignedBigInteger($columnNames['team_foreign_key'])->nullable();
                 $table->index($columnNames['team_foreign_key'], 'roles_team_foreign_key_index');
@@ -48,10 +48,10 @@ return new class extends Migration
         });
 
         Schema::create($tableNames['model_has_permissions'], static function (Blueprint $table) use ($tableNames, $columnNames, $pivotPermission, $teams) {
-            $table->char($pivotPermission, 26);
+            $table->ulid($pivotPermission);
 
             $table->string('model_type');
-            $table->char($columnNames['model_morph_key'], 26);
+            $table->ulid($columnNames['model_morph_key']);
             $table->index([$columnNames['model_morph_key'], 'model_type'], 'model_has_permissions_model_id_model_type_index');
 
             $table->foreign($pivotPermission)
@@ -59,7 +59,7 @@ return new class extends Migration
                 ->on($tableNames['permissions'])
                 ->onDelete('cascade');
             if ($teams) {
-                $table->char($columnNames['team_foreign_key'], 26);
+                $table->ulid($columnNames['team_foreign_key']);
                 $table->index($columnNames['team_foreign_key'], 'model_has_permissions_team_foreign_key_index');
 
                 $table->primary([$columnNames['team_foreign_key'], $pivotPermission, $columnNames['model_morph_key'], 'model_type'],

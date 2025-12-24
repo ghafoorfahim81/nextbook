@@ -27,7 +27,6 @@ class TransactionUpdateRequest extends FormRequest
             'currency_id' => ['required', 'string', 'exists:currencies,id'],
             'rate' => ['required', 'numeric'],
             'date' => ['required', 'date'],
-            'ledger_id' => ['nullable', 'string', 'exists:ledgers,id'],
             'type' => ['required', 'string'],
             'remark' => ['nullable', 'string'],
         ];

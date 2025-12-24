@@ -9,7 +9,7 @@ use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\Account\AccountTypeResource;
 use App\Http\Resources\Administration\BranchResource;
 use App\Http\Resources\Administration\CurrencyResource;
-use App\Http\Resources\LedgerOpening\LedgerOpeningResource;
+use App\Http\Resources\Ledger\LedgerOpeningResource;
 use App\Http\Resources\Transaction\TransactionResource;
 use App\Models\Account\Account;
 use App\Models\Account\AccountType;

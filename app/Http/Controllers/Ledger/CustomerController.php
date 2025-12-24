@@ -11,13 +11,13 @@ use App\Http\Resources\Administration\BranchResource;
 use App\Http\Resources\Sale\SaleResource;
 use App\Http\Resources\Receipt\ReceiptResource;
 use App\Http\Resources\Payment\PaymentResource;
-use App\Http\Resources\LedgerOpening\LedgerOpeningResource;
-use App\Models\Account\Account;
+use App\Http\Resources\Ledger\LedgerOpeningResource;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Branch;
 use Illuminate\Http\Request;
-
+use App\Services\TransactionService;
+use Illuminate\Support\Facades\Cache;
 class CustomerController extends Controller
 {
     /**
@@ -66,33 +66,36 @@ class CustomerController extends Controller
             ->filter(function ($opening) {
                 return !empty($opening['currency_id']) && (float)($opening['amount'] ?? 0) > 0;
             });
-
+        $glAccounts = Cache::get('gl_accounts');
+        $transactionService = app(TransactionService::class);
         if ($openings->isNotEmpty()) {
-            $arId = Account::where('name', 'Account Receivable')->value('id');
-            $apId = Account::where('name', 'Account Payable')->value('id');
+            $arId = $glAccounts['account-receivable'];
+            $apId = $glAccounts['account-payable'];
 
             abort_unless($arId && $apId, 500, 'System accounts (AR/AP) are missing.');
 
-            $openings->each(function ($opening) use ($ledger, $arId, $apId) {
+            $openings->each(function ($opening) use ($ledger, $arId, $apId, $transactionService) {
                 $type = $opening['type'] ?? 'debit';
                 $accountId = $type === 'credit' ? $arId : $apId;
-
-                $transaction = $ledger->transactions()->create([
-                    'amount' => (float) $opening['amount'],
+                $data = [
+                    'ledger' =>$ledger,
                     'account_id' => $accountId,
+                    'amount' => (float) $opening['amount'],
                     'currency_id' => $opening['currency_id'],
-                    'transactionable_type' => Ledger::class,
-                    'transactionable_id' => $ledger->id,
-                    'rate' => (float) $opening['rate'],
+                    'rate' => (float) $opening['rate'], 
                     'date' => now(),
                     'type' => $type,
-                    'remark' => 'Opening balance for customer',
-                    'created_by' => auth()->id(),
+                ];
+
+                $transaction = $transactionService->createLedgerTransaction($data); 
+
+                $ledger->ledgerTransactions()->create([
+                    'transaction_id' => $transaction['id'],
                 ]);
 
                 $transaction->opening()->create([
                     'ledgerable_id' => $ledger->id,
-                    'ledgerable_type' => 'ledger',
+                    'ledgerable_type' => Ledger::class,
                 ]);
             });
         }
@@ -107,21 +110,20 @@ class CustomerController extends Controller
     {
         $customer->load([
             'currency',
-            'branch', 
-            'transactions.account',
-            'transactions.currency',
-        ]); 
+            'branch',   
+            'openings.transaction.currency',
+            'ledgerTransactions.transaction.account',
+            'ledgerTransactions.transaction.currency',
+        ]);   
         $sales = $customer->sales->load('transaction.currency');
         $receipts = $customer->receipts->load('receiveTransaction.currency');
         $payments = $customer->payments->load('bankTransaction.currency');
-        $openings = $customer->openings->load('transaction.currency');
         if ($request->expectsJson()) {
             return response()->json([
                 'customer' => new LedgerResource($customer),
                 'sales' => SaleResource::collection($sales),
                 'receipts' => ReceiptResource::collection($receipts),
                 'payments' => PaymentResource::collection($payments),
-                'openings' => LedgerOpeningResource::collection($openings),
             ]);
         }
 
@@ -130,14 +132,13 @@ class CustomerController extends Controller
             'sales' => SaleResource::collection($sales),
             'receipts' => ReceiptResource::collection($receipts),
             'payments' => PaymentResource::collection($payments),
-            'openings' => LedgerOpeningResource::collection($openings),
         ]);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Request $request, Ledger $customer)
+    public function edit(Ledger $customer)
     {
         $customer->load(['currency', 'branch', 'openings.transaction.currency']);
 
@@ -163,7 +164,8 @@ class CustomerController extends Controller
         $customer->update($validated);
 
         // Remove existing opening balances
-        $customer->transactions()->whereHas('opening')->get()->each(function ($transaction) {
+        $customer->ledgerTransactions()->whereHas('opening')->get()->each(function ($transaction) {
+            $transaction->transaction()->forceDelete();
             $transaction->opening()->forceDelete();
             $transaction->forceDelete();
         });
@@ -172,33 +174,36 @@ class CustomerController extends Controller
             ->filter(function ($opening) {
                 return !empty($opening['currency_id']) && (float)($opening['amount'] ?? 0) > 0;
             });
+            $glAccounts = Cache::get('gl_accounts');
 
         if ($openings->isNotEmpty()) {  // Update existing opening balances
-            $arId = Account::where('name', 'Account Receivable')->value('id');
-            $apId = Account::where('name', 'Account Payable')->value('id');
+            $arId = $glAccounts['account-receivable'];
+            $apId = $glAccounts['account-payable'];
 
             abort_unless($arId && $apId, 500, 'System accounts (AR/AP) are missing.');
-
-            $openings->each(function ($opening) use ($customer, $arId, $apId) {
+            $transactionService = app(TransactionService::class);
+            $openings->each(function ($opening) use ($customer, $arId, $apId, $transactionService) {
                 $type = $opening['type'] ?? 'debit';
                 $accountId = $type === 'credit' ? $arId : $apId;
 
-                $transaction = $customer->transactions()->create([
-                    'amount' => (float) $opening['amount'],
+                $data = [
+                    'ledger' =>$customer,
                     'account_id' => $accountId,
+                    'amount' => (float) $opening['amount'],
                     'currency_id' => $opening['currency_id'],
-                    'transactionable_type' => Ledger::class,
-                    'transactionable_id' => $customer->id,
-                    'rate' => (float) $opening['rate'],
+                    'rate' => (float) $opening['rate'], 
                     'date' => now(),
                     'type' => $type,
-                    'remark' => 'Opening balance for customer',
-                    'created_by' => auth()->id(),
+                ];
+                $transaction = $transactionService->createLedgerTransaction($data); 
+
+                $customer->ledgerTransactions()->create([
+                    'transaction_id' => $transaction['id'],
                 ]);
 
                 $transaction->opening()->create([
                     'ledgerable_id' => $customer->id,
-                    'ledgerable_type' => 'ledger',
+                    'ledgerable_type' => Ledger::class,
                 ]);
             });
         }
@@ -217,9 +222,10 @@ class CustomerController extends Controller
                 'error' => $customer->getDependencyMessage()
             ]);
         }
-        $customer->transactions()->whereHas('opening')->get()->each(function ($transaction) {
-            $transaction->opening()->forceDelete();
-            $transaction->forceDelete();
+        $customer->ledgerTransactions()->whereHas('opening')->get()->each(function ($transaction) {
+            $transaction->transaction()->delete();
+            $transaction->opening()->delete();
+            $transaction->delete();
         });
         $customer->delete();
 
@@ -227,7 +233,8 @@ class CustomerController extends Controller
     }
     public function restore(Request $request, Ledger $customer)
     {
-        $customer->transactions()->whereHas('opening')->get()->each(function ($transaction) {
+        $customer->ledgerTransactions()->whereHas('opening')->get()->each(function ($transaction) {
+            $transaction->transaction()->restore();
             $transaction->opening()->restore();
             $transaction->restore();
         });
