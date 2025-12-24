@@ -109,7 +109,6 @@ class ItemController extends Controller
                     $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
                     $inventoryTransaction = $transactionService->createTransaction([
                         'account_id' => $glAccounts['inventory-asset'],
-                        'ledger_id' =>  null,
                         'amount' => $cost*$amount,
                         'currency_id' => $homeCurrency->id,
                         'rate' => 1,
@@ -121,7 +120,6 @@ class ItemController extends Controller
                     ]);
                     $openingBalanceTransaction = $transactionService->createTransaction([
                         'account_id' => $glAccounts['opening-balance-equity'],
-                        'ledger_id' =>  null,
                         'amount' => $cost*$amount,
                         'currency_id' => $homeCurrency->id,
                         'rate' => 1,
@@ -299,7 +297,6 @@ class ItemController extends Controller
                     $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
                     $inventoryTransaction = $transactionService->createTransaction([
                         'account_id' => $glAccounts['inventory-asset'],
-                        'ledger_id' =>  null,
                         'amount' => $cost*$amount,
                         'currency_id' => $homeCurrency->id,
                         'rate' => 1,
@@ -311,7 +308,6 @@ class ItemController extends Controller
                     ]);
                     $openingBalanceTransaction = $transactionService->createTransaction([
                         'account_id' => $glAccounts['opening-balance-equity'],
-                        'ledger_id' =>  null,
                         'amount' => $cost*$amount,
                         'currency_id' => $homeCurrency->id,
                         'rate' => 1,

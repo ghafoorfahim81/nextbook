@@ -14,20 +14,20 @@ return new class extends Migration
         Schema::disableForeignKeyConstraints();
 
         Schema::create('receipts', function (Blueprint $table) {
-            $table->char('id', 26)->primary();
+            $table->ulid('id')->primary();
             $table->string('number')->index();
             $table->date('date');
-            $table->char('ledger_id', 26)->index();
-            $table->char('receive_transaction_id', 26)->nullable()->index();
-            $table->char('bank_transaction_id', 26)->nullable()->index();
+            $table->ulid('ledger_id')->index();
+            $table->ulid('receive_transaction_id')->nullable()->index();
+            $table->ulid('bank_transaction_id')->nullable()->index();
             $table->string('cheque_no')->nullable();
             $table->text('narration')->nullable(); 
-            $table->char('branch_id', 26)->index();
-            $table->char('created_by', 26)->index();
-            $table->char('updated_by', 26)->nullable();
+            $table->ulid('branch_id')->index();
+            $table->ulid('created_by')->index();
+            $table->ulid('updated_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            $table->char('deleted_by', 26)->nullable();
+            $table->ulid('deleted_by')->nullable();
         });
 
         Schema::enableForeignKeyConstraints();

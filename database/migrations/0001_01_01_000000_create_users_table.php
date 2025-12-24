@@ -12,15 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->char('id', 26)->primary();
+            $table->ulid('id')->primary();
             $table->string('name')->index();
             $table->string('email')->unique()->index();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->enum('status', UserStatus::values())->default(UserStatus::ACTIVE->value);
-            $table->char('created_by', 26)->nullable()->index();
-            $table->char('updated_by', 26)->nullable();
-            $table->char('deleted_by', 26)->nullable(); 
+            $table->ulid('created_by')->nullable()->index();
+            $table->ulid('updated_by')->nullable();
+            $table->ulid('deleted_by')->nullable(); 
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();
@@ -41,7 +41,7 @@ return new class extends Migration
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id');
-            $table->char('user_id',26)->nullable()->index();
+            $table->ulid('user_id')->nullable()->index();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');

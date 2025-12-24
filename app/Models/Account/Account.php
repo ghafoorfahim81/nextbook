@@ -2,7 +2,7 @@
 
 namespace App\Models\Account;
 
-use App\Models\LedgerOpening\LedgerOpening;
+use App\Models\Ledger\LedgerOpening;
 use App\Models\Transaction\Transaction;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;

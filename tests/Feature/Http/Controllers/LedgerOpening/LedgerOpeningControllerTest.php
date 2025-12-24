@@ -1,9 +1,9 @@
 <?php
 
-namespace Tests\Feature\Http\Controllers\LedgerOpening;
+namespace Tests\Feature\Http\Controllers\Ledger;
 
 use App\Models\CreatedBy;
-use App\Models\LedgerOpening;
+use App\Models\Ledger\LedgerOpening;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use JMac\Testing\Traits\AdditionalAssertions;

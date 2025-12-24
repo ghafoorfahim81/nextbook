@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->char('company_id', 26)
+            $table->ulid('company_id')
                 ->nullable()
                 ->after('id')
                 ->constrained('companies')

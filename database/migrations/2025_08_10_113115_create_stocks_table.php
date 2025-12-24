@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('stocks', function (Blueprint $table) {
-            $table->char('id', 26)->primary();
-            $table->char('item_id')->index();
-            $table->char('store_id', 26)->index();
-            $table->char('unit_measure_id', 26)->index();
+            $table->ulid('id')->primary();
+            $table->ulid('item_id')->index();
+            $table->ulid('store_id')->index();
+            $table->ulid('unit_measure_id')->index();
             $table->double('quantity');
             $table->double('unit_price')->unsigned();
             $table->double('free')->nullable();
@@ -24,9 +24,9 @@ return new class extends Migration
             $table->double('tax')->nullable();
             $table->date('date')->nullable(); 
             $table->date('expire_date')->nullable();
-            $table->char('created_by')->index();
-            $table->char('updated_by')->nullable();
-            $table->char('deleted_by',26)->nullable();
+            $table->ulid('created_by')->index();
+            $table->ulid('updated_by')->nullable();
+            $table->ulid('deleted_by')->nullable();
             $table->nullableUlidMorphs('source'); // adds source_type, source_id (ULID), nullable
             $table->timestamps();
             $table->softDeletes();

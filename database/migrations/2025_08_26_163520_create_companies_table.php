@@ -17,7 +17,7 @@ return new class extends Migration
         Schema::disableForeignKeyConstraints();
 
         Schema::create('companies', function (Blueprint $table) {
-            $table->char('id', 26)->primary();
+            $table->ulid('id')->primary();
             $table->string('name_en')->index();
             $table->string('name_fa')->nullable()->index();
             $table->string('name_pa')->nullable()->index();
@@ -31,12 +31,12 @@ return new class extends Migration
             $table->enum('working_style', WorkingStyle::values())->nullable()->default(WorkingStyle::NORMAL->value);
             $table->enum('business_type', BusinessType::values())->nullable()->default(BusinessType::PHARMACY_SHOP->value);
             $table->enum('locale', Locale::values())->nullable()->default(Locale::EN->value);
-            $table->char('currency_id', 26)->index();
+            $table->ulid('currency_id')->index();
             $table->string('email')->nullable();
             $table->string('website')->nullable();
             $table->text('invoice_description')->nullable();
-            $table->char('created_by', 26)->index();
-            $table->char('updated_by', 26)->nullable();
+            $table->ulid('created_by')->index();
+            $table->ulid('updated_by')->nullable();
             $table->timestamps();
         });
 

@@ -15,11 +15,11 @@ return new class extends Migration
             $table->char('id', 26)->primary();
             $table->string('name')->index();
             $table->text('remark')->nullable();
-            $table->char('parent_id',26)->nullable()->index();
-            $table->char('created_by',26)->index();
-            $table->char('updated_by',26)->nullable();
-            $table->char('deleted_by',26)->nullable();
-            $table->char('branch_id',26)->index();
+            $table->ulid('parent_id')->nullable()->index();
+            $table->ulid('created_by')->index();
+            $table->ulid('updated_by')->nullable();
+            $table->ulid('deleted_by')->nullable();
+            $table->ulid('branch_id')->index();
             $table->timestamps();
             $table->softDeletes();
             $table->unique(['branch_id', 'name', 'deleted_at']);

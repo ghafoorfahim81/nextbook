@@ -14,15 +14,15 @@ return new class extends Migration
         Schema::disableForeignKeyConstraints();
 
         Schema::create('items', function (Blueprint $table) {
-            $table->char('id', 26)->primary();
+            $table->ulid('id')->primary();
             $table->string('name')->index();
             $table->string('code')->index();
             $table->string('generic_name')->nullable();
             $table->string('packing')->nullable();
             $table->string('barcode')->nullable()->index();
-            $table->char('unit_measure_id',26)->index();
-            $table->char('brand_id',26)->nullable()->index();
-            $table->char('category_id',26)->nullable()->index();
+            $table->ulid('unit_measure_id')->index();
+            $table->ulid('brand_id')->nullable()->index();
+            $table->ulid('category_id')->nullable()->index();
             $table->double('minimum_stock')->nullable();
             $table->double('maximum_stock')->nullable();
             $table->json('colors')->nullable()->default('[]');
@@ -35,10 +35,10 @@ return new class extends Migration
             $table->double('rate_c')->nullable();
             $table->string('rack_no')->nullable();
             $table->string('fast_search')->nullable()->index();
-            $table->char('branch_id',26)->index();
-            $table->char('created_by')->index();
-            $table->char('updated_by')->nullable();
-            $table->char('deleted_by',26)->nullable();
+            $table->ulid('branch_id')->index();
+            $table->ulid('created_by')->index();
+            $table->ulid('updated_by')->nullable();
+            $table->ulid('deleted_by')->nullable();
             $table->unique(['branch_id', 'name', 'deleted_at']);
             $table->unique(['branch_id', 'code', 'deleted_at']);
             $table->timestamps();

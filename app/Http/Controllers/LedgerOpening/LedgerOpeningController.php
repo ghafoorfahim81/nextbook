@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\LedgerOpening;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\LedgerOpening\LedgerOpeningStoreRequest;
-use App\Http\Requests\LedgerOpening\LedgerOpeningUpdateRequest;
-use App\Http\Resources\LedgerOpening\LedgerOpeningCollection;
-use App\Http\Resources\LedgerOpening\LedgerOpeningResource;
-use App\Models\LedgerOpening\LedgerOpening;
+use App\Http\Requests\Ledger\LedgerOpeningStoreRequest;
+use App\Http\Requests\Ledger\LedgerOpeningUpdateRequest;
+use App\Http\Resources\Ledger\LedgerOpeningCollection;
+use App\Http\Resources\Ledger\LedgerOpeningResource;
+use App\Models\Ledger\LedgerOpening;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 

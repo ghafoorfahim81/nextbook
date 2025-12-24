@@ -14,20 +14,19 @@ return new class extends Migration
         Schema::disableForeignKeyConstraints();
 
         Schema::create('transactions', function (Blueprint $table) {
-            $table->char('id', 26)->primary();
-            $table->char('account_id', 26)->index();
-            $table->char('ledger_id', 26)->nullable()->index();
+            $table->ulid('id')->primary();
+            $table->ulid('account_id')->index(); 
             $table->decimal('amount', 19, 4);
-            $table->char('currency_id', 26)->index();
+            $table->ulid('currency_id')->index();
             $table->decimal('rate', 10, 6);
             $table->date('date')->index();
             $table->string('reference_type')->nullable()->index();
-            $table->char('reference_id', 26)->nullable()->index();
+            $table->ulid('reference_id')->nullable()->index();
             $table->enum('type', TransactionType::values())->default(TransactionType::CREDIT->value);
             $table->text('remark')->nullable();
-            $table->char('created_by', 26)->index();
-            $table->char('updated_by', 26)->nullable();
-            $table->char('deleted_by',26)->nullable();
+            $table->ulid('created_by')->index();
+            $table->ulid('updated_by')->nullable();
+            $table->ulid('deleted_by')->nullable();
             $table->timestamps();
             $table->index(['reference_type', 'reference_id']);
             $table->softDeletes();
@@ -38,7 +37,6 @@ return new class extends Migration
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('currency_id')->references('id')->on('currencies');
             $table->foreign('account_id')->references('id')->on('accounts');
-            $table->foreign('ledger_id')->references('id')->on('ledgers');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
         });
 

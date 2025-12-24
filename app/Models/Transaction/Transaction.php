@@ -3,7 +3,7 @@
 namespace App\Models\Transaction;
 
 use App\Models\Account\Account;
-use App\Models\LedgerOpening\LedgerOpening;
+use App\Models\Ledger\LedgerOpening;
 use App\Models\Ledger\Ledger;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -33,7 +33,6 @@ class Transaction extends Model
     }
     protected $fillable = [
         'account_id',
-        'ledger_id',
         'amount',
         'currency_id',
         'reference_type',
@@ -56,7 +55,6 @@ class Transaction extends Model
         return [
             'id' => 'string',
             'account_id' => 'string',
-            'ledger_id' => 'string',
             'transactionable_type' => 'string',
             'transactionable_id' => 'string',
             'amount' => 'float',
@@ -83,11 +81,6 @@ class Transaction extends Model
         return $this->hasOne(LedgerOpening::class, 'transaction_id');
     }
 
-    public function ledger(): BelongsTo
-    {
-        return $this->belongsTo(Ledger::class);
-    }
-
     public function reference()
     {
         return $this->morphTo();
@@ -99,19 +92,21 @@ class Transaction extends Model
         return $this->belongsTo(\App\Models\Purchase\Purchase::class, 'reference_id')
             ->where('reference_type', 'purchase');
     }
-    // public function sale(): BelongsTo
-    // {
-    //     return $this->belongsTo(\App\Models\Sale\Sale::class, 'reference_id')
-    //         ->where('reference_type', 'sale');
-    // }
+    public function sale(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Sale\Sale::class, 'reference_id')
+            ->where('reference_type', 'sale');
+    }
+    
     public function expense(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Expense\Expense::class, 'reference_id')
             ->where('reference_type', 'expense');
     }
-    // public function income(): BelongsTo
-    // {
-    //     return $this->belongsTo(\App\Models\Income\Income::class, 'reference_id')
-    //         ->where('reference_type', 'income');
-    // }
+ 
+    public function income(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Sale\Sale::class, 'reference_id')
+            ->where('reference_type', 'income');
+    }
 }

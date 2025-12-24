@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources\Ledger;
 
-use App\Http\Resources\LedgerOpening\LedgerOpeningResource;
+use App\Http\Resources\Ledger\LedgerOpeningResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 

@@ -191,6 +191,7 @@ class HandleInertiaRequests extends Middleware
             return Account::whereIn('slug', [
                 'sales-revenue',
                 'account-receivable',
+                'account-payable',
                 'cash-in-hand',
                 'cost-of-goods-sold',
                 'inventory-asset',

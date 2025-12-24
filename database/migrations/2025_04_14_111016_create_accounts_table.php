@@ -13,18 +13,18 @@ return new class extends Migration
     {
 
         Schema::create('accounts', function (Blueprint $table) {
-            $table->char('id', 26)->primary();
+            $table->ulid('id')->primary();
             $table->string('name')->index();
             $table->string('number')->index();
-            $table->char('account_type_id', 26)->index();
+            $table->ulid('account_type_id')->index();
             $table->boolean('is_active')->default(true);
             $table->boolean('is_main')->default(false);
             $table->string('slug')->unique()->nullable();
-            $table->char('branch_id', 26)->index();
+            $table->ulid('branch_id')->index();
             $table->text('remark')->nullable();
-            $table->char('created_by', 26)->index();
-            $table->char('updated_by', 26)->nullable();
-            $table->char('deleted_by',26)->nullable();
+            $table->ulid('created_by')->index();
+            $table->ulid('updated_by')->nullable();
+            $table->ulid('deleted_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
             $table->unique(['branch_id', 'number', 'deleted_at']);

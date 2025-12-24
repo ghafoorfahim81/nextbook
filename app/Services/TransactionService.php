@@ -30,7 +30,6 @@ class TransactionService
         // ALWAYS: DEBIT Inventory (Inventory comes IN)
         $inventoryTransaction = $this->createTransaction([
             'account_id' => Account::where('slug', 'inventory-asset')->first()->id,
-            'ledger_id' => $ledger->id,
             'amount' => $transactionTotal,
             'currency_id' => $currency_id,
             'rate' => $rate,
@@ -45,7 +44,6 @@ class TransactionService
         if ($transactionType === 'credit') {
             $payableTransaction = $this->createTransaction([
                 'account_id' => $payment['account_id'],
-                'ledger_id' => $ledger->id,
                 'amount' => $payment['amount'],
                 'currency_id' => $currency_id,
                 'rate' => $rate,
@@ -59,7 +57,6 @@ class TransactionService
             // Cash purchase
             $cashTransaction = $this->createTransaction([
                 'account_id' => Account::where('slug', 'cash-in-hand')->first()->id,
-                'ledger_id' => $ledger->id,
                 'amount' => $transactionTotal,
                 'currency_id' => $currency_id,
                 'rate' => $rate,
@@ -97,7 +94,6 @@ class TransactionService
             if ($inventoryTransaction) {
                 $inventoryTransaction->update([
                     'account_id' => Account::where('slug', 'inventory-asset')->first()->id,
-                    'ledger_id' => $ledger->id,
                     'amount' => $transactionTotal,
                     'currency_id' => $currency_id,
                     'rate' => $rate,
@@ -112,7 +108,6 @@ class TransactionService
                 $payableTransaction = $existingTransactions->where('type', 'credit')->where('account_id', $payment['account_id'])->first();
                 if ($payableTransaction) {
                     $payableTransaction->update([
-                        'ledger_id' => $ledger->id,
                         'amount' => $payment['amount'],
                         'currency_id' => $currency_id,
                         'rate' => $rate,
@@ -123,7 +118,6 @@ class TransactionService
                     // Create new payment transaction if it doesn't exist
                     $this->createTransaction([
                         'account_id' => $payment['account_id'],
-                        'ledger_id' => $ledger->id,
                         'amount' => $payment['amount'],
                         'currency_id' => $currency_id,
                         'rate' => $rate,
@@ -152,7 +146,6 @@ class TransactionService
                     // Create new cash transaction if it doesn't exist
                     $this->createTransaction([
                         'account_id' => Account::where('slug', 'cash-in-hand')->first()->id,
-                        'ledger_id' => $ledger->id,
                         'amount' => $transactionTotal,
                         'currency_id' => $currency_id,
                         'rate' => $rate,
@@ -193,7 +186,6 @@ class TransactionService
         if ($transactionType === 'credit') {
             $receivableTransaction = $this->createTransaction([
                 'account_id' => $payment['account_id'],
-                'ledger_id' => $ledger->id,
                 'amount' => $transactionTotal-$payment['amount'],
                 'currency_id' => $currency_id,
                 'rate' => $rate,
@@ -210,7 +202,6 @@ class TransactionService
         elseif ($transactionType === 'on_loan') {+
             $loanTransaction = $this->createTransaction([
                 'account_id' => $glAccounts['account-receivable'],
-                'ledger_id' => $ledger->id,
                 'amount' => $transactionTotal,
                 'currency_id' => $currency_id,
                 'rate' => $rate,
@@ -228,7 +219,6 @@ class TransactionService
             $glAccounts['cash-in-hand'];
             $cashTransaction = $this->createTransaction([
                 'account_id' => $cashAccountId,
-                'ledger_id' => null,
                 'amount' => $transactionTotal,
                 'currency_id' => $currency_id,
                 'rate' => $rate,
@@ -246,7 +236,6 @@ class TransactionService
         // ALWAYS: DEBIT Cost of Goods Sold (COGS) - Inventory goes OUT
         $cogsTransaction = $this->createTransaction([
             'account_id' => $glAccounts['cost-of-goods-sold'],
-            'ledger_id' => null,
             'amount' => $transactionTotal, // This should be the cost value, not selling price
             'currency_id' => $currency_id,
             'rate' => $rate,
@@ -260,7 +249,6 @@ class TransactionService
         // CREDIT Inventory (Inventory goes OUT)
         $inventoryTransaction = $this->createTransaction([
             'account_id' => $glAccounts['inventory-asset'],
-            'ledger_id' => null,
             'amount' => $transactionTotal, // This should be the cost value, not selling price
             'currency_id' => $currency_id,
             'rate' => $rate,
@@ -299,7 +287,6 @@ class TransactionService
             // Transaction 1: DEBIT Expense Account (expense increases)
             $expenseTransaction = $this->createTransaction([
                 'account_id' => $expenseAccountId,
-                'ledger_id' => null,
                 'amount' => $total*$rate,
                 'currency_id' => $currencyId,
                 'rate' => $rate,
@@ -313,7 +300,6 @@ class TransactionService
             // Transaction 2: CREDIT Bank/Cash Account (money goes out)
             $bankTransaction = $this->createTransaction([
                 'account_id' => $bankAccountId,
-                'ledger_id' => null,
                 'amount' => $total*$rate,
                 'currency_id' => $currencyId,
                 'rate' => $rate,
@@ -349,11 +335,24 @@ class TransactionService
         });
     }
 
+    // create ledger transactions
+    public function createLedgerTransaction(array $data): Transaction
+    {
+        return DB::transaction(function () use ($data) {
+            $validatedData = $this->validateTransactionData($data); 
+            $validatedData['remark'] = 'Opening balance for ' . $data['ledger']->name;
+            $validatedData['reference_type'] = 'ledger';
+            $validatedData['reference_id'] = $data['ledger']->id;
+            $transaction = Transaction::create($validatedData);   
+            // Return all details as array (including id, timestamps, etc.)
+            return $transaction;
+        });
+    }
+
     protected function validateTransactionData(array $data): array
     {
         return validator($data, [
             'account_id' => 'required|exists:accounts,id',
-            'ledger_id' => 'nullable|exists:ledgers,id',
             'amount' => 'required|numeric|min:0',
             'currency_id' => 'required|exists:currencies,id',
             'rate' => 'required|numeric|min:0',
