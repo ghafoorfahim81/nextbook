@@ -5,6 +5,7 @@ import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import PaymentShowDialog from '@/Pages/Payments/ShowDialog.vue'
+import { router } from '@inertiajs/vue3'
 const { t } = useI18n();
 
 const props = defineProps({
@@ -16,7 +17,7 @@ const showDialog = ref(false)
 const selectedPaymentId = ref(null)
 
 const editItem = (item) => {
-    window.location.href = `/payments/${item.id}/edit`;
+    router.visit(route('payments.edit', item.id));
 }
 const deleteItem = (id) => {
     deleteResource('payments.destroy', id, {

@@ -5,7 +5,7 @@ import SupplierShowDialog from '@/Components/SupplierShowDialog.vue';
 import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { useI18n } from 'vue-i18n';
-
+import { router } from '@inertiajs/vue3'
 const props = defineProps({
     suppliers: Object,
 });
@@ -23,7 +23,7 @@ const columns = computed(() => ([
 ]));
 
 const editItem = (item) => {
-    window.location.href = `/suppliers/${item.id}/edit`;
+    router.visit(route('suppliers.edit', item.id));
 };
 
 const showDialog = ref(false);

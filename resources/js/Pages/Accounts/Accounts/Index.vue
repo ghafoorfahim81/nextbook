@@ -5,7 +5,7 @@ import AccountShowDialog from '@/Components/AccountShowDialog.vue';
 import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { useI18n } from 'vue-i18n';
-
+import { router } from '@inertiajs/vue3';
 const props = defineProps({
     accounts: Object,
 });
@@ -20,13 +20,13 @@ const columns = computed(() => ([
 ]));
 
 const editItem = (item) => {
-    window.location.href = `/chart-of-accounts/${item.id}/edit`;
+    router.visit(route('chart-of-accounts.edit', item.id));
 };
 
 const showDialog = ref(false);
 const selectedAccountId = ref(null);
 
-const showItem = (id) => { 
+const showItem = (id) => {
     selectedAccountId.value = id;
     showDialog.value = true;
 };

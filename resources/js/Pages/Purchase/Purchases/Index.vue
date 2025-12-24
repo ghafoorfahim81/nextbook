@@ -6,6 +6,7 @@ import { ref, computed } from 'vue';
 import { Button } from '@/Components/ui/button';
 import { useI18n } from 'vue-i18n';
 import { useDeleteResource } from '@/composables/useDeleteResource';
+import { router } from '@inertiajs/vue3'
 const { t } = useI18n();
 
 const showFilter = () => {
@@ -20,7 +21,7 @@ const showDialog = ref(false);
 const selectedPurchaseId = ref(null);
 
 const editItem = (item) => {
-    window.location.href = `/purchases/${item.id}/edit`;
+    router.visit(route('purchases.edit', item.id));
 }
 
 const { deleteResource } = useDeleteResource()

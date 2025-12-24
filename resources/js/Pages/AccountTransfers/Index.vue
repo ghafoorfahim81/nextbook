@@ -5,7 +5,7 @@ import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDeleteResource } from '@/composables/useDeleteResource'
 import ShowDialog from '@/Pages/AccountTransfers/ShowDialog.vue'
-
+import { router } from '@inertiajs/vue3'
 const { t } = useI18n()
 
 const props = defineProps({
@@ -17,7 +17,7 @@ const showDialog = ref(false)
 const selectedId = ref(null)
 
 const editItem = (item) => {
-  window.location.href = `/account-transfers/${item.id}/edit`
+  router.visit(route('account-transfers.edit', item.id));
 }
 const deleteItem = (id) => {
   deleteResource('account-transfers.destroy', id, {

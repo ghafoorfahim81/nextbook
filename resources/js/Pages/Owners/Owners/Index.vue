@@ -5,7 +5,7 @@ import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import OwnerShowDialog from './ShowDialog.vue';
 import { useI18n } from 'vue-i18n';
-
+import { router } from '@inertiajs/vue3'
 const props = defineProps({
     owners: Object,
     currencies: Object,
@@ -36,7 +36,7 @@ const deleteItem = (id) => {
 };
 
 const editItem = (item) => {
-    window.location.href = `/owners/${item.id}/edit`;
+    router.visit(route('owners.edit', item.id));
 };
 
 const showItem = (id) => {

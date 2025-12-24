@@ -5,7 +5,7 @@
     import { ref, computed } from 'vue';
     import { useDeleteResource } from '@/composables/useDeleteResource';
     import { useI18n } from 'vue-i18n';
-
+import { router } from '@inertiajs/vue3'
     const props = defineProps({
         customers: Object   ,
     });
@@ -22,14 +22,14 @@
     ]));
 
     const editItem = (item) => {
-        window.location.href = `/customers/${item.id}/edit`
+        router.visit(route('customers.edit', item.id));
     }
 
     const showDialog = ref(false)
     const selectedCustomerId = ref(null)
 
     const showItem = (item) => {
-        selectedCustomerId.value = item 
+        selectedCustomerId.value = item
         showDialog.value = true
     }
     const { deleteResource } = useDeleteResource()
