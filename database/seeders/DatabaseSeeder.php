@@ -10,6 +10,7 @@ use Database\Seeders\Administration\CategorySeeder;
 use Database\Seeders\Administration\BrandSeeder;
 use Database\Seeders\Administration\DepartmentSeeder;
 use Database\Seeders\Administration\QuantitySeeder;
+use Database\Seeders\Administration\SizeSeeder;
 use Database\Seeders\Administration\StoreSeeder;
 use Database\Seeders\Administration\UnitMeasureSeeder;
 use Database\Seeders\Administration\UserSeeder;
@@ -48,6 +49,7 @@ class DatabaseSeeder extends Seeder
             $this->call(AccountSeeder::class);
             $this->call(RolePermissionSeeder::class);
             $this->call(CompanySeeder::class);
+            $this->call(SizeSeeder::class);
         }
         if(app()->environment('production')){
             $this->call(BranchSeeder::class);
@@ -60,6 +62,7 @@ class DatabaseSeeder extends Seeder
             $this->call(AccountSeeder::class);
             $this->call(RolePermissionSeeder::class);
             $this->call(CompanySeeder::class);
+            $this->call(SizeSeeder::class);
         }
 
     }

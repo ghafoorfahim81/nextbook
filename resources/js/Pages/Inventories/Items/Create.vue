@@ -18,6 +18,7 @@ const props = defineProps({
     unitMeasures: { type: [Array, Object], required: true },
     categories: { type: [Array, Object], required: true },
     brands: { type: [Array, Object], required: true },
+    sizes: { type: [Array, Object], required: true },
     maxCode: { type: Number, required: true },
     user_preferences: { type: Object, required: true },
 })
@@ -28,6 +29,7 @@ const stores = computed(() => props.stores?.data ?? props.stores ?? [])
 const unitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 const categories = computed(() => props.categories?.data ?? props.categories ?? [])
 const brands = computed(() => props.brands?.data ?? props.brands ?? [])
+const sizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
 
 // Format code with leading zeros based on the number
 const formatCode = (number) => {
@@ -43,7 +45,7 @@ const formatCode = (number) => {
 
 const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
 const visibleFields = computed(() => user_preferences.value.item_management.visible_fields ?? []).value
-const specText = computed(() => user_preferences.value.item_management.spec_text ?? '') 
+const specText = computed(() => user_preferences.value.item_management.spec_text ?? '')
 
 const form = useForm({
     name: '',
@@ -54,13 +56,14 @@ const form = useForm({
     branch_id: null,
     store_id: null,
     colors: '',
-    size: '',
+    size_id: null,
     barcode: '',
     unit_measure_id: null,
     selected_unit_measure: '',
     selected_company: '',
     selected_category: '',
     selected_brand: '',
+    selected_size: '',
     minimum_stock: '',
     maximum_stock: '',
     purchase_price: '',
@@ -181,7 +184,20 @@ const handleOpeningSelectChange = (index, value) => {
                 <NextInput v-show="visibleFields.generic_name" :label="t('item.generic_name')" v-model="form.generic_name" :error="form.errors?.generic_name" :placeholder="t('general.enter', { text: t('item.generic_name') })" />
                 <NextInput v-show="visibleFields.packing" :label="t('item.packing')" v-model="form.packing" :error="form.errors?.packing" :placeholder="t('general.enter', { text: t('item.packing') })" />
                 <NextInput v-show="visibleFields.colors" packing:label="t('item.colors')" v-model="form.colors" :error="form.errors?.colors" :placeholder="t('general.enter', { text: t('item.colors') })" />
-                <NextInput v-show="visibleFields.size" :label="t('item.size')" v-model="form.size" :error="form.errors?.size" :placeholder="t('general.enter', { text: t('item.size') })" />
+                <NextSelect
+                    v-show="visibleFields.size"
+                    v-model="form.selected_size"
+                    :options="sizes"
+                    @update:modelValue="(value) => handleSelectChange('size_id', value)"
+                    label-key="name"
+                    value-key="id"
+                    id="size_id"
+                    :floating-text="t('item.size')"
+                    :searchable="true"
+                    resource-type="sizes"
+                    :search-fields="['name']"
+                    :error="form.errors.size_id"
+                />
                 <NextSelect
                     v-model="form.selected_unit_measure"
                     :options="unitMeasures"

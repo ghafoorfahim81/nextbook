@@ -67,7 +67,7 @@ class User extends Authenticatable
                 'generic_name' => false,
                 'packing' => true,
                 'colors' => false,
-                'size' => false,
+                'size' => true,
                 'brand' => true,
                 'minimum_stock' => true,
                 'maximum_stock' => true,
@@ -79,7 +79,7 @@ class User extends Authenticatable
                 'rack_no' => false,
                 'fast_search' => true,
             ],
-            'spec_text' => 'batch',
+            'spec_text' => 'Item Spec',
         ],
         'sale' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'store' => true],

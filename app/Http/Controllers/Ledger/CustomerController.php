@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Ledger;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Ledger\LedgerStoreRequest;
 use App\Http\Requests\Ledger\LedgerUpdateRequest;
-use App\Http\Resources\Ledger\LedgerResource; 
+use App\Http\Resources\Ledger\LedgerResource;
 use App\Http\Resources\Administration\CurrencyResource;
 use App\Http\Resources\Administration\BranchResource;
 use App\Http\Resources\Sale\SaleResource;
@@ -82,12 +82,12 @@ class CustomerController extends Controller
                     'account_id' => $accountId,
                     'amount' => (float) $opening['amount'],
                     'currency_id' => $opening['currency_id'],
-                    'rate' => (float) $opening['rate'], 
+                    'rate' => (float) $opening['rate'],
                     'date' => now(),
                     'type' => $type,
                 ];
 
-                $transaction = $transactionService->createLedgerTransaction($data); 
+                $transaction = $transactionService->createLedgerTransaction($data);
 
                 $ledger->ledgerTransactions()->create([
                     'transaction_id' => $transaction['id'],
@@ -95,7 +95,7 @@ class CustomerController extends Controller
 
                 $transaction->opening()->create([
                     'ledgerable_id' => $ledger->id,
-                    'ledgerable_type' => Ledger::class,
+                    'ledgerable_type' => 'ledger',
                 ]);
             });
         }
@@ -110,11 +110,11 @@ class CustomerController extends Controller
     {
         $customer->load([
             'currency',
-            'branch',   
+            'branch',
             'openings.transaction.currency',
             'ledgerTransactions.transaction.account',
             'ledgerTransactions.transaction.currency',
-        ]);   
+        ]);
         $sales = $customer->sales->load('transaction.currency');
         $receipts = $customer->receipts->load('receiveTransaction.currency');
         $payments = $customer->payments->load('bankTransaction.currency');
@@ -191,11 +191,11 @@ class CustomerController extends Controller
                     'account_id' => $accountId,
                     'amount' => (float) $opening['amount'],
                     'currency_id' => $opening['currency_id'],
-                    'rate' => (float) $opening['rate'], 
+                    'rate' => (float) $opening['rate'],
                     'date' => now(),
                     'type' => $type,
                 ];
-                $transaction = $transactionService->createLedgerTransaction($data); 
+                $transaction = $transactionService->createLedgerTransaction($data);
 
                 $customer->ledgerTransactions()->create([
                     'transaction_id' => $transaction['id'],
@@ -203,7 +203,7 @@ class CustomerController extends Controller
 
                 $transaction->opening()->create([
                     'ledgerable_id' => $customer->id,
-                    'ledgerable_type' => Ledger::class,
+                    'ledgerable_type' => 'ledger',
                 ]);
             });
         }

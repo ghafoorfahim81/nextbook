@@ -31,7 +31,7 @@ class ItemStoreRequest extends FormRequest
             'minimum_stock' => ['nullable', 'numeric'],
             'maximum_stock' => ['nullable', 'numeric'],
             'colors' => ['nullable', 'array'],
-            'size' => ['nullable', 'string'],
+            'size_id' => ['nullable', 'string', 'exists:sizes,id'],
             'purchase_price' => ['nullable', 'numeric'],
             'cost' => ['nullable', 'numeric'],
             'sale_price' => ['required', 'numeric'],

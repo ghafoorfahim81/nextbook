@@ -12,8 +12,7 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->date('date');
             $table->text('remarks')->nullable();
-            $table->ulid('category_id')->index(); 
-            $table->string('attachment')->nullable();
+            $table->ulid('category_id')->index();  
             $table->ulid('expense_transaction_id')->nullable()->index();
             $table->ulid('bank_transaction_id')->nullable()->index();
             $table->ulid('created_by')->index();
@@ -23,7 +22,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
         });
-        Schema::table('expenses', function (Blueprint $table) { 
+        Schema::table('expenses', function (Blueprint $table) {
             $table->foreign('category_id')->references('id')->on('expense_categories');
             $table->foreign('expense_transaction_id')->references('id')->on('transactions');
             $table->foreign('bank_transaction_id')->references('id')->on('transactions');

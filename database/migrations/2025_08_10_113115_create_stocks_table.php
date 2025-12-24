@@ -19,10 +19,11 @@ return new class extends Migration
             $table->double('quantity');
             $table->double('unit_price')->unsigned();
             $table->double('free')->nullable();
+            $table->ulid('size_id')->nullable()->index();
             $table->string('batch')->nullable();
             $table->double('discount')->nullable();
             $table->double('tax')->nullable();
-            $table->date('date')->nullable(); 
+            $table->date('date')->nullable();
             $table->date('expire_date')->nullable();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();

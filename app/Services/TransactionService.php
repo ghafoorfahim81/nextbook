@@ -199,7 +199,7 @@ class TransactionService
         }
 
         // CONDITION: Loan based on payment method
-        elseif ($transactionType === 'on_loan') {+
+        elseif ($transactionType === 'on_loan') {
             $loanTransaction = $this->createTransaction([
                 'account_id' => $glAccounts['account-receivable'],
                 'amount' => $transactionTotal,
@@ -339,11 +339,11 @@ class TransactionService
     public function createLedgerTransaction(array $data): Transaction
     {
         return DB::transaction(function () use ($data) {
-            $validatedData = $this->validateTransactionData($data); 
+            $validatedData = $this->validateTransactionData($data);
             $validatedData['remark'] = 'Opening balance for ' . $data['ledger']->name;
             $validatedData['reference_type'] = 'ledger';
             $validatedData['reference_id'] = $data['ledger']->id;
-            $transaction = Transaction::create($validatedData);   
+            $transaction = Transaction::create($validatedData);
             // Return all details as array (including id, timestamps, etc.)
             return $transaction;
         });

@@ -7,6 +7,7 @@ use App\Http\Resources\Administration\CategoryResource;
 use App\Http\Resources\Administration\BrandResource;
 use App\Http\Resources\Administration\StoreResource;
 use App\Http\Resources\Administration\UnitMeasureResource;
+use App\Http\Resources\Administration\SizeResource;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Category;
 use App\Http\Resources\Account\AccountResource;
@@ -16,6 +17,7 @@ use App\Models\Account\AccountType;
 use App\Models\Administration\Brand;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Store;
+use App\Models\Administration\Size;
 use App\Http\Resources\Ledger\LedgerResource;
 use App\Http\Resources\UserManagement\RoleResource;
 use App\Models\Role;
@@ -120,6 +122,14 @@ class HandleInertiaRequests extends Middleware
             $cacheDuration,
             fn() => UnitMeasureResource::collection(
                 \App\Models\Administration\UnitMeasure::latest()->take(1000)->get()
+            )
+        );
+
+        $sizes = Cache::remember(
+            'sizes',
+            $cacheDuration,
+            fn() => SizeResource::collection(
+                Size::latest()->take(10)->get()
             )
         );
 
@@ -249,6 +259,7 @@ class HandleInertiaRequests extends Middleware
             'brands' => $brands,
             'glAccounts' => $glAccounts,
             'unitMeasures' => $unitMeasures,
+            'sizes' => $sizes,
             'businessTypes' => $businessTypes,
             'calendarTypes' => $calendarTypes,
             'workingStyles' => $workingStyles,
