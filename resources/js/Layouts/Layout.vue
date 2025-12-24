@@ -89,7 +89,7 @@ import {
 import { ref, computed } from 'vue'
 // @ts-ignore - Vue SFC default export shim
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue'
-import { usePage } from '@inertiajs/vue3'
+import { usePage, Link, router } from '@inertiajs/vue3'
 // @ts-ignore - Vue SFC default export shim
 import Toaster from '@/Components/ui/toast/Toaster.vue'
 import { HousePlug, ShoppingCart, Receipt as ReceiptIcon } from 'lucide-vue-next'
@@ -305,7 +305,11 @@ const navMain = computed(() => [
 // assign to data after computed is available
 data.navMain = navMain.value
 
-
+// Add logout method for Inertia POST
+function logout() {
+    // Adapt to your backend's logout URL if different
+    router.post('/logout');
+}
 </script>
 
 <template>
@@ -525,7 +529,7 @@ data.navMain = navMain.value
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem>
+                                <DropdownMenuItem @click="logout" class="cursor-pointer">
                                     <LogOut />
                                     Log out
                                 </DropdownMenuItem>
