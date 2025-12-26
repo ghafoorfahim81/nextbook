@@ -10,10 +10,10 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
+use Illuminate\Database\Eloquent\SoftDeletes;
 class LedgerOpening extends Model
 {
-    use HasFactory,HasUlids, HasSearch, HasSorting, HasUserAuditable;
+    use HasFactory,HasUlids, HasSearch, HasSorting, HasUserAuditable, SoftDeletes;
 
 
     protected $keyType = 'string';
@@ -27,7 +27,7 @@ class LedgerOpening extends Model
     protected $fillable = [
         'ledgerable_id',
         'ledgerable_type',
-        'transaction_id', 
+        'transaction_id',
     ];
 
     /**

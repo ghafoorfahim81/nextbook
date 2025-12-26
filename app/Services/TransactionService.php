@@ -343,8 +343,7 @@ class TransactionService
             $validatedData['remark'] = 'Opening balance for ' . $data['ledger']->name;
             $validatedData['reference_type'] = 'ledger';
             $validatedData['reference_id'] = $data['ledger']->id;
-            $transaction = Transaction::create($validatedData);
-            // Return all details as array (including id, timestamps, etc.)
+            $transaction = Transaction::create($validatedData); 
             return $transaction;
         });
     }

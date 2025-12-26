@@ -61,7 +61,7 @@ const loadCustomer = async (id) => {
         loading.value = false;
     }
 };
- 
+
 
 watch(
     () => props.open,
@@ -165,7 +165,7 @@ const closeDialog = () => {
                                             :class="statement.balance_nature === 'cr' ? 'text-green-600' : 'text-red-600'"
                                         >
                                             {{ formatAmount(statement.balance) }} {{statement.balance > 0 ? (statement.balance_nature === 'cr' ? t('general.owe_to') : t('general.owe_you')) : '' }}
-                                        </div> 
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -224,7 +224,7 @@ const closeDialog = () => {
                                         : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
                                     @click="activeTxnTab = 'sales'"
                                 >
-                                    {{ t('sales.sales') }}
+                                    {{ t('sale.sales') }}
                                 </button>
                                 <button
                                     type="button"
@@ -354,7 +354,7 @@ const closeDialog = () => {
                                     </tr>
                                 </tbody>
                             </table>
-                        </div> 
+                        </div>
                     </div>
                 </div>
 

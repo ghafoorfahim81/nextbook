@@ -25,7 +25,7 @@ class LedgerResource extends JsonResource
             'currency_id' => $this->currency_id,
             'currency' => $this->currency,
             'branch' => $this->branch,
-            'type' => $this->type, 
+            'type' => $this->type,
             'created_at' => $this->created_at,
             'openings' => LedgerOpeningResource::collection($this->whenLoaded('openings')),
         ];

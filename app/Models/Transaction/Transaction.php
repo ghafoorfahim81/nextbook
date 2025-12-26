@@ -12,10 +12,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 class Transaction extends Model
 {
-    use HasFactory, HasSearch, HasSorting, HasUserAuditable, SoftDeletes;
+    use HasFactory, HasSearch, HasSorting, HasUlids, HasUserAuditable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -24,13 +24,6 @@ class Transaction extends Model
      */
     protected $keyType = 'string';
     public $incrementing = false;
-    protected static function boot()
-    {
-        parent::boot();
-        static::creating(function ($model) {
-            $model->id = (string) new \Symfony\Component\Uid\Ulid();
-        });
-    }
     protected $fillable = [
         'account_id',
         'amount',
@@ -97,13 +90,13 @@ class Transaction extends Model
         return $this->belongsTo(\App\Models\Sale\Sale::class, 'reference_id')
             ->where('reference_type', 'sale');
     }
-    
+
     public function expense(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Expense\Expense::class, 'reference_id')
             ->where('reference_type', 'expense');
     }
- 
+
     public function income(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Sale\Sale::class, 'reference_id')
