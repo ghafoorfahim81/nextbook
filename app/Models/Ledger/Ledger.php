@@ -40,8 +40,8 @@ class Ledger extends Model
 
                 // Calculate totals
                 $totals = $transactions->reduce(function ($carry, $transaction) {
-                    $amount = $transaction->transaction->amount * $transaction->transaction->rate;
-                    $carry[$transaction->transaction->type] += $amount;
+                    $amount = $transaction->transaction?->amount * $transaction->transaction?->rate;
+                    $carry[$transaction->transaction?->type] += $amount;
                     return $carry;
                 }, ['debit' => 0, 'credit' => 0]);
 
