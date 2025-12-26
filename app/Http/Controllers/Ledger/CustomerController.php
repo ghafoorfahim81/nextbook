@@ -13,6 +13,8 @@ use App\Http\Resources\Receipt\ReceiptResource;
 use App\Http\Resources\Payment\PaymentResource;
 use App\Http\Resources\Ledger\LedgerOpeningResource;
 use App\Models\Ledger\Ledger;
+use App\Models\Ledger\LedgerTransaction;
+use App\Models\Transaction\Transaction;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Branch;
 use Illuminate\Http\Request;
@@ -110,7 +112,6 @@ class CustomerController extends Controller
     {
         $customer->load([
             'currency',
-            'branch',
             'openings.transaction.currency',
             'ledgerTransactions.transaction.account',
             'ledgerTransactions.transaction.currency',
@@ -162,12 +163,12 @@ class CustomerController extends Controller
     {
         $validated = $request->validated();
         $customer->update($validated);
-
+ 
         // Remove existing opening balances
-        $customer->ledgerTransactions()->whereHas('opening')->get()->each(function ($transaction) {
-            $transaction->transaction()->forceDelete();
-            $transaction->opening()->forceDelete();
-            $transaction->forceDelete();
+        $customer->openings->each(function ($opening) {
+            LedgerTransaction::where('transaction_id',$opening->transaction_id)->forceDelete();
+            $opening->forceDelete();
+            $opening->transaction()->forceDelete();
         });
 
         $openings = collect($request->input('openings', []))
@@ -185,7 +186,6 @@ class CustomerController extends Controller
             $openings->each(function ($opening) use ($customer, $arId, $apId, $transactionService) {
                 $type = $opening['type'] ?? 'debit';
                 $accountId = $type === 'credit' ? $arId : $apId;
-
                 $data = [
                     'ledger' =>$customer,
                     'account_id' => $accountId,
@@ -195,6 +195,7 @@ class CustomerController extends Controller
                     'date' => now(),
                     'type' => $type,
                 ];
+
                 $transaction = $transactionService->createLedgerTransaction($data);
 
                 $customer->ledgerTransactions()->create([
@@ -222,23 +223,40 @@ class CustomerController extends Controller
                 'error' => $customer->getDependencyMessage()
             ]);
         }
-        $customer->ledgerTransactions()->whereHas('opening')->get()->each(function ($transaction) {
+        $customer->ledgerTransactions()->get()->each(function ($transaction) {
             $transaction->transaction()->delete();
-            $transaction->opening()->delete();
             $transaction->delete();
         });
+        $customer->openings()->delete();
         $customer->delete();
 
         return redirect()->route('customers.index')->with('success', 'Customer deleted successfully.');
     }
     public function restore(Request $request, Ledger $customer)
     {
-        $customer->ledgerTransactions()->whereHas('opening')->get()->each(function ($transaction) {
-            $transaction->transaction()->restore();
-            $transaction->opening()->restore();
-            $transaction->restore();
+        \DB::transaction(function () use ($customer) {
+            // 3. Batch restore instead of one-by-one
+            $customer->ledgerTransactions()
+                ->with(['transaction']) // Eager load to avoid N+1
+                ->onlyTrashed()
+                ->get()
+                ->each(function ($ledgerTransaction) {
+                    if ($ledgerTransaction->transaction) {
+                        $ledgerTransaction->transaction()->restore();
+                    }
+                    $ledgerTransaction->restore();
+                });
+
+            // 4. Batch restore openings
+            $customer->openings()
+                ->onlyTrashed()
+                ->restore();
+
+            // 5. Restore the customer
+            $customer->restore();
         });
-        $customer->restore();
-        return redirect()->route('customers.index')->with('success', 'Customer restored successfully.');
+
+        return redirect()->route('customers.index')
+            ->with('success', 'Customer restored successfully.');
     }
 }

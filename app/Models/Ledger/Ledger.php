@@ -5,7 +5,7 @@ namespace App\Models\Ledger;
 use App\Models\Administration\Branch;
 use App\Models\Ledger\LedgerOpening;
 use App\Models\Sale\Sale;
-use App\Models\Receipt\Receipt; 
+use App\Models\Receipt\Receipt;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;

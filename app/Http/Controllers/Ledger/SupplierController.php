@@ -17,6 +17,10 @@ use App\Models\Administration\Branch;
 use App\Http\Resources\Purchase\PurchaseResource;
 use App\Http\Resources\Payment\PaymentResource;
 use Illuminate\Http\Request;
+use App\Services\TransactionService;
+use Illuminate\Support\Facades\Cache;
+use App\Http\Resources\Sale\SaleResource;
+use App\Models\Ledger\LedgerTransaction;
 
 class SupplierController extends Controller
 {
@@ -66,28 +70,30 @@ class SupplierController extends Controller
             ->filter(function ($opening) {
                 return !empty($opening['currency_id']) && (float)($opening['amount'] ?? 0) > 0;
             });
-
-        if ($openings->isNotEmpty()) {
-            $arId = Account::where('name', 'Account Receivable')->value('id');
-            $apId = Account::where('name', 'Account Payable')->value('id');
-
+        $glAccounts = Cache::get('gl_accounts');
+        $transactionService = app(TransactionService::class);
+            if ($openings->isNotEmpty()) {
+                $arId = $glAccounts['account-receivable'];
+                $apId = $glAccounts['account-payable'];
             abort_unless($arId && $apId, 500, 'System accounts (AR/AP) are missing.');
 
-            $openings->each(function ($opening) use ($ledger, $arId, $apId) {
+            $openings->each(function ($opening) use ($ledger, $arId, $apId, $transactionService) {
                 $type = $opening['type'] ?? 'debit';
                 $accountId = $type === 'credit' ? $arId : $apId;
-
-                $transaction = $ledger->transactions()->create([
-                    'amount' => (float) $opening['amount'],
+                $data = [
+                    'ledger' =>$ledger,
                     'account_id' => $accountId,
+                    'amount' => (float) $opening['amount'],
                     'currency_id' => $opening['currency_id'],
-                    'transactionable_type' => Ledger::class,
-                    'transactionable_id' => $ledger->id,
                     'rate' => (float) $opening['rate'],
                     'date' => now(),
                     'type' => $type,
-                    'remark' => 'Opening balance for supplier',
-                    'created_by' => auth()->id(),
+                ];
+
+                $transaction = $transactionService->createLedgerTransaction($data);
+
+                $ledger->ledgerTransactions()->create([
+                    'transaction_id' => $transaction['id'],
                 ]);
 
                 $transaction->opening()->create([
@@ -107,22 +113,20 @@ class SupplierController extends Controller
     {
         $supplier->load([
             'currency',
-            'branch',
             'openings.transaction.currency',
-            'transactions.account',
-            'transactions.currency',
+            'ledgerTransactions.transaction.account',
+            'ledgerTransactions.transaction.currency',
         ]);
 
-        $purchases = $supplier->purchases->load('transaction.currency');
-        $payments = $supplier->payments->load('paymentTransaction.currency');
+        $sales = $supplier->sales->load('transaction.currency');
         $receipts = $supplier->receipts->load('receiveTransaction.currency');
- 
+        $payments = $supplier->payments->load('bankTransaction.currency');
         if ($request->expectsJson()) {
             return response()->json([
                 'supplier' => new LedgerResource($supplier),
-                'purchases' => PurchaseResource::collection($purchases),
-                'payments' => PaymentResource::collection($payments),
+                'sales' => SaleResource::collection($sales),
                 'receipts' => ReceiptResource::collection($receipts),
+                'payments' => PaymentResource::collection($payments),
             ]);
         }
 
@@ -162,9 +166,11 @@ class SupplierController extends Controller
         $supplier->update($validated);
 
         // Remove existing opening balances
-        $supplier->transactions()->whereHas('opening')->get()->each(function ($transaction) {
-            $transaction->opening()->forceDelete();
-            $transaction->forceDelete();
+
+        $supplier->openings->each(function ($opening) {
+            LedgerTransaction::where('transaction_id',$opening->transaction_id)->forceDelete();
+            $opening->forceDelete();
+            $opening->transaction()->forceDelete();
         });
 
         $openings = collect($request->input('openings', []))
@@ -172,27 +178,32 @@ class SupplierController extends Controller
                 return !empty($opening['currency_id']) && (float)($opening['amount'] ?? 0) > 0;
             });
 
-        if ($openings->isNotEmpty()) {  // Update existing opening balances
-            $arId = Account::where('name', 'Account Receivable')->value('id');
-            $apId = Account::where('name', 'Account Payable')->value('id');
+        $glAccounts = Cache::get('gl_accounts');
 
+        if ($openings->isNotEmpty()) {  // Update existing opening balances
+            $arId = $glAccounts['account-receivable'];
+            $apId = $glAccounts['account-payable'];
+  // Update existing opening balances
             abort_unless($arId && $apId, 500, 'System accounts (AR/AP) are missing.');
 
-            $openings->each(function ($opening) use ($supplier, $arId, $apId) {
+            $transactionService = app(TransactionService::class);
+            $openings->each(function ($opening) use ($supplier, $arId, $apId, $transactionService) {
                 $type = $opening['type'] ?? 'debit';
                 $accountId = $type === 'credit' ? $arId : $apId;
-
-                $transaction = $supplier->transactions()->create([
-                    'amount' => (float) $opening['amount'],
+                $data = [
+                    'ledger' =>$supplier,
                     'account_id' => $accountId,
+                    'amount' => (float) $opening['amount'],
                     'currency_id' => $opening['currency_id'],
-                    'transactionable_type' => Ledger::class,
-                    'transactionable_id' => $supplier->id,
                     'rate' => (float) $opening['rate'],
                     'date' => now(),
                     'type' => $type,
-                    'remark' => 'Opening balance for supplier',
-                    'created_by' => auth()->id(),
+                ];
+
+                $transaction = $transactionService->createLedgerTransaction($data);
+
+                $supplier->ledgerTransactions()->create([
+                    'transaction_id' => $transaction['id'],
                 ]);
 
                 $transaction->opening()->create([
@@ -210,15 +221,16 @@ class SupplierController extends Controller
      */
     public function destroy(Request $request, Ledger $supplier)
     {
-        
+
         if (!$supplier->canBeDeleted()) {
             return inertia('Ledgers/Suppliers/Index', [
                 'error' => $supplier->getDependencyMessage()
             ]);
         }
-        $supplier->transactions()->whereHas('opening')->get()->each(function ($transaction) {
-            $transaction->opening()->forceDelete();
-            $transaction->forceDelete();
+        $supplier->openings->each(function ($opening) {
+            LedgerTransaction::where('transaction_id',$opening->transaction_id)->delete();
+            $opening->delete();
+            $opening->transaction()->delete();
         });
         $supplier->delete();
 
@@ -226,10 +238,12 @@ class SupplierController extends Controller
     }
     public function restore(Request $request, Ledger $supplier)
     {
-        $supplier->transactions()->whereHas('opening')->get()->each(function ($transaction) {
-            $transaction->opening()->restore();
-            $transaction->restore();
+        $supplier->openings->each(function ($opening) {
+            LedgerTransaction::where('transaction_id',$opening->transaction_id)->restore();
+            $opening->restore();
+            $opening->transaction()->restore();
         });
+
         $supplier->restore();
         return redirect()->route('suppliers.index')->with('success', 'Supplier restored successfully.');
     }
