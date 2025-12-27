@@ -22,6 +22,11 @@ use Illuminate\Support\Str;
 
 class AccountController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Account::class, 'chart_of_account');
+    }
+
     public function index(Request $request)
     { 
         $perPage = $request->input('perPage', 10);

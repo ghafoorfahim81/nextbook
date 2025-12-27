@@ -18,6 +18,11 @@ use Illuminate\Support\Facades\Storage;
 
 class ExpenseController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Expense::class, 'expense');
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);

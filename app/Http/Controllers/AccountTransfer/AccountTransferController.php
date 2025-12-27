@@ -16,6 +16,11 @@ use Illuminate\Support\Facades\DB;
 
 class AccountTransferController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(AccountTransfer::class, 'account_transfer');
+    }
+
     public function index(Request $request)
     { 
         $perPage = $request->input('perPage', 10);

@@ -13,6 +13,11 @@ use Illuminate\Http\Response;
 
 class LedgerController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Ledger::class, 'ledger');
+    }
+
     public function index(Request $request): Response
     {
         $perPage = $request->input('perPage', 10);

@@ -14,6 +14,11 @@ use Illuminate\Http\JsonResponse;
 
 class BranchController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Branch::class, 'branch');
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);

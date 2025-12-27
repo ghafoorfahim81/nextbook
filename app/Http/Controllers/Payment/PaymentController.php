@@ -16,6 +16,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 class PaymentController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Payment::class, 'payment');
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);

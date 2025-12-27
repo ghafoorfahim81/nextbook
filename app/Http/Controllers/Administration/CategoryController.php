@@ -13,6 +13,11 @@ use Illuminate\Http\Response;
 
 class CategoryController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Category::class, 'category');
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);

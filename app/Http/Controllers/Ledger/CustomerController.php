@@ -10,8 +10,7 @@ use App\Http\Resources\Administration\CurrencyResource;
 use App\Http\Resources\Administration\BranchResource;
 use App\Http\Resources\Sale\SaleResource;
 use App\Http\Resources\Receipt\ReceiptResource;
-use App\Http\Resources\Payment\PaymentResource;
-use App\Http\Resources\Ledger\LedgerOpeningResource;
+use App\Http\Resources\Payment\PaymentResource; 
 use App\Models\Ledger\Ledger;
 use App\Models\Ledger\LedgerTransaction;
 use App\Models\Transaction\Transaction;
@@ -20,8 +19,14 @@ use App\Models\Administration\Branch;
 use Illuminate\Http\Request;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\Cache;
+
 class CustomerController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Ledger::class, 'customer');
+    }
+
     /**
      * Display a listing of the resource.
      */

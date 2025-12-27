@@ -13,6 +13,11 @@ use Illuminate\Http\Response;
 
 class StoreController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Store::class, 'store');
+    }
+
     public function index(Request $request)
     {
 
