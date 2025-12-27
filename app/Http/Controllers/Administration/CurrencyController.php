@@ -12,6 +12,11 @@ use Illuminate\Http\Response;
 
 class CurrencyController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Currency::class, 'currency');
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);

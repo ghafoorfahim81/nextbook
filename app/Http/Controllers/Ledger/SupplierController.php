@@ -24,6 +24,11 @@ use App\Models\Ledger\LedgerTransaction;
 
 class SupplierController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Ledger::class, 'supplier');
+    }
+
     /**
      * Display a listing of the resource.
      */

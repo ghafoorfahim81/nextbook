@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Administration;
 
-use App\Administration\Designation;
+use App\Models\Administration\Designation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Administration\DesignationStoreRequest;
 use App\Http\Requests\Administration\DesignationUpdateRequest;
@@ -13,6 +13,10 @@ use Illuminate\Http\Response;
 
 class DesignationController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Designation::class, 'designation');
+    }
     public function index(Request $request): Response
     {
         $designations = Designation::all();

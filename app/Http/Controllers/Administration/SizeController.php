@@ -11,6 +11,11 @@ use Illuminate\Http\Request;
 
 class SizeController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Size::class, 'size');
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);

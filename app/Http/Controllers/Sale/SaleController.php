@@ -17,6 +17,11 @@ use App\Models\Transaction\Transaction;
 use Mpdf\Mpdf;
 class SaleController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Sale::class, 'sale');
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);

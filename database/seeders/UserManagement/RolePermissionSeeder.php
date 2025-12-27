@@ -2,136 +2,202 @@
 
 namespace Database\Seeders\UserManagement;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
+use Illuminate\Database\Seeder; 
+use Spatie\Permission\Models\Permission;
+use App\Models\User; 
 use App\Models\Role;
-use App\Models\Permission;
+use Symfony\Component\Uid\Ulid;
 class RolePermissionSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
+        /*
+        |--------------------------------------------------------------------------
+        | 1. Resources (models / domains)
+        |--------------------------------------------------------------------------
+        */
         $resources = [
-            'administration',
-            'user_management',
+            'users',
+            'roles',
+            'employees',
+
+            'items',
+            'categories',
+            'brands',
+            'stores',
+            'branches',
+
+            'accounts',
+            'account_transfers',
+
             'owners',
-            'drawing',
-            "employees",
-            'inventory',
+            'drawings',
+
+            'customers',
+            'suppliers',
+
+            'purchases',
+            'purchase_returns',
+            'purchase_orders',
+
+            'sales',
+            'sale_returns',
+            'sale_orders',
+
+            'receipts',
+            'payments',
+
+            'expenses',
+            'expense_categories',
+
             'reports',
-            'account',
-            'purchase',
-            'sale',
-            'ledger',
-            'receipt',
-            'payment',
-            'account_transfer',
-            'backup',
-            'sale_quotation',
-            'purchase_quotation',
-            "sale_return",
-            "purchase_return",
-            "sale_order",
-            "purchase_order",
+
             'stock_transfer',
             'stock_receive',
             'stock_issue',
             'stock_adjustment',
+
+            'backup',
         ];
 
-        $transaction_resources = [
-            'sale',
-            'sale_return',
-            'sale_order',
-            'purchase',
-            'purchase_return',
-            'purchase_order',
-            'receipt',
-            'payment',
-            'account_transfer',
-            "drawing",
-            'reports',
+        /*
+        |--------------------------------------------------------------------------
+        | 2. Actions
+        |--------------------------------------------------------------------------
+        */
+        $baseActions = [
+            'view',
+            'create',
+            'update',
+            'delete',
+            'import',
+            'export',
         ];
-        // 'print', 'approve', 'reject', 'approve','email'
-        // Define actions
-        $actions = ['list','create', 'edit', 'view', 'delete', 'import', 'export', ];
 
+        $transactionActions = array_merge($baseActions, [
+            'print',
+            'approve',
+            'reject',
+            'email',
+        ]);
 
-        // Create permissions for each resource
-        $permissions = [];
+        $transactionResources = [
+            'purchases',
+            'purchase_returns',
+            'purchase_orders',
+            'sales',
+            'sale_returns',
+            'sale_orders',
+            'receipts',
+            'payments',
+            'account_transfers',
+            'drawings',
+        ];
 
+        /*
+        |--------------------------------------------------------------------------
+        | 3. Create Permissions
+        |--------------------------------------------------------------------------
+        */
         foreach ($resources as $resource) {
-            if (in_array($resource, $transaction_resources) ) {
-                $actions = array_merge($actions, ['print', 'approve', 'reject', 'approve','email']);
-                foreach ($actions as $action) {
-                    $permissions[] = "{$action}_{$resource}";
-                }
-            }
-            else {
-                foreach ($actions as $action) {
-                    $permissions[] = "{$action}_{$resource}";
-                }
+            $actions = in_array($resource, $transactionResources, true)
+                ? $transactionActions
+                : $baseActions;
+
+            foreach ($actions as $action) {
+                Permission::firstOrCreate([
+                    'id' => (string) new Ulid(),
+                    'name' => "{$resource}.{$action}",
+                    'guard_name' => 'web',
+                ]);
             }
         }
 
-        // Insert permissions into the database
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
-        }
+        /*
+        |--------------------------------------------------------------------------
+        | 4. Create Roles
+        |--------------------------------------------------------------------------
+        */
+        $superAdmin = Role::firstOrCreate([
+            'name' => 'super-admin',
+            'guard_name' => 'web',
+        ]);
 
-        // Create roles
-        $superAdmin = Role::firstOrCreate(['name' => 'Super Admin']);
-        $admin = Role::firstOrCreate(['name' => 'admin']);
-        $accountant = Role::firstOrCreate(['name' => 'Accountant']);
-        $clerk = Role::firstOrCreate(['name' => 'Clerk']);
+        $admin = Role::firstOrCreate([
+            'name' => 'admin',
+            'guard_name' => 'web',
+        ]);
 
-        // Assign all permissions to Super Admin
-        $superAdmin->givePermissionTo(Permission::all());
+        $accountant = Role::firstOrCreate([
+            'name' => 'accountant',
+            'guard_name' => 'web',
+        ]);
 
-        // Assign permissions to Admin (excluding restricted ones)
-        $adminPermissions = Permission::whereNotIn('name', [
-            'delete_user_management',
-            'create_account',
-            'edit_account',
-            'list_account',
-            'delete_account',
-            'import_account',
-            'export_account',
-            'print_account',
-            'approve_account',
-            'reject_account',
-            'approve_account',
-            'email_account',
+        $clerk = Role::firstOrCreate([
+            'name' => 'clerk',
+            'guard_name' => 'web',
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | 5. Assign Permissions to Roles
+        |--------------------------------------------------------------------------
+        */
+
+        // Super Admin → ALL permissions
+        $superAdmin->syncPermissions(Permission::all());
+
+        // Admin → everything except deleting users & roles
+        $admin->syncPermissions(
+            Permission::whereNotIn('name', [
+                'users.delete',
+                'roles.delete',
+            ])->get()
+        );
+
+        // Accountant → transactional + reports (NO delete)
+        $accountantPermissions = Permission::whereIn('name', [
+            // Reports
+            'reports.view',
+            'reports.export',
+
+            // Purchases
+            'purchases.view',
+            'purchases.create',
+            'purchases.update',
+            'purchases.approve',
+            'purchases.print',
+
+            // Sales
+            'sales.view',
+            'sales.create',
+            'sales.update',
+            'sales.approve',
+            'sales.print',
+
+            // Receipts & Payments
+            'receipts.view',
+            'receipts.create',
+            'payments.view',
+            'payments.create',
         ])->get();
-        $admin->syncPermissions($adminPermissions);
 
-        // Assign limited permissions to Editor (only edit, view_list, and view)
-        $accountantPermissions = Permission::where(function ($query) {
-            $query->where('name', 'like', 'edit_%')
-                ->orWhere('name', 'like', 'list_%')
-                ->orWhere('name', 'like', 'view_%');
-        })->where('name', '!=', 'reports')->get();
         $accountant->syncPermissions($accountantPermissions);
 
-        // Assign minimal permissions to User (only view_list and view)
-        $clerkPermissions = Permission::where(function ($query) {
-            $query->where('name', 'like', 'list_%')
-                ->orWhere('name', 'like', 'view_%');
-        })->where('name', '!=', 'reports')->get();
-        $clerk->syncPermissions($clerkPermissions);
+        // Clerk → view-only access
+        $clerk->syncPermissions(
+            Permission::where('name', 'like', '%.view')->get()
+        );
 
-        // Assign only 'view_list_reports' permission for reports to all roles
-        Permission::where('name', ' reports')->each(function ($permission) use ($admin, $accountant, $clerk) {
-            $admin->givePermissionTo($permission);
-            $accountant->givePermissionTo($permission);
-            $clerk->givePermissionTo($permission);
-        });
+        /*
+        |--------------------------------------------------------------------------
+        | 6. Assign Super Admin Role to Default User (optional)
+        |--------------------------------------------------------------------------
+        */
+        $superAdminUser = User::where('email', 'admin@nextbook.com')->first();
 
-        $superAdminUser = \App\Models\User::where('name', 'admin')->first();
         if ($superAdminUser) {
-            $superAdminUser->assignRole('Super Admin');
+            $superAdminUser->syncRoles(['super-admin']);
         }
-    }       
+    }
 }

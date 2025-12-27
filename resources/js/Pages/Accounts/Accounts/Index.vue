@@ -6,11 +6,12 @@ import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3';
+import { useAuth } from '@/composables/useAuth';
 const props = defineProps({
     accounts: Object,
 });
 const { t } = useI18n();
-
+const { can } = useAuth();
 const columns = computed(() => ([
     { key: 'name', label: t('general.name') },
     { key: 'number', label: t('general.number') },
@@ -44,6 +45,7 @@ const deleteItem = (id) => {
 <template>
     <AppLayout :title="t('account.chart_of_accounts')">
         <DataTable
+            can="chart-of-accounts"
             :items="accounts"
             :columns="columns"
             @delete="deleteItem"
@@ -52,7 +54,7 @@ const deleteItem = (id) => {
             :title="t('account.chart_of_accounts')"
             :url="`chart-of-accounts.index`"
             :hasShow="true"
-            :showAddButton="true"
+            :showAddButton="can('chart-of-accounts.create')"
             :addTitle="t('account.account')"
             :addAction="'redirect'"
             :addRoute="'chart-of-accounts.create'"

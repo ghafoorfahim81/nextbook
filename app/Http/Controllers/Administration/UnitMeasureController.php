@@ -23,6 +23,7 @@ class UnitMeasureController extends Controller
 
     public function __construct()
     {
+        $this->authorizeResource(UnitMeasure::class, 'unit_measure');
         $this->metric = new Quantity();
     }
     public function index(Request $request)

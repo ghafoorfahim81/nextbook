@@ -13,6 +13,11 @@ use Illuminate\Http\Response;
 
 class CompanyController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Company::class, 'company');
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);

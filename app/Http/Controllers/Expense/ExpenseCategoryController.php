@@ -11,6 +11,11 @@ use Illuminate\Http\Request;
 
 class ExpenseCategoryController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(ExpenseCategory::class, 'expense_category');
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);

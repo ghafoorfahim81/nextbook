@@ -16,6 +16,11 @@ use App\Services\StockService;
 
 class PurchaseController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Purchase::class, 'purchase');
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);

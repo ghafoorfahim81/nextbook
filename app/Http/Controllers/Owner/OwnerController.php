@@ -19,6 +19,11 @@ use Inertia\Response;
 use App\Models\Transaction\Transaction;
 class OwnerController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Owner::class, 'owner');
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);

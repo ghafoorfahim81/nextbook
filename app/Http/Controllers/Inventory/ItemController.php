@@ -23,6 +23,11 @@ use App\Models\Account\Account;
 use App\Models\Inventory\ItemOpeningTransaction;
 class ItemController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Item::class, 'item');
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);

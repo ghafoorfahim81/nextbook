@@ -168,6 +168,7 @@ function shouldExpandParent(items: any[] | undefined): boolean {
 }
 import { useColorMode, useCycleList } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
+import { useAuth } from '@/composables/useAuth'
 
 const mode = useColorMode({
     emitAuto: true,
@@ -185,6 +186,8 @@ const chevronIcon = computed(() => isRTL.value ? ChevronLeft : ChevronRight)
 // Allow parent pages to control initial sidebar state
 const props = withDefaults(defineProps<{ sidebarCollapsed?: boolean }>(), { sidebarCollapsed: false })
 
+const { can } = useAuth()
+
 const navMain = computed(() => [
     {
         title: t('sidebar.main.dashboard'),
@@ -196,9 +199,9 @@ const navMain = computed(() => [
         url: '#',
         icon: ChartColumn,
         items: [
-            { title: t('sidebar.account.chart_of_account'), url: '/chart-of-accounts' },
-            { title: t('sidebar.account.account_type'), url: '/account-types' },
-            {title: t('sidebar.main.transfer'), url: '/account-transfers', icon: ArrowLeftRight}
+            { title: t('sidebar.account.chart_of_account'), url: '/chart-of-accounts', permission: 'accounts.view' },
+            { title: t('sidebar.account.account_type'), url: '/account-types', permission: 'account_types.view' },
+            { title: t('sidebar.main.transfer'), url: '/account-transfers', icon: ArrowLeftRight, permission: 'account_transfers.view' }
         ],
     },
     {
@@ -206,14 +209,14 @@ const navMain = computed(() => [
         url: '#',
         icon: Cog,
         items: [
-            { title: t('sidebar.administration.category'), url: '/categories' },
-            { title: t('sidebar.administration.currency'), url: '/currencies' },
-            { title: t('sidebar.administration.unit_measure'), url: '/unit-measures' },
-            { title: t('sidebar.administration.size'), url: '/sizes' },
-            { title: t('sidebar.administration.branch'), url: '/branches' },
-            { title: t('sidebar.administration.brand'), url: '/brands' },
-            { title: t('sidebar.administration.store'), url: '/stores' },
-            { title: t('sidebar.administration.company'), url: '/company' },
+            { title: t('sidebar.administration.category'), url: '/categories', permission: 'categories.view' },
+            { title: t('sidebar.administration.currency'), url: '/currencies', permission: 'currencies.view' },
+            { title: t('sidebar.administration.unit_measure'), url: '/unit-measures', permission: 'unit_measures.view' },
+            { title: t('sidebar.administration.size'), url: '/sizes', permission: 'sizes.view' },
+            { title: t('sidebar.administration.branch'), url: '/branches', permission: 'branches.view' },
+            { title: t('sidebar.administration.brand'), url: '/brands', permission: 'brands.view' },
+            { title: t('sidebar.administration.store'), url: '/stores', permission: 'stores.view' },
+            { title: t('sidebar.administration.company'), url: '/company', permission: 'companies.view' },
         ],
     },
     {
@@ -221,9 +224,9 @@ const navMain = computed(() => [
         url: '#',
         icon: Database,
         items: [
-            { title: t('sidebar.inventory.item'), url: '/items' },
-            { title: t('sidebar.inventory.fast_entry'), url: '/item-fast-entry' },
-            { title: t('sidebar.inventory.fast_opening'), url: '/item-fast-opening' },
+            { title: t('sidebar.inventory.item'), url: '/items', permission: 'items.view' },
+            { title: t('sidebar.inventory.fast_entry'), url: '/item-fast-entry', permission: ['items.view', 'items.create'] },
+            { title: t('sidebar.inventory.fast_opening'), url: '/item-fast-opening', permission: ['items.view', 'items.create'] },
         ],
     },
     {
@@ -231,8 +234,8 @@ const navMain = computed(() => [
         url: '#',
         icon: UserCog,
         items: [
-            { title: t('sidebar.ledger.customer'), url: '/customers' },
-            { title: t('sidebar.ledger.supplier'), url: '/suppliers' },
+            { title: t('sidebar.ledger.customer'), url: '/customers', permission: 'ledgers.view' },
+            { title: t('sidebar.ledger.supplier'), url: '/suppliers', permission: 'ledgers.view' },
         ],
     },
     {
@@ -240,7 +243,7 @@ const navMain = computed(() => [
         url: '#',
         icon: BookUser,
         items: [
-            { title: t('sidebar.owners.owners'), url: '/owners' },
+            { title: t('sidebar.owners.owners'), url: '/owners', permission: 'owners.view' },
             { title: t('sidebar.owners.drawing'), url: '/drawing' },
         ],
     },
@@ -249,8 +252,8 @@ const navMain = computed(() => [
         url: '#',
         icon: Banknote,
         items: [
-            { title: t('sidebar.expense.expense_category'), url: '/expense-categories' },
-            { title: t('sidebar.expense.expense'), url: '/expenses' },
+            { title: t('sidebar.expense.expense_category'), url: '/expense-categories', permission: 'expense_categories.view' },
+            { title: t('sidebar.expense.expense'), url: '/expenses', permission: 'expenses.view' },
         ],
     },
     {
@@ -258,7 +261,7 @@ const navMain = computed(() => [
         url: '#',
         icon: ShoppingBasket,
         items: [
-            { title: t('sidebar.purchase.purchase'), url: '/purchases' },
+            { title: t('sidebar.purchase.purchase'), url: '/purchases', permission: 'purchases.view' },
             // { title: t('sidebar.purchase.purchase_return'), url: '/purchase-returns' },
         ],
     },
@@ -267,7 +270,7 @@ const navMain = computed(() => [
         url: '#',
         icon: ShoppingCart,
         items: [
-            { title: t('sidebar.sale.sale'), url: '/sales' },
+            { title: t('sidebar.sale.sale'), url: '/sales', permission: 'sales.view' },
             // { title: t('sidebar.sale.sale_return'), url: '/sale-returns' },
         ],
     },
@@ -276,11 +279,13 @@ const navMain = computed(() => [
         title: t('sidebar.main.receipt'),
         url: '/receipts',
         icon: ReceiptIcon,
+        permission: 'receipts.view',
     },
     {
         title: t('sidebar.main.payment'),
         url: '/payments',
         icon: CreditCard,
+        permission: 'payments.view',
     },
 
     {
@@ -288,8 +293,8 @@ const navMain = computed(() => [
         url: '#',
         icon: UserRound,
         items: [
-            { title: t('sidebar.user_management.user'), url: '/users' },
-            { title: t('sidebar.user_management.role'), url: '/roles' },
+            { title: t('sidebar.user_management.user'), url: '/users', permission: 'users.view' },
+            { title: t('sidebar.user_management.role'), url: '/roles', permission: 'roles.view' },
         ],
     },
     {
@@ -298,6 +303,34 @@ const navMain = computed(() => [
         icon: Cog,
     },
 ])
+
+const filteredNavMain = computed(() => {
+    return navMain.value
+        .map((item) => {
+            // Leaf item
+            if (!item.items) {
+                if (!item.permission || can(item.permission)) {
+                    return item
+                }
+                return null
+            }
+
+            // Parent with children
+            const visibleChildren = item.items.filter(
+                (child) => !child.permission || can(child.permission),
+            )
+
+            if (visibleChildren.length === 0) {
+                return null
+            }
+
+            return {
+                ...item,
+                items: visibleChildren,
+            }
+        })
+        .filter(Boolean)
+})
 
 // assign to data after computed is available
 data.navMain = navMain.value
@@ -369,9 +402,9 @@ function logout() {
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
-                    <SidebarGroupLabel>{{ t('sidebar.group.menu') }}</SidebarGroupLabel>
-                    <SidebarMenu>
-                        <template v-for="item in navMain" :key="item.title">
+                        <SidebarGroupLabel>{{ t('sidebar.group.menu') }}</SidebarGroupLabel>
+                        <SidebarMenu>
+                        <template v-for="item in filteredNavMain" :key="item.title">
                             <!-- Simple menu item without sub-items (like Dashboard) -->
                             <SidebarMenuItem v-if="!item.items" >
                                 <SidebarMenuButton

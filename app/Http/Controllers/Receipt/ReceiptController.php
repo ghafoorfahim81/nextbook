@@ -17,6 +17,11 @@ use Illuminate\Support\Facades\DB;
 
 class ReceiptController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(Receipt::class, 'receipt');
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);

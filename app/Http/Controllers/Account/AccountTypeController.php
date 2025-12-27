@@ -13,6 +13,11 @@ use Illuminate\View\View;
 
 class AccountTypeController extends Controller
 {
+    public function __construct()
+    {
+        $this->authorizeResource(AccountType::class, 'account_type');
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', 10);
