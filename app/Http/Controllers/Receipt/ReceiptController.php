@@ -12,6 +12,7 @@ use App\Models\Receipt\Receipt;
 use App\Models\Transaction\Transaction;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ReceiptController extends Controller
@@ -64,13 +65,13 @@ class ReceiptController extends Controller
                 'cheque_no' => $validated['cheque_no'] ?? null,
                 'narration' => $validated['narration'] ?? null,
             ]);
-
+            $glAccounts = Cache::get('gl_accounts');
             // Credit Accounts Receivable for selected ledger
-            $arAccountId = Account::where('slug', 'account-receivable')->value('id');
+            $arAccountId = $glAccounts['account-receivable'];
+
             $creditRemark = "Receipt #{$receipt->number} from {$ledger->name}";
             $creditTxn = $transactionService->createTransaction([
-                'account_id' => $arAccountId,
-                'ledger_id' => $ledger->id,
+                'account_id' => $arAccountId, 
                 'amount' => $amount,
                 'currency_id' => $currencyId,
                 'rate' => $rate,
@@ -81,11 +82,11 @@ class ReceiptController extends Controller
                 'reference_id' => $receipt->id,
             ]);
 
+
             // Debit selected bank account
             $debitRemark = "Bank receive for receipt #{$receipt->number}";
             $debitTxn = $transactionService->createTransaction([
-                'account_id' => $bankAccountId,
-                'ledger_id' => null,
+                'account_id' => $bankAccountId, 
                 'amount' => $amount,
                 'currency_id' => $currencyId,
                 'rate' => $rate,
@@ -94,6 +95,10 @@ class ReceiptController extends Controller
                 'remark' => $debitRemark,
                 'reference_type' => 'receipt',
                 'reference_id' => $receipt->id,
+            ]);
+
+            $ledger->ledgerTransactions()->create([
+                'transaction_id' => $creditTxn->id,
             ]);
 
             $receipt->update([
@@ -151,12 +156,12 @@ class ReceiptController extends Controller
             $rate = isset($validated['rate']) ? (float) $validated['rate'] : $receipt->rate;
             $date = $validated['date'] ?? $receipt->date;
             $bankAccountId = $validated['bank_account_id'] ?? $receipt->bankTransaction?->account_id;
-            $arAccountId = Account::where('slug', 'account-receivable')->value('id');
+            $glAccounts = Cache::get('gl_accounts');
+            $arAccountId = $glAccounts['account-receivable'];
 
             if ($receipt->receive_transaction_id) {
-                Transaction::where('id', $receipt->receive_transaction_id)->update([
-                    'account_id' => $arAccountId,
-                    'ledger_id' => $ledger->id,
+                Transaction::where  ('id', $receipt->receive_transaction_id)->update([
+                    'account_id' => $arAccountId, 
                     'amount' => $amount,
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -165,11 +170,9 @@ class ReceiptController extends Controller
                     'remark' => "Receipt #{$receipt->number} from {$ledger->name}",
                 ]);
             }
-
             if ($receipt->bank_transaction_id) {
                 Transaction::where('id', $receipt->bank_transaction_id)->update([
-                    'account_id' => $bankAccountId,
-                    'ledger_id' => null,
+                    'account_id' => $bankAccountId, 
                     'amount' => $amount,
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -189,6 +192,7 @@ class ReceiptController extends Controller
             // Soft delete linked transactions then the receipt
             if ($receipt->receive_transaction_id) {
                 Transaction::where('id', $receipt->receive_transaction_id)->delete();
+                $receipt->ledger->ledgerTransactions()->where('transaction_id', $receipt->receive_transaction_id)->delete();
             }
             if ($receipt->bank_transaction_id) {
                 Transaction::where('id', $receipt->bank_transaction_id)->delete();
@@ -203,6 +207,7 @@ class ReceiptController extends Controller
         $receipt->restore();
         if ($receipt->receive_transaction_id) {
             Transaction::where('id', $receipt->receive_transaction_id)->restore();
+            $receipt->ledger->ledgerTransactions()->where('transaction_id', $receipt->receive_transaction_id)->restore();
         }
         if ($receipt->bank_transaction_id) {
             Transaction::where('id', $receipt->bank_transaction_id)->restore();
