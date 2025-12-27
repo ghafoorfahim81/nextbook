@@ -116,9 +116,15 @@ class DateConversionService
 
     /**
      * Convert single Gregorian date to display format
+1     *
+     * Accepts nullable input to avoid type errors when dates are missing.
      */
-    public function toDisplay(string $gregorianDate): string
+    public function toDisplay(?string $gregorianDate): ?string
     {
+        if ($gregorianDate === null || $gregorianDate === '') {
+            return null;
+        }
+
         $cacheKey = "toDisplay:{$gregorianDate}";
 
         if (isset($this->conversionCache[$cacheKey])) {
