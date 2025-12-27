@@ -13,7 +13,7 @@ use App\Models\Transaction\Transaction;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-
+use Illuminate\Support\Facades\Cache;
 class PaymentController extends Controller
 {
     public function index(Request $request)
@@ -71,11 +71,11 @@ class PaymentController extends Controller
             ]);
 
             // Debit Accounts Payable for selected ledger (reduce liability)
-            $apAccountId = Account::where('slug', 'account-payable')->value('id');
+            $glAccounts = Cache::get('gl_accounts');
+            $apAccountId = $glAccounts['account-payable'];
             $debitRemark = "Payment #{$payment->number} to {$ledger->name}";
             $debitTxn = $transactionService->createTransaction([
                 'account_id' => $apAccountId,
-                'ledger_id' => $ledger->id,
                 'amount' => $amount,
                 'currency_id' => $currencyId,
                 'rate' => $rate,
@@ -89,8 +89,7 @@ class PaymentController extends Controller
             // Credit selected bank account
             $creditRemark = "Bank payment for payment #{$payment->number}";
             $creditTxn = $transactionService->createTransaction([
-                'account_id' => $bankAccountId,
-                'ledger_id' => null,
+                'account_id' => $bankAccountId, 
                 'amount' => $amount,
                 'currency_id' => $currencyId,
                 'rate' => $rate,
@@ -99,6 +98,10 @@ class PaymentController extends Controller
                 'remark' => $creditRemark,
                 'reference_type' => 'payment',
                 'reference_id' => $payment->id,
+            ]);
+
+            $ledger->ledgerTransactions()->create([
+                'transaction_id' => $creditTxn->id,
             ]);
 
             $payment->update([
@@ -154,12 +157,12 @@ class PaymentController extends Controller
             $rate = isset($validated['rate']) ? (float) $validated['rate'] : ($payment->bankTransaction?->rate ?? 0);
             $date = $validated['date'] ?? $payment->date;
             $bankAccountId = $validated['bank_account_id'] ?? $payment->bankTransaction?->account_id;
-            $apAccountId = Account::where('slug', 'account-payable')->value('id');
+            $glAccounts = Cache::get('gl_accounts');
+            $apAccountId = $glAccounts['account-payable'];
 
             if ($payment->payment_transaction_id) {
                 Transaction::where('id', $payment->payment_transaction_id)->update([
                     'account_id' => $apAccountId,
-                    'ledger_id' => $ledger->id,
                     'amount' => $amount,
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -172,7 +175,6 @@ class PaymentController extends Controller
             if ($payment->bank_transaction_id) {
                 Transaction::where('id', $payment->bank_transaction_id)->update([
                     'account_id' => $bankAccountId,
-                    'ledger_id' => null,
                     'amount' => $amount,
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -191,6 +193,7 @@ class PaymentController extends Controller
         DB::transaction(function () use ($payment) {
             if ($payment->payment_transaction_id) {
                 Transaction::where('id', $payment->payment_transaction_id)->delete();
+                $payment->ledger->ledgerTransactions()->where('transaction_id', $payment->payment_transaction_id)->delete();
             }
             if ($payment->bank_transaction_id) {
                 Transaction::where('id', $payment->bank_transaction_id)->delete();
@@ -206,6 +209,7 @@ class PaymentController extends Controller
         $payment->restore();
         if ($payment->payment_transaction_id) {
             Transaction::where('id', $payment->payment_transaction_id)->restore();
+            $payment->ledger->ledgerTransactions()->where('transaction_id', $payment->payment_transaction_id)->restore();
         }
         if ($payment->bank_transaction_id) {
             Transaction::where('id', $payment->bank_transaction_id)->restore();
