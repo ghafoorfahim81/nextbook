@@ -19,7 +19,7 @@ class LedgerOpeningResource extends JsonResource
             'rate' => $this->transaction?->rate,
             'currency_id' => $this->transaction?->currency_id,
             'currency' => $this->transaction?->currency,
-            'date' => $dateConversionService->toDisplay($this->transaction?->date),
+            'date' => $this->transaction?->date ? $dateConversionService->toDisplay($this->transaction?->date) : null,
             'type' => $this->transaction?->type,
         ];
     }

@@ -37,11 +37,14 @@ class Ledger extends Model
                 // Use the new ledger_transactions pivot table to get all related transactions
                 // Assume you have a 'transactions' relationship through the pivot table (LedgerTransaction model)
                 $transactions = $this->ledgerTransactions()->get();
-
+                if(count($transactions)>0)       
+                {
                 // Calculate totals
                 $totals = $transactions->reduce(function ($carry, $transaction) {
                     $amount = $transaction->transaction?->amount * $transaction->transaction?->rate;
-                    $carry[$transaction->transaction?->type] += $amount;
+                    if ($transaction->transaction && !is_null($transaction->transaction->type)) {
+                        $carry[$transaction->transaction->type] += $amount;
+                    }
                     return $carry;
                 }, ['debit' => 0, 'credit' => 0]);
 
@@ -69,6 +72,17 @@ class Ledger extends Model
                             ? "Customer owes you {$balanceAmount}"
                             : "You owe {$balanceAmount} to this customer"),
                 ];
+                } else {
+                    return [
+                        'balance' => 0,
+                        'balance_nature' => null,
+                        'normal_balance_nature' => null,
+                        'is_normal_balance' => true,
+                        'total_debit' => 0,
+                        'total_credit' => 0,
+                        'net_balance' => 0,
+                    ];
+                }
             }
         );
     }
