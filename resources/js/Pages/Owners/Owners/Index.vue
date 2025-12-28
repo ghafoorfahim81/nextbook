@@ -48,6 +48,7 @@ const showItem = (id) => {
 <template>
     <AppLayout :title="t('owner.owners')">
         <DataTable
+            can="owners"
             :items="owners"
             :columns="columns"
             :hasShow="true"

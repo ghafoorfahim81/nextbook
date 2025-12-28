@@ -12,7 +12,7 @@ class BrandPolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'brands.view');
+        return $this->hasPermission($user, 'brands.view_any');
     }
 
     public function view(User $user, Brand $brand): bool

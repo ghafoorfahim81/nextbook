@@ -12,7 +12,7 @@ class CurrencyPolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'currencies.view');
+        return $this->hasPermission($user, 'currencies.view_any');
     }
 
     public function view(User $user, Currency $currency): bool

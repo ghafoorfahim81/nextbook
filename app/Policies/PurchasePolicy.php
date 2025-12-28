@@ -12,7 +12,7 @@ class PurchasePolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'purchases.view');
+        return $this->hasPermission($user, 'purchases.view_any');
     }
 
     public function view(User $user, Purchase $purchase): bool

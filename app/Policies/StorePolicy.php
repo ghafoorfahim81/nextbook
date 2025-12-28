@@ -12,7 +12,7 @@ class StorePolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'stores.view');
+        return $this->hasPermission($user, 'stores.view_any');
     }
 
     public function view(User $user, Store $store): bool

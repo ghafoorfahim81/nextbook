@@ -12,7 +12,7 @@ class CompanyPolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'companies.view');
+        return $this->hasPermission($user, 'companies.view_any');
     }
 
     public function view(User $user, Company $company): bool

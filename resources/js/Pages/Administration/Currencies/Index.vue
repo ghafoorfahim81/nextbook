@@ -56,6 +56,7 @@ const deleteItem = (id) => {
             @saved="() => { editingCurrency = null }"
         />
         <DataTable
+            can="currencies"
             :items="currencies"
             :columns="columns"
             @edit="editItem"

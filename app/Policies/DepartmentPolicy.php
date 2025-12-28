@@ -12,7 +12,7 @@ class DepartmentPolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'departments.view');
+        return $this->hasPermission($user, 'departments.view_any');
     }
 
     public function view(User $user, Department $department): bool

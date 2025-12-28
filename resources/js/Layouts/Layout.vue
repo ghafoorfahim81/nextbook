@@ -199,9 +199,9 @@ const navMain = computed(() => [
         url: '#',
         icon: ChartColumn,
         items: [
-            { title: t('sidebar.account.chart_of_account'), url: '/chart-of-accounts', permission: 'accounts.view' },
-            { title: t('sidebar.account.account_type'), url: '/account-types', permission: 'account_types.view' },
-            { title: t('sidebar.main.transfer'), url: '/account-transfers', icon: ArrowLeftRight, permission: 'account_transfers.view' }
+            { title: t('sidebar.account.chart_of_account'), url: '/chart-of-accounts', permission: 'accounts.view_any' },
+            { title: t('sidebar.account.account_type'), url: '/account-types', permission: 'account_types.view_any' },
+            { title: t('sidebar.main.transfer'), url: '/account-transfers', icon: ArrowLeftRight, permission: 'account_transfers.view_any' }
         ],
     },
     {
@@ -209,14 +209,14 @@ const navMain = computed(() => [
         url: '#',
         icon: Cog,
         items: [
-            { title: t('sidebar.administration.category'), url: '/categories', permission: 'categories.view' },
-            { title: t('sidebar.administration.currency'), url: '/currencies', permission: 'currencies.view' },
-            { title: t('sidebar.administration.unit_measure'), url: '/unit-measures', permission: 'unit_measures.view' },
-            { title: t('sidebar.administration.size'), url: '/sizes', permission: 'sizes.view' },
-            { title: t('sidebar.administration.branch'), url: '/branches', permission: 'branches.view' },
-            { title: t('sidebar.administration.brand'), url: '/brands', permission: 'brands.view' },
-            { title: t('sidebar.administration.store'), url: '/stores', permission: 'stores.view' },
-            { title: t('sidebar.administration.company'), url: '/company', permission: 'companies.view' },
+            { title: t('sidebar.administration.category'), url: '/categories', permission: 'categories.view_any' },
+            { title: t('sidebar.administration.currency'), url: '/currencies', permission: 'currencies.view_any' },
+            { title: t('sidebar.administration.unit_measure'), url: '/unit-measures', permission: 'unit_measures.view_any' },
+            { title: t('sidebar.administration.size'), url: '/sizes', permission: 'sizes.view_any' },
+            { title: t('sidebar.administration.branch'), url: '/branches', permission: 'branches.view_any' },
+            { title: t('sidebar.administration.brand'), url: '/brands', permission: 'brands.view_any' },
+            { title: t('sidebar.administration.store'), url: '/stores', permission: 'stores.view_any' },
+            { title: t('sidebar.administration.company'), url: '/company', permission: 'companies.view_any' },
         ],
     },
     {
@@ -224,9 +224,9 @@ const navMain = computed(() => [
         url: '#',
         icon: Database,
         items: [
-            { title: t('sidebar.inventory.item'), url: '/items', permission: 'items.view' },
-            { title: t('sidebar.inventory.fast_entry'), url: '/item-fast-entry', permission: ['items.view', 'items.create'] },
-            { title: t('sidebar.inventory.fast_opening'), url: '/item-fast-opening', permission: ['items.view', 'items.create'] },
+            { title: t('sidebar.inventory.item'), url: '/items', permission: 'items.view_any' },
+            { title: t('sidebar.inventory.fast_entry'), url: '/item-fast-entry', permission: ['items.view_any', 'items.create'] },
+            { title: t('sidebar.inventory.fast_opening'), url: '/item-fast-opening', permission: ['items.view_any', 'items.create'] },
         ],
     },
     {
@@ -234,8 +234,8 @@ const navMain = computed(() => [
         url: '#',
         icon: UserCog,
         items: [
-            { title: t('sidebar.ledger.customer'), url: '/customers', permission: 'ledgers.view' },
-            { title: t('sidebar.ledger.supplier'), url: '/suppliers', permission: 'ledgers.view' },
+            { title: t('sidebar.ledger.customer'), url: '/customers', permission: 'ledgers.view_any' },
+            { title: t('sidebar.ledger.supplier'), url: '/suppliers', permission: 'ledgers.view_any' },
         ],
     },
     {
@@ -243,8 +243,8 @@ const navMain = computed(() => [
         url: '#',
         icon: BookUser,
         items: [
-            { title: t('sidebar.owners.owners'), url: '/owners', permission: 'owners.view' },
-            { title: t('sidebar.owners.drawing'), url: '/drawing' },
+            { title: t('sidebar.owners.owners'), url: '/owners', permission: 'owners.view_any' },
+            { title: t('sidebar.owners.drawing'), url: '/drawing', permission: 'drawing.view_any' },
         ],
     },
     {
@@ -252,8 +252,8 @@ const navMain = computed(() => [
         url: '#',
         icon: Banknote,
         items: [
-            { title: t('sidebar.expense.expense_category'), url: '/expense-categories', permission: 'expense_categories.view' },
-            { title: t('sidebar.expense.expense'), url: '/expenses', permission: 'expenses.view' },
+            { title: t('sidebar.expense.expense_category'), url: '/expense-categories', permission: 'expense_categories.view_any' },
+            { title: t('sidebar.expense.expense'), url: '/expenses', permission: 'expenses.view_any' },
         ],
     },
     {
@@ -261,7 +261,7 @@ const navMain = computed(() => [
         url: '#',
         icon: ShoppingBasket,
         items: [
-            { title: t('sidebar.purchase.purchase'), url: '/purchases', permission: 'purchases.view' },
+            { title: t('sidebar.purchase.purchase'), url: '/purchases', permission: 'purchases.view_any' },
             // { title: t('sidebar.purchase.purchase_return'), url: '/purchase-returns' },
         ],
     },
@@ -270,7 +270,7 @@ const navMain = computed(() => [
         url: '#',
         icon: ShoppingCart,
         items: [
-            { title: t('sidebar.sale.sale'), url: '/sales', permission: 'sales.view' },
+            { title: t('sidebar.sale.sale'), url: '/sales', permission: 'sales.view_any' },
             // { title: t('sidebar.sale.sale_return'), url: '/sale-returns' },
         ],
     },
@@ -279,13 +279,13 @@ const navMain = computed(() => [
         title: t('sidebar.main.receipt'),
         url: '/receipts',
         icon: ReceiptIcon,
-        permission: 'receipts.view',
+        permission: 'receipts.view_any',
     },
     {
         title: t('sidebar.main.payment'),
         url: '/payments',
         icon: CreditCard,
-        permission: 'payments.view',
+        permission: 'payments.view_any',
     },
 
     {
@@ -293,8 +293,8 @@ const navMain = computed(() => [
         url: '#',
         icon: UserRound,
         items: [
-            { title: t('sidebar.user_management.user'), url: '/users', permission: 'users.view' },
-            { title: t('sidebar.user_management.role'), url: '/roles', permission: 'roles.view' },
+            { title: t('sidebar.user_management.user'), url: '/users', permission: 'users.view_any' },
+            { title: t('sidebar.user_management.role'), url: '/roles', permission: 'roles.view_any' },
         ],
     },
     {

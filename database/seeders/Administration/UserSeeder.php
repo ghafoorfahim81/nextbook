@@ -27,6 +27,11 @@ class UserSeeder extends Seeder
                 'preferences' => User::DEFAULT_PREFERENCES,
             ]);
         }
+        else{
+            $adminUser->update([
+                'branch_id' => $branch->id,
+            ]);
+        }
 
     }
 }

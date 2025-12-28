@@ -12,7 +12,7 @@ class UnitMeasurePolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'unit_measures.view');
+        return $this->hasPermission($user, 'unit_measures.view_any');
     }
 
     public function view(User $user, UnitMeasure $unitMeasure): bool

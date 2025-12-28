@@ -12,7 +12,7 @@ class ReceiptPolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'receipts.view');
+        return $this->hasPermission($user, 'receipts.view_any');
     }
 
     public function view(User $user, Receipt $receipt): bool

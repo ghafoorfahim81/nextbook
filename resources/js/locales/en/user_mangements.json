@@ -1,0 +1,13 @@
+﻿{
+    "user_mangements": "User Mangements",
+    "users": "Users",
+    "user": "User",
+    "roles": "Roles",
+    "role": "Role",
+    "permissions": "Permissions",
+    "permission": "Permission",
+    "permissions_description": "Select the permissions for this role.",
+    "confirm_password": "Confirm Password",
+    "additional_permissions": "Additional Permissions",
+    "additional_permissions_description": "Additional permissions that this user should have beyond their assigned roles."
+}

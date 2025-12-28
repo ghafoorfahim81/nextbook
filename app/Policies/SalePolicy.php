@@ -12,7 +12,7 @@ class SalePolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'sales.view');
+        return $this->hasPermission($user, 'sales.view_any');
     }
 
     public function view(User $user, Sale $sale): bool

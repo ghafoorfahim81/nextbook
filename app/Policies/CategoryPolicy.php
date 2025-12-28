@@ -12,7 +12,7 @@ class CategoryPolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'categories.view');
+        return $this->hasPermission($user, 'categories.view_any');
     }
 
     public function view(User $user, Category $category): bool

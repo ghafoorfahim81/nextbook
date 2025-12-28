@@ -10,7 +10,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission;
-
+use App\Enums\UserStatus;
 class UserController extends Controller
 {
     public function __construct()
@@ -59,10 +59,13 @@ class UserController extends Controller
     }
 
     public function store(UserStoreRequest $request)
-    {
+    { 
         $data = $request->validated();
         $data['password'] = Hash::make($data['password']);
-
+        $data['status'] = UserStatus::ACTIVE->value;
+        $data['company_id'] = $request->user()->company_id; 
+        $data['branch_id'] = $request->user()->branch_id;
+        $data['preferences'] = User::DEFAULT_PREFERENCES;
         $user = User::create($data);
 
         if (isset($data['roles'])) {
@@ -89,6 +92,7 @@ class UserController extends Controller
     public function update(UserUpdateRequest $request, User $user)
     { 
         $data = $request->validated(); 
+        $data['status'] = UserStatus::ACTIVE->value;
         if (isset($data['password']) && !empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
         } else {

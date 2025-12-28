@@ -12,7 +12,7 @@ class AccountTransferPolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'account_transfers.view');
+        return $this->hasPermission($user, 'account_transfers.view_any');
     }
 
     public function view(User $user, AccountTransfer $transfer): bool

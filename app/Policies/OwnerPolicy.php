@@ -12,7 +12,7 @@ class OwnerPolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'owners.view');
+        return $this->hasPermission($user, 'owners.view_any');
     }
 
     public function view(User $user, Owner $owner): bool

@@ -12,7 +12,7 @@ class PaymentPolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'payments.view');
+        return $this->hasPermission($user, 'payments.view_any');
     }
 
     public function view(User $user, Payment $payment): bool

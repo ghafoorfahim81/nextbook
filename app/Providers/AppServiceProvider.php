@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
             'user' => 'App\Models\User',
             'role' => 'App\Models\Role',
             'permission' => 'App\Models\Permission',
-            'account' => 'App\Models\Account',
+            'account' => 'App\Models\Account\Account',
             'ledger' => 'App\Models\Ledger\Ledger',
             'ledger_opening' => 'App\Models\Ledger\LedgerOpening',
             'ledger_transaction' => 'App\Models\Ledger\LedgerTransaction',

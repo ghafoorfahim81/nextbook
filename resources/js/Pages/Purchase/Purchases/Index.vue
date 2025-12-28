@@ -49,7 +49,7 @@ const columns = computed(() => ([
 
 <template>
     <AppLayout :title="t('purchase.purchase')">
-        <DataTable :items="purchases" :columns="columns"
+        <DataTable can="purchases" :items="purchases" :columns="columns"
          :title="t('purchase.purchase')"
          :url="`purchases.index`"
          :showAddButton="true"

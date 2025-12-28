@@ -38,6 +38,7 @@
   "deleted_by": "حذف شده توسط",
   "loading": "در حال بارگذاری",
   "search": "جستجو",
+  "search_placeholder": "جستجو {name}...",
   "yes": "بله",
   "no": "خیر",
   "confirm": "تایید",
@@ -176,5 +177,9 @@
   "owe_to": "طلبکار",
   "owe_you": "بدهکار",
   "ledger": "کاته",
-  "source": "منبع"
+  "source": "منبع",
+  "creating": "در حال ایجاد {name}...",
+  "updating": "در حال به‌روزرسانی {name}...",
+  "select_all": "انتخاب همه",
+  "no_results": "نتیجه‌ای یافت نشد"
 }

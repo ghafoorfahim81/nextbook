@@ -4,12 +4,12 @@ import { usePage } from '@inertiajs/vue3'
 export function useAuth() {
   const page = usePage()
 
-  const user = computed(() => page.props.auth?.user || null)
+  const user = computed(() => page.props.auth?.user || null) 
+  console.log('user', user.value);
   const permissions = computed(() => user.value?.permissions || [])
   const roles = computed(() => user.value?.roles || [])
 
-  const isSuperAdmin = computed(() => roles.value.includes('super-admin'))
-
+  const isSuperAdmin = computed(() => roles.value.includes('super-admin')) 
   /**
    * Check if the current user has at least one of the required permissions.
    * - `required` can be a single string or an array (OR logic).
