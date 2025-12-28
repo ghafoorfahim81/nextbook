@@ -4,16 +4,6 @@ import {
     AvatarFallback,
     AvatarImage,
 } from '@/Components/ui/avatar'
-
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from '@/Components/ui/breadcrumb'
-
 import {
     Collapsible,
     CollapsibleContent,
@@ -93,12 +83,18 @@ import { usePage, Link, router } from '@inertiajs/vue3'
 // @ts-ignore - Vue SFC default export shim
 import Toaster from '@/Components/ui/toast/Toaster.vue'
 import { HousePlug, ShoppingCart, Receipt as ReceiptIcon } from 'lucide-vue-next'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+const { locale } = useI18n()
+const { user } = useAuth()
+
 // This is sample data.
 const data = {
     user: {
-        name: 'NextBook',
-        email: 'admin@nextbook.com',
-        avatar: null as string | null,
+        name: user.value?.name || '',
+        email: user.value?.email || '',
+        avatar: user.value?.avatar || null as string | null,
     },
     teams: [
         {
@@ -178,7 +174,6 @@ const mode = useColorMode({
     },
 })
 
-const { t, locale } = useI18n()
 const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
 const sidebarSide = computed(() => isRTL.value ? 'right' : 'left')
 const chevronIcon = computed(() => isRTL.value ? ChevronLeft : ChevronRight)
@@ -511,7 +506,7 @@ function logout() {
                                     <Avatar class="h-8 w-8 rounded-lg">
                                         <AvatarImage :src="data.user.avatar" :alt="data.user.name" />
                                         <AvatarFallback class="rounded-lg">
-                                            CN
+                                            {{ user?.name?.charAt(0) || 'NB' }}
                                         </AvatarFallback>
                                     </Avatar>
                                     <div class="grid flex-1 text-left text-sm leading-tight">
@@ -527,12 +522,12 @@ function logout() {
                                         <Avatar class="h-8 w-8 rounded-lg">
                                             <AvatarImage :src="data.user.avatar" :alt="data.user.name" />
                                             <AvatarFallback class="rounded-lg">
-                                                CN
+                                                {{ user?.name?.charAt(0) || 'NB' }}
                                             </AvatarFallback>
                                         </Avatar>
                                         <div class="grid flex-1 text-left text-sm leading-tight">
                                             <span class="truncate font-semibold">{{ data.user.name }}</span>
-                                            <span class="truncate text-xs">{{ data.user.email }}</span>
+                                                <span class="truncate text-xs">{{ data.user.email }}</span>
                                         </div>
                                     </div>
                                 </DropdownMenuLabel>
@@ -540,28 +535,28 @@ function logout() {
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem>
                                         <Sparkles />
-                                        Upgrade to Pro
+                                        {{ t('layout.upgrade_to_pro') }}
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem>
                                         <BadgeCheck />
-                                        Account
+                                        {{ t('layout.account') }}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem>
                                         <CreditCard />
-                                        Billing
+                                        {{ t('layout.billing') }}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem>
                                         <Bell />
-                                        Notifications
+                                        {{ t('layout.notifications') }}
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem @click="logout" class="cursor-pointer">
                                     <LogOut />
-                                    Log out
+                                    {{ t('layout.logout') }}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
