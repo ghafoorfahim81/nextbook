@@ -69,6 +69,7 @@ const deleteItem = (id) => {
             </div>
         </div>
         <DataTable
+            can="unit_measures"
             :items="unitMeasures"
             :columns="columns"
             @delete="deleteItem"

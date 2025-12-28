@@ -80,6 +80,7 @@ const addExpense = () => {
             @update:open="showDialogOpen = $event"
         />
         <DataTable
+            can="expenses"
             :items="expenses"
             :columns="columns"
             @show="viewItem"

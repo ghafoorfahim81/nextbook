@@ -9,6 +9,7 @@ use App\Http\Resources\UserManagement\RoleResource;
 use App\Models\Role;
 use App\Models\Permission;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class RoleController extends Controller
 {
@@ -53,13 +54,16 @@ class RoleController extends Controller
         ]);
 
         if (isset($data['permissions'])) {
-            $role->syncPermissions($data['permissions']);
+            $role->givePermissionTo($data['permissions']);
+
+            // $role->syncPermissions($data['permissions']);
         }
 
         if ($request->input('create_and_new')) {
             return redirect()->route('roles.create')->with('success', 'Role created successfully.');
         }
-
+        Cache::forget('roles');
+        Cache::forget('users');
         return redirect()->route('roles.index')->with('success', 'Role created successfully.');
     }
 
@@ -90,6 +94,9 @@ class RoleController extends Controller
             $role->syncPermissions($data['permissions'] ?? []);
         }
 
+        Cache::forget('roles');
+        Cache::forget('users');
+
         return redirect()->route('roles.index')->with('success', 'Role updated successfully.');
     }
 
@@ -101,6 +108,8 @@ class RoleController extends Controller
         }
 
         $role->delete();
+        Cache::forget('roles');
+        Cache::forget('users');
         return redirect()->route('roles.index')->with('success', 'Role deleted successfully.');
     }
 
@@ -108,6 +117,8 @@ class RoleController extends Controller
     {
         $role = Role::withTrashed()->findOrFail($id);
         $role->restore();
+        Cache::forget('roles');
+        Cache::forget('users');
         return redirect()->route('roles.index')->with('success', 'Role restored successfully.');
     }
 }

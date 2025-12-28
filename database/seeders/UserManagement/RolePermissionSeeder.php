@@ -48,8 +48,7 @@ class RolePermissionSeeder extends Seeder
             'journals',
             'pos_transactions',
 
-            'dashboard',
-            'reports',
+            'dashboard', 
             'preferences',
             'notifications',
             'projects',
@@ -94,6 +93,7 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
         $baseActions = [
+            'view_any',
             'view',
             'create',
             'update',

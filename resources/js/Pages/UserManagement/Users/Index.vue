@@ -13,10 +13,10 @@ const { t } = useI18n();
 
 const columns = computed(() => ([
     { key: 'name', label: t('general.name'), sortable: true },
-    { key: 'email', label: 'Email', sortable: true },
+    { key: 'email', label: t('general.email'), sortable: true },
     {
         key: 'roles',
-        label: 'Roles',
+        label: t('user_mangements.roles'),
         render: (row) => row.roles?.map(r => r.name).join(', ') ?? '-',
     },
     { key: 'actions', label: t('general.action') },
@@ -26,9 +26,9 @@ const { deleteResource } = useDeleteResource();
 
 const deleteItem = (id) => {
     deleteResource('users.destroy', id, {
-        title: t('general.delete', { name: 'User' }),
-        description: t('general.delete_description', { name: 'User' }),
-        successMessage: t('general.delete_success', { name: 'User' }),
+        title: t('general.delete', { name: t('user_mangements.users') }),
+        description: t('general.delete_description', { name: t('user_mangements.users') }),
+        successMessage: t('general.delete_success', { name: t('user_mangements.users') }),
     });
 };
 
@@ -38,16 +38,17 @@ const editItem = (item) => {
 </script>
 
 <template>
-    <AppLayout :title="'Users'">
+    <AppLayout :title="t('user_mangements.users')">
         <DataTable
+            can="users"
             :items="users"
             :columns="columns"
             @delete="deleteItem"
             @edit="editItem"
-            :title="'Users'"
+            :title="t('user_mangements.users')"
             :url="`users.index`"
             :showAddButton="true"
-            :addTitle="'User'"
+            :addTitle="t('user_mangements.user')"
             :addAction="'redirect'"
             :addRoute="'users.create'"
             :hasEdit="true"

@@ -12,7 +12,7 @@ class SizePolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'sizes.view');
+        return $this->hasPermission($user, 'sizes.view_any');
     }
 
     public function view(User $user, Size $size): bool

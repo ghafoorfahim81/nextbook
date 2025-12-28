@@ -48,6 +48,7 @@
                 @saved="() => { editingAccountType = null }"
             />
             <DataTable
+                can="account_types"
                 :items="accountTypes"
                 :columns="columns"
                 @edit="editItem"

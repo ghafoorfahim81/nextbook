@@ -38,6 +38,7 @@
   "deleted_by": "Deleted by",
   "loading": "Loading",
   "search": "Search",
+  "search_placeholder": "Search {name}...",
   "yes": "Yes",
   "no": "No",
   "confirm": "Confirm",
@@ -176,7 +177,11 @@
   "owe_to": "Owe to",
   "owe_you": "Owe you",
   "ledger": "ledger",
-  "source": "Source"
+  "source": "Source",
+  "creating": "Creating {name}...",
+  "updating": "Updating {name}...",
+  "select_all": "Select all",
+  "no_results": "No results found"
 }
 
 

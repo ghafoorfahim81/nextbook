@@ -12,7 +12,7 @@ class DesignationPolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'designations.view');
+        return $this->hasPermission($user, 'designations.view_any');
     }
 
     public function view(User $user, Designation $designation): bool

@@ -48,6 +48,7 @@ import { router } from '@inertiajs/vue3'
     <AppLayout :title="t('ledger.customer.customers')">
 
         <DataTable
+            can="customers"
             :items="customers"
             :columns="columns"
             @delete="deleteItem"

@@ -99,12 +99,12 @@
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent class="w-48 rtl:text-right" side="bottom" :align="isRTL ? 'end' : 'start'">
                                     <DropdownMenuLabel class="rtl:text-right">{{ t('datatable.actions') }}</DropdownMenuLabel>
-                                    <DropdownMenuItem v-if="props.hasEdit && can(`${props.can}.edit`)" :class="[isRTL ? 'flex-row-reverse gap-2' :
+                                    <DropdownMenuItem v-if="props.hasEdit && can(`${props.can}.update`)" :class="[isRTL ? 'flex-row-reverse gap-2' :
                                     'gap-2', '[&:hover]:bg-violet-400 [&:hover]:text-white [&:focus]:bg-violet-400 [&:focus]:text-white']"
                                     @click="$emit('edit', item)"><SquarePen /> {{ t('datatable.edit') }}
                                 </DropdownMenuItem>
                                     <DropdownMenuItem v-if="can(`${props.can}.delete`)" :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-400 [&:hover]:text-white [&:focus]:bg-violet-400 [&:focus]:text-white']" @click="$emit('delete', item.id)"><Trash2 /> {{ t('datatable.delete') }}</DropdownMenuItem>
-                                    <DropdownMenuItem v-if="props.hasShow && can(`${props.can}.show`)" :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-400 [&:hover]:text-white [&:focus]:bg-violet-400 [&:focus]:text-white']" @click="$emit('show', item.id)"><Eye /> {{ t('datatable.show') }}</DropdownMenuItem>
+                                    <DropdownMenuItem v-if="props.hasShow && can(`${props.can}.view`)" :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-400 [&:hover]:text-white [&:focus]:bg-violet-400 [&:focus]:text-white']" @click="$emit('show', item.id)"><Eye /> {{ t('datatable.show') }}</DropdownMenuItem>
                                     <DropdownMenuItem v-if="props.hasPrint && can(`${props.can}.print`)" :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-400 [&:hover]:text-white [&:focus]:bg-violet-400 [&:focus]:text-white']" @click="$emit('print', item.id)"><Printer /> {{ t('datatable.print') }}</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -244,8 +244,7 @@ const props = defineProps({
     // Controls for empty state and rows
     emptyRowsCount: { type: Number, default: 10 },
 })
-
-console.log('hiiiii',can(`${props.can}.create`)); 
+ 
 const { t, locale } = useI18n()
 const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
 // Declare emits for clarity

@@ -17,7 +17,7 @@ class CustomerSupplierPolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'ledgers.view');
+        return $this->hasPermission($user, 'ledgers.view_any');
     }
 
     public function view(User $user, Ledger $ledger): bool

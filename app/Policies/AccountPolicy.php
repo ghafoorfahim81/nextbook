@@ -12,7 +12,7 @@ class AccountPolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'accounts.view');
+        return $this->hasPermission($user, 'accounts.view_any');
     }
 
     public function view(User $user, Account $account): bool

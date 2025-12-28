@@ -51,6 +51,7 @@ const openInventory = (id) => {
 <template>
   <AppLayout :title="t('item.items')">
     <DataTable
+      can="items"
       :items="items"
       :columns="columns"
       @delete="deleteItem"

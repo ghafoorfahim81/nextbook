@@ -12,7 +12,7 @@ class BranchPolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'branches.view');
+        return $this->hasPermission($user, 'branches.view_any');
     }
 
     public function view(User $user, Branch $branch): bool

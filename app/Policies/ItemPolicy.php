@@ -12,7 +12,7 @@ class ItemPolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'items.view');
+        return $this->hasPermission($user, 'items.view_any');
     }
 
     public function view(User $user, Item $item): bool

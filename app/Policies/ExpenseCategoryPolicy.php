@@ -12,7 +12,7 @@ class ExpenseCategoryPolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'expense_categories.view');
+        return $this->hasPermission($user, 'expense_categories.view_any');
     }
 
     public function view(User $user, ExpenseCategory $category): bool

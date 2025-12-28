@@ -15,7 +15,7 @@ const columns = computed(() => ([
     { key: 'name', label: t('general.name'), sortable: true },
     {
         key: 'permissions',
-        label: 'Permissions',
+        label: t('user_mangements.permissions'),
         render: (row) => {
             const perms = row.permissions || [];
             if (perms.length === 0) return '-';
@@ -30,9 +30,9 @@ const { deleteResource } = useDeleteResource();
 
 const deleteItem = (id) => {
     deleteResource('roles.destroy', id, {
-        title: t('general.delete', { name: 'Role' }),
-        description: t('general.delete_description', { name: 'Role' }),
-        successMessage: t('general.delete_success', { name: 'Role' }),
+            title: t('general.delete', { name: t('user_mangements.role') }),
+        description: t('general.delete_description', { name: t('user_mangements.role') }),
+        successMessage: t('general.delete_success', { name: t('user_mangements.role') }),
     });
 };
 
@@ -42,16 +42,17 @@ const editItem = (item) => {
 </script>
 
 <template>
-    <AppLayout :title="'Roles'">
+    <AppLayout :title="t('user_mangements.roles')">
         <DataTable
+            can="roles"
             :items="roles"
             :columns="columns"
             @delete="deleteItem"
             @edit="editItem"
-            :title="'Roles'"
+            :title="t('user_mangements.roles')"
             :url="`roles.index`"
             :showAddButton="true"
-            :addTitle="'Role'"
+            :addTitle="t('user_mangements.role')"
             :addAction="'redirect'"
             :addRoute="'roles.create'"
             :hasEdit="true"

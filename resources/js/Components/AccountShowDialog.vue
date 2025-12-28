@@ -60,10 +60,7 @@ const statement = computed(() => {
         balance_nature: balanceNature,
     };
 });
-
-console.log('this is account', account);
-console.log('this is transactions', transactions.value);
-console.log('this is openings', openings.value);
+ 
 const formatAmount = (value) => {
     if (value === null || value === undefined) return '-';
     return Number(value).toLocaleString(undefined, {

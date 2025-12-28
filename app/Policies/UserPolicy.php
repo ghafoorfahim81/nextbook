@@ -11,7 +11,7 @@ class UserPolicy extends BasePolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->hasPermission($user, 'users.view');
+        return $this->hasPermission($user, 'users.view_any');
     }
 
     public function view(User $user, User $model): bool

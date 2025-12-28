@@ -56,6 +56,7 @@ const deleteItem = (id) => {
             @saved="() => { editingBranch = null }"
         />
         <DataTable
+            can="branches"
             :items="branches"
             :columns="columns"
             @edit="editItem"

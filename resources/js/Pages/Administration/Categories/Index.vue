@@ -52,6 +52,7 @@ const deleteItem = (id) => {
             @saved="() => { editingCategory = null }"
         />
         <DataTable
+            can="categories"
             :items="categories"
             :columns="columns"
             @edit="editItem"

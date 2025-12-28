@@ -46,6 +46,7 @@ const deleteItem = (id) => {
 <template>
     <AppLayout :title="t('ledger.supplier.suppliers')">
         <DataTable
+            can="suppliers"
             :items="suppliers"
             :columns="columns"
             @delete="deleteItem"

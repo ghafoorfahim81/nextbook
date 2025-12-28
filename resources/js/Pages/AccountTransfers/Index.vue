@@ -44,6 +44,7 @@ const columns = computed(() => ([
 <template>
   <AppLayout :title="t('general.account_transfers')">
     <DataTable
+      can="account_transfers"
       :items="transfers"
       :columns="columns"
       :title="t('general.account_transfers')"
