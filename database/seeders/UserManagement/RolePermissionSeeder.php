@@ -2,9 +2,10 @@
 
 namespace Database\Seeders\UserManagement;
 
-use Illuminate\Database\Seeder; 
-use Spatie\Permission\Models\Permission;
-use App\Models\User; 
+use Illuminate\Database\Seeder;
+use App\Models\User;
+use App\Models\Permission;
+
 use App\Models\Role;
 use Symfony\Component\Uid\Ulid;
 class RolePermissionSeeder extends Seeder
@@ -20,15 +21,38 @@ class RolePermissionSeeder extends Seeder
             'users',
             'roles',
             'employees',
+            'payrolls',
+            'salary_payments',
+            'attendances',
+            'leaves',
+            'leave_applications',
+            'leave_types',
+            'departments',
+            'designations',
+            'prepaids',
+            'loans',
 
             'items',
             'categories',
+            'currencies',
+            'unit_measures',
+            'sizes',
+            'companies',
             'brands',
             'stores',
             'branches',
 
             'accounts',
             'account_transfers',
+            'account_types',
+            'journals',
+            'pos_transactions',
+
+            'dashboard',
+            'reports',
+            'preferences',
+            'notifications',
+            'projects',
 
             'owners',
             'drawings',
@@ -39,14 +63,15 @@ class RolePermissionSeeder extends Seeder
             'purchases',
             'purchase_returns',
             'purchase_orders',
+            'purchase_quotations',
 
             'sales',
             'sale_returns',
             'sale_orders',
+            'sale_quotations',
 
             'receipts',
             'payments',
-
             'expenses',
             'expense_categories',
 
@@ -56,6 +81,9 @@ class RolePermissionSeeder extends Seeder
             'stock_receive',
             'stock_issue',
             'stock_adjustment',
+
+            'formulas',
+            'manufacturers',
 
             'backup',
         ];
