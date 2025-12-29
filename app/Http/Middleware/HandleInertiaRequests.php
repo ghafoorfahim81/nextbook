@@ -62,8 +62,14 @@ class HandleInertiaRequests extends Middleware
     {
         $cacheDuration = 60 * 60;
 
+        // Resolve active branch early so we can key branch-scoped caches by it.
+        $activeBranchId = app()->bound('active_branch_id')
+            ? app('active_branch_id')
+            : ($request->user()->branch_id ?? null);
+        $branchCacheKey = $activeBranchId ? 'branch_' . $activeBranchId : 'branch_none';
+
         $categories = Cache::remember(
-            'categories',
+            'categories_' . $branchCacheKey,
             $cacheDuration,
             fn() => CategoryResource::collection(
                 Category::latest()->take(10)->get()
@@ -71,7 +77,7 @@ class HandleInertiaRequests extends Middleware
         );
 
         $accounts = Cache::remember(
-            'accounts',
+            'accounts_' . $branchCacheKey,
             $cacheDuration,
             fn() => AccountResource::collection(
                 Account::latest()->take(1000)->get()
@@ -79,7 +85,7 @@ class HandleInertiaRequests extends Middleware
         );
 
         $accountTypes = Cache::remember(
-            'accountTypes',
+            'accountTypes_' . $branchCacheKey,
             $cacheDuration,
             fn() => AccountTypeResource::collection(
                 AccountType::latest()->take(10)->get()
@@ -94,7 +100,7 @@ class HandleInertiaRequests extends Middleware
         );
 
         $stores = Cache::remember(
-            'stores',
+            'stores_' . $branchCacheKey,
             $cacheDuration,
             fn() => StoreResource::collection(
                 Store::latest()->take(10)->get()
@@ -102,7 +108,7 @@ class HandleInertiaRequests extends Middleware
         );
 
         $currencies = Cache::remember(
-            'currencies',
+            'currencies_' . $branchCacheKey,
             $cacheDuration,
             fn() => CurrencyResource::collection(
                 Currency::latest()->get()
@@ -110,7 +116,7 @@ class HandleInertiaRequests extends Middleware
         );
 
         $brands = Cache::remember(
-            'brands',
+            'brands_' . $branchCacheKey,
             $cacheDuration,
             fn() => BrandResource::collection(
                 Brand::latest()->take(10)->get()
@@ -118,7 +124,7 @@ class HandleInertiaRequests extends Middleware
         );
 
         $unitMeasures = Cache::remember(
-            'unitMeasures',
+            'unitMeasures_' . $branchCacheKey,
             $cacheDuration,
             fn() => UnitMeasureResource::collection(
                 \App\Models\Administration\UnitMeasure::latest()->take(1000)->get()
@@ -126,7 +132,7 @@ class HandleInertiaRequests extends Middleware
         );
 
         $sizes = Cache::remember(
-            'sizes',
+            'sizes_' . $branchCacheKey,
             $cacheDuration,
             fn() => SizeResource::collection(
                 Size::latest()->take(10)->get()
@@ -176,7 +182,7 @@ class HandleInertiaRequests extends Middleware
             ])
         );
         $items = Cache::remember(
-            'items',
+            'items_' . $branchCacheKey,
             $cacheDuration,
             fn() => ItemResource::collection(
                 Item::latest()->take(10)->get()
@@ -197,7 +203,7 @@ class HandleInertiaRequests extends Middleware
             ])
         );
 
-        $glAccounts = Cache::rememberForever('gl_accounts', function () {
+        $glAccounts = Cache::rememberForever('gl_accounts_' . $branchCacheKey, function () {
             return Account::whereIn('slug', [
                 'sales-revenue',
                 'account-receivable',
@@ -209,18 +215,18 @@ class HandleInertiaRequests extends Middleware
             ])->pluck('id', 'slug');
         });
 
-        $capitalAccounts = Cache::rememberForever('capital_accounts', function () {
+        $capitalAccounts = Cache::rememberForever('capital_accounts_' . $branchCacheKey, function () {
             return Account::join('account_types', 'accounts.account_type_id', '=', 'account_types.id')
-            ->where('account_types.slug', 'equity')
-            ->select('accounts.id', 'accounts.name')
-            ->get();
+                ->where('account_types.slug', 'equity')
+                ->select('accounts.id', 'accounts.name')
+                ->get();
         });
 
-        $drawingAccounts = Cache::rememberForever('drawing_accounts', function () {
+        $drawingAccounts = Cache::rememberForever('drawing_accounts_' . $branchCacheKey, function () {
             return Account::join('account_types', 'accounts.account_type_id', '=', 'account_types.id')
-            ->where('account_types.slug', 'equity')
-            ->select('accounts.id', 'accounts.name')
-            ->get();
+                ->where('account_types.slug', 'equity')
+                ->select('accounts.id', 'accounts.name')
+                ->get();
         });
 
         $roles = Cache::rememberForever('roles', function () {
@@ -241,10 +247,6 @@ class HandleInertiaRequests extends Middleware
             ]);
         });
 
-        // Resolve active branch for UI: prefer middleware context, fall back to user's own branch.
-        $activeBranchId = app()->bound('active_branch_id')
-            ? app('active_branch_id')
-            : ($request->user()->branch_id ?? null);
         $activeBranchName = null;
 
         if ($activeBranchId) {
@@ -262,6 +264,8 @@ class HandleInertiaRequests extends Middleware
                     'id' => $request->user()->id,
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
+                    'branch_id' => $request->user()->branch_id,
+                    'branch_name' => $activeBranchName,
                     // Share permissions and roles as an array of names
                     'permissions' => $request->user()?->getAllPermissions()->pluck('name')->toArray(),
                     'roles' => $request->user()->getRoleNames()->toArray(),

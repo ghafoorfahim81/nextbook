@@ -4,5 +4,10 @@ namespace App\Traits;
 
 trait HasBranch
 {
-    use BelongsToBranch;
+    public static function bootHasBranch()
+    {
+        static::creating(function ($model) {
+            $model->branch_id = auth()->user()->branch_id;
+        });
+    }
 }

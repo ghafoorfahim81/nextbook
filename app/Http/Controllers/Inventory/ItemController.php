@@ -30,6 +30,11 @@ class ItemController extends Controller
 
     public function index(Request $request)
     {
+
+        $activeBranchId = app()->bound('active_branch_id')
+            ? app('active_branch_id')
+            : ($request->user()->branch_id ?? null);
+        // dd($activeBranchId);
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
@@ -47,7 +52,8 @@ class ItemController extends Controller
     public function create()
     {
         // Get the maximum code as integer (cast to handle mixed formats like "3" and "004")
-        $maxCode = Item::query()->selectRaw('MAX(CAST(code AS INTEGER)) as max_code')->value('max_code');
+        $maxCode = Item::query()->selectRaw('MAX(CAST(code AS INTEGER)) as max_code') 
+        ->value('max_code');
         $maxCode = $maxCode ? intval($maxCode) + 1 : 1;
 
         return inertia('Inventories/Items/Create', [
@@ -55,8 +61,8 @@ class ItemController extends Controller
         ]);
     }
     public function store(ItemStoreRequest $request)
-    {
-
+    {   
+ 
         $validated = $request->validated();
         // If you're uploading a photo here, handle it first (optional)
         if ($request->hasFile('photo')) {

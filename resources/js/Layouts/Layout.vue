@@ -87,8 +87,7 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const { locale } = useI18n()
-const { user } = useAuth()
-
+const { user } = useAuth() 
 // This is sample data.
 const data = {
     user: {
@@ -198,20 +197,23 @@ const branches = computed(() => {
 
     return []
 })
-const activeBranchId = computed<string | null>(() => (page.props.activeBranchId as string | null) || null)
-const activeBranchName = computed<string | null>(() => (page.props.activeBranchName as string | null) || null)
+const activeBranchId = computed<string | null>(() => (page.props.auth.user.branch_id as string | null) || null)
+const activeBranchName = computed<string | null>(() => (page.props.auth.user.branch_name as string | null) || null)
 
 const selectedBranchId = ref<string | null>(activeBranchId.value)
-
+ 
 function switchBranch() {
     if (!isSuperAdmin.value || !selectedBranchId.value || selectedBranchId.value === activeBranchId.value) {
         return
     }
 
     router.post('/switch-branch', { branch_id: selectedBranchId.value }, {
-        preserveScroll: true,
-        preserveState: true,
-    })
+        // Wait until the server has actually switched the branch
+        // before reloading, so the refreshed page shows the new branch.
+        onSuccess: () => {
+            console.log('switched branch to 111', selectedBranchId.value);
+        },
+    });
 }
 
 const navMain = computed(() => [

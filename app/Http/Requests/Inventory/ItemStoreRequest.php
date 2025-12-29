@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Inventory;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ItemStoreRequest extends FormRequest
 {
@@ -19,9 +20,27 @@ class ItemStoreRequest extends FormRequest
      */
     public function rules(): array
     {
+        $branchId = $this->user()?->branch_id;
+
         return [
-            'name' => 'required|min:3|unique:items,name,NULL,id,deleted_at,NULL',
-            'code' => 'required|string|unique:items,code,NULL,id,deleted_at,NULL',
+            'name' => [
+                'required',
+                'min:3',
+                Rule::unique('items', 'name')
+                    ->where(fn ($q) => $q
+                        ->where('branch_id', $branchId)
+                        ->whereNull('deleted_at')
+                    ),
+            ],
+            'code' => [
+                'required',
+                'string',
+                Rule::unique('items', 'code')
+                    ->where(fn ($q) => $q
+                        ->where('branch_id', $branchId)
+                        ->whereNull('deleted_at')
+                    ),
+            ],
             'generic_name' => ['nullable', 'string'],
             'packing' => ['nullable', 'string'],
             'barcode' => ['nullable', 'string'],
