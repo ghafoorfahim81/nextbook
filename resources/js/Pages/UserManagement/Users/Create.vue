@@ -13,9 +13,12 @@ const { toast } = useToast();
 
 const props = defineProps({
     permissions: Array,
-    roles: Array,
+    roles: Array, 
+    branches: {type: Object, required: true},
+
 });
 
+console.log(props.branches);
 const form = useForm({
     name: '',
     email: '',
@@ -137,6 +140,18 @@ const goBack = () => {
                         :search-fields="['name']"
                     />  
 
+                    <NextSelect
+                        v-model="form.branch_id"
+                        :options="branches.data"
+                        label-key="name"
+                        value-key="id"
+                        id="branch_id"
+                        :floating-text="t('admin.branch.branch')"
+                        :error="form.errors?.branch_id"
+                        :searchable="true"
+                        resource-type="branches"
+                        :search-fields="['name']"
+                    />   
                     <!-- Additional Permissions -->
                     <div class="md:col-span-3">
                         <div class="mb-4">

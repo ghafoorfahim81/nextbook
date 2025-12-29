@@ -14,6 +14,8 @@ trait BelongsToBranch
     {
         // Global scope: always constrain by the active branch when available.
         static::addGlobalScope('branch', function (Builder $builder) {
+            // Resolve the active branch from the container, which is
+            // set by the SetActiveBranch middleware for every request.
             if (!app()->bound('active_branch_id')) {
                 return;
             }

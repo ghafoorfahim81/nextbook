@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Inventory;
 
 use Illuminate\Foundation\Http\FormRequest;
-
+use Illuminate\Validation\Rule;
 class FastEntryRequest extends FormRequest
 {
     public function authorize(): bool
@@ -13,10 +13,18 @@ class FastEntryRequest extends FormRequest
  
     public function rules(): array
     {
+        $branchId = $this->user()?->branch_id;
+
         return [
             'items'                       => ['required','array','min:1'],
-            'items.*.name'                => ['required','string','max:255','unique:items,name,NULL,id,deleted_at,NULL'],
-            'items.*.code'                => ['nullable','string','max:50','unique:items,code,NULL,id,deleted_at,NULL'],
+            'items.*.name'                => ['required','string','max:255', Rule::unique('items')->where(fn ($q) => $q
+                        ->where('branch_id', $branchId)
+                        ->whereNull('deleted_at')
+                    )],
+            'items.*.code'                => ['nullable','string','max:50', Rule::unique('items')->where(fn ($q) => $q
+                        ->where('branch_id', $branchId)
+                        ->whereNull('deleted_at')
+                    )],
             'items.*.category_id'         => ['nullable','exists:categories,id'],
             'items.*.measure_id'          => ['required','exists:unit_measures,id'],
             'items.*.brand_id'            => ['nullable','exists:brands,id'],

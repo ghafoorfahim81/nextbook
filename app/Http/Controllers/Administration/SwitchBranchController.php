@@ -23,9 +23,24 @@ class SwitchBranchController extends Controller
         $validated = $request->validate([
             'branch_id' => ['required', 'string', 'exists:branches,id'],
         ]);
-        cache()->forget('active_branch_id');
-        cache()->forget('active_branch_name');
-        $request->session()->put('active_branch_id', $validated['branch_id']);
+        $branchId = $validated['branch_id'];
+
+        cache()->forget('auth.user');
+        // Store the active branch in the session so subsequent requests
+        // // (and page refreshes) resolve to this branch.
+        // $request->session()->put('active_branch_id', $branchId);
+
+        // // Clear any cached branch-name for the previous branch so it will be
+        // // recomputed on the next request.
+        // cache()->forget('branch_name_' . ($user->branch_id ?? $branchId));
+
+        // Also update the user's default branch so new sessions/logins
+        // start on the last selected branch.
+        if ($user->branch_id !== $branchId) {
+            $user->branch_id = $branchId;
+            $user->save();
+        }
+ 
 
         return back();
     }
