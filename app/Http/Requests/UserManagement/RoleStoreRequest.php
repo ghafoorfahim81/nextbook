@@ -14,7 +14,7 @@ class RoleStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', 'unique:roles,name'],
+            'name' => ['required', 'string', 'max:255', 'unique:roles,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['exists:permissions,id'],
         ];

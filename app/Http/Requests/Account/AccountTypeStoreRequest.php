@@ -20,9 +20,9 @@ class AccountTypeStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:account_types,name'],
+            'name' => ['required', 'string', 'unique:account_types,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'remark' => ['nullable', 'string'],
-            'slug' => ['nullable', 'string', 'unique:account_types,slug'],
+            'slug' => ['nullable', 'string'],
             'is_main' => ['nullable', 'boolean'],
         ];
     }

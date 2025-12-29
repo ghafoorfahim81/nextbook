@@ -17,8 +17,8 @@ class SizeStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:sizes,name,NULL,id,branch_id,' . $this->user()->current_branch_id . ',deleted_at,NULL'],
-            'code' => ['required', 'string', 'unique:sizes,code,NULL,id,branch_id,' . $this->user()->current_branch_id . ',deleted_at,NULL'],
+            'name' => ['required', 'string', 'unique:sizes,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'code' => ['required', 'string', 'unique:sizes,code,NULL,id,branch_id,NULL,deleted_at,NULL'],
         ];
     }
 }

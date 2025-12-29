@@ -19,7 +19,7 @@ return new class extends Migration
             $table->ulid('account_type_id')->index();
             $table->boolean('is_active')->default(true);
             $table->boolean('is_main')->default(false);
-            $table->string('slug')->unique()->nullable();
+            $table->string('slug')->nullable();
             $table->ulid('branch_id')->index();
             $table->text('remark')->nullable();
             $table->ulid('created_by')->index();

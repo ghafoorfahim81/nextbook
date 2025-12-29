@@ -2,6 +2,7 @@
 
 namespace App\Models\Administration;
 
+use App\Traits\BranchSpecific;
 use App\Traits\HasBranch;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -16,7 +17,7 @@ use App\Traits\HasDependencyCheck;
 use App\Traits\HasCache;
 class Store extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasCache, HasSearch, HasSorting, HasBranch, SoftDeletes, HasDependencyCheck;
+    use HasFactory, HasUserAuditable, HasUlids, HasCache, HasSearch, HasSorting, HasBranch, BranchSpecific, SoftDeletes, HasDependencyCheck;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
