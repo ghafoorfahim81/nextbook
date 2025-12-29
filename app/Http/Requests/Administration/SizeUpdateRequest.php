@@ -18,7 +18,7 @@ class SizeUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', Rule::unique('sizes')->ignore($this->route('size'))->whereNull('deleted_at')],
+            'name' => ['required', 'string', Rule::unique('sizes')->ignore($this->route('size'))->whereNull('deleted_at')->where('branch_id', $this->user()->current_branch_id)],
             'code' => ['required', 'string', Rule::unique('sizes')->ignore($this->route('size'))->whereNull('deleted_at')],
         ];
     }

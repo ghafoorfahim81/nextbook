@@ -22,7 +22,7 @@ class AccountTypeUpdateRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('account_types')->ignore($this->route('account_type'))],
             'remark' => ['nullable', 'string'],
-            'slug' => ['nullable', 'string', 'unique:account_types,slug'],
+            'slug' => ['nullable', 'string'],
             'is_main' => ['nullable', 'boolean'],
         ];
     }

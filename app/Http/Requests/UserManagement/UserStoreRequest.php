@@ -16,7 +16,7 @@ class UserStoreRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:users,email,NULL,id,deleted_at,NULL', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email,NULL,id,branch_id,NULL,deleted_at,NULL', 'max:255'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'status' => ['nullable', 'in:' . implode(',', array_column(UserStatus::cases(), 'value'))],
             'branch_id' => ['nullable', 'string', 'exists:branches,id'],
@@ -26,6 +26,6 @@ class UserStoreRequest extends FormRequest
             'permissions' => ['nullable', 'array'],
             'permissions.*' => ['exists:permissions,id'],
         ];
-    }
+    }   
 }
 

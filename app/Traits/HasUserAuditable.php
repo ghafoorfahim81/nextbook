@@ -11,7 +11,17 @@ trait HasUserAuditable
 {
     public static function bootHasUserAuditable()
     {
-        $user = Auth::user()??\App\Models\User::where('email', 'admin@nextbook.com')->first();
+        $adminUser = \App\Models\User::where('email', 'admin@nextbook.com')->first();
+        if (!$adminUser) {
+            $adminUser = User::create([
+                'id' => (string) new Ulid(),
+                'name' => 'admin',
+                'email' => 'admin@nextbook.com',
+                'password' => bcrypt('password'),
+                'preferences' => User::DEFAULT_PREFERENCES,
+            ]);
+        }
+        $user = Auth::user()??$adminUser;
         static::creating(function ($model) use ($user) {
             $model->created_by =  $user->id;
         });

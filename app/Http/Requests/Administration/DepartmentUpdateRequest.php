@@ -20,7 +20,7 @@ class DepartmentUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:departments,name' , \Illuminate\Validation\Rule::unique('departments')->ignore($this->route('department'))->whereNull('deleted_at')],
+            'name' => ['required', 'string', 'unique:departments,name' , \Illuminate\Validation\Rule::unique('departments')->ignore($this->route('department'))->whereNull('deleted_at')->where('branch_id', $this->user()->current_branch_id)],
             'remark' => ['nullable', 'string'],
             'parent_id' => ['nullable', 'exists:departments,id'],
             'created_by' => ['required'],

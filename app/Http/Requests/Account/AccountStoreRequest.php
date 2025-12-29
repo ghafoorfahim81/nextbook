@@ -20,12 +20,12 @@ class AccountStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:accounts,name'],
-            'number' => ['required', 'string', 'unique:accounts,number'],
+            'name' => ['required', 'string', 'unique:accounts,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'number' => ['required', 'string', 'unique:accounts,number,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'account_type_id' => ['required', 'string', 'exists:account_types,id'],
             'is_active' => ['nullable', 'boolean'],
             'remark' => ['nullable', 'string'],
-            'slug' => ['nullable', 'string', 'unique:accounts,slug'],
+            'slug' => ['nullable', 'string'],
             'openings' => ['nullable', 'array'],
             'openings.*.currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'openings.*.amount' => ['nullable', 'numeric'],

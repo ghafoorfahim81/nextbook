@@ -20,7 +20,7 @@ class StoreStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:stores,name,NULL,id,deleted_at,NULL'],
+            'name' => ['required', 'string', 'unique:stores,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'address' => ['nullable', 'string'],
             'is_main' => ['nullable', 'boolean'],
         ];

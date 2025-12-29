@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('account_types', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->string('name')->index();
-            $table->string('slug')->unique()->nullable();
+            $table->string('slug')->nullable();
             $table->text('remark')->nullable();
             $table->boolean('is_main')->default(false);
-            $table->char('created_by', 26)->index();
+            $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->ulid('branch_id')->index();
