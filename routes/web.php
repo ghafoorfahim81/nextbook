@@ -12,6 +12,7 @@ use App\Http\Controllers\Administration\DesignationController;
 use App\Http\Controllers\Administration\DepartmentController;
 use App\Http\Controllers\SearchController;
 use App\Http\Middleware\CheckCompany;
+use App\Http\Controllers\Administration\SwitchBranchController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -142,5 +143,9 @@ Route::middleware([
     // Expenses
     Route::resource('/expenses', \App\Http\Controllers\Expense\ExpenseController::class);
     Route::patch('/expenses/{expense}/restore', [\App\Http\Controllers\Expense\ExpenseController::class, 'restore'])->name('expenses.restore')->withTrashed();
+
+    // Branch switching (super-admin only)
+    Route::post('/switch-branch', SwitchBranchController::class)
+        ->name('branches.switch');
 
 });

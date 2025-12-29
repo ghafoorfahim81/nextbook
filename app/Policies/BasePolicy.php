@@ -26,11 +26,16 @@ abstract class BasePolicy
             return true;
         }
 
-        if ($user->branch_id === null || $model->branch_id === null) {
+        // Prefer the resolved active branch context when available.
+        $activeBranchId = app()->bound('active_branch_id')
+            ? app('active_branch_id')
+            : $user->branch_id;
+
+        if ($activeBranchId === null || $model->branch_id === null) {
             return false;
         }
 
-        return (string) $user->branch_id === (string) $model->branch_id;
+        return (string) $activeBranchId === (string) $model->branch_id;
     }
 }
 

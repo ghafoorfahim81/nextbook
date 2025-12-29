@@ -181,7 +181,38 @@ const chevronIcon = computed(() => isRTL.value ? ChevronLeft : ChevronRight)
 // Allow parent pages to control initial sidebar state
 const props = withDefaults(defineProps<{ sidebarCollapsed?: boolean }>(), { sidebarCollapsed: false })
 
-const { can } = useAuth()
+const { can, isSuperAdmin } = useAuth()
+
+const branches = computed(() => {
+    const raw: any = page.props.branches
+    if (!raw) return []
+
+    // Support both plain arrays and Laravel resource collections ({ data: [...] }).
+    if (Array.isArray(raw)) {
+        return raw
+    }
+
+    if (Array.isArray(raw.data)) {
+        return raw.data
+    }
+
+    return []
+})
+const activeBranchId = computed<string | null>(() => (page.props.activeBranchId as string | null) || null)
+const activeBranchName = computed<string | null>(() => (page.props.activeBranchName as string | null) || null)
+
+const selectedBranchId = ref<string | null>(activeBranchId.value)
+
+function switchBranch() {
+    if (!isSuperAdmin.value || !selectedBranchId.value || selectedBranchId.value === activeBranchId.value) {
+        return
+    }
+
+    router.post('/switch-branch', { branch_id: selectedBranchId.value }, {
+        preserveScroll: true,
+        preserveState: true,
+    })
+}
 
 const navMain = computed(() => [
     {
@@ -572,16 +603,38 @@ function logout() {
                     <SidebarTrigger class="-ml-1"/>
                     <Separator orientation="vertical" class="mr-2 h-4" />
                 </div>
-                    <div class="flex items-center gap-2 pr-4">
-                        <LanguageSwitcher />
-                        <button
-                            @click="mode = mode === 'dark' ? 'light' : 'dark'"
-                            class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                <div class="flex items-center gap-3 pr-4">
+                    <div v-if="isSuperAdmin" class="flex items-center gap-2">
+                        <label class="text-xs text-muted-foreground" for="branch-switcher">
+                            {{ t('layout.branch') || 'Branch' }}
+                        </label>
+                        <select
+                            id="branch-switcher"
+                            v-model="selectedBranchId"
+                            @change="switchBranch"
+                            class="border rounded-md px-2 py-1 text-xs bg-background"
                         >
-                            <Moon v-if="mode === 'dark'" class="size-5 text-gray-800 dark:text-gray-200" />
-                            <Sun v-else class="size-5 text-gray-800 dark:text-gray-200" />
-                        </button>
+                            <option
+                                v-for="branch in branches"
+                                :key="branch.id"
+                                :value="branch.id"
+                            >
+                                {{ branch.name }}
+                            </option>
+                        </select>
                     </div>
+                    <div v-else class="text-xs text-muted-foreground">
+                        {{ activeBranchName || '—' }}
+                    </div>
+                    <LanguageSwitcher />
+                    <button
+                        @click="mode = mode === 'dark' ? 'light' : 'dark'"
+                        class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                    >
+                        <Moon v-if="mode === 'dark'" class="size-5 text-gray-800 dark:text-gray-200" />
+                        <Sun v-else class="size-5 text-gray-800 dark:text-gray-200" />
+                    </button>
+                </div>
 <!--                </div>-->
             </header>
             <div class="flex flex-1 flex-col gap-4 p-4 pt-4 min-w-0">

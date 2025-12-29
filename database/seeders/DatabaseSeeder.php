@@ -38,10 +38,10 @@ class DatabaseSeeder extends Seeder
         if(app()->environment('local')){
             $this->call(BranchSeeder::class);
             $this->call(UserSeeder::class);
-            $this->call(CategorySeeder::class);
+            // $this->call(CategorySeeder::class);
             $this->call(StoreSeeder::class);
             $this->call(UnitMeasureSeeder::class);
-            $this->call(BrandSeeder::class);
+            // $this->call(BrandSeeder::class);
             $this->call(AccountTypeSeeder::class);
             $this->call(CurrencySeeder::class);
             $this->call(LedgerSeeder::class);
