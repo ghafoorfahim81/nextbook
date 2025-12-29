@@ -241,6 +241,20 @@ class HandleInertiaRequests extends Middleware
             ]);
         });
 
+        // Resolve active branch for UI: prefer middleware context, fall back to user's own branch.
+        $activeBranchId = app()->bound('active_branch_id')
+            ? app('active_branch_id')
+            : ($request->user()->branch_id ?? null);
+        $activeBranchName = null;
+
+        if ($activeBranchId) {
+            $activeBranchName = Cache::remember(
+                'branch_name_' . $activeBranchId,
+                $cacheDuration,
+                fn() => Branch::find($activeBranchId)?->name
+            );
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -282,6 +296,8 @@ class HandleInertiaRequests extends Middleware
             'user_preferences' => $user_preferences,
             'homeCurrency' => $homeCurrency,
             'transactionTypes' => $transactionTypes,
+            'activeBranchId' => $activeBranchId,
+            'activeBranchName' => $activeBranchName,
         ];
     }
 }

@@ -35,7 +35,11 @@ class SizeSeeder extends Seeder
             ['name' => 'N_A', 'code' => 'NA']
         ];
         foreach ($sizes as $size) {
-            Size::create($size);
+            Size::create([
+                'name' => $size['name'],
+                'code' => $size['code'],
+                'branch_id' => Branch::where('is_main', true)->first()->id,
+            ]);
         }
     }
 }

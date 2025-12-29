@@ -4,5 +4,6 @@
     "billing": "Billing",
     "notifications": "Notifications",
     "preferences": "Preferences",
-    "logout": "Logout"
+    "logout": "Logout",
+    "branch": "Branch"
 }
