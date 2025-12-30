@@ -29,7 +29,7 @@ class TransactionService
 
         // ALWAYS: DEBIT Inventory (Inventory comes IN)
         $inventoryTransaction = $this->createTransaction([
-            'account_id' => Account::where('slug', 'inventory-asset')->first()->id,
+            'account_id' => Account::where('slug', 'inventory')->first()->id,
             'amount' => $transactionTotal,
             'currency_id' => $currency_id,
             'rate' => $rate,
@@ -93,7 +93,7 @@ class TransactionService
             $inventoryTransaction = $existingTransactions->where('type', 'debit')->first();
             if ($inventoryTransaction) {
                 $inventoryTransaction->update([
-                    'account_id' => Account::where('slug', 'inventory-asset')->first()->id,
+                    'account_id' => Account::where('slug', 'inventory')->first()->id,
                     'amount' => $transactionTotal,
                     'currency_id' => $currency_id,
                     'rate' => $rate,
@@ -248,7 +248,7 @@ class TransactionService
 
         // CREDIT Inventory (Inventory goes OUT)
         $inventoryTransaction = $this->createTransaction([
-            'account_id' => $glAccounts['inventory-asset'],
+            'account_id' => $glAccounts['inventory'],
             'amount' => $transactionTotal, // This should be the cost value, not selling price
             'currency_id' => $currency_id,
             'rate' => $rate,
@@ -343,7 +343,7 @@ class TransactionService
             $validatedData['remark'] = 'Opening balance for ' . $data['ledger']->name;
             $validatedData['reference_type'] = 'ledger';
             $validatedData['reference_id'] = $data['ledger']->id;
-            $transaction = Transaction::create($validatedData); 
+            $transaction = Transaction::create($validatedData);
             return $transaction;
         });
     }
