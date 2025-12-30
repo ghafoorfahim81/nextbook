@@ -55,7 +55,7 @@ class AccountSeeder extends Seeder
             'name' => 'Accounts Receivable',
             'number' => '1101',
             'account_type_id' => AccountType::where('slug', 'account-receivable')->first()->id,
-            'slug' => 'account-receivable',
+            'slug' => 'accounts-receivable',
             'branch_id' => $mainBranch->id,
             'remark' => 'Money owed by customers',
             'is_main' => true,

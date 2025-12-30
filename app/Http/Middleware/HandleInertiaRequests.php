@@ -210,7 +210,7 @@ class HandleInertiaRequests extends Middleware
                 'account-payable',
                 'cash-in-hand',
                 'cost-of-goods-sold',
-                'inventory-asset',
+                'inventory',
                 'opening-balance-equity',
             ])->pluck('id', 'slug');
         });
