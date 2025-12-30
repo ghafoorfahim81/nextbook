@@ -10,10 +10,10 @@ use App\Models\Administration\Store;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\Stock;
 use App\Traits\HasUserAuditable;
-
+use App\Traits\BranchSpecific;
 class StockOut extends Model
 {
-        use HasUlids,HasUserAuditable, SoftDeletes;
+        use HasUlids,HasUserAuditable, SoftDeletes, BranchSpecific;
 
     protected $table = 'stock_outs';
     protected $primaryKey = 'id';

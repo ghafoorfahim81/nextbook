@@ -21,9 +21,10 @@ use App\Traits\HasCache;
 use App\Models\Purchase\Purchase;
 use App\Models\Payment\Payment;
 use App\Enums\LedgerType;
+use App\Traits\BranchSpecific;
 class Ledger extends Model
 {
-    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasUserAuditable, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasCache, HasSearch,   HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     // ... your existing code ...
 
@@ -37,7 +38,7 @@ class Ledger extends Model
                 // Use the new ledger_transactions pivot table to get all related transactions
                 // Assume you have a 'transactions' relationship through the pivot table (LedgerTransaction model)
                 $transactions = $this->ledgerTransactions()->get();
-                if(count($transactions)>0)       
+                if(count($transactions)>0)
                 {
                 // Calculate totals
                 $totals = $transactions->reduce(function ($carry, $transaction) {

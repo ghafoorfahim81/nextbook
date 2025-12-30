@@ -8,9 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasUserAuditable;
+use App\Traits\BranchSpecific;
 class ExpenseDetail extends Model
 {
-    use HasFactory, HasUlids, SoftDeletes, HasUserAuditable;
+    use HasFactory, HasUlids, SoftDeletes, HasUserAuditable, BranchSpecific;
 
     protected $keyType = 'string';
     public $incrementing = false;

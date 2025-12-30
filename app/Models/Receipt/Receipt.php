@@ -14,10 +14,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use App\Traits\BranchSpecific;
 class Receipt extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     protected $fillable = [
         'number',
@@ -68,7 +68,7 @@ class Receipt extends Model
     {
         return $this->belongsTo(Transaction::class, 'receive_transaction_id');
     }
-    
+
 
     public function bankTransaction(): BelongsTo
     {

@@ -11,10 +11,10 @@ use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
-
+use App\Traits\BranchSpecific;
 class PurchaseItem extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing

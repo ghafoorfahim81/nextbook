@@ -15,9 +15,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\Ulid;
 use App\Traits\HasBranch;
+use App\Traits\BranchSpecific;
 class Category extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasCache, HasSearch, HasSorting, HasDependencyCheck, HasBranch, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUlids, HasCache, HasSearch, HasSorting, HasDependencyCheck, BranchSpecific, HasBranch, SoftDeletes;
 
     /**
      * The table associated with the model.

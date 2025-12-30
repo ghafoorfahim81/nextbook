@@ -4,9 +4,10 @@ namespace App\Models;
 
 use Spatie\Permission\Models\Role as SpatieRole;
 use Symfony\Component\Uid\Ulid;
-
+use App\Traits\BranchSpecific;
 class Role extends SpatieRole
 {
+    use BranchSpecific;
     protected $keyType = 'string';
     public $incrementing = false;
 

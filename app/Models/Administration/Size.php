@@ -13,10 +13,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\Ulid;
-
+use App\Traits\BranchSpecific;
 class Size extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, HasCache, HasBranch, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, HasCache, BranchSpecific, HasBranch, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
 
     protected $table = 'sizes';
     protected $primaryKey = 'id';
@@ -53,6 +53,30 @@ class Size extends Model
                 'model' => 'items',
                 'message' => 'This size is used in items'
             ]
+        ];
+    }
+
+    public static function defaultSizes(): array
+    {
+        return [
+            ['name' => 'خورد', 'code' => 'SM'],
+            ['name' => 'متوسط', 'code' => 'MD'],
+            ['name' => 'کلان', 'code' => 'LG'],
+            ['name' => 'Small', 'code' => 'S'],
+            ['name' => 'Medium', 'code' => 'M'],
+            ['name' => 'Large', 'code' => 'L'],
+            ['name' => 'X-Large', 'code' => 'XL'],
+            ['name' => 'XL', 'code' => 'X1'],
+            ['name' => 'XS', 'code' => 'XS'],
+            ['name' => 'M', 'code' => 'M1'],
+            ['name' => 'L', 'code' => 'L1'],
+            ['name' => 'XXL', 'code' => 'XXL'],
+            ['name' => 'A6', 'code' => 'A6'],
+            ['name' => 'A5', 'code' => 'A5'],
+            ['name' => 'A4', 'code' => 'A4'],
+            ['name' => 'A3', 'code' => 'A3'],
+            ['name' => 'A2', 'code' => 'A2'],
+            ['name' => 'N_A', 'code' => 'NA']
         ];
     }
 

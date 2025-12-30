@@ -14,10 +14,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\Ulid;
-
+use App\Traits\BranchSpecific;
 class Quantity extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUlids, HasSearch, HasSorting, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
 
     /**

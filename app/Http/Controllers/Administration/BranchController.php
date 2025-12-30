@@ -11,7 +11,13 @@ use App\Models\Administration\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
-
+use App\Models\Account\Account;
+use App\Models\Account\AccountType;
+use App\Models\Administration\Quantity;
+use App\Models\Administration\Size;
+use App\Models\Administration\Currency;
+use App\Models\Administration\UnitMeasure;
+use App\Models\Administration\Store;
 class BranchController extends Controller
 {
     public function __construct()
@@ -38,6 +44,82 @@ class BranchController extends Controller
     public function store(BranchStoreRequest $request)
     {
         $branch = Branch::create($request->validated());
+
+        $defaultAccountTypes = AccountType::defaultAccountTypes();
+
+        // foreach ($defaultAccountTypes as $accountType) {
+        //     AccountType::create([
+        //         'name' => $accountType['name'],
+        //         'is_main' => $accountType['is_main'],
+        //         'slug' => $accountType['slug'],
+        //         'branch_id' => $branch->id,
+        //     ]);
+        // }
+
+        // $accounts = Account::where('is_main', true)->get();
+        // foreach ($accounts as $account) {
+        //     Account::create([
+        //         'name' => $account['name'],
+        //         'number' => $account['number'],
+        //         'account_type_id' => AccountType::where('slug', $account['account_type_slug'])
+        //         ->where('branch_id', $branch->id)
+        //         ->first()->id,
+        //         'branch_id' => $branch->id,
+        //         'slug' => $account['slug'],
+        //         'remark' => $account['remark'],
+        //         'is_main' => $account['is_main'],
+        //     ]);
+        // }
+
+        // $defaultSizes = Size::defaultSizes();
+        // foreach ($defaultSizes as $size) {
+        //     Size::create([
+        //         'name' => $size['name'],
+        //         'code' => $size['code'],
+        //         'branch_id' => $branch->id,
+        //     ]);
+        // }
+
+        // $defaultCurrencies = Currency::defaultCurrencies();
+        // foreach ($defaultCurrencies as $currency) {
+        //     Currency::create([
+        //         'name' => $currency['name'],
+        //         'code' => $currency['code'],
+        //         'branch_id' => $branch->id,
+        //     ]);
+        // }
+
+        // $quantities = Quantity::where('is_system', true)->get();
+        // foreach ($quantities as $quantity) {
+        //     Quantity::create([
+        //         'quantity' => $quantity['quantity'],
+        //         'unit' => $quantity['unit'],
+        //         'symbol' => $quantity['symbol'],
+        //         'branch_id' => $branch->id,
+        //     ]);
+        // }
+        // $unitMeasures = UnitMeasure::where('is_system', true)->get();
+        // foreach ($unitMeasures as $unitMeasure) {
+        //     UnitMeasure::create([
+        //         'name' => $unitMeasure['name'],
+        //         'unit' => $unitMeasure['unit'],
+        //         'symbol' => $unitMeasure['symbol'],
+        //         'branch_id' => $branch->id,
+        //         'quantity_id' => $unitMeasure['quantity_id'],
+        //         'is_system' => true,
+        //     ]);
+        // }
+
+        // $stores = Store::where('is_main', true)->get();
+        // foreach ($stores as $store) {
+        //     Store::create([
+        //         'name' => $store['name'],
+        //         'address' => 'Main store',
+        //         'branch_id' => $branch->id,
+        //         'is_main' => true,
+        //     ]);
+        // }
+
         return redirect()->route('branches.index')->with('success', 'Branch created successfully.');
     }
 

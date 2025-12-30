@@ -9,9 +9,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Inventory\StockOut;
 use App\Traits\HasUserAuditable;
+use App\Traits\BranchSpecific;
 class Stock extends Model
 {
-    use HasUlids, SoftDeletes, HasUserAuditable;
+    use HasUlids, SoftDeletes, HasUserAuditable, BranchSpecific;
     protected $table = 'stocks';
     protected $primaryKey = 'id';
     protected $keyType = 'string';
@@ -57,7 +58,7 @@ class Stock extends Model
     {
         return $this->morphTo();
     }
- 
+
     public function ledgerName()
     {
         if($this->source_type == 'App\Models\Purchase\Purchase' && $this->source) {
@@ -65,6 +66,6 @@ class Stock extends Model
         }
         else{
             return 'Unknown';
-        } 
+        }
     }
 }
