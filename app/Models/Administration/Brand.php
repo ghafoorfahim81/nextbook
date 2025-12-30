@@ -13,10 +13,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\Ulid;
-
+use App\Traits\BranchSpecific;
 class Brand extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, HasCache, HasBranch, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, HasCache, BranchSpecific, HasBranch, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
 
     protected $table = 'brands';
     protected $primaryKey = 'id';

@@ -16,10 +16,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use App\Traits\BranchSpecific;
 class Expense extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting,HasBranch, HasUserAuditable, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting,BranchSpecific, HasBranch, HasUserAuditable, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;

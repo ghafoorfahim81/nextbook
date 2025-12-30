@@ -11,14 +11,15 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
-use App\Traits\HasUserAuditable; 
+use App\Traits\HasUserAuditable;
 use App\Traits\HasDependencyCheck;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Enums\UserStatus;
+use App\Traits\BranchSpecific;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, HasUlids, HasSorting, HasUserAuditable, HasDependencyCheck, SoftDeletes, HasRoles;
+    use HasFactory, HasUlids, HasSorting, HasUserAuditable, BranchSpecific, HasDependencyCheck, SoftDeletes, HasRoles;
 
     use TwoFactorAuthenticatable;
 

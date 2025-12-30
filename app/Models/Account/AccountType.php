@@ -10,9 +10,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasBranch;
+use App\Traits\BranchSpecific;
 class AccountType extends Model
 {
-    use HasFactory, HasSearch, HasSorting, HasBranch, HasUserAuditable, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasSearch, HasSorting, BranchSpecific, HasBranch, HasUserAuditable, HasDependencyCheck, SoftDeletes;
 
     protected $table = 'account_types';
     protected $keyType = 'string';
@@ -76,9 +77,10 @@ class AccountType extends Model
     public static function defaultAccountTypes(): array
     {
         return [
+            // ================= ASSETS =================
             [
                 'name' => "Cash-In-Hand",
-                'slug' => 'cash-in-hand',
+                'slug' => 'cash',
                 'remark' => 'Physical cash available',
                 'is_main' => true,
             ],
@@ -113,7 +115,7 @@ class AccountType extends Model
                 'is_main' => true,
             ],
             [
-                'name' => "Loan & Advance (Asset)",
+                'name' => "Loan & Advances (Asset)",
                 'slug' => 'loan-advance-asset',
                 'remark' => 'Loans given to others',
                 'is_main' => true,
@@ -303,7 +305,6 @@ class AccountType extends Model
             ],
 
             // ================= EXPENSES =================
-            // Cost of Goods/Sales
             [
                 'name' => "Cost of Goods Sold",
                 'slug' => 'cost-of-goods-sold',
@@ -431,6 +432,7 @@ class AccountType extends Model
             ],
         ];
     }
+
 
     /**
      * Relationship to accounts that use this account type
