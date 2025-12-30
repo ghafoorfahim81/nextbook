@@ -19,28 +19,12 @@ class ItemStoreRequest extends FormRequest
      * Get the validation rules that apply to the request.
      */
     public function rules(): array
-    {
-        $branchId = $this->user()?->branch_id;
+    { 
 
         return [
-            'name' => [
-                'required',
-                'min:3',
-                Rule::unique('items', 'name')
-                    ->where(fn ($q) => $q
-                        ->where('branch_id', $branchId)
-                        ->whereNull('deleted_at')
-                    ),
-            ],
-            'code' => [
-                'required',
-                'string',
-                Rule::unique('items', 'code')
-                    ->where(fn ($q) => $q
-                        ->where('branch_id', $branchId)
-                        ->whereNull('deleted_at')
-                    ),
-            ],
+            'name' => ['required', 'string', 'unique:items,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'code' => ['required', 'string', 'unique:items,code,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
             'generic_name' => ['nullable', 'string'],
             'packing' => ['nullable', 'string'],
             'barcode' => ['nullable', 'string'],

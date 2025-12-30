@@ -76,6 +76,45 @@ class Currency extends Model
         ];
     }
 
+    public static function defaultCurrencies(): array
+    {
+        return [
+            'AFN' => [
+                'name' => 'Afghanistan, Afghani',
+                'symbol' => '؋',
+                'format' => '؋1,0.00',
+                'exchange_rate' => 1,
+                'flag'     => 'af.png',
+                'is_active' => true,
+                'is_base_currency' => true,
+            ],
+            'USD' => [
+                'name' => 'US Dollar',
+                'symbol' => '$',
+                'format' => '$1,0.00',
+                'exchange_rate' => 0.00,
+                'flag' => 'us.png',
+                'is_active' => true,
+            ],
+            'IRR' => [
+                'name' => 'Iranian Rial',
+                'symbol' => '﷼',
+                'format' => '﷼ 1,0/00',
+                'exchange_rate' => 0.00,
+                'flag'     => 'ir.png',
+                'is_active' => true,
+            ],
+            'INR' => [
+                'name' => 'Indian Rupee',
+                'symbol' => '₹',
+                'format' => '1,0.00₹',
+                'exchange_rate' => 0.00,
+                'flag'     => 'in.png',
+                'is_active' => true,
+            ],
+        ];
+    }
+
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);

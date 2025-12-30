@@ -21,8 +21,9 @@ class ItemUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:256', Rule::unique('items')->ignore($this->route('item'))->whereNull('deleted_at')],
-            'code' => ['required', 'string', 'max:256', Rule::unique('items')->ignore($this->route('item'))->whereNull('deleted_at')],
+            'name' => ['required', 'string', 'max:256', Rule::unique('items')->ignore($this->route('item'))->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
+            'code' => ['required', 'string', 'max:256', Rule::unique('items')->ignore($this->route('item'))->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
+            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
             'generic_name' => ['nullable', 'string'],
             'packing' => ['nullable', 'string'],
             'barcode' => ['nullable', 'string'],

@@ -68,6 +68,10 @@ class HandleInertiaRequests extends Middleware
             : ($request->user()->branch_id ?? null);
         $branchCacheKey = $activeBranchId ? 'branch_' . $activeBranchId : 'branch_none';
 
+        $mainBranch = Cache::rememberForever('main_branch', function () {
+            return Branch::where('is_main', true)->first();
+        });
+
         $categories = Cache::remember(
             'categories_' . $branchCacheKey,
             $cacheDuration,
@@ -275,6 +279,7 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
             ],
+            'mainBranch' => $mainBranch,
             'categories' => $categories,
             'accounts' => $accounts,
             'accountTypes' => $accountTypes,
