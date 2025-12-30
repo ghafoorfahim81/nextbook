@@ -29,6 +29,7 @@ class AccountController extends Controller
 
     public function index(Request $request)
     { 
+ 
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'created_at');
         $sortDirection = $request->input('sortDirection', 'desc');
