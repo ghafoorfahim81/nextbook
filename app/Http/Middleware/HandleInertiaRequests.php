@@ -66,30 +66,26 @@ class HandleInertiaRequests extends Middleware
         $activeBranchId = app()->bound('active_branch_id')
             ? app('active_branch_id')
             : ($request->user()->branch_id ?? null);
-        $branchCacheKey = $activeBranchId ? 'branch_' . $activeBranchId : 'branch_none';
 
         $mainBranch = Cache::rememberForever('main_branch', function () {
             return Branch::where('is_main', true)->first();
         });
 
-        $categories = Cache::remember(
-            'categories_' . $branchCacheKey,
+        $categories = Cache::remember('categories',
             $cacheDuration,
             fn() => CategoryResource::collection(
                 Category::latest()->take(10)->get()
             )
         );
 
-        $accounts = Cache::remember(
-            'accounts_' . $branchCacheKey,
+        $accounts = Cache::remember('accounts',
             $cacheDuration,
             fn() => AccountResource::collection(
                 Account::latest()->take(1000)->get()
             )
         );
 
-        $accountTypes = Cache::remember(
-            'accountTypes_' . $branchCacheKey,
+        $accountTypes = Cache::remember('accountTypes',
             $cacheDuration,
             fn() => AccountTypeResource::collection(
                 AccountType::latest()->take(10)->get()
@@ -103,40 +99,35 @@ class HandleInertiaRequests extends Middleware
             )
         );
 
-        $stores = Cache::remember(
-            'stores_' . $branchCacheKey,
+        $stores = Cache::remember('stores',
             $cacheDuration,
             fn() => StoreResource::collection(
                 Store::latest()->take(10)->get()
             )
         );
 
-        $currencies = Cache::remember(
-            'currencies_' . $branchCacheKey,
+        $currencies = Cache::remember('currencies',
             $cacheDuration,
             fn() => CurrencyResource::collection(
                 Currency::latest()->get()
             )
         );
 
-        $brands = Cache::remember(
-            'brands_' . $branchCacheKey,
+        $brands = Cache::remember('brands',
             $cacheDuration,
             fn() => BrandResource::collection(
                 Brand::latest()->take(10)->get()
             )
         );
 
-        $unitMeasures = Cache::remember(
-            'unitMeasures_' . $branchCacheKey,
+        $unitMeasures = Cache::remember('unitMeasures',
             $cacheDuration,
             fn() => UnitMeasureResource::collection(
                 \App\Models\Administration\UnitMeasure::latest()->take(1000)->get()
             )
         );
 
-        $sizes = Cache::remember(
-            'sizes_' . $branchCacheKey,
+        $sizes = Cache::remember('sizes',
             $cacheDuration,
             fn() => SizeResource::collection(
                 Size::latest()->take(10)->get()
@@ -185,8 +176,7 @@ class HandleInertiaRequests extends Middleware
                 'name' => $item->getLabel(),
             ])
         );
-        $items = Cache::remember(
-            'items_' . $branchCacheKey,
+        $items = Cache::remember('items',
             $cacheDuration,
             fn() => ItemResource::collection(
                 Item::latest()->take(10)->get()
@@ -219,14 +209,14 @@ class HandleInertiaRequests extends Middleware
             ])->pluck('id', 'slug');
         });
 
-        $capitalAccounts = Cache::rememberForever('capital_accounts_' . $branchCacheKey, function () {
+        $capitalAccounts = Cache::rememberForever('capital_accounts', function () {
             return Account::join('account_types', 'accounts.account_type_id', '=', 'account_types.id')
                 ->where('account_types.slug', 'equity')
                 ->select('accounts.id', 'accounts.name')
                 ->get();
         });
 
-        $drawingAccounts = Cache::rememberForever('drawing_accounts_' . $branchCacheKey, function () {
+        $drawingAccounts = Cache::rememberForever('drawing_accounts', function () {
             return Account::join('account_types', 'accounts.account_type_id', '=', 'account_types.id')
                 ->where('account_types.slug', 'equity')
                 ->select('accounts.id', 'accounts.name')
