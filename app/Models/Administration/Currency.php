@@ -81,6 +81,7 @@ class Currency extends Model
         return [
             'AFN' => [
                 'name' => 'Afghanistan, Afghani',
+                'code' => 'AFN',
                 'symbol' => '؋',
                 'format' => '؋1,0.00',
                 'exchange_rate' => 1,
@@ -90,27 +91,33 @@ class Currency extends Model
             ],
             'USD' => [
                 'name' => 'US Dollar',
+                'code' => 'USD',
                 'symbol' => '$',
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
                 'flag' => 'us.png',
                 'is_active' => true,
+                'is_base_currency' => false,
             ],
             'IRR' => [
                 'name' => 'Iranian Rial',
+                'code' => 'IRR',
                 'symbol' => '﷼',
                 'format' => '﷼ 1,0/00',
                 'exchange_rate' => 0.00,
                 'flag'     => 'ir.png',
                 'is_active' => true,
+                'is_base_currency' => false,
             ],
             'INR' => [
                 'name' => 'Indian Rupee',
+                'code' => 'INR',
                 'symbol' => '₹',
                 'format' => '1,0.00₹',
                 'exchange_rate' => 0.00,
                 'flag'     => 'in.png',
                 'is_active' => true,
+                'is_base_currency' => false,
             ],
         ];
     }

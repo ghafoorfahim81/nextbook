@@ -18,6 +18,7 @@ use App\Models\Administration\Size;
 use App\Models\Administration\Currency;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Administration\Store;
+use Symfony\Component\Uid\Ulid;
 class BranchController extends Controller
 {
     public function __construct()
@@ -47,78 +48,111 @@ class BranchController extends Controller
 
         $defaultAccountTypes = AccountType::defaultAccountTypes();
 
-        // foreach ($defaultAccountTypes as $accountType) {
-        //     AccountType::create([
-        //         'name' => $accountType['name'],
-        //         'is_main' => $accountType['is_main'],
-        //         'slug' => $accountType['slug'],
-        //         'branch_id' => $branch->id,
-        //     ]);
-        // }
+        foreach ($defaultAccountTypes as $accountType) {
+            AccountType::withoutEvents(function () use ($accountType, $branch) {
+            AccountType::create([
+                'id' => (string) new Ulid(),
+                'name' => $accountType['name'],
+                'is_main' => $accountType['is_main'],
+                'slug' => $accountType['slug'],
+                'branch_id' => $branch->id,
+                'created_by' => auth()->user()->id,
+            ]);
+            });
+        }
+        $accounts = Account::defaultAccounts();
+        foreach ($accounts as $account) {
+            Account::withoutEvents(function () use ($account, $branch) {
+                Account::create([
+                    'id' => (string) new Ulid(),
+                    'name' => $account['name'], 
+                    'number' => $account['number'],
+                    'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', $account['account_type_slug'])
+                    ->where('branch_id', $branch->id)
+                    ->first()->id,
+                    'branch_id' => $branch->id,
+                    'slug' => $account['slug'],
+                    'remark' => $account['remark'],
+                    'is_main' => $account['is_main'],
+                    'created_by' => auth()->user()->id,
+                ]);
+            });
+        }  
 
-        // $accounts = Account::where('is_main', true)->get();
-        // foreach ($accounts as $account) {
-        //     Account::create([
-        //         'name' => $account['name'],
-        //         'number' => $account['number'],
-        //         'account_type_id' => AccountType::where('slug', $account['account_type_slug'])
-        //         ->where('branch_id', $branch->id)
-        //         ->first()->id,
-        //         'branch_id' => $branch->id,
-        //         'slug' => $account['slug'],
-        //         'remark' => $account['remark'],
-        //         'is_main' => $account['is_main'],
-        //     ]);
-        // }
+        $defaultSizes = Size::defaultSizes();
+        foreach ($defaultSizes as $size) {
+            Size::withoutEvents(function () use ($size, $branch) {
+                Size::create([
+                    'id' => (string) new Ulid(),
+                    'name' => $size['name'],
+                    'code' => $size['code'],
+                    'branch_id' => $branch->id,
+                    'created_by' => auth()->user()->id,
+                ]);
+            });
+        }
 
-        // $defaultSizes = Size::defaultSizes();
-        // foreach ($defaultSizes as $size) {
-        //     Size::create([
-        //         'name' => $size['name'],
-        //         'code' => $size['code'],
-        //         'branch_id' => $branch->id,
-        //     ]);
-        // }
+        $defaultCurrencies = Currency::defaultCurrencies();
+        foreach ($defaultCurrencies as $currency) { 
+            Currency::withoutEvents(function () use ($currency, $branch) {
+                Currency::create([
+                    'id' => (string) new Ulid(),
+                    'name' => $currency['name'],
+                    'code' => $currency['code'],
+                    'symbol' => $currency['symbol'],
+                    'format' => $currency['format'],
+                    'exchange_rate' => $currency['exchange_rate'],
+                    'is_active' => $currency['is_active'],
+                    'is_base_currency' => $currency['is_base_currency'] ?? false,
+                    'flag' => $currency['flag'],
+                    'branch_id' => $branch->id,
+                    'created_by' => auth()->user()->id,
+                ]);
+            });
+        }
 
-        // $defaultCurrencies = Currency::defaultCurrencies();
-        // foreach ($defaultCurrencies as $currency) {
-        //     Currency::create([
-        //         'name' => $currency['name'],
-        //         'code' => $currency['code'],
-        //         'branch_id' => $branch->id,
-        //     ]);
-        // }
+        $quantities = Quantity::withoutGlobalScopes()->where('is_system', true)->get();
+        foreach ($quantities as $quantity) {
+            Quantity::withoutEvents(function () use ($quantity, $branch) {
+                Quantity::create([
+                    'id' => (string) new Ulid(),
+                    'quantity' => $quantity['quantity'],
+                    'unit' => $quantity['unit'],
+                    'symbol' => $quantity['symbol'],
+                    'branch_id' => $branch->id,
+                    'created_by' => auth()->user()->id,
+                ]);
+            });
+        }
+        $unitMeasures = UnitMeasure::withoutGlobalScopes()->where('is_system', true)->get();
+        foreach ($unitMeasures as $unitMeasure) {
+            UnitMeasure::withoutEvents(function () use ($unitMeasure, $branch) {
+                UnitMeasure::create([
+                'id' => (string) new Ulid(),
+                'name' => $unitMeasure['name'],
+                'unit' => $unitMeasure['unit'],
+                'symbol' => $unitMeasure['symbol'],
+                'branch_id' => $branch->id,
+                'quantity_id' => $unitMeasure['quantity_id'],
+                'is_system' => true,
+                'created_by' => auth()->user()->id,
+            ]);
+            });
+        }
 
-        // $quantities = Quantity::where('is_system', true)->get();
-        // foreach ($quantities as $quantity) {
-        //     Quantity::create([
-        //         'quantity' => $quantity['quantity'],
-        //         'unit' => $quantity['unit'],
-        //         'symbol' => $quantity['symbol'],
-        //         'branch_id' => $branch->id,
-        //     ]);
-        // }
-        // $unitMeasures = UnitMeasure::where('is_system', true)->get();
-        // foreach ($unitMeasures as $unitMeasure) {
-        //     UnitMeasure::create([
-        //         'name' => $unitMeasure['name'],
-        //         'unit' => $unitMeasure['unit'],
-        //         'symbol' => $unitMeasure['symbol'],
-        //         'branch_id' => $branch->id,
-        //         'quantity_id' => $unitMeasure['quantity_id'],
-        //         'is_system' => true,
-        //     ]);
-        // }
-
-        // $stores = Store::where('is_main', true)->get();
-        // foreach ($stores as $store) {
-        //     Store::create([
-        //         'name' => $store['name'],
-        //         'address' => 'Main store',
-        //         'branch_id' => $branch->id,
-        //         'is_main' => true,
-        //     ]);
-        // }
+        $stores = Store::withoutGlobalScopes()->where('is_main', true)->get();
+        foreach ($stores as $store) {
+            Store::withoutEvents(function () use ($store, $branch) {
+                Store::create([
+                    'id' => (string) new Ulid(),
+                'name' => $store['name'],
+                'address' => 'Main store',
+                'branch_id' => $branch->id,
+                'is_main' => true,
+                    'created_by' => auth()->user()->id,
+                ]);
+            });
+        }
 
         return redirect()->route('branches.index')->with('success', 'Branch created successfully.');
     }
