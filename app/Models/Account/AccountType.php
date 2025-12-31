@@ -4,6 +4,7 @@ namespace App\Models\Account;
 
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -13,7 +14,7 @@ use App\Traits\HasBranch;
 use App\Traits\BranchSpecific;
 class AccountType extends Model
 {
-    use HasFactory, HasSearch, HasSorting, BranchSpecific, HasBranch, HasUserAuditable, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasSearch, HasSorting,HasUlids, BranchSpecific, HasBranch, HasUserAuditable, HasDependencyCheck, SoftDeletes;
 
     protected $table = 'account_types';
     protected $keyType = 'string';
@@ -23,8 +24,7 @@ class AccountType extends Model
      *
      * @var array
      */
-    protected $fillable = [
-        'id',
+    protected $fillable = [ 
         'name',
         'branch_id',
         'remark',
@@ -40,8 +40,7 @@ class AccountType extends Model
      *
      * @var array
      */
-    protected $casts = [
-        'id' => 'string',
+    protected $casts = [ 
         'branch_id' => 'string',
         'slug' => 'string',
         'is_main' => 'boolean',
