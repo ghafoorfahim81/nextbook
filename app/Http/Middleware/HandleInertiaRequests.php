@@ -207,7 +207,7 @@ class HandleInertiaRequests extends Middleware
             ])
         );
 
-        $glAccounts = Cache::rememberForever('gl_accounts_' . $branchCacheKey, function () {
+        $glAccounts = Cache::remember('gl_accounts', $cacheDuration, function () {
             return Account::whereIn('slug', [
                 'sales-revenue',
                 'accounts-receivable',

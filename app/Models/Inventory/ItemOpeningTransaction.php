@@ -8,9 +8,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Models\Transaction\Transaction;
+use App\Traits\BranchSpecific;
+use App\Traits\HasBranch;
 class ItemOpeningTransaction extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUlids, SoftDeletes, BranchSpecific, HasBranch;
 
     protected $table = 'item_opening_transactions';
     protected $primaryKey = 'id';
@@ -20,6 +22,7 @@ class ItemOpeningTransaction extends Model
         'item_id',
         'inventory_transaction_id',
         'opening_balance_transaction_id',
+        'branch_id',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -29,6 +32,7 @@ class ItemOpeningTransaction extends Model
     {
         return [
             'id' => 'string',
+            'branch_id' => 'string',
             'updated_by' => 'string',
             'deleted_by' => 'string',
             'item_id' => 'string',

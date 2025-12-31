@@ -22,6 +22,7 @@ return new class extends Migration
             $table->date('date')->index();
             $table->string('reference_type')->nullable()->index();
             $table->ulid('reference_id')->nullable()->index();
+            $table->ulid('branch_id')->index(); 
             $table->enum('type', TransactionType::values())->default(TransactionType::CREDIT->value);
             $table->text('remark')->nullable();
             $table->ulid('created_by')->index();
@@ -37,6 +38,7 @@ return new class extends Migration
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('currency_id')->references('id')->on('currencies');
             $table->foreign('account_id')->references('id')->on('accounts');
+            $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
         });
 

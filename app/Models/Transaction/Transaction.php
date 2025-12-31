@@ -13,9 +13,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use App\Traits\BranchSpecific;
+use App\Traits\HasBranch;
 class Transaction extends Model
 {
-    use HasFactory, HasSearch, HasSorting, HasUlids, HasUserAuditable, SoftDeletes;
+    use HasFactory, HasSearch, HasSorting, HasUlids, HasUserAuditable, SoftDeletes, BranchSpecific, HasBranch;
 
     /**
      * The attributes that are mass assignable.
@@ -36,6 +38,7 @@ class Transaction extends Model
         'remark',
         'created_by',
         'updated_by',
+        'branch_id',
     ];
 
     /**
@@ -56,6 +59,7 @@ class Transaction extends Model
             'date' => 'date',
             'created_by' => 'string',
             'updated_by' => 'string',
+            'branch_id' => 'string',
         ];
     }
 

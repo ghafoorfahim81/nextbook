@@ -15,10 +15,10 @@ return new class extends Migration
             $table->ulid('category_id')->index();  
             $table->ulid('expense_transaction_id')->nullable()->index();
             $table->ulid('bank_transaction_id')->nullable()->index();
+            $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
-            $table->ulid('deleted_by')->nullable();
-            $table->ulid('branch_id')->index();
+            $table->ulid('deleted_by')->nullable(); 
             $table->timestamps();
             $table->softDeletes();
         });

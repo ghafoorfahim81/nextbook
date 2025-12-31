@@ -9,9 +9,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasUserAuditable;
 use App\Traits\BranchSpecific;
+use App\Traits\HasBranch;
 class ExpenseDetail extends Model
 {
-    use HasFactory, HasUlids, SoftDeletes, HasUserAuditable, BranchSpecific;
+    use HasFactory, HasUlids, SoftDeletes, HasUserAuditable, BranchSpecific, HasBranch;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -22,6 +23,7 @@ class ExpenseDetail extends Model
         'title',
         'created_by',
         'updated_by',
+        'branch_id',
     ];
 
     protected $casts = [
