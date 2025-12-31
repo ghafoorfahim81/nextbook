@@ -34,7 +34,7 @@ class PurchaseStoreRequest extends FormRequest
             'payment.note' => ['nullable', 'string'],
             'discount' => ['nullable', 'numeric'],
             'discount_type' => ['nullable', 'string'],
-            'store_id' => ['nullable', 'string', 'exists:stores,id'],
+            'store_id' => ['required', 'string', 'exists:stores,id'],
             'description' => ['nullable', 'string'],
             'status' => ['nullable', 'string'],
             'item_list' => ['required', 'array'],
