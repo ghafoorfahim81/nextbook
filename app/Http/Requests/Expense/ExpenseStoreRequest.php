@@ -20,8 +20,7 @@ class ExpenseStoreRequest extends FormRequest
             'expense_account_id' => ['required', 'string', 'exists:accounts,id'],
             'bank_account_id' => ['required', 'string', 'exists:accounts,id'],
             'currency_id' => ['required', 'string', 'exists:currencies,id'],
-            'rate' => ['required', 'numeric', 'min:0'],
-            'attachment' => ['nullable', 'file', 'max:10240'], // 10MB max
+            'rate' => ['required', 'numeric', 'min:0'], 
             'details' => ['required', 'array', 'min:1'],
             'details.*.amount' => ['required', 'numeric', 'min:0.01'],
             'details.*.title' => ['required', 'string', 'max:255'],
