@@ -18,20 +18,15 @@ class AccountType extends Model
     protected $table = 'account_types';
     protected $keyType = 'string';
     public $incrementing = false;
-    protected static function boot()
-    {
-        parent::boot();
-        static::creating(function ($model) {
-            $model->id = (string) new \Symfony\Component\Uid\Ulid();
-        });
-    }
     /**
      * The attributes that are mass assignable.
      *
      * @var array
      */
     protected $fillable = [
+        'id',
         'name',
+        'branch_id',
         'remark',
         'slug',
         'is_main',
@@ -47,6 +42,7 @@ class AccountType extends Model
      */
     protected $casts = [
         'id' => 'string',
+        'branch_id' => 'string',
         'slug' => 'string',
         'is_main' => 'boolean',
         'created_by' => 'string',
