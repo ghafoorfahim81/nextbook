@@ -76,8 +76,8 @@ class CustomerController extends Controller
         $glAccounts = Cache::get('gl_accounts');
         $transactionService = app(TransactionService::class);
         if ($openings->isNotEmpty()) {
-            $arId = $glAccounts['account-receivable'];
-            $apId = $glAccounts['account-payable'];
+            $arId = $glAccounts['accounts-receivable'];
+            $apId = $glAccounts['accounts-payable'];
 
             abort_unless($arId && $apId, 500, 'System accounts (AR/AP) are missing.');
 
@@ -239,7 +239,7 @@ class CustomerController extends Controller
     }
     public function restore(Request $request, Ledger $customer)
     {
-        \DB::transaction(function () use ($customer) {
+        DB::transaction(function () use ($customer) {
             // 3. Batch restore instead of one-by-one
             $customer->ledgerTransactions()
                 ->with(['transaction']) // Eager load to avoid N+1
