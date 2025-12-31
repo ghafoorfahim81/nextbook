@@ -149,25 +149,21 @@ class RolePermissionSeeder extends Seeder
         $superAdmin = Role::firstOrCreate([
             'name' => 'super-admin',
             'guard_name' => 'web',
-            'branch_id' => Branch::where('is_main', true)->first()->id,
         ]);
 
         $admin = Role::firstOrCreate([
             'name' => 'admin',
             'guard_name' => 'web',
-            'branch_id' => Branch::where('is_main', true)->first()->id,
         ]);
 
         $accountant = Role::firstOrCreate([
             'name' => 'accountant',
             'guard_name' => 'web',
-            'branch_id' => Branch::where('is_main', true)->first()->id,
         ]);
 
         $clerk = Role::firstOrCreate([
             'name' => 'clerk',
             'guard_name' => 'web',
-            'branch_id' => Branch::where('is_main', true)->first()->id,
         ]);
 
         /*
