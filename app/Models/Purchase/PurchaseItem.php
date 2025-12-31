@@ -12,9 +12,10 @@ use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\BranchSpecific;
+use App\Traits\HasBranch;
 class PurchaseItem extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasDependencyCheck, SoftDeletes, HasBranch;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
@@ -37,6 +38,7 @@ class PurchaseItem extends Model
         'tax',
         'created_by',
         'updated_by',
+        'branch_id',
     ];
 
     /**
@@ -59,6 +61,7 @@ class PurchaseItem extends Model
             'tax' => 'decimal:2',
             'created_by' => 'string',
             'updated_by' => 'string',
+            'branch_id' => 'string',
         ];
     }
 

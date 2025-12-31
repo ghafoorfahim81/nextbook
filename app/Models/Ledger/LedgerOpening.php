@@ -11,9 +11,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\BranchSpecific;
+use App\Traits\HasBranch;
 class LedgerOpening extends Model
 {
-    use HasFactory,HasUlids, HasSearch, HasSorting, HasUserAuditable, SoftDeletes;
+    use HasFactory,HasUlids, HasSearch, HasSorting, HasUserAuditable, SoftDeletes, BranchSpecific, HasBranch;
 
 
     protected $keyType = 'string';
@@ -28,6 +30,7 @@ class LedgerOpening extends Model
         'ledgerable_id',
         'ledgerable_type',
         'transaction_id',
+        'branch_id',
     ];
 
     /**
@@ -42,6 +45,7 @@ class LedgerOpening extends Model
             'ledgerable_id' => 'string',
             'ledgerable_type' => 'string',
             'transaction_id' => 'string',
+            'branch_id' => 'string',
         ];
     }
 

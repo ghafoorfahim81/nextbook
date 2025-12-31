@@ -11,10 +11,11 @@ use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
-
+use App\Traits\BranchSpecific;
+use App\Traits\HasBranch;
 class SaleItem extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasDependencyCheck, SoftDeletes, BranchSpecific, HasBranch;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
@@ -38,6 +39,7 @@ class SaleItem extends Model
         'store_id',
         'created_by',
         'updated_by',
+        'branch_id',
     ];
 
     /**
@@ -61,6 +63,7 @@ class SaleItem extends Model
             'store_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
+            'branch_id' => 'string',
         ];
     }
 

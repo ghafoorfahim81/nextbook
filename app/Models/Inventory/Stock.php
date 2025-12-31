@@ -10,9 +10,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Inventory\StockOut;
 use App\Traits\HasUserAuditable;
 use App\Traits\BranchSpecific;
-class Stock extends Model
+use App\Traits\HasBranch;
+    class Stock extends Model
 {
-    use HasUlids, SoftDeletes, HasUserAuditable, BranchSpecific;
+    use HasUlids, SoftDeletes, HasUserAuditable, BranchSpecific, HasBranch,BranchSpecific;
     protected $table = 'stocks';
     protected $primaryKey = 'id';
     protected $keyType = 'string';

@@ -11,9 +11,10 @@ use App\Models\Inventory\Item;
 use App\Models\Inventory\Stock;
 use App\Traits\HasUserAuditable;
 use App\Traits\BranchSpecific;
+use App\Traits\HasBranch;
 class StockOut extends Model
 {
-        use HasUlids,HasUserAuditable, SoftDeletes, BranchSpecific;
+        use HasUlids,HasUserAuditable, SoftDeletes, BranchSpecific, HasBranch;
 
     protected $table = 'stock_outs';
     protected $primaryKey = 'id';
@@ -21,7 +22,8 @@ class StockOut extends Model
     public $incrementing = false;
     protected $guarded = [];
     protected $casts = [
-        'id' => 'string',
+        'id' => 'string',    
+        'branch_id' => 'string',
         'stock_id' => 'string',
         'item_id' => 'string',
         'quantity' => 'decimal:2',

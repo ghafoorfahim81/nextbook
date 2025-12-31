@@ -23,8 +23,7 @@ class ItemUpdateRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:256', Rule::unique('items')->ignore($this->route('item'))->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
             'code' => ['required', 'string', 'max:256', Rule::unique('items')->ignore($this->route('item'))->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
-            'photo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
-            'generic_name' => ['nullable', 'string'],
+             'generic_name' => ['nullable', 'string'],
             'packing' => ['nullable', 'string'],
             'barcode' => ['nullable', 'string'],
             'unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],

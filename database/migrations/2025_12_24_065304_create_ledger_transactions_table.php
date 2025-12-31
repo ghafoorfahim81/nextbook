@@ -15,6 +15,7 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->ulid('transaction_id')->index();
             $table->ulid('ledger_id')->index();
+            $table->ulid('branch_id')->index();
             $table->ulid('deleted_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
@@ -22,6 +23,7 @@ return new class extends Migration
         Schema::table('ledger_transactions', function (Blueprint $table) {
             $table->foreign('transaction_id')->references('id')->on('transactions');
             $table->foreign('ledger_id')->references('id')->on('ledgers');
+            $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('deleted_by')->references('id')->on('users');
         });
     }
