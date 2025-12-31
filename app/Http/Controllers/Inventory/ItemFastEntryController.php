@@ -85,8 +85,7 @@ class ItemFastEntryController extends Controller
                     $glAccounts      = Cache::get('gl_accounts');
                     $homeCurrency = Cache::get('home_currency');
                     $inventoryTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['inventory-asset'],
-                        'ledger_id' =>  null,
+                        'account_id' => $glAccounts['inventory'], 
                         'amount' => $cost*$amount,
                         'currency_id' => $homeCurrency->id,
                         'rate' => 1,
@@ -97,8 +96,7 @@ class ItemFastEntryController extends Controller
                         'reference_id' => $item->id,
                     ]);
                     $openingBalanceTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['opening-balance-equity'],
-                        'ledger_id' =>  null,
+                        'account_id' => $glAccounts['opening-balance-equity'], 
                         'amount' => $cost*$amount,
                         'currency_id' => $homeCurrency->id,
                         'rate' => 1,

@@ -41,7 +41,7 @@ const itemDetails = computed(() => [
   { label: t('item.maximum_stock'), value: props.item?.maximum_stock, icon: TrendingUp },
   { label: t('item.current_stock'), value: props.item?.quantity, icon: Target },
   { label: t('item.colors'), value: props.item?.colors, icon: Palette },
-  { label: t('item.size'), value: props.item?.size.name, icon: Ruler },
+  { label: t('item.size'), value: props.item?.size?.name, icon: Ruler },
   { label: t('item.purchase_price'), value: props.item?.purchase_price, icon: DollarSign },
   { label: t('item.cost'), value: props.item?.cost, icon: DollarSign },
   { label: t('item.sale_price'), value: props.item?.sale_price, icon: DollarSign },
