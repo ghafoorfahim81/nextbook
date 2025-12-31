@@ -77,8 +77,7 @@ class AccountTransferController extends Controller
 
             // CREDIT from the source account
             $creditTxn = $transactionService->createTransaction([
-                'account_id' => $fromAccountId,
-                'ledger_id' => null,
+                'account_id' => $fromAccountId, 
                 'amount' => $amount,
                 'currency_id' => $currencyId,
                 'rate' => $rate,
@@ -92,7 +91,6 @@ class AccountTransferController extends Controller
             // DEBIT to the destination account
             $debitTxn = $transactionService->createTransaction([
                 'account_id' => $toAccountId,
-                'ledger_id' => null,
                 'amount' => $amount,
                 'currency_id' => $currencyId,
                 'rate' => $rate,

@@ -56,7 +56,7 @@ class TransactionService
         } else {
             // Cash purchase
             $cashTransaction = $this->createTransaction([
-                'account_id' => Account::where('slug', 'cash-in-hand')->first()->id,
+                'account_id' => Account::where('slug', 'cash')->first()->id,
                 'amount' => $transactionTotal,
                 'currency_id' => $currency_id,
                 'rate' => $rate,
@@ -131,11 +131,10 @@ class TransactionService
             } else {
                 // For cash purchases, update cash transaction
                 $cashTransaction = $existingTransactions->where('type', 'credit')
-                    ->where('account_id', Account::where('slug', 'cash-in-hand')->first()->id)
+                    ->where('account_id', Account::where('slug', 'cash')->first()->id)
                     ->first();
                 if ($cashTransaction) {
-                    $cashTransaction->update([
-                        'ledger_id' => $ledger->id,
+                    $cashTransaction->update([  
                         'amount' => $transactionTotal,
                         'currency_id' => $currency_id,
                         'rate' => $rate,
@@ -145,7 +144,7 @@ class TransactionService
                 } else {
                     // Create new cash transaction if it doesn't exist
                     $this->createTransaction([
-                        'account_id' => Account::where('slug', 'cash-in-hand')->first()->id,
+                        'account_id' => Account::where('slug', 'cash')->first()->id,
                         'amount' => $transactionTotal,
                         'currency_id' => $currency_id,
                         'rate' => $rate,
@@ -171,7 +170,6 @@ class TransactionService
         $transactionId = null;
         $salesTransaction = $this->createTransaction([
             'account_id' => $glAccounts['sales-revenue'],
-            'ledger_id' => null,
             'amount' => $transactionTotal,
             'currency_id' => $currency_id,
             'rate' => $rate,
@@ -201,7 +199,7 @@ class TransactionService
         // CONDITION: Loan based on payment method
         elseif ($transactionType === 'on_loan') {
             $loanTransaction = $this->createTransaction([
-                'account_id' => $glAccounts['account-receivable'],
+                'account_id' => $glAccounts['accounts-receivable'],
                 'amount' => $transactionTotal,
                 'currency_id' => $currency_id,
                 'rate' => $rate,
@@ -216,7 +214,7 @@ class TransactionService
         else {
             // Cash sale
             $cashAccountId = User::find(auth()->user()->id)->getPreference('sale_cash_account_id')??
-            $glAccounts['cash-in-hand'];
+            $glAccounts['cash'];
             $cashTransaction = $this->createTransaction([
                 'account_id' => $cashAccountId,
                 'amount' => $transactionTotal,
@@ -322,18 +320,7 @@ class TransactionService
     /**
      * Update expense transactions
      */
-    public function updateExpenseTransactions(Expense $expense, float $total, string $currencyId, float $rate): array
-    {
-        return DB::transaction(function () use ($expense, $total, $currencyId, $rate) {
-            // Delete existing transactions
-            Transaction::where('reference_type', 'expense')
-                ->where('reference_id', $expense->id)
-                ->forceDelete();
-
-            // Create new transactions
-            return $this->createExpenseTransactions($expense, $total, $currencyId, $rate);
-        });
-    }
+ 
 
     // create ledger transactions
     public function createLedgerTransaction(array $data): Transaction

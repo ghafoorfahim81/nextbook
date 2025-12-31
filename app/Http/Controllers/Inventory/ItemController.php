@@ -119,7 +119,7 @@ class ItemController extends Controller
                     });
                     $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
                     $inventoryTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['inventory-asset'],
+                        'account_id' => $glAccounts['inventory'],
                         'amount' => $cost*$amount,
                         'currency_id' => $homeCurrency->id,
                         'rate' => 1,
@@ -309,7 +309,7 @@ class ItemController extends Controller
                     });
                     $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
                     $inventoryTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['inventory-asset'],
+                        'account_id' => $glAccounts['inventory'],
                         'amount' => $cost*$amount,
                         'currency_id' => $homeCurrency->id,
                         'rate' => 1,
