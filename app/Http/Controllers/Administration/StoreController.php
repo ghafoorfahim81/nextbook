@@ -10,7 +10,7 @@ use App\Http\Resources\Administration\StoreResource;
 use App\Models\Administration\Store;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-
+use Illuminate\Support\Facades\Cache;
 class StoreController extends Controller
 {
     public function __construct()
@@ -37,6 +37,7 @@ class StoreController extends Controller
     public function store(StoreStoreRequest $request)
     {
         $store = Store::create($request->validated());
+        Cache::forget('stores');
         return redirect()->route('stores.index')->with('success', 'Store created successfully.');
 
 
@@ -50,6 +51,7 @@ class StoreController extends Controller
     public function update(StoreUpdateRequest $request, Store $store)
     {
         $store->update($request->validated());
+        Cache::forget('stores');
         return redirect()->route('stores.index')->with('success', 'Store created successfully.');
 
     }
