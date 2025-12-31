@@ -73,7 +73,6 @@ class OwnerController extends Controller
             // Credit owner's capital account (capital contribution)
             $capitalTx = $transactionService->createTransaction([
                 'account_id' => $validated['capital_account_id'],
-                'ledger_id' => null,
                 'amount' => $amount,
                 'currency_id' => $currencyId,
                 'rate' => $rate,
@@ -85,10 +84,9 @@ class OwnerController extends Controller
             ]);
 
             // Debit cash-in-hand (money received)
-            $cashAccountId = Account::where('slug', 'cash-in-hand')->value('id');
+            $cashAccountId = Account::where('slug', 'cash')->value('id');
             $accountTx = $transactionService->createTransaction([
                 'account_id' => $validated['account_id'],
-                'ledger_id' => null,
                 'amount' => $amount,
                 'currency_id' => $currencyId,
                 'rate' => $rate,
@@ -162,7 +160,7 @@ class OwnerController extends Controller
                     'reference_id' => $owner->id,
                 ]);
             }
-            // Update account transaction (cash-in-hand etc)
+            // Update account transaction (cash etc)
             if ($owner->account_transaction_id) {
                 Transaction::where('id', $owner->account_transaction_id)->update([
                     'account_id' => $validated['account_id'],

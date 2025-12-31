@@ -50,7 +50,7 @@ class ExpenseController extends Controller
                 $q->where('slug', 'office-expenses')
             )->get(),
             'bankAccounts' => Account::whereHas('accountType', fn($q) =>
-                $q->whereIn('slug', ['bank-account', 'cash-in-hand','sarafi'])
+                $q->whereIn('slug', ['bank-account', 'cash','sarafi'])
             )->get(),
         ]);
     }
@@ -63,10 +63,10 @@ class ExpenseController extends Controller
             $validated['date'] = $dateService->toGregorian($validated['date']);
 
             // Handle file upload
-            if ($request->hasFile('attachment')) {
-                $validated['attachment'] = $request->file('attachment')
-                    ->store('expenses', 'public');
-            }
+            // if ($request->hasFile('attachment')) {
+            //     $validated['attachment'] = $request->file('attachment')
+            //         ->store('expenses', 'public');
+            // }
 
             // Create expense record
             $expense = Expense::create([
@@ -138,7 +138,7 @@ class ExpenseController extends Controller
                 $q->where('slug', 'office-expenses')
             )->get(),
             'bankAccounts' => Account::whereHas('accountType', fn($q) =>
-                $q->whereIn('slug', ['bank-account', 'cash-in-hand','sarafi'])
+                $q->whereIn('slug', ['bank-account', 'cash','sarafi'])
             )->get(),
         ]);
     }
@@ -154,14 +154,14 @@ class ExpenseController extends Controller
             $validated['date'] = $dateService->toGregorian($validated['date']);
 
             // Handle file upload
-            if ($request->hasFile('attachment')) {
-                // Delete old attachment
-                if ($expense->attachment) {
-                    Storage::disk('public')->delete($expense->attachment);
-                }
-                $validated['attachment'] = $request->file('attachment')
-                    ->store('expenses', 'public');
-            }
+            // if ($request->hasFile('attachment')) {
+            //     // Delete old attachment
+            //     if ($expense->attachment) {
+            //         Storage::disk('public')->delete($expense->attachment);
+            //     }
+            //     $validated['attachment'] = $request->file('attachment')
+            //         ->store('expenses', 'public');
+            // }
 
             // Update expense record
             $expense->update([

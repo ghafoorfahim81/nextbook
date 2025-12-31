@@ -75,7 +75,7 @@ class Account extends Model
     return [
         // ================= ASSETS =================
             [
-                'name' => 'Cash',
+                'name' => 'Cash In Hand',
                 'number' => '1001',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'cash')->first()->id,
                 'account_type_slug' => 'cash',

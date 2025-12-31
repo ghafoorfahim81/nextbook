@@ -183,8 +183,8 @@ class CustomerController extends Controller
             $glAccounts = Cache::get('gl_accounts');
 
         if ($openings->isNotEmpty()) {  // Update existing opening balances
-            $arId = $glAccounts['account-receivable'];
-            $apId = $glAccounts['account-payable'];
+            $arId = $glAccounts['accounts-receivable'];
+            $apId = $glAccounts['accounts-payable'];
 
             abort_unless($arId && $apId, 500, 'System accounts (AR/AP) are missing.');
             $transactionService = app(TransactionService::class);
