@@ -5,7 +5,7 @@ namespace Database\Seeders\UserManagement;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Permission;
-
+use App\Models\Administration\Branch;
 use App\Models\Role;
 use Symfony\Component\Uid\Ulid;
 class RolePermissionSeeder extends Seeder
@@ -149,21 +149,25 @@ class RolePermissionSeeder extends Seeder
         $superAdmin = Role::firstOrCreate([
             'name' => 'super-admin',
             'guard_name' => 'web',
+            'branch_id' => Branch::where('is_main', true)->first()->id,
         ]);
 
         $admin = Role::firstOrCreate([
             'name' => 'admin',
             'guard_name' => 'web',
+            'branch_id' => Branch::where('is_main', true)->first()->id,
         ]);
 
         $accountant = Role::firstOrCreate([
             'name' => 'accountant',
             'guard_name' => 'web',
+            'branch_id' => Branch::where('is_main', true)->first()->id,
         ]);
 
         $clerk = Role::firstOrCreate([
             'name' => 'clerk',
             'guard_name' => 'web',
+            'branch_id' => Branch::where('is_main', true)->first()->id,
         ]);
 
         /*

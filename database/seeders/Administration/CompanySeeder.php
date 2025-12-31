@@ -18,7 +18,7 @@ class CompanySeeder extends Seeder
     public function run(): void
     { 
         // Resolve base currency (prefer explicit base, fall back to first currency)
-        $currencyId = Currency::where('is_base_currency', true)->value('id');
+        $currencyId = Currency::withoutGlobalScopes()->where('is_base_currency', true)->value('id');
 
         if (!$currencyId) {
             $currencyId = Currency::value('id');
@@ -45,7 +45,7 @@ class CompanySeeder extends Seeder
             'business_type' => BusinessType::PHARMACY_SHOP,
             'currency_id' => $currencyId,
         ]);
-        $user = \App\Models\User::where('name', 'admin')->first();
+        $user = \App\Models\User::withoutGlobalScopes()->where('name', 'admin')->first();
         if ($user) {
             $user->company_id = $company->id;
             $user->save();

@@ -22,7 +22,7 @@ class LedgerSeeder extends Seeder
                 'name' => 'Cash customer',
                 'code' => 'CASH-CUST',
                 'type' => 'customer',
-                'created_by' => User::where('email', 'admin@nextbook.com')->first()->id,
+                'created_by' => User::withoutGlobalScopes()->where('email', 'admin@nextbook.com')->first()->id,
             ],
         ];
         Ledger::insert($ledgers);
