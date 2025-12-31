@@ -18,6 +18,7 @@ use App\Models\Administration\Size;
 use App\Models\Administration\Currency;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Administration\Store;
+use App\Models\Ledger\Ledger;
 use Symfony\Component\Uid\Ulid;
 class BranchController extends Controller
 {
@@ -65,7 +66,7 @@ class BranchController extends Controller
             Account::withoutEvents(function () use ($account, $branch) {
                 Account::create([
                     'id' => (string) new Ulid(),
-                    'name' => $account['name'], 
+                    'name' => $account['name'],
                     'number' => $account['number'],
                     'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', $account['account_type_slug'])
                     ->where('branch_id', $branch->id)
@@ -77,7 +78,7 @@ class BranchController extends Controller
                     'created_by' => auth()->user()->id,
                 ]);
             });
-        }  
+        }
 
         $defaultSizes = Size::defaultSizes();
         foreach ($defaultSizes as $size) {
@@ -93,7 +94,7 @@ class BranchController extends Controller
         }
 
         $defaultCurrencies = Currency::defaultCurrencies();
-        foreach ($defaultCurrencies as $currency) { 
+        foreach ($defaultCurrencies as $currency) {
             Currency::withoutEvents(function () use ($currency, $branch) {
                 Currency::create([
                     'id' => (string) new Ulid(),
@@ -140,19 +141,29 @@ class BranchController extends Controller
             });
         }
 
-        $stores = Store::withoutGlobalScopes()->where('is_main', true)->get();
-        foreach ($stores as $store) {
+        $store = Store::withoutGlobalScopes()->where('is_main', true)->first();
             Store::withoutEvents(function () use ($store, $branch) {
                 Store::create([
                     'id' => (string) new Ulid(),
-                'name' => $store['name'],
-                'address' => 'Main store',
-                'branch_id' => $branch->id,
-                'is_main' => true,
+                    'name' => $store['name'],
+                    'address' => 'Main store',
+                    'branch_id' => $branch->id,
+                    'is_main' => true,
                     'created_by' => auth()->user()->id,
                 ]);
             });
-        }
+
+        Ledger::withoutEvents(function () use ($branch) {
+            Ledger::create([
+                'id' => (string) new Ulid(),
+                'name' => 'Cash customer',
+                'code' => 'CASH-CUST',
+                'type' => 'customer',
+                'branch_id' => $branch->id,
+                'created_by' => auth()->user()->id,
+            ]);
+        });
+
 
         return redirect()->route('branches.index')->with('success', 'Branch created successfully.');
     }

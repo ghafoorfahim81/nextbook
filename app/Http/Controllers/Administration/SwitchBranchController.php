@@ -26,6 +26,29 @@ class SwitchBranchController extends Controller
         $branchId = $validated['branch_id'];
 
         cache()->forget('auth.user');
+        cache()->forget('stores');
+        cache()->forget('branches');
+        cache()->forget('categories');
+        cache()->forget('accounts');
+        cache()->forget('accountTypes');
+        cache()->forget('unitMeasures');
+        cache()->forget('sizes');
+        cache()->forget('colors');
+        cache()->forget('brands');
+        cache()->forget('items');
+        cache()->forget('stocks');
+        cache()->forget('currencies');
+        cache()->forget('main_branch');
+        cache()->forget('home_currency');
+        cache()->forget('account_types');
+        cache()->forget('roles');
+        cache()->forget('user_preferences');
+        cache()->forget('transaction_types');
+        cache()->forget('transaction_statuses');
+        cache()->forget('capital_accounts');
+        cache()->forget('drawing_accounts');
+        cache()->forget('ledgers');
+        cache()->forget('gl_accounts');
         // Store the active branch in the session so subsequent requests
         // // (and page refreshes) resolve to this branch.
         // $request->session()->put('active_branch_id', $branchId);
@@ -40,7 +63,7 @@ class SwitchBranchController extends Controller
             $user->branch_id = $branchId;
             $user->save();
         }
- 
+
 
         return back();
     }
