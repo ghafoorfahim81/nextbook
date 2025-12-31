@@ -18,7 +18,8 @@ class BranchSeeder extends Seeder
             'is_main' => true,
             'sub_domain' => 'main',
             'location' => 'Main Location',
-            'remark' => 'Main Branch'
+            'remark' => 'Main Branch',
+            
         ]);
     }
 }

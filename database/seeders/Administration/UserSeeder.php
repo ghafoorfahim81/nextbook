@@ -17,6 +17,7 @@ class UserSeeder extends Seeder
     {
         $adminUser = User::where('name', 'admin')->first();
         $branch = Branch::where('name', 'Main Branch')->first();
+        // dd($adminUser);
         if (!$adminUser) {
             User::create([
                 'id' => (string) new Ulid(),
