@@ -18,7 +18,7 @@ class AccountTypeSeeder extends Seeder
         $accountTypes = AccountType::defaultAccountTypes();
         foreach ($accountTypes as $accountType) {
             AccountType::create([
-                'id' => Str::uuid(),
+                'id' => Str::ulid(),
                 'name' => $accountType['name'],
                 'is_main' => $accountType['is_main'],
                 'slug' => $accountType['slug'],

@@ -17,7 +17,7 @@ const columns = computed(() => ([
     { key: 'name', label: t('general.name') },
     { key: 'number', label: t('general.number') },
     { key: 'account_type.name', label: t('account.account_type') },
-    { key: 'balance', label: t('general.balance') },
+    { key: 'balance_with_nature', label: t('general.balance') },
     { key: 'actions', label: t('general.actions') },
 ]));
 
