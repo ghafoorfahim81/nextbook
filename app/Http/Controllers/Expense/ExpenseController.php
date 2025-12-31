@@ -72,8 +72,7 @@ class ExpenseController extends Controller
             $expense = Expense::create([
                 'date' => $validated['date'],
                 'remarks' => $validated['remarks'] ?? null,
-                'category_id' => $validated['category_id'],
-                'attachment' => $validated['attachment'] ?? null,
+                'category_id' => $validated['category_id'], 
             ]);
 
             // Create expense details
@@ -167,8 +166,7 @@ class ExpenseController extends Controller
             $expense->update([
                 'date' => $validated['date'],
                 'remarks' => $validated['remarks'] ?? null,
-                'category_id' => $validated['category_id'],
-                'attachment' => $validated['attachment'] ?? $expense->attachment,
+                'category_id' => $validated['category_id'], 
             ]);
 
             // Update details
