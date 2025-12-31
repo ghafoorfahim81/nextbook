@@ -48,6 +48,7 @@ class PurchaseController extends Controller
 
     public function store(PurchaseStoreRequest $request, TransactionService $transactionService, StockService $stockService)
     {
+        //dd($request->all());
         $purchase = DB::transaction(function () use ($request, $transactionService, $stockService) {
             // Create purchase
             $dateConversionService = app(\App\Services\DateConversionService::class);

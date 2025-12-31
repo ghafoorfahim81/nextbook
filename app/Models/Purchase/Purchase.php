@@ -30,6 +30,7 @@ class Purchase extends Model
         'discount',
         'discount_type',
         'type',
+        'store_id',
         'description',
         'status',
         'created_by',
