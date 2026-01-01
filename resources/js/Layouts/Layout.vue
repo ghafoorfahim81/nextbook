@@ -87,7 +87,7 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const { locale } = useI18n()
-const { user } = useAuth() 
+const { user } = useAuth()
 // This is sample data.
 const data = {
     user: {
@@ -201,7 +201,7 @@ const activeBranchId = computed<string | null>(() => (page.props.auth.user.branc
 const activeBranchName = computed<string | null>(() => (page.props.auth.user.branch_name as string | null) || null)
 
 const selectedBranchId = ref<string | null>(activeBranchId.value)
- 
+
 function switchBranch() {
     if (!isSuperAdmin.value || !selectedBranchId.value || selectedBranchId.value === activeBranchId.value) {
         return
@@ -606,7 +606,7 @@ function logout() {
                     <Separator orientation="vertical" class="mr-2 h-4" />
                 </div>
                 <div class="flex items-center gap-3 pr-4">
-                    <div v-if="isSuperAdmin" class="flex items-center gap-2">
+                    <div v-if="isSuperAdmin" class="flex items-center max-start gap-2">
                         <label class="text-xs text-muted-foreground" for="branch-switcher">
                             {{ t('layout.branch') || 'Branch' }}
                         </label>
@@ -614,7 +614,7 @@ function logout() {
                             id="branch-switcher"
                             v-model="selectedBranchId"
                             @change="switchBranch"
-                            class="border rounded-md px-2 py-1 text-xs bg-background"
+                            class="border rounded-md ms-start px-5 py-2 text-xs bg-background rtl:pe-10 rtl:ps-3 rtl:bg-left rtl:pr-8"
                         >
                             <option
                                 v-for="branch in branches"
