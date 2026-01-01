@@ -117,7 +117,7 @@ class PurchaseController extends Controller
         $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $stockService) {
             $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
-
+            $stockService = new StockService();
             // Convert date properly
             if (isset($validated['date'])) {
                 $validated['date'] = $dateConversionService->toGregorian($validated['date']);
@@ -139,11 +139,8 @@ class PurchaseController extends Controller
                     return $item;
                 }, $validated['item_list']);
                 $purchase->items()->createMany($validated['item_list']);
-                $purchase->stock()->forceDelete();
-                // Add new stock entries
-                foreach ($validated['item_list'] as $item) {
-                    $stockService->addStock($item, $validated['store_id'], Purchase::class, $purchase->id, $validated['date']);
-                }
+                $stockService->updateStock($validated['item_list'], $validated['store_id'], Purchase::class, $purchase->id, $validated['date']);
+ 
             }
 
             $purchase->transaction()->forceDelete();

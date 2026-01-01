@@ -31,6 +31,32 @@ class StockService
         });
     }
 
+    public function updateStock(array $data, $storeId, string $sourceType, $sourceId = null, $date = null): Stock
+    {
+        return DB::transaction(function () use ($data, $storeId, $sourceType, $sourceId, $date) {
+            $stockData = $this->validateStockData($data);
+            $stockData['date'] = $date;
+            $stockData['store_id'] = $storeId;
+            $stockData['source_type'] = $sourceType;
+            $stockData['source_id'] = $sourceId;
+            $stockData['size_id'] = $data['size_id'] ?? null;
+            $stockData['unit_measure_id'] = $data['unit_measure_id'] ?? null;
+            $stockData['quantity'] = $data['quantity'] ?? 0;
+            $stockData['unit_price'] = $data['unit_price'] ?? 0;
+            $stockData['free'] = $data['free'] ?? 0;
+            $stockData['discount'] = $data['discount'] ?? 0;
+            $stockData['tax'] = $data['tax'] ?? 0;
+            $stockData['date'] = $date;
+            $stockData['store_id'] = $storeId;
+            $stockData['source_type'] = $sourceType;
+            $stockData['source_id'] = $sourceId;
+            return Stock::updateOrCreate($stockData);
+
+            });
+            Cache::forget('items');
+
+    }
+
     /**
      * Remove stock for various reasons
      */
