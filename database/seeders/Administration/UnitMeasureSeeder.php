@@ -6,188 +6,39 @@ use App\Models\Administration\Branch;
 use App\Models\Administration\Quantity;
 use App\Models\Administration\UnitMeasure;
 use Illuminate\Database\Seeder;
-
+use Symfony\Component\Uid\Ulid;
+use App\Models\User;
 class UnitMeasureSeeder extends Seeder
 {
     public function run(): void
     {
 //        UnitMeasure::factory()->count(5)->create();
 
-        $branch_id = Branch::first()->id;
-        $pcs = Quantity::create([
-            'quantity' => 'Count',
-            'unit'       => "Pcs",
-            'symbol'     => "ea",
-            'branch_id'  => $branch_id,
-            'is_system'  => true,
-        ]);
-
-        UnitMeasure::create([
-            'name'        => 'pcs',
-            'unit'        => 1,
-            'symbol'      => "ea",
-            'quantity_id' => $pcs->id,
-            'branch_id'   => $branch_id,
-            'is_system'   => true,
-        ]);
-        UnitMeasure::create([
-            'name'        => 'Pair',
-            'unit'        => 2,
-            'symbol'      => "pr",
-            'quantity_id' => $pcs->id,
-            'branch_id'   => $branch_id,
-            'is_system'   => true,
-        ]);
-        UnitMeasure::create([
-            'name'        => 'Dozen',
-            'unit'        => 12,
-            'symbol'      => "dz",
-            'quantity_id' => $pcs->id,
-            'branch_id'   => $branch_id,
-            'is_system'   => true,
-        ]);
-
-        $length = Quantity::create([
-            'quantity' => 'Length',
-            'unit'       => "Centimetre",
-            'symbol'     => "cm",
-            'branch_id'  => $branch_id,
-            'is_system'  => true,
-        ]);
-
-        UnitMeasure::create([
-            'name'        => 'Centimetre',
-            'unit'        => 1,
-            'symbol'      => "cm",
-            'quantity_id' => $length->id,
-            'branch_id'   => $branch_id,
-            'is_system'   => true,
-        ]);
-        UnitMeasure::create([
-            'name'        => 'Inch',
-            'unit'        => 2.5,
-            'symbol'      => "in",
-            'quantity_id' => $length->id,
-            'branch_id'   => $branch_id,
-            'is_system'   => true,
-        ]);
-        UnitMeasure::create([
-            'name'        => 'Meter',
-            'unit'        => 100,
-            'symbol'      => "m",
-            'quantity_id' => $length->id,
-            'branch_id'   => $branch_id,
-            'is_system'   => true,
-        ]);
-
-        $area = Quantity::create([
-            'quantity' => 'Area',
-            'unit'       => "SquareCentimetre",
-            'symbol'     => "cm2",
-            'branch_id'  => $branch_id,
-            'is_system'  => true,
-        ]);
-
-        UnitMeasure::create([
-            'name'        => 'SquareCentimetre',
-            'unit'        => 1,
-            'symbol'      => "cm2",
-            'quantity_id' => $area->id,
-            'branch_id'   => $branch_id,
-            'is_system'   => true,
-        ]);
-        UnitMeasure::create([
-            'name'        => 'SquareDecimeter',
-            'unit'        => 0.01,
-            'symbol'      => "dm2",
-            'quantity_id' => $area->id,
-            'branch_id'   => $branch_id,
-            'is_system'   => true,
-        ]);
-        UnitMeasure::create([
-            'name'        => 'SquareMeter',
-            'unit'        => 0.0001,
-            'symbol'      => "m2",
-            'quantity_id' => $area->id,
-            'branch_id'   => $branch_id,
-            'is_system'   => true,
-        ]);
-
-        $weight = Quantity::create([
-            'quantity' => 'Weight',
-            'unit'       => "Gram",
-            'symbol'     => "g",
-            'branch_id'  => $branch_id,
-            'is_system'  => true,
-        ]);
-
-        UnitMeasure::create([
-            'name'        => 'Gram',
-            'unit'        => 1,
-            'symbol'      => "g",
-            'quantity_id' => $weight->id,
-            'branch_id'   => $branch_id,
-            'is_system'   => true,
-        ]);
-        UnitMeasure::create([
-            'name'        => 'Kilogram',
-            'unit'        => 1000,
-            'symbol'      => "kg",
-            'quantity_id' => $weight->id,
-            'branch_id'   => $branch_id,
-            'is_system'   => true,
-        ]);
-        UnitMeasure::create([
-            'name'        => 'Ton',
-            'unit'        => 1000000,
-            'symbol'      => "ton",
-            'quantity_id' => $weight->id,
-            'branch_id'   => $branch_id,
-            'is_system'   => true,
-                ]);
-        // volume
-        $volume = Quantity::create([
-            'quantity' => 'Volume',
-            'unit'       => "Millilitre",
-            'symbol'     => "ml",
-            'branch_id'  => $branch_id,
-            'is_system'  => true,
-        ]);
-
-        UnitMeasure::create([
-            'name'        => 'Millilitre',
-            'unit'        => 1,
-            'symbol'      => "ml",
-            'quantity_id' => $volume->id,
-            'branch_id'   => $branch_id,
-            'is_system'   => true,
-        ]);
-
-        UnitMeasure::create([
-            'name'        => 'Litre',
-            'unit'        => 1000,
-            'symbol'      => "L",
-            'quantity_id' => $volume->id,
-            'branch_id'   => $branch_id,
-            'is_system'   => true,
-        ]);
-
-        UnitMeasure::create([
-            'name'        => 'Gallon',
-            'unit'        => 3785.41, // US Gallon to ml
-            'symbol'      => "gal",
-            'quantity_id' => $volume->id,
-            'branch_id'   => $branch_id,
-            'is_system'   => true,
-        ]);
-
-        UnitMeasure::create([
-            'name'        => 'Barrel',
-            'unit'        => 158987.294928, // نفت خام به ml
-            'symbol'      => "bbl",
-            'quantity_id' => $volume->id,
-            'branch_id'   => $branch_id,
-            'is_system'   => true,
-        ]);
+        $branch_id = Branch::where('is_main', true)->first()->id;
+        $quantities = Quantity::defaultQuantity();
+        foreach ($quantities as $quantity) {
+            Quantity::create([
+                'id' => (string) new Ulid(),
+                'quantity' => $quantity['quantity'],
+                'unit' => $quantity['unit'],
+                'symbol' => $quantity['symbol'],
+                'branch_id' => $branch_id,
+                'is_system' => $quantity['is_system'],
+                'created_by' => User::where('name', 'admin')->first()->id,
+            ]);
+        }
+        $unitMeasures = UnitMeasure::defaultUnitMeasures();
+        foreach ($unitMeasures as $unitMeasure) {
+                UnitMeasure::create([
+                    'id' => (string) new Ulid(),
+                    'name' => $unitMeasure['name'],
+                    'unit' => $unitMeasure['unit'],
+                    'symbol' => $unitMeasure['symbol'],
+                    'quantity_id' => $unitMeasure['quantity_id'],
+                    'branch_id' => $branch_id,
+                    'is_system' => $unitMeasure['is_system'],
+                'created_by' => User::where('name', 'admin')->first()->id,
+            ]);
+        }
     }
 }

@@ -30,10 +30,6 @@ class ItemController extends Controller
 
     public function index(Request $request)
     { 
-        $activeBranchId = app()->bound('active_branch_id')
-            ? app('active_branch_id')
-            : ($request->user()->branch_id ?? null);
-        // dd($activeBranchId);
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');

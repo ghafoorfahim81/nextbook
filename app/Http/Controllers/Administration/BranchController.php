@@ -112,7 +112,7 @@ class BranchController extends Controller
             });
         }
 
-        $quantities = Quantity::withoutGlobalScopes()->where('is_system', true)->get();
+        $quantities = Quantity::defaultQuantity();
         foreach ($quantities as $quantity) {
             Quantity::withoutEvents(function () use ($quantity, $branch) {
                 Quantity::create([
@@ -125,7 +125,7 @@ class BranchController extends Controller
                 ]);
             });
         }
-        $unitMeasures = UnitMeasure::withoutGlobalScopes()->where('is_system', true)->get();
+        $unitMeasures = UnitMeasure::defaultUnitMeasures();
         foreach ($unitMeasures as $unitMeasure) {
             UnitMeasure::withoutEvents(function () use ($unitMeasure, $branch) {
                 UnitMeasure::create([
