@@ -62,6 +62,49 @@ class Quantity extends Model
         'parent_id' => 'string',
     ];
 
+    public static function defaultQuantity(): array
+    {
+        return [
+            [
+            'quantity' => 'Count',
+            'unit'       => "Pcs",
+            'symbol'     => "ea",
+            'is_system'  => true,
+            ],
+            [
+                'quantity' => 'Length',
+                'unit'       => "Centimetre",
+                'symbol'     => "cm",
+                'is_system'  => true,
+            ],
+            [
+                'quantity' => 'Area',
+                'unit'       => "SquareCentimetre",
+                'symbol'     => "cm2",
+                'is_system'  => true,
+            ],
+            [
+                'quantity' => 'Weight',
+                'unit'       => "Gram",
+                'symbol'     => "g",
+                'is_system'  => true,
+            ],
+
+            [
+                'quantity' => 'Volume',
+                'unit'       => "Millilitre",
+                'symbol'     => "ml",
+                'is_system'  => true,
+            ],
+
+            [
+                'quantity' => 'Temperature',
+                'unit'       => "Celsius",
+                'symbol'     => "°C",
+                'is_system'  => true,
+            ],
+        ];
+    }
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);

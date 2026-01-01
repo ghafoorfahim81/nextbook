@@ -77,6 +77,128 @@ class UnitMeasure extends Model
         ];
     }
 
+    public static function defaultUnitMeasures(): array
+    {
+        return [
+            // count
+            [
+                'name'        => 'pcs',
+                'unit'        => 1,
+                'symbol'      => "ea",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Count')->first()->id,
+                'is_system'   => true,
+            ],
+            [
+                'name'        => 'Pair',
+                'unit'        => 2,
+                'symbol'      => "pr",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Count')->first()->id,
+                'is_system'   => true,
+            ],
+            [
+                'name'        => 'Dozen',
+                'unit'        => 12,
+                'symbol'      => "dz",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Count')->first()->id,
+                'is_system'   => true,
+            ],
+            // length
+            [
+                'name'        => 'Centimetre',
+                'unit'        => 1,
+                'symbol'      => "cm",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Length')->first()->id,
+                'is_system'   => true,
+            ],
+            [
+                'name'        => 'Meter',
+                'unit'        => 100,
+                'symbol'      => "m",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Length')->first()->id,
+                'is_system'   => true,
+            ],
+            [
+                'name'        => 'Inch',
+                'unit'        => 2.5,
+                'symbol'      => "in",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Length')->first()->id,
+                'is_system'   => true,
+            ],
+            // area
+            [
+                'name'        => 'SquareCentimetre',
+                'unit'        => 1,
+                'symbol'      => "cm2",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Area')->first()->id,
+                'is_system'   => true,
+            ],
+            [
+                'name'        => 'SquareDecimeter',
+                'unit'        => 0.01,
+                'symbol'      => "dm2",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Area')->first()->id,
+                'is_system'   => true,
+            ],
+            [
+                'name'        => 'SquareMeter',
+                'unit'        => 0.0001,
+                'symbol'      => "m2",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Area')->first()->id,
+                'is_system'   => true,
+            ],
+            // weight
+            [
+                'name'        => 'Gram',
+                'unit'        => 1,
+                'symbol'      => "g",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Weight')->first()->id,
+                'is_system'   => true,
+            ],
+            [
+                'name'        => 'Kilogram',
+                'unit'        => 1000,
+                'symbol'      => "kg",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Weight')->first()->id,
+                'is_system'   => true,
+            ],
+            [
+                'name'        => 'Ton',
+                'unit'        => 1000000,
+                'symbol'      => "ton",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Weight')->first()->id,
+                'is_system'   => true,
+            ],
+            // volume
+            [
+                'name'        => 'Millilitre',
+                'unit'        => 1,
+                'symbol'      => "ml",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Volume')->first()->id,
+                'is_system'   => true,
+            ],
+            [
+                'name'        => 'Litre',
+                'unit'        => 1000,
+                'symbol'      => "L",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Volume')->first()->id,
+                'is_system'   => true,
+            ],
+            [
+                'name'        => 'Gallon',
+                'unit'        => 3785.41, // US Gallon to ml
+                'symbol'      => "gal",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Volume')->first()->id,
+                'is_system'   => true,
+            ],
+            [
+                'name'        => 'Barrel',
+                'unit'        => 158987.294928, // نفت خام به ml
+                'symbol'      => "bbl",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Volume')->first()->id,
+                'is_system'   => true,
+            ],
+        ];
+    }
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);

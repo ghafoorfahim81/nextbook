@@ -31,7 +31,7 @@ class AccountSeeder extends Seeder
                 'branch_id' => $mainBranch?->id,
                 'remark' => $account['remark'],
                 'is_main' => $account['is_main'],
-                'created_by' => User::withoutGlobalScopes()->where('email', 'admin@nextbook.com')->first()->id,
+                'created_by' => User::where('name', 'admin')->first()->id,
             ]);
         }
     }

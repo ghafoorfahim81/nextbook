@@ -4,8 +4,6 @@ namespace App\Http\Resources\Inventory;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\Inventory\StockResource;
-use App\Http\Resources\Inventory\StockOutResource;
 use App\Http\Resources\Inventory\StockOpeningResource;
 class ItemResource extends JsonResource
 {
@@ -33,7 +31,7 @@ class ItemResource extends JsonResource
             'maximum_stock' => $this->maximum_stock,
             'colors' => $this->colors,
             'size' => $this->size,
-            'size_id' => $this->size_id, 
+            'size_id' => $this->size_id,
             'purchase_price' => $this->purchase_price,
             'cost' => $this->cost,
             'sale_price' => $this->sale_price,
@@ -46,7 +44,7 @@ class ItemResource extends JsonResource
             'stock_out_count' => $this->stockOut->sum('quantity'),
             'branch_id' => $this->branch_id,
             'quantity' => $this->stocks->sum(('quantity')),
-            'on_hand' => $this->stocks->sum(('quantity')) - $this->openings->sum(('quantity')) - $this->stockOut->sum(('quantity')),
+            'on_hand' => $this->onHand(),
             'openings' => StockOpeningResource::collection($this->openings),
         ];
     }

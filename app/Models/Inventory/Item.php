@@ -153,6 +153,22 @@ class Item extends Model
         return $this->hasMany(ItemOpeningTransaction::class, 'item_id', 'id');
     }
 
+    public function onHand()
+    {
+        $stocks = $this->stocks()->with('unitMeasure')->get();
+        $stockOuts = $this->stockOut()->with('unitMeasure')->get();
+
+        $stockSum = $stocks->sum(function($stock) {
+            return $stock->quantity * ($stock->unitMeasure->unit ?? 1);
+        });
+
+        $stockOutSum = $stockOuts->sum(function($stockOut) {
+            return $stockOut->quantity * ($stockOut->unitMeasure->unit ?? 1);
+        });
+
+        $onHand = $stockSum - $stockOutSum;
+        return $onHand; 
+    }
     // public function inRecords()
     // {
     //     return $this->hasMany(Stock::class);
