@@ -134,8 +134,8 @@ class BranchController extends Controller
                 'unit' => $unitMeasure['unit'],
                 'symbol' => $unitMeasure['symbol'],
                 'branch_id' => $branch->id,
-                'quantity_id' => $unitMeasure['quantity_id'],
-                'is_system' => true,
+                'quantity_id' => Quantity::withoutGlobalScope()->where('branch_id',$branch->id),
+                'is_main' => true,
                 'created_by' => auth()->user()->id,
             ]);
             });

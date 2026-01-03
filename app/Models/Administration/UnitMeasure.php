@@ -42,7 +42,7 @@ class UnitMeasure extends Model
         'description',
         'branch_id',
         'quantity_id',
-        'is_system',
+        'is_main',
         'value',
         'created_by',
         'updated_by',
@@ -58,7 +58,7 @@ class UnitMeasure extends Model
         'id' => 'string',
         'branch_id' => 'string',
         'quantity_id' => 'string',
-        'is_system' => 'boolean',
+        'is_main' => 'boolean',
         'value' => 'double',
         'created_by' => 'string',
         'updated_by' => 'string',
@@ -86,21 +86,21 @@ class UnitMeasure extends Model
                 'unit'        => 1,
                 'symbol'      => "ea",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Count')->first()->id,
-                'is_system'   => true,
+                'is_main'   => true,
             ],
             [
                 'name'        => 'Pair',
                 'unit'        => 2,
                 'symbol'      => "pr",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Count')->first()->id,
-                'is_system'   => true,
+                'is_main'   => true,
             ],
             [
                 'name'        => 'Dozen',
                 'unit'        => 12,
                 'symbol'      => "dz",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Count')->first()->id,
-                'is_system'   => true,
+                'is_main'   => true,
             ],
             // length
             [
@@ -108,21 +108,21 @@ class UnitMeasure extends Model
                 'unit'        => 1,
                 'symbol'      => "cm",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Length')->first()->id,
-                'is_system'   => true,
+                'is_main'   => true,
             ],
             [
                 'name'        => 'Meter',
                 'unit'        => 100,
                 'symbol'      => "m",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Length')->first()->id,
-                'is_system'   => true,
+                'is_main'   => true,
             ],
             [
                 'name'        => 'Inch',
                 'unit'        => 2.5,
                 'symbol'      => "in",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Length')->first()->id,
-                'is_system'   => true,
+                'is_main'   => true,
             ],
             // area
             [
@@ -130,21 +130,21 @@ class UnitMeasure extends Model
                 'unit'        => 1,
                 'symbol'      => "cm2",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Area')->first()->id,
-                'is_system'   => true,
+                'is_main'   => true,
             ],
             [
                 'name'        => 'SquareDecimeter',
                 'unit'        => 0.01,
                 'symbol'      => "dm2",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Area')->first()->id,
-                'is_system'   => true,
+                'is_main'   => true,
             ],
             [
                 'name'        => 'SquareMeter',
                 'unit'        => 0.0001,
                 'symbol'      => "m2",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Area')->first()->id,
-                'is_system'   => true,
+                'is_main'   => true,
             ],
             // weight
             [
@@ -152,21 +152,21 @@ class UnitMeasure extends Model
                 'unit'        => 1,
                 'symbol'      => "g",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Weight')->first()->id,
-                'is_system'   => true,
+                'is_main'   => true,
             ],
             [
                 'name'        => 'Kilogram',
                 'unit'        => 1000,
                 'symbol'      => "kg",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Weight')->first()->id,
-                'is_system'   => true,
+                'is_main'   => true,
             ],
             [
                 'name'        => 'Ton',
                 'unit'        => 1000000,
                 'symbol'      => "ton",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Weight')->first()->id,
-                'is_system'   => true,
+                'is_main'   => true,
             ],
             // volume
             [
@@ -174,28 +174,28 @@ class UnitMeasure extends Model
                 'unit'        => 1,
                 'symbol'      => "ml",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Volume')->first()->id,
-                'is_system'   => true,
+                'is_main'   => true,
             ],
             [
                 'name'        => 'Litre',
                 'unit'        => 1000,
                 'symbol'      => "L",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Volume')->first()->id,
-                'is_system'   => true,
+                'is_main'   => true,
             ],
             [
                 'name'        => 'Gallon',
                 'unit'        => 3785.41, // US Gallon to ml
                 'symbol'      => "gal",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Volume')->first()->id,
-                'is_system'   => true,
+                'is_main'   => true,
             ],
             [
                 'name'        => 'Barrel',
                 'unit'        => 158987.294928, // نفت خام به ml
                 'symbol'      => "bbl",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Volume')->first()->id,
-                'is_system'   => true,
+                'is_main'   => true,
             ],
         ];
     }

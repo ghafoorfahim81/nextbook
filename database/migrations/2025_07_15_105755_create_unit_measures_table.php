@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('symbol')->index();
             $table->double('value')->nullable();
             $table->ulid('quantity_id')->index();
-            $table->boolean('is_system')->default(false);
+            $table->boolean('is_main')->default(false);
             $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();

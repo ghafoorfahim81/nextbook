@@ -23,7 +23,7 @@ class UnitMeasureSeeder extends Seeder
                 'unit' => $quantity['unit'],
                 'symbol' => $quantity['symbol'],
                 'branch_id' => $branch_id,
-                'is_system' => $quantity['is_system'],
+                'is_main' => $quantity['is_main'],
                 'created_by' => User::where('name', 'admin')->first()->id,
             ]);
         }
@@ -36,7 +36,7 @@ class UnitMeasureSeeder extends Seeder
                     'symbol' => $unitMeasure['symbol'],
                     'quantity_id' => $unitMeasure['quantity_id'],
                     'branch_id' => $branch_id,
-                    'is_system' => $unitMeasure['is_system'],
+                    'is_main' => $unitMeasure['is_main'],
                 'created_by' => User::where('name', 'admin')->first()->id,
             ]);
         }
