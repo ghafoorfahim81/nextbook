@@ -89,7 +89,7 @@ class UnitMeasureController extends Controller
                     'quantity' => $metricType['name'],
                     'unit' => $metricType['unit'],
                     'symbol' => $metricType['symbol'],
-                    'is_system' => false,
+                    'is_main' => false,
                     'created_by' => Auth::id()
                 ]);
             }
@@ -101,7 +101,7 @@ class UnitMeasureController extends Controller
                 'symbol' => $measure['symbol'],
                 'branch_id' => Auth::user()->branch_id ?? 1,
                 'quantity_id' => $metric->id,
-                'is_system' => false,
+                'is_main' => false,
                 'created_by' => Auth::id(),
                 'updated_by' => null,
             ];
@@ -149,7 +149,7 @@ class UnitMeasureController extends Controller
                     'unit' => $metricType['unit'],
                     'symbol' => $metricType['symbol'],
                     'description' => $metricType['description'],
-                    'is_system' => false,
+                    'is_main' => false,
                     'created_by' => Auth::id()
                 ]);
             }
@@ -164,7 +164,7 @@ class UnitMeasureController extends Controller
                 'symbol' => $measure['symbol'],
                 'description' => $measure['description'],
                 'quantity_id' => $metric->id,
-                'is_system' => false,
+                'is_main' => false,
                 'updated_by' => Auth::id()
             ]);
 

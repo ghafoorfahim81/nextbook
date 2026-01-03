@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('quantity')->index();
             $table->string('unit');
             $table->string('symbol');
-            $table->boolean('is_system')->default(false);
+            $table->boolean(column: 'is_main')->default(false);
             $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
