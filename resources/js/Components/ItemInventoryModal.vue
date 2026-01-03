@@ -133,21 +133,21 @@ watch(
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
     >
       <div
-        class="w-full max-w-5xl  bg-white rounded-2xl shadow-2xl  flex flex-col max-h-[80vh] overflow-y-auto"
+        class="w-full max-w-5xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[80vh]"
       >
         <!-- Item header -->
         <div
-          class="border-b border-slate-200 bg-gradient-to-r from-violet-50 to-slate-50 px-6 py-4 flex justify-between items-center"
+          class="border-b border-slate-200 bg-gradient-to-r from-violet-400 to-slate-50 px-6 py-4 flex justify-between items-center"
         >
           <div class="flex items-center gap-3">
             <div class="bg-violet-500 text-white p-3 rounded-lg">
               <Package class="w-6 h-6" />
             </div>
             <div>
-              <h2 class="text-xl font-bold text-slate-900">
+              <h2 class="text-xl font-bold text-black">
                 {{ item.name }}
               </h2>
-              <p class="text-xs text-slate-500 mt-1">
+              <p class="text-xs text-black mt-1">
                 {{ item.code }}
               </p>
             </div>
@@ -160,105 +160,105 @@ watch(
           </button>
         </div>
 
-        <!-- Info Section -->
-        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
-          <div class="flex items-center gap-2 mb-4">
-            <div class="bg-violet-500 text-white p-1.5 rounded">
-              <Layers class="w-4 h-4" />
-            </div>
-            <h3 class="text-sm font-semibold text-slate-700">{{ t('general.info') }}</h3>
-          </div>
-
-          <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3">
-            <div v-for="detail in itemDetails" :key="detail.label" class="flex items-start gap-2">
-              <component
-                :is="detail.icon"
-                class="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0"
-              />
-              <div class="flex-1 min-w-0">
-                <p class="text-xs text-slate-500">
-                  {{ detail.label }}
-                </p>
-                <p class="text-sm font-medium text-slate-900 truncate">
-                  {{ detail.value ?? '—' }}
-                </p>
-              </div>
-            </div>
-          </div>
-          <hr class="my-4 border-slate-200" />
-          <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3">
-            <div class="flex items-start gap-2">
+        <!-- Scrollable content -->
+        <div class="flex-1 overflow-y-auto" @scroll="onScroll">
+          <!-- Info Section -->
+          <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+            <div class="flex items-center gap-2 mb-4">
               <div class="bg-violet-500 text-white p-1.5 rounded">
-                <Target class="w-4 h-4" />
+                <Layers class="w-4 h-4" />
               </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-xs text-slate-500">{{ t('general.on_hand') }}</p>
-                <p class="text-sm font-medium text-slate-900 truncate">
-                  {{ item.on_hand ?? '—' }}
-                </p>
-              </div>
+              <h3 class="text-sm font-semibold text-slate-700">{{ t('general.info') }}</h3>
             </div>
 
-            <div class="flex items-start gap-2">
-              <div class="bg-violet-500 text-white p-1.5 rounded">
-                <TrendingDown class="w-4 h-4" />
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-xs text-slate-500">{{ t('item.in_records') }}</p>
-                <p class="text-sm font-medium text-slate-900 truncate">
-                  {{ item.stock_count ?? '—' }}
-                </p>
+            <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3">
+              <div v-for="detail in itemDetails" :key="detail.label" class="flex items-start gap-2">
+                <component
+                  :is="detail.icon"
+                  class="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0"
+                />
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs text-slate-500">
+                    {{ detail.label }}
+                  </p>
+                  <p class="text-sm font-medium text-slate-900 truncate">
+                    {{ detail.value ?? '—' }}
+                  </p>
+                </div>
               </div>
             </div>
-            <div class="flex items-start gap-2">
-              <div class="bg-violet-500 text-white p-1.5 rounded">
-                <TrendingUp class="w-4 h-4" />
+            <hr class="my-4 border-slate-200" />
+            <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3">
+              <div class="flex items-start gap-2">
+                <div class="bg-violet-500 text-white p-1.5 rounded">
+                  <Target class="w-4 h-4" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs text-slate-500">{{ t('general.on_hand') }}</p>
+                  <p class="text-sm font-medium text-slate-900 truncate">
+                    {{ item.on_hand ?? '—' }}
+                  </p>
+                </div>
               </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-xs text-slate-500">{{ t('item.out_records') }}</p>
-                <p class="text-sm font-medium text-slate-900 truncate">
-                  {{ item.stock_out_count ?? '—' }}
-                </p>
+
+              <div class="flex items-start gap-2">
+                <div class="bg-violet-500 text-white p-1.5 rounded">
+                  <TrendingDown class="w-4 h-4" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs text-slate-500 font-bold">{{ t('item.in_records') }}</p>
+                  <p class="text-sm font-medium text-slate-900 truncate font-weight-bold">
+                    {{ item.stock_count ?? '—' }}
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-start gap-2">
+                <div class="bg-violet-500 text-white p-1.5 rounded">
+                  <TrendingUp class="w-4 h-4" />
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-xs text-slate-500 text-bold text-bold">{{ t('item.out_records') }}</p>
+                  <p class="text-sm font-medium text-slate-900 truncate text-bold">
+                    {{ item.stock_out_count ?? '—' }}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Tabs -->
-        <div class="px-6 pt-3 flex gap-2 border-b border-slate-200 bg-white">
-          <button
-            class="px-3 py-2 text-sm rounded-t-md border-b-2"
-            :class="
-              activeTab === 'in'
-                ? 'border-violet-500 text-violet-600 font-medium'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            "
-            @click="switchTab('in')"
+          <!-- Tabs -->
+          <div class="px-6 pt-3 flex gap-2 border-b border-slate-200 bg-white">
+            <button
+              class="px-3 py-2 text-sm rounded-t-md border-b-2"
+              :class="
+                activeTab === 'in'
+                  ? 'border-violet-500 text-violet-600 font-bold'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              "
+              @click="switchTab('in')"
+            >
+              {{ t('item.in_records') }}
+            </button>
+            <button
+              class="px-3 py-2 text-sm rounded-t-md border-b-2"
+              :class="
+                activeTab === 'out'
+                  ? 'border-violet-500 text-violet-600 font-bold'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              "
+              @click="switchTab('out')"
+            >
+              {{ t('item.out_records') }}
+            </button>
+          </div>
+
+          <!-- Table -->
+          <div
+            class="px-6 pb-4 pt-2 text-xs text-slate-700"
           >
-            {{ t('item.in_records') }}
-          </button>
-          <button
-            class="px-3 py-2 text-sm rounded-t-md border-b-2"
-            :class="
-              activeTab === 'out'
-                ? 'border-violet-500 text-violet-600 font-medium'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            "
-            @click="switchTab('out')"
-          >
-            {{ t('item.out_records') }}
-          </button>
-        </div>
-
-        <!-- Table -->
-        <div
-          class="px-6 pb-4 pt-2 text-xs text-slate-700"
-          @scroll="onScroll"
-
-        >
-          <table class="w-full border-collapse">
-            <thead class="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10">
-              <tr class="text-xs uppercase tracking-wide text-slate-600 font-semibold">
+            <table class="w-full border-collapse">
+            <thead class="sticky top-0 border-b-2 border-slate-200 z-10 bg-violet-500 text-white">
+              <tr class="text-xs uppercase tracking-wide text-white font-semibold">
                 <th class="py-3 px-3 text-left rtl:text-right whitespace-nowrap">#</th>
                 <th class="py-3 px-3 text-left rtl:text-right whitespace-nowrap">{{ t('general.ledger') }}</th>
                 <th class="py-3 px-3 text-left rtl:text-right whitespace-nowrap">{{ t('general.bill_number') }}</th>
@@ -321,16 +321,17 @@ watch(
             </tbody>
           </table>
 
-          <div
-            v-if="loading"
-            class="py-3 flex items-center justify-center text-slate-400 text-xs gap-2"
-          >
-            <span
-              class="h-3 w-3 rounded-full border-2 border-slate-300 border-t-violet-500 animate-spin"
-            />
-            Loading more…
+            <div
+              v-if="loading"
+              class="py-3 flex items-center justify-center text-slate-400 text-xs gap-2"
+            >
+              <span
+                class="h-3 w-3 rounded-full border-2 border-slate-300 border-t-violet-500 animate-spin"
+              />
+              Loading more…
+            </div>
           </div>
-        </div>
+        </div> <!-- end scrollable content -->
       </div>
     </div>
   </teleport>

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 class UnitMeasureController extends Controller
 {
     protected $metric;
@@ -82,6 +83,7 @@ class UnitMeasureController extends Controller
             $request->offsetSet('branch_id', Auth::user()->branch_id ?? 1);
             $request->offsetSet('created_by', Auth::id());
 
+
             $metric = $this->metric->where('unit', $metricType['unit'])->first();
 
             if ($metric == null) {
@@ -89,6 +91,7 @@ class UnitMeasureController extends Controller
                     'quantity' => $metricType['name'],
                     'unit' => $metricType['unit'],
                     'symbol' => $metricType['symbol'],
+                    'slug' => Str::slug($metricType['name']),
                     'is_main' => false,
                     'created_by' => Auth::id()
                 ]);

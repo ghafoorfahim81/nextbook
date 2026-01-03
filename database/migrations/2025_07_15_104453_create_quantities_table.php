@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('quantity')->index();
             $table->string('unit');
             $table->string('symbol');
+            $table->string('slug');
             $table->boolean(column: 'is_main')->default(false);
             $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
@@ -25,6 +26,7 @@ return new class extends Migration
             $table->ulid('deleted_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
+            $table->unique(['branch_id', 'slug', 'deleted_at']);
         });
 
         Schema::enableForeignKeyConstraints();

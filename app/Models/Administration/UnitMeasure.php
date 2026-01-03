@@ -86,6 +86,7 @@ class UnitMeasure extends Model
                 'unit'        => 1,
                 'symbol'      => "ea",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Count')->first()->id,
+                'quantity_slug' => 'count',
                 'is_main'   => true,
             ],
             [
@@ -93,6 +94,7 @@ class UnitMeasure extends Model
                 'unit'        => 2,
                 'symbol'      => "pr",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Count')->first()->id,
+                'quantity_slug' => 'count',
                 'is_main'   => true,
             ],
             [
@@ -100,6 +102,7 @@ class UnitMeasure extends Model
                 'unit'        => 12,
                 'symbol'      => "dz",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Count')->first()->id,
+                'quantity_slug' => 'count',
                 'is_main'   => true,
             ],
             // length
@@ -108,6 +111,7 @@ class UnitMeasure extends Model
                 'unit'        => 1,
                 'symbol'      => "cm",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Length')->first()->id,
+                'quantity_slug' => 'length',
                 'is_main'   => true,
             ],
             [
@@ -115,6 +119,7 @@ class UnitMeasure extends Model
                 'unit'        => 100,
                 'symbol'      => "m",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Length')->first()->id,
+                'quantity_slug' => 'length',
                 'is_main'   => true,
             ],
             [
@@ -122,6 +127,7 @@ class UnitMeasure extends Model
                 'unit'        => 2.5,
                 'symbol'      => "in",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Length')->first()->id,
+                'quantity_slug' => 'length',
                 'is_main'   => true,
             ],
             // area
@@ -130,6 +136,7 @@ class UnitMeasure extends Model
                 'unit'        => 1,
                 'symbol'      => "cm2",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Area')->first()->id,
+                'quantity_slug' => 'area',
                 'is_main'   => true,
             ],
             [
@@ -137,6 +144,7 @@ class UnitMeasure extends Model
                 'unit'        => 0.01,
                 'symbol'      => "dm2",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Area')->first()->id,
+                'quantity_slug' => 'area',
                 'is_main'   => true,
             ],
             [
@@ -144,6 +152,7 @@ class UnitMeasure extends Model
                 'unit'        => 0.0001,
                 'symbol'      => "m2",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Area')->first()->id,
+                'quantity_slug' => 'area',
                 'is_main'   => true,
             ],
             // weight
@@ -152,6 +161,7 @@ class UnitMeasure extends Model
                 'unit'        => 1,
                 'symbol'      => "g",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Weight')->first()->id,
+                'quantity_slug' => 'weight',
                 'is_main'   => true,
             ],
             [
@@ -159,6 +169,7 @@ class UnitMeasure extends Model
                 'unit'        => 1000,
                 'symbol'      => "kg",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Weight')->first()->id,
+                'quantity_slug' => 'weight',
                 'is_main'   => true,
             ],
             [
@@ -166,6 +177,7 @@ class UnitMeasure extends Model
                 'unit'        => 1000000,
                 'symbol'      => "ton",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Weight')->first()->id,
+                'quantity_slug' => 'weight',
                 'is_main'   => true,
             ],
             // volume
@@ -174,6 +186,7 @@ class UnitMeasure extends Model
                 'unit'        => 1,
                 'symbol'      => "ml",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Volume')->first()->id,
+                'quantity_slug' => 'volume',
                 'is_main'   => true,
             ],
             [
@@ -181,6 +194,7 @@ class UnitMeasure extends Model
                 'unit'        => 1000,
                 'symbol'      => "L",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Volume')->first()->id,
+                'quantity_slug' => 'volume',
                 'is_main'   => true,
             ],
             [
@@ -188,6 +202,7 @@ class UnitMeasure extends Model
                 'unit'        => 3785.41, // US Gallon to ml
                 'symbol'      => "gal",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Volume')->first()->id,
+                'quantity_slug' => 'volume',
                 'is_main'   => true,
             ],
             [
@@ -195,6 +210,7 @@ class UnitMeasure extends Model
                 'unit'        => 158987.294928, // نفت خام به ml
                 'symbol'      => "bbl",
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Volume')->first()->id,
+                'quantity_slug' => 'volume',
                 'is_main'   => true,
             ],
         ];

@@ -14,13 +14,14 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->string('name')->index();
-            $table->string('email')->unique()->index();
+            $table->string('email')->index();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->enum('status', UserStatus::values())->default(UserStatus::ACTIVE->value);
             $table->ulid('created_by')->nullable()->index();
             $table->ulid('updated_by')->nullable();
-            $table->ulid('deleted_by')->nullable(); 
+            $table->ulid('deleted_by')->nullable();
+            $table->unique(['email', 'deleted_at']);
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();

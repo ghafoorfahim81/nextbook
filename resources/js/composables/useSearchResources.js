@@ -14,72 +14,79 @@ export function useSearchResources() {
      * @param {Object} options - Additional options
      * @returns {Promise<Array>} - Array of search results
      */
-    const searchResources = async (searchTerm, localOptions = [], resourceType, options = {}) => {
-        if (!searchTerm || searchTerm.length < 2) {
-            return localOptions
-        }
-
+    const searchResources = async (
+        searchTerm,
+        localOptions = [],
+        resourceType,
+        options = {}
+      ) => {
         const {
-            labelKey = 'name',
-            valueKey = 'id',
-            searchFields = [labelKey],
-            minSearchLength = 2,
-            cacheTimeout = 300000, // 5 minutes
-            debounceMs = 300
+          labelKey = 'name',
+          valueKey = 'id',
+          searchFields = [labelKey],
+          minSearchLength = 2,
+          cacheTimeout = 300000,
+          debounceMs = 300,
         } = options
 
-        // Clear previous timeout
+        // ✅ EMPTY SEARCH → signal caller to reset
+        if (!searchTerm || !searchTerm.trim()) {
+          return null
+        }
+
+        // ✅ BELOW MIN LENGTH → local only
+        if (searchTerm.length < minSearchLength) {
+          return searchLocal(searchTerm, localOptions, searchFields)
+        }
+
+        // Clear previous debounce
         if (searchTimeout.value) {
-            clearTimeout(searchTimeout.value)
+          clearTimeout(searchTimeout.value)
         }
 
         return new Promise((resolve) => {
-            searchTimeout.value = setTimeout(async () => {
-                try {
-                    // First, search locally
-                    const localResults = searchLocal(searchTerm, localOptions, searchFields, labelKey)
+          searchTimeout.value = setTimeout(async () => {
+            try {
+              // 1️⃣ Local search first
+              const localResults = searchLocal(
+                searchTerm,
+                localOptions,
+                searchFields
+              )
 
-                    // If we have enough local results, return them
-                    if (localResults.length >= 5) {
-                        resolve(localResults)
-                        return
-                    }
+              if (localResults.length >= 5) {
+                resolve(localResults)
+                return
+              }
 
-                    // Check cache first
-                    const cacheKey = `${resourceType}:${searchTerm}`
-                    const cached = searchCache.value.get(cacheKey)
+              // 2️⃣ Cache
+              const cacheKey = `${resourceType}:${searchTerm}`
+              const cached = searchCache.value.get(cacheKey)
 
-                    if (cached && Date.now() - cached.timestamp < cacheTimeout) {
-                        // Merge local and cached results, removing duplicates
-                        const mergedResults = mergeResults(localResults, cached.data, valueKey)
-                        resolve(mergedResults)
-                        return
-                    }
+              if (cached && Date.now() - cached.timestamp < cacheTimeout) {
+                resolve(mergeResults(localResults, cached.data, valueKey))
+                return
+              }
 
-                    // Search remotely
-                    isLoading.value = true
-                    const remoteResults = await searchRemote(searchTerm, resourceType, options)
+              // 3️⃣ Remote search
+              isLoading.value = true
+              const remoteResults = await searchRemote(searchTerm, resourceType, options)
 
-                    // Cache the results
-                    searchCache.value.set(cacheKey, {
-                        data: remoteResults,
-                        timestamp: Date.now()
-                    })
+              searchCache.value.set(cacheKey, {
+                data: remoteResults,
+                timestamp: Date.now(),
+              })
 
-                    // Merge local and remote results
-                    const mergedResults = mergeResults(localResults, remoteResults, valueKey)
-                    resolve(mergedResults)
-
-                } catch (error) {
-                    console.error('Search error:', error)
-                    // Return local results as fallback
-                    resolve(searchLocal(searchTerm, localOptions, searchFields, labelKey))
-                } finally {
-                    isLoading.value = false
-                }
-            }, debounceMs)
+              resolve(mergeResults(localResults, remoteResults, valueKey))
+            } catch (e) {
+              console.error(e)
+              resolve(searchLocal(searchTerm, localOptions, searchFields))
+            } finally {
+              isLoading.value = false
+            }
+          }, debounceMs)
         })
-    }
+      }
 
     /**
      * Search through local options

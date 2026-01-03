@@ -13,7 +13,7 @@ const { toast } = useToast();
 
 const props = defineProps({
     permissions: Array,
-    roles: Array, 
+    roles: Array,
     branches: {type: Object, required: true},
 
 });
@@ -123,9 +123,9 @@ const goBack = () => {
                         :placeholder="t('general.enter', { text: t('user_mangements.confirm_password') })"
                         v-model="form.password_confirmation"
                         :error="form.errors?.password_confirmation"
-                    /> 
+                    />
 
-                    <!-- Roles --> 
+                    <!-- Roles -->
                     <NextSelect
                         v-model="form.roles"
                         :options="roles"
@@ -138,7 +138,7 @@ const goBack = () => {
                         resource-type="roles"
                         multiple
                         :search-fields="['name']"
-                    />  
+                    />
 
                     <NextSelect
                         v-model="form.branch_id"
@@ -151,7 +151,7 @@ const goBack = () => {
                         :searchable="true"
                         resource-type="branches"
                         :search-fields="['name']"
-                    />   
+                    />
                     <!-- Additional Permissions -->
                     <div class="md:col-span-3">
                         <div class="mb-4">
