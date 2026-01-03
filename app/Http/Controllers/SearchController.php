@@ -3,6 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\Inventory\ItemResource;
+use App\Models\Administration\UnitMeasure;
+use App\Models\Account\Account;
+use App\Models\Administration\Size;
+use App\Models\Administration\Currency;
+use App\Models\Administration\Branch;
+use App\Models\Administration\Company;
+use App\Models\Administration\Brand;
+use App\Models\Administration\Category;
+use App\Models\Administration\Store;
+use App\Models\Administration\ExpenseCategory;
 use App\Models\Inventory\Item;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -113,7 +123,8 @@ class SearchController extends Controller
 
             case 'accounts':
                 return $this->searchAccounts($searchTerm, $fields, $limit, $additionalParams);
-
+            case 'sizes':
+                return $this->searchSizes($searchTerm, $fields, $limit, $additionalParams);
             default:
                 throw new \InvalidArgumentException("Unsupported resource type: {$resourceType}");
         }
@@ -124,7 +135,7 @@ class SearchController extends Controller
      */
     private function searchLedgers(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
-        $query = DB::table('ledgers')
+        $query = Ledger::query()
             ->select('id', 'name', 'type', 'email', 'phone_no', 'address')
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
@@ -309,7 +320,7 @@ class SearchController extends Controller
      */
     private function searchCurrencies(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
-        $query = DB::table('currencies')
+        $query = Currency::query()
             ->select('id', 'name', 'code', 'symbol', 'exchange_rate')
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
@@ -327,7 +338,7 @@ class SearchController extends Controller
      */
     private function searchUsers(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
-        $query = DB::table('users')
+        $query = User::query()
             ->select('id', 'name', 'email')
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
@@ -350,7 +361,7 @@ class SearchController extends Controller
      */
     private function searchBranches(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
-        $query = DB::table('branches')
+        $query = Branch::query()
             ->select('id', 'name', 'address', 'phone', 'email')
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
@@ -373,7 +384,7 @@ class SearchController extends Controller
      */
     private function searchCompanies(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
-        $query = DB::table('companies')
+        $query = Company::query()
             ->select('id', 'name', 'email', 'phone', 'address')
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
@@ -390,7 +401,7 @@ class SearchController extends Controller
      */
     private function searchUnitMeasures(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
-        $query = DB::table('unit_measures')
+        $query = UnitMeasure::query()
             ->select('id', 'name', 'unit', 'symbol')
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
@@ -407,7 +418,7 @@ class SearchController extends Controller
      */
     private function searchBrands(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
-        $query = DB::table('brands')
+        $query = Brand::query()
             ->select('id', 'name', 'legal_name', 'registration_number', 'email', 'phone', 'website', 'industry', 'type', 'city', 'country')
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
@@ -423,7 +434,7 @@ class SearchController extends Controller
      */
     private function searchCategories(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
-        $query = DB::table('categories')
+        $query = Category::query()
             ->select('id', 'name', 'description')
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
@@ -439,7 +450,7 @@ class SearchController extends Controller
      */
     private function searchStores(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
-        $query = DB::table('stores')
+        $query = Store::query()
             ->select('id', 'name', 'address')
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
@@ -456,7 +467,7 @@ class SearchController extends Controller
      */
     private function searchExpenseCategories(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
-        $query = DB::table('expense_categories')
+        $query = ExpenseCategory::query()
             ->select('id', 'name', 'remarks', 'is_active')
             ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
@@ -475,7 +486,7 @@ class SearchController extends Controller
      */
     private function searchAccounts(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
-        $query = DB::table('accounts')
+        $query = Account::query()
             ->join('account_types', 'accounts.account_type_id', '=', 'account_types.id')
             ->select('accounts.id', 'accounts.name', 'accounts.number', 'account_types.name as type_name', 'account_types.slug as type_slug')
             ->where('accounts.is_active', true)
@@ -497,6 +508,23 @@ class SearchController extends Controller
             $query->whereIn('account_types.slug', $additionalParams['types']);
         }
 
+        return $query->limit($limit)->get()->toArray();
+    }
+
+    /**
+     * Search sizes
+     */
+    private function searchSizes(string $searchTerm, array $fields, int $limit, array $additionalParams): array
+    {
+        $query = Size::query()
+            ->select('id', 'name', 'code')
+            ->where(function ($q) use ($searchTerm, $fields) {
+                foreach ($fields as $field) {
+                    if (in_array($field, ['name', 'code'])) {
+                        $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
+                    }
+                }
+            });
         return $query->limit($limit)->get()->toArray();
     }
 

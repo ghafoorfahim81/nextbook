@@ -40,6 +40,7 @@ class Quantity extends Model
         'quantity',
         'unit',
         'symbol',
+        'slug',
         'branch_id',
         'is_main',
         'created_by',
@@ -56,6 +57,7 @@ class Quantity extends Model
     protected $casts = [
         'id' => 'string',
         'branch_id' => 'string',
+        'slug' => 'string',
         'is_main' => 'boolean',
         'created_by' => 'string',
         'updated_by' => 'string',
@@ -68,24 +70,28 @@ class Quantity extends Model
             [
             'quantity' => 'Count',
             'unit'       => "Pcs",
+            'slug'       => "count",
             'symbol'     => "ea",
             'is_main'  => true,
             ],
             [
                 'quantity' => 'Length',
                 'unit'       => "Centimetre",
+                'slug'       => "length",
                 'symbol'     => "cm",
                 'is_main'  => true,
             ],
             [
                 'quantity' => 'Area',
                 'unit'       => "SquareCentimetre",
+                'slug'       => "area",
                 'symbol'     => "cm2",
                 'is_main'  => true,
             ],
             [
                 'quantity' => 'Weight',
                 'unit'       => "Gram",
+                'slug'       => "weight",
                 'symbol'     => "g",
                 'is_main'  => true,
             ],
@@ -93,12 +99,14 @@ class Quantity extends Model
             [
                 'quantity' => 'Volume',
                 'unit'       => "Millilitre",
+                'slug'       => "volume",
                 'symbol'     => "ml",
                 'is_main'  => true,
             ],
 
             [
                 'quantity' => 'Temperature',
+                'slug'       => "temperature",
                 'unit'       => "Celsius",
                 'symbol'     => "°C",
                 'is_main'  => true,

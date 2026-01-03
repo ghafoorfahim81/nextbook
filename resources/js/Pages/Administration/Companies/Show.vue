@@ -9,10 +9,10 @@ import NextTextarea from '@/Components/next/NextTextarea.vue';
 import { Edit, Save, X, Building2, Upload } from 'lucide-vue-next';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { useI18n } from 'vue-i18n';
-
+import { useAuth } from '@/composables/useAuth';
 const { toast } = useToast();
 const { t } = useI18n();
-
+const { can } = useAuth();
 const props = defineProps({
     company: Object,
     currencies: Object,
@@ -145,7 +145,7 @@ const saveChanges = () => {
     }
 
     form.post(route('company.update', props.company.id), {
-        onSuccess: () => { 
+        onSuccess: () => {
             isEditing.value = false;
             originalData.value = { ...form.data(), logo: existingLogo.value };
             logoPreview.value = null;
@@ -266,7 +266,7 @@ const setCalendarLocaleStorage = (selected) => {
                     <Building2 class="w-8 h-8 text-primary" />
                     <h1 class="text-2xl font-bold text-foreground">{{ t('company.company_information') }}</h1>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex gap-2" v-if="can('companies.update')">
                     <Button
                         v-if="!isEditing"
                         @click="startEditing"

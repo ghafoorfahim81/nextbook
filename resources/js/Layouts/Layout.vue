@@ -76,6 +76,9 @@ import {
     ShoppingBasket,
     ArrowLeftRight
 } from 'lucide-vue-next'
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/Components/ui/select'
 import { ref, computed } from 'vue'
 // @ts-ignore - Vue SFC default export shim
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue'
@@ -262,8 +265,8 @@ const navMain = computed(() => [
         url: '#',
         icon: UserCog,
         items: [
-            { title: t('sidebar.ledger.customer'), url: '/customers', permission: 'ledgers.view_any' },
-            { title: t('sidebar.ledger.supplier'), url: '/suppliers', permission: 'ledgers.view_any' },
+            { title: t('sidebar.ledger.customer'), url: '/customers', permission: 'customers.view_any' },
+            { title: t('sidebar.ledger.supplier'), url: '/suppliers', permission: 'suppliers.view_any' },
         ],
     },
     {
@@ -536,7 +539,7 @@ function logout() {
                                     size="lg"
                                     class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                                 >
-                                    <Avatar class="h-8 w-8 rounded-lg">
+                                    <Avatar class="h-8 w-8 rounded-lg bg-purple-500 text-white">
                                         <AvatarImage :src="data.user.avatar" :alt="data.user.name" />
                                         <AvatarFallback class="rounded-lg">
                                             {{ user?.name?.charAt(0) || 'NB' }}
@@ -552,7 +555,7 @@ function logout() {
                             <DropdownMenuContent class="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg" side="bottom" align="end" :side-offset="4">
                                 <DropdownMenuLabel class="p-0 font-normal">
                                     <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                                        <Avatar class="h-8 w-8 rounded-lg">
+                                        <Avatar class="h-8 w-8 rounded-lg bg-purple-500 text-white">
                                             <AvatarImage :src="data.user.avatar" :alt="data.user.name" />
                                             <AvatarFallback class="rounded-lg">
                                                 {{ user?.name?.charAt(0) || 'NB' }}
@@ -567,28 +570,28 @@ function logout() {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem>
-                                        <Sparkles />
+                                        <Sparkles class="text-violet-500 hover:text-white" />
                                         {{ t('layout.upgrade_to_pro') }}
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem>
-                                        <BadgeCheck />
+                                        <BadgeCheck class="text-violet-500 hover:text-white" />
                                         {{ t('layout.account') }}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem>
-                                        <CreditCard />
+                                        <CreditCard class="text-violet-500 hover:text-white" />
                                         {{ t('layout.billing') }}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem>
-                                        <Bell />
+                                        <Bell class="text-violet-500 hover:text-white" />
                                         {{ t('layout.notifications') }}
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem @click="logout" class="cursor-pointer">
-                                    <LogOut />
+                                    <LogOut class="text-violet-500 hover:text-white" />
                                     {{ t('layout.logout') }}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -610,20 +613,22 @@ function logout() {
                         <label class="text-xs text-muted-foreground" for="branch-switcher">
                             {{ t('layout.branch') || 'Branch' }}
                         </label>
-                        <select
-                            id="branch-switcher"
-                            v-model="selectedBranchId"
-                            @change="switchBranch"
-                            class="border rounded-md ms-start px-5 py-2 text-xs bg-background rtl:pe-10 rtl:ps-3 rtl:bg-left rtl:pr-8"
-                        >
-                            <option
-                                v-for="branch in branches"
-                                :key="branch.id"
-                                :value="branch.id"
-                            >
-                                {{ branch.name }}
-                            </option>
-                        </select>
+
+                        <Select v-model="selectedBranchId" @update:modelValue="switchBranch">
+                            <SelectTrigger class="w-[130px] h-7 text-xs border-input">
+                                <SelectValue :placeholder="t('layout.branch')" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem
+                                    v-for="branch in branches"
+                                    :key="branch.id"
+                                    :value="branch.id"
+                                    class="text-xs data-[state=checked]:bg-primary px-5 py-2 data-[state=checked]:text-white data-[highlighted]:bg-purple-500 data-[highlighted]:text-white rtl:pe-10 rtl:ps-3 rtl:bg-left rtl:pr-8"
+                                >
+                                    {{ branch.name }}
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div v-else class="text-xs text-muted-foreground">
                         {{ activeBranchName || '—' }}

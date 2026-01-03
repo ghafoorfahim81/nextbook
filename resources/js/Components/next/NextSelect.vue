@@ -10,11 +10,13 @@
           :dir="isRTL ? 'rtl' : 'ltr'"
           @update:modelValue="val => emit('update:modelValue', val)"
           @search="handleSearch"
+          @update:search="onSearchUpdate"
           :filterable="false"
           :clearable="clearable"
           :loading="isLoading"
           :placeholder="placeholder"
           :close-on-select="true"
+          :no-options-text="noResultsText"
           :append-to-body="shouldAppendToBody"
           :calculate-position="shouldAppendToBody ? calculatePosition : null"
           class="col-span-3 w-full sm:text-sm"
@@ -37,10 +39,12 @@
   </template>
 
   <script setup>
-  import { ref, computed, watch, onMounted, getCurrentInstance } from 'vue'
+    import { ref, computed, watch, onMounted, getCurrentInstance } from 'vue'
   import { useI18n } from 'vue-i18n'
   import FloatingLabel from '@/Components/next/FloatingLabel.vue'
   import { useSearchResources } from '@/composables/useSearchResources.js'
+
+  const { t } = useI18n()
 
   /* ---------------- PROPS ---------------- */
 
@@ -136,33 +140,35 @@
 
   watch(() => props.modelValue, ensureSelectedOptionInOptions, { immediate: true })
 
+
   const handleSearch = async (term) => {
-    if (!props.searchable || !props.resourceType) return
-    try {
-      const results = await searchResources(
-        term,
-        props.options,
-        props.resourceType,
-        {
-          labelKey: props.labelKey,
-          valueKey: props.valueKey,
-          searchFields: props.searchFields,
-          ...props.searchOptions,
-        }
-      )
-
-      results.forEach(o => {
-        cachedOptions.value.set(reduceInternal(o), o)
-      })
-
-      searchableOptions.value = results
-    } catch {
-      searchableOptions.value = [...props.options]
-    } finally {
-      ensureSelectedOptionInOptions()
+  const results = await searchResources(
+    term,
+    props.options,
+    props.resourceType,
+    {
+      labelKey: props.labelKey,
+      valueKey: props.valueKey,
+      searchFields: props.searchFields,
+      ...props.searchOptions,
     }
-  }
+  )
 
+  // 🔥 COMPOSABLE SIGNALS RESET
+  if (results === null) return
+
+  searchableOptions.value = results
+}
+
+const onSearchUpdate = (val) => {
+  if (!val || !val.trim()) {
+    searchableOptions.value = []
+    nextTick(() => {
+      searchableOptions.value = [...props.options]
+      ensureSelectedOptionInOptions()
+    })
+  }
+}
   /* ---------------- PAGE-ONLY POSITIONING ---------------- */
 
   const calculatePosition = (dropdownEl, component) => {

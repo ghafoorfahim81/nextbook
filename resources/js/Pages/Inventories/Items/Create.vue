@@ -13,7 +13,6 @@ import { useI18n } from 'vue-i18n';
 const { t } = useI18n()
 // keep props reactive
 const props = defineProps({
-    branches: { type: [Array, Object], required: true },
     stores: { type: [Array, Object], required: true },
     unitMeasures: { type: [Array, Object], required: true },
     categories: { type: [Array, Object], required: true },
@@ -24,7 +23,6 @@ const props = defineProps({
 })
 
 // normalize lists whether they're paginated or not
-const branches = computed(() => props.branches?.data ?? props.branches ?? [])
 const stores = computed(() => props.stores?.data ?? props.stores ?? [])
 const unitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 const categories = computed(() => props.categories?.data ?? props.categories ?? [])
@@ -195,7 +193,7 @@ const handleOpeningSelectChange = (index, value) => {
                     :floating-text="t('item.size')"
                     :searchable="true"
                     resource-type="sizes"
-                    :search-fields="['name']"
+                    :search-fields="['name','code']"
                     :error="form.errors.size_id"
                 />
                 <NextSelect

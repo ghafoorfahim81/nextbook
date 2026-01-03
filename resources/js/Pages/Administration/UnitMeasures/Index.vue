@@ -22,7 +22,7 @@ const editingMeasure = ref(null)
 const columns = computed(() => ([
     {
         key: 'quantity.quantity',
-        label: '',
+        label: t('admin.unit_measure.quantity'),
         sortable: true,
         render: (row) => row.quantity?.quantity ?? '-',
     },
