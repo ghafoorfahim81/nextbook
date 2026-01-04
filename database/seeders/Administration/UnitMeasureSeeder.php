@@ -25,7 +25,7 @@ class UnitMeasureSeeder extends Seeder
                 'slug' => $quantity['slug'],
                 'branch_id' => $branch_id,
                 'is_main' => $quantity['is_main'],
-                'created_by' => User::where('name', 'admin')->first()->id,
+                'created_by' => User::first()->id,
             ]);
         }
         $unitMeasures = UnitMeasure::defaultUnitMeasures();
