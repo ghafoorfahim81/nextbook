@@ -48,7 +48,7 @@ class ReceiptController extends Controller
         ]);
     }
 
- 
+
 
     public function store(ReceiptStoreRequest $request, TransactionService $transactionService)
     {
@@ -72,11 +72,11 @@ class ReceiptController extends Controller
             ]);
             $glAccounts = Cache::get('gl_accounts');
             // Credit Accounts Receivable for selected ledger
-            $arAccountId = $glAccounts['account-receivable'];
+            $arAccountId = $glAccounts['accounts-receivable'];
 
             $creditRemark = "Receipt #{$receipt->number} from {$ledger->name}";
             $creditTxn = $transactionService->createTransaction([
-                'account_id' => $arAccountId, 
+                'account_id' => $arAccountId,
                 'amount' => $amount,
                 'currency_id' => $currencyId,
                 'rate' => $rate,
@@ -91,7 +91,7 @@ class ReceiptController extends Controller
             // Debit selected bank account
             $debitRemark = "Bank receive for receipt #{$receipt->number}";
             $debitTxn = $transactionService->createTransaction([
-                'account_id' => $bankAccountId, 
+                'account_id' => $bankAccountId,
                 'amount' => $amount,
                 'currency_id' => $currencyId,
                 'rate' => $rate,
@@ -108,7 +108,7 @@ class ReceiptController extends Controller
 
             $receipt->update([
                 'receive_transaction_id' => $creditTxn->id,
-                'bank_transaction_id' => $debitTxn->id,
+                'bank_transaction_id' => $creditTxn->id,
             ]);
         });
 
@@ -162,11 +162,11 @@ class ReceiptController extends Controller
             $date = $validated['date'] ?? $receipt->date;
             $bankAccountId = $validated['bank_account_id'] ?? $receipt->bankTransaction?->account_id;
             $glAccounts = Cache::get('gl_accounts');
-            $arAccountId = $glAccounts['account-receivable'];
+            $arAccountId = $glAccounts['accounts-receivable'];
 
             if ($receipt->receive_transaction_id) {
                 Transaction::where  ('id', $receipt->receive_transaction_id)->update([
-                    'account_id' => $arAccountId, 
+                    'account_id' => $arAccountId,
                     'amount' => $amount,
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -177,7 +177,7 @@ class ReceiptController extends Controller
             }
             if ($receipt->bank_transaction_id) {
                 Transaction::where('id', $receipt->bank_transaction_id)->update([
-                    'account_id' => $bankAccountId, 
+                    'account_id' => $bankAccountId,
                     'amount' => $amount,
                     'currency_id' => $currencyId,
                     'rate' => $rate,
