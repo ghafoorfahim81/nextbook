@@ -77,7 +77,7 @@ class PaymentController extends Controller
 
             // Debit Accounts Payable for selected ledger (reduce liability)
             $glAccounts = Cache::get('gl_accounts');
-            $apAccountId = $glAccounts['account-payable'];
+            $apAccountId = $glAccounts['accounts-payable'];
             $debitRemark = "Payment #{$payment->number} to {$ledger->name}";
             $debitTxn = $transactionService->createTransaction([
                 'account_id' => $apAccountId,
@@ -94,7 +94,7 @@ class PaymentController extends Controller
             // Credit selected bank account
             $creditRemark = "Bank payment for payment #{$payment->number}";
             $creditTxn = $transactionService->createTransaction([
-                'account_id' => $bankAccountId, 
+                'account_id' => $bankAccountId,
                 'amount' => $amount,
                 'currency_id' => $currencyId,
                 'rate' => $rate,
@@ -106,7 +106,7 @@ class PaymentController extends Controller
             ]);
 
             $ledger->ledgerTransactions()->create([
-                'transaction_id' => $creditTxn->id,
+                'transaction_id' => $debitTxn->id,
             ]);
 
             $payment->update([
@@ -163,7 +163,7 @@ class PaymentController extends Controller
             $date = $validated['date'] ?? $payment->date;
             $bankAccountId = $validated['bank_account_id'] ?? $payment->bankTransaction?->account_id;
             $glAccounts = Cache::get('gl_accounts');
-            $apAccountId = $glAccounts['account-payable'];
+            $apAccountId = $glAccounts['accounts-payable'];
 
             if ($payment->payment_transaction_id) {
                 Transaction::where('id', $payment->payment_transaction_id)->update([

@@ -137,7 +137,7 @@ watch(
       >
         <!-- Item header -->
         <div
-          class="border-b border-slate-200 bg-gradient-to-r from-violet-400 to-slate-50 px-6 py-4 flex justify-between items-center"
+          class="border-b border-slate-200 bg-gradient-to-r rtl:bg-gradient-to-l from-violet-400 to-slate-50 px-6 py-4 flex justify-between items-center"
         >
           <div class="flex items-center gap-3">
             <div class="bg-violet-500 text-white p-3 rounded-lg">

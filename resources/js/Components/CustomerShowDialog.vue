@@ -7,7 +7,7 @@ import {
     DialogContent,
 } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
-import { UserRoundSearch, UserRoundX, UserStar } from 'lucide-vue-next';
+import {  UserStar } from 'lucide-vue-next';
 
 const { t } = useI18n();
 
@@ -88,7 +88,7 @@ const closeDialog = () => {
             <div class="w-full bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
                 <!-- Static header -->
                 <div
-                    class="border-b border-slate-200 bg-gradient-to-r from-violet-400 to-slate-50 px-6 py-4 flex justify-between items-center"
+                    class="border-b border-slate-200 bg-gradient-to-r rtl:bg-gradient-to-l from-violet-400 to-slate-50 px-6 py-4 flex justify-between items-center"
                     >
                     <div class="flex items-center gap-3">
                         <div class="bg-violet-500 text-white p-3 rounded-lg">
@@ -111,7 +111,7 @@ const closeDialog = () => {
                         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
                     </div>
 
-                    <div v-else-if="customerData && customerData.id" class="space-y-4">
+                    <div v-else-if="customerData && customerData.id" class="space-y-4 ">
                         <!-- Top tabs: General / Opening -->
                         <div class="border-b flex gap-4">
                             <button
@@ -141,7 +141,7 @@ const closeDialog = () => {
                             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                                 <!-- Left: avatar + summary -->
                                 <div class="bg-card rounded-xl shadow-sm border p-4 flex flex-col items-center gap-4">
-                                    <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-violet-500 to-violet-400 flex items-center justify-center text-white text-xl font-bold">
+                                    <div class="w-16 h-16 rounded-full bg-gradient-to-tr rtl:bg-gradient-tl from-violet-500 to-violet-400 flex items-center justify-center text-white text-xl font-bold">
                                         {{ (customerData.name || '').charAt(0).toUpperCase() }}
                                     </div>
                                     <div class="text-center">
@@ -161,13 +161,13 @@ const closeDialog = () => {
                                         <div class="flex flex-col divide-y">
                                             <div class="flex items-center px-5 py-2">
                                                 <div class="flex-1 text-base  dark:text-white">{{ t('general.credit') }}</div>
-                                                <div class="text-base font-medium text-green-600">
+                                                <div class="text-base font-medium text-primary">
                                                     {{ formatAmount(statement.total_credit) }}
                                                 </div>
                                             </div>
                                             <div class="flex items-center px-5 py-2 mt-1">
                                                 <div class="flex-1 text-base  dark:text-white">{{ t('general.debit') }}</div>
-                                                <div class="text-base font-medium text-green-600">
+                                                <div class="text-base font-medium text-primary">
                                                     {{ formatAmount(statement.total_debit) }}
                                                 </div>
                                             </div>
@@ -175,7 +175,7 @@ const closeDialog = () => {
                                                 <div class="flex-1 text-base  dark:text-white">{{ t('general.balance') }}</div>
                                                 <div
                                                     class="text-base font-medium"
-                                                    :class="statement.balance_nature === 'cr' ? 'text-green-600' : 'text-red-600'"
+                                                    :class="statement.balance_nature === 'cr' ? 'text-green-600' : 'text-primary'"
                                                 >
                                                     {{ formatAmount(statement.balance) }} {{statement.balance > 0 ? (statement.balance_nature === 'cr' ? t('general.owe_to') : t('general.owe_you')) : '' }}
                                                 </div>
