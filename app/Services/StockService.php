@@ -105,7 +105,7 @@ class StockService
                     'discount' => $stockOutData['discount'] ?? $stock->discount,
                     'date' => $stockOutData['date'] ?? now(),
                     'batch' => $stock->batch,
-                    'unit_measure_id' => $stock->unit_measure_id,
+                    'unit_measure_id' => $stockOutData['unit_measure_id'] ?? $stock->unit_measure_id,
                     'store_id' => $stock->store_id,
                     'source_type' => $sourceType,
                     'source_id' => $sourceId,
@@ -266,6 +266,7 @@ class StockService
             'free' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
+            'unit_measure_id' => 'nullable|exists:unit_measures,id',
             'date' => 'nullable|date',
             'size_id' => 'nullable|exists:sizes,id',
         ])->validate();

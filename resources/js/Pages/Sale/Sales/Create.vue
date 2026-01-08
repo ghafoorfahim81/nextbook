@@ -6,7 +6,6 @@ import axios from 'axios'
 import { useForm } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
-import NextTextarea from '@/Components/next/NextTextarea.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
 import PaymentDialog from '@/Components/next/PaymentDialog.vue';
 import { useI18n } from 'vue-i18n';
@@ -23,10 +22,6 @@ const { t } = useI18n();
 const showFilter = () => {
     showFilter.value = true;
 }
-
-
-
-
 const { toast } = useToast()
 
 const props = defineProps({
@@ -38,9 +33,9 @@ const props = defineProps({
     accounts: {type: Object, required: true},
     saleNumber: {type: String, required: true},
     items: {type: Object, required: true},
-    user_preferences: {type: Object, required: true},   
+    user_preferences: {type: Object, required: true},
 })
- 
+
 const form = useForm({
     number: props.saleNumber,
     customer_id: '',
@@ -191,21 +186,22 @@ const handleResetPayment = () => {
         method: '',
         amount: '',
         account_id: '',
-        note: '', 
+        note: '',
     }
 }
-const handleSelectChange = (field, value) => { 
+const handleSelectChange = (field, value) => {
     if(field === 'currency_id') {
         form.rate = value.exchange_rate;
     }
     if(field === 'sale_purchase_type_id' && value === 'cash') {
         handleResetPayment();
-    } 
+    }
     form[field] = value;
 };
 
 
 function handleSubmit(createAndNew = false) {
+
     if(form.items[0]?.selected_item === '' || form.items[0]?.selected_item === null) {
         notifySound('error');
         toast({
@@ -216,6 +212,7 @@ function handleSubmit(createAndNew = false) {
         })
         return;
     }
+
     else{
         const FormItems = form.items.filter(item => item.selected_item && item.item_id);
         form.item_list = FormItems;
@@ -225,6 +222,7 @@ function handleSubmit(createAndNew = false) {
         form.item_list.forEach(item => {
             item.unit_measure_id = item.selected_measure.id;
         });
+        console.log('this is item',form.item_list)
     }
     if (createAndNew) {
         form.transform((data) => ({ ...data, create_and_new: true })).post(route('sales.store'), {
@@ -280,7 +278,6 @@ function handleSubmit(createAndNew = false) {
             form.post(route('sales.store'), {
             onSuccess: () => {
                 notifySound('success');
-
                 toast({
                     title: 'Sale created successfully',
                     description: 'Sale created successfully',
@@ -333,7 +330,7 @@ onMounted(() => {
         sidebar.setOpen(false)
     }
     // Auto-generate bill number: latest + 1
-    ;(async () => { 
+    ;(async () => {
     })()
 })
 onUnmounted(() => {
@@ -376,9 +373,9 @@ const handleItemChange = async (index, selectedItem) => {
         row.expire_date = ''
         row.discount = ''
         row.free = ''
-        row.tax = '' 
+        row.tax = ''
         return
-    } 
+    }
     // Build available measures robustly by matching quantity id
     const selUM = selectedItem?.unitMeasure || {}
     const selectedQuantityId = selUM.quantity_id ?? selUM.quantity?.id
@@ -390,7 +387,7 @@ const handleItemChange = async (index, selectedItem) => {
     })
     row.selected_measure = selectedItem.unitMeasure
     row.item_id = selectedItem.id
-    row.on_hand = (selectedItem.on_hand * selectedItem.unitMeasure?.unit)/(selectedItem.unitMeasure?.unit) - row.quantity; 
+    row.on_hand = (selectedItem.on_hand * selectedItem.unitMeasure?.unit)/(selectedItem.unitMeasure?.unit) - row.quantity;
     // Set the base unit price - this is the price per base unit
     row.base_unit_price = selectedItem.unit_price ?? selectedItem.sale_price ?? 0
 
@@ -403,7 +400,7 @@ const handleItemChange = async (index, selectedItem) => {
         addRow()
     }
 
-    notifyIfDuplicate(index) 
+    notifyIfDuplicate(index)
 }
 const isRowEnabled = (index) => {
     if (!form.selected_ledger) return false
@@ -575,9 +572,9 @@ const user_preferences = computed(() => props.user_preferences?.data ?? props.us
 const general_fields = computed(() =>  user_preferences.value?.sale.general_fields ?? user_preferences.value.sale.general_fields ?? []).value
 const item_columns = computed(() => user_preferences.value?.sale.item_columns ?? user_preferences.value.sale.item_columns ?? []).value
 const sale_preferences = computed(() => user_preferences.value?.sale ?? user_preferences.value.sale ?? []).value
-const item_management = computed(() => user_preferences.value?.item_management ?? user_preferences.value.item_management ?? []).value 
+const item_management = computed(() => user_preferences.value?.item_management ?? user_preferences.value.item_management ?? []).value
 const spec_text = computed(() => item_management?.spec_text ?? item_management?.spec_text ?? 'batch').value
- 
+
 </script>
 
 <template>
@@ -620,7 +617,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                 />
                 <NextInput placeholder="Rate" v-if="general_fields.currency" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')"/>
                 <NextSelect
-                    :options="salePurchaseTypes"   
+                    :options="salePurchaseTypes"
                     v-if="general_fields.type"
                     v-model="form.selected_sale_purchase_type"
                     :clearable="false"
@@ -630,7 +627,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                     :reduce="salePurchaseType => salePurchaseType.id"
                     :floating-text="t('general.type')"
                     :error="form.errors?.sale_purchase_type_id"
-                /> 
+                />
                 <NextSelect
                     v-if="general_fields.store"
                     :options="stores.data"
@@ -687,7 +684,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.batch">
-                                <NextInput                                
+                                <NextInput
                                     v-model="item.batch"
                                     :disabled="!item.selected_item"
                                     :error="form.errors?.[`item_list.${index}.batch`]"
@@ -840,12 +837,12 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                  :errors="form.errors"
                  :accounts="props.accounts?.data || []"
                  :submitting="false"
-                :billTotal="transactionSummary.valueOfGoods" 
+                :billTotal="transactionSummary.valueOfGoods"
                  @update:open="(value) => showPaymentDialog = value"
                  @confirm="handlePaymentDialogConfirm"
                  @cancel="handlePaymentDialogCancel"
                  @update:payment="(payment) => form.payment = payment"
-             /> 
+             />
     </AppLayout>
 </template>
 

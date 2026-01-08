@@ -74,7 +74,8 @@ import {
     UserRound,
     Banknote,
     ShoppingBasket,
-    ArrowLeftRight
+    ArrowLeftRight,
+    PlusCircle
 } from 'lucide-vue-next'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -86,8 +87,7 @@ import { usePage, Link, router } from '@inertiajs/vue3'
 // @ts-ignore - Vue SFC default export shim
 import Toaster from '@/Components/ui/toast/Toaster.vue'
 import { HousePlug, ShoppingCart, Receipt as ReceiptIcon } from 'lucide-vue-next'
-import { useI18n } from 'vue-i18n'
-
+import QuickLinks from '@/Components/next/QuickLinks.vue'
 const { t } = useI18n()
 const { locale } = useI18n()
 const { user } = useAuth()
@@ -609,6 +609,8 @@ function logout() {
                     <Separator orientation="vertical" class="mr-2 h-4" />
                 </div>
                 <div class="flex items-center gap-3 pr-4">
+
+                    <QuickLinks />
                     <div v-if="isSuperAdmin" class="flex items-center max-start gap-2">
                         <label class="text-xs text-muted-foreground" for="branch-switcher">
                             {{ t('layout.branch') || 'Branch' }}
