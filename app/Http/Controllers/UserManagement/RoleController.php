@@ -107,6 +107,10 @@ class RoleController extends Controller
             return redirect()->route('roles.index')->with('error', 'Cannot delete role that has users assigned.');
         }
 
+        if ($role->slug === 'super-admin' || $role->slug === 'admin' || $role->slug === 'accountant' || $role->slug === 'clerk') {
+            return redirect()->route('roles.index')->with('error', 'Cannot delete super admin, admin, accountant, or clerk roles.');
+        }
+
         $role->delete();
         Cache::forget('roles');
         Cache::forget('users');
