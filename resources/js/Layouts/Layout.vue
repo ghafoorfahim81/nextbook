@@ -458,12 +458,20 @@ function logout() {
                             >
                                 <SidebarMenuItem>
                                     <CollapsibleTrigger as-child>
-                                        <SidebarMenuButton :tooltip="item.title">
+                                        <SidebarMenuButton
+                                            :tooltip="item.title"
+                                            :isActive="shouldExpandParent(item.items)"
+                                        >
                                             <component :is="item.icon" />
                                             <span
-                                            class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500"
-                                            >{{ item.title }}</span>
-                                            <component :is="chevronIcon" :class="isRTL ? 'mr-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' : 'ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90'" />
+                                                class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500"
+                                            >
+                                                {{ item.title }}
+                                            </span>
+                                            <component
+                                                :is="chevronIcon"
+                                                :class="isRTL ? 'mr-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' : 'ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90'"
+                                            />
                                         </SidebarMenuButton>
                                     </CollapsibleTrigger>
                                     <CollapsibleContent>
@@ -475,7 +483,7 @@ function logout() {
                                                 <SidebarMenuSubButton
                                                     :isActive="isMenuItemActive(subItem.url)"
                                                     as-child
-                                                    class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500"
+                                                    class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500 data-[active=true]:bg-transparent data-[active=true]:text-violet-500"
                                                 >
                                                     <Link :href="subItem.url">
                                                         <span>{{ subItem.title }}</span>
