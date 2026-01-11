@@ -24,7 +24,7 @@ class SetActiveBranch
             $branchId = null;
 
             // Super-admin can switch branches via session, but falls back to own branch
-            if (method_exists($user, 'hasRole') && $user->hasRole('super-admin')) {
+            if (method_exists($user, 'hasRole') && $user->roles->contains('slug', 'super-admin')) {
                 $branchId = $request->session()->get('active_branch_id', $user->branch_id);
             } else {
                 // Normal users are always locked to their own branch

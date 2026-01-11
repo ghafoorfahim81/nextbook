@@ -263,6 +263,7 @@ class HandleInertiaRequests extends Middleware
                     // Share permissions and roles as an array of names
                     'permissions' => $request->user()?->getAllPermissions()->pluck('name')->toArray(),
                     'roles' => $request->user()->getRoleNames()->toArray(),
+                    'role_slugs' => $request->user()->roles->pluck('slug')->toArray(),
                 ] : null,
             ],
             'flash' => [

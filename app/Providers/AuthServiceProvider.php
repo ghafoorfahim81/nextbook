@@ -113,7 +113,7 @@ class AuthServiceProvider extends ServiceProvider
 
         // Global super-admin bypass for all authorization checks.
         Gate::before(function ($user, string $ability) {
-            if (method_exists($user, 'hasRole') && $user->hasRole('super-admin')) {
+            if (method_exists($user, 'hasRole') && $user->roles->contains('slug', 'super-admin')) {
                 return true;
             }
 

@@ -16,7 +16,7 @@ class SwitchBranchController extends Controller
         $user = $request->user();
 
         // Only super-admins are allowed to switch branches.
-        if (!$user || !method_exists($user, 'hasRole') || !$user->hasRole('super-admin')) {
+        if (!$user || !method_exists($user, 'hasRole') || !$user->roles->contains('slug', 'super-admin')) {
             abort(403);
         }
 

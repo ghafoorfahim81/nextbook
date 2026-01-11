@@ -48,7 +48,7 @@ class RolePermissionSeeder extends Seeder
             'journals',
             'pos_transactions',
 
-            'dashboard', 
+            'dashboard',
             'preferences',
             'notifications',
             'projects',
@@ -148,21 +148,25 @@ class RolePermissionSeeder extends Seeder
         */
         $superAdmin = Role::firstOrCreate([
             'name' => 'super-admin',
+            'slug' => 'super-admin',
             'guard_name' => 'web',
         ]);
 
         $admin = Role::firstOrCreate([
             'name' => 'admin',
+            'slug' => 'admin',
             'guard_name' => 'web',
         ]);
 
         $accountant = Role::firstOrCreate([
             'name' => 'accountant',
+            'slug' => 'accountant',
             'guard_name' => 'web',
         ]);
 
         $clerk = Role::firstOrCreate([
             'name' => 'clerk',
+            'slug' => 'clerk',
             'guard_name' => 'web',
         ]);
 
