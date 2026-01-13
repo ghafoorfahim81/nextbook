@@ -66,7 +66,11 @@ class StoreController extends Controller
                 'error' => $message
             ]);
         }
-
+        if($store->is_main) {
+            return redirect()->route('stores.index')->with('error', 'You cannot delete the main store.');
+        }
+        Cache::forget('stores');
+        
         $store->delete();
         return redirect()->route('stores.index')->with('success', 'Store deleted successfully.');
     }
@@ -74,5 +78,6 @@ class StoreController extends Controller
     {
         $store->restore();
         return redirect()->route('stores.index')->with('success', 'Store restored successfully.');
+        Cache::forget('stores');
     }
 }
