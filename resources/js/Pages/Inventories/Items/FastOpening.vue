@@ -53,6 +53,25 @@ const form = useForm({
     }))
 })
 
+const searchTerm = ref('')
+
+const filteredItemIndexes = computed(() => {
+    if (!searchTerm.value) {
+        return form.items.map((_, idx) => idx)
+    }
+
+    const q = searchTerm.value.toLowerCase()
+
+    return form.items
+        .map((row, idx) => ({ row, idx }))
+        .filter(({ row }) => {
+            const name = (row.name ?? '').toLowerCase()
+            const batch = (row.batch ?? '').toLowerCase()
+            return name.includes(q) || batch.includes(q)
+        })
+        .map(({ idx }) => idx)
+})
+
 const removeRow = (idx) => {
     if (form.items.length <= 1) return
     form.items.splice(idx, 1)
@@ -97,19 +116,30 @@ const handleSubmit = () => {
     <AppLayout :title="t('item.fast_opening')" :sidebar-collapsed="true">
         <form @submit.prevent="handleSubmit" class="space-y-4">
             <div class="rounded-2xl border bg-card text-card-foreground shadow-sm p-1">
-                <div class="p-4 border-b">
-                    <h2 class="text-lg font-semibold">{{ t('item.fast_opening') }}</h2>
-                    <p class="text-sm text-muted-foreground">{{ t('item.remove_unwanted_items') }}</p>
-                </div>
+                <div class="p-4 border-b flex items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-semibold">{{ t('item.fast_opening') }}</h2>
+                        <p class="text-sm text-muted-foreground">{{ t('item.remove_unwanted_items') }}</p>
+                    </div>
 
+                </div>
+                <div class="w-full max-w-xs p-2">
+                    <NextInput
+                        v-model="searchTerm"
+                        type="text"
+                        :label="t('datatable.search')"
+                        :placeholder="t('item.search_item')"
+                    />
+                </div>
                 <div class="rounded-xl border bg-card shadow-sm overflow-x-auto p-3 mt-1 mb-1">
                     <table class="w-full table-fixed min-w-[1000px] entry-table border-separate border-spacing-y-2">
                         <thead class="sticky top-0 bg-muted/40">
-                        <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
+                        <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-white bg-primary">
                             <th class="px-1 py-1 w-5 min-w-5">#</th>
                             <th class="px-1 py-1 w-40">{{ t('item.item') }}</th>
                             <th class="px-1 py-1 w-36">{{ t('item.batch') }}</th>
                             <th class="px-1 py-1 w-28">{{ t('item.quantity') }}</th>
+                            <th class="px-1 py-1 w-28">{{ t('admin.unit_measure.unit_measure') }}</th>
                             <th class="px-1 py-1 w-44">{{ t('item.expire_date') }}</th>
                             <th class="px-1 py-1 w-40">{{ t('item.cost') }}</th>
                             <th class="px-1 py-1 w-44">{{ t('admin.store.store') }}</th>
@@ -118,39 +148,55 @@ const handleSubmit = () => {
                         </thead>
 
                         <tbody>
-                        <tr v-for="(item, index) in form.items" :key="item._key" class="border-t">
-                            <td class="px-1 py-2">{{ index + 1 }}</td>
+                        <tr
+                            v-for="(rowIndex, displayIndex) in filteredItemIndexes"
+                            :key="form.items[rowIndex]._key"
+                            class="border-t"
+                        >
+                            <td class="px-1 py-2">{{ displayIndex + 1 }}</td>
                             <!-- Item Name (readonly) -->
                             <td class="px-1 py-2 align-top">
-                                <NextInput v-model="item.name" :disabled="true" />
-                                <NextInput type="hidden" v-model="item.item_id" />
+                                <NextInput v-model="form.items[rowIndex].name" :disabled="true" />
+                                <NextInput type="hidden" v-model="form.items[rowIndex].item_id" />
                             </td>
 
                             <!-- Batch -->
                             <td class="px-1 py-2 align-top">
                                 <NextInput
-                                    v-model="item.batch"
+                                    v-model="form.items[rowIndex].batch"
                                     type="text"
-                                    :error="fieldError(index, 'batch')"
-                                    @keyup.enter.prevent="addRowAfter(index)"
+                                    :error="fieldError(rowIndex, 'batch')"
+                                    @keyup.enter.prevent="addRowAfter(rowIndex)"
                                 />
                             </td>
 
                             <!-- Quantity (editable) -->
                             <td class="px-1 py-2 align-top">
                                 <NextInput
-                                    v-model="item.quantity"
+                                    v-model="form.items[rowIndex].quantity"
                                     type="number"
                                     inputmode="decimal"
-                                    :error="fieldError(index, 'quantity')"
+                                    :error="fieldError(rowIndex, 'quantity')"
+                                />
+                            </td>
+                            <!-- Unit Measure -->
+                            <td class="px-1 py-2 align-top">
+                                <NextSelect
+                                    v-model="form.items[rowIndex].unit_measure_id"
+                                    :options="props.unitMeasures.data"
+                                    label-key="symbol"
+                                    :show-arrow="false"
+                                    :disabled="true"
+                                    value-key="id"
                                 />
                             </td>
                             <!-- Expiration Date -->
                             <td class="px-1 py-2 align-top">
-                                <NextInput
-                                    type="date"
-                                    v-model="item.expire_date"
-                                    :error="fieldError(index, 'expire_date')"
+                                <NextDate
+                                    v-model="form.items[rowIndex].expire_date"
+                                    :error="fieldError(rowIndex, 'expire_date')"
+                                    :placeholder="t('general.enter', { text: t('item.expire_date') })"
+                                    :disabled="true"
                                 />
                             </td>
 
@@ -158,27 +204,36 @@ const handleSubmit = () => {
                             <td class="px-1 py-2 align-top">
                                 <NextInput
                                     type="number"
-                                    v-model="item.cost"
+                                    v-model="form.items[rowIndex].cost"
                                     inputmode="decimal"
-                                    :error="fieldError(index, 'cost')"
+                                    :error="fieldError(rowIndex, 'cost')"
                                 />
                             </td>
 
                             <!-- Store Selection -->
                             <td class="px-1 py-2 align-top">
                                 <NextSelect
-                                    v-model="item.store_id"
+                                    v-model="form.items[rowIndex].store_id"
                                     :options="props.stores.data"
                                     label-key="name"
                                     value-key="id"
                                     :show-arrow="false"
-                                    :error="fieldError(index, 'store_id')"
+                                    :error="fieldError(rowIndex, 'store_id')"
                                 />
                             </td>
 
                             <!-- Actions -->
                             <td class="px-1 py-2 align-top">
-                                <Button type="button" variant="secondary" class="text-fuchsia-500" size="sm" @click="removeRow(index)" :disabled="form.items.length === 1">−</Button>
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    class="text-fuchsia-500"
+                                    size="sm"
+                                    @click="removeRow(rowIndex)"
+                                    :disabled="form.items.length === 1"
+                                >
+                                    −
+                                </Button>
                             </td>
                         </tr>
                         </tbody>
