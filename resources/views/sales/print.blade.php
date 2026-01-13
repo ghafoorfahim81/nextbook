@@ -258,9 +258,8 @@
 <body class="rtl">
 @php
     $companyName = $company->name_en ?? $company->name_fa ?? config('app.name');
-    $businessType = $company->business_type
-        ? \App\Enums\BusinessType::tryFrom($company->business_type)?->getLabel()
-        : null;
+    // business_type is already cast to the BusinessType enum on the Company model
+    $businessType = $company->business_type?->getLabel();
     $companyTagline = $businessType ?: ($company->invoice_description ?: 'کسب‌وکار');
     $companyLogo = $company->logo_url ?? null;
     $website = $company->website ?? config('app.url');
