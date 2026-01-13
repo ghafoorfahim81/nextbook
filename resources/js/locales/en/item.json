@@ -33,5 +33,6 @@
     "remove_unwanted_items": "Remove unwanted items using the “-” symbol.",
     "current_stock": "Current Stock",
     "in_records": "In Records",
-    "out_records": "Out Records"
+    "out_records": "Out Records",
+    "search_item": "Search Item"
 }
