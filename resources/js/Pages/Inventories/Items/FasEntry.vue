@@ -43,6 +43,9 @@ const { toast } = useToast()
 const stores        = computed(() => props.stores?.data ?? props.stores ?? [])
 const unitMeasures  = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 
+// Track the latest max code on the client so we can keep incrementing
+const currentMaxCode = ref(Number(props.maxCode))
+
 // Format code with leading zeros based on the number
 const formatCode = (number) => {
     const num = Number(number);
@@ -55,9 +58,9 @@ const formatCode = (number) => {
     }
 }
 
-const blankRow = () => ({
+const blankRow = (code = currentMaxCode.value) => ({
     name: '',
-    code: formatCode(props.maxCode),
+    code: formatCode(code),
     measure_id: null,
     purchase_price: '',
     sale_price: '',
@@ -73,7 +76,8 @@ const addRow = () => {
 }
 
 const form = useForm({
-    items: [blankRow()],
+    // Initialize 6 rows with auto-incrementing codes based on currentMaxCode
+    items: Array.from({ length: 6 }, (_, idx) => blankRow(currentMaxCode.value + idx)),
 })
 
 const fieldError = (idx, field) => form.errors?.[`items.${idx}.${field}`]
@@ -101,21 +105,41 @@ const removeRow = (idx) => {
     }
 }
 
+// Check if a row is effectively empty (ignoring auto code)
+const isEmptyRow = (row) => {
+    const keysToCheck = [
+        'name',
+        'measure_id',
+        'quantity',
+        'batch',
+        'expire_date',
+        'store_id',
+        'purchase_price',
+        'sale_price',
+    ]
+
+    return !keysToCheck.some((key) => {
+        const value = row[key]
+        return value !== '' && value !== null && value !== undefined
+    })
+}
+
+// Return a normalized copy of items without mutating the UI rows
 const normalize = () => {
-        form.items = form.items
-            .map(r => ({
-                ...r,
-                quantity: r.quantity === '' ? null : Number(r.quantity),
-                purchase_price: r.purchase_price === '' ? null : Number(r.purchase_price),
-                sale_price: r.sale_price === '' ? null : Number(r.sale_price),
-                category_id: r.category_id ?? null,
-                measure_id: r.measure_id ?? null,
-                company_id: r.company_id ?? null,
-                store_id: r.store_id ?? null,
-                expire_date: r.expire_date || null,
-            }))
-            // drop completely empty rows
-            .filter(r => Object.values({ ...r, _key: undefined }).some(v => v !== '' && v !== null))
+    return form.items
+        .map(r => ({
+            ...r,
+            quantity: r.quantity === '' ? null : Number(r.quantity),
+            purchase_price: r.purchase_price === '' ? null : Number(r.purchase_price),
+            sale_price: r.sale_price === '' ? null : Number(r.sale_price),
+            category_id: r.category_id ?? null,
+            measure_id: r.measure_id ?? null,
+            company_id: r.company_id ?? null,
+            store_id: r.store_id ?? null,
+            expire_date: r.expire_date || null,
+        }))
+        // drop rows that are effectively empty (ignore auto code)
+        .filter(r => !isEmptyRow(r))
 }
 
 
@@ -131,25 +155,46 @@ const notifySound = (type) => {
 }
 
 const handleSubmit = () => {
-    normalize()
+    const normalizedItems = normalize()
 
-    // ensure items is a clean array; drop helper keys
-    form.transform(data => ({
-        items: (data.items ?? []).map(({ _key, ...r }) => r)
+    // If everything is empty, there is nothing to submit
+    if (!normalizedItems.length) {
+        toast({
+            title: t('general.error'),
+            variant: 'error',
+            description: t('general.no_data_to_save') ?? 'Nothing to save. Please fill at least one row.',
+        })
+        return
+    }
+
+    // ensure items is a clean array; drop helper keys and send only non-empty rows
+    form.transform(() => ({
+        items: normalizedItems.map(({ _key, ...r }) => r)
     }))
 
-    const itemCount = form.items.length;
+    const itemCount = normalizedItems.length;
     form.post(route('item.fast.store'), {
         preserveScroll: true,
         // preserveState: true, // optional
         onSuccess: () => {
+            // Update currentMaxCode based on the highest code we just saved
+            const highestCode = normalizedItems.reduce((max, item) => {
+                const codeNum = Number(item.code) || 0
+                return codeNum > max ? codeNum : max
+            }, currentMaxCode.value)
+
+            currentMaxCode.value = highestCode + 1
+
             notifySound('success');
             toast({
                 title: t('general.success'),
                 variant: 'success',
                 description: itemCount + ' ' + t('item.items') + ' ' + t('general.created_successfully'),
             });
-            form.reset('items')
+
+            // Rebuild the items array so new rows start after the latest saved code
+            form.items = Array.from({ length: 6 }, (_, idx) => blankRow(currentMaxCode.value + idx))
+            form.clearErrors()
         },
         onError: () => {
             notifySound('error');
