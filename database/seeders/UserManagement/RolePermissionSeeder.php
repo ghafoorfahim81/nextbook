@@ -80,6 +80,7 @@ class RolePermissionSeeder extends Seeder
             'stock_receive',
             'stock_issue',
             'stock_adjustment',
+            'item_transfers',
 
             'formulas',
             'manufacturers',
@@ -120,6 +121,7 @@ class RolePermissionSeeder extends Seeder
             'payments',
             'account_transfers',
             'drawings',
+            'item_transfers',
         ];
 
         /*

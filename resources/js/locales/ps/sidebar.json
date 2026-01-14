@@ -29,7 +29,8 @@
   "inventory": {
     "item": "ایټم",
     "fast_entry": "چټک ثبت",
-    "fast_opening": "چټک افتتاح"
+    "fast_opening": "چټک افتتاح",
+    "item_transfer": "جنس لېږد"
   },
   "account": {
     "chart_of_account": "حسابونو جدول",
