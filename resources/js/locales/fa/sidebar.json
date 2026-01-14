@@ -35,7 +35,8 @@
   "inventory": {
     "item": "جنس/کالا",
     "fast_entry": "ثبت سریع",
-    "fast_opening": "افتتاحیه سریع"
+    "fast_opening": "افتتاحیه سریع",
+    "item_transfer": "انتقال جنس"
   },
   "account": {
     "chart_of_account": "چارت حساب",

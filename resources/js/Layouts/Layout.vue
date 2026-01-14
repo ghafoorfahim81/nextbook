@@ -258,6 +258,7 @@ const navMain = computed(() => [
             { title: t('sidebar.inventory.item'), url: '/items', permission: 'items.view_any' },
             { title: t('sidebar.inventory.fast_entry'), url: '/item-fast-entry', permission: ['items.view_any', 'items.create'] },
             { title: t('sidebar.inventory.fast_opening'), url: '/item-fast-opening', permission: ['items.view_any', 'items.create'] },
+            { title: t('sidebar.inventory.item_transfer'), url: '/item-transfers', permission: 'item_transfers.view_any' },
         ],
     },
     {

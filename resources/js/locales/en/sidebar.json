@@ -36,7 +36,8 @@
   "inventory": {
     "item": "Item",
     "fast_entry": "Fast Entry",
-    "fast_opening": "Fast Opening"
+    "fast_opening": "Fast Opening",
+    "item_transfer": "Item Transfer"
   },
   "account": {
     "chart_of_account": "Chart of Account",
