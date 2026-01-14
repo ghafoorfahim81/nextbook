@@ -144,6 +144,12 @@ Route::middleware([
     Route::resource('/expenses', \App\Http\Controllers\Expense\ExpenseController::class);
     Route::patch('/expenses/{expense}/restore', [\App\Http\Controllers\Expense\ExpenseController::class, 'restore'])->name('expenses.restore')->withTrashed();
 
+    // Item Transfers
+    Route::resource('/item-transfers', \App\Http\Controllers\ItemTransfer\ItemTransferController::class);
+    Route::patch('/item-transfers/{itemTransfer}/restore', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'restore'])->name('item-transfers.restore')->withTrashed();
+    Route::patch('/item-transfers/{itemTransfer}/complete', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'complete'])->name('item-transfers.complete');
+    Route::patch('/item-transfers/{itemTransfer}/cancel', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'cancel'])->name('item-transfers.cancel');
+
     // Branch switching (super-admin only)
     Route::post('/switch-branch', SwitchBranchController::class)
         ->name('branches.switch');
