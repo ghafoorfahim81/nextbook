@@ -18,6 +18,7 @@ import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next';
 import { Spinner } from "@/components/ui/spinner";
+import { router } from '@inertiajs/vue3';
 const { t } = useI18n();
 const showFilter = () => {
     showFilter.value = true;
@@ -104,21 +105,66 @@ const form = useForm({
             free: '',
             tax: '',
         },
+        {
+            item_id: '',
+            selected_item: '',
+            quantity: '',
+            unit_measure_id: '',
+            batches: [],
+            selected_batch: '',
+            expire_date: '',
+            unit_price: '',
+            selected_measure: '',
+            item_discount: '',
+            free: '',
+            tax: '',
+        },
+        {
+            item_id: '',
+            selected_item: '',
+            quantity: '',
+            unit_measure_id: '',
+            batches: [],
+            selected_batch: '',
+            expire_date: '',
+            unit_price: '',
+            selected_measure: '',
+            item_discount: '',
+            free: '',
+            tax: '',
+        },
     ],
 })
 
-// const items=ref([]);
+const itemOptions = ref([])
 
-// const loadItems = () => {
-//     axios.get(route('item.with.batches', { store_id: form.store_id })).then(response => {
-//         items.value = response.data;
-//         console.log('items', items.value);
-//     })
-// }
-
-onMounted(() => {
-    // loadItems();
+const itemSearchOptions = computed(() => {
+    const additionalParams = {}
+    if (form.store_id) {
+        additionalParams.store_id = form.store_id
+    }
+    return { additionalParams, limit: 200 }
 })
+
+const loadItemOptions = async (storeId = form.store_id) => {
+    if (!storeId) {
+        itemOptions.value = []
+        return
+    }
+
+    try {
+        const response = await axios.get(route('search.items-for-sale'), {
+            params: {
+                store_id: storeId,
+                limit: 50,
+            }
+        })
+        itemOptions.value = response.data?.data || []
+    } catch (error) {
+        console.error('Failed to load items', error)
+        itemOptions.value = []
+    }
+}
 
 // Watch for purchaseNumber prop changes and update form.number
 watch(() => props.saleNumber, (newPurchaseNumber) => {
@@ -167,6 +213,14 @@ watch(() => props.stores.data, (stores) => {
             form.store_id = baseStore.id;
         }
     }
+}, { immediate: true });
+
+watch(() => form.store_id, (storeId) => {
+    if (!storeId) {
+        itemOptions.value = []
+        return
+    }
+    loadItemOptions(storeId)
 }, { immediate: true });
 
 // Payment dialog state
@@ -376,6 +430,7 @@ const handleItemChange = async (index, selectedItem) => {
         row.tax = ''
         return
     }
+    row.batches = selectedItem.batches || []
     // Build available measures robustly by matching quantity id
     const selUM = selectedItem?.unitMeasure || {}
     const selectedQuantityId = selUM.quantity_id ?? selUM.quantity?.id
@@ -401,6 +456,12 @@ const handleItemChange = async (index, selectedItem) => {
     }
 
     notifyIfDuplicate(index)
+}
+
+const handleBatchChange = (index, batch) => {
+    const row = form.items[index]
+    row.batch = batch
+    row.expire_date = batch.expire_date 
 }
 const isRowEnabled = (index) => {
     if (!form.selected_ledger) return false
@@ -668,7 +729,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                             <td class="px-1 py-2 align-top w-5">{{ index + 1 }}</td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
-                                    :options="items.data"
+                                    :options="itemOptions"
                                     v-model="item.selected_item"
                                     label-key="name"
                                     :placeholder="t('general.search_or_select')"
@@ -676,23 +737,31 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                                     :error="form.errors?.item_id"
                                     :show-arrow="false"
                                     :searchable="true"
-                                    resource-type="items"
+                                    resource-type="items-for-sale"
                                     :search-fields="['name', 'code', 'generic_name', 'packing', 'barcode','fast_search']"
+                                    :search-options="itemSearchOptions"
                                     value-key="id"
                                     :reduce="item => item"
                                     @update:modelValue=" value => { handleItemChange(index, value); }"
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.batch">
-                                <NextInput
-                                    v-model="item.batch"
-                                    :disabled="!item.selected_item"
+                                <NextSelect
+                                    :options="item.selected_item.batches"
+                                    v-model="item.selected_batch"
+                                    label-key="batch"
+                                    :placeholder="t('general.search_or_select')"
+                                    id="batch_id"
                                     :error="form.errors?.[`item_list.${index}.batch`]"
-                                    @input="notifyIfDuplicate(index)"
+                                    :show-arrow="false"
+                                    value-key="batch"
+                                    :reduce="batch => batch"
+                                    @update:modelValue=" value => { handleBatchChange(index, value); }"
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none relative relative wq': !isRowEnabled(index) }" v-if="item_columns.expiry">
                                 <NextDate v-model="item.expire_date"
+                                disabled='true'
                                 :popover="popover"
                                 :error="form.errors?.[`item_list.${index}.expire_date`]"   />
                             </td>
