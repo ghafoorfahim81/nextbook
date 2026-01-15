@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { Button } from '@/Components/ui/button'
-    import { ref } from 'vue'
+    import { onBeforeUnmount, onMounted, ref } from 'vue'
     import {
       DropdownMenu,
       DropdownMenuContent,
@@ -13,6 +13,8 @@
     import { PlusCircle, ChartColumn, ShoppingBasket, Box, ShoppingCart, UserCog, ArrowLeftRight, Banknote, ReceiptIcon, CreditCard } from 'lucide-vue-next'
     import { useI18n } from 'vue-i18n'
     import { router } from '@inertiajs/vue3'
+    import { Kbd } from '@/Components/ui/kbd'
+    import { KbdGroup } from '@/Components/ui/kbd'
     const { t } = useI18n()
     const showStatusBar = ref(true)
     const showActivityBar = ref(false)
@@ -20,6 +22,36 @@
     const navigateTo = (url) => {
       router.visit(url)
     }
+    const shortcutRoutes = {
+      a: '/chart-of-accounts/create',
+      t: '/account-transfers/create',
+      i: '/items/create',
+      p: '/purchases/create',
+      s: '/sales/create',
+      c: '/customers/create',
+      e: '/expenses/create',
+      r: '/receipts/create',
+    }
+    const handleShortcuts = (event: KeyboardEvent) => {
+      if (!event.altKey || event.ctrlKey || event.metaKey) {
+        return
+      }
+      const target = event.target
+      if (
+        target instanceof HTMLElement &&
+        ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)
+      ) {
+        return
+      }
+      const match = shortcutRoutes[event.key.toLowerCase()]
+      if (!match) {
+        return
+      }
+      event.preventDefault()
+      navigateTo(match)
+    }
+    onMounted(() => window.addEventListener('keydown', handleShortcuts))
+    onBeforeUnmount(() => window.removeEventListener('keydown', handleShortcuts))
     const position = ref('bottom')
     </script>
 
@@ -41,7 +73,11 @@
                 <PlusCircle class="w-4 h-4" />
                 <span>{{ t('sidebar.main.account') }}</span>
               </div>
-              <ChartColumn class="w-4 h-4" />
+              <KbdGroup>
+                <Kbd>Alt + A</Kbd>
+                <!-- <span>+</span> -->
+                <!-- <Kbd>A</Kbd> -->
+              </KbdGroup>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -52,7 +88,9 @@
                 <PlusCircle class="w-4 h-4" />
                 <span>{{ t('sidebar.main.transfer') }}</span>
               </div>
-              <ArrowLeftRight class="w-4 h-4" />
+              <KbdGroup>
+                <Kbd>Alt + T</Kbd>
+              </KbdGroup>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -63,7 +101,9 @@
                 <PlusCircle class="w-4 h-4" />
                 <span>{{ t('sidebar.inventory.item') }}</span>
               </div>
-              <Box class="w-4 h-4" />
+              <KbdGroup>
+                <Kbd>Alt + I</Kbd>
+              </KbdGroup>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -74,7 +114,9 @@
                 <PlusCircle class="w-4 h-4" />
                 <span>{{ t('sidebar.main.purchase') }}</span>
               </div>
-              <ShoppingBasket class="w-4 h-4" />
+              <KbdGroup>
+                <Kbd>Alt + P</Kbd>
+              </KbdGroup>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -85,7 +127,9 @@
                 <PlusCircle class="w-4 h-4" />
                 <span>{{ t('sidebar.main.sale') }}</span>
               </div>
-              <ShoppingCart class="w-4 h-4" />
+              <KbdGroup>
+                <Kbd>Alt + S</Kbd>
+              </KbdGroup>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -96,7 +140,9 @@
                 <PlusCircle class="w-4 h-4" />
                 <span>{{ t('sidebar.ledger.customer') }}</span>
               </div>
-              <UserCog class="w-4 h-4" />
+              <KbdGroup>
+                <Kbd>Alt + C</Kbd>
+              </KbdGroup>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -107,7 +153,9 @@
                 <PlusCircle class="w-4 h-4" />
                 <span>{{ t('sidebar.ledger.supplier') }}</span>
               </div>
-              <UserCog class="w-4 h-4" />
+              <KbdGroup>
+                <Kbd>Alt + S</Kbd>
+              </KbdGroup>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -118,7 +166,9 @@
                 <PlusCircle class="w-4 h-4" />
                 <span>{{ t('sidebar.main.expense') }}</span>
               </div>
-              <Banknote class="w-4 h-4" />
+              <KbdGroup>
+                <Kbd>Alt + E</Kbd>
+              </KbdGroup>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -129,7 +179,9 @@
                 <PlusCircle class="w-4 h-4" />
                 <span>{{ t('sidebar.main.receipt') }}</span>
               </div>
-              <ReceiptIcon class="w-4 h-4" />
+              <KbdGroup>
+                <Kbd>Alt + R</Kbd>
+              </KbdGroup>
             </DropdownMenuItem>
 
             <DropdownMenuItem
@@ -140,7 +192,9 @@
                 <PlusCircle class="w-4 h-4" />
                 <span>{{ t('sidebar.main.payment') }}</span>
               </div>
-              <CreditCard class="w-4 h-4" />
+              <KbdGroup>
+                <Kbd>Alt + P</Kbd>
+              </KbdGroup>
             </DropdownMenuItem>
             <DropdownMenuItem
               @click="navigateTo('/item-transfers/create')"
@@ -150,7 +204,9 @@
                 <PlusCircle class="w-4 h-4" />
                 <span>{{ t('sidebar.inventory.item_transfer') }}</span>
               </div>
-              <Box class="w-4 h-4" />
+              <KbdGroup>
+                <Kbd>Alt + I</Kbd>
+              </KbdGroup>
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />

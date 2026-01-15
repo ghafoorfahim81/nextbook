@@ -27,6 +27,8 @@ export function useSearchResources() {
           minSearchLength = 2,
           cacheTimeout = 300000,
           debounceMs = 300,
+          limit = 20,
+          additionalParams = {},
         } = options
 
         // ✅ EMPTY SEARCH → signal caller to reset
@@ -60,7 +62,14 @@ export function useSearchResources() {
               }
 
               // 2️⃣ Cache
-              const cacheKey = `${resourceType}:${searchTerm}`
+              const paramsKey = serializeParams(additionalParams)
+              const fieldsKey = searchFields?.length ? `fields:${searchFields.join(',')}` : ''
+              const cacheKeyParts = [
+                `limit:${limit}`,
+                paramsKey ? `params:${paramsKey}` : '',
+                fieldsKey,
+              ].filter(Boolean)
+              const cacheKey = `${resourceType}:${searchTerm}:${cacheKeyParts.join('|') || 'default'}`
               const cached = searchCache.value.get(cacheKey)
 
               if (cached && Date.now() - cached.timestamp < cacheTimeout) {
@@ -115,8 +124,9 @@ export function useSearchResources() {
         } = options
 
         try {
-            const response = await fetch(`/api/search/${resourceType}`, {
+            const response = await fetch(`/search/${resourceType}`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
@@ -157,6 +167,16 @@ export function useSearchResources() {
         })
 
         return merged
+    }
+
+    const serializeParams = (params = {}) => {
+        const entries = Object.entries(params || {})
+        if (!entries.length) return ''
+
+        return entries
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([key, value]) => `${key}:${JSON.stringify(value)}`)
+            .join('|')
     }
 
     /**

@@ -12,14 +12,18 @@ use App\Models\Administration\Company;
 use App\Models\Administration\Brand;
 use App\Models\Administration\Category;
 use App\Models\Administration\Store;
-use App\Models\Administration\ExpenseCategory;
+use App\Models\Expense\ExpenseCategory;
 use App\Models\Inventory\Item;
+use App\Models\Inventory\Stock;
+use App\Models\Inventory\StockOut;
+use App\Models\Ledger\Ledger;
+use Illuminate\Support\Facades\Log;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
-
 class SearchController extends Controller
 {
     /**
@@ -28,7 +32,7 @@ class SearchController extends Controller
     public function search(Request $request, string $resourceType): JsonResponse|\Illuminate\Http\Resources\Json\AnonymousResourceCollection
     {
         $validator = Validator::make($request->all(), [
-            'search' => 'required|string|min:2|max:255',
+            'search' => 'nullable|string|min:2|max:255',
             'fields' => 'array',
             'limit' => 'integer|min:1|max:100',
         ]);
@@ -41,10 +45,23 @@ class SearchController extends Controller
             ], 422);
         }
 
-        $searchTerm = $request->input('search');
+        $searchTerm = $request->input('search', '');
         $fields = $request->input('fields', ['name']);
         $limit = $request->input('limit', 20);
         $additionalParams = $request->except(['search', 'fields', 'limit']);
+
+        if (!$searchTerm) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+                'meta' => [
+                    'resource_type' => $resourceType,
+                    'search_term' => $searchTerm,
+                    'total' => 0,
+                    'limit' => $limit
+                ]
+            ]);
+        }
 
         try {
             $results = $this->performSearch($resourceType, $searchTerm, $fields, $limit, $additionalParams);
@@ -201,12 +218,13 @@ class SearchController extends Controller
     /**
      * Search items for sales with store filtering and batch information
      */
-    public function searchItemsForSale(Request $request): JsonResponse
+    public function searchItemsForSale(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'item_id' => 'nullable|string|exists:items,id',
-            'store_id' => 'required|string|exists:stores,id',
-            'search' => 'nullable|string|min:1|max:255',
+            'store_id' => 'nullable|string|exists:stores,id',
+            'search' => 'nullable|string|max:255',
+            'search_query' => 'nullable|string|max:255',
+            'limit' => 'nullable|integer|min:1|max:250',
         ]);
 
         if ($validator->fails()) {
@@ -217,84 +235,21 @@ class SearchController extends Controller
             ], 422);
         }
 
-        $itemId = $request->input('item_id');
-        $storeId = $request->input('store_id');
-        $searchTerm = $request->input('search');
+        $searchTerm = trim($request->input('search_query') ?? $request->input('search', ''));
+        $limit = $this->resolveItemLimit($request->input('limit'), $searchTerm);
+        $requestedStoreId = trim((string) ($request->input('store_id') ?? ''));
+        $storeId = $requestedStoreId ?: Store::main()?->id;
+        if (!$storeId || !Store::query()->where('id', $storeId)->first()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Store not found',
+            ], 404);
+        }
 
         try {
-            $query = Item::query()
-                ->with(['unitMeasure', 'brand', 'category', 'stocks' => function ($query) use ($storeId) {
-                    $query->where('store_id', $storeId)
-                          ->where('quantity', '>', 0)
-                          ->with('stockOuts')
-                          ->orderBy('date', 'asc')
-                          ->orderBy('created_at', 'asc');
-                }])
-                ->whereHas('stocks', function ($q) use ($storeId) {
-                    $q->where('store_id', $storeId)
-                      ->where('quantity', '>', 0);
-                });
-
-            // Filter by specific item_id if provided
-            if ($itemId) {
-                $query->where('id', $itemId);
-            }
-
-            // Add search term filter if provided
-            if ($searchTerm) {
-                $searchTerm = '%' . strtolower($searchTerm) . '%';
-                $query->where(function ($q) use ($searchTerm) {
-                    $q->whereRaw('LOWER(name) iLike ?', [$searchTerm])
-                      ->orWhereRaw('LOWER(code) iLike ?', [$searchTerm])
-                      ->orWhereRaw('LOWER(generic_name) iLike ?', [$searchTerm])
-                      ->orWhereRaw('LOWER(barcode) iLike ?', [$searchTerm])
-                      ->orWhereRaw('LOWER(fast_search) iLike ?', [$searchTerm]);
-                });
-            }
-
-            $items = $query->get()->map(function ($item) use ($storeId) {
-                $stocks = $item->stocks->filter(function ($stock) {
-                    // Calculate available quantity (total stock - stock outs)
-                    $stock->available_quantity = $stock->quantity - $stock->stockOuts->sum('quantity');
-                    return $stock->available_quantity > 0;
-                })->values();
-
-                $totalAvailable = $stocks->sum('available_quantity');
-
-                // Get unique batches with their available quantities
-                $batches = $stocks->map(function ($stock) {
-                    return [
-                        'batch' => $stock->batch,
-                        'expire_date' => $stock->expire_date?->format('Y-m-d'),
-                        'available_quantity' => $stock->available_quantity,
-                        'unit_price' => $stock->unit_price,
-                        'cost' => $stock->cost,
-                    ];
-                })->filter(function ($batch) {
-                    return $batch['available_quantity'] > 0;
-                })->values();
-
-                return [
-                    'id' => $item->id,
-                    'name' => $item->name,
-                    'code' => $item->code,
-                    'generic_name' => $item->generic_name,
-                    'packing' => $item->packing,
-                    'barcode' => $item->barcode,
-                    'unit_measure_id' => $item->unit_measure_id,
-                    'unit_measure_name' => $item->unitMeasure?->name,
-                    'brand_name' => $item->brand?->name,
-                    'category_name' => $item->category?->name,
-                    'purchase_price' => $item->purchase_price,
-                    'cost' => $item->cost,
-                    'sale_price' => $item->sale_price,
-                    'rate_a' => $item->rate_a,
-                    'rate_b' => $item->rate_b,
-                    'rate_c' => $item->rate_c,
-                    'on_hand' => $totalAvailable, // Total available quantity across all batches
-                    'batches' => $batches, // Array of available batches
-                    'has_batches' => count($batches) > 0,
-                ];
+            $cacheKey = $this->makeItemCacheKey($storeId, $searchTerm, $limit);
+            $items = Cache::remember($cacheKey, now()->addMinutes(2), function () use ($storeId, $searchTerm, $limit) {
+                return $this->gatherItemsForStore($storeId, $searchTerm, $limit);
             });
 
             return response()->json([
@@ -302,10 +257,10 @@ class SearchController extends Controller
                 'data' => $items,
                 'meta' => [
                     'store_id' => $storeId,
-                    'item_id' => $itemId,
-                    'search_term' => $searchTerm,
-                    'total' => $items->count()
-                ]
+                    'search_query' => $searchTerm,
+                    'limit' => $limit,
+                    'total' => count($items),
+                ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -314,6 +269,150 @@ class SearchController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    private function resolveItemLimit(?int $limit, string $searchTerm): int
+    {
+        $default = $searchTerm ? 200 : 50;
+        $limit = $limit ?: $default;
+        return max(1, min(250, $limit));
+    }
+
+    private function makeItemCacheKey(string $storeId, string $searchTerm, int $limit): string
+    {
+        $hash = $searchTerm ? md5($searchTerm) : 'all';
+        return "items_with_batches:store:{$storeId}:search:{$hash}:limit:{$limit}";
+    }
+
+    private function gatherItemsForStore(string $storeId, string $searchTerm, int $limit): array
+    {
+        $searchableFields = ['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search'];
+
+        $query = Item::query()
+            ->select([
+                'id',
+                'name',
+                'code',
+                'generic_name',
+                'packing',
+                'barcode',
+                'unit_measure_id',
+                'brand_id',
+                'category_id',
+                'colors',
+                'size_id',
+                'purchase_price',
+                'sale_price',
+                'rate_a',
+                'rate_b',
+                'rate_c',
+                'rack_no',
+                'fast_search',
+            ])
+            ->with([
+                'unitMeasure:id,name,unit,quantity_id',
+                'brand:id,name',
+                'category:id,name',
+                'size:id,name',
+            ])
+            ->when($searchTerm, function ($query) use ($searchTerm, $searchableFields) {
+                $term = '%' . strtolower($searchTerm) . '%';
+                $query->where(function ($builder) use ($searchableFields, $term) {
+                    foreach ($searchableFields as $field) {
+                        $builder->orWhereRaw("LOWER({$field}) iLike ?", [$term]);
+                    }
+                });
+            })
+            ->orderBy('name')
+            ->limit($limit);
+
+        $items = $query->get();
+        if ($items->isEmpty()) {
+            return [];
+        }
+
+        $itemIds = $items->pluck('id')->all();
+
+        $stocks = Stock::query()
+            ->select(['id', 'item_id', 'batch', 'expire_date', 'quantity'])
+            ->where('store_id', $storeId)
+            ->whereIn('item_id', $itemIds)
+            ->get();
+
+        $stockOuts = StockOut::query()
+            ->select(['stock_id', 'item_id', 'quantity'])
+            ->where('store_id', $storeId)
+            ->whereIn('item_id', $itemIds)
+            ->get()
+            ->groupBy('stock_id')
+            ->map(fn ($group) => (float) $group->sum('quantity'));
+
+        $stocksByItem = $stocks->groupBy('item_id');
+
+        return $items->map(function (Item $item) use ($stocksByItem, $stockOuts) {
+            $itemStocks = $stocksByItem->get($item->id, collect());
+            $batchSummaries = [];
+            $nonBatchOnHand = 0;
+
+            foreach ($itemStocks as $stock) {
+                $available = max(0, (float) $stock->quantity - ($stockOuts[$stock->id] ?? 0));
+                if ($available <= 0) {
+                    continue;
+                }
+
+                $batchKey = trim((string) ($stock->batch ?? ''));
+                if ($batchKey !== '') {
+                    if (!isset($batchSummaries[$batchKey])) {
+                        $batchSummaries[$batchKey] = [
+                            'batch' => $batchKey,
+                            'expire_date' => $stock->expire_date,
+                            'on_hand' => 0,
+                        ];
+                    }
+                    $batchSummaries[$batchKey]['expire_date'] = $batchSummaries[$batchKey]['expire_date'] ?? $stock->expire_date;
+                    $batchSummaries[$batchKey]['on_hand'] += $available;
+                } else {
+                    $nonBatchOnHand += $available;
+                }
+            }
+
+            $batches = array_values(array_map(function ($batch) {
+                return [
+                    'batch' => $batch['batch'],
+                    'expire_date' => $batch['expire_date'],
+                    'on_hand' => round($batch['on_hand'] ?? 0, 2),
+                ];
+            }, $batchSummaries));
+
+            $batchOnHand = array_reduce($batches, fn ($carry, $batch) => $carry + ($batch['on_hand'] ?? 0), 0);
+            $totalOnHand = round($batchOnHand + $nonBatchOnHand, 2);
+            $hasBatches = count($batches) > 0;
+
+            return [
+                'id' => $item->id,
+                'name' => $item->name,
+                'code' => $item->code,
+                'generic_name' => $item->generic_name,
+                'packing' => $item->packing,
+                'barcode' => $item->barcode,
+                'unit_measure_id' => $item->unit_measure_id,
+                'unitMeasure' => $item->unitMeasure,
+                'brand' => $item->brand,
+                'category' => $item->category,
+                'colors' => $item->colors,
+                'size' => $item->size,
+                'purchase_price' => $item->purchase_price,
+                'sale_price' => $item->sale_price,
+                'rate_a' => $item->rate_a,
+                'rate_b' => $item->rate_b,
+                'rate_c' => $item->rate_c,
+                'rack_no' => $item->rack_no,
+                'fast_search' => $item->fast_search,
+                'batches' => $batches,
+                'has_batches' => $hasBatches,
+                'on_hand' => $totalOnHand,
+            ];
+        })->values()->all();
     }
     /**
      * Search currencies

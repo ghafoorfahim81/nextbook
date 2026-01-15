@@ -1,9 +1,10 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import { useForm, usePage } from '@inertiajs/vue3'
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@/Components/ui/toast/use-toast'
+import axios from 'axios'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
@@ -16,7 +17,7 @@ const { toast } = useToast()
 
 const page = usePage()
 const stores = computed(() => page.props.stores?.data || page.props.stores || [])
-const items = computed(() => page.props.items?.data || page.props.items || [])
+const itemOptions = ref([])
 const unitMeasures = computed(() => page.props.unitMeasures?.data || page.props.unitMeasures || [])
 
 const createEmptyRow = () => ({
@@ -41,6 +42,52 @@ const form = useForm({
   transfer_cost: '',
   remarks: '',
   items: [createEmptyRow(), createEmptyRow(), createEmptyRow()],
+})
+
+const itemSearchOptions = computed(() => {
+  const additionalParams = {}
+  if (form.from_store_id) {
+    additionalParams.store_id = form.from_store_id
+  }
+  return { additionalParams, limit: 200 }
+})
+
+const loadItemOptions = async () => {
+  if (!form.from_store_id) {
+    itemOptions.value = []
+    return
+  }
+
+  try {
+    const response = await axios.post(route('api.search.items-for-sale'), {
+      store_id: form.from_store_id,
+      limit: 50,
+    })
+    itemOptions.value = response.data?.data || []
+  } catch (error) {
+    console.error('Failed to load items', error)
+    itemOptions.value = []
+  }
+}
+
+watch(
+  stores,
+  (availableStores = []) => {
+    if (availableStores.length && !form.from_store_id) {
+      const preferredStore = availableStores.find(str => str.is_main) || availableStores[0]
+      form.selected_from_store = preferredStore || null
+      form.from_store_id = preferredStore?.id || ''
+    }
+  },
+  { immediate: true }
+)
+
+watch(() => form.from_store_id, (storeId) => {
+  if (!storeId) {
+    itemOptions.value = []
+    return
+  }
+  loadItemOptions()
 })
 
 const sameStoreError = computed(() => {
@@ -270,7 +317,7 @@ onUnmounted(() => {
               <td class="px-1 py-2 align-top w-5">{{ index + 1 }}</td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                 <NextSelect
-                  :options="items"
+                  :options="itemOptions"
                   v-model="item.selected_item"
                   label-key="name"
                   :placeholder="t('general.search_or_select')"
@@ -278,10 +325,11 @@ onUnmounted(() => {
                   :error="form.errors?.[`items.${index}.item_id`]"
                   :show-arrow="false"
                   :searchable="true"
-                  resource-type="items"
+                  resource-type="items-for-sale"
                   :search-fields="['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search']"
                   value-key="id"
                   :reduce="itemValue => itemValue"
+                  :search-options="itemSearchOptions"
                   @update:modelValue="value => { handleItemChange(index, value) }"
                 />
               </td>

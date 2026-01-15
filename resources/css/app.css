@@ -158,7 +158,142 @@
       --chart-3: 260 75% 75%;
       --chart-4: 45 80% 55%;
       --chart-5: 210 70% 60%;
+
+
     }
+
+    /* =========================
+   VUE PERSIAN DATE PICKER – DARK MODE
+   ========================= */
+
+    .dark .vpd-container,
+    .dark .vpd-calendar,
+    .dark .vpd-content {
+        background-color: #32264e !important; /* slate-900 */
+        color: #e5e7eb !important;
+    }
+
+
+    /* Month label */
+    .dark .vpd-month-name {
+        color: #e5e7eb !important;
+    }
+
+    /* Weekdays */
+    .dark .vpd-weekday {
+        color: #8b5cf6 !important;
+    }
+
+    /* Days */
+    .dark .vpd-day,
+    .dark .vpd-date {
+        color: #e5e7eb !important;
+    }
+
+    /* Hover */
+
+
+    /* Selected */
+    .dark .vpd-day.selected,
+    .dark .vpd-date.selected,
+    .dark .vpd-day.is-selected {
+        background-color: #8b5cf6 !important;
+        color: #ffffff !important;
+    }
+
+    /* Today */
+    .dark .vpd-day.today,
+    .dark .vpd-date.today {
+        border: 1px solid #8b5cf6 !important;
+    }
+
+    /* Disabled */
+    .dark .vpd-day.disabled,
+    .dark .vpd-date.disabled {
+        color: #8b5cf6 !important;
+    }
+
+    /* Navigation arrows */
+    .dark .vpd-prev,
+    .dark .vpd-next,
+    .dark .vpd-arrow {
+        color: #e5e7eb !important;
+    }
+
+    /* Month / year picker */
+    .dark .vpd-month-item,
+    .dark .vpd-year-item {
+        color: #e5e7eb !important;
+    }
+
+    .dark .vpd-month-item:hover,
+    .dark .vpd-year-item:hover {
+        background-color: #334155 !important;
+    }
+
+    .dark .vpd-month-item.active,
+    .dark .vpd-year-item.active {
+        background-color: #8b5cf6 !important;
+        color: #ffffff !important;
+    }
+
+    /* Clear icon */
+    .dark .vpd-clear-btn {
+        color: #c084fc !important;
+    }
+    /* =========================
+   DATE PICKER INPUT – DARK MODE
+   ========================= */
+
+    /* Input wrapper */
+    .dark .vpd-input-group {
+        background-color: #1e1b2e !important;
+        border: 2px solid #3a2679 !important;
+        border-radius: 6px;
+    }
+
+    /* Actual input */
+    .dark .vpd-input-group input,
+    .dark .vpd-input-group .vpd-input {
+        background-color: #1e1b2e !important;
+        color: #e5e7eb !important;
+        border: none !important;
+    }
+
+    /* Placeholder */
+    .dark .vpd-input-group input::placeholder {
+        color: #9ca3af !important;
+    }
+
+    /* Calendar icon button */
+    .dark .vpd-input-group .vpd-icon-btn {
+        background-color: #8b5cf6 !important; /* violet */
+        color: #ffffff !important;
+        border: none !important;
+    }
+
+    /* Clear (X) button */
+    .dark .vpd-input-group .vpd-clear-btn {
+        color: #c084fc !important;
+    }
+
+    /* Hover & focus */
+    .dark .vpd-input-group:hover {
+        border-color: #8b5cf6 !important;
+    }
+
+    .dark .vpd-input-group input:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Disabled state */
+    .dark .vpd-input-group input:disabled {
+        background-color: #2a2540 !important;
+        color: #9ca3af !important;
+    }
+
+
   }
 
 @layer base {
