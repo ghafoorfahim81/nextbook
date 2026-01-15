@@ -44,6 +44,11 @@ return [
         'approved' => 'Approved',
         'rejected' => 'Rejected',
     ],
+    'transfer_status' => [
+        'pending' => 'Pending',
+        'completed' => 'Completed',
+        'cancelled' => 'Cancelled',
+    ],
     'user_status' => [
         'active' => 'Active',
         'inactive' => 'Inactive',

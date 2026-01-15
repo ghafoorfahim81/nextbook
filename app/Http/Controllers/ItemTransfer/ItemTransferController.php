@@ -70,11 +70,6 @@ class ItemTransferController extends Controller
             }, $validated['items']);
         }
 
-        // Set branch_id from authenticated user if not provided
-        if (!isset($validated['branch_id'])) {
-            $validated['branch_id'] = auth()->user()->branch_id;
-        }
-
         $transfer = $this->transferService->createTransfer($validated);
 
         if ((bool) $request->create_and_new) {
@@ -101,6 +96,9 @@ class ItemTransferController extends Controller
      */
     public function edit(Request $request, ItemTransfer $itemTransfer)
     {
+        if ($itemTransfer->status === TransferStatus::COMPLETED || $itemTransfer->status === TransferStatus::CANCELLED) {
+            return redirect()->back()->withErrors(['error' => 'Cannot edit a completed or cancelled transfer.']);
+        }
         $itemTransfer->load(['fromStore', 'toStore', 'items.item', 'items.unitMeasure']);
 
         return inertia('ItemTransfer/ItemTransfers/Edit', [

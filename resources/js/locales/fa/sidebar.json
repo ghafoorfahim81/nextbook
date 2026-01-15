@@ -15,7 +15,8 @@
     "transfer": "انتقال حساب",
     "user_management": "مدیریت کاربران",
     "preferences": "تنظیمات",
-    "expense": "مصارف"
+    "expense": "مصارف",
+    "item_transfer": "انتقال جنس"
   },
   "expense": {
     "expense": "مصارف",
