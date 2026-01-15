@@ -23,6 +23,8 @@ return new class extends Migration
             $table->ulid('measure_id')->index();
             $table->decimal('unit_price', 19, 4)->nullable();
             $table->ulid('branch_id')->index();
+            $table->ulid('created_by')->index();
+            $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->timestamps();
             $table->softDeletes();
@@ -34,6 +36,8 @@ return new class extends Migration
             $table->foreign('measure_id')->references('id')->on('unit_measures');
             $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('deleted_by')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('created_by')->references('id')->on('users');
+            $table->foreign('updated_by')->references('id')->on('users');
         });
 
         Schema::enableForeignKeyConstraints();

@@ -29,7 +29,6 @@ class ItemTransferStoreRequest extends FormRequest
             'to_store_id' => ['required', 'string', 'exists:stores,id', 'different:from_store_id'],
             'status' => ['nullable', 'string', Rule::in(TransferStatus::values())],
             'transfer_cost' => ['nullable', 'numeric', 'min:0'],
-            'branch_id' => ['required', 'string', 'exists:branches,id'],
             'remarks' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.item_id' => ['required', 'string', 'exists:items,id'],

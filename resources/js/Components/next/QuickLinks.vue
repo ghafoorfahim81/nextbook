@@ -142,7 +142,16 @@
               </div>
               <CreditCard class="w-4 h-4" />
             </DropdownMenuItem>
-
+            <DropdownMenuItem
+              @click="navigateTo('/item-transfers/create')"
+              class="cursor-pointer flex items-center justify-between rtl:flex-row-reverse"
+            >
+              <div class="flex items-center gap-2 rtl:flex-row-reverse">
+                <PlusCircle class="w-4 h-4" />
+                <span>{{ t('sidebar.inventory.item_transfer') }}</span>
+              </div>
+              <Box class="w-4 h-4" />
+            </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
         </DropdownMenuContent>

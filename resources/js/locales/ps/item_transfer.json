@@ -1,0 +1,16 @@
+{
+  "item_transfer": "Item Transfer",
+  "item_transfers": "Item Transfers",
+  "from_store": "From Store",
+  "to_store": "To Store",
+  "transfer_cost": "Transfer Cost",
+  "transfer_details": "Transfer Details",
+  "transfer_items": "Transfer Items",
+  "stores_cannot_be_same": "From and To stores cannot be the same.",
+  "cancel_transfer": "Cancel transfer",
+  "complete_transfer": "Complete transfer",
+  "completed_successfully": "Transfer completed successfully",
+  "cancelled_successfully": "Transfer cancelled successfully",
+  "cannot_edit_completed_or_cancelled_transfer": "Cannot edit a completed or cancelled transfer"
+}
+

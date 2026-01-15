@@ -30,7 +30,6 @@ class ItemTransferService
                 'to_store_id' => $data['to_store_id'],
                 'status' => TransferStatus::PENDING,
                 'transfer_cost' => $data['transfer_cost'] ?? null,
-                'branch_id' => $data['branch_id'],
                 'remarks' => $data['remarks'] ?? null,
             ]);
 
@@ -44,7 +43,6 @@ class ItemTransferService
                     'quantity' => $itemData['quantity'],
                     'measure_id' => $itemData['measure_id'],
                     'unit_price' => $itemData['unit_price'] ?? null,
-                    'branch_id' => $data['branch_id'],
                 ]);
             }
 
@@ -92,7 +90,6 @@ class ItemTransferService
                         'quantity' => $itemData['quantity'],
                         'measure_id' => $itemData['measure_id'],
                         'unit_price' => $itemData['unit_price'] ?? null,
-                        'branch_id' => $transfer->branch_id,
                     ]);
                 }
             }
@@ -196,9 +193,9 @@ class ItemTransferService
         foreach ($items as $item) {
             $itemId = is_array($item) ? $item['item_id'] : $item->item_id;
             $quantity = is_array($item) ? $item['quantity'] : $item->quantity;
-            
+
             $stockLevel = $this->stockService->getStockLevel($itemId, $fromStoreId);
-            
+
             if ($stockLevel['available'] < $quantity) {
                 $itemModel = \App\Models\Inventory\Item::find($itemId);
                 $itemName = $itemModel->name ?? 'Unknown';
