@@ -28,6 +28,7 @@ const createEmptyRow = () => ({
   measure_id: '',
   selected_measure: null,
   batch: '',
+  selected_batch: null,
   expire_date: '',
   unit_price: '',
   base_unit_price: '',
@@ -62,22 +63,23 @@ const itemSearchOptions = computed(() => {
   return { additionalParams, limit: 200 }
 })
 
-const loadItemOptions = async () => {
-  if (!form.from_store_id) {
-    itemOptions.value = []
-    return
-  }
-
-  try {
-    const response = await axios.post(route('api.search.items-for-sale'), {
-      store_id: form.from_store_id,
-      limit: 50,
-    })
-    itemOptions.value = response.data?.data || []
-  } catch (error) {
-    console.error('Failed to load items', error)
-    itemOptions.value = []
-  }
+const loadItemOptions = async (storeId = form.store_id) => {
+    if (!storeId) {
+        itemOptions.value = []
+        return
+    }
+    try {
+        const response = await axios.get(route('search.items-for-sale'), {
+            params: {
+                store_id: storeId,
+                limit: 50,
+            }
+        })
+        itemOptions.value = response.data?.data || []
+    } catch (error) {
+        console.error('Failed to load items', error)
+        itemOptions.value = []
+    }
 }
 
 watch(
@@ -92,13 +94,14 @@ watch(
   { immediate: true }
 )
 
+
 watch(() => form.from_store_id, (storeId) => {
-  if (!storeId) {
-    itemOptions.value = []
-    return
-  }
-  loadItemOptions()
-})
+    if (!storeId) {
+        itemOptions.value = []
+        return
+    }
+    loadItemOptions(storeId)
+}, { immediate: true });
 
 const sameStoreError = computed(() => {
   return form.from_store_id && form.to_store_id && form.from_store_id === form.to_store_id
@@ -139,6 +142,7 @@ const handleItemChange = (index, selectedItem) => {
   row.item_id = selectedItem.id
   row.base_unit_price = selectedItem.purchase_price ?? selectedItem.unit_price ?? 0
 
+  
   const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1
   const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
   row.unit_price = (row.base_unit_price / baseUnit) * selectedUnit
@@ -147,6 +151,13 @@ const handleItemChange = (index, selectedItem) => {
     addRow()
   }
 }
+
+const handleBatchChange = (index, batch) => {
+    const row = form.items[index]
+    row.batch = batch?.batch
+    row.expire_date = batch?.expire_date
+}
+
 
 const isRowEnabled = (index) => {
   if (!form.selected_from_store || !form.selected_to_store) return false
@@ -179,6 +190,19 @@ const rowTotal = (index) => {
 const totalRows = computed(() => form.items.length)
 const totalQuantity = computed(() => form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0))
 const totalAmount = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.quantity, 0) * toNum(item.unit_price, 0)), 0))
+
+
+const onhand = (index) => {
+    const item = form.items[index]
+    if (!item || !item.selected_item) return ''
+    const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1
+    const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
+    const onHand = item.selected_batch ? Number(item.selected_batch.on_hand) : Number(item.on_hand) || 0
+    const converted = (onHand * baseUnit) / selectedUnit
+    const free = Number(item.free) || 0
+    const qty = Number(item.quantity) || 0
+    return converted - free - qty;
+}
 
 function handleSubmit(createAndNew = false) {
   if (sameStoreError.value) {
@@ -314,6 +338,7 @@ onUnmounted(() => {
               <th class="px-1 py-1 w-32">{{ t('general.batch') }}</th>
               <th class="px-1 py-1 w-36">{{ t('general.expire_date') }}</th>
               <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
+              <th class="px-1 py-1 w-24">{{ t('general.on_hand') }}</th>
               <th class="px-1 py-1 w-24">{{ t('general.unit') }}</th>
               <th class="px-1 py-1 w-24">{{ t('general.unit_price') }}</th>
               <th class="px-1 py-1 w-24">{{ t('general.total') }}</th>
@@ -344,17 +369,23 @@ onUnmounted(() => {
                 />
               </td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                <NextInput
-                  v-model="item.batch"
-                  :disabled="!item.selected_item"
-                  :error="form.errors?.[`items.${index}.batch`]"
+                <NextSelect
+                    :options="item.selected_item?.batches"
+                    v-model="item.selected_batch"
+                    label-key="batch"
+                    :placeholder="t('general.search_or_select')"
+                    id="batch_id"
+                    :error="form.errors?.[`items.${index}.batch`]"
+                    :show-arrow="false"
+                    value-key="batch"
+                    :reduce="batch => batch"
+                    @update:modelValue=" value => { handleBatchChange(index, value); }"
                 />
               </td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                <NextDate
-                  v-model="item.expire_date"
-                  :error="form.errors?.[`items.${index}.expire_date`]"
-                />
+                <NextDate v-model="item.expire_date"
+                disabled='true'
+                :error="form.errors?.[`items.${index}.expire_date`]"   />
               </td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                 <NextInput
@@ -365,6 +396,9 @@ onUnmounted(() => {
                   inputmode="decimal"
                   :error="form.errors?.[`items.${index}.quantity`]"
                 />
+              </td>
+              <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                <span :title="String(onhand(index))">{{ Number(onhand(index)).toFixed(1) }}</span>
               </td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                 <NextSelect
