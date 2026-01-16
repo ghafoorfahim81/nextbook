@@ -151,6 +151,7 @@ const loadItemOptions = async (storeId = form.store_id) => {
         itemOptions.value = []
         return
     }
+    console.log('this is storeId', storeId)
 
     try {
         const response = await axios.get(route('search.items-for-sale'), {
@@ -182,6 +183,7 @@ watch(() => props.ledgers?.data, (ledgers) => {
         }
     }
 }, { immediate: true });
+
 // Set base currency as default
 watch(() => props.currencies?.data, (currencies) => {
     if (currencies && !form.currency_id) {
@@ -245,13 +247,27 @@ const handleResetPayment = () => {
 }
 const handleSelectChange = (field, value) => {
     if(field === 'currency_id') {
-        form.rate = value.exchange_rate;
+        form.rate = value?.exchange_rate;
     }
     if(field === 'sale_purchase_type_id' && value === 'cash') {
         handleResetPayment();
     }
-    form[field] = value;
+    form[field] = value?.id;
 };
+
+const storeChange = (value) => {
+    loadItemOptions(value);
+    form.store_id = value;
+    form.items.forEach(item => {
+        item.selected_item = '';
+        item.selected_batch = '';
+        item.expire_date = '';
+        item.quantity = '';
+        item.unit_price = '';
+        item.selected_measure = '';
+        item.item_discount = '';
+    });
+}
 
 
 function handleSubmit(createAndNew = false) {
@@ -259,8 +275,8 @@ function handleSubmit(createAndNew = false) {
     if(form.items[0]?.selected_item === '' || form.items[0]?.selected_item === null) {
         notifySound('error');
         toast({
-            title: 'Please add items',
-            description: 'Please add at least one item to create a sale',
+            title: t('general.please_add_items'),
+            description: t('general.please_add_at_least_one_item_to_create_sale'),
             variant: 'destructive',
             class:'bg-yellow-600 text-white',
         })
@@ -276,7 +292,6 @@ function handleSubmit(createAndNew = false) {
         form.item_list.forEach(item => {
             item.unit_measure_id = item.selected_measure.id;
         });
-        console.log('this is item',form.item_list)
     }
     if (createAndNew) {
         form.transform((data) => ({ ...data, create_and_new: true })).post(route('sales.store'), {
@@ -295,6 +310,15 @@ function handleSubmit(createAndNew = false) {
                         form.currency_id = baseCurrency.id;
                     }
                 }
+                if(props.ledgers?.data) {
+                    const baseLedger = props.ledgers.data.find(c => c.code === 'CASH-CUST');
+                    if (baseLedger) {
+                        form.selected_ledger = baseLedger;
+                        form.customer_id = baseLedger.id;
+                    }
+                }
+
+                form.date = new Date().toISOString().split('T')[0];
                 // Re-initialize sale_purchase_type with default
                 if (props.salePurchaseTypes) {
                     const baseSalePurchaseType = props.salePurchaseTypes.find(c => c.id === 'cash');
@@ -312,8 +336,8 @@ function handleSubmit(createAndNew = false) {
                     }
                 }
                 toast({
-                    title: 'Success',
-                    description: 'Sale created successfully',
+                    title: t('general.success'),
+                    description: t('general.create_success', { name: t('sale.sale') }),
                     variant: 'success',
                     class:'bg-green-600 text-white',
                 })
@@ -321,8 +345,8 @@ function handleSubmit(createAndNew = false) {
             onError: () => {
                 notifySound('error');
                 toast({
-                    title: 'Error creating sale',
-                    description: 'Error creating purchase',
+                    title: t('general.error'),
+                    description: t('general.create_error', { name: t('sale.sale') }),
                     variant: 'destructive',
                     class:'bg-pink-600 text-white',
                 })
@@ -333,8 +357,8 @@ function handleSubmit(createAndNew = false) {
             onSuccess: () => {
                 notifySound('success');
                 toast({
-                    title: 'Sale created successfully',
-                    description: 'Sale created successfully',
+                    title: t('general.success'),
+                    description: t('general.create_success', { name: t('sale.sale') }),
                     variant: 'success',
                     class:'bg-green-600 text-white',
                 })
@@ -342,8 +366,8 @@ function handleSubmit(createAndNew = false) {
             onError: () => {
                 notifySound('error');
                 toast({
-                        title: 'Error creating sale',
-                    description: 'Error creating sale',
+                        title: t('general.error'),
+                    description: t('general.create_error', { name: t('sale.sale') }),
                     variant: 'destructive',
                     class:'bg-pink-600 text-white',
                 })
@@ -352,11 +376,11 @@ function handleSubmit(createAndNew = false) {
     }
 }
 
+
 // Payment dialog handlers
 const handlePaymentDialogConfirm = () => {
     // Payment data is already updated in the form.payment object via the dialog's update:payment event
     showPaymentDialog.value = false;
-    console.log(form.payment);
 };
 
 const handlePaymentDialogCancel = () => {
@@ -370,28 +394,7 @@ const handlePaymentDialogCancel = () => {
     showPaymentDialog.value = false;
 };
 
-// Collapse sidebar while on this page, restore on leave (safe if provider missing)
-let sidebar = null
-try {
-    sidebar = useSidebar()
-} catch (e) {
-    sidebar = null
-}
-const prevSidebarOpen = ref(true)
-onMounted(() => {
-    if (sidebar) {
-        prevSidebarOpen.value = sidebar.open.value
-        sidebar.setOpen(false)
-    }
-    // Auto-generate bill number: latest + 1
-    ;(async () => {
-    })()
-})
-onUnmounted(() => {
-    if (sidebar) {
-        sidebar.setOpen(prevSidebarOpen.value)
-    }
-})
+
 
 // Recalculate item unit prices when currency rate changes
 watch(() => form.rate, (newRate) => {
@@ -424,6 +427,7 @@ const handleItemChange = async (index, selectedItem) => {
         row.unit_price = ''
         row.quantity = ''
         row.batch = ''
+        row.selected_batch = ''
         row.expire_date = ''
         row.discount = ''
         row.free = ''
@@ -460,8 +464,8 @@ const handleItemChange = async (index, selectedItem) => {
 
 const handleBatchChange = (index, batch) => {
     const row = form.items[index]
-    row.batch = batch
-    row.expire_date = batch.expire_date
+    row.batch = batch?.batch
+    row.expire_date = batch?.expire_date
 }
 const isRowEnabled = (index) => {
     if (!form.selected_ledger) return false
@@ -647,7 +651,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                 <NextSelect
                     :options="ledgers.data"
                     v-model="form.selected_ledger"
-                    @update:modelValue="(value) => handleSelectChange('customer_id', value.id)"
+                    @update:modelValue="(value) => handleSelectChange('customer_id', value)"
                     label-key="name"
                     value-key="id"
                     :reduce="ledger => ledger"
@@ -659,16 +663,16 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                     :search-options="{ type: 'supplier' }"
                 />
 
-                <NextInput placeholder="Number" v-if="general_fields.number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
+                <NextInput placeholder="Number"  v-if="general_fields.number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
                 <NextDate v-if="general_fields.date" v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
-                    <NextSelect
+                <NextSelect
                     v-if="general_fields.currency"
                     :options="currencies.data"
                     v-model="form.selected_currency"
                     label-key="code"
                     value-key="id"
                     :clearable="false"
-                    @update:modelValue="(value) => handleSelectChange('currency_id', value.id)"
+                    @update:modelValue="(value) => handleSelectChange('currency_id', value)"
                     :reduce="currency => currency"
                    :floating-text="t('admin.currency.currency')"
                     :error="form.errors?.currency_id"
@@ -686,7 +690,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                     label-key="name"
                     value-key="id"
                     :reduce="salePurchaseType => salePurchaseType.id"
-                    :floating-text="t('general.type')"
+                    :floating-text="t('general.payment_type')"
                     :error="form.errors?.sale_purchase_type_id"
                 />
                 <NextSelect
@@ -694,7 +698,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                     :options="stores.data"
                     v-model="form.selected_store"
                     :clearable="false"
-                    @update:modelValue="(value) => handleSelectChange('store_id', value)"
+                    @update:modelValue="(value) => storeChange(value)"
                     label-key="name"
                     value-key="id"
                     :reduce="store => store.id"
@@ -745,7 +749,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                                     :search-options="itemSearchOptions"
                                     value-key="id"
                                     :reduce="item => item"
-                                    @update:modelValue=" value => { handleItemChange(index, value); }"
+                                    @update:modelValue=" value => { handleItemChange(index, value) }"
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.batch">

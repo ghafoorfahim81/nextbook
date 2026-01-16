@@ -124,7 +124,20 @@ export function useSearchResources() {
         } = options
 
         try {
-            const response = await fetch(`/search/${resourceType}?search=${searchTerm}&fields=${JSON.stringify(searchFields)}&limit=${limit}&${serializeParams(additionalParams)}`, {
+            // Build query params properly for GET request
+            const params = new URLSearchParams()
+            params.append('search', searchTerm)
+            params.append('limit', limit)
+            // Add fields as array format: fields[]=name&fields[]=code
+            searchFields.forEach(field => params.append('fields[]', field))
+            // Add additional params
+            Object.entries(additionalParams || {}).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '') {
+                    params.append(key, value)
+                }
+            })
+
+            const response = await fetch(`/search/${resourceType}?${params.toString()}`, {
                 method: 'GET',
                 credentials: 'include',
             })

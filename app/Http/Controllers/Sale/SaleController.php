@@ -54,6 +54,10 @@ class SaleController extends Controller
             $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
 
+            if(!isset($validated['date'])) {
+                $validated['date'] = now()->toDateString();
+            }
+
             $validated['type']  = $validated['sale_purchase_type_id'] ?? null;
             $validated['status'] = 'pending';
 
