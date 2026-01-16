@@ -461,7 +461,7 @@ const handleItemChange = async (index, selectedItem) => {
 const handleBatchChange = (index, batch) => {
     const row = form.items[index]
     row.batch = batch
-    row.expire_date = batch.expire_date 
+    row.expire_date = batch.expire_date
 }
 const isRowEnabled = (index) => {
     if (!form.selected_ledger) return false
@@ -534,7 +534,7 @@ const onhand = (index) => {
     if (!item || !item.selected_item) return ''
     const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
-    const onHand = Number(item.on_hand) || 0
+    const onHand = item.selected_batch ? Number(item.selected_batch.on_hand) : Number(item.on_hand) || 0
     const converted = (onHand * baseUnit) / selectedUnit
     const free = Number(item.free) || 0
     const qty = Number(item.quantity) || 0
@@ -700,6 +700,9 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                     :reduce="store => store.id"
                     :floating-text="t('admin.store.store')"
                     :error="form.errors?.store_id"
+                    :searchable="true"
+                    resource-type="stores"
+                    :search-fields="['name', 'code', 'address']"
                 />
             </div>
             </div>
@@ -747,7 +750,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.batch">
                                 <NextSelect
-                                    :options="item.selected_item.batches"
+                                    :options="item.selected_item?.batches"
                                     v-model="item.selected_batch"
                                     label-key="batch"
                                     :placeholder="t('general.search_or_select')"

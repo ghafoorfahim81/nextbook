@@ -124,20 +124,9 @@ export function useSearchResources() {
         } = options
 
         try {
-            const response = await fetch(`/search/${resourceType}`, {
-                method: 'POST',
+            const response = await fetch(`/search/${resourceType}?search=${searchTerm}&fields=${JSON.stringify(searchFields)}&limit=${limit}&${serializeParams(additionalParams)}`, {
+                method: 'GET',
                 credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    search: searchTerm,
-                    fields: searchFields,
-                    limit,
-                    ...additionalParams
-                })
             })
 
             if (!response.ok) {

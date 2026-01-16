@@ -1,4 +1,4 @@
-ف<template>
+<template>
     <div class="relative">
         <component
             :is="VuePersianDatetimePicker"
@@ -61,6 +61,27 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'change'])
+const initialized = ref(false)
+onMounted(() => {
+    if (
+        props.currentDate &&
+        !initialized.value &&
+        (props.modelValue === null || props.modelValue === '' || props.modelValue === undefined)
+    ) {
+        const today = new Date()
+
+        // Emit ISO date for Gregorian
+        if (effectiveLocale.value === 'en') {
+            emit('update:modelValue', today.toISOString().slice(0, 10))
+        }
+        // Emit Date object for Jalali picker
+        else {
+            emit('update:modelValue', today)
+        }
+
+        initialized.value = true
+    }
+})
 
 // Use the picker's built-in current prop
 const shouldShowCurrentDate = computed(() => {

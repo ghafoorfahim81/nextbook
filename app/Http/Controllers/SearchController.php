@@ -31,6 +31,13 @@ class SearchController extends Controller
      */
     public function search(Request $request, string $resourceType): JsonResponse|\Illuminate\Http\Resources\Json\AnonymousResourceCollection
     {
+
+        // dd($request->all());
+        // return response()->json([
+        //     'success' => true,
+        //     'data' => $request->all(),
+
+        // ]);
         $validator = Validator::make($request->all(), [
             'search' => 'nullable|string|min:2|max:255',
             'fields' => 'array',
@@ -324,7 +331,7 @@ class SearchController extends Controller
                 });
             })
             ->orderBy('name')
-            ->limit($limit);
+            ->limit(2);
 
         $items = $query->get();
         if ($items->isEmpty()) {
