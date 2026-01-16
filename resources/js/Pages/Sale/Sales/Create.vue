@@ -150,9 +150,7 @@ const loadItemOptions = async (storeId = form.store_id) => {
     if (!storeId) {
         itemOptions.value = []
         return
-    }
-    console.log('this is storeId', storeId)
-
+    } 
     try {
         const response = await axios.get(route('search.items-for-sale'), {
             params: {
