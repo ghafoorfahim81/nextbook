@@ -72,7 +72,7 @@ class ExpenseController extends Controller
             $expense = Expense::create([
                 'date' => $validated['date'],
                 'remarks' => $validated['remarks'] ?? null,
-                'category_id' => $validated['category_id'], 
+                'category_id' => $validated['category_id'],
             ]);
 
             // Create expense details
@@ -101,10 +101,10 @@ class ExpenseController extends Controller
         });
 
         if ($request->boolean('create_and_new')) {
-            return redirect()->back()->with('success', 'Expense created successfully.');
+            return redirect()->back()->with('success', __('general.created_successfully', ['resource' => __('general.resource.expense')]));
         }
 
-        return redirect()->route('expenses.index')->with('success', 'Expense created successfully.');
+        return redirect()->route('expenses.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.expense')]));
     }
 
     public function show(Request $request, Expense $expense)
@@ -166,7 +166,7 @@ class ExpenseController extends Controller
             $expense->update([
                 'date' => $validated['date'],
                 'remarks' => $validated['remarks'] ?? null,
-                'category_id' => $validated['category_id'], 
+                'category_id' => $validated['category_id'],
             ]);
 
             // Update details
@@ -211,7 +211,7 @@ class ExpenseController extends Controller
             ]);
         });
 
-        return redirect()->route('expenses.index')->with('success', 'Expense updated successfully.');
+        return redirect()->route('expenses.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.expense')]));
     }
     public function destroy(Request $request, Expense $expense)
     {
@@ -230,7 +230,7 @@ class ExpenseController extends Controller
         });
 
         return redirect()->route('expenses.index')
-            ->with('success', 'Expense deleted successfully.');
+            ->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.expense')]));
     }
 
     public function restore(Request $request, Expense $expense)
@@ -249,7 +249,7 @@ class ExpenseController extends Controller
             }
         });
 
-        return back()->with('success', 'Expense restored successfully.');
+        return back()->with('success', __('general.restored_successfully', ['resource' => __('general.resource.expense')]));
     }
 }
 

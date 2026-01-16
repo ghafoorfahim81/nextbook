@@ -116,10 +116,10 @@ class PaymentController extends Controller
         });
 
         if ($request->input('create_and_new')) {
-            return redirect()->route('payments.create')->with('success', 'Payment created successfully.');
+            return redirect()->route('payments.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.payment')]));
         }
 
-        return redirect()->route('payments.index')->with('success', 'Payment created successfully.');
+        return redirect()->route('payments.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.payment')]));
     }
 
     public function show(Request $request, Payment $payment)
@@ -190,7 +190,7 @@ class PaymentController extends Controller
             }
         });
 
-        return redirect()->route('payments.index')->with('success', 'Payment updated successfully.');
+        return redirect()->route('payments.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.payment')]));
     }
 
     public function destroy(Request $request, Payment $payment)
@@ -206,7 +206,7 @@ class PaymentController extends Controller
             $payment->delete();
         });
 
-        return redirect()->route('payments.index')->with('success', 'Payment deleted successfully.');
+        return redirect()->route('payments.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.payment')]));
     }
 
     public function restore(Request $request, Payment $payment)
@@ -219,7 +219,7 @@ class PaymentController extends Controller
         if ($payment->bank_transaction_id) {
             Transaction::where('id', $payment->bank_transaction_id)->restore();
         }
-        return redirect()->route('payments.index')->with('success', 'Payment restored successfully.');
+        return redirect()->route('payments.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.payment')]));
     }
 }
 

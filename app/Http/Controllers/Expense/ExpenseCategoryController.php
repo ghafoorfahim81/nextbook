@@ -37,7 +37,7 @@ class ExpenseCategoryController extends Controller
     {
         ExpenseCategory::create($request->validated());
         return redirect()->route('expense-categories.index')
-            ->with('success', 'Expense category created successfully.');
+            ->with('success', __('general.created_successfully', ['resource' => __('general.resource.expense_category')]));
     }
 
     public function show(Request $request, ExpenseCategory $expenseCategory)
@@ -50,7 +50,7 @@ class ExpenseCategoryController extends Controller
     public function update(ExpenseCategoryUpdateRequest $request, ExpenseCategory $expenseCategory)
     {
         $expenseCategory->update($request->validated());
-        return redirect()->back()->with('success', 'Expense category updated successfully.');
+        return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.expense_category')]));
     }
 
     public function destroy(Request $request, ExpenseCategory $expenseCategory)
@@ -62,13 +62,13 @@ class ExpenseCategoryController extends Controller
 
         $expenseCategory->delete();
         return redirect()->route('expense-categories.index')
-            ->with('success', 'Expense category deleted successfully.');
+            ->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.expense_category')]));
     }
 
     public function restore(Request $request, ExpenseCategory $expenseCategory)
     {
         $expenseCategory->restore();
-        return back()->with('success', 'Expense category restored successfully.');
+        return back()->with('success', __('general.restored_successfully', ['resource' => __('general.resource.expense_category')]));
     }
 }
 

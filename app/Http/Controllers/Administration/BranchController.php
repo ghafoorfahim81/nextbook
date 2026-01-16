@@ -169,7 +169,7 @@ class BranchController extends Controller
         });
 
 
-        return redirect()->route('branches.index')->with('success', 'Branch created successfully.');
+        return redirect()->route('branches.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.branch')]));
     }
 
     public function show(Request $request, Branch $branch): Response
@@ -180,14 +180,14 @@ class BranchController extends Controller
     public function update(BranchUpdateRequest $request, Branch $branch)
     {
         $branch->update($request->validated());
-        return redirect()->route('branches.index')->with('success', 'Branch updated successfully.');
+        return redirect()->route('branches.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.branch')]));
     }
 
     public function destroy(Request $request, Branch $branch)
     {
         // Prevent deleting the main branch
         if ($branch->is_main) {
-            return redirect()->route('branches.index')->with('error', __('You cannot delete the main branch.'));
+            return redirect()->route('branches.index')->with('error', __('general.cannot_delete_main_branch'));
         }
 
         // Check for dependencies before deletion
@@ -203,6 +203,6 @@ class BranchController extends Controller
     public function restore(Request $request, Branch $branch)
     {
         $branch->restore();
-        return redirect()->route('branches.index')->with('success', 'Branch restored successfully.');
+        return redirect()->route('branches.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.branch')]));
     }
 }

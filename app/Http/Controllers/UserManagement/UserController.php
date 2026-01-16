@@ -34,7 +34,7 @@ class UserController extends Controller
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
-            
+
         return inertia('UserManagement/Users/Index', [
             'users' => UserResource::collection($users),
         ]);
@@ -50,8 +50,8 @@ class UserController extends Controller
     }
 
     public function edit(User $user)
-    {     
-        $user = $user->load(['roles', 'permissions']); 
+    {
+        $user = $user->load(['roles', 'permissions']);
         return inertia('UserManagement/Users/Edit', [
             'user' => new UserResource($user),
             'permissions' => Permission::select('id', 'name')->get(),
@@ -59,11 +59,11 @@ class UserController extends Controller
     }
 
     public function store(UserStoreRequest $request)
-    { 
+    {
         $data = $request->validated();
         $data['password'] = Hash::make($data['password']);
         $data['status'] = UserStatus::ACTIVE->value;
-        $data['company_id'] = $request->user()->company_id; 
+        $data['company_id'] = $request->user()->company_id;
         $data['branch_id'] = $request->user()->branch_id;
         $data['preferences'] = User::DEFAULT_PREFERENCES;
         $user = User::create($data);
@@ -77,10 +77,10 @@ class UserController extends Controller
         }
 
         if ($request->input('create_and_new')) {
-            return redirect()->route('users.create')->with('success', 'User created successfully.');
+            return redirect()->route('users.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.user')]));
         }
 
-        return redirect()->route('users.index')->with('success', 'User created successfully.');
+        return redirect()->route('users.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.user')]));
     }
 
     public function show(Request $request, User $user)
@@ -90,44 +90,44 @@ class UserController extends Controller
     }
 
     public function update(UserUpdateRequest $request, User $user)
-    { 
-        $data = $request->validated(); 
+    {
+        $data = $request->validated();
         $data['status'] = UserStatus::ACTIVE->value;
         if (isset($data['password']) && !empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
         } else {
             unset($data['password']);
         }
-        
+
         $user->update($data);
-        
+
         if (array_key_exists('roles', $data)) {
             $user->syncRoles($data['roles'] ?? []);
         }
-        
+
         if (array_key_exists('permissions', $data)) {
             $user->syncPermissions($data['permissions'] ?? []);
         }
 
-        return redirect()->route('users.index')->with('success', 'User updated successfully.');
+        return redirect()->route('users.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.user')]));
     }
 
     public function destroy(Request $request, User $user)
     {
         // Prevent deleting own account
         if ($user->id === $request->user()->id) {
-            return redirect()->route('users.index')->with('error', 'You cannot delete your own account.');
+            return redirect()->route('users.index')->with('error', __('general.cannot_delete_own_account'));
         }
-        
+
         $user->delete();
-        return redirect()->route('users.index')->with('success', 'User deleted successfully.');
+        return redirect()->route('users.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.user')]));
     }
 
     public function restore(Request $request, $id)
     {
         $user = User::withTrashed()->findOrFail($id);
         $user->restore();
-        return redirect()->route('users.index')->with('success', 'User restored successfully.');
+        return redirect()->route('users.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.user')]));
     }
 }
 

@@ -104,9 +104,9 @@ class OwnerController extends Controller
         });
 
         if ($request->boolean('create_and_new')) {
-            return redirect()->route('owners.create')->with('success', 'Owner created successfully.');
+            return redirect()->route('owners.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.owner')]));
         }
-        return redirect()->route('owners.index')->with('success', 'Owner created successfully.');
+        return redirect()->route('owners.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.owner')]));
     }
 
     public function show(Request $request, Owner $owner)
@@ -175,7 +175,7 @@ class OwnerController extends Controller
                 ]);
             }
         });
-        return redirect()->route('owners.index')->with('success', 'Owner updated successfully.');
+        return redirect()->route('owners.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.owner')]));
     }
 
     public function destroy(Request $request, Owner $owner)
@@ -184,7 +184,7 @@ class OwnerController extends Controller
         $owner->capitalTransaction->delete();
         $owner->accountTransaction->delete();
         $owner->delete();
-        return redirect()->route('owners.index')->with('success', 'Owner deleted successfully.');
+        return redirect()->route('owners.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.owner')]));
     }
 
     public function restore(Request $request, Owner $owner)
@@ -196,7 +196,7 @@ class OwnerController extends Controller
         if ($owner->account_transaction_id) {
             Transaction::where('id', $owner->account_transaction_id)->restore();
         }
-        return redirect()->route('owners.index')->with('success', 'Owner restored successfully.');
+        return redirect()->route('owners.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.owner')]));
     }
 }
 

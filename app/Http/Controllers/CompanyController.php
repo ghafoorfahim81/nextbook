@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
- 
+
 use App\Http\Requests\Administration\CompanyUpdateRequest;
 use App\Http\Requests\Administration\CompanyStoreRequest;
 use App\Models\Administration\Company;
@@ -49,7 +49,7 @@ class CompanyController extends Controller
         $user->save();
 
         return redirect()->route('dashboard')
-            ->with('success', 'Company created successfully.');
+            ->with('success', __('general.created_successfully', ['resource' => __('general.resource.company')]));
     }
 
     /**
@@ -61,7 +61,7 @@ class CompanyController extends Controller
 
         if (!$company) {
             return redirect()->route('company.create')
-                ->with('error', 'No company found. Please create a company first.');
+                ->with('error', __('general.no_company_found_create_first'));
         }
 
         return inertia('Administration/Companies/Show', [
@@ -115,19 +115,19 @@ class CompanyController extends Controller
         // $company->update($validated);
 
         return redirect()->back()
-            ->with('success', 'Company information updated successfully.');
+            ->with('success', __('general.updated_successfully', ['resource' => __('general.resource.company')]));
     }
 
     public function destroy(Company $company)
     {
         $company->delete();
         return redirect()->route('companies.index')
-            ->with('success', 'Company deleted successfully.');
+            ->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.company')]));
     }
     public function restore(Company $company)
     {
         $company->restore();
         return redirect()->route('companies.index')
-            ->with('success', 'Company restored successfully.');
+            ->with('success', __('general.restored_successfully', ['resource' => __('general.resource.company')]));
     }
 }

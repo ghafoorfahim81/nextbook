@@ -13,10 +13,13 @@ use App\Http\Controllers\Administration\DepartmentController;
 use App\Http\Controllers\SearchController;
 use App\Http\Middleware\CheckCompany;
 use App\Http\Controllers\Administration\SwitchBranchController;
+use App\Http\Controllers\LocaleController;
 
 Route::get('/', function () {
     return redirect()->route('login');
 });
+
+Route::post('/locale', LocaleController::class)->name('locale.update');
 
 // Public routes that don't require company check
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])

@@ -85,7 +85,7 @@ class ItemFastEntryController extends Controller
                     $glAccounts      = Cache::get('gl_accounts');
                     $homeCurrency = Cache::get('home_currency');
                     $inventoryTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['inventory'], 
+                        'account_id' => $glAccounts['inventory'],
                         'amount' => $cost*$amount,
                         'currency_id' => $homeCurrency->id,
                         'rate' => 1,
@@ -96,7 +96,7 @@ class ItemFastEntryController extends Controller
                         'reference_id' => $item->id,
                     ]);
                     $openingBalanceTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['opening-balance-equity'], 
+                        'account_id' => $glAccounts['opening-balance-equity'],
                         'amount' => $cost*$amount,
                         'currency_id' => $homeCurrency->id,
                         'rate' => 1,
@@ -116,7 +116,7 @@ class ItemFastEntryController extends Controller
             });
         });
 
-        return back()->with('success', 'Items saved successfully.');
+        return back()->with('success', __('general.items_saved_successfully'));
     }
 
 

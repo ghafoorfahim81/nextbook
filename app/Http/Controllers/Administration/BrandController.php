@@ -35,7 +35,7 @@ class BrandController extends Controller
     public function store(BrandStoreRequest $request)
     {
         Brand::create($request->validated());
-        return redirect()->route('brands.index')->with('success', 'Brand created successfully.');
+        return redirect()->route('brands.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.brand')]));
     }
 
     public function show(Request $request, Brand $brand)
@@ -61,11 +61,11 @@ class BrandController extends Controller
         }
 
         $brand->delete();
-        return redirect()->route('brands.index')->with('success', 'Brand deleted successfully.');
+        return redirect()->route('brands.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.brand')]));
     }
     public function restore(Request $request, Brand $brand)
     {
         $brand->restore();
-        return redirect()->route('brands.index')->with('success', 'Brand restored successfully.');
+        return redirect()->route('brands.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.brand')]));
     }
 }

@@ -108,7 +108,7 @@ class SupplierController extends Controller
             });
         }
 
-        return to_route('suppliers.index')->with('success', 'Supplier created successfully.');
+        return to_route('suppliers.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.supplier')]));
     }
 
     /**
@@ -218,7 +218,7 @@ class SupplierController extends Controller
             });
         }
 
-        return to_route('suppliers.index')->with('success', 'Supplier updated successfully.');
+        return to_route('suppliers.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.supplier')]));
     }
 
     /**
@@ -239,7 +239,7 @@ class SupplierController extends Controller
         });
         $supplier->delete();
 
-        return redirect()->route('suppliers.index')->with('success', 'Supplier deleted successfully.');
+        return redirect()->route('suppliers.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.supplier')]));
     }
     public function restore(Request $request, Ledger $supplier)
     {
@@ -250,6 +250,6 @@ class SupplierController extends Controller
         });
 
         $supplier->restore();
-        return redirect()->route('suppliers.index')->with('success', 'Supplier restored successfully.');
+        return redirect()->route('suppliers.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.supplier')]));
     }
 }

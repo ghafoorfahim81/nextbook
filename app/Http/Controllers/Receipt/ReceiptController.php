@@ -113,10 +113,10 @@ class ReceiptController extends Controller
         });
 
         if ($request->input('create_and_new')) {
-            return redirect()->route('receipts.create')->with('success', 'Receipt created successfully.');
+            return redirect()->route('receipts.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.receipt')]));
         }
 
-        return redirect()->route('receipts.index')->with('success', 'Receipt created successfully.');
+        return redirect()->route('receipts.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.receipt')]));
     }
 
     public function show(Request $request, Receipt $receipt)
@@ -188,7 +188,7 @@ class ReceiptController extends Controller
             }
         });
 
-        return redirect()->route('receipts.index')->with('success', 'Receipt updated successfully.');
+        return redirect()->route('receipts.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.receipt')]));
     }
 
     public function destroy(Request $request, Receipt $receipt)
@@ -205,7 +205,7 @@ class ReceiptController extends Controller
             $receipt->delete();
         });
 
-        return redirect()->route('receipts.index')->with('success', 'Receipt deleted successfully.');
+        return redirect()->route('receipts.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.receipt')]));
     }
     public function restore(Request $request, Receipt $receipt)
     {
@@ -217,7 +217,7 @@ class ReceiptController extends Controller
         if ($receipt->bank_transaction_id) {
             Transaction::where('id', $receipt->bank_transaction_id)->restore();
         }
-        return redirect()->route('receipts.index')->with('success', 'Receipt restored successfully.');
+        return redirect()->route('receipts.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.receipt')]));
     }
 
 }

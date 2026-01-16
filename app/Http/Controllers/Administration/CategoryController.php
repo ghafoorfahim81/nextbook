@@ -38,7 +38,7 @@ class CategoryController extends Controller
     public function store(CategoryStoreRequest $request)
     {
         $category = Category::create($request->validated());
-        return redirect()->route('categories.index')->with('success', 'Category created successfully.');
+        return redirect()->route('categories.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.category')]));
     }
 
     public function show(Request $request, Category $category): Response
@@ -65,12 +65,12 @@ class CategoryController extends Controller
         }
 
         $category->delete();
-        return redirect()->route('categories.index')->with('success', 'Category deleted successfully.');
+        return redirect()->route('categories.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.category')]));
     }
 
     public function restore(Request $request, Category $category)
     {
         $category->restore();
-        return back()->with('success', 'Category restored successfully.');
+        return back()->with('success', __('general.restored_successfully', ['resource' => __('general.resource.category')]));
     }
 }
