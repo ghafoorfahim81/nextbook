@@ -5,6 +5,7 @@ import { useForm } from '@inertiajs/vue3';
 import NextInput from "@/Components/next/NextInput.vue";
 import NextSelect from "@/Components/next/NextSelect.vue";
 import Checkbox from "@/Components/Checkbox.vue";
+import SubmitButtons from "@/Components/SubmitButtons.vue";
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { Input } from "@/Components/ui/input";
@@ -29,6 +30,15 @@ const form = useForm({
     roles: [],
     permissions: [],
 });
+
+const submitAction = ref(null);
+const createLoading = computed(() => form.processing && submitAction.value === 'create');
+const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new');
+
+const handleSubmitAction = (createAndNew = false) => {
+    submitAction.value = createAndNew ? 'create_and_new' : 'create';
+    handleSubmit(createAndNew);
+};
 
 // --- Permission Search and Humanization Logic ---
 
@@ -90,7 +100,7 @@ const goBack = () => {
 
 <template>
     <AppLayout :title="t('general.create', { name: t('user_mangements.user') })">
-        <form @submit.prevent="handleSubmit()">
+        <form @submit.prevent="handleSubmitAction">
             <div class="mb-5 rounded-xl border p-4 shadow-sm   border-gray-200 relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.create', { name: t('user_mangements.user') }) }}
@@ -222,15 +232,16 @@ const goBack = () => {
                     </div>
                 </div>
             </div>
-            <div class="mt-4 flex gap-2">
-                <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white" :disabled="form.processing">
-                    {{ form.processing ? t('general.creating', { name: t('user_mangements.user') }) : t('general.create') }}
-                </button>
-                <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white" @click="() => handleSubmit(true)">
-                    {{ t('general.create') }} & {{ t('general.new') }}
-                </button>
-                <button type="button" class="btn px-4 py-2 rounded-md border" @click="goBack">{{ t('general.cancel') }}</button>
-            </div>
+            <SubmitButtons
+                :create-label="t('general.create')"
+                :create-and-new-label="t('general.create_and_new')"
+                :cancel-label="t('general.cancel')"
+                :creating-label="t('general.creating', { name: t('user_mangements.user') })"
+                :create-loading="createLoading"
+                :create-and-new-loading="createAndNewLoading"
+                @create-and-new="handleSubmitAction(true)"
+                @cancel="goBack"
+            />
         </form>
     </AppLayout>
 </template>

@@ -6,12 +6,11 @@ import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import NextDate from '@/Components/next/NextDatePicker.vue';
+import SubmitButtons from '@/Components/SubmitButtons.vue';
 import { useI18n } from 'vue-i18n';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { Trash2, Plus, Upload } from 'lucide-vue-next';
-import { Button } from '@/Components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
 
 const { t } = useI18n();
 const { toast } = useToast();
@@ -44,6 +43,15 @@ const form = useForm({
     selected_bank_account: null,
     selected_currency: null,
 });
+
+const submitAction = ref(null);
+const createLoading = computed(() => form.processing && submitAction.value === 'create');
+const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new');
+
+const handleSubmitAction = (createAndNew = false) => {
+    submitAction.value = createAndNew ? 'create_and_new' : 'create';
+    handleSubmit(createAndNew);
+};
 
 const fileInput = ref(null);
 const attachmentPreview = ref(null);
@@ -207,7 +215,7 @@ onUnmounted(() => {
 
 <template>
     <AppLayout :title="t('general.create', { name: t('expense.expense') })" :sidebar-collapsed="true">
-        <form @submit.prevent="handleSubmit(false)">
+        <form @submit.prevent="handleSubmitAction">
             <!-- General Section -->
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">
@@ -392,31 +400,16 @@ onUnmounted(() => {
             </div>
 
             <!-- Action Buttons -->
-            <div class="mt-6 flex gap-3">
-                <Button
-                    type="submit"
-                    :disabled="form.processing"
-                    class="bg-primary"
-                >
-                    {{ t('general.create') }}
-                    <Spinner v-if="form.processing" class="ml-2" />
-                </Button>
-                <Button
-                    type="button"
-                    variant="outline"
-                    :disabled="form.processing"
-                    @click="handleSubmit(true)"
-                >
-                    {{ t('general.create') }} & {{ t('general.new') }}
-                </Button>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    @click="$inertia.visit(route('expenses.index'))"
-                >
-                    {{ t('general.cancel') }}
-                </Button>
-            </div>
+            <SubmitButtons
+                :create-label="t('general.create')"
+                :create-and-new-label="t('general.create_and_new')"
+                :cancel-label="t('general.cancel')"
+                :creating-label="t('general.creating', { name: t('expense.expense') })"
+                :create-loading="createLoading"
+                :create-and-new-loading="createAndNewLoading"
+                @create-and-new="handleSubmitAction(true)"
+                @cancel="() => $inertia.visit(route('expenses.index'))"
+            />
         </form>
     </AppLayout>
 </template>

@@ -12,12 +12,12 @@ import { useI18n } from 'vue-i18n';
 import TransactionSummary from '@/Components/next/TransactionSummary.vue';
 import DiscountSummary from '@/Components/next/DiscountSummary.vue';
 import TaxSummary from '@/Components/next/TaxSummary.vue';
+import SubmitButtons from '@/Components/SubmitButtons.vue';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next';
-import { Spinner } from "@/components/ui/spinner";
 import { router } from '@inertiajs/vue3';
 const { t } = useI18n();
 const showFilter = () => {
@@ -236,6 +236,15 @@ watch(() => form.selected_sale_purchase_type, (newType) => {
 });
 
 let disabled = (false);
+const submitAction = ref(null);
+
+const handleSubmitAction = (createAndNew = false) => {
+    submitAction.value = createAndNew ? 'create_and_new' : 'create';
+    handleSubmit(createAndNew);
+};
+
+const createLoading = computed(() => form.processing && submitAction.value === 'create');
+const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new');
 
 const handleResetPayment = () => {
     form.payment = {
@@ -644,7 +653,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
 
 <template>
     <AppLayout :title="t('general.create', { name: t('sale.sale') })" :sidebar-collapsed="true">
-         <form @submit.prevent="handleSubmit">
+         <form @submit.prevent="handleSubmitAction">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative ">
             <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('sale.sale') }) }}</div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
@@ -894,15 +903,17 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                 <TransactionSummary :summary="transactionSummary" :balance-nature="form?.selected_ledger?.statement?.balance_nature" />
             </div>
 
-            <div class="mt-4 flex gap-2">
-                <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white disabled:bg-gray-300" :disabled="disabled">{{ t('general.create') }}</button>
-                <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white disabled:bg-gray-300" :disabled="disabled"
-                 @click="() => handleSubmit(true)">
-                 {{ t('general.create') }} & {{ t('general.new') }}
-                 <Spinner v-show="submitting" />
-                </button>
-                <button type="button" class="btn px-4 py-2 rounded-md border" @click="() => $inertia.visit(route('sales.index'))">{{ t('general.cancel') }}</button>
-            </div>
+            <SubmitButtons
+                :create-label="t('general.create')"
+                :create-and-new-label="t('general.create_and_new')"
+                :cancel-label="t('general.cancel')"
+                :creating-label="t('general.creating', { name: t('sale.sale') })"
+                :create-loading="createLoading"
+                :create-and-new-loading="createAndNewLoading"
+                :disabled="disabled"
+                @create-and-new="handleSubmitAction(true)"
+                @cancel="() => $inertia.visit(route('sales.index'))"
+            />
 
          </form>
 

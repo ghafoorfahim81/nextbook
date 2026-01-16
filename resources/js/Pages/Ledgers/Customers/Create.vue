@@ -1,11 +1,12 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
-import { Button } from '@/Components/ui/button';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from "@/Components/next/NextTextarea.vue";
+import SubmitButtons from '@/Components/SubmitButtons.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+import { ref, computed } from 'vue';
 const { t } = useI18n();
 
 
@@ -53,6 +54,19 @@ const form = useForm({
     openings: buildOpenings(),
 })
 
+const submitAction = ref(null);
+const createLoading = computed(() => form.processing && submitAction.value === 'create');
+const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new');
+
+const handleSubmitAction = (createAndNew = false) => {
+    submitAction.value = createAndNew ? 'create_and_new' : 'create';
+    if (createAndNew) {
+        handleCreateAndNew();
+    } else {
+        handleCreate();
+    }
+};
+
 const transactionTypes = [
     { id: 'debit', name: 'Debit' },
     { id: 'credit', name: 'Credit' },
@@ -80,7 +94,7 @@ const handleCancel = () => {
 
 <template>
     <AppLayout :title="t('ledger.customer.customer')">
-        <form @submit.prevent="handleCreate">
+        <form @submit.prevent="handleSubmitAction">
             <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.create', { name: t('ledger.customer.customer') }) }}
@@ -154,11 +168,16 @@ const handleCancel = () => {
                 {{ form.progress.percentage }}%
             </progress>
 
-            <div class="mt-4 flex gap-2">
-                <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white">{{ t('general.create') }}</button>
-                <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white" @click="handleCreateAndNew">{{ t('general.create_and_new') }}</button>
-                <button type="button" class="btn px-4 py-2 rounded-md border" @click="handleCancel">{{ t('general.cancel') }}</button>
-            </div>
+            <SubmitButtons
+                :create-label="t('general.create')"
+                :create-and-new-label="t('general.create_and_new')"
+                :cancel-label="t('general.cancel')"
+                :creating-label="t('general.creating', { name: t('ledger.customer.customer') })"
+                :create-loading="createLoading"
+                :create-and-new-loading="createAndNewLoading"
+                @create-and-new="handleSubmitAction(true)"
+                @cancel="handleCancel"
+            />
         </form>
     </AppLayout>
 </template>
