@@ -136,6 +136,14 @@ Route::middleware([
     Route::get('/preferences/export', [\App\Http\Controllers\Preferences\PreferencesController::class, 'export'])->name('preferences.export');
     Route::post('/preferences/import', [\App\Http\Controllers\Preferences\PreferencesController::class, 'import'])->name('preferences.import');
 
+    // Reports
+    Route::get('/reports', function () {
+        return Inertia::render('Reports/Dashboard');
+    })->name('reports.index');
+    Route::get('/reports/architecture', function () {
+        return Inertia::render('Reports/Architecture');
+    })->name('reports.architecture');
+
     // Expense Categories
     Route::resource('/expense-categories', \App\Http\Controllers\Expense\ExpenseCategoryController::class);
     Route::patch('/expense-categories/{expenseCategory}/restore', [\App\Http\Controllers\Expense\ExpenseCategoryController::class, 'restore'])->name('expense-categories.restore')->withTrashed();

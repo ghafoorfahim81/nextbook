@@ -15,7 +15,8 @@
     "transfer": "Account Transfers",
     "expense": "Expense",
     "user_management": "User Management",
-    "preferences": "Preferences"
+    "preferences": "Preferences",
+    "reports": "Reports"
 
   },
   "expense": {
