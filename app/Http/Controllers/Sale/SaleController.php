@@ -93,10 +93,10 @@ class SaleController extends Controller
 
         if ((bool) $request->create_and_new) {
             // Stay on the same page; frontend will reset form and increment number
-            return redirect()->back()->with('success', 'Sale created successfully.');
+            return redirect()->back()->with('success', __('general.created_successfully', ['resource' => __('general.resource.sale')]));
         }
 
-        return redirect()->route('sales.index')->with('success', 'Sale created successfully.');
+        return redirect()->route('sales.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.sale')]));
     }
 
     public function show(Request $request, Sale $sale)
@@ -163,7 +163,7 @@ class SaleController extends Controller
             return $sale;
         });
 
-        return redirect()->route('sales.index')->with('success', 'Sale updated successfully.');
+        return redirect()->route('sales.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.sale')]));
     }
 
     public function destroy(Request $request, Sale $sale)

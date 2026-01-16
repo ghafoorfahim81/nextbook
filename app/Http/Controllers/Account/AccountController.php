@@ -28,8 +28,8 @@ class AccountController extends Controller
     }
 
     public function index(Request $request)
-    { 
- 
+    {
+
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'created_at');
         $sortDirection = $request->input('sortDirection', 'desc');
@@ -85,7 +85,7 @@ class AccountController extends Controller
             });
         }
 
-        return to_route('chart-of-accounts.index')->with('success', 'Account created successfully.');
+        return to_route('chart-of-accounts.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.account')]));
     }
 
 
@@ -120,7 +120,7 @@ class AccountController extends Controller
         $chart_of_account->load(['accountType', 'transactions.currency', 'openings.transaction.currency']);
 
         return inertia('Accounts/Accounts/Edit', [
-            'account' => new AccountResource($chart_of_account),  
+            'account' => new AccountResource($chart_of_account),
         ]);
     }
 
@@ -162,7 +162,7 @@ class AccountController extends Controller
             });
         }
 
-        return to_route('chart-of-accounts.index')->with('success', 'Account updated successfully.');
+        return to_route('chart-of-accounts.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.account')]));
     }
 
     public function destroy(Request $request, Account $chart_of_account)
@@ -172,7 +172,7 @@ class AccountController extends Controller
             return redirect()->route('chart-of-accounts.index')->with('error', $message);
         }
         if($chart_of_account->is_main) {
-            return redirect()->route('chart-of-accounts.index')->with('error', 'You cannot delete the main account.');
+            return redirect()->route('chart-of-accounts.index')->with('error', __('general.cannot_delete_main_account'));
         }
 
         $chart_of_account->transactions()->whereHas('opening')->get()->each(function ($transaction) {
@@ -181,7 +181,7 @@ class AccountController extends Controller
         });
         $chart_of_account->delete();
 
-        return redirect()->route('chart-of-accounts.index')->with('success', 'Chart of account deleted successfully.');
+        return redirect()->route('chart-of-accounts.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.account')]));
     }
     public function restore(Request $request, Account $chart_of_account)
     {
@@ -190,6 +190,6 @@ class AccountController extends Controller
             $transaction->restore();
         });
         $chart_of_account->restore();
-        return redirect()->route('chart-of-accounts.index')->with('success', 'Chart of account restored successfully.');
+        return redirect()->route('chart-of-accounts.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.account')]));
     }
 }

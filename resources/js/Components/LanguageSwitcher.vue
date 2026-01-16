@@ -1,28 +1,26 @@
 <script setup>
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { router, usePage } from '@inertiajs/vue3'
 
-const { locale } = useI18n()
+const page = usePage()
 
-const options = [
-    { value: 'en', label: 'English' },
-    { value: 'fa', label: 'فارسی' },
-    { value: 'ps', label: 'پښتو' },
-]
-
-function setLocale(next) {
-    const normalized = next === 'pa' ? 'ps' : next
-    locale.value = normalized
-    try {
-        localStorage.setItem('locale', normalized)
-    } catch {}
-    document.documentElement.setAttribute('lang', normalized)
-    document.documentElement.setAttribute('dir', ['fa','ps','pa'].includes(normalized) ? 'rtl' : 'ltr')
-}
+const options = computed(() => {
+    const locales = page.props.locales || []
+    if (Array.isArray(locales) && locales.length) {
+        return locales.map((l) => ({ value: l.id, label: l.name }))
+    }
+    return [
+        { value: 'en', label: 'English' },
+        { value: 'fa', label: 'فارسی' },
+        { value: 'ps', label: 'پښتو' },
+    ]
+})
 
 const current = computed({
-    get: () => locale.value,
-    set: (val) => setLocale(val),
+    get: () => page.props.locale || 'en',
+    set: (val) => {
+        router.post(route('locale.update'), { locale: val }, { preserveScroll: true })
+    },
 })
 </script>
 

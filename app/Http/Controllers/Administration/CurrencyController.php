@@ -35,7 +35,7 @@ class CurrencyController extends Controller
     public function store(CurrencyStoreRequest $request)
     {
         $currency = Currency::create($request->validated());
-        return redirect()->route('currencies.index')->with('success', 'Currency created successfully.');
+        return redirect()->route('currencies.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.currency')]));
 
     }
 
@@ -48,7 +48,7 @@ class CurrencyController extends Controller
     {
         $currency->update($request->validated());
 
-        return redirect()->route('currencies.index')->with('success', 'Currency updated successfully.');
+        return redirect()->route('currencies.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.currency')]));
 
     }
 
@@ -60,6 +60,6 @@ class CurrencyController extends Controller
     public function restore(Request $request, Currency $currency)
     {
         $currency->restore();
-        return redirect()->route('currencies.index')->with('success', 'Currency restored successfully.');
+        return redirect()->route('currencies.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.currency')]));
     }
 }

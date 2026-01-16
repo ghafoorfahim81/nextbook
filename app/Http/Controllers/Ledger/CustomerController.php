@@ -10,7 +10,7 @@ use App\Http\Resources\Administration\CurrencyResource;
 use App\Http\Resources\Administration\BranchResource;
 use App\Http\Resources\Sale\SaleResource;
 use App\Http\Resources\Receipt\ReceiptResource;
-use App\Http\Resources\Payment\PaymentResource; 
+use App\Http\Resources\Payment\PaymentResource;
 use App\Models\Ledger\Ledger;
 use App\Models\Ledger\LedgerTransaction;
 use App\Models\Transaction\Transaction;
@@ -106,7 +106,7 @@ class CustomerController extends Controller
                 ]);
             });
         }
-        return to_route('customers.index')->with('success', 'Customer created successfully.');
+        return to_route('customers.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.customer')]));
 
     }
 
@@ -168,7 +168,7 @@ class CustomerController extends Controller
     {
         $validated = $request->validated();
         $customer->update($validated);
- 
+
         // Remove existing opening balances
         $customer->openings->each(function ($opening) {
             LedgerTransaction::where('transaction_id',$opening->transaction_id)->forceDelete();
@@ -214,7 +214,7 @@ class CustomerController extends Controller
             });
         }
 
-        return to_route('customers.index')->with('success', 'Customer updated successfully.');
+        return to_route('customers.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.customer')]));
     }
 
     /**
@@ -235,7 +235,7 @@ class CustomerController extends Controller
         $customer->openings()->delete();
         $customer->delete();
 
-        return redirect()->route('customers.index')->with('success', 'Customer deleted successfully.');
+        return redirect()->route('customers.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.customer')]));
     }
     public function restore(Request $request, Ledger $customer)
     {
@@ -262,6 +262,6 @@ class CustomerController extends Controller
         });
 
         return redirect()->route('customers.index')
-            ->with('success', 'Customer restored successfully.');
+            ->with('success', __('general.restored_successfully', ['resource' => __('general.resource.customer')]));
     }
 }

@@ -73,10 +73,10 @@ class ItemTransferController extends Controller
         $transfer = $this->transferService->createTransfer($validated);
 
         if ((bool) $request->create_and_new) {
-            return redirect()->back()->with('success', 'Item transfer created successfully.');
+            return redirect()->back()->with('success', __('general.created_successfully', ['resource' => __('general.resource.item_transfer')]));
         }
 
-        return redirect()->route('item-transfers.index')->with('success', 'Item transfer created successfully.');
+        return redirect()->route('item-transfers.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.item_transfer')]));
     }
 
     /**
@@ -97,7 +97,7 @@ class ItemTransferController extends Controller
     public function edit(Request $request, ItemTransfer $itemTransfer)
     {
         if ($itemTransfer->status === TransferStatus::COMPLETED || $itemTransfer->status === TransferStatus::CANCELLED) {
-            return redirect()->back()->withErrors(['error' => 'Cannot edit a completed or cancelled transfer.']);
+            return redirect()->back()->withErrors(['error' => __('general.cannot_edit_completed_or_cancelled_transfer')]);
         }
         $itemTransfer->load(['fromStore', 'toStore', 'items.item', 'items.unitMeasure']);
 
@@ -131,7 +131,7 @@ class ItemTransferController extends Controller
 
         $transfer = $this->transferService->updateTransfer($itemTransfer, $validated);
 
-        return redirect()->route('item-transfers.index')->with('success', 'Item transfer updated successfully.');
+        return redirect()->route('item-transfers.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.item_transfer')]));
     }
 
     /**
@@ -141,13 +141,13 @@ class ItemTransferController extends Controller
     {
         // Only allow deletion of pending transfers
         if ($itemTransfer->status === TransferStatus::COMPLETED) {
-            return redirect()->back()->withErrors(['error' => 'Cannot delete a completed transfer.']);
+            return redirect()->back()->withErrors(['error' => __('general.cannot_delete_completed_transfer')]);
         }
 
         $itemTransfer->items()->delete();
         $itemTransfer->delete();
 
-        return redirect()->route('item-transfers.index')->with('success', 'Item transfer deleted successfully.');
+        return redirect()->route('item-transfers.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.item_transfer')]));
     }
 
     /**
@@ -158,7 +158,7 @@ class ItemTransferController extends Controller
         $itemTransfer->restore();
         $itemTransfer->items()->restore();
 
-        return redirect()->route('item-transfers.index')->with('success', 'Item transfer restored successfully.');
+        return redirect()->route('item-transfers.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.item_transfer')]));
     }
 
     /**
@@ -168,7 +168,7 @@ class ItemTransferController extends Controller
     {
         $transfer = $this->transferService->completeTransfer($itemTransfer);
 
-        return redirect()->back()->with('success', 'Item transfer completed successfully.');
+        return redirect()->back()->with('success', __('general.completed_successfully', ['resource' => __('general.resource.item_transfer')]));
     }
 
     /**
@@ -178,6 +178,6 @@ class ItemTransferController extends Controller
     {
         $transfer = $this->transferService->cancelTransfer($itemTransfer);
 
-        return redirect()->back()->with('success', 'Item transfer cancelled successfully.');
+        return redirect()->back()->with('success', __('general.cancelled_successfully', ['resource' => __('general.resource.item_transfer')]));
     }
 }

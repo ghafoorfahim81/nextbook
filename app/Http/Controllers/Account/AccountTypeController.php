@@ -35,7 +35,7 @@ class AccountTypeController extends Controller
 
     public function create(Request $request)
     {
-         
+
     }
 
     public function store(AccountTypeStoreRequest $request)
@@ -61,13 +61,13 @@ class AccountTypeController extends Controller
         $validated = $request->validated();
         $validated['slug'] = \Str::slug($validated['name']);
         $accountType->update($validated);
-        return redirect()->route('account-types.index')->with('success', 'Account type created successfully.');
+        return redirect()->route('account-types.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.account_type')]));
     }
 
     public function destroy(Request $request, AccountType $accountType)
     {
         if ($accountType->accounts()->count() > 0) {
-            return redirect()->route('account-types.index')->with('error', 'Account type cannot be deleted because it is used in accounts.');
+            return redirect()->route('account-types.index')->with('error', __('general.account_type_in_use_cannot_delete'));
         }
         $accountType->delete();
 
@@ -76,6 +76,6 @@ class AccountTypeController extends Controller
     public function restore(Request $request, AccountType $accountType)
     {
         $accountType->restore();
-        return redirect()->route('account-types.index')->with('success', 'Account type restored successfully.');
+        return redirect()->route('account-types.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.account_type')]));
     }
 }

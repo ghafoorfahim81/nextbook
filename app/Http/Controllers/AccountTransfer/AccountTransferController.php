@@ -22,7 +22,7 @@ class AccountTransferController extends Controller
     }
 
     public function index(Request $request)
-    { 
+    {
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'date');
         $sortDirection = $request->input('sortDirection', 'desc');
@@ -43,13 +43,13 @@ class AccountTransferController extends Controller
     }
 
     public function create(Request $request)
-    { 
+    {
         return inertia('AccountTransfers/Create');
     }
 
 
     public function store(AccountTransferStoreRequest $request, TransactionService $transactionService)
-    { 
+    {
         // dd((string) \Symfony\Component\Uid\Ulid::generate());
         DB::transaction(function () use ($request, $transactionService) {
             $dateConversionService = app(\App\Services\DateConversionService::class);
@@ -72,12 +72,12 @@ class AccountTransferController extends Controller
             $transfer = AccountTransfer::create([
                 'number' => $validated['number'] ?? null,
                 'date' => $validated['date'],
-                'remark' => $validated['remark'] ?? null, 
+                'remark' => $validated['remark'] ?? null,
             ]);
 
             // CREDIT from the source account
             $creditTxn = $transactionService->createTransaction([
-                'account_id' => $fromAccountId, 
+                'account_id' => $fromAccountId,
                 'amount' => $amount,
                 'currency_id' => $currencyId,
                 'rate' => $rate,
@@ -108,10 +108,10 @@ class AccountTransferController extends Controller
         });
 
         if ($request->input('create_and_new')) {
-            return redirect()->route('account-transfers.create')->with('success', 'Account Transfer created successfully.');
+            return redirect()->route('account-transfers.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.account_transfer')]));
         }
 
-        return redirect()->route('account-transfers.index')->with('success', 'Account Transfer created successfully.');
+        return redirect()->route('account-transfers.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.account_transfer')]));
     }
 
     public function show(Request $request, AccountTransfer $accountTransfer)
@@ -131,7 +131,7 @@ class AccountTransferController extends Controller
     }
 
     public function update(AccountTransferUpdateRequest $request, AccountTransfer $accountTransfer)
-    { 
+    {
         DB::transaction(function () use ($request, $accountTransfer) {
             $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
@@ -178,19 +178,19 @@ class AccountTransferController extends Controller
             }
         });
 
-        return redirect()->route('account-transfers.index')->with('success', 'Account Transfer updated successfully.');
+        return redirect()->route('account-transfers.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.account_transfer')]));
     }
 
     public function destroy(AccountTransfer $accountTransfer)
-    { 
+    {
         $accountTransfer->delete();
-        return back()->with('success', 'Account Transfer deleted.');
+        return back()->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.account_transfer')]));
     }
 
     public function restore(AccountTransfer $accountTransfer)
-    { 
+    {
         $accountTransfer->restore();
-        return back()->with('success', 'Account Transfer restored.');
+        return back()->with('success', __('general.restored_successfully', ['resource' => __('general.resource.account_transfer')]));
     }
 }
 

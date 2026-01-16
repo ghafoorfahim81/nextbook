@@ -39,6 +39,7 @@
 <script setup>
 import { computed, onMounted, watch, ref } from 'vue'
 import VuePersianDatetimePicker from 'vue3-persian-datetime-picker'
+import { usePage } from '@inertiajs/vue3'
 
 const props = defineProps({
     modelValue: [String, Number, Date],
@@ -105,17 +106,16 @@ const normalizedModel = computed({
     set: (v) => (model.value = v),
 })
 
-// Determine locale from prop or localStorage (fallback to 'fa')
+const page = usePage()
+
+// Determine picker calendar mode from Inertia locale (fallback to 'fa' / Jalali).
 const effectiveLocale = computed(() => {
     if (props.locale) {
-        console.log('Using locale from props:', props.locale)
         return props.locale
     }
 
-    const stored = typeof localStorage !== 'undefined' ? (localStorage.getItem('calendar_type') || '') : ''
-
-    if (stored === 'en') return 'en'
-    return 'fa' // Default to Persian (fa) for VuePersianDatetimePicker
+    const inertiaLocale = page.props.locale || 'en'
+    return inertiaLocale === 'en' ? 'en' : 'fa'
 })
 
 const isJalali = computed(() => effectiveLocale.value === 'fa')

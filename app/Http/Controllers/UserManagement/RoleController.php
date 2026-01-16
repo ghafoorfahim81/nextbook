@@ -60,11 +60,11 @@ class RoleController extends Controller
         }
 
         if ($request->input('create_and_new')) {
-            return redirect()->route('roles.create')->with('success', 'Role created successfully.');
+            return redirect()->route('roles.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.role')]));
         }
         Cache::forget('roles');
         Cache::forget('users');
-        return redirect()->route('roles.index')->with('success', 'Role created successfully.');
+        return redirect()->route('roles.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.role')]));
     }
 
     public function show(Request $request, Role $role)
@@ -97,24 +97,24 @@ class RoleController extends Controller
         Cache::forget('roles');
         Cache::forget('users');
 
-        return redirect()->route('roles.index')->with('success', 'Role updated successfully.');
+        return redirect()->route('roles.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.role')]));
     }
 
     public function destroy(Request $request, Role $role)
     {
         // Prevent deleting roles that have users
         if ($role->users()->count() > 0) {
-            return redirect()->route('roles.index')->with('error', 'Cannot delete role that has users assigned.');
+            return redirect()->route('roles.index')->with('error', __('general.cannot_delete_role_has_users'));
         }
 
         if ($role->slug === 'super-admin' || $role->slug === 'admin' || $role->slug === 'accountant' || $role->slug === 'clerk') {
-            return redirect()->route('roles.index')->with('error', 'Cannot delete super admin, admin, accountant, or clerk roles.');
+            return redirect()->route('roles.index')->with('error', __('general.cannot_delete_protected_role'));
         }
 
         $role->delete();
         Cache::forget('roles');
         Cache::forget('users');
-        return redirect()->route('roles.index')->with('success', 'Role deleted successfully.');
+        return redirect()->route('roles.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.role')]));
     }
 
     public function restore(Request $request, $id)
@@ -123,6 +123,6 @@ class RoleController extends Controller
         $role->restore();
         Cache::forget('roles');
         Cache::forget('users');
-        return redirect()->route('roles.index')->with('success', 'Role restored successfully.');
+        return redirect()->route('roles.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.role')]));
     }
 }

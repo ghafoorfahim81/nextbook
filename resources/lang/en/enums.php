@@ -28,7 +28,11 @@ return [
     'locale' => [
         'fa' => 'فارسی',
         'en' => 'English',
-        'pa' => 'پښتو',
+        'ps' => 'پښتو',
+    ],
+    'transaction_type' => [
+        'debit' => 'Debit',
+        'credit' => 'Credit',
     ],
     'sales_purchase_type' => [
         'cash' => 'Cash',

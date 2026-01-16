@@ -62,6 +62,6 @@ class CompanyController extends Controller
     public function restore(Request $request, Company $company)
     {
         $company->restore();
-        return redirect()->route('companies.index')->with('success', 'Company restored successfully.');
+        return redirect()->route('companies.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.company')]));
     }
 }

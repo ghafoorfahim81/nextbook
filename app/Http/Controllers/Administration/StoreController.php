@@ -38,7 +38,7 @@ class StoreController extends Controller
     {
         $store = Store::create($request->validated());
         Cache::forget('stores');
-        return redirect()->route('stores.index')->with('success', 'Store created successfully.');
+        return redirect()->route('stores.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.store')]));
 
 
     }
@@ -52,7 +52,7 @@ class StoreController extends Controller
     {
         $store->update($request->validated());
         Cache::forget('stores');
-        return redirect()->route('stores.index')->with('success', 'Store created successfully.');
+        return redirect()->route('stores.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.store')]));
 
     }
 
@@ -67,17 +67,17 @@ class StoreController extends Controller
             ]);
         }
         if($store->is_main) {
-            return redirect()->route('stores.index')->with('error', 'You cannot delete the main store.');
+            return redirect()->route('stores.index')->with('error', __('general.cannot_delete_main_store'));
         }
         Cache::forget('stores');
-        
+
         $store->delete();
-        return redirect()->route('stores.index')->with('success', 'Store deleted successfully.');
+        return redirect()->route('stores.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.store')]));
     }
     public function restore(Request $request, Store $store)
     {
         $store->restore();
-        return redirect()->route('stores.index')->with('success', 'Store restored successfully.');
+        return redirect()->route('stores.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.store')]));
         Cache::forget('stores');
     }
 }

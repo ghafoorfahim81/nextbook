@@ -29,7 +29,7 @@ class ItemController extends Controller
     }
 
     public function index(Request $request)
-    { 
+    {
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
@@ -146,9 +146,9 @@ class ItemController extends Controller
 
         });
         if ((bool) $request->input('stay') || (bool) $request->input('create_and_new')) {
-            return redirect()->route('items.create')->with('success', 'Item created successfully.');
+            return redirect()->route('items.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.item')]));
         }
-        return redirect()->route('items.index')->with('success', 'Items created successfully.');
+        return redirect()->route('items.index')->with('success', __('general.items_created_successfully'));
     }
 
     public function show(Request $request, Item $item)
@@ -336,7 +336,7 @@ class ItemController extends Controller
 
         });
 
-        return redirect()->route('items.index')->with('success', 'Item updated successfully.');
+        return redirect()->route('items.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.item')]));
     }
 
 
@@ -375,7 +375,7 @@ class ItemController extends Controller
                 $item->delete();
             });
 
-            return redirect()->route('items.index')->with('success', 'Item deleted successfully.');
+            return redirect()->route('items.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.item')]));
 
         } catch (\Exception $e) {
             // Log the error for debugging
@@ -384,7 +384,7 @@ class ItemController extends Controller
                 'exception' => $e
             ]);
 
-            return redirect()->back()->with('error', 'Failed to delete item. Please try again.');
+            return redirect()->back()->with('error', __('general.failed_to_delete_try_again', ['resource' => __('general.resource.item')]));
         }
     }
     public function restore(Request $request, Item $item)
@@ -423,7 +423,7 @@ class ItemController extends Controller
                 });
             });
 
-            return redirect()->route('items.index')->with('success', 'Item restored successfully.');
+            return redirect()->route('items.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.item')]));
 
         } catch (\Exception $e) {
             // Log the error for debugging
@@ -432,7 +432,7 @@ class ItemController extends Controller
                 'exception' => $e
             ]);
 
-            return redirect()->back()->with('error', 'Failed to restore item. Please try again.');
+            return redirect()->back()->with('error', __('general.failed_to_restore_try_again', ['resource' => __('general.resource.item')]));
         }
     }
 
@@ -464,7 +464,7 @@ class ItemController extends Controller
                 $item->forceDelete();
             });
 
-            return redirect()->route('items.index')->with('success', 'Item permanently deleted successfully.');
+            return redirect()->route('items.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.item')]));
 
         } catch (\Exception $e) {
             // Log the error for debugging
@@ -473,7 +473,7 @@ class ItemController extends Controller
                 'exception' => $e
             ]);
 
-            return redirect()->back()->with('error', 'Failed to permanently delete item. Please try again.');
+            return redirect()->back()->with('error', __('general.failed_to_permanently_delete_try_again', ['resource' => __('general.resource.item')]));
         }
     }
 }

@@ -88,10 +88,10 @@ class PurchaseController extends Controller
 
         if ((bool) $request->create_and_new) {
             // Stay on the same page; frontend will reset form and increment number
-            return redirect()->back()->with('success', 'Purchase created successfully.');
+            return redirect()->back()->with('success', __('general.created_successfully', ['resource' => __('general.resource.purchase')]));
         }
 
-        return redirect()->route('purchases.index')->with('success', 'Purchase created successfully.');
+        return redirect()->route('purchases.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.purchase')]));
     }
 
 
@@ -140,7 +140,7 @@ class PurchaseController extends Controller
                 }, $validated['item_list']);
                 $purchase->items()->createMany($validated['item_list']);
                 $stockService->updateStock($validated['item_list'], $validated['store_id'], Purchase::class, $purchase->id, $validated['date']);
- 
+
             }
 
             $purchase->transaction()->forceDelete();
@@ -158,7 +158,7 @@ class PurchaseController extends Controller
             return $purchase;
         });
 
-        return redirect()->route('purchases.index')->with('success', 'Purchase updated successfully.');
+        return redirect()->route('purchases.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.purchase')]));
     }
 
     public function destroy(Request $request, Purchase $purchase)

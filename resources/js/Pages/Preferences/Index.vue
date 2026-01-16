@@ -11,7 +11,7 @@ import { Switch } from '@/Components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
 import { Textarea } from '@/Components/ui/textarea'
 import { Checkbox } from '@/Components/ui/checkbox'
-import { useToast } from '@/Components/ui/toast' 
+import { useToast } from '@/Components/ui/toast'
 import {
     Palette, Package, ShoppingCart, ShoppingBag, CreditCard, Calculator,
     Bell, Shield, Database, Globe, Monitor, RotateCcw, Download, Upload,
@@ -58,9 +58,6 @@ const save = () => {
             })
         // Store form values to local storage after a successful save
         localStorage.setItem('user_preferences', JSON.stringify(form));
-        if(form.locale && form.locale !== 'en') {
-            localStorage.setItem('locale', form.locale)
-        }
         },
     })
 }
@@ -121,7 +118,7 @@ const itemColumns = [
     { key: 'packing', label: 'preferences.fields.packing' },
     { key: 'colors', label: 'preferences.fields.colors' },
     { key: 'size', label: 'preferences.fields.size' },
-    { key: 'brand', label: 'preferences.fields.brand' }, 
+    { key: 'brand', label: 'preferences.fields.brand' },
     { key: 'rack_no', label: 'preferences.fields.rack_no' },
     { key: 'category', label: 'preferences.fields.category' },
     { key: 'rates', label: 'preferences.fields.rates' },

@@ -234,10 +234,10 @@ class HandleInertiaRequests extends Middleware
             return Currency::where('is_base_currency', true)->first();
         });
 
-        $transactionTypes = Cache::rememberForever('transaction_types', function () {
+        $transactionTypes = Cache::rememberForever('transaction_types_' . app()->getLocale(), function () {
             return collect(TransactionType::cases())->map(fn($item): array => [
                 'id' => $item->value,
-                'name' => $item->name,
+                'name' => $item->getLabel(),
             ]);
         });
 
@@ -251,8 +251,13 @@ class HandleInertiaRequests extends Middleware
             );
         }
 
+        $locale = app()->getLocale();
+        $direction = in_array($locale, ['fa', 'ps'], true) ? 'rtl' : 'ltr';
+
         return [
             ...parent::share($request),
+            'locale' => $locale,
+            'direction' => $direction,
             'auth' => [
                 'user' => $request->user() ? [
                     'id' => $request->user()->id,
