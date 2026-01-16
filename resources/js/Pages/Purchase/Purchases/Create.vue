@@ -13,12 +13,12 @@ import { useI18n } from 'vue-i18n';
 import TransactionSummary from '@/Components/next/TransactionSummary.vue';
 import DiscountSummary from '@/Components/next/DiscountSummary.vue';
 import TaxSummary from '@/Components/next/TaxSummary.vue';
+import SubmitButtons from '@/Components/SubmitButtons.vue';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next';
-import { Spinner } from "@/components/ui/spinner";
 const { t } = useI18n();
 const showFilter = () => {
     showFilter.value = true;
@@ -124,7 +124,7 @@ watch(() => props.currencies?.data, (currencies) => {
         }
     }
 }, { immediate: true });
- 
+
 
 watch(() => props.salePurchaseTypes, (salePurchaseTypes) => {
     if (salePurchaseTypes && !form.selected_sale_purchase_type) {
@@ -157,6 +157,15 @@ watch(() => form.selected_sale_purchase_type, (newType) => {
 });
 
 let disabled = (false);
+const submitAction = ref(null);
+
+const handleSubmitAction = (createAndNew = false) => {
+    submitAction.value = createAndNew ? 'create_and_new' : 'create';
+    handleSubmit(createAndNew);
+};
+
+const createLoading = computed(() => form.processing && submitAction.value === 'create');
+const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new');
 
 const handleResetPayment = () => {
     form.payment = {
@@ -166,13 +175,13 @@ const handleResetPayment = () => {
         note: '',
     }
 }
-const handleSelectChange = (field, value) => { 
+const handleSelectChange = (field, value) => {
     if(field === 'currency_id') {
         form.rate = value.exchange_rate;
     }
     if(field === 'sale_purchase_type_id' && value === 'cash') {
         handleResetPayment();
-    } 
+    }
     form[field] = value;
 };
 
@@ -305,7 +314,7 @@ onMounted(() => {
         sidebar.setOpen(false)
     }
     // Auto-generate bill number: latest + 1
-    ;(async () => { 
+    ;(async () => {
     })()
 })
 onUnmounted(() => {
@@ -378,7 +387,7 @@ const handleItemChange = async (index, selectedItem) => {
         addRow()
     }
 
-    notifyIfDuplicate(index) 
+    notifyIfDuplicate(index)
 }
 const isRowEnabled = (index) => {
     if (!form.selected_ledger) return false
@@ -549,7 +558,7 @@ const user_preferences = computed(() => props.user_preferences?.data ?? props.us
 const general_fields = computed(() =>  user_preferences.value?.purchase.general_fields ?? user_preferences.value.purchase.general_fields ?? []).value
 const item_columns = computed(() => user_preferences.value?.purchase.item_columns ?? user_preferences.value.purchase.item_columns ?? []).value
 const purchase_preferences = computed(() => user_preferences.value?.purchase ?? user_preferences.value.purchase ?? []).value
-const item_management = computed(() => user_preferences.value?.item_management ?? user_preferences.value.item_management ?? []).value 
+const item_management = computed(() => user_preferences.value?.item_management ?? user_preferences.value.item_management ?? []).value
 const spec_text = computed(() => item_management?.spec_text ?? item_management?.spec_text ?? 'batch').value
 
 console.log('item_columns', item_columns);
@@ -557,7 +566,7 @@ console.log('item_columns', item_columns);
 
 <template>
     <AppLayout :title="t('general.create', { name: t('purchase.purchase') })" :sidebar-collapsed="true">
-         <form @submit.prevent="handleSubmit">
+         <form @submit.prevent="handleSubmitAction">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative ">
             <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('purchase.purchase') }) }}</div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
@@ -663,7 +672,7 @@ console.log('item_columns', item_columns);
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.batch">
-                                <NextInput 
+                                <NextInput
                                     v-model="item.batch"
                                     :disabled="!item.selected_item"
                                     :error="form.errors?.[`item_list.${index}.batch`]"
@@ -696,7 +705,7 @@ console.log('item_columns', item_columns);
                                     value-key="id"
                                     :show-arrow="false"
                                     :reduce="unit => unit"
-                                    @update:modelValue="(measure) => { 
+                                    @update:modelValue="(measure) => {
                                             const baseUnit = Number(form.items[index]?.selected_item?.unitMeasure?.unit) || 1
                                             const selectedUnit = Number(measure?.unit) || baseUnit
                                             const baseUnitPrice = Number(form.items[index]?.base_unit_price) || 0
@@ -795,15 +804,17 @@ console.log('item_columns', item_columns);
                 <TransactionSummary :summary="transactionSummary" :balance-nature="form?.selected_ledger?.statement?.balance_nature" />
             </div>
 
-            <div class="mt-4 flex gap-2">
-                <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white disabled:bg-gray-300" :disabled="disabled">{{ t('general.create') }}</button>
-                <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white disabled:bg-gray-300" :disabled="disabled"
-                 @click="() => handleSubmit(true)">
-                 {{ t('general.create') }} & {{ t('general.new') }}
-                 <Spinner v-show="submitting" />
-                </button>
-                <button type="button" class="btn px-4 py-2 rounded-md border" @click="() => $inertia.visit(route('purchases.index'))">{{ t('general.cancel') }}</button>
-            </div>
+            <SubmitButtons
+                :create-label="t('general.create')"
+                :create-and-new-label="t('general.create_and_new')"
+                :cancel-label="t('general.cancel')"
+                :creating-label="t('general.creating', { name: t('purchase.purchase') })"
+                :create-loading="createLoading"
+                :create-and-new-loading="createAndNewLoading"
+                :disabled="disabled"
+                @create-and-new="handleSubmitAction(true)"
+                @cancel="() => $inertia.visit(route('purchases.index'))"
+            />
 
          </form>
 

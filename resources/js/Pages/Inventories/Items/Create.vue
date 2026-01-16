@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
-import { computed, watch } from 'vue'
+import { computed, watch, ref } from 'vue'
 import { Button } from '@/Components/ui/button'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
@@ -9,6 +9,7 @@ import { Label } from '@/Components/ui/label'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import FloatingLabel     from "@/Components/next/FloatingLabel.vue";
 import NextDate from '@/Components/next/NextDatePicker.vue'
+import SubmitButtons from '@/Components/SubmitButtons.vue'
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n()
 // keep props reactive
@@ -79,6 +80,10 @@ const form = useForm({
     ],
 })
 
+const submitAction = ref(null)
+const createLoading = computed(() => form.processing && submitAction.value === 'create')
+const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new')
+
 // By default select the main store if available
 watch(() => props.stores?.data ?? props.stores, (stores) => {
     if (stores && stores.length) {
@@ -133,6 +138,7 @@ const normalize = () => {
 }
 
 const handleCreate = () => {
+    submitAction.value = 'create'
     normalize()
     // ensure no leftover transform
     form.transform((d) => d).post(route('items.store'), {
@@ -141,6 +147,7 @@ const handleCreate = () => {
 }
 
 const handleCreateAndNew = () => {
+    submitAction.value = 'create_and_new'
     normalize()
     form
         .transform((data) => ({ ...data, stay: true }))
@@ -285,11 +292,16 @@ const handleOpeningSelectChange = (index, value) => {
                 {{ form.progress.percentage }}%
             </progress>
 
-            <div class="mt-4 flex gap-2">
-                <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white">{{ t('general.create') }}</button>
-                <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white" @click="handleCreateAndNew">{{ t('general.create_and_new') }}</button>
-                <button type="button" class="btn px-4 py-2 rounded-md border" @click="handleCancel">{{ t('general.cancel') }}</button>
-            </div>
+            <SubmitButtons
+                :create-label="t('general.create')"
+                :create-and-new-label="t('general.create_and_new')"
+                :cancel-label="t('general.cancel')"
+                :creating-label="t('general.creating', { name: t('item.item') })"
+                :create-loading="createLoading"
+                :create-and-new-loading="createAndNewLoading"
+                @create-and-new="handleCreateAndNew"
+                @cancel="handleCancel"
+            />
         </form>
     </AppLayout>
 </template>

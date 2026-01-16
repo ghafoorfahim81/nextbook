@@ -1,11 +1,12 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import { useForm, usePage, Link } from '@inertiajs/vue3'
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
+import SubmitButtons from '@/Components/SubmitButtons.vue'
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 import { useToast } from '@/Components/ui/toast/use-toast'
@@ -28,6 +29,15 @@ const form = useForm({
   cheque_no: '',
   narration: '',
 })
+
+const submitAction = ref(null)
+const createLoading = computed(() => form.processing && submitAction.value === 'create')
+const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new')
+
+const submitActionHandler = (createAndNew = false) => {
+  submitAction.value = createAndNew ? 'create_and_new' : 'create'
+  submit(createAndNew)
+}
 
 // default currency
 watch(() => currencies, (list) => {
@@ -83,7 +93,7 @@ function submit(createAndNew = false) {
 
 <template>
   <AppLayout :title="t('general.create', { name: 'Receipt' })"  >
-    <form @submit.prevent="submit()">
+    <form @submit.prevent="submitActionHandler">
       <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: 'Receipt' }) }}
@@ -146,13 +156,16 @@ function submit(createAndNew = false) {
           </div>
         </div>
       </div>
-      <div class="mt-4 flex gap-2">
-        <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white">{{ t('general.create') }}</button>
-        <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white" @click="() => submit(true)">
-          {{ t('general.create') }} & {{ t('general.new') }}
-        </button>
-        <button type="button" class="btn px-4 py-2 rounded-md border" @click="() => $inertia.visit('/receipts')">{{ t('general.cancel') }}</button>
-      </div>
+      <SubmitButtons
+        :create-label="t('general.create')"
+        :create-and-new-label="t('general.create_and_new')"
+        :cancel-label="t('general.cancel')"
+        :creating-label="t('general.creating', { name: t('receipt.receipt') })"
+        :create-loading="createLoading"
+        :create-and-new-loading="createAndNewLoading"
+        @create-and-new="submitActionHandler(true)"
+        @cancel="() => $inertia.visit('/receipts')"
+      />
     </form>
   </AppLayout>
 </template>
