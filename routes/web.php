@@ -151,9 +151,9 @@ Route::middleware([
     Route::patch('/item-transfers/{itemTransfer}/cancel', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'cancel'])->name('item-transfers.cancel');
 
 
-    Route::get('/search/items-for-sale', [SearchController::class, 'searchItemsForSale'])
-    ->name('search.items-for-sale');
-    Route::post('/search/{resourceType}', [SearchController::class, 'search']);
+    Route::match(['get', 'post'], '/search/items-for-sale', [SearchController::class, 'searchItemsForSale'])
+        ->name('search.items-for-sale');
+    Route::get('/search/{resourceType}', [SearchController::class, 'search']);
     Route::get('/search/resource-types', [SearchController::class, 'getResourceTypes']);
 
     // Branch switching (super-admin only)
