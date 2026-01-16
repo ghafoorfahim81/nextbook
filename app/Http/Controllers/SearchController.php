@@ -31,13 +31,6 @@ class SearchController extends Controller
      */
     public function search(Request $request, string $resourceType): JsonResponse|\Illuminate\Http\Resources\Json\AnonymousResourceCollection
     {
-
-        // dd($request->all());
-        // return response()->json([
-        //     'success' => true,
-        //     'data' => $request->all(),
-
-        // ]);
         $validator = Validator::make($request->all(), [
             'search' => 'nullable|string|min:2|max:255',
             'fields' => 'array',
@@ -255,7 +248,7 @@ class SearchController extends Controller
 
         try {
             $cacheKey = $this->makeItemCacheKey($storeId, $searchTerm, $limit);
-            $items = Cache::remember($cacheKey, now()->addMinutes(2), function () use ($storeId, $searchTerm, $limit) {
+            $items = Cache::remember($cacheKey, now()->addMinutes(1), function () use ($storeId, $searchTerm, $limit) {
                 return $this->gatherItemsForStore($storeId, $searchTerm, $limit);
             });
 
@@ -331,7 +324,7 @@ class SearchController extends Controller
                 });
             })
             ->orderBy('name')
-            ->limit(2);
+            ->limit($limit);
 
         $items = $query->get();
         if ($items->isEmpty()) {

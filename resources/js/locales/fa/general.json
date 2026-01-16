@@ -48,9 +48,9 @@
   "clear": "پاک کردن",
   "actions": "عملیه ها",
   "no_data_found": "داده‌ای یافت نشد",
-  "delete_error_message": "خطا در هنگام حذف رخ داد.",
-  "update_error_message": "خطا در هنگام به‌روزرسانی رخ داد.",
-  "create_error_message": "خطا در هنگام ایجاد رخ داد.",
+  "delete_error": "خطا در هنگام حذف {name}.",
+  "update_error": "خطا در هنگام به‌روزرسانی {name}.",
+  "create_error": "خطا در هنگام ایجاد {name}.",
   "details": "جزئیات",
   "remove": "حذف",
   "all": "همه",
@@ -181,5 +181,8 @@
   "creating": "در حال ایجاد {name}...",
   "updating": "در حال به‌روزرسانی {name}...",
   "select_all": "انتخاب همه",
-  "no_results": "نتیجه‌ای یافت نشد"
+  "no_results": "نتیجه‌ای یافت نشد",
+  "payment_type": "نوع پرداخت",
+  "please_add_items": "لطفا آیتم ها را اضافه کنید",
+  "please_add_at_least_one_item_to_create_sale": "لطفا حداقل یک آیتم برای ایجاد فاکتور اضافه کنید"
 }

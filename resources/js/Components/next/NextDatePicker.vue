@@ -9,6 +9,7 @@
             :editable="editable"
             :auto-submit="autoSubmit"
             :type="type"
+            :disabled="disabled"
             :clearable="clearable"
             :color="color"
             :label="showLabel ? undefined : ''"
@@ -58,6 +59,7 @@ const props = defineProps({
     showLabel: { type: Boolean, default: false },
     popover: { type: String, default: 'bottom-left' },
     color: { type: String, default: '#8b5cf6' }, // violet-500
+    disabled: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['update:modelValue', 'change'])
@@ -270,10 +272,22 @@ function safeYear(m) {
 /* Position clear icon at the end of the input */
 :deep(.vpd-input-group .vpd-clear-btn) {
     position: absolute !important;
-    right: 0 !important;
-    left: auto !important;
     color: #c026d3 !important; /* fuchsia-600 */
 }
 
+
+/* LTR layout: clear button on the right */
+:global([dir='ltr'] .vpd-input-group .vpd-clear-btn),
+:global([dir="ltr"] .vpd-input-group .vpd-clear-btn) {
+    right: 0 !important;
+    left: auto !important;
+}
+
+/* In RTL layouts, the input "end" is the left side */
+:global([dir='rtl'] .vpd-input-group .vpd-clear-btn),
+:global([dir="rtl"] .vpd-input-group .vpd-clear-btn) {
+    right: auto !important;
+    left: 0 !important;
+}
 
 </style>

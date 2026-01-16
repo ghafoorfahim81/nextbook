@@ -48,9 +48,9 @@
   "clear": "Clear",
   "actions": "Actions",
   "no_data_found": "No data found",
-  "delete_error_message": "An error occurred while deleting.",
-  "update_error_message": "An error occurred while updating.",
-  "create_error_message": "An error occurred while creating.",
+  "delete_error": "An error occurred while deleting {name}.",
+  "update_error": "An error occurred while updating {name}.",
+  "create_error": "An error occurred while creating {name}.",
   "details": "Details",
   "remove": "Remove",
   "all": "All",
@@ -181,7 +181,10 @@
   "creating": "Creating {name}...",
   "updating": "Updating {name}...",
   "select_all": "Select all",
-  "no_results": "No results found"
+  "no_results": "No results found",
+  "payment_type": "Payment Type",
+  "please_add_items": "Please add items",
+  "please_add_at_least_one_item_to_create_sale": "Please add at least one item to create a sale"
 }
 
 
