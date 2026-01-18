@@ -159,11 +159,17 @@ class Item extends Model
         $stockOuts = $this->stockOut()->with('unitMeasure')->get();
 
         $stockSum = $stocks->sum(function($stock) {
-            return $stock->quantity * ($stock->unitMeasure->unit ?? 1);
+            if($stock->unitMeasure->unit != $this->unitMeasure->unit){
+                $stock->quantity = $stock->quantity * ($stock->unitMeasure->unit / $this->unitMeasure->unit);
+            }
+            return $stock->quantity;
         });
 
         $stockOutSum = $stockOuts->sum(function($stockOut) {
-            return $stockOut->quantity * ($stockOut->unitMeasure->unit ?? 1);
+            if($stockOut->unitMeasure->unit != $this->unitMeasure->unit){
+                $stockOut->quantity = $stockOut->quantity * ($stockOut->unitMeasure->unit / $this->unitMeasure->unit);
+            }
+            return $stockOut->quantity;
         });
 
         $onHand = $stockSum - $stockOutSum;
