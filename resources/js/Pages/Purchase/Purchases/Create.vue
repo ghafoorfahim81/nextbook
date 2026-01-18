@@ -680,7 +680,7 @@ console.log('item_columns', item_columns);
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none relative relative wq': !isRowEnabled(index) }" v-if="item_columns.expiry">
-                                <NextDate v-if="item_columns.expire_date" v-model="item.expire_date"
+                                <NextDate   v-model="item.expire_date"
                                 :popover="popover"
                                 :error="form.errors?.[`item_list.${index}.expire_date`]"   />
                             </td>
