@@ -103,6 +103,45 @@ const form = useForm({
             free: '',
             tax: '',
         },
+        {
+            item_id: '',
+            selected_item: '',
+            quantity: '',
+            unit_measure_id: '',
+            batch: '',
+            expire_date: '',
+            unit_price: '',
+            selected_measure: '',
+            item_discount: '',
+            free: '',
+            tax: '',
+        },
+        {
+            item_id: '',
+            selected_item: '',
+            quantity: '',
+            unit_measure_id: '',
+            batch: '',
+            expire_date: '',
+            unit_price: '',
+            selected_measure: '',
+            item_discount: '',
+            free: '',
+            tax: '',
+        },
+        {
+            item_id: '',
+            selected_item: '',
+            quantity: '',
+            unit_measure_id: '',
+            batch: '',
+            expire_date: '',
+            unit_price: '',
+            selected_measure: '',
+            item_discount: '',
+            free: '',
+            tax: '',
+        },
     ],
 })
 
@@ -613,7 +652,7 @@ console.log('item_columns', item_columns);
                     label-key="name"
                     value-key="id"
                     :reduce="salePurchaseType => salePurchaseType.id"
-                    :floating-text="t('general.type')"
+                    :floating-text="t('general.payment_type')"
                     :error="form.errors?.sale_purchase_type_id"
                 />
                 </div>
@@ -630,8 +669,8 @@ console.log('item_columns', item_columns);
                 />
             </div>
             </div>
-            <div class="rounded-xl border bg-card shadow-sm overflow-x-auto max-h-80">
-                <table class="w-full table-fixed min-w-[1000px] purchase-table border-separate">
+            <div class="rounded-xl border bg-card shadow-sm">
+                <table class="w-full table-fixed min-w-[1200px] purchase-table border-separate">
                     <thead class=" " :class="form.sale_purchase_type_id === 'cash' ? 'bg-card sticky top-0 z-[200]' : ''">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 min-w-5">#</th>
@@ -681,7 +720,7 @@ console.log('item_columns', item_columns);
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none relative relative wq': !isRowEnabled(index) }" v-if="item_columns.expiry">
                                 <NextDate   v-model="item.expire_date"
-                                :popover="popover"
+                                popover="top-left"
                                 :error="form.errors?.[`item_list.${index}.expire_date`]"   />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
@@ -846,5 +885,7 @@ console.log('item_columns', item_columns);
     white-space: nowrap;
     overflow: hidden;
 }
+
+ 
 
 </style>

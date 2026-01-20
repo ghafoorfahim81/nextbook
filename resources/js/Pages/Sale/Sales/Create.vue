@@ -781,7 +781,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                             <td :class="{ 'opacity-50 pointer-events-none select-none relative relative wq': !isRowEnabled(index) }" v-if="item_columns.expiry">
                                 <NextDate v-model="item.expire_date"
                                 disabled='true'
-                                :popover="popover"
+                                popover="top-left"
                                 :error="form.errors?.[`item_list.${index}.expire_date`]"   />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
@@ -947,6 +947,17 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
     padding: 0.5rem;
     white-space: nowrap;
     overflow: hidden;
+}
+
+/* Keep sticky footer visible but below any popovers (datepicker/select) opened inside table rows */
+.purchase-table tfoot.sticky {
+    z-index: 50;
+}
+
+/* Ensure datepicker popover renders above sticky footer (fixes “missing” last week row) */
+:deep(.purchase-table .vpd-content),
+:deep(.purchase-table .vpd-calendar) {
+    z-index: 9999 !important;
 }
 
 </style>

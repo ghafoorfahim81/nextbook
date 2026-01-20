@@ -132,7 +132,7 @@ const handleSubmit = () => {
                     />
                 </div>
                 <div class="rounded-xl border bg-card shadow-sm overflow-x-auto p-3 mt-1 mb-1">
-                    <table class="w-full table-fixed min-w-[1000px] entry-table border-separate border-spacing-y-2">
+                    <table class="w-full table-fixed min-w-[1000px]">
                         <thead class="sticky top-0 bg-muted/40">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-white bg-primary">
                             <th class="px-1 py-1 w-5 min-w-5">#</th>
@@ -196,7 +196,7 @@ const handleSubmit = () => {
                                     v-model="form.items[rowIndex].expire_date"
                                     :error="fieldError(rowIndex, 'expire_date')"
                                     :placeholder="t('general.enter', { text: t('item.expire_date') })"
-                                    :disabled="true"
+
                                 />
                             </td>
 
