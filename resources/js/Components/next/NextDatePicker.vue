@@ -170,6 +170,27 @@ function safeYear(m) {
     box-sizing: border-box;
 }
 
+:deep(.vpd-day) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 33px;
+    width: 36px; /* Set a fixed width for consistency */
+    border-radius: 50%;
+}
+
+:deep(.vpd-day.selected) {
+    background-color: #8b5cf6; /* Color for the selected day */
+    color: white;
+}
+
+
+
+:deep(.vpd-weekday) {
+    color: #8b5cf6 !important; /* violet-500 */
+    font-weight: 600;
+}
+
 /* Compact the calendar icon addon so it doesn't expand the cell */
 :deep(.vpd-input-group .vpd-addon) {
     margin: 0;
