@@ -19,7 +19,7 @@ const options = computed(() => {
 const current = computed({
     get: () => page.props.locale || 'en',
     set: (val) => {
-        router.post(route('locale.update'), { locale: val }, { preserveScroll: true })
+        router.post(route('locale.update'), { locale: val }, { preserveScroll: true, preserveState: false })
     },
 })
 </script>

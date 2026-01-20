@@ -30,14 +30,18 @@ createInertiaApp({
         const i18n = createI18nInstance(initialLocale)
         applyDocumentLocale(initialLocale, initialDirection)
 
-        router.on('navigate', (event) => {
-            const page = event.detail.page
+        const applyFromPage = (page) => {
             const nextLocale = page?.props?.locale
             const nextDirection = page?.props?.direction
             if (!nextLocale) return
             i18n.global.locale.value = nextLocale
             applyDocumentLocale(nextLocale, nextDirection)
-        })
+        }
+
+        // "navigate" is mainly for GET visits; language switching is a POST + redirect.
+        // "success" fires after any successful Inertia visit (GET/POST/etc) and includes the updated page props.
+        router.on('navigate', (event) => applyFromPage(event.detail.page))
+        router.on('success', (event) => applyFromPage(event.detail.page))
 
         return createApp({ render: () => h(App, props) })
             .use(plugin)
