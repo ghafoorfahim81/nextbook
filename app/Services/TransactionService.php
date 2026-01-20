@@ -134,7 +134,7 @@ class TransactionService
                     ->where('account_id', Account::where('slug', 'cash')->first()->id)
                     ->first();
                 if ($cashTransaction) {
-                    $cashTransaction->update([  
+                    $cashTransaction->update([
                         'amount' => $transactionTotal,
                         'currency_id' => $currency_id,
                         'rate' => $rate,
@@ -167,7 +167,7 @@ class TransactionService
 
         // ALWAYS: CREDIT Sales Revenue (Money comes IN)
         $glAccounts = Cache::get('gl_accounts');
-        $transactionId = null;
+        $ledgerTransaction_id = null;
         $salesTransaction = $this->createTransaction([
             'account_id' => $glAccounts['sales-revenue'],
             'amount' => $transactionTotal,
@@ -258,7 +258,9 @@ class TransactionService
         ]);
 
         $sale->update(['transaction_id' => $transactionId]);
-
+        $ledgerTransaction_id = $ledger->ledgerTransactions()->create([
+            'transaction_id' => $transactionId,
+        ]);
         // Cache::forget('key''ledgers', 'accounts')->flush();
 
         return $transactions;
@@ -320,7 +322,7 @@ class TransactionService
     /**
      * Update expense transactions
      */
- 
+
 
     // create ledger transactions
     public function createLedgerTransaction(array $data): Transaction

@@ -232,7 +232,7 @@ const onSearchUpdate = (val) => {
     margin-top: 2px;
     max-height: 200px;
     overflow-y: auto;
-    z-index: 50;
+    z-index: 500;
     background-color: hsl(var(--popover));
     color: hsl(var(--popover-foreground));
     border-color: hsl(var(--border));
