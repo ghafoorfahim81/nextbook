@@ -49,6 +49,7 @@ class SaleController extends Controller
 
     public function store(SaleStoreRequest $request, TransactionService $transactionService, StockService $stockService)
     {
+        // dd($request->validated());
         $sale = DB::transaction(function () use ($request, $transactionService, $stockService) {
             // Create sale
             $dateConversionService = app(\App\Services\DateConversionService::class);
@@ -58,7 +59,7 @@ class SaleController extends Controller
                 $validated['date'] = now()->toDateString();
             }
 
-            $validated['type']  = $validated['sale_purchase_type_id'] ?? null;
+            $validated['type']  = $validated['transaction_type_id'] ?? 'cash';
             $validated['status'] = 'pending';
 
             // Convert date properly
@@ -82,7 +83,7 @@ class SaleController extends Controller
                 $sale,
                 \App\Models\Ledger\Ledger::find($validated['customer_id']),
                 $validated['transaction_total'],
-                $validated['sale_purchase_type_id'],
+                $validated['type'],
                 $validated['payment'] ?? [],
                 $validated['currency_id'] ?? null,
                 $validated['rate'] ?? null,
