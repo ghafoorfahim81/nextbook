@@ -16,10 +16,10 @@ class PurchaseItemResource extends JsonResource
         return [
             'id' => $this->id,
             'purchase_id' => $this->purchase_id,
-            'purchase_number' => $this->purchase->number,
+            'purchase_number' => $this->purchase?->number,
             'item_id' => $this->item_id,
-            'item_name' => $this->item->name,
-            'item_code' => $this->item->code,
+            'item_name' => $this->item?->name,
+            'item_code' => $this->item?->code,
             'batch' => $this->batch,
             'expire_date' => $this->expire_date ? $dateConversionService->toDisplay($this->expire_date) : null,
             'quantity' => $this->quantity,

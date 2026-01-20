@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Sale;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use App\Enums\SalesPurchaseType;
 
 class SaleUpdateRequest extends FormRequest
 {
@@ -26,7 +28,7 @@ class SaleUpdateRequest extends FormRequest
             'transaction_total' => ['required', 'numeric'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric'],
-            'sale_purchase_type_id' => ['nullable', 'string', 'in:cash,credit,on_loan'],
+            'sale_purchase_type_id' => ['nullable', 'string', Rule::in(SalesPurchaseType::values())],
             'payment' => ['nullable', 'array'],
             'payment.method' => ['nullable', 'string'],
             'payment.amount' => ['nullable', 'numeric'],
