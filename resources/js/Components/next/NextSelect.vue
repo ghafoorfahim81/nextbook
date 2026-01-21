@@ -176,8 +176,15 @@ const onSearchUpdate = (val) => {
     if (!toggle) return
 
     const rect = toggle.getBoundingClientRect()
-    dropdownEl.style.left = `${rect.left}px`
-    dropdownEl.style.top = `${rect.bottom + 2}px`
+
+    // When `append-to-body` is enabled, the dropdown is moved under <body>.
+    // `getBoundingClientRect()` is viewport-relative, so we must add page scroll
+    // to convert to document coordinates.
+    const scrollX = window.scrollX ?? window.pageXOffset ?? 0
+    const scrollY = window.scrollY ?? window.pageYOffset ?? 0
+
+    dropdownEl.style.left = `${rect.left + scrollX}px`
+    dropdownEl.style.top = `${rect.bottom + scrollY + 2}px`
     dropdownEl.style.width = `${rect.width}px`
   }
   </script>
