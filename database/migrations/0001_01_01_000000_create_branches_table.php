@@ -18,10 +18,7 @@ return new class extends Migration
             $table->string('location')->nullable();
             $table->boolean('is_main')->default(false);
             $table->string('sub_domain')->nullable();
-            $table->ulid('parent_id')->nullable()->index();
-            $table->ulid('created_by')->nullable()->index();
-            $table->ulid('updated_by')->nullable();
-            $table->ulid('deleted_by')->nullable();
+            $table->ulid('parent_id')->nullable()->index(); 
             $table->softDeletes();
             $table->timestamps();
             $table->unique(['name', 'deleted_at']);
@@ -33,11 +30,7 @@ return new class extends Migration
             $table->foreign('parent_id')
                 ->references('id')
                 ->on('branches')
-                ->onDelete('CASCADE');
-
-            $table->foreign('created_by')->references('id')->on('users');
-            $table->foreign('updated_by')->references('id')->on('users');
-            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('cascade');
+                ->onDelete('CASCADE'); 
         });
     }
 
