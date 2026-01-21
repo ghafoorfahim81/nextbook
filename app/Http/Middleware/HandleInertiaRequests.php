@@ -269,6 +269,7 @@ class HandleInertiaRequests extends Middleware
                     'permissions' => $request->user()?->getAllPermissions()->pluck('name')->toArray(),
                     'roles' => $request->user()->getRoleNames()->toArray(),
                     'role_slugs' => $request->user()->roles->pluck('slug')->toArray(),
+                    'calendar_type' => $request->user()->company->calendar_type,
                 ] : null,
             ],
             'flash' => [
@@ -290,6 +291,7 @@ class HandleInertiaRequests extends Middleware
             'calendarTypes' => $calendarTypes,
             'workingStyles' => $workingStyles,
             'locales' => $locales,
+            'calendarType' => auth()->user()?->company,
             'ledgers' => LedgerResource::collection($ledgers),
             'salePurchaseTypes' => $salePurchaseTypes,
             'items' => $items,

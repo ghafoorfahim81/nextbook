@@ -9,6 +9,7 @@ use App\Models\Administration\Currency;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class CompanyController extends Controller
@@ -111,6 +112,8 @@ class CompanyController extends Controller
             // No new file; just update other fields
             $company->update($validated);
         }
+
+        Cache::forget('user_'.Auth::id());
 
         // $company->update($validated);
 
