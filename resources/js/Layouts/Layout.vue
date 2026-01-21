@@ -443,7 +443,7 @@ function logout() {
                                     :isActive="isMenuItemActive(item.url)"
                                     as-child
                                 >
-                                    <Link :href="item.url" >
+                                    <Link :href="item.url" prefetch cache-for="1m">
                                         <component :is="item.icon" />
                                         <span>{{ item.title }}</span>
                                     </Link>
@@ -486,7 +486,7 @@ function logout() {
                                                     as-child
                                                     class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500 data-[active=true]:bg-transparent data-[active=true]:text-violet-500"
                                                 >
-                                                    <Link :href="subItem.url">
+                                                    <Link :href="subItem.url" prefetch cache-for="1m">
                                                         <span>{{ subItem.title }}</span>
                                                     </Link>
                                                 </SidebarMenuSubButton>
