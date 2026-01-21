@@ -40,6 +40,8 @@
 import { computed, onMounted, watch, ref } from 'vue'
 import VuePersianDatetimePicker from 'vue3-persian-datetime-picker'
 import { usePage } from '@inertiajs/vue3'
+ 
+const user = computed(() => usePage().props.auth?.user || null)
 
 const props = defineProps({
     modelValue: [String, Number, Date],
@@ -60,9 +62,10 @@ const props = defineProps({
     showLabel: { type: Boolean, default: false },
     popover: { type: String, default: 'bottom-left' },
     color: { type: String, default: '#8b5cf6' }, // violet-500
-    disabled: { type: Boolean, default: false },
+    disabled: { type: Boolean, default: false }, 
 })
-
+const calendarType = computed(() => user.value?.calendar_type || 'gregorian')
+console.log(user.value)
 const emit = defineEmits(['update:modelValue', 'change'])
 const initialized = ref(false)
 onMounted(() => {
@@ -110,12 +113,11 @@ const page = usePage()
 
 // Determine picker calendar mode from Inertia locale (fallback to 'fa' / Jalali).
 const effectiveLocale = computed(() => {
-    if (props.locale) {
-        return props.locale
+    if (calendarType.value === 'jalali') {
+        return 'fa'
     }
 
-    const inertiaLocale = page.props.locale || 'en'
-    return inertiaLocale === 'en' ? 'en' : 'fa'
+    return 'en'
 })
 
 const isJalali = computed(() => effectiveLocale.value === 'fa')
@@ -123,12 +125,12 @@ const isJalali = computed(() => effectiveLocale.value === 'fa')
 // Resolve formats based on calendar type so output is consistent
 const resolvedFormat = computed(() => {
     if (props.format && props.format !== 'date') return props.format
-    return isJalali.value ? 'jYYYY-jMM-jDD' : 'YYYY-MM-DD'
+    return calendarType.value === 'jalali' ? 'jYYYY-jMM-jDD' : 'YYYY-MM-DD'
 })
 
 const resolvedDisplayFormat = computed(() => {
     if (props.displayFormat) return props.displayFormat
-    return isJalali.value ? 'jYYYY-jMM-jDD' : 'YYYY-MM-DD'
+    return calendarType.value === 'jalali' ? 'jYYYY-jMM-jDD' : 'YYYY-MM-DD'
 })
 
 const afghanMonths = [
