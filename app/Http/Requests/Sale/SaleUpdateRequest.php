@@ -22,7 +22,7 @@ class SaleUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['required', 'integer', 'min:1'],
+            'number' => ['required', 'integer', 'min:1', Rule::unique('sales', 'number')->ignore($this->sale)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
             'customer_id' => ['required', 'string', 'exists:ledgers,id'],
             'date' => ['required', 'date'],
             'transaction_total' => ['required', 'numeric'],
