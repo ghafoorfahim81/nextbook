@@ -15,7 +15,7 @@ import TaxSummary from '@/Components/next/TaxSummary.vue';
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next';
-import { Spinner } from "@/components/ui/spinner";
+import { Spinner } from "@/Components/ui/spinner";
 import { Button } from '@/Components/ui/button';
 
 const { t } = useI18n();
@@ -27,7 +27,7 @@ const props = defineProps({
     currencies: {type: Object, required: true},
     stores: {type: Object, required: true},
     unitMeasures: {type: Object, required: true},
-    accounts: {type: Object, required: true},               
+    accounts: {type: Object, required: true},
     sale: {type: Object, required: true},
 })
 

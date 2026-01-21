@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { Spinner } from '@/components/ui/spinner'
+import { Spinner } from '@/Components/ui/spinner'
 
 const props = defineProps({
     createLabel: { type: String, required: true },

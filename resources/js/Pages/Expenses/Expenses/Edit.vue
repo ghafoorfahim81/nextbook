@@ -11,7 +11,7 @@ import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { Trash2, Plus, Upload } from 'lucide-vue-next';
 import { Button } from '@/Components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { Spinner } from '@/Components/ui/spinner';
 
 const { t } = useI18n();
 const { toast } = useToast();
