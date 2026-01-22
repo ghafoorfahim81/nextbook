@@ -78,20 +78,7 @@ class ItemTransfer extends Model
         return $this->hasMany(ItemTransferItem::class);
     }
 
-    public function createdBy(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class, 'created_by');
-    }
-
-    public function updatedBy(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class, 'updated_by');
-    }
-
-    public function deletedBy(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class, 'deleted_by');
-    }
+   
 
     public function getDependencyMessage(): string
     {
