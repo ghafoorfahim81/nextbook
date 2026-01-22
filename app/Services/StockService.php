@@ -261,8 +261,8 @@ class StockService
         return validator($data, [
             'item_id' => 'required|exists:items,id',
             'store_id' => 'nullable|exists:stores,id',
-            'quantity' => 'required|numeric|min:0.01',
-            'sale_price' => 'nullable|numeric|min:0',
+            'quantity' => 'required|numeric|min:0.01', 
+            'unit_price' => 'nullable|numeric|min:0',
             'free' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',

@@ -195,11 +195,34 @@ const onSearchUpdate = (val) => {
   /* match app input look (light + dark via CSS vars) */
   :deep(.vs__dropdown-toggle) {
     background-color: hsl(var(--background));
-    border: 2px solid hsl(var(--border));
-    border-radius: var(--radius);
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) - 2px);
+    height: 2.5rem;      /* match input h-10 */
     min-height: 2.5rem;
-    padding: 0.25rem 0.75rem 0.5rem;
+    padding: 0 0.75rem;  /* avoid extra vertical height from padding */
+    display: flex;
+    align-items: center;
     color: hsl(var(--foreground));
+  }
+
+  /* Ensure internal content centers vertically and doesn't add extra height */
+  :deep(.vs__selected-options) {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+  }
+
+  :deep(.vs__actions) {
+    display: flex;
+    align-items: center;
+    padding: 0;
+  }
+
+  :deep(.vs__search),
+  :deep(.vs__selected) {
+    margin: 0;
+    line-height: 1.25rem; /* text-sm-ish */
   }
 
   :deep(.vs__selected),
@@ -237,7 +260,7 @@ const onSearchUpdate = (val) => {
     left: 0;
     width: 100%;
     margin-top: 2px;
-    max-height: 200px;
+    max-height: 150px;
     overflow-y: auto;
     z-index: 500;
     background-color: hsl(var(--popover));
@@ -249,7 +272,7 @@ const onSearchUpdate = (val) => {
   /* focus parity with inputs */
   :deep(.vs--open .vs__dropdown-toggle),
   :deep(.vs__dropdown-toggle:focus-within) {
-    border-color: rgb(99 102 241);
+    border-color: rgb(137, 80, 221);
     box-shadow: 0 0 0 1px rgba(99,102,241,.25);
   }
   </style>

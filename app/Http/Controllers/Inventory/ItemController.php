@@ -160,7 +160,7 @@ class ItemController extends Controller
     }
     public function inRecords(Request $request, Item $item)
     {
-        $stocks = Stock::with(['store', 'unitMeasure', 'source.supplier'])
+        $stocks = Stock::with(['store', 'unitMeasure', 'source'])
             ->where('item_id', $item->id)
             ->orderBy('date', 'desc')
             ->paginate($request->input('per_page', 10));
@@ -178,7 +178,7 @@ class ItemController extends Controller
 
     public function outRecords(Request $request, Item $item)
     {
-        $stockOuts = StockOut::with(['store', 'unitMeasure', 'source.customer'])
+        $stockOuts = StockOut::with(['store', 'unitMeasure', 'source'])
             ->where('item_id', $item->id)
             ->orderBy('date', 'desc')
             ->paginate($request->input('per_page', 10));
