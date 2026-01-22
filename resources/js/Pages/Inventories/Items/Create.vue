@@ -155,6 +155,7 @@ const handleCreateAndNew = () => {
             forceFormData: true,
             onSuccess: () => {
                 form.reset()
+                form.code = formatCode(props.maxCode)
                 // reset transform so it doesn't affect other submits
                 form.transform((d) => d)
             },
@@ -286,11 +287,7 @@ const handleOpeningSelectChange = (index, value) => {
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <progress v-if="form.progress" :value="form.progress.percentage" max="100">
-                {{ form.progress.percentage }}%
-            </progress>
+            </div> 
 
             <SubmitButtons
                 :create-label="t('general.create')"
