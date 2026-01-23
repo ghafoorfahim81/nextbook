@@ -258,9 +258,11 @@ class TransactionService
         ]);
 
         $sale->update(['transaction_id' => $transactionId]);
-        $ledgerTransaction_id = $ledger->ledgerTransactions()->create([
-            'transaction_id' => $transactionId,
-        ]);
+        if($transactionType != 'cash') {
+            $ledger->ledgerTransactions()->create([
+                'transaction_id' => $transactionId,
+            ]);
+        }
         // Cache::forget('key''ledgers', 'accounts')->flush();
 
         return $transactions;
