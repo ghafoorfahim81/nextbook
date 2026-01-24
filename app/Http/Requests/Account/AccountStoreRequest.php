@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Account;
 
+use App\Enums\TransactionType;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class AccountStoreRequest extends FormRequest
 {
@@ -30,7 +32,7 @@ class AccountStoreRequest extends FormRequest
             'openings.*.currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'openings.*.amount' => ['nullable', 'numeric'],
             'openings.*.rate' => ['required', 'numeric'],
-            'openings.*.type' => ['nullable', 'string', 'in:debit,credit'],
+            'openings.*.type' => ['nullable', 'string', Rule::in(TransactionType::values())],
         ];
     }
 }

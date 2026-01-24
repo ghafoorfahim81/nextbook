@@ -84,6 +84,9 @@ class AccountController extends Controller
                 ]);
             });
         }
+        if ($request->boolean('stay') || $request->boolean('create_and_new')) {
+            return redirect()->route('chart-of-accounts.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.account')]));
+        }
 
         return to_route('chart-of-accounts.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.account')]));
     }

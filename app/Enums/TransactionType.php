@@ -10,8 +10,8 @@ enum TransactionType: string
     public function getLabel(): string
     {
         return match ($this) {
-            self::DEBIT => __('enums.transaction_type.debit'),
-            self::CREDIT => __('enums.transaction_type.credit'),
+            self::DEBIT => __('enums.opening_type.debit'),
+            self::CREDIT => __('enums.opening_type.credit'),
         };
     }
 

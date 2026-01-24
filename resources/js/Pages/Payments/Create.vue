@@ -37,8 +37,9 @@ const createLoading = computed(() => form.processing && submitAction.value === '
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new')
 
 const submitActionHandler = (createAndNew = false) => {
-  submitAction.value = createAndNew ? 'create_and_new' : 'create'
-  submit(createAndNew)
+  const isCreateAndNew = createAndNew === true
+  submitAction.value = isCreateAndNew ? 'create_and_new' : 'create'
+  submit(isCreateAndNew)
 }
 
 watch(() => currencies, (list) => {
@@ -90,7 +91,7 @@ function submit(createAndNew = false) {
 
 <template>
   <AppLayout :title="t('general.create', { name: 'Payment' })">
-    <form @submit.prevent="submitActionHandler">
+    <form @submit.prevent="submitActionHandler(false)">
       <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: 'Payment' }) }}

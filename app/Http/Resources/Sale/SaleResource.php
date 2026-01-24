@@ -26,7 +26,7 @@ class SaleResource extends JsonResource
             'amount' => $this->transaction?->amount,
             'discount' => $this->discount,
             'discount_type' => $this->discount_type,
-            'type' => $this->type,
+            'type' => $this->type   ,
             'sale_purchase_type_id' => $this->type,
             'description' => $this->description,
             'status' => $this->status,

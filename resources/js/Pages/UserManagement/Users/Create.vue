@@ -36,8 +36,9 @@ const createLoading = computed(() => form.processing && submitAction.value === '
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new');
 
 const handleSubmitAction = (createAndNew = false) => {
-    submitAction.value = createAndNew ? 'create_and_new' : 'create';
-    handleSubmit(createAndNew);
+    const isCreateAndNew = createAndNew === true;
+    submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
+    handleSubmit(isCreateAndNew);
 };
 
 // --- Permission Search and Humanization Logic ---
@@ -80,8 +81,6 @@ const handleSubmit = (createAndNew = false) => {
         onSuccess: () => {
             if (createAndNew) {
                 form.reset('name', 'email', 'password', 'password_confirmation', 'branch_id', 'company_id', 'roles', 'permissions');
-            } else {
-                $inertia.visit(route('users.index'));
             }
             toast({
                 title: t('general.success'),
@@ -100,7 +99,7 @@ const goBack = () => {
 
 <template>
     <AppLayout :title="t('general.create', { name: t('user_mangements.user') })">
-        <form @submit.prevent="handleSubmitAction">
+        <form @submit.prevent="handleSubmitAction(false)">
             <div class="mb-5 rounded-xl border p-4 shadow-sm   border-gray-200 relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.create', { name: t('user_mangements.user') }) }}

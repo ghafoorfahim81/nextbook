@@ -40,9 +40,13 @@ return [
         'percentage' => 'فیصدی',
         'currency' => 'مبلغی',
     ],
+    'opening_type' => [
+        'debit' => 'دبیت',
+        'credit' => 'کریدیت',
+    ],
     'transaction_type' => [
         'debit' => 'بدهکار',
-        'credit' => 'بستانکار',
+        'credit' => 'طلبکار',
     ],
     'transaction_status' => [
         'pending' => 'در انتظار',

@@ -49,8 +49,9 @@ const createLoading = computed(() => form.processing && submitAction.value === '
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new');
 
 const handleSubmitAction = (createAndNew = false) => {
-    submitAction.value = createAndNew ? 'create_and_new' : 'create';
-    handleSubmit(createAndNew);
+    const isCreateAndNew = createAndNew === true;
+    submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
+    handleSubmit(isCreateAndNew);
 };
 
 const fileInput = ref(null);
@@ -215,7 +216,7 @@ onUnmounted(() => {
 
 <template>
     <AppLayout :title="t('general.create', { name: t('expense.expense') })" :sidebar-collapsed="true">
-        <form @submit.prevent="handleSubmitAction">
+        <form @submit.prevent="handleSubmitAction(false)">
             <!-- General Section -->
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">
