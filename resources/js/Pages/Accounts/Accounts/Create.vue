@@ -7,10 +7,10 @@ import SubmitButtons from '@/Components/SubmitButtons.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, computed } from 'vue';
-
+import { useToast } from '@/Components/ui/toast/use-toast';
 const { t } = useI18n();
-
-const { currencies, accountTypes, branches } = defineProps({
+const { toast } = useToast();
+const { currencies, accountTypes, transactionTypes } = defineProps({
     accountTypes: {
         type: Array,
         required: true,
@@ -23,8 +23,11 @@ const { currencies, accountTypes, branches } = defineProps({
         type: Array,
         required: true,
     },
+    transactionTypes: {
+        type: Array,
+        required: true,
+    },
 });
-
 const isBaseCurrency = (currencyId) => {
     return (currencies?.data || []).some(
         (currency) => currency.id === currencyId && currency.is_base_currency
@@ -37,7 +40,7 @@ const buildOpenings = () => {
         currency_name: currency.name,
         amount: '',
         rate: isBaseCurrency(currency.id) ? 1 : currency.exchange_rate,
-        type: 'debit',
+        type: transactionTypes.find(type => type.id === 'debit')?.id,
     }));
 };
 
@@ -49,48 +52,55 @@ const form = useForm({
     openings: buildOpenings(),
 });
 
+
 const submitAction = ref(null);
 const createLoading = computed(() => form.processing && submitAction.value === 'create');
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new');
 
 const handleSubmitAction = (createAndNew = false) => {
-    submitAction.value = createAndNew ? 'create_and_new' : 'create';
-    if (createAndNew) {
-        handleCreateAndNew();
-    } else {
-        handleCreate();
-    }
-};
+    const isCreateAndNew = createAndNew === true;
+    submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
 
-const transactionTypes = [
-    { id: 'debit', name: 'Debit' },
-    { id: 'credit', name: 'Credit' },
-];
-
-const handleCreate = () => {
-    form.post(route('chart-of-accounts.store'));
-};
-
-const handleCreateAndNew = () => {
-    form
-        .transform((data) => ({ ...data, stay: true }))
-        .post(route('chart-of-accounts.store'), {
+    // Shared post options for both actions
+    const postOptions = isCreateAndNew
+        ? {
             onSuccess: () => {
+                toast({
+                    title: t('general.success'),
+                    description: t('general.create_success', { name: t('account.account') }),
+                    variant: 'success',
+                    class: 'bg-green-600 text-white',
+                });
                 form.reset();
                 form.openings = buildOpenings();
-                form.transform((d) => d);
+                form.transform((d) => d); // Reset transform to identity
             },
-        });
+            // Any shared callbacks like onError can go here
+        }
+        : undefined;
+
+    const transformFn = isCreateAndNew
+        ? (data) => ({ ...data, create_and_new: true, stay: true })
+        : (data) => data;
+
+    form
+        .transform(transformFn)
+        .post(route('chart-of-accounts.store'), postOptions);
 };
 
 const handleCancel = () => {
     router.visit(route('chart-of-accounts.index'));
 };
+
+const handleOpeningSelectChange = (index, value) => {
+    form.openings[index].type = value;
+    console.log('form', form.openings);
+};
 </script>
 
 <template>
     <AppLayout :title="t('account.chart_of_accounts')">
-        <form @submit.prevent="handleSubmitAction">
+        <form @submit.prevent="handleSubmitAction(false)">
             <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.create', { name: t('account.account') }) }}
@@ -163,6 +173,8 @@ const handleCancel = () => {
                                     value-key="id"
                                     :id="`transaction_type_${index}`"
                                     :floating-text="t('general.transaction_type')"
+                                    :error="form.errors?.transaction_type"
+                                    @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
                                 />
 
                                 <div class="text-sm text-gray-700 border rounded-md p-2">

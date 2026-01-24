@@ -158,6 +158,12 @@ const handleCreateAndNew = () => {
                 form.code = formatCode(props.maxCode)
                 // reset transform so it doesn't affect other submits
                 form.transform((d) => d)
+                toast({
+                    title: t('general.success'),
+                    description: t('general.create_success', { name: t('item.item') }),
+                    variant: 'success',
+                    class: 'bg-green-600 text-white',
+                });
             },
         })
 }
@@ -287,7 +293,7 @@ const handleOpeningSelectChange = (index, value) => {
                         </div>
                     </div>
                 </div>
-            </div> 
+            </div>
 
             <SubmitButtons
                 :create-label="t('general.create')"

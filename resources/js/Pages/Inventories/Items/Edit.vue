@@ -85,6 +85,12 @@ const handleSubmit = () => {
     form.patch(route('items.update', form.id), {
         onSuccess: () => {
             form.reset()
+            toast({
+                    title: t('general.success'),
+                    description: t('general.update_success', { name: t('item.item') }),
+                    variant: 'success',
+                    class: 'bg-green-600 text-white',
+                });
         },
     })
 }

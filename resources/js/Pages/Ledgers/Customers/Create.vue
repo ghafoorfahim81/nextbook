@@ -59,8 +59,9 @@ const createLoading = computed(() => form.processing && submitAction.value === '
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new');
 
 const handleSubmitAction = (createAndNew = false) => {
-    submitAction.value = createAndNew ? 'create_and_new' : 'create';
-    if (createAndNew) {
+    const isCreateAndNew = createAndNew === true;
+    submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
+    if (isCreateAndNew) {
         handleCreateAndNew();
     } else {
         handleCreate();
@@ -78,7 +79,7 @@ const handleCreate = () => {
 
 const handleCreateAndNew = () => {
     form
-        .transform((data) => ({ ...data, stay: true }))
+        .transform((data) => ({ ...data, create_and_new: true, stay: true }))
         .post(route('customers.store'), {
             onSuccess: () => {
                 form.reset()
@@ -94,7 +95,7 @@ const handleCancel = () => {
 
 <template>
     <AppLayout :title="t('ledger.customer.customer')">
-        <form @submit.prevent="handleSubmitAction">
+        <form @submit.prevent="handleSubmitAction(false)">
             <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.create', { name: t('ledger.customer.customer') }) }}

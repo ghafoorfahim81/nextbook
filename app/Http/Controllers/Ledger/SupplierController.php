@@ -108,7 +108,13 @@ class SupplierController extends Controller
             });
         }
 
-        return to_route('suppliers.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.supplier')]));
+        if ($request->boolean('stay') || $request->boolean('create_and_new')) {
+            return to_route('suppliers.create')
+                ->with('success', __('general.created_successfully', ['resource' => __('general.resource.supplier')]));
+        }
+
+        return to_route('suppliers.index')
+            ->with('success', __('general.created_successfully', ['resource' => __('general.resource.supplier')]));
     }
 
     /**

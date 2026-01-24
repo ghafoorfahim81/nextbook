@@ -237,8 +237,9 @@ let disabled = (false);
 const submitAction = ref(null);
 
 const handleSubmitAction = (createAndNew = false) => {
-    submitAction.value = createAndNew ? 'create_and_new' : 'create';
-    handleSubmit(createAndNew);
+    const isCreateAndNew = createAndNew === true;
+    submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
+    handleSubmit(isCreateAndNew);
 };
 
 const createLoading = computed(() => form.processing && submitAction.value === 'create');
@@ -656,7 +657,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
 
 <template>
     <AppLayout :title="t('general.create', { name: t('sale.sale') })" :sidebar-collapsed="true">
-         <form @submit.prevent="handleSubmitAction">
+        <form @submit.prevent="handleSubmitAction(false)">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative ">
             <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('sale.sale') }) }}</div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">

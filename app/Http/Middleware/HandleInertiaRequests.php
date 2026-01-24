@@ -235,7 +235,7 @@ class HandleInertiaRequests extends Middleware
         });
 
         $transactionTypes = Cache::rememberForever('transaction_types_' . app()->getLocale(), function () {
-            return collect(TransactionType::cases())->map(fn($item): array => [
+            return collect(TransactionType::cases())->map(fn(TransactionType $item): array => [
                 'id' => $item->value,
                 'name' => $item->getLabel(),
             ]);

@@ -106,7 +106,13 @@ class CustomerController extends Controller
                 ]);
             });
         }
-        return to_route('customers.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.customer')]));
+        if ($request->boolean('stay') || $request->boolean('create_and_new')) {
+            return to_route('customers.create')
+                ->with('success', __('general.created_successfully', ['resource' => __('general.resource.customer')]));
+        }
+
+        return to_route('customers.index')
+            ->with('success', __('general.created_successfully', ['resource' => __('general.resource.customer')]));
 
     }
 
