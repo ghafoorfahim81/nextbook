@@ -15,6 +15,7 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->string('name')->index();
             $table->string('slug')->nullable();
+            $table->string('nature')->nullable();
             $table->text('remark')->nullable();
             $table->boolean('is_main')->default(false);
             $table->ulid('created_by')->index();
