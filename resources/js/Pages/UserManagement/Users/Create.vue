@@ -9,15 +9,21 @@ import SubmitButtons from "@/Components/SubmitButtons.vue";
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { Input } from "@/Components/ui/input";
+import { useLazyProps } from '@/composables/useLazyProps'
 const { t } = useI18n();
 const { toast } = useToast();
 
 const props = defineProps({
     permissions: Array,
-    roles: Array,
+    roles: {
+        type: Array,
+        required: false,
+        default: () => [],
+    },
     branches: {type: Object, required: true},
-
 });
+
+useLazyProps(props, ['roles'])
 
 console.log(props.branches);
 const form = useForm({

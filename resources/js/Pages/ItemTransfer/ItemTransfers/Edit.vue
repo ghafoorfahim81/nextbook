@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import { useForm, usePage } from '@inertiajs/vue3'
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextInput from '@/Components/next/NextInput.vue'
@@ -10,6 +10,7 @@ import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next'
 import { useSidebar } from '@/Components/ui/sidebar/utils'
+import { useLazyProps } from '@/composables/useLazyProps'
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -22,6 +23,8 @@ const page = usePage()
 const stores = computed(() => page.props.stores?.data || page.props.stores || [])
 const items = computed(() => page.props.items?.data || page.props.items || [])
 const unitMeasures = computed(() => page.props.unitMeasures?.data || page.props.unitMeasures || [])
+
+useLazyProps(page.props, ['items'])
 
 const transfer = props.transfer.data
 
@@ -59,6 +62,17 @@ const form = useForm({
     available_measures: [],
   })),
 })
+
+watch(items, (list) => {
+  if (!Array.isArray(list) || !form.items?.length) return
+  form.items = form.items.map((row) => {
+    if (row.selected_item || !row.item_id) return row
+    return {
+      ...row,
+      selected_item: list.find(i => i.id === row.item_id) || null,
+    }
+  })
+}, { immediate: true })
 
 const sameStoreError = computed(() => {
   return form.from_store_id && form.to_store_id && form.from_store_id === form.to_store_id

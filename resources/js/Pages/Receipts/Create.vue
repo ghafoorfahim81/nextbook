@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/Layout.vue'
 import { useForm, usePage, Link } from '@inertiajs/vue3'
 import { ref, watch, computed } from 'vue'
+import { useLazyProps } from '@/composables/useLazyProps'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
@@ -11,9 +12,11 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 import { useToast } from '@/Components/ui/toast/use-toast'
 const page = usePage()
-const ledgers = page.props.ledgers?.data || []
-const accounts = page.props.accounts?.data || []
-const currencies = page.props.currencies?.data || []
+const ledgers = computed(() => page.props.ledgers?.data || [])
+const accounts = computed(() => page.props.accounts?.data || [])
+const currencies = computed(() => page.props.currencies?.data || [])
+
+useLazyProps(page.props, ['ledgers', 'accounts'])
 const { toast } = useToast()
 const form = useForm({
   number: page.props.latestNumber ?? '',
@@ -41,7 +44,7 @@ const submitActionHandler = (createAndNew = false) => {
 }
 
 // default currency
-watch(() => currencies, (list) => {
+watch(currencies, (list) => {
   if (list && list.length && !form.currency_id) {
     const base = list.find(c => c.is_base_currency)
     if (base) {
@@ -57,7 +60,7 @@ watch(() => currencies, (list) => {
 function handleSelectChange(field, value) {
   form[field] = value
   if (field === 'currency_id') {
-    const chosen = currencies.find(c => c.id === value)
+    const chosen = currencies.value.find(c => c.id === value)
     if (chosen) form.rate = chosen.exchange_rate
   }
 }

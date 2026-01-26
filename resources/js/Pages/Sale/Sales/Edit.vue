@@ -2,7 +2,7 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import { ref, watch, onMounted } from 'vue';
 import axios from 'axios'
-import { useForm } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
@@ -17,19 +17,23 @@ import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next';
 import { Spinner } from "@/Components/ui/spinner";
 import { Button } from '@/Components/ui/button';
+import { useLazyProps } from '@/composables/useLazyProps'
 
 const { t } = useI18n();
 const { toast } = useToast()
 
 const props = defineProps({
-    ledgers: {type: Object, required: true},
+    ledgers: {type: Object, required: false, default: () => ({ data: [] })},
     salePurchaseTypes: {type: Object, required: true},
     currencies: {type: Object, required: true},
     stores: {type: Object, required: true},
     unitMeasures: {type: Object, required: true},
-    accounts: {type: Object, required: true},
+    accounts: {type: Object, required: false, default: () => ({ data: [] })},
     sale: {type: Object, required: true},
 })
+
+const page = usePage()
+useLazyProps(page.props, ['ledgers', 'accounts'])
 
 // Form setup for editing sales
 const form = useForm({
@@ -310,7 +314,7 @@ const transactionSummary = computed(() => {
                     />
 
                     <NextSelect
-                        :options="$page.props.ledgers"
+                        :options="page.props.ledgers?.data || []"
                         v-model="form.selected_ledger"
                         @update:modelValue="(value) => handleSelectChange('customer_id', value.id)"
                         label-key="name"
@@ -515,7 +519,7 @@ const transactionSummary = computed(() => {
                     :open="showPaymentDialog"
                     :payment="form.payment"
                     :errors="form.errors"
-                    :accounts="$page.props.accounts || []"
+                    :accounts="page.props.accounts?.data || []"
                     @update:open="(value) => showPaymentDialog = value"
                     @confirm="handlePaymentDialogConfirm"
                     @cancel="handlePaymentDialogCancel"

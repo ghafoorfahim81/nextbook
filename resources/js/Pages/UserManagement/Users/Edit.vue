@@ -8,6 +8,7 @@ import Checkbox from "@/Components/Checkbox.vue";
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { Input } from "@/Components/ui/input";
+import { useLazyProps } from '@/composables/useLazyProps'
 
 const { t, locale } = useI18n();
 const { toast } = useToast();
@@ -15,9 +16,15 @@ const { toast } = useToast();
 const props = defineProps({
     user: Object,
     permissions: Array,
-    roles: Array,
+    roles: {
+        type: Array,
+        required: false,
+        default: () => [],
+    },
 });
 const user = props.user?.data;
+
+useLazyProps(props, ['roles'])
 
 // Add a loading state as in many create pages
 const loading = ref(false);

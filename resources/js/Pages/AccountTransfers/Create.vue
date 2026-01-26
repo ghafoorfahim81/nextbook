@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/Layout.vue'
 import { useForm, usePage } from '@inertiajs/vue3'
 import { ref, watch, computed } from 'vue'
+import { useLazyProps } from '@/composables/useLazyProps'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
@@ -14,8 +15,11 @@ const { t } = useI18n()
 const { toast } = useToast()
 
 const page = usePage()
-const accounts = page.props.accounts?.data || []
-const currencies = page.props.currencies?.data || []
+const accounts = computed(() => page.props.accounts?.data || [])
+const currencies = computed(() => page.props.currencies?.data || [])
+console.log('this is currencies', page.props);
+
+useLazyProps(page.props, ['accounts'])
 
 const form = useForm({
   number: page.props.latestNumber ?? '',
@@ -44,7 +48,7 @@ const sameAccountError = computed(() => {
   return form.from_account_id && form.to_account_id && form.from_account_id === form.to_account_id
 })
 
-watch(() => currencies, (list) => {
+watch(currencies, (list) => {
   if (list && list.length && !form.currency_id) {
     const base = list.find(c => c.is_base_currency)
     if (base) {
@@ -58,7 +62,7 @@ watch(() => currencies, (list) => {
 function handleSelectChange(field, value) {
   form[field] = value
   if (field === 'currency_id') {
-    const chosen = currencies.find(c => c.id === value)
+    const chosen = currencies.value.find(c => c.id === value)
     if (chosen) form.rate = chosen.exchange_rate
   }
 }
@@ -80,6 +84,7 @@ function submit(createAndNew = false) {
         form.reset('date', 'amount', 'remark')
         form.number = String((isNaN(latest) ? 0 : latest) + 1)
       }
+      
       toast({
         title: t('general.success'),
         description: t('general.create_success', { name: t('general.account_transfer') }),

@@ -53,6 +53,10 @@ return [
         'completed' => 'Completed',
         'cancelled' => 'Cancelled',
     ],
+    'opening_type' => [
+        'debit' => 'Debit',
+        'credit' => 'Credit',
+    ],
     'user_status' => [
         'active' => 'Active',
         'inactive' => 'Inactive',

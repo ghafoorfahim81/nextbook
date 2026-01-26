@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/Layout.vue'
 import { useForm, usePage } from '@inertiajs/vue3'
 import { ref, watch, computed } from 'vue'
+import { useLazyProps } from '@/composables/useLazyProps'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
@@ -13,8 +14,10 @@ const { t } = useI18n()
 const { toast } = useToast()
 
 const page = usePage()
-const accounts = page.props.accounts?.data || []
-const currencies = page.props.currencies?.data || []
+const accounts = computed(() => page.props.accounts?.data || [])
+const currencies = computed(() => page.props.currencies?.data || [])
+
+useLazyProps(page.props, ['accounts'])
 
 const props = defineProps({
   data: Object,
@@ -53,7 +56,7 @@ watch(() => props.data, (val) => {
 function handleSelectChange(field, value) {
   form[field] = value
   if (field === 'currency_id') {
-    const chosen = currencies.find(c => c.id === value)
+    const chosen = currencies.value.find(c => c.id === value)
     if (chosen) form.rate = chosen.exchange_rate
   }
 }
