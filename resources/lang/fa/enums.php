@@ -67,6 +67,13 @@ return [
         'customer' => 'مشتری',
         'supplier' => 'تأمین‌کننده',
     ],
+    'item_type' => [
+        'inventory_materials' => 'مواد و محصولات انبار',
+        'non_inventory_materials' => 'مواد غیر انبار',
+        'raw_materials' => 'مواد اولیه',
+        'finished_good_items' => 'محصولات تمام شده',
+        'inventory_services' => 'خدمات انبار',
+    ],
 ];
 
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Inventory;
 
+use App\Enums\ItemType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,6 +25,8 @@ class ItemStoreRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'unique:items,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'code' => ['required', 'string', 'unique:items,code,NULL,id,branch_id,NULL,deleted_at,NULL'], 
+            'item_type' => ['nullable', 'string', Rule::in(ItemType::values()) ?? ItemType::INVENTORY_MATERIALS->value],
+            'sku' => ['nullable', 'string', 'unique:items,sku,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'generic_name' => ['nullable', 'string'],
             'packing' => ['nullable', 'string'],
             'barcode' => ['nullable', 'string'],

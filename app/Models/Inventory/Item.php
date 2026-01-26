@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use App\Enums\ItemType;
 class Item extends Model
 {
     use HasFactory, HasUserAuditable, HasUlids, HasCache, HasSearch, HasSorting, HasBranch, BranchSpecific, HasDependencyCheck, SoftDeletes;
@@ -30,7 +30,9 @@ class Item extends Model
      */
     protected $fillable = [
         'name',
-        'code',
+        'code', 
+        'item_type',
+        'sku',
         'generic_name',
         'packing',
         'barcode',
@@ -67,6 +69,7 @@ class Item extends Model
             'brand_id' => 'string',
             'category_id' => 'string',
             'size_id' => 'string',
+            'item_type' => ItemType::class,
             'minimum_stock' => 'double',
             'maximum_stock' => 'double',
             'purchase_price' => 'double',

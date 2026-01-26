@@ -82,7 +82,6 @@ final class CoreShared
                 'error' => fn() => $request->session()->get('error'),
             ],
             'user_preferences' => $userPreferences,
-            'calendarType' => $user?->company,
             'activeBranchId' => $activeBranchId,
             'activeBranchName' => $activeBranchName,
         ];

@@ -34,5 +34,8 @@
     "current_stock": "Current Stock",
     "in_records": "In Records",
     "out_records": "Out Records",
-    "search_item": "Search Item"
+    "search_item": "Search Item",
+    "item_type": "Item Type",
+    "sku": "Stock Keeping Unit"
 }
+ 

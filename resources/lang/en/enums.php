@@ -66,4 +66,11 @@ return [
         'customer' => 'Customer',
         'supplier' => 'Supplier',
     ],
+    'item_type' => [
+        'inventory_materials' => 'Inventory Materials',
+        'non_inventory_materials' => 'Non-Inventory Materials',
+        'raw_materials' => 'Raw Materials',
+        'finished_good_items' => 'Finished Good Items',
+        'inventory_services' => 'Inventory Services',
+    ],
     ];
