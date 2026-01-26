@@ -24,6 +24,7 @@ use App\Models\Administration\Currency;
 use App\Models\Administration\Size;
 use App\Models\Administration\Store;
 use App\Models\Administration\UnitMeasure;
+use App\Enums\ItemType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -120,6 +121,7 @@ final class LookupShared
             'locales' => EnumOptions::forLocale($request, Locale::class, 'locales'),
             'salePurchaseTypes' => EnumOptions::forLocale($request, SalesPurchaseType::class, 'sale_purchase_types'),
             'discountTypes' => EnumOptions::forLocale($request, DiscountType::class, 'discount_types'),
+            'itemTypes' => EnumOptions::forLocale($request, ItemType::class, 'item_types'),
             'transactionStatuses' => EnumOptions::forLocale($request, TransactionStatus::class, 'transaction_statuses'),
             'transactionTypes' => EnumOptions::forLocale($request, TransactionType::class, 'transaction_types'),
         ];

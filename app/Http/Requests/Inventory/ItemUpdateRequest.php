@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Inventory;
 
+use App\Enums\ItemType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -23,6 +24,8 @@ class ItemUpdateRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:256', Rule::unique('items')->ignore($this->route('item'))->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
             'code' => ['required', 'string', 'max:256', Rule::unique('items')->ignore($this->route('item'))->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
+            'item_type' => ['nullable', 'string', Rule::in(ItemType::values()) ?? ItemType::INVENTORY_MATERIALS->value],
+            'sku' => ['nullable', 'string', 'unique:items,sku,NULL,id,branch_id,NULL,deleted_at,NULL'],
              'generic_name' => ['nullable', 'string'],
             'packing' => ['nullable', 'string'],
             'barcode' => ['nullable', 'string'],

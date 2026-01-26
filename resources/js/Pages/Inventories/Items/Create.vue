@@ -21,6 +21,7 @@ const props = defineProps({
     sizes: { type: [Array, Object], required: true },
     maxCode: { type: Number, required: true },
     user_preferences: { type: Object, required: true },
+    itemTypes: { type: Object, required: true },
 })
 
 // normalize lists whether they're paginated or not
@@ -29,7 +30,8 @@ const unitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasur
 const categories = computed(() => props.categories?.data ?? props.categories ?? [])
 const brands = computed(() => props.brands?.data ?? props.brands ?? [])
 const sizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
-
+const itemTypes = computed(() => props.itemTypes?.data ?? props.itemTypes ?? [])
+console.log('this is itemTypes', props);
 // Format code with leading zeros based on the number
 const formatCode = (number) => {
     const num = Number(number);
@@ -223,7 +225,16 @@ const handleOpeningSelectChange = (index, value) => {
                     :search-fields="['name','unit','symbol']"
                     :error="form.errors.unit_measure_id"
                 />
-
+                <NextSelect
+                    v-model="form.selected_item_type"
+                    :options="itemTypes"
+                    @update:modelValue="(value) => handleSelectChange('item_type', value)"
+                    label-key="name"
+                    value-key="id"
+                    id="item_type"
+                    :floating-text="t('item.item_type')"
+                />
+                <NextInput v-show="visibleFields.sku" :label="t('item.sku')" v-model="form.sku" :error="form.errors?.sku" :placeholder="t('general.enter', { text: t('item.sku') })" />
                 <NextSelect
                     :options="categories"
                     v-model="form.selected_category"
