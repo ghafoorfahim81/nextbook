@@ -11,8 +11,9 @@ const { t } = useI18n();
 
 const { currencies, accountTypes, branches } = defineProps({
     accountTypes: {
-        type: Array,
-        required: true,
+        type: Object,
+        required: false,
+        default: () => ({ data: [] }),
     },
     currencies: {
         type: Array,

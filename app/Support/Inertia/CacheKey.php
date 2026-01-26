@@ -22,23 +22,31 @@ final class CacheKey
         return "inertia:user:{$userId}:{$name}";
     }
 
-    public static function companyId(Request $request): ?int
+    /**
+     * Retrieve the company ID associated with the current request's user.
+     *
+     * Returns the user's direct company_id if available, otherwise uses the company relation.
+     */
+    public static function companyId(Request $request): ?string
     {
         $user = $request->user();
 
         if ($user?->company_id) {
-            return $user->company_id;
+            return (string) $user->company_id;
         }
 
-        return $user?->company?->id;
+        return $user?->company?->id ? (string) $user->company->id : null;
     }
 
-    public static function branchId(Request $request): ?int
+    public static function branchId(Request $request): ?string
     {
         if (app()->bound('active_branch_id')) {
-            return app('active_branch_id');
+            $branchId = app('active_branch_id');
+            return $branchId ? (string) $branchId : null;
         }
 
-        return $request->user()?->branch_id;
+        $branchId = $request->user()?->branch_id;
+
+        return $branchId ? (string) $branchId : null;
     }
 }

@@ -10,16 +10,8 @@ import { ref, computed } from 'vue';
 const { t } = useI18n();
 
 
-const { currencies, accountTypes,branches } = defineProps({
-    accountTypes: {
-        type: Array,
-        required: true,
-    },
+const { currencies, branches } = defineProps({
     currencies: {
-        type: Array,
-        required: true,
-    },
-    branches: {
         type: Array,
         required: true,
     },

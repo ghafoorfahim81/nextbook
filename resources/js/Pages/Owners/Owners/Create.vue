@@ -7,6 +7,7 @@ import NextTextarea from '@/Components/next/NextTextarea.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
 import { useI18n } from 'vue-i18n'
 import { watch, computed, ref } from 'vue'
+import { useLazyProps } from '@/composables/useLazyProps'
 const { t } = useI18n()
 
 const page = usePage()
@@ -14,12 +15,22 @@ const page = usePage()
 const allAccounts = computed(() => page.props.accounts?.data ?? page.props.accounts ?? [])
 const currencies = computed(() => page.props.currencies?.data ?? page.props.currencies ?? [])
 
+useLazyProps(page.props, ['accounts', 'capitalAccounts', 'drawingAccounts'])
+
 // Derive lists for selects
 const capitalAccounts = computed(() => {
+  const shared = page.props.capitalAccounts?.data ?? page.props.capitalAccounts
+  if (Array.isArray(shared) && shared.length) {
+    return shared
+  }
   const list = Array.isArray(allAccounts.value) ? allAccounts.value : []
   return list.filter(a => a?.slug === 'owners-capital' || (a?.name || '').toLowerCase().includes('capital'))
 })
 const drawingAccounts = computed(() => {
+  const shared = page.props.drawingAccounts?.data ?? page.props.drawingAccounts
+  if (Array.isArray(shared) && shared.length) {
+    return shared
+  }
   const list = Array.isArray(allAccounts.value) ? allAccounts.value : []
   return list.filter(a => a?.slug === 'owners-drawing' || (a?.name || '').toLowerCase().includes('drawing'))
 })

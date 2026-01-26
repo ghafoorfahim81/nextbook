@@ -8,15 +8,17 @@ import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, computed } from 'vue';
 import { useToast } from '@/Components/ui/toast/use-toast';
+import { useLazyProps } from '@/composables/useLazyProps'
 const { t } = useI18n();
 const { toast } = useToast();
-const { currencies, accountTypes, transactionTypes } = defineProps({
+const props = defineProps({
     accountTypes: {
-        type: Array,
-        required: true,
+        type: Object,
+        required: false,
+        default: () => ({ data: [] }),
     },
     currencies: {
-        type: Array,
+        type: Object,
         required: true,
     },
     branches: {
@@ -28,19 +30,21 @@ const { currencies, accountTypes, transactionTypes } = defineProps({
         required: true,
     },
 });
+
+useLazyProps(props, ['accountTypes'])
 const isBaseCurrency = (currencyId) => {
-    return (currencies?.data || []).some(
+    return (props.currencies?.data || []).some(
         (currency) => currency.id === currencyId && currency.is_base_currency
     );
 };
 
 const buildOpenings = () => {
-    return (currencies?.data || []).map(currency => ({
+    return (props.currencies?.data || []).map(currency => ({
         currency_id: currency.id,
         currency_name: currency.name,
         amount: '',
         rate: isBaseCurrency(currency.id) ? 1 : currency.exchange_rate,
-        type: transactionTypes.find(type => type.id === 'debit')?.id,
+        type: props.transactionTypes.find(type => type.id === 'debit')?.id,
     }));
 };
 
@@ -121,7 +125,7 @@ const handleOpeningSelectChange = (index, value) => {
                     />
 
                     <NextSelect
-                        :options="accountTypes.data"
+                        :options="props.accountTypes?.data || []"
                         v-model="form.account_type_id"
                         label-key="name"
                         value-key="id"

@@ -1,8 +1,9 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import { useForm, usePage } from '@inertiajs/vue3'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import axios from 'axios'
+import { useLazyProps } from '@/composables/useLazyProps'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
@@ -11,9 +12,11 @@ import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 
 const page = usePage()
-const ledgers = page.props.ledgers?.data || []
-const accounts = page.props.accounts?.data || []
-const currencies = page.props.currencies?.data || []
+const ledgers = computed(() => page.props.ledgers?.data || [])
+const accounts = computed(() => page.props.accounts?.data || [])
+const currencies = computed(() => page.props.currencies?.data || [])
+
+useLazyProps(page.props, ['ledgers', 'accounts'])
 
 const form = useForm({
   id: '',
@@ -52,8 +55,8 @@ onMounted(async () => {
   form.rate = r.rate
   form.cheque_no = r.cheque_no
   form.description = r.description
-  form.selected_ledger = ledgers.find(l => l.id === r.ledger_id) || r.ledger || null
-  form.selected_currency = currencies.find(c => c.id === r.currency_id) || null
+  form.selected_ledger = ledgers.value.find(l => l.id === r.ledger_id) || r.ledger || null
+  form.selected_currency = currencies.value.find(c => c.id === r.currency_id) || null
   const bankId = r?.bank_transaction?.account_id || r.bank_transaction_id
   form.bank_account_id = bankId
   form.selected_bank_account = r.bank_account
@@ -61,10 +64,19 @@ onMounted(async () => {
 
 })
 
+watch([ledgers, currencies], () => {
+  if (form.ledger_id && !form.selected_ledger) {
+    form.selected_ledger = ledgers.value.find(l => l.id === form.ledger_id) || form.selected_ledger
+  }
+  if (form.currency_id && !form.selected_currency) {
+    form.selected_currency = currencies.value.find(c => c.id === form.currency_id) || form.selected_currency
+  }
+})
+
 function handleSelectChange(field, value) {
   form[field] = value
   if (field === 'currency_id') {
-    const chosen = currencies.find(c => c.id === value)
+    const chosen = currencies.value.find(c => c.id === value)
     if (chosen) form.rate = chosen.exchange_rate
   }
 }

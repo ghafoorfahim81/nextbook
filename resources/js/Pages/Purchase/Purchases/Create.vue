@@ -19,6 +19,7 @@ import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next';
+import { useLazyProps } from '@/composables/useLazyProps'
 const { t } = useI18n();
 const showFilter = () => {
     showFilter.value = true;
@@ -28,16 +29,18 @@ const showFilter = () => {
 const { toast } = useToast()
 
 const props = defineProps({
-    ledgers: {type: Object, required: true},
+    ledgers: {type: Object, required: false, default: () => ({ data: [] })},
     salePurchaseTypes: {type: Object, required: true},
     currencies: {type: Object, required: true},
-    items: {type: Object, required: true},
+    items: {type: Object, required: false, default: () => ({ data: [] })},
     stores: {type: Object, required: true},
     unitMeasures: {type: Object, required: true},
-    accounts: {type: Object, required: true},
+    accounts: {type: Object, required: false, default: () => ({ data: [] })},
     purchaseNumber: {type: String, required: true},
     user_preferences: {type: Object, required: true},
 })
+
+useLazyProps(props, ['ledgers', 'accounts', 'items'])
 
 const form = useForm({
     number: props.purchaseNumber,
@@ -611,7 +614,7 @@ console.log('item_columns', item_columns);
             <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('purchase.purchase') }) }}</div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <NextSelect
-                    :options="ledgers.data"
+                    :options="ledgers?.data || []"
                     v-model="form.selected_ledger"
                     @update:modelValue="(value) => handleSelectChange('supplier_id', value.id)"
                     label-key="name"
@@ -696,7 +699,7 @@ console.log('item_columns', item_columns);
                             <td class="px-1 py-2 align-top w-5">{{ index + 1 }}</td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
-                                    :options="items.data"
+                                    :options="items?.data || []"
                                     v-model="item.selected_item"
                                     label-key="name"
                                     :placeholder="t('general.search_or_select')"

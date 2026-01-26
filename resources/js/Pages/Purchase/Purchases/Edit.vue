@@ -17,21 +17,24 @@ import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next';
+import { useLazyProps } from '@/composables/useLazyProps'
 
 const { t } = useI18n();
 const { toast } = useToast()
 
 const props = defineProps({
     purchase: {type: Object, required: true},
-    ledgers: {type: Object, required: true},
+    ledgers: {type: Object, required: false, default: () => ({ data: [] })},
     salePurchaseTypes: {type: Object, required: true},
     currencies: {type: Object, required: true},
-    items: {type: Object, required: true},
+    items: {type: Object, required: false, default: () => ({ data: [] })},
     stores: {type: Object, required: true},
     unitMeasures: {type: Object, required: true},
-    accounts: {type: Object, required: true},
+    accounts: {type: Object, required: false, default: () => ({ data: [] })},
     purchaseNumber: {type: String, required: true},
 })
+
+useLazyProps(props, ['ledgers', 'accounts', 'items'])
 
 const purchase = props.purchase.data;
 console.log('this is purchase',purchase);
@@ -75,6 +78,17 @@ const form = useForm({
         available_measures: [],
     })) || [],
 })
+
+watch(() => props.items?.data, (list) => {
+    if (!Array.isArray(list) || !form.items?.length) return
+    form.items = form.items.map((row) => {
+        if (row.selected_item || !row.item_id) return row
+        return {
+            ...row,
+            selected_item: list.find(i => i.id === row.item_id) || null,
+        }
+    })
+}, { immediate: true })
 
 // Set selected values based on existing data
 onMounted(() => {

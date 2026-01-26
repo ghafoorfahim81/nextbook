@@ -5,15 +5,18 @@ import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+import { useLazyProps } from '@/composables/useLazyProps'
 
 const { t } = useI18n();
 
 const props = defineProps({
     account: { type: Object, required: true }, 
     currencies: {type: Object, required: true},
-    accountTypes: {type: Object, required: true},
+    accountTypes: {type: Object, required: false, default: () => ({ data: [] })},
     transactionTypes: { type: Array, required: true },
 });
+
+useLazyProps(props, ['accountTypes'])
 
 const isBaseCurrency = (currencyId) => {
     return (props.currencies?.data || []).some(

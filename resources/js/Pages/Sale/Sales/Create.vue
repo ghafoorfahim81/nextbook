@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
+import { h, ref, watch, onUnmounted, computed } from 'vue';
 import axios from 'axios'
 import { useForm } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
@@ -18,7 +18,7 @@ import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next';
-import { router } from '@inertiajs/vue3';
+import { useLazyProps } from '@/composables/useLazyProps'
 const { t } = useI18n();
 const showFilter = () => {
     showFilter.value = true;
@@ -26,16 +26,18 @@ const showFilter = () => {
 const { toast } = useToast()
 
 const props = defineProps({
-    ledgers: {type: Object, required: true},
+    ledgers: {type: Object, required: false, default: () => ({ data: [] })},
     salePurchaseTypes: {type: Object, required: true},
     currencies: {type: Object, required: true},
     stores: {type: Object, required: true},
     unitMeasures: {type: Object, required: true},
-    accounts: {type: Object, required: true},
+    accounts: {type: Object, required: false, default: () => ({ data: [] })},
     saleNumber: {type: String, required: true},
-    items: {type: Object, required: true},
+    items: {type: Object, required: false, default: () => ({ data: [] })},
     user_preferences: {type: Object, required: true},
 })
+
+console.log('this is ledgers', props);
 
 const form = useForm({
     number: props.saleNumber,
@@ -136,6 +138,8 @@ const form = useForm({
     ],
 })
 
+useLazyProps(props, ['ledgers', 'accounts', 'items'])
+
 const itemOptions = ref([])
 
 const itemSearchOptions = computed(() => {
@@ -171,6 +175,7 @@ watch(() => props.saleNumber, (newPurchaseNumber) => {
         form.number = newPurchaseNumber;
     }
 }, { immediate: true });
+
 
 watch(() => props.ledgers?.data, (ledgers) => {
     if (ledgers && !form.selected_ledger) {
@@ -662,7 +667,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
             <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('sale.sale') }) }}</div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <NextSelect
-                    :options="ledgers.data"
+                    :options="ledgers?.data || []"
                     v-model="form.selected_ledger"
                     @update:modelValue="(value) => handleSelectChange('customer_id', value)"
                     label-key="name"
