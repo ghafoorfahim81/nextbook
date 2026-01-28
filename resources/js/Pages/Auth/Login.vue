@@ -57,12 +57,18 @@ const stopSlider = () => {
 onMounted(startSlider);
 onBeforeUnmount(stopSlider);
 
+const isLoading = ref(false);
+
 const submit = () => {
+    isLoading.value = true;
     form.transform(data => ({
         ...data,
         remember: form.remember ? 'on' : '',
     })).post(route('login'), {
-        onFinish: () => form.reset('password'),
+        onFinish: () => {
+            form.reset('password');
+            isLoading.value = false;
+        },
     });
 };
 </script>
@@ -234,10 +240,38 @@ const submit = () => {
 
                         <button
                             type="submit"
-                            class="w-full bg-[#6c4dff] hover:bg-[#5531ff] text-white py-3.5 rounded-xl font-semibold text-[15px] shadow-md shadow-[#6c4dff]/30 transition-colors"
-                            :disabled="form.processing"
+                            class="w-full bg-[#6c4dff] hover:bg-[#5531ff] text-white py-3.5 rounded-xl font-semibold text-[15px] shadow-md shadow-[#6c4dff]/30 transition-colors flex items-center justify-center relative"
+                            :disabled="form.processing || isLoading"
                         >
-                            {{ t('auth.sign_in') }}
+                            <span v-if="isLoading" class="flex items-center justify-center">
+                                <span class="mr-2 inline-flex">
+                                    <svg
+                                        class="animate-spin h-5 w-5 text-gray-700"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <circle
+                                            class="opacity-20"
+                                            cx="12"
+                                            cy="12"
+                                            r="9"
+                                            stroke="currentColor"
+                                            stroke-width="4"
+                                        />
+                                        <path
+                                            d="M21 12a9 9 0 00-9-9"
+                                            stroke="currentColor"
+                                            stroke-width="4"
+                                            stroke-linecap="round"
+                                        />
+                                    </svg>
+                                </span>
+                                <span>{{ t('auth.logging_in') }}</span>
+                            </span>
+                            <span v-else>
+                                {{ t('auth.sign_in') }}
+                            </span>
                         </button>
                     </form>
 
@@ -253,7 +287,7 @@ const submit = () => {
                 </div>
                 <div class="mt-auto pt-10 flex items-center justify-center gap-2 text-sm text-slate-400">
                      <LanguageSwitcher />
-                </div> 
+                </div>
             </div>
 
             <!-- Chat bubble placeholder -->
@@ -271,5 +305,13 @@ const submit = () => {
 /* Custom checkbox styles */
 input[type='checkbox']:checked {
     background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+}
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+.animate-spin {
+    animation: spin 1s linear infinite;
 }
 </style>
