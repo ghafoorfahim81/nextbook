@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Cache;
+use App\Support\Inertia\CacheKey;
 class PreferencesController extends Controller
 {
     public function index(Request $request)
@@ -41,7 +42,7 @@ class PreferencesController extends Controller
         $newPreferences = array_replace_recursive($currentPreferences, $validated);
 
         $user->update(['preferences' => $newPreferences]);
-        Cache::forget('user_preferences');
+        Cache::forget(CacheKey::forUser($request, 'preferences'));          
         return redirect()->back()->with('success', __('preferences.preferences_saved'));
     }
 
@@ -49,7 +50,7 @@ class PreferencesController extends Controller
     {
         $user = $request->user();
         $user->resetPreferences($category)->save();
-        Cache::forget('user_preferences');
+        Cache::forget(CacheKey::forUser($request, 'preferences'));          
         return redirect()->back()->with('success', __('preferences.preferences_reset'));
     }
 

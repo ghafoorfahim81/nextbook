@@ -72,14 +72,12 @@ class ItemController extends Controller
             $openings = collect($validated['openings'] ?? []);
             $dateConversionService = app(\App\Services\DateConversionService::class);
             $transactionService = app(\App\Services\TransactionService::class);
-            $date = $dateConversionService->toGregorian(Carbon::now()->toDateString());
-
+            $date = $dateConversionService->toGregorian(Carbon::now()->toDateString()); 
             $openings
                 ->filter(function ($o) {
-                    return !empty($o['store_id']) && (float)($o['quantity'] ?? 0) > 0;
+                    return !empty($o['store_id']) && $o['quantity'] > 0;
                 })
-                ->each(function ($o) use ($item, $validated, $dateConversionService, $transactionService, $date) {
-                    // pick cost source (fallback to purchase_price or cost on item form)
+                ->each(function ($o) use ($item, $validated, $dateConversionService, $transactionService, $date) { 
                     $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
                     $expire_date = $o['expire_date'] ? $dateConversionService->toGregorian($o['expire_date']) : null;
                     // create stock
@@ -102,11 +100,12 @@ class ItemController extends Controller
                         'id'      => (string) Str::ulid(),
                         'item_id' => $item->id,
                         'stock_id' => $stock->id,
-                    ]);
-
+                    ]); 
                 });
                 // Create opening transactions
-                if ($openings->count() > 0) {
+                if ($openings->filter(function ($o) {
+                    return !empty($o['store_id']) && $o['quantity'] > 0;
+                })->count() > 0) {
                     $glAccounts      = Cache::get('gl_accounts');
                     $homeCurrency = Cache::get('home_currency');
                     $amount = $openings->sum(function ($o) {
@@ -114,7 +113,7 @@ class ItemController extends Controller
                     });
                     $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
                     $inventoryTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['inventory'],
+                        'account_id' => $glAccounts['inventory-stock'],
                         'amount' => $cost*$amount,
                         'currency_id' => $homeCurrency->id,
                         'rate' => 1,
@@ -125,7 +124,7 @@ class ItemController extends Controller
                         'reference_id' => $item->id,
                     ]);
                     $openingBalanceTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['opening-balance-equity'],
+                        'account_id' => $glAccounts['retained-earnings'],
                         'amount' => $cost*$amount,
                         'currency_id' => $homeCurrency->id,
                         'rate' => 1,
@@ -296,7 +295,7 @@ class ItemController extends Controller
                 });
 
                 // Create opening transactions
-                if ($filteredOpenings->count() > 0) {
+                if ($filteredOpenings->filter(fn($o) => !empty($o['store_id']) && (float)($o['quantity'] ?? 0) > 0)->count() > 0) {
                     $glAccounts = Cache::get('gl_accounts');
                     $homeCurrency = Cache::get('home_currency');
                     $amount = $filteredOpenings->sum(function ($o) {
@@ -304,7 +303,7 @@ class ItemController extends Controller
                     });
                     $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
                     $inventoryTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['inventory'],
+                        'account_id' => $glAccounts['inventory-stock'],
                         'amount' => $cost*$amount,
                         'currency_id' => $homeCurrency->id,
                         'rate' => 1,
@@ -315,7 +314,7 @@ class ItemController extends Controller
                         'reference_id' => $item->id,
                     ]);
                     $openingBalanceTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['opening-balance-equity'],
+                        'account_id' => $glAccounts['retained-earnings'],
                         'amount' => $cost*$amount,
                         'currency_id' => $homeCurrency->id,
                         'rate' => 1,

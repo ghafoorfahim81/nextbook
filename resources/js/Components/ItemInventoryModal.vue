@@ -34,6 +34,8 @@ const itemDetails = computed(() => [
   { label: t('item.generic_name'), value: props.item?.generic_name, icon: Pill },
   { label: t('item.packing'), value: props.item?.packing, icon: Box },
   { label: t('item.barcode'), value: props.item?.barcode, icon: Barcode },
+  { label: t('item.sku'), value: props.item?.sku, icon: Barcode },
+  { label: t('item.item_type'), value: props.item?.item_type, icon: Tag },
   { label: t('item.unit_measure'), value: props.item?.measure, icon: Ruler },
   { label: t('item.brand'), value: props.item?.brand_name, icon: Tag },
   { label: t('item.category'), value: props.item?.category, icon: Layers }, 

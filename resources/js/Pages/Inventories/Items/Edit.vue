@@ -18,6 +18,7 @@ const props = defineProps({
     brands: { type: [Array, Object], required: true },
     sizes: { type: [Array, Object], required: true },
     user_preferences: { type: Object, required: true },
+    itemTypes: { type: [Array, Object], required: true },
 })
 
 const { t } = useI18n()
@@ -26,12 +27,14 @@ const unitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasur
 const categories = computed(() => props.categories?.data ?? props.categories ?? [])
 const brands = computed(() => props.brands?.data ?? props.brands ?? [])
 const sizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
+const itemTypes = computed(() => props.itemTypes?.data ?? props.itemTypes ?? [])
 const form = useForm({
     ...props.item.data,
     selected_unit_measure: props.item.data.unitMeasure,
     selected_category: props.item.data.category,
     selected_brand: props.item.data.brand,
     selected_size: props.item.data.size,
+    selected_item_type: props.item.data.item_type,
     photo: null,
     openings: props.item.data.openings?.length
         ? props.item.data.openings.map(o => ({
@@ -41,7 +44,7 @@ const form = useForm({
             store_id: o.store_id,
             selected_store: o.store
         }))
-        : [{ batch: '', expire_date: '', quantity: '', store_id: null, selected_store: null, store: null }],
+        : [{ batch: '', expire_date: '', quantity: 0, store_id: null, selected_store: null, store: null }],
 })
 
 
@@ -53,7 +56,7 @@ const onPhotoChange = (e) => {
 // Rows
 const addRow = (index) => {
     if (index === form.openings.length - 1) {
-        form.openings.push({ batch: '', expire_date: '', quantity: '', store_id: null, selected_store: null, store: null })
+        form.openings.push({ batch: '', expire_date: '', quantity: 0, store_id: null, selected_store: null, store: null })
     }
 }
 const removeRow = (idx) => {
@@ -150,6 +153,16 @@ const specText = computed(() => user_preferences.value.item_management.spec_text
                         :search-fields="['name','unit','symbol']"
                         :error="form.errors.unit_measure_id"
                     />
+                    <NextSelect
+                        v-model="form.selected_item_type"
+                        :options="itemTypes"
+                        @update:modelValue="(value) => handleSelectChange('item_type', value)"
+                        label-key="name"
+                        value-key="id"
+                        id="item_type"
+                        :floating-text="t('item.item_type')"
+                    />
+                    <NextInput v-show="visibleFields.sku" :label="t('item.sku')" v-model="form.sku" :error="form.errors?.sku" :placeholder="t('general.enter', { text: t('item.sku') })" />
                     <NextSelect
                         v-model="form.selected_category"
                         @update:modelValue="(value) => handleSelectChange('category_id', value)"
