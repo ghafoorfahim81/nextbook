@@ -129,6 +129,8 @@ const itemColumns = [
     { key: 'discount', label: 'preferences.fields.discount' },
     { key: 'tax', label: 'preferences.fields.tax' },
     { key: 'free', label: 'preferences.fields.free' },
+
+
 ]
 
 const itemManagementFields = [
@@ -147,6 +149,8 @@ const itemManagementFields = [
     { key: 'barcode', label: 'preferences.item_fields.barcode' },
     { key: 'rack_no', label: 'preferences.item_fields.rack_no' },
     { key: 'fast_search', label: 'preferences.item_fields.fast_search' },
+    { key: 'item_type', label: 'preferences.fields.item_type' },
+    { key: 'sku', label: 'preferences.fields.sku' },
 ]
 
 const receiptPaymentFields = [

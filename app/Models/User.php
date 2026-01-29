@@ -79,6 +79,8 @@ class User extends Authenticatable
                 'barcode' => true,
                 'rack_no' => false,
                 'fast_search' => true,
+                'item_type' => true,
+                'sku' => true,
             ],
             'spec_text' => 'Item Spec',
         ],
