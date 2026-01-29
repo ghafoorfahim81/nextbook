@@ -5,6 +5,7 @@ namespace App\Http\Resources\Inventory;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Inventory\StockOpeningResource;
+use App\Enums\ItemType;
 class ItemResource extends JsonResource
 {
     /**
@@ -40,6 +41,9 @@ class ItemResource extends JsonResource
             'rate_c' => $this->rate_c,
             'rack_no' => $this->rack_no,
             'fast_search' => $this->fast_search,
+            'sku' => $this->sku,
+            'item_type' => $this->item_type ? $this->item_type?->getLabel() : null,
+            'item_type_id' => $this->item_type,
             'stock_count' => $this->stocks->sum('quantity'),
             'stock_out_count' => $this->stockOut->sum('quantity'),
             'branch_id' => $this->branch_id,

@@ -46,6 +46,7 @@ const formatCode = (number) => {
 
 const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
 const visibleFields = computed(() => user_preferences.value.item_management.visible_fields ?? []).value
+console.log('this is visibleFields', visibleFields);
 const specText = computed(() => user_preferences.value.item_management.spec_text ?? '')
 
 const form = useForm({
@@ -78,7 +79,7 @@ const form = useForm({
     rack_no: '',
     photo: null, // file
     openings: [
-        { batch: '', expire_date: '', quantity: '', store_id: null, selected_store: null },
+        { batch: '', expire_date: '', quantity: 0, store_id: null, selected_store: null },
     ],
 })
 
@@ -112,7 +113,7 @@ const onPhotoChange = (e) => {
 // rows
 const addRow = (index) => {
     if (index === form.openings.length - 1) {
-        form.openings.push({ batch: '', expire_date: '', quantity: '', store_id: null, selected_store: null })
+        form.openings.push({ batch: '', expire_date: '', quantity: 0, store_id: null, selected_store: null })
     }
 }
 const removeRow = (idx) => {

@@ -77,7 +77,8 @@ final class DomainShared
                     'accounts-payable',
                     'cash',
                     'cost-of-goods-sold',
-                    'inventory',
+                    'inventory-stock',
+                    'retained-earnings',
                     'opening-balance-equity',
                 ])->pluck('id', 'slug')
             )),
