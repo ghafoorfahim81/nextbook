@@ -135,7 +135,7 @@ Route::middleware([
     // Settings
     Route::get('/preferences', [\App\Http\Controllers\Preferences\PreferencesController::class, 'index'])->name('preferences.index');
     Route::put('/preferences', [\App\Http\Controllers\Preferences\PreferencesController::class, 'update'])->name('preferences.update');
-    Route::post('/preferences/reset/{category?}', [\App\Http\Controllers\Preferences\PreferencesController::class, 'reset'])->name('preferences.reset');
+    Route::post('/preferences/reset/{category?}', [\App\Http\Controllers\Preferences\PreferencesController::class, 'resetPreferences'])->name('preferences.reset');
     Route::get('/preferences/export', [\App\Http\Controllers\Preferences\PreferencesController::class, 'export'])->name('preferences.export');
     Route::post('/preferences/import', [\App\Http\Controllers\Preferences\PreferencesController::class, 'import'])->name('preferences.import');
 

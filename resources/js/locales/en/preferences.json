@@ -57,7 +57,9 @@
         "rate_c": "Rate C",
         "barcode": "Barcode",
         "rack_no": "Rack No",
-        "fast_search": "Fast Search"
+        "fast_search": "Fast Search",
+        "item_type": "Item Type",
+        "sku": "Stock keeping unit"
     },
     "fields": {
         "number": "Number",
