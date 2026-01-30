@@ -25,7 +25,7 @@ return new class extends Migration
             $table->enum('discount_type', DiscountType::values())->nullable();
             $table->enum('type', SalesPurchaseType::values())->default(SalesPurchaseType::Cash->value);
             $table->text('description')->nullable();
-            $table->enum('status', TransactionStatus::values())->default(TransactionStatus::PENDING->value);
+            $table->enum('status', TransactionStatus::values())->default(TransactionStatus::POSTED->value);
             $table->ulid('store_id')->index();
             $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
