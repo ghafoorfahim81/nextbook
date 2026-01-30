@@ -13,20 +13,20 @@
                         @input="debouncedSearch"
                         type="text"
                         :placeholder="`${t('datatable.search')} ${props.title ? props.title : ''}`"
-                        :class="isRTL ? 'pl-8 w-72 pr-10' : 'pl-8 w-72 pr-20'"
+                        :class="isRTL ? 'pl-8 w-72 pr-10 border-1 text-primary ' : 'pl-8 w-72 pr-20 text-primary  focus:text-primary/80'"
                     />
                     <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                        <Search class="size-4 text-muted-foreground" />
+                        <Search class="size-4 text-primary hover:text-primary/80" />
                     </span>
                     <button
                         v-if="search"
-                        class="absolute end-0 inset-y-0 flex items-center justify-center px-2 rtl:px-8 text-muted-foreground hover:text-foreground"
+                        class="absolute end-0 inset-y-0 flex items-center justify-center px-2 rtl:px-8 text-primary"
                         @click="clearSearch"
                     >
                         <CircleX class="size-4 mr-9" />
                     </button>
                     <button
-                        class="absolute end-0 inset-y-0 flex items-center justify-center px-2 text-muted-foreground hover:text-foreground"
+                        class="absolute end-0 inset-y-0 flex items-center justify-center px-2 text-primary"
                         @click="clearSearch"
                     >
                         <SlidersHorizontal class="size-4 mr-2" />
