@@ -26,7 +26,7 @@ return new class extends Migration
             $table->enum('type', SalesPurchaseType::values())->default(SalesPurchaseType::Cash->value);
             $table->ulid('store_id')->index();
             $table->text('description')->nullable();
-            $table->enum('status', TransactionStatus::values())->default(TransactionStatus::PENDING->value);
+            $table->enum('status', TransactionStatus::values())->default(TransactionStatus::POSTED->value);
             $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();

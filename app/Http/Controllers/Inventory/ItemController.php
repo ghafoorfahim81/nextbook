@@ -72,12 +72,12 @@ class ItemController extends Controller
             $openings = collect($validated['openings'] ?? []);
             $dateConversionService = app(\App\Services\DateConversionService::class);
             $transactionService = app(\App\Services\TransactionService::class);
-            $date = $dateConversionService->toGregorian(Carbon::now()->toDateString()); 
+            $date = $dateConversionService->toGregorian(Carbon::now()->toDateString());
             $openings
                 ->filter(function ($o) {
                     return !empty($o['store_id']) && $o['quantity'] > 0;
                 })
-                ->each(function ($o) use ($item, $validated, $dateConversionService, $transactionService, $date) { 
+                ->each(function ($o) use ($item, $validated, $dateConversionService, $transactionService, $date) {
                     $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
                     $expire_date = $o['expire_date'] ? $dateConversionService->toGregorian($o['expire_date']) : null;
                     // create stock
@@ -100,7 +100,7 @@ class ItemController extends Controller
                         'id'      => (string) Str::ulid(),
                         'item_id' => $item->id,
                         'stock_id' => $stock->id,
-                    ]); 
+                    ]);
                 });
                 // Create opening transactions
                 if ($openings->filter(function ($o) {
@@ -112,34 +112,25 @@ class ItemController extends Controller
                         return (float)($o['quantity'] ?? 0);
                     });
                     $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
-                    $inventoryTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['inventory-stock'],
-                        'amount' => $cost*$amount,
-                        'currency_id' => $homeCurrency->id,
-                        'rate' => 1,
-                        'date' => $date,
-                        'type' => 'debit',
-                        'remark' => 'Opening balance for item ' . $item->name,
-                        'reference_type' => Item::class,
-                        'reference_id' => $item->id,
-                    ]);
-                    $openingBalanceTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['retained-earnings'],
-                        'amount' => $cost*$amount,
-                        'currency_id' => $homeCurrency->id,
-                        'rate' => 1,
-                        'date' => $date,
-                        'type' => 'credit',
-                        'remark' => 'Opening balance for item ' . $item->name,
-                        'reference_type' => Item::class,
-                        'reference_id' => $item->id,
-                    ]);
+
+                    $transaction = $transactionService->post(
+                        header: [
+                          'currency_id' => $homeCurrency->id,
+                          'rate' => 1,
+                          'date' => $date,
+                          'reference_type' => Item::class,
+                          'reference_id' => $item->id,
+                          'remark' => 'Opening balance for item ' . $item->name,
+                        ],
+                        lines: [
+                          ['account_id' => $glAccounts['inventory-stock'],   'debit' => $cost*$amount, 'credit' => 0],
+                          ['account_id' => $glAccounts['retained-earnings'], 'debit' => 0,    'credit' => $cost*$amount],
+                        ]
+                      );
                     ItemOpeningTransaction::create([
                         'id' => (string) Str::ulid(),
                         'item_id' => $item->id,
-                        'inventory_transaction_id' => $inventoryTransaction->id,
-                        'opening_balance_transaction_id' => $openingBalanceTransaction->id,
-                        'created_by' => auth()->id(),
+                        'transaction_id' => $transaction->id,
                     ]);
                 }
 

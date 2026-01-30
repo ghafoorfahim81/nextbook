@@ -20,8 +20,7 @@ class ItemOpeningTransaction extends Model
     protected $keyType = 'string';
     protected $fillable = [
         'item_id',
-        'inventory_transaction_id',
-        'opening_balance_transaction_id',
+        'transaction_id',
         'branch_id',
         'created_by',
         'updated_by',
@@ -36,10 +35,10 @@ class ItemOpeningTransaction extends Model
             'updated_by' => 'string',
             'deleted_by' => 'string',
             'item_id' => 'string',
-            'inventory_transaction_id' => 'string',
+            'transaction_id' => 'string',
             'opening_balance_transaction_id' => 'string',
         ];
-    
+
     }
 
     public function item()
@@ -47,13 +46,9 @@ class ItemOpeningTransaction extends Model
         return $this->belongsTo(Item::class);
     }
 
-    public function inventoryTransaction()
+    public function transaction()
     {
-        return $this->belongsTo(Transaction::class);
+        return $this->belongsTo(Transaction::class, 'transaction_id');
     }
 
-    public function openingBalanceTransaction()
-    {
-        return $this->belongsTo(Transaction::class);
-    }
 }
