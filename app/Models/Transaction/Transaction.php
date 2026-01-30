@@ -5,6 +5,7 @@ namespace App\Models\Transaction;
 use App\Models\Account\Account;
 use App\Models\Ledger\LedgerOpening;
 use App\Models\Ledger\Ledger;
+use App\Models\Transaction\TransactionLine;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\BranchSpecific;
 use App\Traits\HasBranch;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 class Transaction extends Model
 {
     use HasFactory, HasSearch, HasSorting, HasUlids, HasUserAuditable, SoftDeletes, BranchSpecific, HasBranch;
@@ -28,13 +30,13 @@ class Transaction extends Model
     public $incrementing = false;
     protected $fillable = [
         'account_id',
-        'amount',
+        'voucher_number',
+        'status',
         'currency_id',
         'reference_type',
         'reference_id',
         'rate',
         'date',
-        'type',
         'remark',
         'created_by',
         'updated_by',
@@ -50,10 +52,10 @@ class Transaction extends Model
     {
         return [
             'id' => 'string',
-            'account_id' => 'string',
+            'voucher_number' => 'string',
+            'status' => 'string',
             'transactionable_type' => 'string',
             'transactionable_id' => 'string',
-            'amount' => 'float',
             'currency_id' => 'string',
             'rate' => 'float',
             'date' => 'date',
@@ -68,9 +70,9 @@ class Transaction extends Model
         return $this->belongsTo(\App\Models\Administration\Currency::class);
     }
 
-    public function account(): BelongsTo
+    public function lines(): HasMany
     {
-        return $this->belongsTo(Account::class);
+        return $this->hasMany(TransactionLine::class);
     }
 
     public function opening()

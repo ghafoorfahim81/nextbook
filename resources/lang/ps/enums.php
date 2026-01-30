@@ -44,9 +44,11 @@ return [
         'credit' => 'Credit',
     ],
     'transaction_status' => [
-        'pending' => 'Pending',
+        'posted' => 'Posted',
         'approved' => 'Approved',
         'rejected' => 'Rejected',
+        'cancelled' => 'Cancelled',
+        'reversed' => 'Reversed',
     ],
     'transfer_status' => [
         'pending' => 'Pending',

@@ -49,9 +49,11 @@ return [
         'credit' => 'طلبکار',
     ],
     'transaction_status' => [
-        'pending' => 'در انتظار',
+        'posted' => 'ثبت شده',
         'approved' => 'تأیید شده',
         'rejected' => 'رد شده',
+        'cancelled' => 'لغو شده',
+        'reversed' => 'معکوس شده',
     ],
     'transfer_status' => [
         'pending' => 'در انتظار',
