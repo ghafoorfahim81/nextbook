@@ -19,7 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
-
+use App\Services\TransactionService;
 class AccountController extends Controller
 {
     public function __construct()
@@ -34,8 +34,7 @@ class AccountController extends Controller
         $sortField = $request->input('sortField', 'created_at');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $accounts = Account::with('transactions')
-            ->search($request->query('search'))
+        $accounts = Account::search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
@@ -67,20 +66,22 @@ class AccountController extends Controller
         if ($openings->isNotEmpty()) {
             $openings->each(function ($opening) use ($account) {
                 $type = $opening['type'] ?? 'debit';
+            
+                $transactionService = app(TransactionService::class);
 
-                $transaction = $account->transactions()->create([
-                    'amount' => (float) $opening['amount'],
-                    'currency_id' => $opening['currency_id'],
-                    'rate' => (float) ($opening['rate'] ?? 1),
-                    'date' => now(),
-                    'type' => $type,
-                    'remark' => 'Opening balance for account',
-                    'created_by' => Auth::id(),
-                ]);
-
-                $transaction->opening()->create([
-                    'ledgerable_id' => $account->id,
-                    'ledgerable_type' => 'account',
+                $transaction = $transactionService->createTransaction([
+                    'header' => [
+                        'currency_id' => $opening['currency_id'],
+                        'rate' => (float) ($opening['rate'] ?? 1),
+                        'date' => now(),
+                        'remark' => 'Opening balance for account',
+                    ],
+                    'lines' => [
+                        'account_id' => $account->id,
+                        'debit' => (float) $opening['amount'],
+                        'credit' => 0,
+                        'remark' => 'Opening balance for account',
+                    ],
                 ]);
             });
         }
