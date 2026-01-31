@@ -16,7 +16,9 @@ use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use App\Models\Administration\Branch;
 use App\Traits\BranchSpecific;
-use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Casts\Attribute; 
+use Illuminate\Support\Facades\DB;
+
 class Account extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
@@ -69,58 +71,59 @@ class Account extends Model
         ];
     }
 
-
     protected function statement(): Attribute
     {
         return Attribute::make(
             get: function () {
-                $transactions = $this->transactions()->get();
-                if (count($transactions) > 0) {
-                    $totals = $transactions->reduce(function ($carry, $transaction) {
-                        $amount = $transaction->amount * $transaction->rate;
-                        if ($transaction && !is_null($transaction->type)) {
-                            $carry[$transaction->type] += $amount;
-                        }
-                        return $carry;
-                    }, ['debit' => 0, 'credit' => 0]);
-
-                    if ($totals['debit'] > $totals['credit']) {
-                        $balanceAmount = $totals['debit'] - $totals['credit'];
-                        $balanceNature = 'dr';
-                    } elseif ($totals['credit'] > $totals['debit']) {
-                        $balanceAmount = $totals['credit'] - $totals['debit'];
-                        $balanceNature = 'cr';
-                    } else {
-                        $balanceAmount = 0;
-                        $balanceNature = 'dr'; // Default to dr if equal
-                    }
-
-                    $netBalance = $totals['debit'] - $totals['credit'];
-
-                    return [
-                        'balance' => $balanceAmount,
-                        'balance_nature' => $balanceNature,
-                        'balance_with_nature' => $balanceAmount.'.'.$balanceNature,
-                        'total_debit' => $totals['debit'],
-                        'total_credit' => $totals['credit'],
-                        'net_balance' => $netBalance,
-                        'normal_balance_nature' => 'dr',
-                        'is_normal_balance' => true,
-                    ];
+    
+                $totals = $this->transactionLines()
+                    ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
+                    ->where('transactions.status', 'posted')
+                    ->selectRaw('
+                        SUM(transaction_lines.debit * transactions.rate)  AS total_debit,
+                        SUM(transaction_lines.credit * transactions.rate) AS total_credit
+                    ')
+                    ->first();
+    
+                $totalDebit  = (float) ($totals->total_debit ?? 0);
+                $totalCredit = (float) ($totals->total_credit ?? 0);
+    
+                if ($totalDebit > $totalCredit) {
+                    $balanceAmount = $totalDebit - $totalCredit;
+                    $balanceNature = 'dr';
+                } elseif ($totalCredit > $totalDebit) {
+                    $balanceAmount = $totalCredit - $totalDebit;
+                    $balanceNature = 'cr';
+                } else {
+                    $balanceAmount = 0;
+                    $balanceNature = '';
                 }
+    
+                $netBalance = $totalDebit - $totalCredit;
+    
                 return [
-                    'balance' => 0,
-                    'balance_nature' => 'dr',
-                    'total_debit' => 0,
-                    'total_credit' => 0,
-                    'balance_with_nature' => '0',
-                    'net_balance' => 0,
-                    'normal_balance_nature' => 'dr',
-                    'is_normal_balance' => true,
+                    'balance'               => $balanceAmount,
+                    'balance_nature'        => $balanceNature,
+                    'balance_with_nature'   => $balanceAmount>0?$balanceAmount . '.' . $balanceNature:0,
+                    'total_debit'           => $totalDebit,
+                    'total_credit'          => $totalCredit,
+                    'net_balance'           => $netBalance,
+                    'normal_balance_nature' => $this->normal_balance ?? '',
+                    'is_normal_balance'     => $this->isNormalBalance($netBalance),
                 ];
             }
         );
-    } 
+    }
+
+    public function isNormalBalance(float $netBalance): bool
+    {
+        if ($this->normal_balance === 'dr') {
+            return $netBalance >= 0;
+        }
+
+        return $netBalance <= 0;
+    }
+    
 
     public static function defaultAccounts(): array
 {
@@ -918,10 +921,14 @@ class Account extends Model
         return $this->belongsTo(Branch::class);
     }
 
-    public function transactions()
+    public function transactionLines()
     {
-        return $this->hasMany(Transaction::class);
+        return $this->hasMany(
+            \App\Models\Transaction\TransactionLine::class,
+            'account_id'
+        );
     }
+
 
     public function opening()
     {
