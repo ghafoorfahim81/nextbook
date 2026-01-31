@@ -59,6 +59,7 @@ const form = useForm({
     store_id: null,
     colors: '',
     size_id: null,
+    item_type: null,
     barcode: '',
     unit_measure_id: null,
     selected_unit_measure: '',
@@ -146,6 +147,26 @@ const handleCreate = () => {
     // ensure no leftover transform
     form.transform((d) => d).post(route('items.store'), {
         forceFormData: true,
+        onSuccess: () => {
+            form.reset()
+            form.code = formatCode(props.maxCode)
+            // reset transform so it doesn't affect other submits
+            form.transform((d) => d)
+            toast({
+                title: t('general.success'),
+                description: t('general.create_success', { name: t('item.item') }),
+                variant: 'success',
+                class: 'bg-green-600 text-white',
+            });
+        },
+        onError: () => {
+            toast({
+                title: t('general.error'),
+                description: t('general.create_error', { name: t('item.item') }),
+                variant: 'error',
+                class: 'bg-red-600 text-white',
+            });
+        },
     })
 }
 
@@ -177,6 +198,7 @@ const handleCancel = () => {
 
 const handleSelectChange = (field, value) => {
     form[field] = value;
+    console.log('this is form', form[field]);
 };
 
 const handleOpeningSelectChange = (index, value) => {

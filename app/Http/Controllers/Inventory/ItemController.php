@@ -11,6 +11,7 @@ use App\Models\Inventory\Stock;
 use App\Models\Inventory\StockOpening;
 use App\Models\Inventory\StockOut;
 use App\Models\Transaction\Transaction;
+use App\Models\Transaction\TransactionLine;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,7 @@ use App\Http\Resources\Inventory\StockResource;
 use App\Http\Resources\Inventory\StockOutResource;
 use App\Models\Account\Account;
 use App\Models\Inventory\ItemOpeningTransaction;
+use App\Enums\ItemType;
 class ItemController extends Controller
 {
     public function __construct()
@@ -45,7 +47,7 @@ class ItemController extends Controller
     }
 
     public function create()
-    {
+    { 
         // Get the maximum code as integer (cast to handle mixed formats like "3" and "004")
         $maxCode = Item::query()->selectRaw('MAX(CAST(code AS INTEGER)) as max_code')
         ->value('max_code');
@@ -57,6 +59,7 @@ class ItemController extends Controller
     }
     public function store(ItemStoreRequest $request)
     {
+        
 
         $validated = $request->validated();
         // If you're uploading a photo here, handle it first (optional)
@@ -65,6 +68,7 @@ class ItemController extends Controller
         //     $validated['photo'] = $path;
         // }
 
+        // dd($validated['item_type']);
         DB::transaction(function () use ($validated, $request) {
             // 1) Create item
             $item = Item::create($validated);
@@ -113,6 +117,23 @@ class ItemController extends Controller
                     });
                     $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
 
+                    $itemType = $validated['item_type'];
+                    if ($itemType == ItemType::INVENTORY_MATERIALS->value) {
+                        $inventoryAccount = $glAccounts['inventory-stock'];
+                        $retainedEarningsAccount = $glAccounts['retained-earnings'];
+                    } 
+                    elseif ($itemType == ItemType::NON_INVENTORY_MATERIALS->value) {
+                        $inventoryAccount = $glAccounts['non-inventory-items'];
+                        $retainedEarningsAccount = $glAccounts['retained-earnings'];
+                    }
+                    elseif ($itemType == ItemType::RAW_MATERIALS->value) {
+                        $inventoryAccount = $glAccounts['raw-materials'];
+                        $retainedEarningsAccount = $glAccounts['retained-earnings'];
+                    }
+                    elseif ($itemType == ItemType::FINISHED_GOOD_ITEMS->value) {
+                        $inventoryAccount = $glAccounts['finished-goods'];
+                        $retainedEarningsAccount = $glAccounts['retained-earnings'];
+                    }
                     $transaction = $transactionService->post(
                         header: [
                           'currency_id' => $homeCurrency->id,
@@ -123,8 +144,8 @@ class ItemController extends Controller
                           'remark' => 'Opening balance for item ' . $item->name,
                         ],
                         lines: [
-                          ['account_id' => $glAccounts['inventory-stock'],   'debit' => $cost*$amount, 'credit' => 0],
-                          ['account_id' => $glAccounts['retained-earnings'], 'debit' => 0,    'credit' => $cost*$amount],
+                          ['account_id' => $inventoryAccount,   'debit' => $cost*$amount, 'credit' => 0],
+                          ['account_id' => $retainedEarningsAccount, 'debit' => 0,    'credit' => $cost*$amount],
                         ]
                       );
                     ItemOpeningTransaction::create([
@@ -194,6 +215,8 @@ class ItemController extends Controller
 
     public function update(ItemUpdateRequest $request, Item $item)
     {
+
+        
         $validated = $request->validated();
         // Handle photo update
         // dd($request->all());
@@ -252,36 +275,31 @@ class ItemController extends Controller
 
                     // Delete opening transactions
                     $item->openingTransactions()->each(function ($openingTransaction) {
-                        $inventoryTransactionId = $openingTransaction->inventory_transaction_id;
-                        $openingBalanceTransactionId = $openingTransaction->opening_balance_transaction_id;
+                        $transactionId = $openingTransaction->transaction_id; 
 
                         // Delete the opening transaction first to remove foreign key constraints
                         $openingTransaction->forceDelete();
 
                         // Then safely delete the related transactions
-                        if ($inventoryTransactionId) {
-                            Transaction::where('id', $inventoryTransactionId)->forceDelete();
-                        }
-                        if ($openingBalanceTransactionId) {
-                            Transaction::where('id', $openingBalanceTransactionId)->forceDelete();
+                        if ($transactionId) {
+                            TransactionLine::where('transaction_id', $transactionId)->forceDelete();
+                            Transaction::where('id', $transactionId)->forceDelete();
+
                         }
                     });
                 }
 
                 $item->openingTransactions()->each(function ($openingTransaction) {
                     // Store transaction IDs before deleting the opening transaction
-                    $inventoryTransactionId = $openingTransaction->inventory_transaction_id;
-                    $openingBalanceTransactionId = $openingTransaction->opening_balance_transaction_id;
+                    $transactionId = $openingTransaction->transaction_id;
 
                     // Delete the opening transaction first to remove foreign key constraints
                     $openingTransaction->forceDelete();
 
                     // Then safely delete the related transactions
-                    if ($inventoryTransactionId) {
-                        Transaction::where('id', $inventoryTransactionId)->forceDelete();
-                    }
-                    if ($openingBalanceTransactionId) {
-                        Transaction::where('id', $openingBalanceTransactionId)->forceDelete();
+                    if ($transactionId) {
+                        TransactionLine::where('transaction_id', $transactionId)->forceDelete();
+                        Transaction::where('id', $transactionId)->forceDelete();
                     }
                 });
 
@@ -293,35 +311,43 @@ class ItemController extends Controller
                         return (float)($o['quantity'] ?? 0);
                     });
                     $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
-                    $inventoryTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['inventory-stock'],
-                        'amount' => $cost*$amount,
-                        'currency_id' => $homeCurrency->id,
-                        'rate' => 1,
-                        'date' => $date,
-                        'type' => 'debit',
-                        'remark' => 'Opening balance for item ' . $item->name,
-                        'reference_type' => Item::class,
-                        'reference_id' => $item->id,
-                    ]);
-                    $openingBalanceTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['retained-earnings'],
-                        'amount' => $cost*$amount,
-                        'currency_id' => $homeCurrency->id,
-                        'rate' => 1,
-                        'date' => $date,
-                        'type' => 'credit',
-                        'remark' => 'Opening balance for item ' . $item->name,
-                        'reference_type' => Item::class,
-                        'reference_id' => $item->id,
-                    ]);
+
+                    $itemType = $validated['item_type'];
+                    if ($itemType == ItemType::INVENTORY_MATERIALS->value) {
+                        $inventoryAccount = $glAccounts['inventory-stock'];
+                        $retainedEarningsAccount = $glAccounts['retained-earnings'];
+                    } 
+                    elseif ($itemType == ItemType::NON_INVENTORY_MATERIALS->value) {
+                        $inventoryAccount = $glAccounts['non-inventory-items'];
+                        $retainedEarningsAccount = $glAccounts['retained-earnings'];
+                    }
+                    elseif ($itemType == ItemType::RAW_MATERIALS->value) {
+                        $inventoryAccount = $glAccounts['raw-materials'];
+                        $retainedEarningsAccount = $glAccounts['retained-earnings'];
+                    }
+                    elseif ($itemType == ItemType::FINISHED_GOOD_ITEMS->value) {
+                        $inventoryAccount = $glAccounts['finished-goods'];
+                        $retainedEarningsAccount = $glAccounts['retained-earnings'];
+                    }
+                    $transaction = $transactionService->post(
+                        header: [
+                          'currency_id' => $homeCurrency->id,
+                          'rate' => 1,
+                          'date' => $date,
+                          'reference_type' => Item::class,
+                          'reference_id' => $item->id,
+                          'remark' => 'Opening balance for item ' . $item->name,
+                        ],
+                        lines: [
+                          ['account_id' => $inventoryAccount,   'debit' => $cost*$amount, 'credit' => 0],
+                          ['account_id' => $retainedEarningsAccount, 'debit' => 0,    'credit' => $cost*$amount],
+                        ]
+                      );
                     ItemOpeningTransaction::create([
                         'id' => (string) Str::ulid(),
                         'item_id' => $item->id,
-                        'inventory_transaction_id' => $inventoryTransaction->id,
-                        'opening_balance_transaction_id' => $openingBalanceTransaction->id,
-                            'created_by' => auth()->id(),
-                        ]);
+                        'transaction_id' => $transaction->id,
+                    ]);
                 }
 
         });
@@ -351,12 +377,12 @@ class ItemController extends Controller
                 });
 
                 // Delete opening transactions with their related models
-                $item->openingTransactions()->with(['inventoryTransaction', 'openingBalanceTransaction'])->each(function ($openingTransaction) {
-                    if ($openingTransaction->inventoryTransaction) {
-                        $openingTransaction->inventoryTransaction->delete();
-                    }
-                    if ($openingTransaction->openingBalanceTransaction) {
-                        $openingTransaction->openingBalanceTransaction->delete();
+                $item->openingTransactions()->with(['transaction'])->each(function ($openingTransaction) {
+                    if ($openingTransaction->transaction) {
+                        $openingTransaction->transaction->lines()->each(function ($line) {
+                            $line->delete();
+                        });
+                        $openingTransaction->transaction->delete();
                     }
                     $openingTransaction->delete();
                 });

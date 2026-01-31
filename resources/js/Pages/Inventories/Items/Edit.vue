@@ -35,6 +35,7 @@ const form = useForm({
     selected_brand: props.item.data.brand,
     selected_size: props.item.data.size,
     selected_item_type: props.item.data.item_type,
+    item_type: props.item.data.item_type_id,
     photo: null,
     openings: props.item.data.openings?.length
         ? props.item.data.openings.map(o => ({

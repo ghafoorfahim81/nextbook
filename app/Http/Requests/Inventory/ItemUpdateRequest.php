@@ -26,7 +26,7 @@ class ItemUpdateRequest extends FormRequest
             'code' => ['required', 'string', 'max:256', Rule::unique('items')->ignore($this->route('item'))->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
             'item_type' => ['nullable', 'string', Rule::in(ItemType::values()) ?? ItemType::INVENTORY_MATERIALS->value],
             'sku' => ['nullable', 'string', 'unique:items,sku,NULL,id,branch_id,NULL,deleted_at,NULL'],
-             'generic_name' => ['nullable', 'string'],
+            'generic_name' => ['nullable', 'string'],
             'packing' => ['nullable', 'string'],
             'barcode' => ['nullable', 'string'],
             'unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
