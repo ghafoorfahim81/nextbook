@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('transactions', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->ulid('currency_id')->index();
-            $table->decimal('rate', 10, 9);
+            $table->decimal('rate', 10, 4);
             $table->date('date')->index();
             $table->string('voucher_number')->nullable()->index();
             $table->string('reference_type')->nullable()->index();

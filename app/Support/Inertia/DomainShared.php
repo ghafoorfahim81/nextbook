@@ -24,16 +24,6 @@ final class DomainShared
     {
         $cacheDuration = 60 * 60;
 
-        $equityAccounts = fn() => Cache::remember(
-            CacheKey::forCompanyBranchLocale($request, 'equity_accounts'),
-            $cacheDuration,
-            fn() => Account::query()
-                ->join('account_types', 'accounts.account_type_id', '=', 'account_types.id')
-                ->where('account_types.slug', 'equity')
-                ->select('accounts.id', 'accounts.name')
-                ->get()
-        );
-
         return [
             'accounts' => Inertia::lazy(fn() => Cache::remember(
                 CacheKey::forCompanyBranchLocale($request, 'accounts'),
@@ -67,23 +57,7 @@ final class DomainShared
                 CacheKey::forCompanyBranchLocale($request, 'roles'),
                 $cacheDuration,
                 fn() => Role::query()->orderBy('id')->limit(10)->get()
-            )),
-            'glAccounts' => Inertia::lazy(fn() => Cache::remember(
-                CacheKey::forCompanyBranchLocale($request, 'gl_accounts'),
-                $cacheDuration,
-                fn() => Account::query()->whereIn('slug', [
-                    'sales-revenue',
-                    'accounts-receivable',
-                    'accounts-payable',
-                    'cash',
-                    'cost-of-goods-sold',
-                    'inventory-stock',
-                    'retained-earnings',
-                    'opening-balance-equity',
-                ])->pluck('id', 'slug')
-            )),
-            'capitalAccounts' => Inertia::lazy($equityAccounts),
-            'drawingAccounts' => Inertia::lazy($equityAccounts),
+            )),  
         ];
     }
 }

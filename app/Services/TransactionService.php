@@ -29,8 +29,7 @@ class TransactionService
             // -----------------------------
             // 2️⃣ Create transaction (header)
             // -----------------------------
-            $transaction = Transaction::create([
-                'branch_id'      => $header['branch_id'],
+            $transaction = Transaction::create([ 
                 'currency_id'    => $header['currency_id'],
                 'rate'           => $header['rate'],
                 'date'           => $header['date'],
@@ -88,8 +87,7 @@ class TransactionService
 
     protected function validateHeader(array $header): void
     {
-        validator($header, [
-            'branch_id'      => 'required|exists:branches,id',
+        validator($header, [ 
             'currency_id'    => 'required|exists:currencies,id',
             'rate'           => 'required|numeric|min:0',
             'date'           => 'required|date',

@@ -27,7 +27,7 @@ use App\Models\Administration\UnitMeasure;
 use App\Enums\ItemType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-
+use App\Models\Account\Account;
 final class LookupShared
 {
     /**
@@ -104,6 +104,26 @@ final class LookupShared
             $cacheDuration,
             fn() => Currency::query()->where('is_base_currency', true)->first()
         );
+        Cache::put('home_currency', $homeCurrency);
+
+        $glAccounts = Cache::remember(
+            CacheKey::forCompanyBranchLocale($request, 'gl_accounts'),
+            $cacheDuration,
+            fn() => Account::query()->whereIn('slug', [
+                'sales-revenue',
+                'accounts-receivable',
+                'accounts-payable',
+                'cash',
+                'cost-of-goods-sold',
+                'inventory-stock',
+                'retained-earnings',
+                'opening-balance-equity',
+                'non-inventory-items',
+                'raw-materials',
+                'finished-goods',
+            ])->pluck('id', 'slug')
+        );
+        Cache::put('gl_accounts', $glAccounts);
 
         return [
             'mainBranch' => $mainBranch,

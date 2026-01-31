@@ -2,6 +2,7 @@
     <div class="relative">
         <!-- the actual input -->
         <Input
+            ref="inputRef"
             :id="id"
             :type="type"
             v-model="model"
@@ -9,7 +10,7 @@
             :disabled="disabled"
             :autocomplete="autocomplete"
             :placeholder="placeholder"
-            @click="$emit('click')"
+            @click="handleClick"
             class="peer block w-full border-1 border-border bg-background px-3 py-3 text-sm shadow-sm
             placeholder:text-transparent focus:placeholder:text-muted-foreground
             disabled:cursor-not-allowed disabled:opacity-50"
@@ -38,7 +39,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import Input from '@/Components/ui/input/Input.vue'
 
 const props = defineProps({
@@ -61,6 +62,30 @@ const model = computed({
     get: () => props.modelValue,
     set: v => emit('update:modelValue', v),
 })
+
+const inputRef = ref(null)
+function handleClick(e) {
+    // Call any click listener provided via $emit
+    // Select input value if enabled
+    if (!props.disabled && inputRef.value) {
+        // The actual input ref may be on the nexted Input, so dig if necessary
+        // Vue 3 <script setup> exposes .$el on the component ref
+        let el = inputRef.value.$el || inputRef.value
+        // If the inner element is an input, select it
+        if (el && typeof el.querySelector === 'function') {
+            const realInput = el.querySelector('input') || el
+            if (realInput && typeof realInput.select === 'function') {
+                realInput.select()
+            }
+        } else if (el && typeof el.select === 'function') {
+            el.select()
+        }
+    }
+    // Emit click upwards as before
+    // NOTE: this still allows the user of the component to attach their own handler
+    // after select is called
+    emit('click', e)
+}
 </script>
 
 <style scoped>
