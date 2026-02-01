@@ -16,9 +16,9 @@ class TransactionService
      * MANY transaction lines
      * debit MUST equal credit
      */
-    public function post(array $header, array $lines): Transaction
+    public function post(array $header, array $lines, array $currencies = []): Transaction
     {
-        return DB::transaction(function () use ($header, $lines) {
+        return DB::transaction(function () use ($header, $lines, $currencies) {
 
             // -----------------------------
             // 1️⃣ Validate header
@@ -29,7 +29,7 @@ class TransactionService
             // -----------------------------
             // 2️⃣ Create transaction (header)
             // -----------------------------
-            $transaction = Transaction::create([ 
+            $transaction = Transaction::create([
                 'currency_id'    => $header['currency_id'],
                 'rate'           => $header['rate'],
                 'date'           => $header['date'],
@@ -68,6 +68,13 @@ class TransactionService
                     'remark'     => $line['remark'] ?? null,
                     'created_by' => Auth::id(),
                 ]);
+
+            }
+            foreach ($currencies as $currency) {
+                $transaction->lines()->currency()->create([
+                    'currency_id' => $currency['currency_id'],
+                    'exchange_rate' => $currency['exchange_rate'],
+                ]);
             }
 
             // -----------------------------
@@ -87,7 +94,7 @@ class TransactionService
 
     protected function validateHeader(array $header): void
     {
-        validator($header, [ 
+        validator($header, [
             'currency_id'    => 'required|exists:currencies,id',
             'rate'           => 'required|numeric|min:0',
             'date'           => 'required|date',
