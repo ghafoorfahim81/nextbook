@@ -16,7 +16,7 @@ use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use App\Models\Administration\Branch;
 use App\Traits\BranchSpecific;
-use Illuminate\Database\Eloquent\Casts\Attribute; 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\DB;
 
 class Account extends Model
@@ -75,7 +75,7 @@ class Account extends Model
     {
         return Attribute::make(
             get: function () {
-    
+
                 $totals = $this->transactionLines()
                     ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
                     ->where('transactions.status', 'posted')
@@ -84,10 +84,10 @@ class Account extends Model
                         SUM(transaction_lines.credit * transactions.rate) AS total_credit
                     ')
                     ->first();
-    
+
                 $totalDebit  = (float) ($totals->total_debit ?? 0);
                 $totalCredit = (float) ($totals->total_credit ?? 0);
-    
+
                 if ($totalDebit > $totalCredit) {
                     $balanceAmount = $totalDebit - $totalCredit;
                     $balanceNature = 'dr';
@@ -98,9 +98,9 @@ class Account extends Model
                     $balanceAmount = 0;
                     $balanceNature = '';
                 }
-    
+
                 $netBalance = $totalDebit - $totalCredit;
-    
+
                 return [
                     'balance'               => $balanceAmount,
                     'balance_nature'        => $balanceNature,
@@ -123,7 +123,7 @@ class Account extends Model
 
         return $netBalance <= 0;
     }
-    
+
 
     public static function defaultAccounts(): array
 {
@@ -131,7 +131,7 @@ class Account extends Model
         // ================= ASSETS =================
             [
                 'name' => 'Cash in Hand',
-                'number' => '10100',
+                'number' => '1010',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'cash-or-bank')->first()->id,
                 'account_type_slug' => 'cash-or-bank',
                 'slug' => 'cash-in-hand',
@@ -140,7 +140,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Cash in Safe',
-                'number' => '10200',
+                'number' => '1020',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'cash-or-bank')->first()->id,
                 'account_type_slug' => 'cash-or-bank',
                 'slug' => 'cash-in-safe',
@@ -149,7 +149,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Cash in Bank',
-                'number' => '10300',
+                'number' => '1030',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'cash-or-bank')->first()->id,
                 'account_type_slug' => 'cash-or-bank',
                 'slug' => 'cash-in-bank',
@@ -158,7 +158,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Petty Cash',
-                'number' => '10400',
+                'number' => '1040',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'cash-or-bank')->first()->id,
                 'account_type_slug' => 'cash-or-bank',
                 'slug' => 'petty-cash',
@@ -167,7 +167,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Accounts Receivable',
-                'number' => '20100',
+                'number' => '2010',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'account-receivable')->first()->id,
                 'account_type_slug' => 'account-receivable',
                 'slug' => 'accounts-receivable',
@@ -176,7 +176,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Undeposited Money',
-                'number' => '30100',
+                'number' => '3010',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
                 'account_type_slug' => 'other-current-asset',
                 'slug' => 'undeposited-money',
@@ -185,7 +185,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Inventory Stock',
-                'number' => '30200',
+                'number' => '3020',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
                 'account_type_slug' => 'other-current-asset',
                 'slug' => 'inventory-stock',
@@ -194,7 +194,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Non-Inventory items',
-                'number' => '30210',
+                'number' => '3021',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
                 'account_type_slug' => 'other-current-asset',
                 'slug' => 'non-inventory-items',
@@ -203,7 +203,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Raw materials inventory',
-                'number' => '30400',
+                'number' => '3040',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
                 'account_type_slug' => 'other-current-asset',
                 'slug' => 'raw-materials',
@@ -212,7 +212,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Finished goods inventory',
-                'number' => '30500',
+                'number' => '3050',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
                 'account_type_slug' => 'other-current-asset',
                 'slug' => 'finished-goods',
@@ -221,7 +221,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Advances and Prepaid/Diposit',
-                'number' => '30300',
+                'number' => '3030',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
                 'account_type_slug' => 'other-current-asset',
                 'slug' => 'advances-prepaid-deposit',
@@ -230,7 +230,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Fixed Assets',
-                'number' => '40000',
+                'number' => '4000',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'fixed-asset')->first()->id,
                 'account_type_slug' => 'fixed-asset',
                 'slug' => 'fixed-assets',
@@ -239,7 +239,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Land & Building',
-                'number' => '40100',
+                'number' => '4010',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'fixed-asset')->first()->id,
                 'account_type_slug' => 'fixed-asset',
                 'slug' => 'land-building',
@@ -248,7 +248,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Machinery & Equipments',
-                'number' => '40200',
+                'number' => '4020',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'fixed-asset')->first()->id,
                 'account_type_slug' => 'fixed-asset',
                 'slug' => 'machinery-equipments',
@@ -257,7 +257,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Vehicles & Generators',
-                'number' => '40300',
+                'number' => '4030',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'fixed-asset')->first()->id,
                 'account_type_slug' => 'fixed-asset',
                 'slug' => 'vehicles-generators',
@@ -266,7 +266,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Furnitures & Fixtures',
-                'number' => '40400',
+                'number' => '4040',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'fixed-asset')->first()->id,
                 'account_type_slug' => 'fixed-asset',
                 'slug' => 'furnitures-fixtures',
@@ -275,7 +275,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Computers & Phone Related Items',
-                'number' => '40500',
+                'number' => '4050',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'fixed-asset')->first()->id,
                 'account_type_slug' => 'fixed-asset',
                 'slug' => 'computers-phone-items',
@@ -284,7 +284,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Kitchen Utensils & Misc. Tools',
-                'number' => '40600',
+                'number' => '4060',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'fixed-asset')->first()->id,
                 'account_type_slug' => 'fixed-asset',
                 'slug' => 'kitchen-utensils-misc-tools',
@@ -293,7 +293,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Accumulated Depreciation',
-                'number' => '40700',
+                'number' => '4070',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'fixed-asset')->first()->id,
                 'account_type_slug' => 'fixed-asset',
                 'slug' => 'accumulated-depreciation',
@@ -302,7 +302,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Accounts Payable',
-                'number' => '50100',
+                'number' => '5010',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'accounts-payable')->first()->id,
                 'account_type_slug' => 'accounts-payable',
                 'slug' => 'accounts-payable',
@@ -311,7 +311,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Current Liabilities',
-                'number' => '50800',
+                'number' => '5080',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-liability')->first()->id,
                 'account_type_slug' => 'other-current-liability',
                 'slug' => 'current-liabilities',
@@ -320,7 +320,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Payroll Liabilities',
-                'number' => '50810',
+                'number' => '5081',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-liability')->first()->id,
                 'account_type_slug' => 'other-current-liability',
                 'slug' => 'payroll-liabilities',
@@ -329,7 +329,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Tax Liabilities',
-                'number' => '50820',
+                'number' => '5082',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-liability')->first()->id,
                 'account_type_slug' => 'other-current-liability',
                 'slug' => 'tax-liabilities',
@@ -338,7 +338,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Other Accrued Expenses',
-                'number' => '50830',
+                'number' => '5083',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-liability')->first()->id,
                 'account_type_slug' => 'other-current-liability',
                 'slug' => 'other-accrued-expenses',
@@ -347,7 +347,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Loan',
-                'number' => '50900',
+                    'number' => '5090',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'long-term-liability')->first()->id,
                 'account_type_slug' => 'long-term-liability',
                 'slug' => 'loan',
@@ -356,7 +356,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Opening Balance Equity',
-                'number' => '60000',
+                'number' => '6000',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'equity')->first()->id,
                 'account_type_slug' => 'equity',
                 'slug' => 'opening-balance-equity',
@@ -365,7 +365,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Owners Equity',
-                'number' => '60100',
+                'number' => '6010',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'equity')->first()->id,
                 'account_type_slug' => 'equity',
                 'slug' => 'owners-equity',
@@ -374,7 +374,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Owner 1 Contribution',
-                'number' => '60110',
+                'number' => '6011',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'equity')->first()->id,
                 'account_type_slug' => 'equity',
                 'slug' => 'owner-1-contribution',
@@ -383,7 +383,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Owner 2 Contribution',
-                'number' => '60120',
+                'number' => '6012',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'equity')->first()->id,
                 'account_type_slug' => 'equity',
                 'slug' => 'owner-2-contribution',
@@ -392,7 +392,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Owners Draw',
-                'number' => '60200',
+                'number' => '6020',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'equity')->first()->id,
                 'account_type_slug' => 'equity',
                 'slug' => 'owners-draw',
@@ -401,7 +401,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Owner 1 Draw',
-                'number' => '60210',
+                    'number' => '6021',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'equity')->first()->id,
                 'account_type_slug' => 'equity',
                 'slug' => 'owner-1-draw',
@@ -410,7 +410,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Owner 1 Draw',
-                'number' => '60220',
+                'number' => '6022',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'equity')->first()->id,
                 'account_type_slug' => 'equity',
                 'slug' => 'owner-1-draw-2',
@@ -419,7 +419,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Reatined Earnings',
-                'number' => '60300',
+                'number' => '6030',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'equity')->first()->id,
                 'account_type_slug' => 'equity',
                 'slug' => 'retained-earnings',
@@ -428,7 +428,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Income',
-                'number' => '70000',
+                'number' => '7000',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'income')->first()->id,
                 'account_type_slug' => 'income',
                 'slug' => 'income',
@@ -437,7 +437,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Product Income',
-                'number' => '70100',
+                'number' => '7010',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'income')->first()->id,
                 'account_type_slug' => 'income',
                 'slug' => 'product-income',
@@ -446,7 +446,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Service Revenues',
-                'number' => '70200',
+                'number' => '7020',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'income')->first()->id,
                 'account_type_slug' => 'income',
                 'slug' => 'service-revenues',
@@ -455,7 +455,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Cost of Goods Sold',
-                'number' => '80000',
+                'number' => '8000',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'cost-of-goods-sold')->first()->id,
                 'account_type_slug' => 'cost-of-goods-sold',
                 'slug' => 'cost-of-goods-sold',
@@ -464,7 +464,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Direct Material Cost',
-                'number' => '80100',
+                'number' => '8010',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'cost-of-goods-sold')->first()->id,
                 'account_type_slug' => 'cost-of-goods-sold',
                 'slug' => 'direct-material-cost',
@@ -473,7 +473,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Direct Working Cost',
-                'number' => '80200',
+                'number' => '8020',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'cost-of-goods-sold')->first()->id,
                 'account_type_slug' => 'cost-of-goods-sold',
                 'slug' => 'direct-working-cost',
@@ -482,7 +482,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Admin Expenses',
-                'number' => '91000',
+                'number' => '9100',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'admin-expenses',
@@ -491,7 +491,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Office Rent',
-                'number' => '91010',
+                    'number' => '9101',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'office-rent',
@@ -500,7 +500,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Kitchen Food/Refreshment',
-                'number' => '91020',
+                'number' => '9102',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'kitchen-food-refreshment',
@@ -509,7 +509,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Site Food and Hospitality',
-                'number' => '91030',
+                'number' => '9103',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'site-food-hospitality',
@@ -518,7 +518,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Office Supplies/Equipments',
-                'number' => '91040',
+                'number' => '9104',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'office-supplies-equipments',
@@ -527,7 +527,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Office Stationary',
-                'number' => '91050',
+                'number' => '9105',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'office-stationary',
@@ -536,7 +536,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Advertising/Promotion',
-                'number' => '91060',
+                'number' => '9106',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'advertising-promotion',
@@ -545,7 +545,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Employee Recruitment/Training',
-                'number' => '91070',
+                'number' => '9107',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'employee-recruitment-training',
@@ -554,7 +554,7 @@ class Account extends Model
             ],
             [
                 'name' => 'License Permit and Legal Fee',
-                'number' => '91080',
+                'number' => '9108',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'license-permit-legal-fee',
@@ -563,7 +563,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Payroll Expenses',
-                'number' => '92000',
+                'number' => '9200',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'payroll-expenses',
@@ -572,7 +572,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Permanent Staff Salary',
-                'number' => '92010',
+                'number' => '9201',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'permanent-staff-salary',
@@ -581,7 +581,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Temporary Staff Salary',
-                'number' => '92020',
+                'number' => '9202',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'temporary-staff-salary',
@@ -590,7 +590,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Consultant/Professional Salary',
-                'number' => '92070',
+                'number' => '9207',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'consultant-professional-salary',
@@ -599,7 +599,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Allowances & Commissions',
-                'number' => '92080',
+                    'number' => '9208',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'allowances-commissions',
@@ -608,7 +608,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Operational Expenses',
-                'number' => '93000',
+                'number' => '9300',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'operational-expenses',
@@ -617,7 +617,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Vehicle Expense',
-                'number' => '93010',
+                'number' => '9301',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'vehicle-expense',
@@ -626,7 +626,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Generator Expense',
-                'number' => '93020',
+                'number' => '9302',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'generator-expense',
@@ -635,7 +635,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Building Repair/Maintenance',
-                'number' => '93030',
+                'number' => '9303',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'building-repair-maintenance',
@@ -644,7 +644,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Transportation/Taxi Fare',
-                'number' => '93040',
+                'number' => '9304',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'transportation-taxi-fare',
@@ -653,7 +653,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Travel/ Visa/ Postage',
-                'number' => '93050',
+                'number' => '9305',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'travel-visa-postage',
@@ -662,7 +662,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Safety & Mediacal Supplies',
-                'number' => '93060',
+                'number' => '9306',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'safety-medical-supplies',
@@ -671,7 +671,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Utilities Expenses',
-                'number' => '94000',
+                'number' => '9400',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'utilities-expenses',
@@ -680,7 +680,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Gas Expense',
-                'number' => '94010',
+                'number' => '9401',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'gas-expense',
@@ -689,7 +689,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Electricity Bill/Genset Fuel',
-                'number' => '94020',
+                'number' => '9402',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'electricity-bill-genset-fuel',
@@ -698,7 +698,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Internet Bill',
-                'number' => '94030',
+                'number' => '9403',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'internet-bill',
@@ -707,7 +707,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Telephone Expense',
-                'number' => '94040',
+                'number' => '9404',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'telephone-expense',
@@ -716,7 +716,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Software/Website/Email Hosting',
-                'number' => '94050',
+                'number' => '9405',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'software-website-email-hosting',
@@ -725,7 +725,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Cleaning Supplies/Trash Removal',
-                'number' => '94060',
+                'number' => '9406',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'cleaning-supplies-trash-removal',
@@ -734,7 +734,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Heating Expense',
-                'number' => '94070',
+                'number' => '9407',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'heating-expense',
@@ -743,7 +743,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Other Expenses',
-                'number' => '95000',
+                'number' => '9500',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'other-expenses',
@@ -752,7 +752,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Depreciation Expense',
-                'number' => '95010',
+                'number' => '9501',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'depreciation-expense',
@@ -761,7 +761,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Bank Service Charges',
-                'number' => '95020',
+                'number' => '9502',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'bank-service-charges',
@@ -770,7 +770,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Bad Debts',
-                'number' => '95030',
+                'number' => '9503',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'bad-debts',
@@ -779,7 +779,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Insurance Expense',
-                'number' => '95040',
+                'number' => '9504',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'insurance-expense',
@@ -788,7 +788,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Interest Expense',
-                'number' => '95060',
+                'number' => '9506',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'interest-expense',
@@ -797,7 +797,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Misc. Supplies and Services',
-                'number' => '95070',
+                'number' => '9507',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'misc-supplies-services',
@@ -806,7 +806,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Tax Related Expenses',
-                'number' => '96000',
+                'number' => '9600',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'tax-related-expenses',
@@ -815,7 +815,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Business Receipt Tax BRT',
-                'number' => '96010',
+                'number' => '9601',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'business-receipt-tax-brt',
@@ -824,7 +824,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Salary Withholding Tax',
-                'number' => '96020',
+                'number' => '9602',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'salary-withholding-tax',
@@ -833,7 +833,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Rent Withholding Tax',
-                'number' => '96030',
+                'number' => '9603',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'rent-withholding-tax',
@@ -842,7 +842,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Contractor Withholding Tax',
-                'number' => '96040',
+                'number' => '9604',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'contractor-withholding-tax',
@@ -851,7 +851,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Income Tax',
-                'number' => '96050',
+                'number' => '9605',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'income-tax',
@@ -860,7 +860,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Exchange Gain or Loss',
-                'number' => '97000',
+                'number' => '9700',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'exchange-gain-loss',
@@ -869,7 +869,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Ask My Accountant',
-                'number' => '98000',
+                'number' => '9800',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'ask-my-accountant',
@@ -878,7 +878,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Purchase Orders',
-                'number' => '90100',
+                'number' => '9010',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'non-posting')->first()->id,
                 'account_type_slug' => 'non-posting',
                 'slug' => 'purchase-orders',
@@ -887,7 +887,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Sales Orders',
-                'number' => '90200',
+                'number' => '9020',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'non-posting')->first()->id,
                 'account_type_slug' => 'non-posting',
                 'slug' => 'sales-orders',
@@ -896,13 +896,13 @@ class Account extends Model
             ],
             [
                 'name' => 'Quotation',
-                'number' => '90300',
+                'number' => '9030',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'non-posting')->first()->id,
                 'account_type_slug' => 'non-posting',
                 'slug' => 'quotation',
                 'remark' => '',
                 'is_main' => true,
-            ], 
+            ],
         ];
     }
 
