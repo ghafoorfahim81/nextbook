@@ -66,13 +66,13 @@ class AccountController extends Controller
         if ($openings->isNotEmpty()) {
             $openings->each(function ($opening) use ($account) {
                 $type = $opening['type'] ?? 'debit';
-
+            
                 $transactionService = app(TransactionService::class);
 
                 $transaction = $transactionService->createTransaction([
                     'header' => [
-                        'currency_id' => $opening['currency_id'][0],
-                        'rate' => (float) ($opening['rate'][0] ?? 1),
+                        'currency_id' => $opening['currency_id'],
+                        'rate' => (float) ($opening['rate'] ?? 1),
                         'date' => now(),
                         'remark' => 'Opening balance for account',
                     ],
@@ -81,10 +81,6 @@ class AccountController extends Controller
                         'debit' => (float) $opening['amount'],
                         'credit' => 0,
                         'remark' => 'Opening balance for account',
-                    ],
-                    'currencies' => [
-                        'currency_id' => $opening['currency_id'],
-                        'exchange_rate' => (float) ($opening['rate'] ?? 1),
                     ],
                 ]);
             });
