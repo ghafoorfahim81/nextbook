@@ -1,48 +1,75 @@
 <template>
     <div class="relative w-full">
-      <div class="relative">
-        <v-select
-          :id="id"
-          :options="searchableOptions"
-          :label="labelKey"
-          :reduce="reduceInternal"
-          :modelValue="modelValue"
-          :dir="isRTL ? 'rtl' : 'ltr'"
-          @update:modelValue="val => emit('update:modelValue', val)"
-          @search="handleSearch"
-          @update:search="onSearchUpdate"
-          :filterable="false"
-          :clearable="clearable"
-          :loading="isLoading"
-          :placeholder="placeholder"
-          :close-on-select="true"
-          :no-options-text="noResultsText"
-          :append-to-body="shouldAppendToBody"
-          :calculate-position="shouldAppendToBody ? calculatePosition : null"
-          class="col-span-3 w-full sm:text-sm"
-          :class="[{ 'no-arrow': !showArrow }]"
-          v-bind="$attrs"
-        />
+      <v-select
+        :id="id"
+        :options="searchableOptions"
+        :label="labelKey"
+        :reduce="reduceInternal"
+        :modelValue="modelValue"
+        :dir="isRTL ? 'rtl' : 'ltr'"
+        @update:modelValue="val => emit('update:modelValue', val)"
+        @search="handleSearch"
+        @update:search="onSearchUpdate"
+        :filterable="false"
+        :clearable="clearable"
+        :loading="isLoading"
+        :placeholder="placeholder"
+        :close-on-select="true"
+        :no-options-text="noResultsText"
+        :append-to-body="shouldAppendToBody"
+        :calculate-position="shouldAppendToBody ? calculatePosition : null"
+        class="col-span-3 w-full sm:text-sm"
+        :class="[{ 'no-arrow': !showArrow }]"
 
-        <!-- Floating label (does NOT block clicks) -->
-        <FloatingLabel
-          :id="id"
-          :label="floatingText"
-          class="pointer-events-none z-20"
-        />
-      </div>
+        v-bind="$attrs"
+      >
+        <!-- Add New Option Button (always visible at bottom when open) -->
+        <template #list-footer v-if="showQuickCreateButton">
+          <div class="list-footer">
+            <button
+              type="button"
+              @click="openAddDialog"
+              class="btn btn-sm btn-outline-primary px-3 drop-btn"
+            >
+              <i class="bx bx-list-plus ml-2 text-center"></i>
+              {{ addNewButtonText }}
+            </button>
+          </div>
+        </template>
+      </v-select>
 
+      <QuickCreateModal
+        v-if="quickCreateConfig"
+        :open="quickCreateOpen"
+        :resource-type="resourceType"
+        :additional-params="normalizedSearchOptions.additionalParams || {}"
+        @update:open="quickCreateOpen = $event"
+        @created="handleQuickCreated"
+      />
+
+      <!-- Floating label (does NOT block clicks) -->
+      <FloatingLabel
+        :id="id"
+        :label="floatingText"
+        class="pointer-events-none z-20"
+      />
+
+      <!-- Error Display -->
       <span v-if="error" class="mt-1 block text-red-500 text-sm">
         {{ error }}
       </span>
     </div>
   </template>
 
+
+
   <script setup>
-    import { ref, computed, watch, onMounted, getCurrentInstance } from 'vue'
+    import { ref, computed, watch, onMounted, onUnmounted, getCurrentInstance, nextTick } from 'vue'
   import { useI18n } from 'vue-i18n'
   import FloatingLabel from '@/Components/next/FloatingLabel.vue'
   import { useSearchResources } from '@/composables/useSearchResources.js'
+  import QuickCreateModal from '@/Components/next/QuickCreateModal.vue'
+  import { QUICK_CREATE_EVENT, quickCreateRegistry } from '@/Components/next/quickCreateRegistry'
 
   const { t } = useI18n()
 
@@ -65,13 +92,15 @@
     searchOptions: { type: Object, default: () => ({}) },
 
     showArrow: { type: Boolean, default: true },
+    hasAddButton: { type: Boolean, default: true },
+    addNewLabel: { type: String, default: '' },
     clearable: { type: Boolean, default: true },
 
     /* default OFF — can be enabled per-usage if needed */
     appendToBody: { type: Boolean, default: false },
   })
 
-  const emit = defineEmits(['update:modelValue'])
+  const emit = defineEmits(['update:modelValue', 'add-new'])
 
   /* ---------------- I18N / DIRECTION ---------------- */
 
@@ -100,6 +129,52 @@
 
   const shouldAppendToBody = computed(() => {
     return props.appendToBody && !isInDialog.value
+  })
+
+  const quickCreateOpen = ref(false)
+  const quickCreateConfig = computed(() => {
+    if (!props.resourceType) return null
+    return quickCreateRegistry?.[props.resourceType] || null
+  })
+
+  const normalizedSearchOptions = computed(() => {
+    const so = props.searchOptions || {}
+    const knownKeys = new Set([
+      'labelKey',
+      'valueKey',
+      'searchFields',
+      'minSearchLength',
+      'cacheTimeout',
+      'debounceMs',
+      'limit',
+      'additionalParams',
+    ])
+
+    // If user already provided additionalParams, keep it as-is.
+    if (so && typeof so === 'object' && 'additionalParams' in so) {
+      return so
+    }
+
+    // Backward compatible: treat unknown keys as additional params.
+    const additionalParams = {}
+    Object.entries(so || {}).forEach(([k, v]) => {
+      if (!knownKeys.has(k)) additionalParams[k] = v
+    })
+
+    return {
+      ...so,
+      additionalParams,
+    }
+  })
+
+  const showQuickCreateButton = computed(() => {
+    return Boolean(props.hasAddButton && quickCreateConfig.value)
+  })
+
+  const addNewButtonText = computed(() => {
+    if (props.addNewLabel) return props.addNewLabel
+    const title = quickCreateConfig.value?.title
+    return title ? `Add New ${title}` : 'Add New'
   })
 
   /* ---------------- SEARCH & OPTIONS ---------------- */
@@ -150,7 +225,7 @@
       labelKey: props.labelKey,
       valueKey: props.valueKey,
       searchFields: props.searchFields,
-      ...props.searchOptions,
+      ...normalizedSearchOptions.value,
     }
   )
 
@@ -169,6 +244,57 @@ const onSearchUpdate = (val) => {
     })
   }
 }
+
+const openAddDialog = () => {
+  // If this select supports quick-create, open the reusable modal.
+  if (quickCreateConfig.value) {
+    quickCreateOpen.value = true
+    return
+  }
+
+  // Fallback for legacy usages that listen to this event externally.
+  emit('add-new')
+}
+
+const addCreatedOptionToOptions = (created) => {
+  if (!created) return
+  const createdValue = reduceInternal(created)
+
+  // cache for ensureSelectedOptionInOptions()
+  cachedOptions.value.set(createdValue, created)
+
+  // prepend and dedupe
+  searchableOptions.value = [
+    created,
+    ...searchableOptions.value.filter((o) => reduceInternal(o) !== createdValue),
+  ]
+}
+
+const handleQuickCreated = (created) => {
+  addCreatedOptionToOptions(created)
+
+  const newModel = props.reduce ? props.reduce(created) : created?.[props.valueKey]
+  emit('update:modelValue', newModel)
+}
+
+const onGlobalQuickCreated = (event) => {
+  const detail = event?.detail || {}
+  const myEndpoint = quickCreateConfig.value?.endpointType
+  if (!myEndpoint) return
+
+  // match on endpointType so aliases like items-for-sale update items selects too
+  if (detail.endpointType && detail.endpointType === myEndpoint) {
+    addCreatedOptionToOptions(detail.created)
+  }
+}
+
+onMounted(() => {
+  window.addEventListener(QUICK_CREATE_EVENT, onGlobalQuickCreated)
+})
+
+onUnmounted(() => {
+  window.removeEventListener(QUICK_CREATE_EVENT, onGlobalQuickCreated)
+})
   /* ---------------- PAGE-ONLY POSITIONING ---------------- */
 
   const calculatePosition = (dropdownEl, component) => {
@@ -191,6 +317,65 @@ const onSearchUpdate = (val) => {
 
   <style scoped>
   /* ---------------- SAFE STYLES ---------------- */
+
+  .list-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background-color: hsl(var(--popover));
+    padding: 0.5rem;
+    /* Remove border and margin below button to eliminate unwanted space */
+    border-top: none;
+    margin-bottom: 0;
+  }
+
+  /* Styling for the "Add New Account" button */
+  .drop-btn {
+    background-color: transparent;
+    border: 1px solid hsl(var(--primary));
+    color: hsl(var(--primary));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: var(--radius);
+    width: 100%;
+  }
+
+  /* Hover effect (optional, for style) */
+  .drop-btn:hover {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  /* Material Icon Size */
+  .bx {
+    font-size: 20px;
+  }
+
+  /* Center alignment */
+  .d-flex {
+    display: flex;
+  }
+
+  /* Ensure button is at the bottom of the dropdown */
+  .vs__dropdown-menu {
+    position: absolute;
+    bottom: auto !important;
+    left: 0;
+    width: 100%;
+    margin-top: 2px;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 500;
+    background-color: hsl(var(--popover));
+    color: hsl(var(--popover-foreground));
+    border-color: hsl(var(--border));
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.45);
+    padding-bottom: 0 !important; /* REMOVE bottom padding to eliminate space */
+  }
 
   /* match app input look (light + dark via CSS vars) */
   :deep(.vs__dropdown-toggle) {
@@ -267,6 +452,7 @@ const onSearchUpdate = (val) => {
     color: hsl(var(--popover-foreground));
     border-color: hsl(var(--border));
     box-shadow: 0 18px 45px rgba(15, 23, 42, 0.45);
+    padding-bottom: 0 !important; /* REMOVE bottom padding to eliminate space */
   }
 
   /* focus parity with inputs */
