@@ -28,11 +28,10 @@ class AccountStoreRequest extends FormRequest
             'is_active' => ['nullable', 'boolean'],
             'remark' => ['nullable', 'string'],
             'slug' => ['nullable', 'string'],
-            'openings' => ['nullable', 'array'],
-            'openings.*.currency_id' => ['nullable', 'string', 'exists:currencies,id'],
-            'openings.*.amount' => ['nullable', 'numeric'],
-            'openings.*.rate' => ['required', 'numeric'],
-            'openings.*.type' => ['nullable', 'string', Rule::in(TransactionType::values())],
+            'currency_id' => ['required', 'string', 'exists:currencies,id'],
+            'rate' => ['nullable', 'numeric','required_with:currency_id'],
+            'amount' => ['nullable', 'numeric','required_with:transaction_type'],
+            'transaction_type' => ['required', 'string', Rule::in(TransactionType::values())],
         ];
     }
 }
