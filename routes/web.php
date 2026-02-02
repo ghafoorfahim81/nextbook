@@ -14,6 +14,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Middleware\CheckCompany;
 use App\Http\Controllers\Administration\SwitchBranchController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\QuickCreateController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -105,6 +106,7 @@ Route::middleware([
     // Search routes
     Route::post('/search/{resourceType}', [\App\Http\Controllers\SearchController::class, 'search']);
     Route::get('/search/resource-types', [\App\Http\Controllers\SearchController::class, 'getResourceTypes']);
+    Route::post('/quick-create/{resourceType}', [QuickCreateController::class, 'store'])->name('quick-create.store');
 
     // Receipts
     Route::resource('/receipts', \App\Http\Controllers\Receipt\ReceiptController::class);
