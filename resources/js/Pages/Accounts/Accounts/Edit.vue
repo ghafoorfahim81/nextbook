@@ -5,12 +5,13 @@ import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
+import { ref, computed, watch } from 'vue';
 import { useLazyProps } from '@/composables/useLazyProps'
 
 const { t } = useI18n();
 
 const props = defineProps({
-    account: { type: Object, required: true }, 
+    account: { type: Object, required: true },
     currencies: {type: Object, required: true},
     accountTypes: {type: Object, required: false, default: () => ({ data: [] })},
     transactionTypes: { type: Array, required: true },
@@ -18,49 +19,35 @@ const props = defineProps({
 
 useLazyProps(props, ['accountTypes'])
 
-const isBaseCurrency = (currencyId) => {
-    return (props.currencies?.data || []).some(
-        (currency) => currency.id === currencyId && currency.is_base_currency
-    );
-};
 
-const buildOpenings = () => {
-    const existing = props.account.data.openings || [];
-    const byCurrency = existing.reduce((acc, o) => {
-        const currencyId = o.currency_id || o.currency?.id;
-        if (currencyId) {
-            acc[currencyId] = o;
-        }
-        return acc;
-    }, {});
-
-    return (props.currencies?.data || []).map(currency => {
-        const found = byCurrency[currency.id] || {};
-        return {
-            currency_id: currency.id,
-            currency_name: currency.name,
-            amount: found.amount ?? 0,
-            rate: found.rate ?? 0,
-            type: found.type ?? 'debit',
-        };
-    });
-};
 
 const form = useForm({
     ...props.account.data,
     account_type_id: props.account.data.account_type_id,
-    openings: buildOpenings(),
-
+    currency_id: props.account.data.currency_id,
+    selected_currency: props.account.data?.opening?.currency,
+    currency_id: props.account.data?.opening?.currency_id,
+    rate: props.account.data?.opening?.rate,
+    amount: props.account.data?.opening?.amount,
+    transaction_type: props.account.data?.opening?.transaction_type,
 });
 
- 
+
 const handleUpdate = () => {
     form.patch(route('chart-of-accounts.update', form.id))
 }
- 
+
 
 const handleCancel = () => {
     router.visit(route('chart-of-accounts.index'));
+};
+
+const handleSelectChange = (field, value) => {
+    if(field === 'currency_id') {
+        form.rate = value?.exchange_rate??0;
+    }
+    form[field] = value;
+
 };
 </script>
 
@@ -98,7 +85,44 @@ const handleCancel = () => {
                         :search-fields="['name']"
                         :error="form.errors.account_type_id"
                     />
-
+                    <div class="grid grid-cols-2 gap-2">
+                        <NextSelect
+                            :options="currencies.data"
+                            v-model="form.selected_currency"
+                            label-key="code"
+                            value-key="id"
+                            @update:modelValue="(value) => handleSelectChange('currency_id', value)"
+                            :reduce="currency => currency"
+                            :floating-text="t('admin.currency.currency')"
+                            :error="form.errors?.currency_id"
+                            :searchable="true"
+                            resource-type="currencies"
+                            :search-fields="['name', 'code', 'symbol']"
+                        />
+                        <NextInput
+                            v-model="form.rate"
+                            type="number"
+                            step="any"
+                            :label="t('general.rate')"
+                            :error="form.errors?.rate"
+                        />
+                    </div>
+                    <NextSelect
+                        :options="transactionTypes"
+                        v-model="form.transaction_type"
+                        label-key="name"
+                        value-key="id"
+                        :floating-text="t('general.transaction_type')"
+                        :error="form.errors?.transaction_type_id"
+                        @update:modelValue="(value) => handleSelectChange('transaction_type', value)"
+                    />
+                    <NextInput
+                        v-model="form.amount"
+                        type="number"
+                        step="any"
+                        :label="t('general.amount')"
+                        :error="form.errors?.amount"
+                    />
                     <NextTextarea
                         v-model="form.remark"
                         :label="t('general.remark')"
@@ -106,49 +130,6 @@ const handleCancel = () => {
                         :error="form.errors?.remark"
                         class="md:col-span-3"
                     />
-                </div>
-
-                <div class="md:col-span-4 mt-4">
-                    <div class="pt-2">
-                        <span class="font-bold">{{ t('item.opening') }}</span>
-                        <div class="mt-3 space-y-3">
-                            <div
-                                v-for="(opening, index) in form.openings"
-                                :key="opening.currency_id"
-                                class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start"
-                            >
-                                <NextInput
-                                    :label="`${t('general.amount')} (${opening.currency_name})`"
-                                    type="number"
-                                    step="any"
-                                    v-model="opening.amount"
-                                    :placeholder="t('general.enter', { text: t('general.amount') })"
-                                />
-                                <NextInput
-                                    :label="`${t('general.rate')} (${opening.currency_name})`"
-                                    type="number"
-                                    :disabled="isBaseCurrency(opening.currency_id)"
-                                    step="any"
-                                    v-model="opening.rate"
-                                    :placeholder="t('general.enter', { text: t('general.rate') })"
-                                />
-
-                                <NextSelect
-                                    :options="transactionTypes"
-                                    v-model="opening.type"
-                                    label-key="name"
-                                    value-key="id"
-                                    :reduce="transactionType => transactionType.id"
-                                    :id="`transaction_type_${index}`"
-                                    :floating-text="t('general.transaction_type')"
-                                />
-
-                                <div class=" text-sm text-gray-700 border rounded-md p-2">
-                                    {{ opening.currency_name }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -160,7 +141,7 @@ const handleCancel = () => {
                 <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white">
                     {{ t('general.update') }}
                 </button>
-                
+
                 <button
                     type="button"
                     class="btn px-4 py-2 rounded-md border"

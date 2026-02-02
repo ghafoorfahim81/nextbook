@@ -935,10 +935,6 @@ class Account extends Model
         return $this->morphOne(LedgerOpening::class, 'ledgerable');
     }
 
-    public function openings()
-    {
-        return $this->morphMany(LedgerOpening::class, 'ledgerable');
-    }
 
     /**
      * Get relationships configuration for dependency checking
