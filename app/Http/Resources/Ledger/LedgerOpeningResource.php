@@ -12,18 +12,34 @@ class LedgerOpeningResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        if ($this->resource === null) {
+            return [
+                'id' => null,
+                'amount' => 0,
+                'lines' => [],
+                'rate' => null,
+                'currency_id' => null,
+                'currency' => null,
+                'date' => null,
+                'type' => null,
+                'transaction' => null,
+            ];
+        }
+
         $dateConversionService = app(\App\Services\DateConversionService::class);
+        $transaction = $this->transaction;
+        $firstLine = $transaction?->lines?->first();
+
         return [
             'id' => $this->id,
-            'amount' => $this->transaction->lines[0]?->credit>0 ? $this->transaction->lines[0]?->credit : $this->transaction->lines[0]?->debit,
-            'transaction_type' => $this->transaction->lines[0]?->credit>0 ? TransactionType::CREDIT->value : TransactionType::DEBIT->value,
-            'lines' => $this->transaction->lines,
-            'rate' => $this->transaction?->rate,
-            'currency_id' => $this->transaction?->currency_id,
-            'currency' => $this->transaction?->currency,
-            'date' => $this->transaction?->date ? $dateConversionService->toDisplay($this->transaction?->date) : null,
-            'type' => $this->transaction?->type,
-            'transaction' => $this->transaction,
+            'amount' => ($firstLine?->credit ?? 0) > 0 ? ($firstLine?->credit ?? 0) : ($firstLine?->debit ?? 0),
+            'lines' => $transaction?->lines ?? [],
+            'rate' => $transaction?->rate,
+            'currency_id' => $transaction?->currency_id,
+            'currency' => $transaction?->currency,
+            'date' => $transaction?->date ? $dateConversionService->toDisplay($transaction->date) : null,
+            'type' => $transaction?->type,
+            'transaction' => $transaction,
         ];
     }
 }

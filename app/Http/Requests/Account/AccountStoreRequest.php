@@ -30,8 +30,7 @@ class AccountStoreRequest extends FormRequest
             'slug' => ['nullable', 'string'],
             'currency_id' => ['required', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric','required_with:currency_id'],
-            'amount' => ['nullable', 'numeric','required_with:transaction_type'],
-            'transaction_type' => ['required', 'string', Rule::in(TransactionType::values())],
+            'amount' => ['nullable', 'numeric','required_with:transaction_type'], 
         ];
     }
 }

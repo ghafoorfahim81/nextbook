@@ -4,15 +4,12 @@ namespace App\Models\Transaction;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Traits\HasUserAuditable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
-use App\Traits\BranchSpecific;
-use App\Traits\HasBranch;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Account\Account;
 class TransactionLine extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, SoftDeletes, BranchSpecific, HasBranch;
+    use HasFactory, HasUlids, SoftDeletes;
 
     protected $table = 'transaction_lines';
     protected $primaryKey = 'id';
@@ -24,10 +21,7 @@ class TransactionLine extends Model
         'debit',
         'credit',
         'remark',
-        'created_by',
-        'updated_by',
         'deleted_by',
-        'branch_id',
     ];
 
     public function casts(): array

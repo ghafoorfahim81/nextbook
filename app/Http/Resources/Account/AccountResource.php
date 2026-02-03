@@ -5,7 +5,7 @@ namespace App\Http\Resources\Account;
 use App\Http\Resources\Ledger\LedgerOpeningResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-
+use App\Http\Resources\Transaction\TransactionLineResource;
 class AccountResource extends JsonResource
 {
     /**
@@ -28,7 +28,10 @@ class AccountResource extends JsonResource
             'branch_id' => $this->branch_id,
             'branch'    => $this->branch,
             'remark' => $this->remark,
-            'opening' => new LedgerOpeningResource($this->whenLoaded('opening')),
+            'transactions' => TransactionLineResource::collection($this->transactionLines),  // Return the transaction lines
+            'opening' => $this->relationLoaded('opening') && $this->opening
+                ? new LedgerOpeningResource($this->opening)
+                : null,
 
         ];
     }

@@ -14,7 +14,7 @@ const props = defineProps({
     account: { type: Object, required: true },
     currencies: {type: Object, required: true},
     accountTypes: {type: Object, required: false, default: () => ({ data: [] })},
-    transactionTypes: { type: Array, required: true },
+    homeCurrency: {type: Object, required: true},
 });
 
 useLazyProps(props, ['accountTypes'])
@@ -29,7 +29,6 @@ const form = useForm({
     currency_id: props.account.data?.opening?.currency_id,
     rate: props.account.data?.opening?.rate,
     amount: props.account.data?.opening?.amount,
-    transaction_type: props.account.data?.opening?.transaction_type,
 });
 
 
@@ -45,8 +44,11 @@ const handleCancel = () => {
 const handleSelectChange = (field, value) => {
     if(field === 'currency_id') {
         form.rate = value?.exchange_rate??0;
+        form.currency_id = value?.id;
     }
-    form[field] = value;
+    else{
+        form[field] = value;
+    }
 
 };
 </script>
@@ -105,17 +107,9 @@ const handleSelectChange = (field, value) => {
                             step="any"
                             :label="t('general.rate')"
                             :error="form.errors?.rate"
+                            :disabled="form.currency_id === homeCurrency.id"
                         />
                     </div>
-                    <NextSelect
-                        :options="transactionTypes"
-                        v-model="form.transaction_type"
-                        label-key="name"
-                        value-key="id"
-                        :floating-text="t('general.transaction_type')"
-                        :error="form.errors?.transaction_type_id"
-                        @update:modelValue="(value) => handleSelectChange('transaction_type', value)"
-                    />
                     <NextInput
                         v-model="form.amount"
                         type="number"
