@@ -47,10 +47,10 @@ const preventOutsideDismiss = (event: any) => {
 <template>
   <Dialog :open="open" @update:open="value => emit('update:open', value)">
     <!-- ✅ Lighter background (more transparency) -->
-    <div v-if="open" class="fixed inset-0 bg-white/5" />
+    <div v-if="open" class="fixed inset-0 z-[1090] bg-white/5" />
 
     <DialogContent
-        :class="[width, 'max-h-[90vh] p-0 flex flex-col overflow-hidden', contentClass]"
+        :class="[width, 'z-[1100] max-h-[90vh] p-0 flex flex-col overflow-hidden', contentClass]"
         @pointer-down-outside="preventOutsideDismiss"
         @interact-outside="preventOutsideDismiss"
     >

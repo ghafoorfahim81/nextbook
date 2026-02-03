@@ -247,6 +247,7 @@ const handleOpeningSelectChange = (index, value) => {
                     resource-type="unit_measures"
                     :search-fields="['name','unit','symbol']"
                     :error="form.errors.unit_measure_id"
+                    :has-add-button="false"
                 />
                 <NextSelect
                     v-model="form.selected_item_type"

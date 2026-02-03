@@ -173,8 +173,9 @@
 
   const addNewButtonText = computed(() => {
     if (props.addNewLabel) return props.addNewLabel
-    const title = quickCreateConfig.value?.title
-    return title ? `Add New ${title}` : 'Add New'
+    const titleKey = quickCreateConfig.value?.titleKey
+    const name = titleKey ? t(titleKey) : ''
+    return t('general.new', { name })
   })
 
   /* ---------------- SEARCH & OPTIONS ---------------- */
