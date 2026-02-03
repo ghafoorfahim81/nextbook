@@ -41,7 +41,6 @@ const form = useForm({
     rate: 1,
     amount: 0,
     account_type_id: null,
-    transaction_type: null,
 });
 watch(props.homeCurrency, (list) => {
     if (props.homeCurrency && !form.currency_id) {
@@ -93,10 +92,12 @@ const handleCancel = () => {
 const handleSelectChange = (field, value) => {
     if(field === 'currency_id') {
         form.rate = value?.exchange_rate??0;
+        form.currency_id = value?.id;
+        console.log('this is form', form.currency_id);
     }
-    form[field] = value;
-    console.log('this is value', field);
-
+    else{
+        form[field] = value;
+    }
 };
 </script>
 
@@ -148,17 +149,9 @@ const handleSelectChange = (field, value) => {
                         resource-type="currencies"
                         :search-fields="['name', 'code', 'symbol']"
                     />
-                    <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+                    <NextInput placeholder="Rate" :disabled="form.currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
                     </div>
-                    <NextSelect
-                        :options="transactionTypes"
-                        v-model="form.selected_transaction_type"
-                        label-key="name"
-                        value-key="id"
-                        :floating-text="t('general.transaction_type')"
-                        :error="form.errors?.transaction_type_id"
-                        @update:modelValue="(value) => handleSelectChange('transaction_type', value)"
-                    />
+
                     <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
                     <NextTextarea
                         v-model="form.remark"

@@ -16,18 +16,17 @@ class TransactionResource extends JsonResource
         $dateConversionService = app(\App\Services\DateConversionService::class);
         return [
             'id' => $this->id,
+            'voucher_number' => $this->voucher_number,
+            'status' => $this->status,
             'reference_type' => $this->reference_type,
             'reference_id' => $this->reference_id,
             'transactionable' => $this->transactionable,
-            'amount' => $this->amount,
-            'account_id' => $this->account_id,
-            'account' => $this->whenLoaded('account', fn () => new AccountResource($this->account)),
             'currency_id' => $this->currency_id,
             'currency' => $this->whenLoaded('currency', $this->currency),
             'rate' => $this->rate,
             'date' => $dateConversionService->toDisplay($this->date),
-            'type' => $this->type,
             'remark' => $this->remark,
+            'lines' => TransactionLineResource::collection($this->whenLoaded('lines')),
         ];
     }
 }

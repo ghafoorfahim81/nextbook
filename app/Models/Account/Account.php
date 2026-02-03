@@ -929,6 +929,19 @@ class Account extends Model
         );
     }
 
+    public function transactions()
+    {
+        return $this->belongsToMany(
+            Transaction::class,
+            'transaction_lines',
+            'account_id',
+            'transaction_id'
+        )
+            ->withPivot(['debit', 'credit', 'remark'])
+            ->withTimestamps()
+            ->distinct();
+    }
+
 
     public function opening()
     {
