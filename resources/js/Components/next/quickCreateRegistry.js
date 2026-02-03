@@ -3,8 +3,6 @@
 
 export const QUICK_CREATE_EVENT = 'nextbook:quick-created'
 
-const option = (key, label) => ({ key, label })
-
 /**
  * @typedef {Object} Field
  * @property {string} key
@@ -20,164 +18,175 @@ const option = (key, label) => ({ key, label })
  */
 export const quickCreateRegistry = {
   currencies: {
-    title: 'Currency',
+    titleKey: 'admin.currency.currency',
     endpointType: 'currencies',
     fields: [
-      { key: 'name', label: 'Name', type: 'text', required: true },
-      { key: 'code', label: 'Code', type: 'text', required: true },
-      { key: 'symbol', label: 'Symbol', type: 'text', required: true },
-      { key: 'format', label: 'Format', type: 'text', required: true },
-      { key: 'exchange_rate', label: 'Exchange Rate', type: 'number', required: true },
-      { key: 'flag', label: 'Flag', type: 'text' },
-      { key: 'is_active', label: 'Active', type: 'checkbox' },
-      { key: 'is_base_currency', label: 'Base Currency', type: 'checkbox' },
+      { key: 'name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'code', labelKey: 'admin.currency.code', type: 'text', required: true },
+      { key: 'symbol', labelKey: 'admin.shared.symbol', type: 'text', required: true },
+      { key: 'format', labelKey: 'admin.currency.format', type: 'text', required: true },
+      { key: 'exchange_rate', labelKey: 'admin.currency.exchange_rate', type: 'number', required: true },
+      { key: 'flag', labelKey: 'admin.currency.flag', type: 'text' },
+      { key: 'is_active', labelKey: 'general.active', type: 'checkbox' },
+      { key: 'is_base_currency', labelKey: 'admin.currency.base_currency', type: 'checkbox' },
     ],
   },
 
   accounts: {
-    title: 'Account',
+    titleKey: 'account.account',
     endpointType: 'accounts',
     fields: [
-      { key: 'name', label: 'Name', type: 'text', required: true },
-      { key: 'number', label: 'Number', type: 'text', required: true },
-      { key: 'account_type_id', label: 'Account Type', type: 'select', required: true },
-      { key: 'currency_id', label: 'Currency', type: 'select', required: true },
-      { key: 'rate', label: 'Rate', type: 'number', required: true },
-      { key: 'amount', label: 'Opening Amount', type: 'number', required: true },
-      { key: 'transaction_type', label: 'Transaction Type', type: 'select', required: true },
-      { key: 'remark', label: 'Remark', type: 'textarea' },
-      { key: 'is_active', label: 'Active', type: 'checkbox' },
+      { key: 'name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'number', labelKey: 'general.number', type: 'text', required: true },
+      { key: 'account_type_id', labelKey: 'account.account_type', type: 'select', required: true },
+      { key: 'currency_id', labelKey: 'admin.currency.currency', type: 'select', required: true },
+      { key: 'rate', labelKey: 'general.rate', type: 'number', required: true },
+      { key: 'amount', labelKey: 'general.amount', type: 'number', required: true },
+      { key: 'transaction_type', labelKey: 'general.transaction_type', type: 'select', required: true },
+      { key: 'remark', labelKey: 'general.remark', type: 'textarea' },
+      { key: 'is_active', labelKey: 'general.active', type: 'checkbox' },
     ],
   },
 
   categories: {
-    title: 'Category',
+    titleKey: 'admin.category.category',
     endpointType: 'categories',
     fields: [
-      { key: 'name', label: 'Name', type: 'text', required: true },
-      { key: 'parent_id', label: 'Parent Category', type: 'select' },
-      { key: 'remark', label: 'Remark', type: 'textarea' },
+      { key: 'name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'parent_id', labelKey: 'admin.shared.parent', type: 'select' },
+      { key: 'remark', labelKey: 'general.remarks', type: 'textarea' },
     ],
   },
 
   unit_measures: {
-    title: 'Unit Measure',
+    titleKey: 'admin.unit_measure.unit_measure',
     endpointType: 'unit_measures',
     fields: [
-      { key: 'metric.name', label: 'Quantity Name', type: 'text', required: true },
-      { key: 'metric.unit', label: 'Quantity Unit', type: 'text', required: true },
-      { key: 'metric.symbol', label: 'Quantity Symbol', type: 'text', required: true },
-      { key: 'measure.name', label: 'Measure Name', type: 'text', required: true },
-      { key: 'measure.unit', label: 'Measure Unit', type: 'number', required: true },
-      { key: 'measure.symbol', label: 'Measure Symbol', type: 'text', required: true },
+      { key: 'metric.name', labelKey: 'admin.unit_measure.quantity', type: 'text', required: true },
+      { key: 'metric.unit', labelKey: 'admin.unit_measure.base_unit', type: 'text', required: true },
+      { key: 'metric.symbol', labelKey: 'admin.shared.symbol', type: 'text', required: true },
+      { key: 'measure.name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'measure.unit', labelKey: 'admin.unit_measure.unit', type: 'number', required: true },
+      { key: 'measure.symbol', labelKey: 'admin.shared.symbol', type: 'text', required: true },
     ],
   },
 
   sizes: {
-    title: 'Size',
+    titleKey: 'admin.size.size',
     endpointType: 'sizes',
     fields: [
-      { key: 'name', label: 'Name', type: 'text', required: true },
-      { key: 'code', label: 'Code', type: 'text', required: true },
+      { key: 'name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'code', labelKey: 'admin.currency.code', type: 'text', required: true },
     ],
   },
 
   brands: {
-    title: 'Brand',
+    titleKey: 'admin.brand.brand',
     endpointType: 'brands',
-    fields: [{ key: 'name', label: 'Name', type: 'text', required: true }],
+    fields: [
+      { key: 'name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'legal_name', labelKey: 'admin.brand.legal_name', type: 'text' },
+      { key: 'registration_number', labelKey: 'admin.brand.registration_number', type: 'text' },
+      { key: 'email', labelKey: 'admin.shared.email', type: 'text' },
+      { key: 'phone', labelKey: 'admin.shared.phone', type: 'text' },
+      { key: 'website', labelKey: 'admin.brand.website', type: 'text' },
+      { key: 'industry', labelKey: 'admin.brand.industry', type: 'text' },
+      { key: 'type', labelKey: 'admin.brand.type', type: 'text' },
+      { key: 'address', labelKey: 'admin.brand.address', type: 'text' },
+      { key: 'city', labelKey: 'admin.brand.city', type: 'text' },
+      { key: 'country', labelKey: 'admin.shared.country', type: 'text' },
+    ],
   },
 
   stores: {
-    title: 'Store',
+    titleKey: 'admin.store.store',
     endpointType: 'stores',
     fields: [
-      { key: 'name', label: 'Name', type: 'text', required: true },
-      { key: 'address', label: 'Address', type: 'textarea' },
-      { key: 'is_main', label: 'Main Store', type: 'checkbox' },
+      { key: 'name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'address', labelKey: 'admin.shared.address', type: 'textarea' },
     ],
   },
 
   items: {
-    title: 'Item',
+    titleKey: 'item.item',
     endpointType: 'items',
     fields: [
-      { key: 'name', label: 'Name', type: 'text', required: true },
-      { key: 'code', label: 'Code', type: 'text', required: true },
-      { key: 'unit_measure_id', label: 'Unit Measure', type: 'select', required: true },
-      { key: 'sale_price', label: 'Sale Price', type: 'number', required: true },
-      { key: 'brand_id', label: 'Brand', type: 'select' },
-      { key: 'category_id', label: 'Category', type: 'select' },
-      { key: 'size_id', label: 'Size', type: 'select' },
+      { key: 'name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'code', labelKey: 'admin.currency.code', type: 'text', required: true },
+      { key: 'unit_measure_id', labelKey: 'admin.unit_measure.unit_measure', type: 'select', required: true },
+      { key: 'sale_price', labelKey: 'item.sale_price', type: 'number', required: true },
+      { key: 'brand_id', labelKey: 'admin.brand.brand', type: 'select' },
+      { key: 'category_id', labelKey: 'admin.category.category', type: 'select' },
+      { key: 'size_id', labelKey: 'item.size', type: 'select' },
     ],
   },
 
   'items-for-sale': {
-    title: 'Item',
+    titleKey: 'item.item',
     endpointType: 'items',
     fields: [
-      { key: 'name', label: 'Name', type: 'text', required: true },
-      { key: 'code', label: 'Code', type: 'text', required: true },
-      { key: 'unit_measure_id', label: 'Unit Measure', type: 'select', required: true },
-      { key: 'sale_price', label: 'Sale Price', type: 'number', required: true },
-      { key: 'brand_id', label: 'Brand', type: 'select' },
-      { key: 'category_id', label: 'Category', type: 'select' },
-      { key: 'size_id', label: 'Size', type: 'select' },
+      { key: 'name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'code', labelKey: 'admin.currency.code', type: 'text', required: true },
+      { key: 'unit_measure_id', labelKey: 'admin.unit_measure.unit_measure', type: 'select', required: true },
+      { key: 'sale_price', labelKey: 'item.sale_price', type: 'number', required: true },
+      { key: 'brand_id', labelKey: 'admin.brand.brand', type: 'select' },
+      { key: 'category_id', labelKey: 'admin.category.category', type: 'select' },
+      { key: 'size_id', labelKey: 'item.size', type: 'select' },
     ],
   },
 
   // Customer/Supplier are Ledgers with type.
   ledgers: {
-    title: 'Customer / Supplier',
+    titleKey: 'ledger.ledger',
     endpointType: 'ledgers',
     defaults: (ctx) => ({
       type: ctx?.additionalParams?.type || 'customer',
     }),
     fields: [
-      { key: 'type', label: 'Ledger Type', type: 'select', required: true },
-      { key: 'name', label: 'Name', type: 'text', required: true },
-      { key: 'phone_no', label: 'Phone', type: 'text' },
-      { key: 'email', label: 'Email', type: 'text' },
-      { key: 'address', label: 'Address', type: 'textarea' },
-      { key: 'currency_id', label: 'Currency', type: 'select' },
+      { key: 'type', labelKey: 'general.type', type: 'select', required: true },
+      { key: 'name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'phone_no', labelKey: 'general.phone', type: 'text' },
+      { key: 'email', labelKey: 'general.email', type: 'text' },
+      { key: 'address', labelKey: 'general.address', type: 'textarea' },
+      { key: 'currency_id', labelKey: 'admin.currency.currency', type: 'select' },
     ],
   },
 
   suppliers: {
-    title: 'Supplier',
+    titleKey: 'ledger.supplier.supplier',
     endpointType: 'ledgers',
     defaults: () => ({ type: 'supplier' }),
     fields: [
-      { key: 'type', label: 'Ledger Type', type: 'select', required: true },
-      { key: 'name', label: 'Name', type: 'text', required: true },
-      { key: 'phone_no', label: 'Phone', type: 'text' },
-      { key: 'email', label: 'Email', type: 'text' },
-      { key: 'address', label: 'Address', type: 'textarea' },
-      { key: 'currency_id', label: 'Currency', type: 'select' },
+      { key: 'type', labelKey: 'general.type', type: 'select', required: true },
+      { key: 'name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'phone_no', labelKey: 'general.phone', type: 'text' },
+      { key: 'email', labelKey: 'general.email', type: 'text' },
+      { key: 'address', labelKey: 'general.address', type: 'textarea' },
+      { key: 'currency_id', labelKey: 'admin.currency.currency', type: 'select' },
     ],
   },
 
   customers: {
-    title: 'Customer',
+    titleKey: 'ledger.customer.customer',
     endpointType: 'ledgers',
     defaults: () => ({ type: 'customer' }),
     fields: [
-      { key: 'type', label: 'Ledger Type', type: 'select', required: true },
-      { key: 'name', label: 'Name', type: 'text', required: true },
-      { key: 'phone_no', label: 'Phone', type: 'text' },
-      { key: 'email', label: 'Email', type: 'text' },
-      { key: 'address', label: 'Address', type: 'textarea' },
-      { key: 'currency_id', label: 'Currency', type: 'select' },
+      { key: 'type', labelKey: 'general.type', type: 'select', required: true },
+      { key: 'name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'phone_no', labelKey: 'general.phone', type: 'text' },
+      { key: 'email', labelKey: 'general.email', type: 'text' },
+      { key: 'address', labelKey: 'general.address', type: 'textarea' },
+      { key: 'currency_id', labelKey: 'admin.currency.currency', type: 'select' },
     ],
   },
 
   expense_categories: {
-    title: 'Expense Category',
+    titleKey: 'expense.category',
     endpointType: 'expense_categories',
     fields: [
-      { key: 'name', label: 'Name', type: 'text', required: true },
-      { key: 'remarks', label: 'Remarks', type: 'textarea' },
-      { key: 'is_active', label: 'Active', type: 'checkbox' },
+      { key: 'name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'remarks', labelKey: 'general.remarks', type: 'textarea' },
+      { key: 'is_active', labelKey: 'general.active', type: 'checkbox' },
     ],
   },
 }

@@ -7,6 +7,7 @@ import NextInput from '@/Components/next/NextInput.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import { QUICK_CREATE_EVENT, quickCreateRegistry } from '@/Components/next/quickCreateRegistry'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
   open: { type: Boolean, default: false },
@@ -17,12 +18,16 @@ const props = defineProps({
 
 const emit = defineEmits(['update:open', 'created'])
 
+const { t } = useI18n()
 const page = usePage()
 const submitting = ref(false)
 const errors = ref({})
 
 const config = computed(() => quickCreateRegistry?.[props.resourceType] || null)
-const title = computed(() => config.value?.title || 'New')
+const title = computed(() => {
+  const key = config.value?.titleKey
+  return key ? t(key) : ''
+})
 
 const currencyOptions = computed(() => page.props?.currencies?.data || page.props?.currencies || [])
 const categoryOptions = computed(() => page.props?.categories?.data || page.props?.categories || [])
@@ -36,8 +41,8 @@ const transactionTypeOptions = computed(() => page.props?.transactionTypes?.data
 ])
 
 const ledgerTypeOptions = computed(() => [
-  { id: 'customer', name: 'Customer' },
-  { id: 'supplier', name: 'Supplier' },
+  { id: 'customer', name: t('ledger.customer.customer') },
+  { id: 'supplier', name: t('ledger.supplier.supplier') },
 ])
 
 const makeInitialForm = () => {
@@ -151,9 +156,9 @@ function toPayload(data) {
 <template>
   <ModalDialog
     :open="open"
-    :title="`Add New ${title}`"
-    :confirmText="'Create'"
-    :cancel-text="'Close'"
+    :title="$t('general.new', { name: title })"
+    :confirmText="$t('general.create')"
+    :cancel-text="$t('general.close')"
     :submitting="submitting"
     width="w-[800px] max-w-[800px]"
     @update:open="emit('update:open', $event)"
@@ -164,11 +169,11 @@ function toPayload(data) {
       {{ errors.general }}
     </div>
 
-    <div v-if="config" class="grid grid-cols-2 gap-4">
+    <div v-if="config" class="grid grid-cols-2 gap-4 mt-2">
       <template v-for="field in config.fields" :key="field.key">
         <div class="col-span-2" v-if="field.type === 'textarea'">
           <NextTextarea
-            :label="field.label"
+            :label="field.labelKey ? $t(field.labelKey) : field.label"
             :model-value="getByPath(form, field.key)"
             @update:modelValue="(v) => setByPath(form, field.key, v)"
             :error="errors?.[field.key]"
@@ -182,7 +187,7 @@ function toPayload(data) {
               :checked="Boolean(getByPath(form, field.key))"
               @change="setByPath(form, field.key, $event.target.checked)"
             />
-            <span>{{ field.label }}</span>
+            <span>{{ field.labelKey ? $t(field.labelKey) : field.label }}</span>
           </label>
           <div v-if="errors?.[field.key]" class="mt-1 text-sm text-red-500">
             {{ errors[field.key] }}
@@ -199,14 +204,14 @@ function toPayload(data) {
             :reduce="(o) => o?.id"
             label-key="name"
             value-key="id"
-            :floating-text="field.label"
+            :floating-text="field.labelKey ? $t(field.labelKey) : field.label"
             :error="errors?.[field.key]"
           />
         </div>
 
         <div v-else>
           <NextInput
-            :label="field.label"
+            :label="field.labelKey ? $t(field.labelKey) : field.label"
             :type="field.type === 'number' ? 'number' : 'text'"
             :model-value="getByPath(form, field.key)"
             @update:modelValue="(v) => setByPath(form, field.key, v)"

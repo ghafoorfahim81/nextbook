@@ -730,7 +730,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
             </div>
             <div class="rounded-xl border bg-card shadow-sm overflow-x-auto max-h-80">
                 <table class="w-full table-fixed min-w-[1000px] purchase-table border-separate">
-                    <thead class=" " :class="form.transaction_type_id === 'cash' ? 'bg-card sticky top-0 z-[200]' : ''">
+                    <thead :class="form.transaction_type_id === 'cash' ? 'bg-card sticky top-0 z-[200]' : ''">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 min-w-5">#</th>
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
