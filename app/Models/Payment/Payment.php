@@ -23,10 +23,9 @@ class Payment extends Model
         'number',
         'date',
         'ledger_id',
-        'payment_transaction_id',
-        'bank_transaction_id',
+        'transaction_id',
         'cheque_no',
-        'description',
+        'narration',
         'branch_id',
         'created_by',
         'updated_by',
@@ -35,8 +34,7 @@ class Payment extends Model
     protected $casts = [
         'id' => 'string',
         'ledger_id' => 'string',
-        'payment_transaction_id' => 'string',
-        'bank_transaction_id' => 'string',
+        'transaction_id' => 'string',
         'date' => 'date',
         'created_by' => 'string',
         'updated_by' => 'string',
@@ -49,7 +47,7 @@ class Payment extends Model
             'number',
             'date',
             'cheque_no',
-            'description',
+            'narration',
         ];
     }
 
@@ -58,26 +56,17 @@ class Payment extends Model
         return $this->belongsTo(Ledger::class);
     }
 
-    public function paymentTransaction(): BelongsTo
+    public function transaction(): BelongsTo
     {
-        return $this->belongsTo(Transaction::class, 'payment_transaction_id');
-    }
-
-    public function bankTransaction(): BelongsTo
-    {
-        return $this->belongsTo(Transaction::class, 'bank_transaction_id');
+        return $this->belongsTo(Transaction::class);
     }
 
     protected function getRelationships(): array
     {
         return [
-            'paymentTransaction' => [
+            'transaction' => [
                 'model' => 'transactions',
-                'message' => 'This payment has a linked payment transaction',
-            ],
-            'bankTransaction' => [
-                'model' => 'transactions',
-                'message' => 'This payment has a linked bank transaction',
+                'message' => 'This payment has a linked transaction',
             ],
         ];
     }

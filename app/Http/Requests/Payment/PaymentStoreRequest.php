@@ -22,7 +22,7 @@ class PaymentStoreRequest extends FormRequest
             'currency_id' => ['required', 'exists:currencies,id'],
             'rate' => ['required', 'numeric', 'min:0'],
             'cheque_no' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'narration' => ['nullable', 'string'],
         ];
     }
 }

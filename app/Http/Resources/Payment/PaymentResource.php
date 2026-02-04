@@ -20,18 +20,16 @@ class PaymentResource extends JsonResource
             'ledger' => $this->whenLoaded('ledger'),
             'ledger_name' => $this->ledger?->name,
             // derive from bank/payment transactions
-            'amount' => $this->bankTransaction?->amount,
-            'currency_id' => $this->bankTransaction?->currency_id,
-            'currency_code' => $this->bankTransaction?->currency?->code,
-            'rate' => $this->bankTransaction?->rate,
-            'bank_account_id' => $this->bankTransaction?->account?->id,
-            'bank_account' => new AccountResource($this->bankTransaction?->account),
+            'amount' => $this->transaction?->lines[1]->debit,
+            'currency_id' => $this->transaction?->currency_id,
+            'currency_code' => $this->transaction?->currency?->code,
+            'rate' => $this->transaction?->rate,
+            'bank_account_id' => $this->transaction?->lines[0]->account_id,
+            'bank_account' => new AccountResource($this->transaction?->lines[0]->account),
             'cheque_no' => $this->cheque_no,
-            'description' => $this->description,
-            'payment_transaction_id' => $this->payment_transaction_id,
-            'bank_transaction_id' => $this->bank_transaction_id,
-            'bank_transaction' => new TransactionResource($this->bankTransaction),
-            'payment_transaction' => new TransactionResource($this->paymentTransaction),
+            'narration' => $this->narration,
+            'transaction_id' => $this->transaction_id,
+            'transaction' => new TransactionResource($this->transaction),
         ];
     }
 }
