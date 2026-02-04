@@ -92,8 +92,7 @@ const handleCancel = () => {
 const handleSelectChange = (field, value) => {
     if(field === 'currency_id') {
         form.rate = value?.exchange_rate??0;
-        form.currency_id = value?.id;
-        console.log('this is form', form.currency_id);
+        form.currency_id = value?.id; 
     }
     else{
         form[field] = value;

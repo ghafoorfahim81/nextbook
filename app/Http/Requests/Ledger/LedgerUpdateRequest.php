@@ -27,12 +27,9 @@ class LedgerUpdateRequest extends FormRequest
             'phone_no' => ['nullable', 'string'],
             'email' => ['nullable', 'email'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
-            'type' => ['nullable', 'string'],
-            'openings' => ['nullable', 'array'],
-            'openings.*.currency_id' => ['nullable', 'string', 'exists:currencies,id'],
-            'openings.*.amount' => ['nullable', 'numeric'],
-            'openings.*.rate' => ['required', 'numeric'],
-            'openings.*.type' => ['nullable', 'string', 'in:debit,credit'],
+            'opening_currency_id' => ['nullable', 'string', 'exists:currencies,id'],
+            'rate' => ['nullable', 'numeric','required_with:opening_currency_id'],
+            'amount' => ['nullable', 'numeric','required_with:opening_currency_id'], 
         ];
     }
 }

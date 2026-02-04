@@ -133,9 +133,9 @@ class Ledger extends Model
         return $this->belongsTo(Branch::class);
     }
 
-    public function openings()
+    public function opening()
     {
-        return $this->morphMany(LedgerOpening::class, 'ledgerable');
+        return $this->morphOne(LedgerOpening::class, 'ledgerable');
     }
 
     public function sales()

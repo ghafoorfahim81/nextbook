@@ -69,42 +69,37 @@ class CustomerController extends Controller
         $validated = $request->validated();
         $validated['type'] = 'customer';
         $ledger = Ledger::create($validated);
-        $openings = collect($request->input('openings', []))
-            ->filter(function ($opening) {
-                return !empty($opening['currency_id']) && (float)($opening['amount'] ?? 0) > 0;
-            });
         $glAccounts = Cache::get('gl_accounts');
         $transactionService = app(TransactionService::class);
-        if ($openings->isNotEmpty()) {
+        if ($validated['opening_currency_id'] && $validated['amount'] && $validated['amount'] > 0) {
+
             $arId = $glAccounts['accounts-receivable'];
             $apId = $glAccounts['accounts-payable'];
 
             abort_unless($arId && $apId, 500, 'System accounts (AR/AP) are missing.');
 
-            $openings->each(function ($opening) use ($ledger, $arId, $apId, $transactionService) {
-                $type = $opening['type'] ?? 'debit';
-                $accountId = $type === 'credit' ? $arId : $apId;
-                $data = [
-                    'ledger' =>$ledger,
-                    'account_id' => $accountId,
-                    'amount' => (float) $opening['amount'],
-                    'currency_id' => $opening['currency_id'],
-                    'rate' => (float) $opening['rate'],
+            $transaction = $transactionService->post(
+                header: [
+                    'currency_id' => $validated['opening_currency_id'],
+                    'rate' => (float) $validated['rate'],
                     'date' => now(),
-                    'type' => $type,
-                ];
+                    'reference_type' => Ledger::class,
+                    'reference_id' => $ledger->id,
+                    'remark' => 'Opening balance for customer ' . $ledger->name,
+                ],
+                lines: [
+                ['account_id' => $arId, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for customer ' . $ledger->name],
+                ['account_id' => $apId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $ledger->name],
+            ]);
 
-                $transaction = $transactionService->createLedgerTransaction($data);
+            $ledger->ledgerTransactions()->create([
+                'transaction_id' => $transaction['id'],
+            ]);
 
-                $ledger->ledgerTransactions()->create([
-                    'transaction_id' => $transaction['id'],
-                ]);
-
-                $transaction->opening()->create([
-                    'ledgerable_id' => $ledger->id,
-                    'ledgerable_type' => 'ledger',
-                ]);
-            });
+            $transaction->opening()->create([
+                'ledgerable_id' => $ledger->id,
+                'ledgerable_type' => 'ledger',
+            ]); 
         }
         if ($request->boolean('stay') || $request->boolean('create_and_new')) {
             return to_route('customers.create')
@@ -152,18 +147,10 @@ class CustomerController extends Controller
      */
     public function edit(Ledger $customer)
     {
-        $customer->load(['currency', 'branch', 'openings.transaction.currency']);
-
-        $transactionTypes = [
-            ['id' => 'debit', 'name' => 'Debit'],
-            ['id' => 'credit', 'name' => 'Credit'],
-        ];
-
+        $customer->load(['currency', 'opening', 'opening.transaction.currency','opening.transaction.lines']);
+        // dd($customer);
         return inertia('Ledgers/Customers/Edit', [
             'customer' => new LedgerResource($customer),
-            'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
-            'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
-            'transactionTypes' => $transactionTypes,
         ]);
     }
 
