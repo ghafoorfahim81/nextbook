@@ -26,8 +26,7 @@ const form = useForm({
     rate: props.supplier.data?.opening?.rate,
     amount: props.supplier.data?.opening?.amount,
 })
-
-console.log('supplier', props.supplier.data.opening);
+ 
 watch(props.homeCurrency, (list) => {
     if (props.homeCurrency && !form.currency_id) {
         form.currency_id = props.homeCurrency.id

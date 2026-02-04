@@ -10,6 +10,7 @@ use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
 use App\Models\Receipt\Receipt;
 use App\Models\Transaction\Transaction;
+use App\Models\Transaction\TransactionLine;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -48,8 +49,6 @@ class ReceiptController extends Controller
         ]);
     }
 
-
-
     public function store(ReceiptStoreRequest $request, TransactionService $transactionService)
     {
         DB::transaction(function () use ($request, $transactionService) {
@@ -75,40 +74,33 @@ class ReceiptController extends Controller
             $arAccountId = $glAccounts['accounts-receivable'];
 
             $creditRemark = "Receipt #{$receipt->number} from {$ledger->name}";
-            $creditTxn = $transactionService->createTransaction([
-                'account_id' => $arAccountId,
-                'amount' => $amount,
-                'currency_id' => $currencyId,
-                'rate' => $rate,
-                'date' => $receipt->date,
-                'type' => 'credit',
-                'remark' => $creditRemark,
-                'reference_type' => 'receipt',
-                'reference_id' => $receipt->id,
-            ]);
 
-
-            // Debit selected bank account
-            $debitRemark = "Bank receive for receipt #{$receipt->number}";
-            $debitTxn = $transactionService->createTransaction([
-                'account_id' => $bankAccountId,
-                'amount' => $amount,
-                'currency_id' => $currencyId,
-                'rate' => $rate,
-                'date' => $receipt->date,
-                'type' => 'debit',
-                'remark' => $debitRemark,
-                'reference_type' => 'receipt',
-                'reference_id' => $receipt->id,
-            ]);
-
-            $ledger->ledgerTransactions()->create([
-                'transaction_id' => $creditTxn->id,
-            ]);
+            $transaction = $transactionService->post(
+                header: [
+                    'currency_id' => $currencyId,
+                    'rate' => $rate,
+                    'date' => $receipt->date,
+                    'reference_type' => Receipt::class,
+                    'reference_id' => $receipt->id,
+                    'remark' => $creditRemark,
+                ],
+                lines: [
+                    [
+                        'account_id' => $bankAccountId,
+                        'debit' => $amount,
+                        'credit' => 0,
+                    ],
+                    [
+                        'account_id' => $arAccountId,
+                        'debit' => 0,
+                        'ledger_id' => $ledger->id,
+                        'credit' => $amount,
+                    ],
+                ],
+            );
 
             $receipt->update([
-                'receive_transaction_id' => $creditTxn->id,
-                'bank_transaction_id' => $creditTxn->id,
+                'transaction_id' => $transaction->id,
             ]);
         });
 
@@ -121,7 +113,7 @@ class ReceiptController extends Controller
 
     public function show(Request $request, Receipt $receipt)
     {
-        $receipt->load(['ledger', 'receiveTransaction.currency', 'bankTransaction.currency']);
+        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account']);
         return response()->json([
             'data' => new ReceiptResource($receipt),
         ]);
@@ -130,7 +122,7 @@ class ReceiptController extends Controller
 
     public function edit(Request $request, Receipt $receipt)
     {
-        $receipt->load(['ledger', 'receiveTransaction.currency', 'bankTransaction.currency']);
+        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account']);
         return inertia('Receipts/Edit', [
             'data' => new ReceiptResource($receipt),
         ]);
@@ -160,32 +152,36 @@ class ReceiptController extends Controller
             $currencyId = $validated['currency_id'] ?? $receipt->currency_id;
             $rate = isset($validated['rate']) ? (float) $validated['rate'] : $receipt->rate;
             $date = $validated['date'] ?? $receipt->date;
-            $bankAccountId = $validated['bank_account_id'] ?? $receipt->bankTransaction?->account_id;
+            $bankAccountId = $validated['bank_account_id'] ?? $receipt->transaction?->lines[0]->account_id;
             $glAccounts = Cache::get('gl_accounts');
             $arAccountId = $glAccounts['accounts-receivable'];
-
-            if ($receipt->receive_transaction_id) {
-                Transaction::where  ('id', $receipt->receive_transaction_id)->update([
-                    'account_id' => $arAccountId,
-                    'amount' => $amount,
+            TransactionLine::where('transaction_id', $receipt->transaction_id)->forceDelete();
+             Transaction::where('id', $receipt->transaction_id)->forceDelete();
+             $transactionService = app(TransactionService::class);
+             $transaction = $transactionService->post(
+                header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
                     'date' => $date,
-                    'type' => 'credit',
-                    'remark' => "Receipt #{$receipt->number} from {$ledger->name}",
-                ]);
-            }
-            if ($receipt->bank_transaction_id) {
-                Transaction::where('id', $receipt->bank_transaction_id)->update([
-                    'account_id' => $bankAccountId,
-                    'amount' => $amount,
-                    'currency_id' => $currencyId,
-                    'rate' => $rate,
-                    'date' => $date,
-                    'type' => 'debit',
-                    'remark' => "Bank receive for receipt #{$receipt->number}",
-                ]);
-            }
+                    'reference_type' => Receipt::class,
+                    'reference_id' => $receipt->id,
+                ],
+                lines: [
+                    [
+                        'account_id' => $bankAccountId,
+                        'debit' => $amount,
+                        'credit' => 0,
+                    ],
+                    [
+                        'account_id' => $arAccountId,
+                        'debit' => 0,
+                        'credit' => $amount,
+                    ],
+                ],
+            );
+            $receipt->update([
+                'transaction_id' => $transaction->id,
+            ]);
         });
 
         return redirect()->route('receipts.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.receipt')]));
@@ -195,13 +191,8 @@ class ReceiptController extends Controller
     {
         DB::transaction(function () use ($receipt) {
             // Soft delete linked transactions then the receipt
-            if ($receipt->receive_transaction_id) {
-                Transaction::where('id', $receipt->receive_transaction_id)->delete();
-                $receipt->ledger->ledgerTransactions()->where('transaction_id', $receipt->receive_transaction_id)->delete();
-            }
-            if ($receipt->bank_transaction_id) {
-                Transaction::where('id', $receipt->bank_transaction_id)->delete();
-            }
+                Transaction::where('id', $receipt->transaction_id)->delete();
+                TransactionLine::where('transaction_id', $receipt->transaction_id)->delete();
             $receipt->delete();
         });
 
@@ -210,13 +201,8 @@ class ReceiptController extends Controller
     public function restore(Request $request, Receipt $receipt)
     {
         $receipt->restore();
-        if ($receipt->receive_transaction_id) {
-            Transaction::where('id', $receipt->receive_transaction_id)->restore();
-            $receipt->ledger->ledgerTransactions()->where('transaction_id', $receipt->receive_transaction_id)->restore();
-        }
-        if ($receipt->bank_transaction_id) {
-            Transaction::where('id', $receipt->bank_transaction_id)->restore();
-        }
+        Transaction::where('id', $receipt->transaction_id)->restore();
+        TransactionLine::where('transaction_id', $receipt->transaction_id)->restore();
         return redirect()->route('receipts.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.receipt')]));
     }
 
