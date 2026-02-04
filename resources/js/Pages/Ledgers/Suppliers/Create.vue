@@ -95,7 +95,7 @@ const handleSelectChange = (field, value) => {
 <template>
     <AppLayout :title="t('ledger.supplier.supplier')">
         <form @submit.prevent="handleSubmitAction(false)">
-            <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
+            <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.create', { name: t('ledger.supplier.supplier') }) }}
                 </div>

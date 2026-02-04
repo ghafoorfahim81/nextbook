@@ -33,7 +33,7 @@ const drawingAccounts = computed(() => {
   }
   const list = Array.isArray(allAccounts.value) ? allAccounts.value : []
   return list.filter(a => a?.slug === 'owners-drawing' || (a?.name || '').toLowerCase().includes('drawing'))
-}) 
+})
 const form = useForm({
   name: owner?.name || '',
   father_name: owner?.father_name || '',
@@ -95,7 +95,7 @@ function submit() {
 <template>
   <AppLayout :title="t('general.edit', { name: t('owner.owner') })">
     <form @submit.prevent="submit()">
-      <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
+      <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.edit', { name: t('owner.owner') }) }}
         </div>

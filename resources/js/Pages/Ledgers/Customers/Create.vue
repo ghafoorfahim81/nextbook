@@ -33,12 +33,12 @@ const form = useForm({
     selected_opening_currency: null,
     opening_currency_id: null,
     amount: '',
-    rate: '', 
+    rate: '',
 })
 
 watch(props.homeCurrency, (list) => {
-    if (props.homeCurrency && !form.currency_id) { 
-        form.currency_id = props.homeCurrency.id  
+    if (props.homeCurrency && !form.currency_id) {
+        form.currency_id = props.homeCurrency.id
     }
 }, { immediate: true })
 
@@ -55,7 +55,7 @@ const handleSubmitAction = (createAndNew = false) => {
         handleCreate();
     }
 };
- 
+
 
 const handleCreate = () => {
     form.post(route('customers.store'))
@@ -80,11 +80,11 @@ const handleCancel = () => {
 const handleSelectChange = (field, value) => {
     if(field === 'currency_id') {
         form.rate = value?.exchange_rate??0;
-        form.currency_id = value?.id; 
+        form.currency_id = value?.id;
     }
     else if(field === 'opening_currency_id') {
         form.rate = value?.exchange_rate??0;
-        form.opening_currency_id = value?.id; 
+        form.opening_currency_id = value?.id;
     }
     else{
         form[field] = value;
@@ -95,7 +95,7 @@ const handleSelectChange = (field, value) => {
 <template>
     <AppLayout :title="t('ledger.customer.customer')">
         <form @submit.prevent="handleSubmitAction(false)">
-            <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
+            <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.create', { name: t('ledger.customer.customer') }) }}
                 </div>
@@ -118,7 +118,7 @@ const handleSelectChange = (field, value) => {
                         :search-fields="['name', 'code', 'symbol']"
                         :error="form.errors.currency_id"
                     />
-                   
+
                 </div>
                 <div class="md:col-span-3 mt-4">
                     <div class="pt-2">
@@ -143,7 +143,7 @@ const handleSelectChange = (field, value) => {
                             </div>
                         </div>
                     </div>
-                </div>                 
+                </div>
             </div>
 
             <progress v-if="form.progress" :value="form.progress.percentage" max="100">

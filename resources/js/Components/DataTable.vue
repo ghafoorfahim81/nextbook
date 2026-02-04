@@ -4,7 +4,7 @@
         <div class="flex items-center justify-between">
             <div class="flex relative w-full max-w-sm">
                 <div class="flex justify-items-start">
-                    <h1 :class="isRTL ? 'text-lg font-semibold ml-2 text-nowrap mt-1' : 'text-lg font-semibold mr-2 text-nowrap mt-1'">{{ props.title }}</h1>
+                    <h1 :class="isRTL ? 'text-lg font-semibold ml-2 text-nowrap mt-1 text-primary' : 'text-lg font-semibold mr-2 text-nowrap mt-1 text-primary'">{{ props.title }}</h1>
                 </div>
                 <div class="flex relative gap-4">
                     <Input
@@ -50,7 +50,7 @@
         </div>
 
         <!-- Table -->
-        <div class="border rounded-md">
+        <div class="border rounded-md border-primary">
             <Table>
                 <TableHeader class="bg-violet-500">
                     <TableRow class="bg-primary hover:bg-purple-500 h-8 text-white">
