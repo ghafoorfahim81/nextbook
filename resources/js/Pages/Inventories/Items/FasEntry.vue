@@ -213,13 +213,13 @@ const handleSubmit = () => {
 <template>
     <AppLayout :title="t('item.fast_entry')" :sidebar-collapsed="true">
         <form @submit.prevent="handleSubmit" class="space-y-4">
-            <div class="rounded-2xl border bg-card text-card-foreground shadow-sm p-1">
+            <div class="rounded-2xl border bg-card text-card-foreground shadow-sm p-1 border-primary">
                 <div class="p-4 border-b">
                     <h2 class="text-lg font-semibold">{{ t('item.fast_entry') }}</h2>
                     <p class="text-sm text-muted-foreground">{{ t('item.add_multiple_items_quickly') }}</p>
                     </div>
 
-                <div class="rounded-xl border bg-card shadow-sm overflow-x-auto p-3 mt-1 mb-1">
+                <div class="rounded-xl border border-violet-400 bg-card shadow-sm overflow-x-auto p-3 mt-1 mb-1">
                     <table class="w-full table-fixed min-w-[1000px]">
                         <thead class="sticky top-0 bg-muted/40">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-white bg-primary">
