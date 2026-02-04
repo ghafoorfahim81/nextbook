@@ -57,10 +57,10 @@ onMounted(async () => {
   form.description = r.description
   form.selected_ledger = ledgers.value.find(l => l.id === r.ledger_id) || r.ledger || null
   form.selected_currency = currencies.value.find(c => c.id === r.currency_id) || null
-  const bankId = r?.bank_transaction?.account_id || r.bank_transaction_id
+  const bankId = r?.transaction?.lines[0]?.account_id || r.transaction_id
   form.bank_account_id = bankId
-  form.selected_bank_account = r.bank_account
-  form.bank_account_id = r.bank_account_id
+  form.selected_bank_account = r.transaction?.lines[0]?.account || null
+  form.bank_account_id = r.transaction?.lines[0]?.account_id || null
 
 })
 
@@ -97,7 +97,7 @@ function submit() {
 <template>
   <AppLayout :title="t('general.edit', { name: 'Payment' })">
     <form @submit.prevent="submit()">
-      <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
+      <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.edit', { name: 'Payment' }) }}
         </div>
@@ -130,7 +130,7 @@ function submit() {
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+          <NextInput placeholder="Rate" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
           <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
           <NextSelect
             :options="accounts"
@@ -148,7 +148,7 @@ function submit() {
           <NextInput placeholder="Cheque No" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('receipt.cheque_no')" />
           <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="md:col-span-2">
-              <NextTextarea placeholder="Description" :error="form.errors?.description" v-model="form.description" :label="'Description'" />
+              <NextTextarea placeholder="Narration" :error="form.errors?.narration" v-model="form.narration" :label="'Narration'" />
             </div>
             <div class="md:col-span-1">
               <div class="rounded-xl border p-4 w-full md:w-64 ml-auto">

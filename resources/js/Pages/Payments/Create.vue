@@ -32,7 +32,7 @@ const form = useForm({
   selected_currency: null,
   rate: '',
   cheque_no: '',
-  description: '',
+  narration: '',
 })
 
 const submitAction = ref(null)
@@ -78,12 +78,12 @@ function submit(createAndNew = false) {
     onSuccess: () => {
       const latest = Number(form.number || 0)
       if (createAndNew) {
-        form.reset('date', 'amount', 'cheque_no', 'description')
+        form.reset('date', 'amount', 'cheque_no', 'narration')
         form.number = String((isNaN(latest) ? 0 : latest) + 1)
       }
       toast({
         title: t('general.success'),
-        description: t('general.create_success', { name: 'Payment' }),
+        narration: t('general.create_success', { name: 'Payment' }),
         variant: 'success',
         class:'bg-green-600 text-white',
       })
@@ -95,7 +95,7 @@ function submit(createAndNew = false) {
 <template>
   <AppLayout :title="t('general.create', { name: 'Payment' })">
     <form @submit.prevent="submitActionHandler(false)">
-      <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
+      <div class="mb-5 rounded-xl border border-primary p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: 'Payment' }) }}
         </div>
@@ -129,7 +129,7 @@ function submit(createAndNew = false) {
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+          <NextInput placeholder="Rate" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
           <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
           <NextSelect
             :options="accounts"
@@ -147,7 +147,7 @@ function submit(createAndNew = false) {
           <NextInput placeholder="Cheque No" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('receipt.cheque_no')" />
           <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="md:col-span-2">
-              <NextTextarea placeholder="Description" :error="form.errors?.description" v-model="form.description" :label="'Description'" />
+              <NextTextarea placeholder="Narration" :error="form.errors?.narration" v-model="form.narration" :label="'Narration'" />
             </div>
             <div class="md:col-span-1">
               <div class="rounded-xl border p-4 w-full md:w-64 ml-auto">
