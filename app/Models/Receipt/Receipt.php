@@ -23,8 +23,7 @@ class Receipt extends Model
         'number',
         'date',
         'ledger_id',
-        'receive_transaction_id',
-        'bank_transaction_id',
+        'transaction_id',
         'cheque_no',
         'narration',
         'currency_id',
@@ -38,8 +37,7 @@ class Receipt extends Model
     protected $casts = [
         'id' => 'string',
         'ledger_id' => 'string',
-        'receive_transaction_id' => 'string',
-        'bank_transaction_id' => 'string',
+        'transaction_id' => 'string',
         'currency_id' => 'string',
         'rate' => 'float',
         'amount' => 'float',
@@ -64,27 +62,18 @@ class Receipt extends Model
         return $this->belongsTo(Ledger::class);
     }
 
-    public function receiveTransaction(): BelongsTo
+    public function transaction(): BelongsTo
     {
-        return $this->belongsTo(Transaction::class, 'receive_transaction_id');
+        return $this->belongsTo(Transaction::class, 'transaction_id');
     }
 
-
-    public function bankTransaction(): BelongsTo
-    {
-        return $this->belongsTo(Transaction::class, 'bank_transaction_id');
-    }
 
     protected function getRelationships(): array
     {
         return [
-            'receiveTransaction' => [
+            'transaction' => [
                 'model' => 'transactions',
-                'message' => 'This receipt has a linked receive transaction',
-            ],
-            'bankTransaction' => [
-                'model' => 'transactions',
-                'message' => 'This receipt has a linked bank transaction',
+                'message' => 'This receipt has a linked transaction',
             ],
         ];
     }

@@ -114,31 +114,31 @@ function closeDialog() {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="border border-gray-200 rounded-lg p-4">
                         <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('receipt.receive_credit') || 'Credit (Receive)' }}</div>
-                        <div v-if="receipt.receive_transaction" class="grid grid-cols-2 gap-2 text-sm">
+                        <div v-if="receipt.transaction" class="grid grid-cols-2 gap-2 text-sm">
                             <div class="text-muted-foreground">{{ t('general.amount') }}</div>
                             <div class="font-medium">
-                                {{ receipt.receive_transaction.currency?.symbol || '' }} {{ receipt.receive_transaction.amount }}
+                                {{ receipt.transaction.currency?.symbol || '' }} {{ receipt.transaction.lines[0].debit }}
                             </div>
                             <div class="text-muted-foreground">{{ t('admin.currency.currency') }}</div>
                             <div class="font-medium">
-                                {{ receipt.receive_transaction.currency?.code || '-' }}
+                                {{ receipt.transaction.currency?.code || '-' }}
                             </div>
-                           
+
                         </div>
                         <div v-else class="text-sm text-muted-foreground">-</div>
                     </div>
                     <div class="border border-gray-200 rounded-lg p-4">
                         <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('receipt.bank_debit') || 'Debit (Bank)' }}</div>
-                        <div v-if="receipt.bank_transaction" class="grid grid-cols-2 gap-2 text-sm">
+                        <div v-if="receipt.transaction" class="grid grid-cols-2 gap-2 text-sm">
                             <div class="text-muted-foreground">{{ t('general.amount') }}</div>
                             <div class="font-medium">
-                                {{ receipt.bank_transaction.currency?.symbol || '' }} {{ receipt.bank_transaction.amount }}
+                                {{ receipt.transaction.currency?.symbol || '' }} {{ receipt.transaction.lines[0].debit }}
                             </div>
                             <div class="text-muted-foreground">{{ t('admin.currency.currency') }}</div>
                             <div class="font-medium">
-                                {{ receipt.bank_transaction.currency?.code || '-' }}
+                                {{ receipt.transaction.currency?.code || '-' }}
                             </div>
-                           
+
                         </div>
                         <div v-else class="text-sm text-muted-foreground">-</div>
                     </div>

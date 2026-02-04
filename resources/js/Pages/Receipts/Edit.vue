@@ -17,7 +17,7 @@ const page = usePage()
 const ledgers = computed(() => page.props.ledgers?.data || [])
 const accounts = computed(() => page.props.accounts?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
-
+const homeCurrency = computed(() => page.props.homeCurrency?.data || null)
 useLazyProps(page.props, ['ledgers', 'accounts'])
 const form = useForm({
   id: '',
@@ -140,7 +140,8 @@ function submit() {
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+
+          <NextInput placeholder="Rate" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
           <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
           <NextSelect
             :options="accounts"
