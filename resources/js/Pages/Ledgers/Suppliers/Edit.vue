@@ -1,59 +1,58 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
+import { Button } from '@/Components/ui/button';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
+import NextTextarea from "@/Components/next/NextTextarea.vue";
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
-
+import { ref, computed, watch } from 'vue';
 const props = defineProps({
     supplier: { type: Object, required: true },
     currencies: { type: Array, required: true },
-    branches: { type: Array, required: true },
-    transactionTypes: { type: Array, required: true },
+    homeCurrency: { type: Object, required: true },
 });
 
 const { t } = useI18n();
 
-const buildOpenings = () => {
-    const existing = props.supplier.data.openings || [];
-    const byCurrency = existing.reduce((acc, o) => {
-        const currencyId = o.currency_id || o.currency?.id;
-        if (currencyId) {
-            acc[currencyId] = o;
-        }
-        return acc;
-    }, {});
-
-    return (props.currencies?.data || []).map(currency => {
-        const found = byCurrency[currency.id] || {};
-        return {
-            currency_id: currency.id,
-            currency_name: currency.name,
-            amount: found.amount ?? 0,
-            rate: found.rate ?? 0,
-            type: found.type ?? 'credit',
-        };
-    });
-};
-
-const isBaseCurrency = (currencyId) => {
-    return (props.currencies?.data || []).some(
-        (currency) => currency.id === currencyId && currency.is_base_currency
-    );
-};
 
 const form = useForm({
     ...props.supplier.data,
     currency_id: props.supplier.data.currency_id,
-    openings: buildOpenings(),
-});
+    selected_currency: props.supplier.data?.currency,
+    currency_id: props.supplier.data.currency_id,
+    selected_opening_currency: props.supplier.data?.opening?.currency,
+    opening_currency_id: props.supplier.data?.opening?.currency_id,
+    rate: props.supplier.data?.opening?.rate,
+    amount: props.supplier.data?.opening?.amount,
+})
 
+console.log('supplier', props.supplier.data.opening);
+watch(props.homeCurrency, (list) => {
+    if (props.homeCurrency && !form.currency_id) {
+        form.currency_id = props.homeCurrency.id
+    }
+}, { immediate: true })
 const handleUpdate = () => {
-    form.patch(route('suppliers.update', form.id));
-};
+    form.patch(route('suppliers.update', form.id))
+}
 
 const handleCancel = () => {
-    router.visit(route('suppliers.index'));
+    router.visit(route('suppliers.index'))
+}
+
+const handleSelectChange = (field, value) => {
+    if(field === 'currency_id') {
+        form.rate = value?.exchange_rate??0;
+        form.currency_id = value?.id;
+    }
+    else if(field === 'opening_currency_id') {
+        form.rate = value?.exchange_rate??0;
+        form.opening_currency_id = value?.id;
+    }
+    else{
+        form[field] = value;
+    }
 };
 </script>
 
@@ -84,46 +83,29 @@ const handleCancel = () => {
                         :search-fields="['name', 'code', 'symbol']"
                         :error="form.errors.currency_id"
                     />
+
                 </div>
 
                 <div class="md:col-span-4 mt-4">
                     <div class="pt-2">
                         <span class="font-bold">{{ t('item.opening') }}</span>
                         <div class="mt-3 space-y-3">
-                            <div
-                                v-for="(opening, index) in form.openings"
-                                :key="opening.currency_id"
-                                class="grid grid-cols-1 md:grid-cols-4 gap-4 items-start"
-                            >
-                                <NextInput
-                                    :label="`${t('general.amount')} (${opening.currency_name})`"
-                                    type="number"
-                                    step="any"
-                                    v-model="opening.amount"
-                                    :placeholder="t('general.enter', { text: t('general.amount') })"
-                                />
-                                <NextInput
-                                    :label="`${t('general.rate')} (${opening.currency_name})`"
-                                    type="number"
-                                    :disabled="isBaseCurrency(opening.currency_id)"
-                                    step="any"
-                                    v-model="opening.rate"
-                                    :placeholder="t('general.enter', { text: t('general.rate') })"
-                                />
-
+                            <div class="grid grid-cols-3 gap-2">
                                 <NextSelect
-                                    :options="transactionTypes"
-                                    v-model="opening.type"
-                                    label-key="name"
-                                    value-key="id"
-                                    :reduce="transactionType => transactionType.id"
-                                    :id="`transaction_type_${index}`"
-                                    :floating-text="t('general.transaction_type')"
-                                />
-
-                                <div class=" text-sm text-gray-700 border rounded-md p-2">
-                                    {{ opening.currency_name }}
-                                </div>
+                                :options="currencies.data"
+                                v-model="form.selected_opening_currency"
+                                label-key="code"
+                                value-key="id"
+                                @update:modelValue="(value) => handleSelectChange('opening_currency_id', value)"
+                                :reduce="currency => currency"
+                                :floating-text="t('admin.currency.currency')"
+                                :error="form.errors?.opening_currency_id"
+                                :searchable="true"
+                                resource-type="currencies"
+                                :search-fields="['name', 'code', 'symbol']"
+                                 />
+                                <NextInput placeholder="Rate" :disabled="form.opening_currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+                                <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
                             </div>
                         </div>
                     </div>
@@ -141,4 +123,3 @@ const handleCancel = () => {
         </form>
     </AppLayout>
 </template>
-

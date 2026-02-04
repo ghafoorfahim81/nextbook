@@ -35,7 +35,7 @@ const activeTxnTab = ref('sales');
 
 const customerData = computed(() => customer.value ?? {});
 const statement = computed(() => customerData.value.statement ?? {});
-const openings = computed(() => customerData.value.openings ?? []);
+const opening = computed(() => customerData.value.opening ?? {});
 
 const formatAmount = (value) => {
     if (value === null || value === undefined) return '-';
@@ -381,20 +381,17 @@ const closeDialog = () => {
                                     <tr class="border-b text-left rtl:text-right text-gray-500">
                                         <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
                                         <th class="py-2 pr-4">{{ t('general.amount') }}</th>
-                                        <th class="py-2 pr-4">{{ t('general.rate') }}</th>
-                                        <th class="py-2 pr-4">{{ t('general.type') }}</th>
+                                        <th class="py-2 pr-4">{{ t('general.rate') }}</th> 
                                         <th class="py-2 pr-4">{{ t('general.date') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-if="!openings.length">
+                                    <tr v-if="opening.length">
                                         <td colspan="5" class="py-4 text-center text-gray-400">
                                             {{ t('general.no_data_found') }}
                                         </td>
                                     </tr>
                                     <tr
-                                        v-for="opening in openings"
-                                        :key="opening.id"
                                         class="border-b last:border-b-0"
                                     >
                                         <td class="py-2 pr-4">
@@ -405,9 +402,6 @@ const closeDialog = () => {
                                         </td>
                                         <td class="py-2 pr-4">
                                             {{ opening.rate }}
-                                        </td>
-                                        <td class="py-2 pr-4 capitalize">
-                                            {{ opening.type }}
                                         </td>
                                         <td class="py-2 pr-4">
                                             {{ opening.date }}

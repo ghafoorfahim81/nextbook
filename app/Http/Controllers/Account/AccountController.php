@@ -162,6 +162,7 @@ class AccountController extends Controller
             $chart_of_account->opening()->forceDelete();
             TransactionLine::where('transaction_id', $chart_of_account->opening->transaction_id)->forceDelete();
             Transaction::where('id', $chart_of_account->opening->transaction_id)->forceDelete();
+            
         }
 
         if ($validated['amount'] && $validated['amount'] > 0) {

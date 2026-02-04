@@ -29,7 +29,7 @@ class TransactionService
             // -----------------------------
             // 2️⃣ Create transaction (header)
             // -----------------------------
-            $transaction = Transaction::create([ 
+            $transaction = Transaction::create([
                 'currency_id'    => $header['currency_id'],
                 'rate'           => $header['rate'],
                 'date'           => $header['date'],
@@ -62,6 +62,7 @@ class TransactionService
 
                 $transaction->lines()->create([
                     'account_id' => $line['account_id'],
+                    'ledger_id' => $line['ledger_id'] ?? null,
                     'debit'      => $debit,
                     'credit'     => $credit,
                     'branch_id'  => $transaction->branch_id,
@@ -87,7 +88,7 @@ class TransactionService
 
     protected function validateHeader(array $header): void
     {
-        validator($header, [ 
+        validator($header, [
             'currency_id'    => 'required|exists:currencies,id',
             'rate'           => 'required|numeric|min:0',
             'date'           => 'required|date',
@@ -110,6 +111,7 @@ class TransactionService
             [
                 'lines'                => 'required|array|min:2',
                 'lines.*.account_id'   => 'required|exists:accounts,id',
+                'lines.*.ledger_id'    => 'nullable|exists:ledgers,id',
                 'lines.*.debit'        => 'nullable|numeric|min:0',
                 'lines.*.credit'       => 'nullable|numeric|min:0',
                 'lines.*.remark'       => 'nullable|string',

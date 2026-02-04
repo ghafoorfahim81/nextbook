@@ -361,6 +361,9 @@ const closeDialog = () => {
                                     {{ t('general.rate') }}
                                 </th>
                                 <th class="py-2 pr-4">
+                                    {{ t('general.type') }}
+                                </th>
+                                <th class="py-2 pr-4">
                                     {{ t('general.date') }}
                                 </th>
                             </tr>
@@ -380,13 +383,16 @@ const closeDialog = () => {
                                 class="border-b border-border last:border-b-0"
                             >
                                 <td class="py-2 pr-4">
-                                    {{ opening.currency?.code || opening.currency?.name || '' }}
+                                    {{ opening.currency?.name || '' }}
                                 </td>
                                 <td class="py-2 pr-4">
                                     {{ formatAmount(opening.amount) }}
                                 </td>
                                 <td class="py-2 pr-4">
                                     {{ opening.rate }}
+                                </td>
+                                <td class="py-2 pr-4 capitalize">
+                                    {{ opening.type }}
                                 </td>
                                 <td class="py-2 pr-4">
                                     {{ opening.date }}

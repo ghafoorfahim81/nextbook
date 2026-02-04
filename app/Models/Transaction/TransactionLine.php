@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Account\Account;
+use App\Models\Ledger\Ledger;
 class TransactionLine extends Model
 {
     use HasFactory, HasUlids, SoftDeletes;
@@ -18,6 +19,7 @@ class TransactionLine extends Model
     protected $fillable = [
         'transaction_id',
         'account_id',
+        'ledger_id',
         'debit',
         'credit',
         'remark',
@@ -30,6 +32,7 @@ class TransactionLine extends Model
             'id' => 'string',
             'transaction_id' => 'string',
             'account_id' => 'string',
+            'ledger_id' => 'string',
             'debit' => 'float',
             'credit' => 'float',
         ];
@@ -43,5 +46,9 @@ class TransactionLine extends Model
     public function account()
     {
         return $this->belongsTo(Account::class, 'account_id');
+    }
+    public function ledger()
+    {
+        return $this->belongsTo(Ledger::class, 'ledger_id');
     }
 }
