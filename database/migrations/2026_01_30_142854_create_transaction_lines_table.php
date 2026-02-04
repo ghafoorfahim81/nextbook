@@ -15,12 +15,14 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->ulid('transaction_id');
             $table->ulid('account_id');
+            $table->ulid('ledger_id')->nullable();
             $table->decimal('debit', 19, 4)->default(0);
             $table->decimal('credit', 19, 4)->default(0);
             $table->text('remark')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->index('transaction_id');
             $table->index(['account_id']);
+            $table->index(['ledger_id']);
             $table->timestamps();
             $table->softDeletes();
         });

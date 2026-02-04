@@ -34,7 +34,7 @@ const activeTxnTab = ref('purchases');
 
 const supplierData = computed(() => supplier.value ?? {});
 const statement = computed(() => supplierData.value.statement ?? {});
-const openings = computed(() => supplierData.value.openings ?? []);
+const opening = computed(() => supplierData.value.opening ?? []);
 
 const formatAmount = (value) => {
     if (value === null || value === undefined) return '-';
@@ -384,14 +384,12 @@ const closeDialog = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-if="!openings.length">
+                                    <tr v-if="opening.length">
                                         <td colspan="5" class="py-4 text-center text-gray-400">
                                             {{ t('general.no_data_found') }}
                                         </td>
                                     </tr>
                                     <tr
-                                        v-for="opening in openings"
-                                        :key="opening.id"
                                         class="border-b last:border-b-0"
                                     >
                                         <td class="py-2 pr-4">
@@ -402,9 +400,6 @@ const closeDialog = () => {
                                         </td>
                                         <td class="py-2 pr-4">
                                             {{ opening.rate }}
-                                        </td>
-                                        <td class="py-2 pr-4 capitalize">
-                                            {{ opening.type }}
                                         </td>
                                         <td class="py-2 pr-4">
                                             {{ opening.date }}

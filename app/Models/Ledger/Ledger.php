@@ -21,7 +21,9 @@ use App\Traits\HasCache;
 use App\Models\Purchase\Purchase;
 use App\Models\Payment\Payment;
 use App\Enums\LedgerType;
+use App\Models\Transaction\TransactionLine;
 use App\Traits\BranchSpecific;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 class Ledger extends Model
 {
     use HasFactory, HasUlids, HasCache, HasSearch,   HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
@@ -35,45 +37,51 @@ class Ledger extends Model
     {
         return Attribute::make(
             get: function () {
-                // Use the new ledger_transactions pivot table to get all related transactions
-                // Assume you have a 'transactions' relationship through the pivot table (LedgerTransaction model)
-                $transactions = $this->ledgerTransactions()->get();
-                if(count($transactions)>0)
-                {
-                // Calculate totals
-                $totals = $transactions->reduce(function ($carry, $transaction) {
-                    $amount = $transaction->transaction?->amount * $transaction->transaction?->rate;
-                    if ($transaction->transaction && !is_null($transaction->transaction->type)) {
-                        $carry[$transaction->transaction->type] += $amount;
+                // Get all transaction lines related to this ledger (not account_id)
+                $transactionLines = TransactionLine::whereHas('transaction', function ($query) {
+                    $query->where('ledger_id', $this->id);  // Filter transaction lines by ledger_id
+                })->get(); // Fetch all transaction lines related to the current ledger
+
+                if ($transactionLines->isNotEmpty()) {
+                    // Initialize debit and credit totals
+                    $totals = ['debit' => 0, 'credit' => 0];
+
+                    // Iterate through each transaction line
+                    foreach ($transactionLines as $transactionLine) {
+                        // Add the debit and credit amounts to the respective totals
+                        $totals['debit'] += $transactionLine->debit;
+                        $totals['credit'] += $transactionLine->credit;
                     }
-                    return $carry;
-                }, ['debit' => 0, 'credit' => 0]);
 
-                $netBalance = $totals['debit'] - $totals['credit'];
-                $balanceAmount = abs($netBalance);
-                $balanceNature = $netBalance >= 0 ? 'dr' : 'cr';
-                $isSupplier = $this->type === 'supplier';
+                    // Net balance calculation
+                    $netBalance = $totals['debit'] - $totals['credit'];
+                    $balanceAmount = abs($netBalance);  // Always positive balance amount
+                    $balanceNature = $netBalance >= 0 ? 'dr' : 'cr'; // Debit if net balance is positive, credit if negative
 
-                return [
-                    'balance' => $balanceAmount,
-                    'balance_nature' => $balanceNature,
-                    'normal_balance_nature' => $isSupplier ? 'cr' : 'dr',
-                    'is_normal_balance' => $balanceNature === ($isSupplier ? 'cr' : 'dr'),
-                    'total_debit' => $totals['debit'],
-                    'total_credit' => $totals['credit'],
-                    'net_balance' => $netBalance,
-                    'account_type' => $this->type,
-                    'payable_amount' => $balanceNature === 'cr' ? $balanceAmount : 0,
-                    'receivable_amount' => $balanceNature === 'dr' ? $balanceAmount : 0,
-                    'meaning' => $isSupplier
-                        ? ($balanceNature === 'cr'
-                            ? "You owe {$balanceAmount} to this supplier"
-                            : "Supplier owes you {$balanceAmount}")
-                        : ($balanceNature === 'dr'
-                            ? "Customer owes you {$balanceAmount}"
-                            : "You owe {$balanceAmount} to this customer"),
-                ];
+                    // Check if this ledger is a supplier
+                    $isSupplier = $this->type === 'supplier';
+
+                    return [
+                        'balance' => $balanceAmount,
+                        'balance_nature' => $balanceNature,
+                        'normal_balance_nature' => $isSupplier ? 'cr' : 'dr',
+                        'is_normal_balance' => $balanceNature === ($isSupplier ? 'cr' : 'dr'),
+                        'total_debit' => $totals['debit'],
+                        'total_credit' => $totals['credit'],
+                        'net_balance' => $netBalance,
+                        'account_type' => $this->type,
+                        'payable_amount' => $balanceNature === 'cr' ? $balanceAmount : 0,
+                        'receivable_amount' => $balanceNature === 'dr' ? $balanceAmount : 0,
+                        'meaning' => $isSupplier
+                            ? ($balanceNature === 'cr'
+                                ? "You owe {$balanceAmount} to this supplier"
+                                : "Supplier owes you {$balanceAmount}")
+                            : ($balanceNature === 'dr'
+                                ? "Customer owes you {$balanceAmount}"
+                                : "You owe {$balanceAmount} to this customer"),
+                    ];
                 } else {
+                    // If there are no transaction lines, return empty statement
                     return [
                         'balance' => 0,
                         'balance_nature' => null,
@@ -87,6 +95,8 @@ class Ledger extends Model
             }
         );
     }
+
+
 
     /**
      * The attributes that are mass assignable.
@@ -158,9 +168,13 @@ class Ledger extends Model
         return $this->hasMany(Payment::class, 'ledger_id', 'id');
     }
 
-    public function ledgerTransactions()
+    // public function ledgerTransactions()
+    // {
+    //     return $this->hasMany(LedgerTransaction::class);
+    // }
+    public function transactionLines(): HasMany
     {
-        return $this->hasMany(LedgerTransaction::class);
+        return $this->hasMany(TransactionLine::class, 'ledger_id', 'id');
     }
     /**
      * Get relationships configuration for dependency checking

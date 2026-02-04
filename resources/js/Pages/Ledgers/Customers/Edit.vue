@@ -14,7 +14,7 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
- 
+
 
 const form = useForm({
     ...props.customer.data,
@@ -27,10 +27,10 @@ const form = useForm({
     amount: props.customer.data?.opening?.amount,
 })
 
-console.log('customer', props.customer);
+console.log('customer', props.customer.data.opening);
 watch(props.homeCurrency, (list) => {
-    if (props.homeCurrency && !form.currency_id) { 
-        form.currency_id = props.homeCurrency.id  
+    if (props.homeCurrency && !form.currency_id) {
+        form.currency_id = props.homeCurrency.id
     }
 }, { immediate: true })
 const handleUpdate = () => {
@@ -44,11 +44,11 @@ const handleCancel = () => {
 const handleSelectChange = (field, value) => {
     if(field === 'currency_id') {
         form.rate = value?.exchange_rate??0;
-        form.currency_id = value?.id; 
+        form.currency_id = value?.id;
     }
     else if(field === 'opening_currency_id') {
         form.rate = value?.exchange_rate??0;
-        form.opening_currency_id = value?.id; 
+        form.opening_currency_id = value?.id;
     }
     else{
         form[field] = value;

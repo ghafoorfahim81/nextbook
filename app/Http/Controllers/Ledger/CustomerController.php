@@ -19,7 +19,8 @@ use App\Models\Administration\Branch;
 use Illuminate\Http\Request;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\Cache;
-
+use App\Models\Transaction\TransactionLine;
+use Illuminate\Support\Facades\DB;
 class CustomerController extends Controller
 {
     public function __construct()
@@ -74,9 +75,9 @@ class CustomerController extends Controller
         if ($validated['opening_currency_id'] && $validated['amount'] && $validated['amount'] > 0) {
 
             $arId = $glAccounts['accounts-receivable'];
-            $apId = $glAccounts['accounts-payable'];
+            $equityId = $glAccounts['opening-balance-equity'];
 
-            abort_unless($arId && $apId, 500, 'System accounts (AR/AP) are missing.');
+            abort_unless($arId && $equityId, 500, 'System accounts (AR/AP) are missing.');
 
             $transaction = $transactionService->post(
                 header: [
@@ -88,18 +89,18 @@ class CustomerController extends Controller
                     'remark' => 'Opening balance for customer ' . $ledger->name,
                 ],
                 lines: [
-                ['account_id' => $arId, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for customer ' . $ledger->name],
-                ['account_id' => $apId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $ledger->name],
+                ['account_id' => $arId, 'ledger_id' => $ledger->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for customer ' . $ledger->name],
+                ['account_id' => $equityId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $ledger->name],
             ]);
 
-            $ledger->ledgerTransactions()->create([
-                'transaction_id' => $transaction['id'],
-            ]);
+            // $ledger->ledgerTransactions()->create([
+            //     'transaction_id' => $transaction['id'],
+            // ]);
 
             $transaction->opening()->create([
                 'ledgerable_id' => $ledger->id,
                 'ledgerable_type' => 'ledger',
-            ]); 
+            ]);
         }
         if ($request->boolean('stay') || $request->boolean('create_and_new')) {
             return to_route('customers.create')
@@ -118,10 +119,13 @@ class CustomerController extends Controller
     {
         $customer->load([
             'currency',
-            'openings.transaction.currency',
-            'ledgerTransactions.transaction.account',
-            'ledgerTransactions.transaction.currency',
+            'opening',
+            'opening.transaction.currency',
+            'opening.transaction.lines',
+            'transactionLines.transaction',
+            'transactionLines.transaction.currency',
         ]);
+
         $sales = $customer->sales->load('transaction.currency');
         $receipts = $customer->receipts->load('receiveTransaction.currency');
         $payments = $customer->payments->load('bankTransaction.currency');
@@ -148,7 +152,6 @@ class CustomerController extends Controller
     public function edit(Ledger $customer)
     {
         $customer->load(['currency', 'opening', 'opening.transaction.currency','opening.transaction.lines']);
-        // dd($customer);
         return inertia('Ledgers/Customers/Edit', [
             'customer' => new LedgerResource($customer),
         ]);
@@ -163,48 +166,39 @@ class CustomerController extends Controller
         $customer->update($validated);
 
         // Remove existing opening balances
-        $customer->openings->each(function ($opening) {
-            LedgerTransaction::where('transaction_id',$opening->transaction_id)->forceDelete();
-            $opening->forceDelete();
-            $opening->transaction()->forceDelete();
-        });
 
-        $openings = collect($request->input('openings', []))
-            ->filter(function ($opening) {
-                return !empty($opening['currency_id']) && (float)($opening['amount'] ?? 0) > 0;
-            });
+        if($customer->opening) {
+            TransactionLine::where('transaction_id',$customer->opening->transaction_id)->forceDelete();
+            $customer->opening->forceDelete();
+            $customer->opening->transaction()->forceDelete();
+        }
+
+
+        if ($validated['amount'] && $validated['amount'] > 0 && $validated['opening_currency_id'] && $validated['rate']) {  // Update existing opening balances
             $glAccounts = Cache::get('gl_accounts');
-
-        if ($openings->isNotEmpty()) {  // Update existing opening balances
             $arId = $glAccounts['accounts-receivable'];
-            $apId = $glAccounts['accounts-payable'];
-
-            abort_unless($arId && $apId, 500, 'System accounts (AR/AP) are missing.');
+            $equityId = $glAccounts['opening-balance-equity'];
             $transactionService = app(TransactionService::class);
-            $openings->each(function ($opening) use ($customer, $arId, $apId, $transactionService) {
-                $type = $opening['type'] ?? 'debit';
-                $accountId = $type === 'credit' ? $arId : $apId;
-                $data = [
-                    'ledger' =>$customer,
-                    'account_id' => $accountId,
-                    'amount' => (float) $opening['amount'],
-                    'currency_id' => $opening['currency_id'],
-                    'rate' => (float) $opening['rate'],
+            abort_unless($arId && $equityId, 500, 'System accounts (AR/AP) are missing.');
+
+            $transaction = $transactionService->post(
+                header: [
+                    'currency_id' => $validated['opening_currency_id'],
+                    'rate' => (float) $validated['rate'],
                     'date' => now(),
-                    'type' => $type,
-                ];
+                    'reference_type' => Ledger::class,
+                    'reference_id' => $customer->id,
+                    'remark' => 'Opening balance for customer ' . $customer->name,
+                ],
+                lines: [
+                ['account_id' => $arId, 'ledger_id' => $customer->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for customer ' . $customer->name],
+                ['account_id' => $equityId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $customer->name],
+            ]);
 
-                $transaction = $transactionService->createLedgerTransaction($data);
-
-                $customer->ledgerTransactions()->create([
-                    'transaction_id' => $transaction['id'],
-                ]);
-
-                $transaction->opening()->create([
-                    'ledgerable_id' => $customer->id,
-                    'ledgerable_type' => 'ledger',
-                ]);
-            });
+            $transaction->opening()->create([
+                'ledgerable_id' => $customer->id,
+                'ledgerable_type' => 'ledger',
+            ]);
         }
 
         return to_route('customers.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.customer')]));
@@ -213,48 +207,56 @@ class CustomerController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+
+
     public function destroy(Request $request, Ledger $customer)
     {
+        $openingTransactionId = $customer->opening?->transaction_id;
 
-        if (!$customer->canBeDeleted()) {
-            return inertia('Ledgers/Customers/Index', [
-                'error' => $customer->getDependencyMessage()
-            ]);
+        // Allow delete only when customer has no transactions OR only opening transaction.
+        $hasNonOpeningTransactions = TransactionLine::query()
+            ->where('ledger_id', $customer->id)
+            ->when(
+                $openingTransactionId,
+                fn ($q) => $q->where('transaction_id', '!=', $openingTransactionId),
+                fn ($q) => $q // no opening found -> any transaction means blocked
+            )
+            ->exists();
+
+        if ($hasNonOpeningTransactions) {
+            return back()->with('error', __('Cannot delete customer: this customer has transactions. Please remove related transactions first.'));
         }
-        $customer->ledgerTransactions()->get()->each(function ($transaction) {
-            $transaction->transaction()->delete();
-            $transaction->delete();
-        });
-        $customer->openings()->delete();
-        $customer->delete();
 
-        return redirect()->route('customers.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.customer')]));
+        DB::transaction(function () use ($customer, $openingTransactionId) {
+            if ($openingTransactionId) {
+                // Delete the whole opening transaction (both lines) and the opening record.
+                TransactionLine::where('transaction_id', $openingTransactionId)->delete();
+                Transaction::where('id', $openingTransactionId)->delete();
+                $customer->opening()->delete();
+            }
+
+            $customer->delete();
+        });
+
+        return redirect()
+            ->route('customers.index')
+            ->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.customer')]));
     }
+
     public function restore(Request $request, Ledger $customer)
     {
-        DB::transaction(function () use ($customer) {
-            // 3. Batch restore instead of one-by-one
-            $customer->ledgerTransactions()
-                ->with(['transaction']) // Eager load to avoid N+1
-                ->onlyTrashed()
-                ->get()
-                ->each(function ($ledgerTransaction) {
-                    if ($ledgerTransaction->transaction) {
-                        $ledgerTransaction->transaction()->restore();
-                    }
-                    $ledgerTransaction->restore();
-                });
+        $opening = $customer->opening()->withTrashed()->first();
+        $openingTransactionId = $opening?->transaction_id;
 
-            // 4. Batch restore openings
-            $customer->openings()
-                ->onlyTrashed()
-                ->restore();
+        DB::transaction(function () use ($customer, $openingTransactionId) {
+            if ($openingTransactionId) {
+                Transaction::withTrashed()->where('id', $openingTransactionId)->restore();
+                TransactionLine::withTrashed()->where('transaction_id', $openingTransactionId)->restore();
+                $customer->opening()->withTrashed()->restore();
+            }
 
-            // 5. Restore the customer
             $customer->restore();
         });
-
-        return redirect()->route('customers.index')
-            ->with('success', __('general.restored_successfully', ['resource' => __('general.resource.customer')]));
+        return redirect()->route('customers.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.customer')]));
     }
 }

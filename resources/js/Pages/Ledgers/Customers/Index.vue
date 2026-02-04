@@ -38,6 +38,7 @@ import { router } from '@inertiajs/vue3'
             title: t('general.delete', { name: t('ledger.customer.customer') }),
             description: t('general.delete_description', { name: t('ledger.customer.customer') }),
             successMessage: t('general.delete_success', { name: t('ledger.customer.customer') }),
+            onError: () => showItem(id),
         })
 
     };
