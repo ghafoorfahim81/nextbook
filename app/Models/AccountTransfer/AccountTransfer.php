@@ -23,8 +23,7 @@ class AccountTransfer extends Model
     protected $fillable = [
         'number',
         'date',
-        'from_transaction_id',
-        'to_transaction_id',
+        'transaction_id',
         'remark',
         'branch_id',
         'created_by',
@@ -35,23 +34,18 @@ class AccountTransfer extends Model
     protected $casts = [
         'id' => 'string',
         'date' => 'date',
-        'from_transaction_id' => 'string',
-        'to_transaction_id' => 'string',
+        'transaction_id' => 'string',
         'branch_id' => 'string',
         'created_by' => 'string',
         'updated_by' => 'string',
         'deleted_by' => 'string',
     ];
 
-    public function fromTransaction(): BelongsTo
+    public function transaction(): BelongsTo
     {
-        return $this->belongsTo(Transaction::class, 'from_transaction_id');
+        return $this->belongsTo(Transaction::class, 'transaction_id');
     }
 
-    public function toTransaction(): BelongsTo
-    {
-        return $this->belongsTo(Transaction::class, 'to_transaction_id');
-    }
 }
 
 

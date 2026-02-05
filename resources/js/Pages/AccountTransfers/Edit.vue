@@ -27,14 +27,14 @@ const initial = props.data.data || {}
 const form = useForm({
   number: initial.number ?? '',
   date: initial.date ?? '',
-  from_account_id: initial.from_transaction?.account?.id || '',
-  selected_from_account: initial.from_transaction.account || null,
-  to_account_id: initial.to_transaction?.account?.id || '',
-  selected_to_account: initial.to_transaction.account || null,
+  from_account_id: initial.from_account?.id || '',
+  selected_from_account: initial.from_account || null,
+  to_account_id: initial.to_account?.id || '',
+  selected_to_account: initial.to_account || null,
   amount: initial.amount || '',
-  currency_id: initial.to_transaction?.currency?.id || initial.from_transaction?.currency?.id || '',
-  selected_currency: initial.to_transaction?.currency || initial.from_transaction?.currency || null,
-  rate: initial.to_transaction?.rate || initial.from_transaction?.rate || '',
+  currency_id: initial?.currency_id || initial.currency?.id || '',
+  selected_currency: initial?.currency || initial.currency || null,
+  rate: initial?.rate || initial.rate || '',
   remark: initial.remark || '',
 })
 
@@ -48,9 +48,9 @@ watch(() => props.data, (val) => {
   form.from_account_id = val.from_account?.id || ''
   form.selected_to_account = val.to_account || null
   form.to_account_id = val.to_account?.id || ''
-  form.selected_currency = val.to_transaction?.currency || val.from_transaction?.currency || null
+  form.selected_currency = val.currency || null
   form.currency_id = form.selected_currency?.id || ''
-  form.rate = val.to_transaction?.rate || val.from_transaction?.rate || ''
+  form.rate = val.rate || ''
 }, { immediate: false })
 
 function handleSelectChange(field, value) {
@@ -104,7 +104,7 @@ function submit() {
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+          <NextInput placeholder="Rate" :error="form.errors?.rate" :disabled="form.selected_currency.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
 
           <NextSelect
             :options="accounts"
@@ -143,7 +143,7 @@ function submit() {
       </div>
 
       <div class="mt-4 flex gap-2">
-        <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white" :disabled="sameAccountError">
+        <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white" :disabled="sameAccountError || form.processing">
           {{ t('general.update') }}
         </button>
         <button type="button" class="btn px-4 py-2 rounded-md border" @click="() => $inertia.visit('/account-transfers')">{{ t('general.cancel') }}</button>
