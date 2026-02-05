@@ -190,7 +190,7 @@ const submit = () => {
                                 v-model="form.email"
                                 type="email"
                                 class="w-full px-3.5 py-3.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#e0ddff] focus:border-[#6c4dff] text-sm placeholder:text-slate-400"
-                                placeholder="johnsmith@example.com"
+                                placeholder="ahmad@example.com"
                                 required
                                 autofocus
                             />
