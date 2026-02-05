@@ -17,8 +17,7 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->string('number')->nullable()->index();
             $table->date('date');
-            $table->ulid('from_transaction_id')->nullable()->index();
-            $table->ulid('to_transaction_id')->nullable()->index();
+            $table->ulid('transaction_id')->nullable()->index();
             $table->text('remark')->nullable();
             $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
@@ -29,8 +28,7 @@ return new class extends Migration
         });
 
         Schema::table('account_transfers', function (Blueprint $table) {
-            $table->foreign('from_transaction_id')->references('id')->on('transactions');
-            $table->foreign('to_transaction_id')->references('id')->on('transactions');
+            $table->foreign('transaction_id')->references('id')->on('transactions')->onDelete('set null');
             $table->foreign('branch_id')->references('id')->on('branches')->onDelete('set null');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');

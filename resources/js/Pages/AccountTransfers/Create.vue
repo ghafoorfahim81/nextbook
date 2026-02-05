@@ -121,7 +121,7 @@ function submit(createAndNew = false) {
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+          <NextInput placeholder="Rate" :error="form.errors?.rate" :disabled="form.selected_currency.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
 
           <NextSelect
             :options="accounts"
