@@ -93,11 +93,11 @@ function submit(createAndNew = false) {
 </script>
 
 <template>
-  <AppLayout :title="t('general.create', { name: 'Payment' })">
+  <AppLayout :title="t('general.create', { name: t('payment.payment') })">
     <form @submit.prevent="submitActionHandler(false)">
       <div class="mb-5 rounded-xl border border-primary p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
-          {{ t('general.create', { name: 'Payment' }) }}
+          {{ t('general.create', { name: t('payment.payment') }) }}
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextSelect
@@ -129,8 +129,8 @@ function submit(createAndNew = false) {
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput placeholder="Rate" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
-          <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
+          <NextInput :placeholder="t('general.enter', { text: t('general.rate') })" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+          <NextInput :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
           <NextSelect
             :options="accounts"
             v-model="form.selected_bank_account"
@@ -138,16 +138,16 @@ function submit(createAndNew = false) {
             label-key="name"
             value-key="id"
             :reduce="acc => acc"
-            :floating-text="'Debit from Account'"
+            :floating-text="t('general.add_to_account')"
             :error="form.errors?.bank_account_id"
             :searchable="true"
             resource-type="accounts"
             :search-fields="['name', 'number', 'slug']"
           />
-          <NextInput placeholder="Cheque No" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('receipt.cheque_no')" />
+          <NextInput :placeholder="t('general.enter', { text: t('general.cheque_no') })" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('general.cheque_no')" />
           <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="md:col-span-2">
-              <NextTextarea placeholder="Narration" :error="form.errors?.narration" v-model="form.narration" :label="'Narration'" />
+              <NextTextarea :placeholder="t('general.enter', { text: t('general.narration') })" :error="form.errors?.narration" v-model="form.narration" :label="t('general.narration')" />
             </div>
             <div class="md:col-span-1">
               <div class="rounded-xl border p-4 w-full md:w-64 ml-auto">
@@ -163,7 +163,7 @@ function submit(createAndNew = false) {
         :create-label="t('general.create')"
         :create-and-new-label="t('general.create_and_new')"
         :cancel-label="t('general.cancel')"
-        :creating-label="t('general.creating', { name: 'Payment' })"
+        :creating-label="t('general.creating', { name: t('payment.payment') })"
         :create-loading="createLoading"
         :create-and-new-loading="createAndNewLoading"
         @create-and-new="submitActionHandler(true)"

@@ -61,5 +61,8 @@ return [
 
     'error_occurred_while_creating' => 'An error occurred while creating :resource.',
     'error_occurred_while_updating' => 'An error occurred while updating :resource.',
+    'add_to_account' => 'Add to Account',
+    'cheque_no' => 'Cheque No',
+    'narration' => 'Narration',
 ];
 

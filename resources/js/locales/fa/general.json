@@ -184,5 +184,8 @@
   "no_results": "نتیجه‌ای یافت نشد",
   "payment_type": "نوع پرداخت",
   "please_add_items": "لطفا آیتم ها را اضافه کنید",
-  "please_add_at_least_one_item_to_create_sale": "لطفا حداقل یک آیتم برای ایجاد فاکتور اضافه کنید"
+  "please_add_at_least_one_item_to_create_sale": "لطفا حداقل یک آیتم برای ایجاد فاکتور اضافه کنید",
+  "add_to_account": "اضافه کردن به حساب",
+  "cheque_no": "شماره چک",
+  "narration": "یادداشت"
 }
