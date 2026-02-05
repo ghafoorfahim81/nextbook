@@ -20,7 +20,7 @@ class PaymentResource extends JsonResource
             'ledger' => $this->whenLoaded('ledger'),
             'ledger_name' => $this->ledger?->name,
             // derive from bank/payment transactions
-            'amount' => $this->transaction?->lines[1]->debit,
+            'amount' => $this->transaction?->lines[1]->debit ?? $this->transaction?->lines[1]->credit,
             'currency_id' => $this->transaction?->currency_id,
             'currency_code' => $this->transaction?->currency?->code,
             'rate' => $this->transaction?->rate,

@@ -21,7 +21,7 @@ class ReceiptResource extends JsonResource
             'ledger_id' => $this->ledger_id,
             'ledger' => $this->whenLoaded('ledger'),
             'ledger_name' => $this->ledger?->name,
-            'amount' => $this->transaction?->lines[0]->debit,
+            'amount' => $this->transaction?->lines[0]->debit ?? $this->transaction?->lines[0]->credit,
             'currency_id' => $this->transaction?->currency_id,
             'currency_code' => $this->transaction?->currency?->code, 
             'rate' => $this->transaction?->rate,
