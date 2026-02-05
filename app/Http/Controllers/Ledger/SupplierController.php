@@ -24,6 +24,8 @@ use App\Models\Ledger\LedgerTransaction;
 use App\Models\Transaction\TransactionLine;
 use Illuminate\Support\Facades\DB;
 use App\Models\Transaction\Transaction;
+use App\Support\Inertia\CacheKey;
+
 class SupplierController extends Controller
 {
     public function __construct()
@@ -100,6 +102,7 @@ class SupplierController extends Controller
                 'ledgerable_type' => 'ledger',
             ]);
         }
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         if ($request->boolean('stay') || $request->boolean('create_and_new')) {
             return to_route('suppliers.create')
                 ->with('success', __('general.created_successfully', ['resource' => __('general.resource.supplier')]));
@@ -198,6 +201,7 @@ class SupplierController extends Controller
                 'ledgerable_type' => 'ledger',
             ]);
         }
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         return to_route('suppliers.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.supplier')]));
     }
 
@@ -233,6 +237,7 @@ class SupplierController extends Controller
 
             $supplier->delete();
         });
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         return redirect()->route('suppliers.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.supplier')]));
     }
     public function restore(Request $request, Ledger $supplier)
@@ -249,6 +254,7 @@ class SupplierController extends Controller
 
             $supplier->restore();
         });
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         return redirect()->route('suppliers.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.supplier')]));
     }
 }

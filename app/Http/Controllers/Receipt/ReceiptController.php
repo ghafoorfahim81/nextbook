@@ -15,7 +15,7 @@ use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-
+use App\Support\Inertia\CacheKey;
 class ReceiptController extends Controller
 {
     public function __construct()
@@ -103,6 +103,7 @@ class ReceiptController extends Controller
                 'transaction_id' => $transaction->id,
             ]);
         });
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
         if ($request->input('create_and_new')) {
             return redirect()->route('receipts.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.receipt')]));
@@ -181,7 +182,8 @@ class ReceiptController extends Controller
             );
             $receipt->update([
                 'transaction_id' => $transaction->id,
-            ]);
+            ]); 
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         });
 
         return redirect()->route('receipts.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.receipt')]));
@@ -195,7 +197,8 @@ class ReceiptController extends Controller
                 TransactionLine::where('transaction_id', $receipt->transaction_id)->delete();
             $receipt->delete();
         });
-
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+  
         return redirect()->route('receipts.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.receipt')]));
     }
     public function restore(Request $request, Receipt $receipt)
@@ -203,6 +206,8 @@ class ReceiptController extends Controller
         $receipt->restore();
         Transaction::where('id', $receipt->transaction_id)->restore();
         TransactionLine::where('transaction_id', $receipt->transaction_id)->restore();
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
         return redirect()->route('receipts.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.receipt')]));
     }
 

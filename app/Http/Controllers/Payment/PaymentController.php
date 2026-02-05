@@ -15,7 +15,7 @@ use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
-
+use App\Support\Inertia\CacheKey;
 class PaymentController extends Controller
 {
     public function __construct()
@@ -112,6 +112,8 @@ class PaymentController extends Controller
             ]);
         });
 
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
         if ($request->input('create_and_new')) {
             return redirect()->route('payments.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.payment')]));
         }
@@ -191,6 +193,8 @@ class PaymentController extends Controller
             ]);
         });
 
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
         return redirect()->route('payments.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.payment')]));
     }
 
@@ -203,6 +207,8 @@ class PaymentController extends Controller
             $payment->delete();
         });
 
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
         return redirect()->route('payments.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.payment')]));
     }
 
@@ -211,6 +217,8 @@ class PaymentController extends Controller
         $payment->restore();
         TransactionLine::where('transaction_id', $payment->transaction_id)->restore();
         Transaction::where('id', operator: $payment->transaction_id)->restore();
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
         return redirect()->route('payments.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.payment')]));
     }
 }
