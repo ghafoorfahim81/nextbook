@@ -21,8 +21,8 @@ const editItem = (item) => {
 }
 const deleteItem = (id) => {
     deleteResource('payments.destroy', id, {
-        title: t('general.delete', { name: 'Payment' }),
-        name: 'Payment',
+        title: t('general.delete', { name: t('payment.payment') }),
+        name: t('payment.payment'),
     })
 }
 const showItem = (id) => {

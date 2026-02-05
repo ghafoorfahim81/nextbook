@@ -21,6 +21,8 @@ use App\Services\TransactionService;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Transaction\TransactionLine;
 use Illuminate\Support\Facades\DB;
+use App\Support\Inertia\CacheKey;
+
 class CustomerController extends Controller
 {
     public function __construct()
@@ -91,17 +93,15 @@ class CustomerController extends Controller
                 lines: [
                 ['account_id' => $arId, 'ledger_id' => $ledger->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for customer ' . $ledger->name],
                 ['account_id' => $equityId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $ledger->name],
-            ]);
-
-            // $ledger->ledgerTransactions()->create([
-            //     'transaction_id' => $transaction['id'],
-            // ]);
-
+            ]); 
             $transaction->opening()->create([
                 'ledgerable_id' => $ledger->id,
                 'ledgerable_type' => 'ledger',
             ]);
         }
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
+
         if ($request->boolean('stay') || $request->boolean('create_and_new')) {
             return to_route('customers.create')
                 ->with('success', __('general.created_successfully', ['resource' => __('general.resource.customer')]));
@@ -201,6 +201,8 @@ class CustomerController extends Controller
             ]);
         }
 
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
         return to_route('customers.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.customer')]));
     }
 
@@ -238,6 +240,8 @@ class CustomerController extends Controller
             $customer->delete();
         });
 
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
         return redirect()
             ->route('customers.index')
             ->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.customer')]));
@@ -257,6 +261,9 @@ class CustomerController extends Controller
 
             $customer->restore();
         });
+
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
         return redirect()->route('customers.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.customer')]));
     }
 }

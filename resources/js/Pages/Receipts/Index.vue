@@ -41,19 +41,19 @@ const columns = computed(() => ([
 </script>
 
 <template>
-    <AppLayout title="Receipts">
+    <AppLayout :title="t('receipt.receipts')">
         <DataTable
             can="receipts"
             :items="receipts"
             :columns="columns"
-            :title="'Receipts'"
+            :title="t('receipt.receipts')"
             :url="`receipts.index`"
             :showAddButton="true"
             :hasShow="true"
             @edit="editItem"
             @delete="deleteItem"
             @show="showItem"
-            :addTitle="'Receipt'"
+            :addTitle="t('receipt.receipt')"
             :addAction="'redirect'"
             :addRoute="'receipts.create'"
         />
