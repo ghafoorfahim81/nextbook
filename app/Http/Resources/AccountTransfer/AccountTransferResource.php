@@ -5,7 +5,7 @@ namespace App\Http\Resources\AccountTransfer;
 use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\Account\AccountResource; 
+use App\Http\Resources\Account\AccountResource;
 class AccountTransferResource extends JsonResource
 {
     public function toArray(Request $request): array
@@ -26,7 +26,7 @@ class AccountTransferResource extends JsonResource
             'to_account_id' => $toAccount?->id,
             'from_account' => new AccountResource($fromAccount),
             'to_account' => new AccountResource($toAccount),
-            'amount' => $this->transaction?->lines?->first()?->debit ?? $this->transaction?->lines?->first()?->credit,
+            'amount' => $this->transaction?->lines?->first()?->debit>0?$this->transaction?->lines?->first()?->debit: $this->transaction?->lines?->first()?->credit,
             'currency_code' => $this->transaction?->currency?->code,
             'currency_id' => $this->transaction?->currency?->id,
             'rate' => $this->transaction?->rate,
