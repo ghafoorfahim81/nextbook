@@ -194,42 +194,55 @@ class SaleController extends Controller
 
     public function print(Request $request, Sale $sale)
     {
-        $sale->load([
-            'items.item',
-            'items.unitMeasure',
-            'customer',
-            'transaction.currency',
-            'stockOuts.store',
-        ]);
 
         $company = auth()->user()?->company;
-
-        $html = view('sales.print', [
-            'sale' => $sale,
-            'company' => $company,
-        ])->render();
-
-        $tempDir = storage_path('app/mpdf-temp');
-        if (!is_dir($tempDir)) {
-            mkdir($tempDir, 0775, true);
-        }
-
-        $mpdf = new Mpdf([
-            'default_font_size' => 10,
-            'default_font' => 'dejavusans',
-            'tempDir' => $tempDir,
-            'margin_top' => 15,
-            'margin_bottom' => 15,
-            'margin_left' => 10,
-            'margin_right' => 10,
+        $sale = $sale->load([
+            'customer',
+            'items',
+        ]);
+        return inertia('Sale/Sales/Print', [
+            'invoice' => new SaleResource($sale),
+        'company' => $company,
+        'sale_preference' => user_preference('sale.preference'),
         ]);
 
-        $mpdf->SetTitle('Sale #' . $sale->number);
-        $mpdf->WriteHTML($html);
+        // dd('hiiii');
+        // $sale->load([
+        //     'items.item',
+        //     'items.unitMeasure',
+        //     'customer',
+        //     'transaction.currency',
+        //     'stockOuts.store',
+        // ]);
 
-        return response($mpdf->Output('sale-'.$sale->number.'.pdf', 'S'), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="sale-'.$sale->number.'.pdf"',
-        ]);
+        // $company = auth()->user()?->company;
+
+        // $html = view('sales.print', [
+        //     'sale' => $sale,
+        //     'company' => $company,
+        // ])->render();
+
+        // $tempDir = storage_path('app/mpdf-temp');
+        // if (!is_dir($tempDir)) {
+        //     mkdir($tempDir, 0775, true);
+        // }
+
+        // $mpdf = new Mpdf([
+        //     'default_font_size' => 10,
+        //     'default_font' => 'dejavusans',
+        //     'tempDir' => $tempDir,
+        //     'margin_top' => 15,
+        //     'margin_bottom' => 15,
+        //     'margin_left' => 10,
+        //     'margin_right' => 10,
+        // ]);
+
+        // $mpdf->SetTitle('Sale #' . $sale->number);
+        // $mpdf->WriteHTML($html);
+
+        // return response($mpdf->Output('sale-'.$sale->number.'.pdf', 'S'), 200, [
+        //     'Content-Type' => 'application/pdf',
+        //     'Content-Disposition' => 'inline; filename="sale-'.$sale->number.'.pdf"',
+        // ]);
     }
 }
