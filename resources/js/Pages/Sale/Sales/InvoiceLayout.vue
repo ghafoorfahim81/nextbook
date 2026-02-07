@@ -15,6 +15,14 @@ const formatNumber = (val) => {
   return n.toLocaleString('fa-IR')
 }
 
+const subtotal = computed(() => {
+  return props.invoice?.items?.reduce((acc, item) => acc + item.unit_price * item.quantity, 0) ?? 0
+})
+
+const grandTotal = computed(() => {
+  return props.invoice?.items?.reduce((acc, item) => acc + item.unit_price * item.quantity - item.discount + item.tax, 0) ?? 0
+})
+
 // Keep the first page visually "full" by adding empty rows.
 // Chosen to match A4 layout with header/meta/customer/totals/footer blocks.
 const MIN_TABLE_ROWS = 12
@@ -105,7 +113,8 @@ const emptyRowsCount = computed(() => {
           <!-- Totals row (like the sample invoice) -->
           <tr class="items-total-row">
             <td colspan="4" class="items-total-label">جمع مبلغ</td>
-            <td colspan="4" class="items-total-value">{{ formatNumber(invoice.subtotal) }}</td>
+            <td colspan="3" class="items-total-value text-center">{{ formatNumber(subtotal) }}</td>
+            <td  class="items-total-value text-center">{{ formatNumber(grandTotal) }}</td>
           </tr>
         </tbody>
       </table>
@@ -146,7 +155,7 @@ const emptyRowsCount = computed(() => {
       <footer class="invoice-footer">
         <div class="footer-rule"></div>
         <div class="address">
-          آدرس دفتر مرکزی: هرات، جاده‌ی بهزاد، روبروی مارکت بهزاد
+          آدرس دفتر مرکزی: بازار سنگ ماشه 
         </div>
         <div class="footer-bar">
           <span class="red"></span>
