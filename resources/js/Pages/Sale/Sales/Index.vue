@@ -37,7 +37,7 @@ const showItem = (id) => {
 }
 
 const printItem = (id) => {
-    router.visit(route('sales.print', id));
+    window.open(route('sales.print', id), '_blank');
 }
 
 const columns = computed(() => ([
