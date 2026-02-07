@@ -141,7 +141,9 @@ const emptyRowsCount = computed(() => {
       <!-- FOOTER NOTES -->
       <section class="notes">
         <div class="notes-title">توضیحات:</div>
-        <div class="notes-box"></div>
+        <div class="notes-box">
+          {{ invoice.description }}
+        </div>
       </section>
 
       <!-- SIGNATURES -->
@@ -153,9 +155,11 @@ const emptyRowsCount = computed(() => {
 
       <!-- FOOTER -->
       <footer class="invoice-footer">
-        <div class="footer-rule"></div>
+        <div class="footer-rule">
+          {{ company.invoice_description }}
+        </div>
         <div class="address">
-          آدرس دفتر مرکزی: بازار سنگ ماشه 
+         {{ company.address }}
         </div>
         <div class="footer-bar">
           <span class="red"></span>
