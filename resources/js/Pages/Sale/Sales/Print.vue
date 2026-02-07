@@ -12,6 +12,6 @@
   
   console.log(props.invoice.data)
   onMounted(() => {
-    // window.print()
+    window.print()
   })
   </script>
