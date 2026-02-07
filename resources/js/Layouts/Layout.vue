@@ -86,6 +86,8 @@ import LanguageSwitcher from '@/Components/LanguageSwitcher.vue'
 import { usePage, Link, router } from '@inertiajs/vue3'
 // @ts-ignore - Vue SFC default export shim
 import Toaster from '@/Components/ui/toast/Toaster.vue'
+// @ts-ignore - Vue SFC default export shim
+import Sonner from '@/Components/ui/sonner/Sonner.vue'
 import { HousePlug, ShoppingCart, Receipt as ReceiptIcon } from 'lucide-vue-next'
 import QuickLinks from '@/Components/next/QuickLinks.vue'
 const { t } = useI18n()
@@ -175,6 +177,11 @@ const mode = useColorMode({
         cafe: 'cafe',
     },
 })
+
+// vue-sonner has its own theme system; keep it in sync with Tailwind dark mode.
+const sonnerTheme = computed(() =>
+    String(mode.value || '').includes('dark') ? 'dark' : 'light',
+)
 
 const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
 const sidebarSide = computed(() => isRTL.value ? 'right' : 'left')
@@ -376,6 +383,7 @@ function logout() {
 
 <template>
     <Toaster />
+    <Sonner :theme="sonnerTheme" />
     <SidebarProvider :default-open="!props.sidebarCollapsed">
         <Sidebar collapsible="icon" :side="sidebarSide">
             <SidebarHeader>

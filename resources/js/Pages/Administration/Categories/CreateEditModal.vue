@@ -1,17 +1,14 @@
 <script setup>
 import { computed, ref, reactive, watch } from 'vue'
-import { useForm, router } from '@inertiajs/vue3'
-import { Input } from '@/Components/ui/input'
-import { Textarea } from '@/Components/ui/textarea'
-import { Label } from '@/Components/ui/label'
-import ModalDialog from '@/Components/next/Dialog.vue'
-import vSelect from 'vue-select'
-import NextInput from "@/Components/next/NextInput.vue";
-import FloatingLabel from "@/Components/next/FloatingLabel.vue";
+import { useForm, router } from '@inertiajs/vue3' 
+import ModalDialog from '@/Components/next/Dialog.vue' 
+import NextInput from "@/Components/next/NextInput.vue"; 
 import NextTextarea from "@/Components/next/NextTextarea.vue";
 import NextSelect from "@/Components/next/NextSelect.vue";
 import { useI18n } from 'vue-i18n';
-const { t } = useI18n()
+import { toast } from 'vue-sonner'
+const { t } = useI18n() 
+
 const props = defineProps({
     isDialogOpen: Boolean,
     editingItem: Object, // ✅ this is passed from Index.vue
@@ -64,12 +61,21 @@ const handleParentSelectChange = (value) => {
 }
 
 const handleSubmit = async () => {
+    toast.error(t('general.success'), {
+                    description: t('general.update_success', { name: t('admin.category.category') }),
+                    class: 'bg-green-600 text-white',
+                })
+    return
     if (isEditing.value) {
         form.patch(route('categories.update', props.editingItem.id), {
             onSuccess: () => {
                 emit('saved')
                 form.reset();
                 closeModal()
+                toast.success(t('general.success'), {
+                    description: t('general.update_success', { name: t('admin.category.category') }),
+                    class: 'bg-green-600 text-white',
+                })
             },
         })
     } else {
@@ -78,6 +84,10 @@ const handleSubmit = async () => {
                 emit('saved')
                 form.reset();
                 closeModal()
+                toast.success(t('general.success'), {
+                    description: t('general.create_success', { name: t('admin.category.category') }),
+                    class: 'bg-green-600 text-white',
+                })
             },
         })
     }
