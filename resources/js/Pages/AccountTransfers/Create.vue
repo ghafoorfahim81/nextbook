@@ -76,10 +76,7 @@ const handleSubmitAction = (createAndNew = false) => {
                 class: 'bg-green-600',
             });
             if (isCreateAndNew) {
-                form.reset();
-                if (typeof buildOpenings === 'function') {
-                    form.openings = buildOpenings();
-                }
+                form.reset(); 
                 form.transform((d) => d); // Reset transform to identity
             }
         },

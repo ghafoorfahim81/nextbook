@@ -2,13 +2,12 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
-import NextTextarea from "@/Components/next/NextTextarea.vue";
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
+import { toast } from 'vue-sonner';
 const { t } = useI18n();
-
 
 const props = defineProps({
     currencies: {
@@ -45,32 +44,34 @@ watch(props.homeCurrency, (list) => {
 const submitAction = ref(null);
 const createLoading = computed(() => form.processing && submitAction.value === 'create');
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new');
-
+ 
 const handleSubmitAction = (createAndNew = false) => {
     const isCreateAndNew = createAndNew === true;
     submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
-    if (isCreateAndNew) {
-        handleCreateAndNew();
-    } else {
-        handleCreate();
-    }
-};
 
+    // Always show toast on success, regardless of which button is used
+    const postOptions = {
+        onSuccess: () => {
+            toast.success(t('general.success'), {
+                description: t('general.create_success', { name: t('ledger.customer.customer') }),
+                class: 'bg-green-600',
+            });
+            if (isCreateAndNew) {
+                form.reset(); 
+                form.transform((d) => d); // Reset transform to identity
+            }
+        },
+        // Any shared callbacks like onError can go here
+    };
 
-const handleCreate = () => {
-    form.post(route('customers.store'))
-}
+    const transformFn = isCreateAndNew
+        ? (data) => ({ ...data, create_and_new: true, stay: true })
+        : (data) => data;
 
-const handleCreateAndNew = () => {
     form
-        .transform((data) => ({ ...data, create_and_new: true, stay: true }))
-        .post(route('customers.store'), {
-            onSuccess: () => {
-                form.reset()
-                form.transform((d) => d)
-            },
-        })
-}
+        .transform(transformFn)
+        .post(route('customers.store'), postOptions);
+};
 
 const handleCancel = () => {
     router.visit(route('customers.index'))
