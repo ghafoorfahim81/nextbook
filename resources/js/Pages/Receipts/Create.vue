@@ -10,14 +10,12 @@ import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
-import { useToast } from '@/Components/ui/toast/use-toast'
 const page = usePage()
 const ledgers = computed(() => page.props.ledgers?.data || [])
 const accounts = computed(() => page.props.accounts?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
-
+import { toast } from 'vue-sonner'
 useLazyProps(page.props, ['ledgers', 'accounts'])
-const { toast } = useToast()
 const form = useForm({
   number: page.props.latestNumber ?? '',
   date: '',
@@ -37,6 +35,21 @@ const submitAction = ref(null)
 const createLoading = computed(() => form.processing && submitAction.value === 'create')
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new')
 
+const refreshLedgersAndAccounts = () => {
+  // For Inertia lazy props, best is to force reload the props from server
+  // We do it by making a GET request to the same page (`/receipts/create`)
+  // with preserveState to keep the modal open, and then update the page.props with the new ledgers/accounts
+  // Since we're in a SPA context, we'll forcibly reload the page props for ledgers/accounts.
+  // You can use $inertia.reload or router.reload in newer Inertia, or a manual inertia visit with only for fresh props.
+  // Here, we use Inertia visit with preserveScroll, only to update those lazy props
+  window.$inertia.visit('/receipts/create', {
+    method: 'get',
+    preserveState: true,
+    preserveScroll: true,
+    only: ['ledgers', 'accounts'],
+  })
+}
+
 const submitActionHandler = (createAndNew = false) => {
   const isCreateAndNew = createAndNew === true
   submitAction.value = isCreateAndNew ? 'create_and_new' : 'create'
@@ -54,8 +67,6 @@ watch(currencies, (list) => {
     }
   }
 }, { immediate: true })
-
-
 
 function handleSelectChange(field, value) {
   form[field] = value
@@ -79,19 +90,23 @@ function submit(createAndNew = false) {
     onSuccess: () => {
       if (createAndNew) {
         const latest = Number(form.number || 0)
-        form.reset('date', 'amount', 'cheque_no', 'narration')
+        form.reset('date', 'amount', 'cheque_no', 'narration', 'selected_ledger')
+        // Refresh ledgers and accounts after create and new
+        refreshLedgersAndAccounts()
         form.number = String((isNaN(latest) ? 0 : latest) + 1)
-
       }
-      toast({
-        title: t('general.success'),
+      toast.success(t('general.success'), {
         description: t('general.create_success', { name: t('receipt.receipt') }),
-        variant: 'success',
-        class:'bg-green-600 text-white',
-      })
-    }
-
-  })
+        class:'bg-green-600',
+      });
+    },
+    onError: () => {
+      toast.error(t('general.error'), {
+        description: t('general.create_error', { name: t('receipt.receipt') }),
+        class:'bg-red-600',
+      });
+    },
+  });
 }
 </script>
 
@@ -173,5 +188,3 @@ function submit(createAndNew = false) {
     </form>
   </AppLayout>
 </template>
-
-

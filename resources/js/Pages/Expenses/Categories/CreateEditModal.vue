@@ -7,7 +7,7 @@ import NextTextarea from '@/Components/next/NextTextarea.vue';
 import { Switch } from '@/Components/ui/switch';
 import { Label } from '@/Components/ui/label';
 import { useI18n } from 'vue-i18n';
-
+import { toast } from 'vue-sonner';
 const { t } = useI18n();
 
 const props = defineProps({
@@ -50,23 +50,31 @@ const closeModal = () => {
 };
 
 const handleSubmit = async () => {
-    if (isEditing.value) {
-        form.patch(route('expense-categories.update', props.editingItem.id), {
-            onSuccess: () => {
-                emit('saved');
-                form.reset();
-                closeModal();
-            },
-        });
-    } else {
-        form.post(route('expense-categories.store'), {
-            onSuccess: () => {
-                emit('saved');
-                form.reset();
-                closeModal();
-            },
-        });
-    }
+    const isEdit = isEditing.value;
+    const action = isEdit
+        ? () => form.patch(route('expense-categories.update', props.editingItem.id), submitOptions)
+        : () => form.post('/expense-categories', submitOptions);
+
+    const submitOptions = {
+        onSuccess: () => {
+            emit('saved');
+            form.reset();
+            closeModal();
+            toast.success(
+                t('general.success'),
+                {
+                    description: t(
+                        isEdit ? 'general.update_success' : 'general.create_success',
+                        { name: t('expense.category') }
+                    ),
+                    class: 'bg-green-600',
+                }
+            );
+        },
+        onError: () => console.error('error', form.errors),
+    };
+
+    await action();
 };
 </script>
 
@@ -78,6 +86,7 @@ const handleSubmit = async () => {
         :cancel-text="t('general.close')"
         @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
         :closeable="true"
+        :submitting="form.processing"
         @confirm="handleSubmit"
         @cancel="closeModal"
     >

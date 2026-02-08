@@ -9,11 +9,9 @@ import NextDate from '@/Components/next/NextDatePicker.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import { useI18n } from 'vue-i18n';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
-import { useToast } from '@/Components/ui/toast/use-toast';
 import { Trash2, Plus, Upload } from 'lucide-vue-next';
-
+import { toast } from 'vue-sonner';
 const { t } = useI18n();
-const { toast } = useToast();
 
 const props = defineProps({
     categories: { type: Object, required: true },
@@ -22,8 +20,6 @@ const props = defineProps({
     currencies: { type: Array, required: true },
     homeCurrency: { type: Object, required: true },
 });
-
-console.log('this is homeCurrency', props.homeCurrency);
 
 const form = useForm({
     date: '',
@@ -127,10 +123,9 @@ const handleSubmit = (createAndNew = false) => {
     // Validate at least one detail
     const validDetails = form.details.filter(d => d.title && d.amount);
     if (validDetails.length === 0) {
-        toast({
-            title: t('expense.error'),
+        toast.error(t('expense.expense_details'), {
             description: t('expense.at_least_one_detail'),
-            variant: 'destructive',
+            class: 'bg-red-600',
         });
         return;
     }
@@ -161,10 +156,9 @@ const handleSubmit = (createAndNew = false) => {
         data: formData,
         forceFormData: true,
         onSuccess: () => {
-            toast({
-                title: t('general.success'),
-                description: t('expense.created_successfully'),
-                class: 'bg-green-600 text-white',
+            toast.success(t('general.success'), {
+                description: t('general.create_success', { name: t('expense.expense') }),
+                class: 'bg-green-600',
             });
             if (createAndNew) {
                 form.reset();
