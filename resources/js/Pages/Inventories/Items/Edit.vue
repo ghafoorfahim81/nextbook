@@ -1,15 +1,12 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import { ref, computed } from 'vue'
-import { Button } from '@/Components/ui/button'
 import NextInput from '@/Components/next/NextInput.vue'
-import NextTextarea from '@/Components/next/NextTextarea.vue'
 import { useForm } from '@inertiajs/vue3'
-import FloatingLabel from "@/Components/next/FloatingLabel.vue";
 import NextSelect from "@/Components/next/NextSelect.vue";
 import NextDatePicker from '@/Components/next/NextDatePicker.vue'
 import { useI18n } from 'vue-i18n'
-
+import { toast } from 'vue-sonner';
 const props = defineProps({
     item: { type: Object, required: true },
     stores: { type: [Array, Object], required: true },
@@ -89,12 +86,10 @@ const handleSubmit = () => {
     form.patch(route('items.update', form.id), {
         onSuccess: () => {
             form.reset()
-            toast({
-                    title: t('general.success'),
-                    description: t('general.update_success', { name: t('item.item') }),
-                    variant: 'success',
-                    class: 'bg-green-600 text-white',
-                });
+            toast.success(t('general.success'),{
+                description: t('general.update_success', { name: t('item.item') }),
+                class: 'bg-green-600',
+            });
         },
     })
 }
