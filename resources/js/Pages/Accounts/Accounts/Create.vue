@@ -7,10 +7,9 @@ import SubmitButtons from '@/Components/SubmitButtons.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
-import { useToast } from '@/Components/ui/toast/use-toast';
+import { toast } from 'vue-sonner';
 import { useLazyProps } from '@/composables/useLazyProps'
 const { t } = useI18n();
-const { toast } = useToast();
 const props = defineProps({
     accountTypes: {
         type: Object,
@@ -58,23 +57,23 @@ const handleSubmitAction = (createAndNew = false) => {
     const isCreateAndNew = createAndNew === true;
     submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
 
-    // Shared post options for both actions
-    const postOptions = isCreateAndNew
-        ? {
-            onSuccess: () => {
-                toast({
-                    title: t('general.success'),
-                    description: t('general.create_success', { name: t('account.account') }),
-                    variant: 'success',
-                    class: 'bg-green-600 text-white',
-                });
+    // Always show toast on success, regardless of which button is used
+    const postOptions = {
+        onSuccess: () => {
+            toast.success(t('general.success'), {
+                description: t('general.create_success', { name: t('account.account') }),
+                class: 'bg-green-600',
+            });
+            if (isCreateAndNew) {
                 form.reset();
-                form.openings = buildOpenings();
+                if (typeof buildOpenings === 'function') {
+                    form.openings = buildOpenings();
+                }
                 form.transform((d) => d); // Reset transform to identity
-            },
-            // Any shared callbacks like onError can go here
-        }
-        : undefined;
+            }
+        },
+        // Any shared callbacks like onError can go here
+    };
 
     const transformFn = isCreateAndNew
         ? (data) => ({ ...data, create_and_new: true, stay: true })

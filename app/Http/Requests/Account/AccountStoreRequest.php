@@ -28,9 +28,9 @@ class AccountStoreRequest extends FormRequest
             'is_active' => ['nullable', 'boolean'],
             'remark' => ['nullable', 'string'],
             'slug' => ['nullable', 'string'],
-            'currency_id' => ['required', 'string', 'exists:currencies,id'],
+            'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric','required_with:currency_id'],
-            'amount' => ['nullable', 'numeric','required_with:transaction_type'], 
+            'amount' => ['nullable', 'numeric','required_with:currency_id'], 
         ];
     }
 }
