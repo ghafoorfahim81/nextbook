@@ -185,6 +185,9 @@
   "payment_type": "Payment Type",
   "please_add_items": "Please add items",
   "please_add_at_least_one_item_to_create_sale": "Please add at least one item to create a sale",
+  "add_to_account": "Add to account",
+  "cheque_no": "Cheque No",
+  "narration": "Narration",
   "saving": "Saving..."
 }
 

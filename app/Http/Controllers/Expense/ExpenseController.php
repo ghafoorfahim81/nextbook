@@ -47,10 +47,10 @@ class ExpenseController extends Controller
                 ExpenseCategory::where('is_active', true)->get()
             ),
             'expenseAccounts' => Account::whereHas('accountType', fn($q) =>
-                $q->where('slug', 'office-expenses')
+                $q->where('slug', 'expense')
             )->get(),
             'bankAccounts' => Account::whereHas('accountType', fn($q) =>
-                $q->whereIn('slug', ['bank-account', 'cash','sarafi'])
+                $q->whereIn('slug', ['cash-or-bank'])
             )->get(),
         ]);
     }
