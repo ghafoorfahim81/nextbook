@@ -1,16 +1,13 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import { computed, watch, ref } from 'vue'
-import { Button } from '@/Components/ui/button'
 import NextInput from '@/Components/next/NextInput.vue'
-import NextTextarea from '@/Components/next/NextTextarea.vue'
 import { useForm, router } from '@inertiajs/vue3'
-import { Label } from '@/Components/ui/label'
 import NextSelect from '@/Components/next/NextSelect.vue'
-import FloatingLabel     from "@/Components/next/FloatingLabel.vue";
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
 import { useI18n } from 'vue-i18n';
+import { toast } from 'vue-sonner';
 const { t } = useI18n()
 // keep props reactive
 const props = defineProps({
@@ -31,7 +28,6 @@ const categories = computed(() => props.categories?.data ?? props.categories ?? 
 const brands = computed(() => props.brands?.data ?? props.brands ?? [])
 const sizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
 const itemTypes = computed(() => props.itemTypes?.data ?? props.itemTypes ?? [])
-console.log('this is itemTypes', props);
 // Format code with leading zeros based on the number
 const formatCode = (number) => {
     const num = Number(number);
@@ -46,7 +42,6 @@ const formatCode = (number) => {
 
 const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
 const visibleFields = computed(() => user_preferences.value.item_management.visible_fields ?? []).value
-console.log('this is visibleFields', visibleFields);
 const specText = computed(() => user_preferences.value.item_management.spec_text ?? '')
 
 const form = useForm({
@@ -140,57 +135,36 @@ const normalize = () => {
         store_id: o.store_id || null,
     }))
 }
+const handleSubmitAction = (createAndNew = false) => {
+    const isCreateAndNew = createAndNew === true;
+    submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
 
-const handleCreate = () => {
-    submitAction.value = 'create'
-    normalize()
-    // ensure no leftover transform
-    form.transform((d) => d).post(route('items.store'), {
-        forceFormData: true,
+    // Always show toast on success, regardless of which button is used
+    const postOptions = {
         onSuccess: () => {
-            form.reset()
-            form.code = formatCode(props.maxCode)
-            // reset transform so it doesn't affect other submits
-            form.transform((d) => d)
-            toast({
-                title: t('general.success'),
+            toast.success(t('general.success'), {
                 description: t('general.create_success', { name: t('item.item') }),
-                variant: 'success',
-                class: 'bg-green-600 text-white',
+                class: 'bg-green-600',
             });
+            if (isCreateAndNew) {
+                form.reset();
+                if (typeof buildOpenings === 'function') {
+                    form.openings = buildOpenings();
+                }
+                form.transform((d) => d); // Reset transform to identity
+            }
         },
-        onError: () => {
-            toast({
-                title: t('general.error'),
-                description: t('general.create_error', { name: t('item.item') }),
-                variant: 'error',
-                class: 'bg-red-600 text-white',
-            });
-        },
-    })
-}
+        // Any shared callbacks like onError can go here
+    };
 
-const handleCreateAndNew = () => {
-    submitAction.value = 'create_and_new'
-    normalize()
+    const transformFn = isCreateAndNew
+        ? (data) => ({ ...data, create_and_new: true, stay: true })
+        : (data) => data;
+
     form
-        .transform((data) => ({ ...data, stay: true }))
-        .post(route('items.store'), {
-            forceFormData: true,
-            onSuccess: () => {
-                form.reset()
-                form.code = formatCode(props.maxCode)
-                // reset transform so it doesn't affect other submits
-                form.transform((d) => d)
-                toast({
-                    title: t('general.success'),
-                    description: t('general.create_success', { name: t('item.item') }),
-                    variant: 'success',
-                    class: 'bg-green-600 text-white',
-                });
-            },
-        })
-}
+        .transform(transformFn)
+        .post(route('items.store'), postOptions);
+};
 
 const handleCancel = () => {
     router.visit(route('items.index'))
@@ -198,7 +172,6 @@ const handleCancel = () => {
 
 const handleSelectChange = (field, value) => {
     form[field] = value;
-    console.log('this is form', form[field]);
 };
 
 const handleOpeningSelectChange = (index, value) => {
@@ -210,7 +183,7 @@ const handleOpeningSelectChange = (index, value) => {
 
 <template>
     <AppLayout :title="t('item.item')">
-        <form @submit.prevent="handleCreate">
+        <form @submit.prevent="handleSubmitAction">
             <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.create', { name: t('item.item') }) }}
@@ -337,7 +310,7 @@ const handleOpeningSelectChange = (index, value) => {
                 :creating-label="t('general.creating', { name: t('item.item') })"
                 :create-loading="createLoading"
                 :create-and-new-loading="createAndNewLoading"
-                @create-and-new="handleCreateAndNew"
+                @create-and-new="handleSubmitAction(true)"
                 @cancel="handleCancel"
             />
         </form>
