@@ -1,16 +1,12 @@
 <script setup>
 import { computed, ref, reactive, watch } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
-import { Input } from '@/Components/ui/input'
-import { Textarea } from '@/Components/ui/textarea'
-import { Label } from '@/Components/ui/label'
 import ModalDialog from '@/Components/next/Dialog.vue'
-import vSelect from 'vue-select'
 import NextInput from "@/Components/next/NextInput.vue";
 import NextTextarea from "@/Components/next/NextTextarea.vue";
-import FloatingLabel from "@/Components/next/FloatingLabel.vue";
 import NextSelect from "@/Components/next/NextSelect.vue";
 import { useI18n } from 'vue-i18n';
+import { toast } from 'vue-sonner'
 const { t } = useI18n()
 const props = defineProps({
     isDialogOpen: Boolean,
@@ -23,10 +19,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:isDialogOpen', 'saved'])
-
+const loading = ref(false)
 const branches = computed(() => {
     const data = props.branches.data ?? props.branches
-    console.log('Branches data:', data)
     return data
 })
 const localDialogOpen = ref(props.isDialogOpen)
@@ -71,24 +66,34 @@ const handleParentSelectChange = (value) => {
 }
 
 const handleSubmit = async () => {
-    if (isEditing.value) {
-        form.patch(route('branches.update', props.editingItem.id), {
-            onSuccess: () => {
-                emit('saved')
-                form.reset();
-                closeModal()
-            },
-        })
-    } else {
-        form.post('/branches', {
-            onSuccess: () => {
-                emit('saved')
-                form.reset();
-                closeModal()
-            },
-        })
-    }
-}
+    const isEdit = isEditing.value;
+    const action = isEdit
+        ? () => form.patch(route('branches.update', props.editingItem.id), submitOptions)
+        : () => form.post('/branches', submitOptions);
+
+    const submitOptions = {
+        onSuccess: () => {
+            emit('saved');
+            form.reset();
+            closeModal();
+            toast.success(
+                t('general.success'),
+                {
+                    description: t(
+                        isEdit ? 'general.update_success' : 'general.create_success',
+                        { name: t('admin.branch.branch') }
+                    ),
+                    class: 'bg-green-600',
+                }
+            );
+        },
+        onError: () => console.error('error', form.errors),
+    };
+
+    await action();
+};
+
+ 
 
 
 </script>
@@ -102,7 +107,8 @@ const handleSubmit = async () => {
         :closeable="true"
         width="w-[800px] max-w-[800px]"
         @confirm="handleSubmit"
-        @cancel="closeModal"
+        @cancel="closeModal" 
+        :submitting="form.processing"
         :cancel-text="t('general.close')"
     >
 

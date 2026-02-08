@@ -47,7 +47,7 @@ const delegatedProps = reactiveOmit(props, "toastOptions");
         toast:
           'group toast flex w-full items-start gap-2 rounded-lg border border-border bg-background p-4 text-foreground shadow-lg',
         title: 'text-sm font-semibold leading-none tracking-tight',
-        description: 'text-sm text-foreground/80',
+        description: 'text-sm text-foreground/80 text-white',
         content: 'flex flex-col gap-1',
         actionButton:
           'inline-flex h-8 shrink-0 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground',
