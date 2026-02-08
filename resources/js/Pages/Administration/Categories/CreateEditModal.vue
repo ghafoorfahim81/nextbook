@@ -61,38 +61,33 @@ const handleParentSelectChange = (value) => {
 }
 
 const handleSubmit = async () => {
-    toast.error(t('general.success'), {
-                    description: t('general.update_success', { name: t('admin.category.category') }),
-                    class: 'bg-green-600 text-white',
-                })
-    return
-    if (isEditing.value) {
-        form.patch(route('categories.update', props.editingItem.id), {
-            onSuccess: () => {
-                emit('saved')
-                form.reset();
-                closeModal()
-                toast.success(t('general.success'), {
-                    description: t('general.update_success', { name: t('admin.category.category') }),
-                    class: 'bg-green-600 text-white',
-                })
-            },
-        })
-    } else {
-        form.post('/categories', {
-            onSuccess: () => {
-                emit('saved')
-                form.reset();
-                closeModal()
-                toast.success(t('general.success'), {
-                    description: t('general.create_success', { name: t('admin.category.category') }),
-                    class: 'bg-green-600 text-white',
-                })
-            },
-        })
-    }
-}
+    const isEdit = isEditing.value;
+    const action = isEdit
+        ? () => form.patch(route('categories.update', props.editingItem.id), submitOptions)
+        : () => form.post('/categories', submitOptions);
 
+    const submitOptions = {
+        onSuccess: () => {
+            emit('saved');
+            form.reset();
+            closeModal();
+            toast.success(
+                t('general.success'),
+                {
+                    description: t(
+                        isEdit ? 'general.update_success' : 'general.create_success',
+                        { name: t('admin.category.category') }
+                    ),
+                    class: 'bg-green-600',
+                }
+            );
+        },
+        onError: () => console.error('error', form.errors),
+    };
+
+    await action();
+};
+  
 
 </script>
 
@@ -104,6 +99,7 @@ const handleSubmit = async () => {
         :cancel-text="t('general.close')"
         @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
         :closeable="true"
+        :submitting="form.processing"
         @confirm="handleSubmit"
         @cancel="closeModal"
     >

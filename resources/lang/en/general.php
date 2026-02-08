@@ -64,5 +64,6 @@ return [
     'add_to_account' => 'Add to Account',
     'cheque_no' => 'Cheque No',
     'narration' => 'Narration',
+    
 ];
 

@@ -1,26 +1,18 @@
 <script setup>
 import { computed, ref, reactive, watch } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
-import { Input } from '@/Components/ui/input'
-import { Textarea } from '@/Components/ui/textarea'
-import { Label } from '@/Components/ui/label'
 import ModalDialog from '@/Components/next/Dialog.vue' 
 import NextInput from "@/Components/next/NextInput.vue"; 
 import { useI18n } from 'vue-i18n';
+import { toast } from 'vue-sonner'
 const { t } = useI18n()
 const props = defineProps({
     isDialogOpen: Boolean,
     editingItem: Object, // ✅ this is passed from Index.vue
-    branches: {
-        type: Array,
-        default: () => [],
-    },
-
 })
 
 const emit = defineEmits(['update:isDialogOpen', 'saved'])
 
-const branches = computed(() => props.branches.data ?? props.branches)
 const localDialogOpen = ref(props.isDialogOpen)
 
 watch(() => props.isDialogOpen, (val) => {0
@@ -62,29 +54,33 @@ watch(() => props.editingItem, (item) => {
 const closeModal = () => {
     localDialogOpen.value = false
 }
-
 const handleSubmit = async () => {
-    if (isEditing.value) {
-        form.patch(route('currencies.update', props.editingItem.id), {
-            onSuccess: () => {
-                emit('saved')
-                form.reset();
-                closeModal()
-            },
-        })
-    } else {
-        form.post('/currencies', {
-            onSuccess: () => {
-                emit('saved')
-                form.reset();
-                closeModal()
-            },
-            onError: () => {
-                console.log('error', form.errors);
-            },
-        })
-    }
-}
+    const isEdit = isEditing.value;
+    const action = isEdit
+        ? () => form.patch(route('currencies.update', props.editingItem.id), submitOptions)
+        : () => form.post('/currencies', submitOptions);
+
+    const submitOptions = {
+        onSuccess: () => {
+            emit('saved');
+            form.reset();
+            closeModal();
+            toast.success(
+                t('general.success'),
+                {
+                    description: t(
+                        isEdit ? 'general.update_success' : 'general.create_success',
+                        { name: t('admin.currency.currency') }
+                    ),
+                    class: 'bg-green-600',
+                }
+            );
+        },
+        onError: () => console.error('error', form.errors),
+    };
+
+    await action();
+};
 
 
 </script>
@@ -97,6 +93,7 @@ const handleSubmit = async () => {
         :cancel-text="t('general.close')"
         @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
         :closeable="true"
+        :submitting="form.processing"
         width="w-[800px] max-w-[800px]"
         @confirm="handleSubmit"
         @cancel="closeModal"

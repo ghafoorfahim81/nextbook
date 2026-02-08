@@ -9,9 +9,8 @@ import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
 import { useI18n } from 'vue-i18n'
-import { useToast } from '@/Components/ui/toast/use-toast'
+import { toast } from 'vue-sonner'
 const { t } = useI18n()
-const { toast } = useToast()
 
 const page = usePage()
 const ledgers = computed(() => page.props.ledgers?.data || [])
@@ -81,11 +80,9 @@ function submit(createAndNew = false) {
         form.reset('date', 'amount', 'cheque_no', 'narration')
         form.number = String((isNaN(latest) ? 0 : latest) + 1)
       }
-      toast({
-        title: t('general.success'),
-        narration: t('general.create_success', { name: 'Payment' }),
-        variant: 'success',
-        class:'bg-green-600 text-white',
+      toast.success(t('general.success'), {
+        description: t('general.create_success', { name: 'Payment' }),
+        class: 'bg-green-600 text-white',
       })
     }
   })

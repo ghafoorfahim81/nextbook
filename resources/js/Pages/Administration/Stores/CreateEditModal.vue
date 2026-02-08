@@ -5,21 +5,16 @@ import ModalDialog from '@/Components/next/Dialog.vue'
 import NextInput from "@/Components/next/NextInput.vue";
 import NextTextarea from "@/Components/next/NextTextarea.vue";
 import { useI18n } from 'vue-i18n';
+import { toast } from 'vue-sonner'
 const { t } = useI18n()
 const props = defineProps({
     isDialogOpen: Boolean,
     editingItem: Object, // ✅ this is passed from Index.vue
-    branches: {
-        type: Array,
-        default: () => [],
-    },
     errors: Object,
 })
 
 const emit = defineEmits(['update:isDialogOpen', 'saved'])
 
-const branches = computed(() => props.branches.data ?? props.branches)
-console.log('this is branches', branches.value);
 const localDialogOpen = ref(props.isDialogOpen)
 
 watch(() => props.isDialogOpen, (val) => {
@@ -54,24 +49,33 @@ const closeModal = () => {
 }
 
 const handleSubmit = async () => {
-    if (isEditing.value) {
-        form.patch(route('stores.update', props.editingItem.id), {
-            onSuccess: () => {
-                emit('saved')
-                form.reset();
-                closeModal()
-            },
-        })
-    } else {
-        form.post('/stores', {
-            onSuccess: () => {
-                emit('saved')
-                form.reset();
-                closeModal()
-            },
-        })
-    }
-}
+    const isEdit = isEditing.value;
+    const action = isEdit
+        ? () => form.patch(route('stores.update', props.editingItem.id), submitOptions)
+        : () => form.post('/stores', submitOptions);
+
+    const submitOptions = {
+        onSuccess: () => {
+            emit('saved');
+            form.reset();
+            closeModal();
+            toast.success(
+                t('general.success'),
+                {
+                    description: t(
+                        isEdit ? 'general.update_success' : 'general.create_success',
+                        { name: t('admin.store.store') }
+                    ),
+                    class: 'bg-green-600',
+                }
+            );
+        },
+        onError: () => console.error('error', form.errors),
+    };
+
+    await action();
+};
+
 
 
 </script>
@@ -85,6 +89,7 @@ const handleSubmit = async () => {
         @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
         :closeable="true" 
         @confirm="handleSubmit"
+        :submitting="form.processing"
         @cancel="closeModal"
     >
 
