@@ -7,6 +7,7 @@ import NextTextarea from "@/Components/next/NextTextarea.vue";
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
+import { toast } from 'vue-sonner';
 const props = defineProps({
     customer: { type: Object, required: true },
     currencies: { type: Array, required: true },
@@ -24,17 +25,23 @@ const form = useForm({
     selected_opening_currency: props.customer.data?.opening?.currency,
     opening_currency_id: props.customer.data?.opening?.currency_id,
     rate: props.customer.data?.opening?.rate,
-    amount: props.customer.data?.opening?.amount,
+    amount: props.customer.data?.opening?.amount??0,
 })
 
-console.log('customer', props.customer.data.opening);
 watch(props.homeCurrency, (list) => {
     if (props.homeCurrency && !form.currency_id) {
         form.currency_id = props.homeCurrency.id
     }
 }, { immediate: true })
-const handleUpdate = () => {
-    form.patch(route('customers.update', form.id))
+const handleSubmit = () => {
+    form.patch(route('customers.update', form.id), {
+        onSuccess: () => {
+            toast.success(t('general.success'), {
+                description: t('general.update_success', { name: t('ledger.customer.customer') }),
+                class: 'bg-green-600',
+            });
+        },
+    }); 
 }
 
 const handleCancel = () => {
@@ -58,7 +65,7 @@ const handleSelectChange = (field, value) => {
 
 <template>
     <AppLayout :title="t('general.edit', { name: t('ledger.customer.customer') })">
-        <form @submit.prevent="handleUpdate">
+        <form @submit.prevent="handleSubmit">
             <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.edit', { name: t('ledger.customer.customer') }) }}
