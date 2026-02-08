@@ -4,8 +4,8 @@ import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import { useForm, router } from '@inertiajs/vue3';
-import { useI18n } from 'vue-i18n';
-import { ref, computed, watch } from 'vue';
+import { useI18n } from 'vue-i18n'; 
+import { toast } from 'vue-sonner';
 import { useLazyProps } from '@/composables/useLazyProps'
 
 const { t } = useI18n();
@@ -19,21 +19,26 @@ const props = defineProps({
 
 useLazyProps(props, ['accountTypes'])
 
-
-
 const form = useForm({
     ...props.account.data,
     account_type_id: props.account.data.account_type_id,
     currency_id: props.account.data.currency_id,
     selected_currency: props.account.data?.opening?.currency,
     currency_id: props.account.data?.opening?.currency_id,
-    rate: props.account.data?.opening?.rate,
-    amount: props.account.data?.opening?.amount,
+    rate: props.account.data?.opening?.rate??null,
+    amount: props.account.data?.opening?.amount??0,
 });
 
 
 const handleUpdate = () => {
-    form.patch(route('chart-of-accounts.update', form.id))
+    form.patch(route('chart-of-accounts.update', form.id), {
+        onSuccess: () => {
+            toast.success(t('general.success'), {
+                description: t('general.update_success', { name: t('account.account') }),
+                class: 'bg-green-600',
+            });
+        },
+    });
 }
 
 

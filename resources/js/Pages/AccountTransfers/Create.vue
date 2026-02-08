@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
-import { useForm, usePage } from '@inertiajs/vue3'
+import { useForm, usePage, router } from '@inertiajs/vue3'
 import { ref, watch, computed } from 'vue'
 import { useLazyProps } from '@/composables/useLazyProps'
 import NextInput from '@/Components/next/NextInput.vue'
@@ -9,10 +9,9 @@ import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
 import { useI18n } from 'vue-i18n'
-import { useToast } from '@/Components/ui/toast/use-toast'
+import { toast } from 'vue-sonner'
 
 const { t } = useI18n()
-const { toast } = useToast()
 
 const page = usePage()
 const accounts = computed(() => page.props.accounts?.data || [])
@@ -39,15 +38,13 @@ const submitAction = ref(null)
 const createLoading = computed(() => form.processing && submitAction.value === 'create')
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new')
 
-const submitActionHandler = (createAndNew = false) => {
-  submitAction.value = createAndNew ? 'create_and_new' : 'create'
-  submit(createAndNew)
-}
-
 const sameAccountError = computed(() => {
   return form.from_account_id && form.to_account_id && form.from_account_id === form.to_account_id
 })
 
+const handleCancel = () => {
+  router.visit(route('account-transfers.index'));
+};
 watch(currencies, (list) => {
   if (list && list.length && !form.currency_id) {
     const base = list.find(c => c.is_base_currency)
@@ -67,38 +64,42 @@ function handleSelectChange(field, value) {
   }
 }
 
-function submit(createAndNew = false) {
-  if (sameAccountError.value) {
-    toast({
-      title: t('general.error'),
-      description: t('general.accounts_cannot_be_same'),
-      variant: 'destructive',
-    })
-    return
-  }
-  const payload = createAndNew ? { create_and_new: true } : {}
-  form.transform(data => ({ ...data, ...payload })).post('/account-transfers', {
-    onSuccess: () => {
-      const latest = Number(form.number || 0)
-      if (createAndNew) {
-        form.reset('date', 'amount', 'remark')
-        form.number = String((isNaN(latest) ? 0 : latest) + 1)
-      }
-      
-      toast({
-        title: t('general.success'),
-        description: t('general.create_success', { name: t('general.account_transfer') }),
-        variant: 'success',
-        class:'bg-green-600 text-white',
-      })
-    }
-  })
-}
+const handleSubmitAction = (createAndNew = false) => {
+    const isCreateAndNew = createAndNew === true;
+    submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
+
+    // Always show toast on success, regardless of which button is used
+    const postOptions = {
+        onSuccess: () => {
+            toast.success(t('general.success'), {
+                description: t('general.create_success', { name: t('general.account_transfer') }),
+                class: 'bg-green-600',
+            });
+            if (isCreateAndNew) {
+                form.reset();
+                if (typeof buildOpenings === 'function') {
+                    form.openings = buildOpenings();
+                }
+                form.transform((d) => d); // Reset transform to identity
+            }
+        },
+        // Any shared callbacks like onError can go here
+    };
+
+    const transformFn = isCreateAndNew
+        ? (data) => ({ ...data, create_and_new: true, stay: true })
+        : (data) => data;
+
+    form
+        .transform(transformFn)
+        .post(route('account-transfers.store'), postOptions);
+};
+ 
 </script>
 
 <template>
   <AppLayout :title="t('general.create', { name: t('general.account_transfer') })">
-    <form @submit.prevent="submitActionHandler">
+    <form @submit.prevent="handleSubmitAction">
       <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: t('general.account_transfer') }) }}
@@ -160,16 +161,15 @@ function submit(createAndNew = false) {
       </div>
 
       <SubmitButtons
-        :create-label="t('general.create')"
-        :create-and-new-label="t('general.create_and_new')"
-        :cancel-label="t('general.cancel')"
-        :creating-label="t('general.creating', { name: t('general.account_transfer') })"
-        :create-loading="createLoading"
-        :create-and-new-loading="createAndNewLoading"
-        :disabled="sameAccountError"
-        @create-and-new="submitActionHandler(true)"
-        @cancel="() => $inertia.visit('/account-transfers')"
-      />
+      :create-label="t('general.create')"
+      :create-and-new-label="t('general.create_and_new')"
+      :cancel-label="t('general.cancel')"
+      :creating-label="t('general.creating', { name: t('account.account') })"
+      :create-loading="createLoading"
+      :create-and-new-loading="createAndNewLoading"
+      @create-and-new="handleSubmitAction(true)"
+      @cancel="handleCancel"
+  />
     </form>
   </AppLayout>
 </template>

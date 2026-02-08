@@ -8,10 +8,9 @@ import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { useI18n } from 'vue-i18n'
-import { useToast } from '@/Components/ui/toast/use-toast'
+import { toast } from 'vue-sonner'
 
 const { t } = useI18n()
-const { toast } = useToast()
 
 const page = usePage()
 const accounts = computed(() => page.props.accounts?.data || [])
@@ -65,14 +64,12 @@ const sameAccountError = computed(() => {
   return form.from_account_id && form.to_account_id && form.from_account_id === form.to_account_id
 })
 
-function submit() {
+const handleSubmit = () => {
   form.put(`/account-transfers/${initial.id}`, {
     onSuccess: () => {
-      toast({
-        title: t('general.success'),
+      toast.success(t('general.success'), {
         description: t('general.update_success', { name: t('general.account_transfer') }),
-        variant: 'success',
-        class:'bg-green-600 text-white',
+        class:'bg-green-600',
       })
     }
   })
@@ -81,7 +78,7 @@ function submit() {
 
 <template>
   <AppLayout :title="t('general.edit', { name: t('general.account_transfer') })">
-    <form @submit.prevent="submit()">
+    <form @submit.prevent="handleSubmit">
       <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.edit', { name: t('general.account_transfer') }) }}
