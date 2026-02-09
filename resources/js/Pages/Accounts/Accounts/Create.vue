@@ -20,10 +20,6 @@ const props = defineProps({
         type: Object,
         required: true,
     },
-    transactionTypes: {
-        type: Array,
-        required: true,
-    },
     homeCurrency: {
         type: Object,
         required: true,
@@ -39,6 +35,7 @@ const form = useForm({
     currency_id: null,
     rate: 1,
     amount: 0,
+    selected_account_type: null,
     account_type_id: null,
 });
 watch(props.homeCurrency, (list) => {
@@ -93,8 +90,8 @@ const handleSelectChange = (field, value) => {
         form.rate = value?.exchange_rate??0;
         form.currency_id = value?.id; 
     }
-    else{
-        form[field] = value;
+    else{ 
+        form[field] = value.id;
     }
 };
 </script>
@@ -123,41 +120,49 @@ const handleSelectChange = (field, value) => {
 
                     <NextSelect
                         :options="props.accountTypes?.data || []"
-                        v-model="form.account_type_id"
+                        v-model="form.selected_account_type"
                         label-key="name"
                         value-key="id"
+                        @update:modelValue="(value) => handleSelectChange('account_type_id', value)"
                         id="account_type"
+                        :reduce="accountType => accountType"
                         :floating-text="t('account.account_type')"
                         :searchable="true"
                         resource-type="account_types"
                         :search-fields="['name']"
-                        :error="form.errors.account_type_id"
+                        :error="form.errors?.account_type_id"
                     />
-                    <div class="grid grid-cols-2 gap-2">
-                        <NextSelect
-                        :options="currencies.data"
-                        v-model="form.selected_currency"
-                        label-key="code"
-                        value-key="id"
-                        @update:modelValue="(value) => handleSelectChange('currency_id', value)"
-                        :reduce="currency => currency"
-                        :floating-text="t('admin.currency.currency')"
-                        :error="form.errors?.currency_id"
-                        :searchable="true"
-                        resource-type="currencies"
-                        :search-fields="['name', 'code', 'symbol']"
-                    />
-                    <NextInput placeholder="Rate" :disabled="form.currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
-                    </div>
-
-                    <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
-                    <NextTextarea
+                      <NextTextarea
                         v-model="form.remark"
                         :label="t('general.remark')"
                         :placeholder="t('general.enter', { text: t('general.remark') })"
                         :error="form.errors?.remark"
                         class="md:col-span-3"
                     />
+                </div>
+                <div class="md:col-span-3 mt-4" v-if="form?.selected_account_type?.slug=='cash-or-bank'">
+                    <div class="pt-2">
+                        <span class="font-bold">{{ t('item.opening') }} </span>
+                        <div class="mt-3">
+                            <div class="grid grid-cols-3 gap-2">
+                                <NextSelect
+                                :options="currencies.data"
+                                v-model="form.selected_currency"
+                                label-key="code"
+                                value-key="id"
+                                @update:modelValue="(value) => handleSelectChange('currency_id', value)"
+                                :reduce="currency => currency"
+                                :floating-text="t('admin.currency.currency')"
+                                :error="form.errors?.currency_id"
+                                :searchable="true"
+                                resource-type="currencies"
+                                :search-fields="['name', 'code', 'symbol']"
+                                 />
+                                <NextInput placeholder="Rate" :disabled="form.currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+                                <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
