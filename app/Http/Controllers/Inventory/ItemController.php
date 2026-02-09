@@ -47,7 +47,7 @@ class ItemController extends Controller
     }
 
     public function create()
-    { 
+    {
         // Get the maximum code as integer (cast to handle mixed formats like "3" and "004")
         $maxCode = Item::query()->selectRaw('MAX(CAST(code AS INTEGER)) as max_code')
         ->value('max_code');
@@ -59,7 +59,7 @@ class ItemController extends Controller
     }
     public function store(ItemStoreRequest $request)
     {
-        
+
 
         $validated = $request->validated();
         // If you're uploading a photo here, handle it first (optional)
@@ -67,9 +67,8 @@ class ItemController extends Controller
         //     $path = $request->file('photo')->store('items', 'public');
         //     $validated['photo'] = $path;
         // }
-
-        // dd($validated['item_type']);
-        DB::transaction(function () use ($validated, $request) {
+        $itemType = $validated['item_type']??ItemType::INVENTORY_MATERIALS->value;
+        DB::transaction(function () use ($validated, $request, $itemType) {
             // 1) Create item
             $item = Item::create($validated);
             // 2) Create opening stocks (if any)
@@ -121,7 +120,7 @@ class ItemController extends Controller
                     if ($itemType == ItemType::INVENTORY_MATERIALS->value) {
                         $inventoryAccount = $glAccounts['inventory-stock'];
                         $retainedEarningsAccount = $glAccounts['retained-earnings'];
-                    } 
+                    }
                     elseif ($itemType == ItemType::NON_INVENTORY_MATERIALS->value) {
                         $inventoryAccount = $glAccounts['non-inventory-items'];
                         $retainedEarningsAccount = $glAccounts['retained-earnings'];
@@ -216,7 +215,7 @@ class ItemController extends Controller
     public function update(ItemUpdateRequest $request, Item $item)
     {
 
-        
+
         $validated = $request->validated();
         // Handle photo update
         // dd($request->all());
@@ -275,7 +274,7 @@ class ItemController extends Controller
 
                     // Delete opening transactions
                     $item->openingTransactions()->each(function ($openingTransaction) {
-                        $transactionId = $openingTransaction->transaction_id; 
+                        $transactionId = $openingTransaction->transaction_id;
 
                         // Delete the opening transaction first to remove foreign key constraints
                         $openingTransaction->forceDelete();
@@ -316,7 +315,7 @@ class ItemController extends Controller
                     if ($itemType == ItemType::INVENTORY_MATERIALS->value) {
                         $inventoryAccount = $glAccounts['inventory-stock'];
                         $retainedEarningsAccount = $glAccounts['retained-earnings'];
-                    } 
+                    }
                     elseif ($itemType == ItemType::NON_INVENTORY_MATERIALS->value) {
                         $inventoryAccount = $glAccounts['non-inventory-items'];
                         $retainedEarningsAccount = $glAccounts['retained-earnings'];
