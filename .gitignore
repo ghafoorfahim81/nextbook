@@ -22,3 +22,4 @@ yarn-error.log
 /.zed
 yaml
 public/public.zip
+package-lock.json
