@@ -126,7 +126,7 @@ class AccountType extends Model
                     'is_main' => true,
                 ],
                 [
-                    'name' => "Equity",
+                    'name' => "Equity/Capital",
                     'slug' => 'equity',
                     'nature' => 'equity',
                     'remark' => 'Ownership interests',

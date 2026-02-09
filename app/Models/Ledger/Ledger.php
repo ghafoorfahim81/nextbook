@@ -26,7 +26,7 @@ use App\Traits\BranchSpecific;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 class Ledger extends Model
 {
-    use HasFactory, HasUlids, HasCache, HasSearch,   HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     // ... your existing code ...
 
