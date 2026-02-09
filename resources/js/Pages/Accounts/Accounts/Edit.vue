@@ -95,37 +95,7 @@ const handleSelectChange = (field, value) => {
                         resource-type="account-types"
                         :search-fields="['name']"
                         :error="form.errors.account_type_id"
-                    />
-                    <!-- <div class="grid grid-cols-2 gap-2">
-                        <NextSelect
-                            :options="currencies.data"
-                            v-model="form.selected_currency"
-                            label-key="code"
-                            value-key="id"
-                            @update:modelValue="(value) => handleSelectChange('currency_id', value)"
-                            :reduce="currency => currency"
-                            :floating-text="t('admin.currency.currency')"
-                            :error="form.errors?.currency_id"
-                            :searchable="true"
-                            resource-type="currencies"
-                            :search-fields="['name', 'code', 'symbol']"
-                        />
-                        <NextInput
-                            v-model="form.rate"
-                            type="number"
-                            step="any"
-                            :label="t('general.rate')"
-                            :error="form.errors?.rate"
-                            :disabled="form.currency_id === homeCurrency.id"
-                        />
-                    </div>
-                    <NextInput
-                        v-model="form.amount"
-                        type="number"
-                        step="any"
-                        :label="t('general.amount')"
-                        :error="form.errors?.amount"
-                    /> -->
+                    /> 
                     <NextTextarea
                         v-model="form.remark"
                         :label="t('general.remark')"
