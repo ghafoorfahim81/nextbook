@@ -5,6 +5,7 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import { useI18n } from 'vue-i18n';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
+import { toast } from 'vue-sonner'
 
 const { t } = useI18n();
 
@@ -68,6 +69,16 @@ const submit = () => {
         onFinish: () => {
             form.reset('password');
             isLoading.value = false;
+            toast.success(t('general.success'), {
+                description: t('auth.login_success'),
+                class: 'bg-green-600 text-white',
+            })
+        },
+        onError: () => {
+            toast.error(t('general.error'), {
+                description: t('auth.login_error'),
+                class: 'bg-red-600 text-white',
+            })
         },
     });
 };
