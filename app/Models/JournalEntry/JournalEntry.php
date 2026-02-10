@@ -26,6 +26,14 @@ class JournalEntry extends Model
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
+
+    protected $fillable = [
+        'number',
+        'date',
+        'remark',
+        'status',
+        'branch_id'
+    ];
     protected $casts = [
         'id' => 'string',
         'date' => 'date',
