@@ -32,7 +32,7 @@ const showItem = (id) => {
 
 const columns = computed(() => ([
     { key: 'number', label: t('general.number'), sortable: true },
-    { key: 'description', label: t('general.description'), sortable: true },
+    { key: 'remark', label: t('general.remark'), sortable: true },
     { key: 'amount', label: t('general.amount'), sortable: true },
     { key: 'date', label: t('general.date'), sortable: true },
     { key: 'status', label: t('general.status'), sortable: true },
@@ -43,7 +43,7 @@ const columns = computed(() => ([
 <template>
     <AppLayout :title="t('sidebar.journal_entry.journal_entries')">
         <DataTable
-            can="journalEntries"
+            can="journals.view_any"
             :items="journalEntries"
             :columns="columns"
             :title="t('sidebar.journal_entry.journal_entries')"
@@ -55,7 +55,7 @@ const columns = computed(() => ([
             @show="showItem"
             :addTitle="t('sidebar.journal_entry.journal_entry')"
             :addAction="'redirect'"
-            :addRoute="'journalEntries.create'"
+            :addRoute="'journal-entries.create'"
         />
         <JournalEntryShowDialog
             :open="showDialog"
