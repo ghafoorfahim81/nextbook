@@ -154,7 +154,9 @@ Route::middleware([
     Route::patch('/item-transfers/{itemTransfer}/restore', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'restore'])->name('item-transfers.restore')->withTrashed();
     Route::patch('/item-transfers/{itemTransfer}/complete', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'complete'])->name('item-transfers.complete');
     Route::patch('/item-transfers/{itemTransfer}/cancel', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'cancel'])->name('item-transfers.cancel');
-
+    // Journal Entries
+    Route::resource('/journal-entries', \App\Http\Controllers\JournalEntry\JournalEntryController::class);
+    Route::patch('/journal-entries/{journalEntry}/restore', [\App\Http\Controllers\JournalEntry\JournalEntryController::class, 'restore'])->name('journal-entries.restore')->withTrashed();
 
     Route::match(['get', 'post'], '/search/items-for-sale', [SearchController::class, 'searchItemsForSale'])
         ->name('search.items-for-sale');

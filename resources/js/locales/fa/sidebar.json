@@ -43,6 +43,10 @@
     "chart_of_account": "چارت حساب",
     "account_type": "نوع حساب"
   },
+  "journal_entry": {
+    "journal_entry": "ورودی حسابداری",
+    "journal_entries": "ورودی های حسابداری"
+  },
   "purchase": {
     "purchase": "خرید",
     "purchase_return": "برگشت خرید"

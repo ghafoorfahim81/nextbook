@@ -43,6 +43,10 @@
     "chart_of_account": "Chart of Account",
     "account_type": "Account Type"
   },
+  "journal_entry": {
+    "journal_entry": "Journal Entry",
+    "journal_entries": "Journal Entries"
+  },
   "purchase": {
     "purchase": "Purchase",
     "purchase_return": "Purchase Return"
