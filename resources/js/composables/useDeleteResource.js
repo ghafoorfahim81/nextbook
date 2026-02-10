@@ -2,16 +2,14 @@
 import { createApp, h, ref } from 'vue'
 import ConfirmDeleteDialog from '@/Components/next/ConfirmDeleteDialog.vue'
 import { router } from '@inertiajs/vue3'
-import { ToastAction } from '@/Components/ui/toast'
-import { useI18n } from 'vue-i18n'
-import { useToast } from '@/Components/ui/toast/use-toast'
+import { useI18n } from 'vue-i18n' 
+import { toast } from 'vue-sonner'
 
 export function useDeleteResource() {
-    // Move composables to the top level
     const { t } = useI18n()
-    const { toast } = useToast()
 
     const deleteResource = (routeName, id, options = {}) => {
+        console.log(routeName, id, options)
         const isOpen = ref(true)
         const container = document.createElement('div')
         document.body.appendChild(container)
@@ -24,97 +22,93 @@ export function useDeleteResource() {
                             // Check server flashed error (e.g., main branch or dependency)
                             const flashedError = page?.props?.flash?.error || page?.props?.error
                             if (flashedError) {
-                                toast({
-                                    title: t('general.dependencies_found'),
+                                toast.error(flashedError, {
                                     description: flashedError,
-                                    variant: 'destructive',
-                                    class:'bg-pink-600 text-white',
-                                    duration: Infinity,
-                                });
-                                app.unmount();
-                                container.remove();
-                                options?.onError?.();
-                                return;
+                                    className: 'bg-pink-600 text-white',
+                                    duration: 8000,
+                                })
+                                app.unmount()
+                                container.remove()
+                                options?.onError?.()
+                                return
                             }
 
-                            // Show success toast with undo option
-                            let dismissed = false;
+                            // Show success notification with undo option
+                            let dismissed = false
 
                             const handleUndo = () => {
-                                if (dismissed) return;
-                                dismissed = true;
+                                if (dismissed) return
+                                dismissed = true
 
-                                // Restore the record
                                 router.patch(route(routeName.replace('.destroy', '.restore'), id), {}, {
                                     onSuccess: () => {
-                                        toast({
-                                            title: t('general.success'),
-                                            variant: 'success',
+                                        toast.success(t('general.restore_successful'), {
                                             description: t('general.restore_success', { name: options.name }),
-                                        });
+                                            class: 'bg-green-600',
+                                            duration: 4000,
+                                        })
                                         options?.onUndo?.()
                                     },
                                     onError: (errors) => {
-                                        toast({
-                                            title: t('general.error'),
+                                        toast.error(errors?.message || t('general.restore_error_message'), {
                                             description: errors?.message || t('general.restore_error_message'),
-                                            variant: 'destructive',
-                                        });
+                                            className: 'bg-pink-600 text-white',
+                                            duration: 6000,
+                                        })
                                         options?.onError?.()
                                     }
-                                });
-                            };
+                                })
+                            }
 
-                            const toastInstance = toast({
-                                title: t('general.success'),
-                                variant: 'success',
+                            toast.success( t('general.delete_sucessfully'), {
                                 description: options.successMessage || t('general.delete_success', { name: options.name }),
-                                action: h(ToastAction, {
-                                    altText: t('general.undo'),
-                                    onClick: handleUndo
-                                }, {
-                                    default: () => t('general.undo'),
-                                }),
-                                duration: 5000, // 5 seconds to undo
-                                onDismiss: () => {
-                                    dismissed = true;
+                                action: {
+                                    label: t('general.undo'),
+                                    onClick: handleUndo,
+                                },
+                                class: 'bg-green-600',
+                                duration: 5000,
+                                onAutoClose: () => {
+                                    dismissed = true
                                 }
-                            });
+                            })
 
                             app.unmount()
                             container.remove()
                             options?.onSuccess?.()
                         },
                         onError: (errors) => {
-                            // Check if it's a dependency error (Laravel validation errors)
-                            let errorMessage = t('general.delete_error_message');
-                            let isDependencyError = false;
+                            // Determine dependency error for custom messaging/styling
+                            let errorMessage = t('general.delete_error_message')
+                            let isDependencyError = false
 
                             if (errors?.category) {
-                                errorMessage = errors.category;
-                                isDependencyError = true;
+                                errorMessage = errors.category
+                                isDependencyError = true
                             } else if (errors?.message) {
-                                errorMessage = errors.message;
-                                isDependencyError = errorMessage.includes('Cannot delete this record') ||
-                                                   errorMessage.includes('dependencies') ||
-                                                   errorMessage.includes('used in');
+                                errorMessage = errors.message
+                                isDependencyError =
+                                    errorMessage.includes('Cannot delete this record') ||
+                                    errorMessage.includes('dependencies') ||
+                                    errorMessage.includes('used in')
                             } else if (errors?.error) {
-                                errorMessage = errors.error;
-                                isDependencyError = errorMessage.includes('Cannot delete this record') ||
-                                                   errorMessage.includes('dependencies') ||
-                                                   errorMessage.includes('used in');
+                                errorMessage = errors.error
+                                isDependencyError =
+                                    errorMessage.includes('Cannot delete this record') ||
+                                    errorMessage.includes('dependencies') ||
+                                    errorMessage.includes('used in')
                             }
-                            toast({
-                                title: isDependencyError ? t('general.dependencies_found') : t('general.error'),
+
+                            toast.error(errorMessage, {
                                 description: errorMessage,
-                                variant: 'destructive',
-                                class:'bg-pink-600 text-white',
-                                duration: Infinity,
-                                    action: isDependencyError ? null : h(ToastAction, {
-                                    altText: t('general.try_again'),
-                                }, {
-                                    default: () => t('general.try_again'),
-                                }),
+                                className: 'bg-pink-600 text-white',
+                                duration: isDependencyError ? 10000 : 7000,
+                                action: !isDependencyError
+                                    ? {
+                                        label: t('general.try_again'),
+                                        onClick: () => {},
+                                    }
+                                    : undefined,
                             })
 
                             app.unmount()
@@ -133,8 +127,8 @@ export function useDeleteResource() {
                 return () =>
                     h(ConfirmDeleteDialog, {
                         open: isOpen.value,
-                        cancelText:   t('general.cancel'),
-                        continueText:   t('general.confirm'),
+                        cancelText: t('general.cancel'),
+                        continueText: t('general.confirm'),
                         title: options.title || t('general.are_you_sure'),
                         description: options.description || t('general.action_cannot_be_undone'),
                         'onUpdate:open': (val) => {
