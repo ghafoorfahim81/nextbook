@@ -75,7 +75,8 @@ import {
     Banknote,
     ShoppingBasket,
     ArrowLeftRight,
-    PlusCircle
+    PlusCircle,
+    FileText
 } from 'lucide-vue-next'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -239,7 +240,8 @@ const navMain = computed(() => [
         items: [
             { title: t('sidebar.account.chart_of_account'), url: '/chart-of-accounts', permission: 'accounts.view_any' },
             { title: t('sidebar.account.account_type'), url: '/account-types', permission: 'account_types.view_any' },
-            { title: t('sidebar.main.transfer'), url: '/account-transfers', icon: ArrowLeftRight, permission: 'account_transfers.view_any' }
+            { title: t('sidebar.main.transfer'), url: '/account-transfers', icon: ArrowLeftRight, permission: 'account_transfers.view_any' },
+            { title: t('sidebar.main.journal_entry'), url: '/journal-entries', icon: FileText, permission: 'journals.view_any' },
         ],
     },
     {
