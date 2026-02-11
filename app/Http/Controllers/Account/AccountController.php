@@ -65,16 +65,16 @@ class AccountController extends Controller
             $glAccounts = Cache::get('gl_accounts');
             $transactionService = app(TransactionService::class);
         if ($validated['amount'] && $validated['amount'] > 0) {
-            $nature = $account->accountType->nature ?? 'asset';
-            // Map debit/credit per account nature (see image)
-            $mappings = [
-                'asset'    => ['debit' => $account->id, 'credit' => $glAccounts['opening-balance-equity']],
-                'liability'=> ['debit' => $glAccounts['opening-balance-equity'], 'credit' => $account->id],
-                'equity'   => ['debit' => $glAccounts['opening-balance-equity'], 'credit' => $account->id],
-                'income'   => ['debit' => $glAccounts['opening-balance-equity'], 'credit' => $account->id],
-                'expense'  => ['debit' => $account->id, 'credit' => $glAccounts['opening-balance-equity']],
-            ];
-            $map = $mappings[$nature] ?? $mappings['asset'];
+            // $nature = $account->accountType->nature ?? 'asset';
+            // // Map debit/credit per account nature (see image)
+            // $mappings = [
+            //     'asset'    => ['debit' => $account->id, 'credit' => $glAccounts['opening-balance-equity']],
+            //     'liability'=> ['debit' => $glAccounts['opening-balance-equity'], 'credit' => $account->id],
+            //     'equity'   => ['debit' => $glAccounts['opening-balance-equity'], 'credit' => $account->id],
+            //     'income'   => ['debit' => $glAccounts['opening-balance-equity'], 'credit' => $account->id],
+            //     'expense'  => ['debit' => $account->id, 'credit' => $glAccounts['opening-balance-equity']],
+            // ];
+            // $map = $mappings[$nature] ?? $mappings['asset'];
             $transaction = $transactionService->post(
                 header: [
                     'currency_id' => $validated['currency_id'],
@@ -85,8 +85,8 @@ class AccountController extends Controller
                     'remark' => 'Opening balance for account ' . $account->name,
                 ],
                 lines: [
-                    ['account_id' => $map['debit'], 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for account ' . $account->name],
-                    ['account_id' => $map['credit'], 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for account ' . $account->name],
+                    ['account_id' => $account->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for account ' . $account->name],
+                    ['account_id' => $glAccounts['opening-balance-equity'], 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for account ' . $account->name],
                 ],
             );
             $account->opening()->create(['transaction_id' => $transaction->id]);
@@ -168,16 +168,16 @@ class AccountController extends Controller
         if ($validated['amount'] && $validated['amount'] > 0) {
             $glAccounts = Cache::get('gl_accounts');
             $transactionService = app(TransactionService::class);
-            $nature = $chart_of_account->accountType->nature ?? 'asset';
+            // $nature = $chart_of_account->accountType->nature ?? 'asset';
             // Map debit/credit per account nature (see image)
-            $mappings = [
-                'asset'    => ['debit' => $chart_of_account->id, 'credit' => $glAccounts['opening-balance-equity']],
-                'liability'=> ['debit' => $chart_of_account->id, 'credit' => $glAccounts['opening-balance-equity']],
-                'equity'   => ['debit' => $chart_of_account->id, 'credit' => $glAccounts['opening-balance-equity']],
-                'income'   => ['debit' => $chart_of_account->id, 'credit' => $glAccounts['opening-balance-equity']],
-                'expense'  => ['debit' => $chart_of_account->id, 'credit' => $glAccounts['opening-balance-equity']],
-            ];
-            $map = $mappings[$nature] ?? $mappings['asset'];
+            // $mappings = [
+            //     'asset'    => ['debit' => $chart_of_account->id, 'credit' => $glAccounts['opening-balance-equity']],
+            //     'liability'=> ['debit' => $chart_of_account->id, 'credit' => $glAccounts['opening-balance-equity']],
+            //     'equity'   => ['debit' => $chart_of_account->id, 'credit' => $glAccounts['opening-balance-equity']],
+            //     'income'   => ['debit' => $chart_of_account->id, 'credit' => $glAccounts['opening-balance-equity']],
+            //     'expense'  => ['debit' => $chart_of_account->id, 'credit' => $glAccounts['opening-balance-equity']],
+            // ];
+            // $map = $mappings[$nature] ?? $mappings['asset'];
             $transaction = $transactionService->post(
                 header: [
                     'currency_id' => $validated['currency_id'],
@@ -188,8 +188,8 @@ class AccountController extends Controller
                     'remark' => 'Opening balance for account ' . $chart_of_account->name,
                 ],
                 lines: [
-                    ['account_id' => $map['debit'], 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for account ' . $chart_of_account->name],
-                    ['account_id' => $map['credit'], 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for account ' . $chart_of_account->name],
+                    ['account_id' => $chart_of_account->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for account ' . $chart_of_account->name],
+                    ['account_id' => $glAccounts['opening-balance-equity'], 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for account ' . $chart_of_account->name],
                 ],
             );
             $chart_of_account->opening()->create(['transaction_id' => $transaction->id]);
