@@ -79,6 +79,7 @@ class AccountTransferController extends Controller
                 'expense'  => ['debit' => $toAccount->id, 'credit' => $fromAccount->id],
             ]; 
             $map = $mappings[$nature] ?? $mappings['asset'];
+
             $transfer = AccountTransfer::create([
                 'number' => $validated['number'] ?? null,
                 'date' => $validated['date'],
@@ -88,7 +89,7 @@ class AccountTransferController extends Controller
                 'currency_id' => $currencyId,
                 'rate' => $rate,
                 'date' => $transfer->date,
-                'remark' => "Transfer #{$transfer->number}",
+                'remark' => "Transfer #{$transfer->number}.from {$fromAccount->name} to {$toAccount->name}",
             ], [
                 [
                     'account_id' => $map['debit'],

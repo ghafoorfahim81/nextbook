@@ -19,6 +19,9 @@ const props = defineProps({
     maxCode: { type: Number, required: true },
     user_preferences: { type: Object, required: true },
     itemTypes: { type: Object, required: true },
+    otherCurrentAssetsAccounts:{ type:Object, required: true},
+    incomeAccounts:{ type:Object, required: true},
+    costAccounts:{ type:Object, required: true},
 })
 
 // normalize lists whether they're paginated or not
@@ -27,6 +30,10 @@ const unitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasur
 const categories = computed(() => props.categories?.data ?? props.categories ?? [])
 const brands = computed(() => props.brands?.data ?? props.brands ?? [])
 const sizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
+const otherCurrentAssetsAccounts = computed(() => props.otherCurrentAssetsAccounts?.data ?? props.otherCurrentAssetsAccounts ?? [])
+const incomeAccounts = computed(() => props.incomeAccounts?.data ?? props.incomeAccounts ?? [])
+const costAccounts = computed(() => props.costAccounts?.data ?? props.costAccounts ?? [])
+
 const itemTypes = computed(() => props.itemTypes?.data ?? props.itemTypes ?? [])
 // Format code with leading zeros based on the number
 const formatCode = (number) => {
@@ -67,6 +74,12 @@ const form = useForm({
     purchase_price: '',
     brand_id: null,
     category_id: null,
+    other_current_assets_account_id: null,
+    selected_other_current_assets_account: null,
+    income_account_id: null,
+    selected_income_account: null,
+    cost_account_id: null,  
+    selected_cost_account: null,
     cost: '',
     sale_price: '',
     rate_a: '',
@@ -78,6 +91,15 @@ const form = useForm({
         { batch: '', expire_date: '', quantity: 0, store_id: null, selected_store: null },
     ],
 })
+
+watch(() => props.otherCurrentAssetsAccounts.data, (account) => {
+    if (account && account.length) {
+        const defaultAccount = account.find(c => c.slug === 'other-current-asset');
+        console.log('this is defaultAccount', defaultAccount);
+        // form.selected_other_current_assets_account = defaultAccount;
+        // form.other_current_assets_account_id = defaultAccount.id;
+    }
+}, { immediate: true })
 
 const submitAction = ref(null)
 const createLoading = computed(() => form.processing && submitAction.value === 'create')
@@ -259,8 +281,46 @@ const handleOpeningSelectChange = (index, value) => {
                     :search-fields="['name', 'legal_name', 'registration_number', 'email', 'phone', 'website', 'industry', 'type', 'city', 'country']"
                     :error="form.errors.brand_id"
                 />
+                <NextSelect
+                    :options="otherCurrentAssetsAccounts"
+                    v-model="form.selected_other_current_assets_account"
+                    @update:modelValue="(value) => handleSelectChange('other_current_assets_account_id', value)"
+                    label-key="name"
+                    value-key="id"
+                    id="other_current_assets_account"
+                    :floating-text="t('account.other_current_assets_account')"
+                    :searchable="true"
+                    resource-type="other_current_assets_accounts"
+                    :search-fields="['name']"
+                    :error="form.errors.other_current_assets_account_id"
+                />
+                <NextSelect
+                    :options="incomeAccounts"
+                    v-model="form.selected_income_account"
+                    @update:modelValue="(value) => handleSelectChange('income_account_id', value)"
+                    label-key="name"
+                    value-key="id"
+                    id="income_account"
+                    :floating-text="t('account.income_account')"
+                    :searchable="true"
+                    resource-type="income_accounts"
+                    :search-fields="['name']"
+                    :error="form.errors.income_account_id"
+                />
+                <NextSelect
+                    :options="costAccounts"
+                    v-model="form.selected_cost_account"
+                    @update:modelValue="(value) => handleSelectChange('cost_account_id', value)"
+                    label-key="name"
+                    value-key="id"
+                    id="cost_account"
+                    :floating-text="t('account.cost_account')"
+                    :searchable="true"
+                    resource-type="cost_accounts"
+                    :search-fields="['name']"
+                    :error="form.errors.cost_account_id"
+                />
                 <NextInput v-show="visibleFields.photo" :label="t('item.photo')" type="file"  @input="onPhotoChange" :error="form.errors?.photo" :placeholder="t('general.enter', { text: t('item.photo') })" />
-
                 <NextInput v-show="visibleFields.minimum_stock" :label="t('item.minimum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.minimum_stock') })" v-model="form.minimum_stock" :error="form.errors?.minimum_stock" />
                 <NextInput v-show="visibleFields.maximum_stock" :label="t('item.maximum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.maximum_stock') })" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
                 <NextInput :label="t('item.purchase_price')" type="number" :placeholder="t('general.enter', { text: t('item.purchase_price') })" v-model="form.purchase_price" :error="form.errors?.purchase_price" />

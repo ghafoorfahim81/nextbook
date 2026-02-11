@@ -961,4 +961,11 @@ class Account extends Model
             ]
         ];
     }
+
+    public function getAccountsByAccountTypeSlug(string $slug)
+    {
+        return $this->whereHas('accountType', function ($query) use ($slug) {
+            $query->where('slug', $slug);
+        })->get();
+    }
 }
