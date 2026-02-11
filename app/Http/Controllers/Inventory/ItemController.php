@@ -36,7 +36,7 @@ class ItemController extends Controller
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $items = Item::with('category', 'unitMeasure', 'size')
+        $items = Item::with('category', 'unitMeasure', 'size', 'assetAccount', 'incomeAccount', 'costAccount')
             ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -55,8 +55,8 @@ class ItemController extends Controller
         $accountModel = new Account();
         $otherCurrentAssetsAccounts = $accountModel->getAccountsByAccountTypeSlug('other-current-asset');
         $incomeAccounts = $accountModel->getAccountsByAccountTypeSlug('income');
-        $costAccounts = $accountModel->getAccountsByAccountTypeSlug('cost-of-goods-sold'); 
-        
+        $costAccounts = $accountModel->getAccountsByAccountTypeSlug('cost-of-goods-sold');
+
         return inertia('Inventories/Items/Create', [
             'maxCode' => $maxCode,
             'otherCurrentAssetsAccounts' => $otherCurrentAssetsAccounts,
@@ -69,13 +69,14 @@ class ItemController extends Controller
 
 
         $validated = $request->validated();
+        // dd($validated);
         // If you're uploading a photo here, handle it first (optional)
         // if ($request->hasFile('photo')) {
         //     $path = $request->file('photo')->store('items', 'public');
         //     $validated['photo'] = $path;
         // }
-        $itemType = $validated['item_type']??ItemType::INVENTORY_MATERIALS->value;
-        DB::transaction(function () use ($validated, $request, $itemType) {
+        $validated['item_type'] = $validated['item_type']??ItemType::INVENTORY_MATERIALS->value;
+        DB::transaction(function () use ($validated, $request) {
             // 1) Create item
             $item = Item::create($validated);
             // 2) Create opening stocks (if any)
@@ -125,19 +126,19 @@ class ItemController extends Controller
 
                     $itemType = $validated['item_type'];
                     if ($itemType == ItemType::INVENTORY_MATERIALS->value) {
-                        $inventoryAccount = $glAccounts['inventory-stock'];
+                        $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['inventory-stock'];
                         $retainedEarningsAccount = $glAccounts['retained-earnings'];
                     }
                     elseif ($itemType == ItemType::NON_INVENTORY_MATERIALS->value) {
-                        $inventoryAccount = $glAccounts['non-inventory-items'];
+                        $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['non-inventory-items'];
                         $retainedEarningsAccount = $glAccounts['retained-earnings'];
                     }
                     elseif ($itemType == ItemType::RAW_MATERIALS->value) {
-                        $inventoryAccount = $glAccounts['raw-materials'];
+                        $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['raw-materials'];
                         $retainedEarningsAccount = $glAccounts['retained-earnings'];
                     }
                     elseif ($itemType == ItemType::FINISHED_GOOD_ITEMS->value) {
-                        $inventoryAccount = $glAccounts['finished-goods'];
+                        $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['finished-goods'];
                         $retainedEarningsAccount = $glAccounts['retained-earnings'];
                     }
                     $transaction = $transactionService->post(
@@ -171,6 +172,8 @@ class ItemController extends Controller
     public function show(Request $request, Item $item)
     {
         // $item->load(['stock_count', 'stock_out_count']);
+        $item->load('assetAccount', 'incomeAccount', 'costAccount');
+
         return inertia('Inventories/Items/Show', [
             'item' => new ItemResource($item),
         ]);

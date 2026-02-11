@@ -20,11 +20,11 @@ class ItemStoreRequest extends FormRequest
      * Get the validation rules that apply to the request.
      */
     public function rules(): array
-    { 
+    {
 
         return [
             'name' => ['required', 'string', 'unique:items,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'code' => ['required', 'string', 'unique:items,code,NULL,id,branch_id,NULL,deleted_at,NULL'], 
+            'code' => ['required', 'string', 'unique:items,code,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'item_type' => ['nullable', 'string', Rule::in(ItemType::values()) ?? ItemType::INVENTORY_MATERIALS->value],
             'sku' => ['nullable', 'string', 'unique:items,sku,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'generic_name' => ['nullable', 'string'],
@@ -33,6 +33,9 @@ class ItemStoreRequest extends FormRequest
             'unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
             'brand_id' => ['nullable', 'string', 'exists:brands,id'],
             'category_id' => ['nullable', 'string', 'exists:categories,id'],
+            'asset_account_id' => ['required', 'string', 'exists:accounts,id'],
+            'income_account_id' => ['required', 'string', 'exists:accounts,id'],
+            'cost_account_id' => ['required', 'string', 'exists:accounts,id'],
             'minimum_stock' => ['nullable', 'numeric'],
             'maximum_stock' => ['nullable', 'numeric'],
             'colors' => ['nullable', 'array'],

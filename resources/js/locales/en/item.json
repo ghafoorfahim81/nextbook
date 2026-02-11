@@ -36,6 +36,8 @@
     "out_records": "Out Records",
     "search_item": "Search Item",
     "item_type": "Item Type",
-    "sku": "Stock Keeping Unit"
+    "sku": "Stock Keeping Unit",
+    "asset_account": "Assets Account",
+    "income_account": "Income Account",
+    "cost_account": "Cost Account"
 }
- 

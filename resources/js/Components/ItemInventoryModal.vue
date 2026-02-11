@@ -38,7 +38,10 @@ const itemDetails = computed(() => [
   { label: t('item.item_type'), value: props.item?.item_type, icon: Tag },
   { label: t('item.unit_measure'), value: props.item?.measure, icon: Ruler },
   { label: t('item.brand'), value: props.item?.brand_name, icon: Tag },
-  { label: t('item.category'), value: props.item?.category, icon: Layers }, 
+  { label: t('item.category'), value: props.item?.category, icon: Layers },
+  { label: t('item.asset_account'), value: props.item?.asset_account?.name, icon: Building },
+  { label: t('item.income_account'), value: props.item?.income_account?.name, icon: TrendingUp },
+  { label: t('item.cost_account'), value: props.item?.cost_account?.name, icon: TrendingDown },
   { label: t('item.maximum_stock'), value: props.item?.maximum_stock, icon: TrendingUp },
   { label: t('item.current_stock'), value: props.item?.on_hand || 0, icon: Target },
   { label: t('item.colors'), value: props.item?.colors, icon: Palette },
@@ -74,7 +77,6 @@ const fetchRecords = async (type, page) => {
   const res = await axios.get(`/items/${props.item.id}/${type}-records`, {
     params: { page, per_page: 10 },
   })
-  console.log('this is res', res.data)
   return {
     data: res.data.data || [],
     hasMore: res.data.meta?.current_page < res.data.meta?.last_page,
