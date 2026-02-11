@@ -4,20 +4,37 @@ namespace App\Http\Controllers\JournalEntry;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\JournalEntry\JournalEntry;   
+use App\Models\JournalEntry\JournalEntry;
 use App\Http\Resources\JournalEntry\JournalEntryResource;
+use App\Http\Resources\Account\AccountResource;
+use App\Http\Resources\Ledger\LedgerResource;
+use App\Http\Resources\Currency\CurrencyResource;
+use App\Models\Account\Account;
+use App\Models\Ledger\Ledger;
+use App\Models\Currency\Currency;
+use App\Http\Requests\JournalEntry\JournalEntryStoreRequest;
+use App\Services\TransactionService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use App\Support\Inertia\CacheKey;
+
 class JournalEntryController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+    public function __construct()
+    {
+        $this->authorizeResource(JournalEntry::class, 'journalEntry');
+    }
     public function index( Request $request )
     {
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'created_at');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $journalEntries = JournalEntry::with('transaction', 'lines')->search($request->query('search'))
+        $journalEntries = JournalEntry::with('transaction', 'transaction.lines.account')
+            ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
@@ -32,46 +49,168 @@ class JournalEntryController extends Controller
      */
     public function create()
     {
-        //
+        return inertia('JournalEntries/Create', [
+            'accounts' => AccountResource::collection(Account::all()),
+            'ledgers' => LedgerResource::collection(Ledger::all()),
+        ]);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(JournalEntryStoreRequest $request)
     {
-        //
+        DB::transaction(function () use ($request) {
+        $validated = $request->validated();
+        $journalEntry = JournalEntry::create([
+            'number' => $validated['number'],
+            'date' => $validated['date'],
+            'status' => 'posted',
+            'currency_id' => $validated['currency_id'],
+            'rate' => $validated['rate'],
+            'remarks' => $validated['remarks'],
+        ]);
+        $transactionService = new TransactionService();
+        $lines = collect($validated['lines'])
+        ->map(fn ($line) => [
+            'account_id'  => $line['account_id'],
+            'ledger_id'   => $line['ledger_id'] ?? null,
+            'debit'       => $line['debit'] ?? 0,
+            'credit'      => $line['credit'] ?? 0,
+            'remark'      => $line['remark'] ?? null,
+            'bill_number' => $line['bill_number'] ?? null,
+        ])
+        ->toArray();
+        $transactionService->post(
+            header: [
+                'currency_id' => $validated['currency_id'],
+                'rate' => $validated['rate'],
+                'date' => $validated['date'],
+                'remark' => $validated['remarks'],
+                'reference_type' => JournalEntry::class,
+                'reference_id' => $journalEntry->id,
+                'status' => 'posted',
+            ],
+            lines: $lines,
+        );
+        });
+        if ($request->input('create_and_new')) {
+            return redirect()->route('journal-entries.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.journal_entry')]));
+        }
+        return redirect()->route('journal-entries.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.journal_entry')]));
+
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Request $request, JournalEntry $journalEntry)
     {
-        //
+        $journalEntry->load([
+            'transaction.currency',
+            'transaction.lines.account',
+        ]);
+        return response()->json([
+            'data' => new JournalEntryResource($journalEntry),
+        ]);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Request $request, JournalEntry $journalEntry)
     {
-        //
+        $journalEntry->load(['transaction.currency', 'transaction.lines.account']);
+        return inertia('JournalEntries/Edit', [
+            'journalEntry' => new JournalEntryResource($journalEntry),
+            'accounts' => AccountResource::collection(Account::all()),
+            'ledgers' => LedgerResource::collection(Ledger::all()),
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(JournalEntryStoreRequest $request, JournalEntry $journalEntry)
     {
-        //
+        $validated = $request->validated();
+
+        DB::transaction(function () use ($validated, $journalEntry) {
+            // Update journal entry details
+            $journalEntry->update([
+                'number' => $validated['number'],
+                'date' => $validated['date'],
+                'status' => 'posted',
+                'currency_id' => $validated['currency_id'],
+                'rate' => $validated['rate'],
+                'remarks' => $validated['remarks'],
+            ]);
+
+            // Remove existing transaction + lines (hard delete), then recreate with store logic
+            $transaction = $journalEntry->transaction()->withTrashed()->first();
+            if ($transaction) {
+                $transaction->lines()->withTrashed()->forceDelete();
+                $transaction->forceDelete();
+            }
+            $lines = [];
+
+
+            // Post/Update transaction (same posting logic as store after lines created)
+            $transactionService = new TransactionService();
+            $lines = collect($validated['lines'])
+            ->map(fn ($line) => [
+                'account_id'  => $line['account_id'],
+                'ledger_id'   => $line['ledger_id'] ?? null,
+                'debit'       => $line['debit'] ?? 0,
+                'credit'      => $line['credit'] ?? 0,
+                'remark'      => $line['remark'] ?? null,
+                'bill_number' => $line['bill_number'] ?? null,
+            ])
+            ->toArray();
+            $transactionService->post(
+                header: [
+                    'currency_id' => $validated['currency_id'],
+                    'rate' => $validated['rate'],
+                    'date' => $validated['date'],
+                    'remark' => $validated['remarks'],
+                    'reference_type' => JournalEntry::class,
+                    'reference_id' => $journalEntry->id,
+                    'status' => 'posted',
+                ],
+                lines: $lines,
+            );
+        });
+
+        return redirect()->route('journal-entries.index')
+            ->with('success', __('general.updated_successfully', ['resource' => __('general.resource.journal_entry')]));
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, JournalEntry $journalEntry)
     {
-        //
+        DB::transaction(function () use ($journalEntry) {
+            $transaction = $journalEntry->transaction()->first();
+            if ($transaction) {
+                $transaction->lines()->delete();
+                $transaction->delete();
+            }
+            $journalEntry->delete();
+        });
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        return redirect()->route('journal-entries.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.journal_entry')]));
+    }
+
+    public function restore(Request $request, JournalEntry $journalEntry)
+    {
+        $journalEntry->restore();
+        $transaction = $journalEntry->transaction()->withTrashed()->first();
+        if ($transaction) {
+            $transaction->restore();
+            $transaction->lines()->withTrashed()->restore();
+        }
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+        return redirect()->route('journal-entries.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.journal_entry')]));
     }
 }

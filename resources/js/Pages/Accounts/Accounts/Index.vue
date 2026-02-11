@@ -5,14 +5,14 @@ import AccountShowDialog from '@/Components/AccountShowDialog.vue';
 import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { useI18n } from 'vue-i18n';
-import { router } from '@inertiajs/vue3'; 
+import { router } from '@inertiajs/vue3';
 import { useAuth } from '@/composables/useAuth';
 const props = defineProps({
     accounts: Object,
     user: Object,
 });
 console.log('user', props.user);
-const { t } = useI18n(); 
+const { t } = useI18n();
 const columns = computed(() => ([
     { key: 'name', label: t('general.name') },
     { key: 'number', label: t('general.number') },
@@ -54,8 +54,8 @@ const deleteItem = (id) => {
             @show="showItem"
             :title="t('account.chart_of_accounts')"
             :url="`chart-of-accounts.index`"
-            :hasShow="true" 
-            :addTitle="t('account.account')"
+            :hasShow="true"
+            :addTitle="t('acaccountcount.')"
             :addAction="'redirect'"
             :addRoute="'chart-of-accounts.create'"
         />

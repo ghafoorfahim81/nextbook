@@ -45,7 +45,7 @@ class RolePermissionSeeder extends Seeder
             'accounts',
             'account_transfers',
             'account_types',
-            'journals',
+            'journal_entries',
             'pos_transactions',
 
             'dashboard',

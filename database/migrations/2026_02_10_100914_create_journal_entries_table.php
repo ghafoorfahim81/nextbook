@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('journal_entries', function (Blueprint $table) {
-            $table->uuid('id')->primary();
-            $table->string('number');
+            $table->ulid('id')->primary();
+            $table->string('number')->nullable();
             $table->date('date');
-            $table->string('description'); 
+            $table->text('remark')->nullable();
             $table->string('status');
             $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
