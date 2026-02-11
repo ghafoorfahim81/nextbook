@@ -52,9 +52,16 @@ class ItemController extends Controller
         $maxCode = Item::query()->selectRaw('MAX(CAST(code AS INTEGER)) as max_code')
         ->value('max_code');
         $maxCode = $maxCode ? intval($maxCode) + 1 : 1;
-
+        $accountModel = new Account();
+        $otherCurrentAssetsAccounts = $accountModel->getAccountsByAccountTypeSlug('other-current-asset');
+        $incomeAccounts = $accountModel->getAccountsByAccountTypeSlug('income');
+        $costAccounts = $accountModel->getAccountsByAccountTypeSlug('cost-of-goods-sold'); 
+        
         return inertia('Inventories/Items/Create', [
             'maxCode' => $maxCode,
+            'otherCurrentAssetsAccounts' => $otherCurrentAssetsAccounts,
+            'incomeAccounts' => $incomeAccounts,
+            'costAccounts' => $costAccounts,
         ]);
     }
     public function store(ItemStoreRequest $request)
