@@ -72,7 +72,7 @@ class Transaction extends Model
 
     public function lines(): HasMany
     {
-        return $this->hasMany(TransactionLine::class);
+        return $this->hasMany(TransactionLine::class, 'transaction_id');
     }
 
     public function opening()

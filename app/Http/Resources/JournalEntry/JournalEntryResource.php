@@ -16,11 +16,11 @@ class JournalEntryResource extends JsonResource
             'id' => $this->id,
             'number' => $this->number,
             'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
-            'description' => $this->description,
+            'remark' => $this->remark,
             'status' => $this->status,
-            'amount' => $this->lines->sum('debit'),
-            'lines' => TransactionLineResource::collection($this->lines),
-            'transaction' => new TransactionResource($this->transaction),
+            'amount' => $this->transaction->lines->sum('debit')>0?$this->transaction->lines->sum('debit'):$this->transaction->lines->sum('credit'),
+            'lines' => TransactionLineResource::collection($this->whenLoaded('transaction.lines')),
+            'transaction' => new TransactionResource($this->whenLoaded('transaction')),
         ];
     }
 }

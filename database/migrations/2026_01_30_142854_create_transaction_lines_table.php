@@ -18,6 +18,7 @@ return new class extends Migration
             $table->ulid('ledger_id')->nullable();
             $table->decimal('debit', 19, 4)->default(0);
             $table->decimal('credit', 19, 4)->default(0);
+            $table->string('bill_number')->nullable();
             $table->text('remark')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->index('transaction_id');
