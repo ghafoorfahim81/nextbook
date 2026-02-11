@@ -65,18 +65,10 @@ class JournalEntry extends Model
      */
     public function transaction(): HasOne
     {
-        return $this->hasOne(Transaction::class, 'source_id')
-            ->where('source_type', self::class);
+        return $this->hasOne(Transaction::class, 'reference_id');
     }
 
     /**
      * Shortcut to transaction lines
      */
-    public function lines(): HasMany
-    {
-        return $this->hasMany(TransactionLine::class, 'transaction_id')
-            ->whereHas('transaction', function ($q) {
-                $q->where('source_type', self::class);
-            });
-    }
 }

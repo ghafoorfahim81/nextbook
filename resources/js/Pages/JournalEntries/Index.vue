@@ -17,16 +17,16 @@ const showDialog = ref(false)
 const selectedJournalEntryId = ref(null)
 
 const editItem = (item) => {
-    router.visit(route('payments.edit', item.id));
+    router.visit(route('journal-entries.edit', item.id));
 }
 const deleteItem = (id) => {
-    deleteResource('payments.destroy', id, {
-        title: t('general.delete', { name: t('payment.payment') }),
-        name: t('payment.payment'),
+    deleteResource('journal-entries.destroy', id, {
+        title: t('general.delete', { name: t('journal_entry.journal_entry') }),
+        name: t('journal_entry.journal_entry'),
     })
 }
 const showItem = (id) => {
-    selectedPaymentId.value = id
+    selectedJournalEntryId.value = id
     showDialog.value = true
 }
 
@@ -59,7 +59,7 @@ const columns = computed(() => ([
         />
         <JournalEntryShowDialog
             :open="showDialog"
-            :journalEntry-id="selectedJournalEntryId"
+            :journal-entry-id="selectedJournalEntryId"
             @update:open="showDialog = $event"
         />
     </AppLayout>
