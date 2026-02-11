@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Inventory\StockOpeningResource;
 use App\Enums\ItemType;
+use App\Http\Resources\Account\AccountResource;
 class ItemResource extends JsonResource
 {
     /**
@@ -28,6 +29,9 @@ class ItemResource extends JsonResource
             'brand_name' => $this->brand?->name,
             'category_id' => $this->category_id,
             'category' => $this->category?->name,
+            'asset_account' => new AccountResource($this->whenLoaded('assetAccount')),
+            'income_account' => new AccountResource($this->whenLoaded('incomeAccount')),
+            'cost_account' => new AccountResource($this->whenLoaded('costAccount')),
             'minimum_stock' => $this->minimum_stock,
             'maximum_stock' => $this->maximum_stock,
             'colors' => $this->colors,

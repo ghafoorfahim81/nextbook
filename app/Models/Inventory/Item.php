@@ -30,7 +30,7 @@ class Item extends Model
      */
     protected $fillable = [
         'name',
-        'code', 
+        'code',
         'item_type',
         'sku',
         'generic_name',
@@ -39,6 +39,9 @@ class Item extends Model
         'unit_measure_id',
         'brand_id',
         'category_id',
+        'cost_account_id',
+        'income_account_id',
+        'asset_account_id',
         'minimum_stock',
         'maximum_stock',
         'colors',
@@ -156,6 +159,21 @@ class Item extends Model
         return $this->hasMany(ItemOpeningTransaction::class, 'item_id', 'id');
     }
 
+    public function assetAccount(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Account\Account::class, 'asset_account_id');
+    }
+
+    public function incomeAccount(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Account\Account::class, 'income_account_id');
+    }
+
+    public function costAccount(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Account\Account::class, 'cost_account_id');
+    }
+
     public function onHand()
     {
         $stocks = $this->stocks()->with('unitMeasure')->get();
@@ -176,7 +194,7 @@ class Item extends Model
         });
 
         $onHand = $stockSum - $stockOutSum;
-        return $onHand; 
+        return $onHand;
     }
     // public function inRecords()
     // {
