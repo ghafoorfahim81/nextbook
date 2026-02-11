@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('journal_entries', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->ulid('id')->primary();
             $table->string('number')->nullable();
             $table->date('date');
             $table->text('remark')->nullable();

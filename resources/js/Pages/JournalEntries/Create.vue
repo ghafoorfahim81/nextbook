@@ -22,21 +22,11 @@ const props = defineProps({
 
 const form = useForm({
     date: '',
+    number: '',
     currency_id: '',
     rate: 1,
     remarks: '',
-    attachment: null,
-    details: [
-        {
-            account_id: '',
-            selected_account:null,
-            debit: '',
-            credit: '',
-            remark: '',
-            ledger_id: '',
-            selected_ledger:null,
-            bill_number: '',
-        },
+    lines: [
         {
             account_id: '',
             selected_account:null,
@@ -105,7 +95,7 @@ const handleCurrencyChange = (currency) => {
 
 // Calculate total
 const total = computed(() => {
-    return form.details.reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+    return form.lines.reduce((sum, d) => sum + (Number(d.debit) || 0), 0);
 });
 
 const baseTotal = computed(() => {
@@ -113,14 +103,14 @@ const baseTotal = computed(() => {
 });
 
 // Add new detail line
-const addDetailLine = () => {
-    form.details.push({ amount: '', title: '' });
+const addLine = () => {
+    form.lines.push({ account_id: '', debit: '', credit: '', remark: '', ledger_id: '', bill_number: '' });
 };
 
 // Remove detail line
-const removeDetailLine = (index) => {
-    if (form.details.length > 1) {
-        form.details.splice(index, 1);
+const removeLine = (index) => {
+    if (form.lines.length > 1) {
+        form.lines.splice(index, 1);
     }
 };
 
@@ -149,10 +139,16 @@ const removeAttachment = () => {
     }
 };
 
+const normalize = () => {
+    return form.lines.filter(d =>
+        d.account_id &&
+        ((Number(d.debit) > 0) || (Number(d.credit) > 0))
+    );
+}
 // Submit form
 const handleSubmit = (createAndNew = false) => {
     // Validate at least one detail
-    const validDetails = form.details.filter(d => d.selected_account && d.debit || d.credit);
+    const validDetails = normalize();
     if (validDetails.length === 0) {
         toast.error(t('account.detail_lines'), {
             description: t('account.at_least_one_detail'),
@@ -169,6 +165,7 @@ const handleSubmit = (createAndNew = false) => {
         return;
     }
 
+    form.lines = normalize();
     const formData = new FormData();
     formData.append('date', form.date);
     formData.append('currency_id', form.currency_id);
@@ -180,12 +177,12 @@ const handleSubmit = (createAndNew = false) => {
     }
 
     validDetails.forEach((detail, index) => {
-        formData.append(`details[${index}][account_id]`, detail.account_id);
-        formData.append(`details[${index}][debit]`, detail.debit);
-        formData.append(`details[${index}][credit]`, detail.credit);
-        formData.append(`details[${index}][remark]`, detail.remark);
-        formData.append(`details[${index}][ledger_id]`, detail.ledger_id);
-        formData.append(`details[${index}][bill_number]`, detail.bill_number);
+        formData.append(`lines[${index}][account_id]`, detail.account_id);
+        formData.append(`lines[${index}][debit]`, detail.debit);
+        formData.append(`lines[${index}][credit]`, detail.credit);
+        formData.append(`lines[${index}][remark]`, detail.remark);
+        formData.append(`lines[${index}][ledger_id]`, detail.ledger_id);
+        formData.append(`lines[${index}][bill_number]`, detail.bill_number);
     });
 
     if (createAndNew) {
@@ -202,7 +199,7 @@ const handleSubmit = (createAndNew = false) => {
             });
             if (createAndNew) {
                 form.reset();
-                form.details = [{ account_id: '', debit: '', credit: '', remark: '', ledger_id: '', bill_number: '' }];
+                form.lines = [{ account_id: '', debit: '', credit: '', remark: '', ledger_id: '', bill_number: '' }];
                 attachmentPreview.value = null;
                 // Re-set default currency
                 if (props.currencies) {
@@ -226,22 +223,29 @@ const handleSubmit = (createAndNew = false) => {
 };
 
 const totalCredit = computed(() => {
-    return form.details.reduce((sum, d) => sum + (Number(d.credit) || 0), 0);
+    return form.lines.reduce((sum, d) => sum + (Number(d.credit) || 0), 0);
 });
 
 const totalDebit = computed(() => {
-    return form.details.reduce((sum, d) => sum + (Number(d.debit) || 0), 0);
+    return form.lines.reduce((sum, d) => sum + (Number(d.debit) || 0), 0);
 });
 
 // Sidebar collapse behavior
 let sidebar = null;
-try {
-    sidebar = useSidebar();
-} catch (e) {
-    sidebar = null;
-}
-const prevSidebarOpen = ref(true);
+    try {
+        sidebar = useSidebar();
+    } catch (e) {
+        sidebar = null;
+    }
+    const prevSidebarOpen = ref(true);
 
+const handleAmountChange = (index, type) => {
+    if (type === 'debit') {
+        form.lines[index].credit = 0;
+    } else {
+        form.lines[index].debit = 0;
+    }
+};
 onMounted(() => {
     if (sidebar) {
         prevSidebarOpen.value = sidebar.open.value;
@@ -271,6 +275,11 @@ onUnmounted(() => {
                         :error="form.errors?.date"
                         :label="t('general.date')"
                     />
+                    <NextInput
+                        v-model="form.number"
+                        :label="t('general.number')"
+                        :error="form.errors?.number"
+                    />
                     <div class="grid grid-cols-2 gap-2">
                         <NextSelect
                             :options="currencies.data || currencies"
@@ -297,7 +306,6 @@ onUnmounted(() => {
                         :error="form.errors?.remarks"
                         rows="2"
                     />
-                </div>
 
                 <!-- Attachment -->
                 <div class="mt-4">
@@ -335,6 +343,8 @@ onUnmounted(() => {
                         class="mt-2 max-h-32 rounded border"
                     />
                 </div>
+                </div>
+
             </div>
 
             <!-- Expense Details Section -->
@@ -357,66 +367,67 @@ onUnmounted(() => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="(detail, index) in form.details" :key="index" class="border-t hover:bg-muted/30">
+                        <tr v-for="(line, index) in form.lines" :key="index" class="border-t hover:bg-muted/30">
                             <td class="px-4 py-2 text-center text-muted-foreground">{{ index + 1 }}</td>
-
                             <td class="px-4 py-2 w-64">
                                 <NextSelect
                                     :options="accounts.data || accounts"
-                                    v-model="detail.selected_account"
-                                    @update:modelValue="(val) => { detail.selected_account = val || null }"
+                                    v-model="line.selected_account"
+                                    @update:modelValue="(val) => { line.account_id = val?.id || null }"
                                     label-key="name"
                                     value-key="id"
                                     :reduce="acc => acc"
-                                    :error="form.errors?.[`details.${index}.account_id`]"
+                                    :error="form.errors?.[`line.${index}.account_id`]"
                                     :searchable="true"
                                 />
                             </td>
                             <td class="px-4 py-2 w-40">
                                 <NextInput
-                                    v-model="detail.debit"
+                                    v-model="line.debit"
                                     type="number"
                                     step="any"
+                                    @input="handleAmountChange(index, 'debit')"
                                     :placeholder="t('general.debit')"
-                                    :error="form.errors?.[`details.${index}.debit`]"
+                                    :error="form.errors?.[`line.${index}.debit`]"
                                     class="text-right"
                                 />
                             </td>
                             <td class="px-4 py-2 w-40">
                                 <NextInput
-                                    v-model="detail.credit"
+                                    v-model="line.credit"
                                     type="number"
                                     step="any"
+                                    @input="handleAmountChange(index, 'credit')"
                                     :placeholder="t('general.credit')"
-                                    :error="form.errors?.[`details.${index}.credit`]"
+                                    :error="form.errors?.[`line.${index}.credit`]"
                                     class="text-right"
                                 />
                             </td>
                             <td class="px-4 py-2 w-40">
                                 <NextInput
-                                    v-model="detail.remark"
+                                    v-model="line.remark"
                                     :placeholder="t('general.remark')"
-                                    :error="form.errors?.[`details.${index}.remark`]"
+                                    :error="form.errors?.[`line.${index}.remark`]"
                                     class="text-right"
                                 />
                             </td>
                             <td class="px-4 py-2 w-64">
                                 <NextSelect
                                     :options="ledgers.data || ledgers"
-                                    v-model="detail.selected_ledger"
-                                    @update:modelValue="(val) => { detail.ledger_id = val?.id || '' }"
+                                        v-model="line.selected_ledger"
+                                    @update:modelValue="(val) => { line.ledger_id = val?.id || '' }"
                                     label-key="name"
                                     value-key="id"
                                     :reduce="ledger => ledger"
-                                    :error="form.errors?.[`details.${index}.ledger_id`]"
+                                    :error="form.errors?.[`line.${index}.ledger_id`]"
                                     :searchable="true"
                                 />
                             </td>
                             <td class="px-4 py-2 w-40">
                                 <NextInput
-                                    v-model="detail.bill_number"
+                                    v-model="line.bill_number"
                                     :placeholder="t('general.bill_number')"
-                                    :error="form.errors?.[`details.${index}.bill_number`]"
+                                    :error="form.errors?.[`line.${index}.bill_number`]"
                                     class="text-right"
                                 />
                             </td>
@@ -424,8 +435,8 @@ onUnmounted(() => {
                             <td class="px-4 py-2 text-center">
                                 <button
                                     type="button"
-                                    @click="removeDetailLine(index)"
-                                    :disabled="form.details.length <= 1"
+                                    @click="removeLine(index)"
+                                    :disabled="form.lines.length <= 1"
                                     class="text-red-500 hover:text-red-700 disabled:opacity-30 disabled:cursor-not-allowed"
                                 >
                                     <Trash2 class="w-4 h-4" />
@@ -445,7 +456,7 @@ onUnmounted(() => {
                             <td colspan="2"></td>
                             <td class="px-4 py-3">
                                 <Button type="button" variant="outline" size="sm" class="btn btn-primary px-4 py-2 rounded-md bg-violet-500 hover:bg-violet-600 border text-white disabled:bg-gray-300"
-                                @click="addDetailLine">
+                                @click="addLine">
                                    <div class="flex items-center gap-2">
                                     {{ t('general.add_more') }}
                                     <Plus class="w-4 h-4 mr-1" />
