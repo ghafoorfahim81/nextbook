@@ -176,14 +176,13 @@ function safeYear(m) {
     display: flex;
     align-items: stretch;
     box-sizing: border-box;
-    height: 2.5rem; /* 40px */
+    height: 2.5rem;
     min-height: 2.5rem;
-    background-color: hsl(var(--background));
+    background-color: hsl(var(--background)) !important; /* ← match shadcn */
     border: 1px solid hsl(var(--border)) !important;
     border-radius: calc(var(--radius) - 2px);
-    overflow: hidden; /* makes icon + input share same outer radius */
+    overflow: hidden;
 }
-
 /* Focus parity (same as NextInput/NextSelect) */
 :deep(.vpd-input-group:focus-within) {
     border-color: rgb(99 102 241) !important;
