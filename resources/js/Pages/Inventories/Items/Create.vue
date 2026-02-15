@@ -290,8 +290,7 @@ const normalize = () => {
 const handleSubmitAction = (createAndNew = false) => {
     const isCreateAndNew = createAndNew === true;
     submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
-    normalize()
-    checkDuplicateOpening();
+    normalize() 
     // Always show toast on success, regardless of which button is used
     const postOptions = {
         onSuccess: () => {
