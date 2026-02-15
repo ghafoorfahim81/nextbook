@@ -128,19 +128,19 @@ class ItemController extends Controller
                     $itemType = $validated['item_type'];
                     if ($itemType == ItemType::INVENTORY_MATERIALS->value) {
                         $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['inventory-stock'];
-                        $retainedEarningsAccount = $glAccounts['retained-earnings'];
+                        $retainedEarningsAccount = $glAccounts['opening-balance-equity'];
                     }
                     elseif ($itemType == ItemType::NON_INVENTORY_MATERIALS->value) {
                         $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['non-inventory-items'];
-                        $retainedEarningsAccount = $glAccounts['retained-earnings'];
+                        $retainedEarningsAccount = $glAccounts['opening-balance-equity'];
                     }
                     elseif ($itemType == ItemType::RAW_MATERIALS->value) {
                         $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['raw-materials'];
-                        $retainedEarningsAccount = $glAccounts['retained-earnings'];
+                        $retainedEarningsAccount = $glAccounts['opening-balance-equity'];
                     }
                     elseif ($itemType == ItemType::FINISHED_GOOD_ITEMS->value) {
                         $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['finished-goods'];
-                        $retainedEarningsAccount = $glAccounts['retained-earnings'];
+                        $retainedEarningsAccount = $glAccounts['opening-balance-equity'];
                     }
                     $transaction = $transactionService->post(
                         header: [
@@ -334,19 +334,19 @@ class ItemController extends Controller
                     $itemType = $validated['item_type'];
                     if ($itemType == ItemType::INVENTORY_MATERIALS->value) {
                         $inventoryAccount = $glAccounts['inventory-stock'];
-                        $retainedEarningsAccount = $glAccounts['retained-earnings'];
+                        $retainedEarningsAccount = $glAccounts['opening-balance-equity'];
                     }
                     elseif ($itemType == ItemType::NON_INVENTORY_MATERIALS->value) {
                         $inventoryAccount = $glAccounts['non-inventory-items'];
-                        $retainedEarningsAccount = $glAccounts['retained-earnings'];
+                        $retainedEarningsAccount = $glAccounts['opening-balance-equity'];
                     }
                     elseif ($itemType == ItemType::RAW_MATERIALS->value) {
                         $inventoryAccount = $glAccounts['raw-materials'];
-                        $retainedEarningsAccount = $glAccounts['retained-earnings'];
+                        $retainedEarningsAccount = $glAccounts['opening-balance-equity'];
                     }
                     elseif ($itemType == ItemType::FINISHED_GOOD_ITEMS->value) {
                         $inventoryAccount = $glAccounts['finished-goods'];
-                        $retainedEarningsAccount = $glAccounts['retained-earnings'];
+                        $retainedEarningsAccount = $glAccounts['opening-balance-equity'];
                     }
                     $transaction = $transactionService->post(
                         header: [
