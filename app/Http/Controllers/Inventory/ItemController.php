@@ -36,7 +36,7 @@ class ItemController extends Controller
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $items = Item::with('category', 'unitMeasure', 'size', 'assetAccount', 'incomeAccount', 'costAccount')
+        $items = Item::with('category', 'unitMeasure','createdBy', 'updatedBy')
             ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -173,7 +173,7 @@ class ItemController extends Controller
     public function show(Request $request, Item $item)
     {
         // $item->load(['stock_count', 'stock_out_count']);
-        $item->load('assetAccount', 'incomeAccount', 'costAccount');
+        $item->load('assetAccount', 'incomeAccount', 'costAccount', 'createdBy', 'updatedBy');
 
         return inertia('Inventories/Items/Show', [
             'item' => new ItemResource($item),

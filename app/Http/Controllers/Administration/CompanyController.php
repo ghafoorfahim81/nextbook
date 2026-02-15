@@ -24,7 +24,7 @@ class CompanyController extends Controller
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $companies = Company::with('parent')
+        $companies = Company::with(['createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)

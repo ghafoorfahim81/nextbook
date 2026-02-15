@@ -30,7 +30,7 @@ class ItemTransferController extends Controller
         $sortField = $request->input('sortField', 'date');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $transfers = ItemTransfer::with(['fromStore', 'toStore', 'items.item', 'items.unitMeasure'])
+        $transfers = ItemTransfer::with(['fromStore', 'toStore', 'items.item', 'items.unitMeasure', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)

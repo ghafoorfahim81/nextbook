@@ -6,6 +6,7 @@ use App\Http\Resources\Ledger\LedgerOpeningResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Transaction\TransactionLineResource;
+use App\Http\Resources\UserManagement\UserSimpleResource;
 class AccountResource extends JsonResource
 {
     /**
@@ -32,7 +33,8 @@ class AccountResource extends JsonResource
             'opening' => $this->relationLoaded('opening') && $this->opening
                 ? new LedgerOpeningResource($this->opening)
                 : null,
-
+            'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
+            'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
         ];
     }
 }

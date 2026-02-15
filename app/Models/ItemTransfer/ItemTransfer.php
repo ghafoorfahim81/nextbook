@@ -9,6 +9,7 @@ use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,7 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ItemTransfer extends Model
 {
-    use HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasUlids, HasSearch, HasSorting, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     protected $table = 'item_transfers';
 
@@ -78,7 +79,7 @@ class ItemTransfer extends Model
         return $this->hasMany(ItemTransferItem::class);
     }
 
-   
+
 
     public function getDependencyMessage(): string
     {

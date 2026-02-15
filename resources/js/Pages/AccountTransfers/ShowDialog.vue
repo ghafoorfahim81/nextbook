@@ -6,7 +6,7 @@ import {
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/Components/ui/dialog'
 import { Button } from '@/Components/ui/button'
-import { Calendar, DollarSign, FileText, ArrowLeftRight, Banknote } from 'lucide-vue-next'
+import { Calendar, DollarSign, FileText, ArrowLeftRight, Banknote, User } from 'lucide-vue-next'
 
 const { t } = useI18n()
 
@@ -58,7 +58,7 @@ function closeDialog() {
 
             <div v-else-if="transfer" class="space-y-6">
                 <div class="bg-card rounded-lg p-4 border border-border">
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div class="space-y-1">
                             <div class="flex items-center gap-2 text-xs text-muted-foreground">
                                 <Calendar class="w-3 h-3" />
@@ -86,6 +86,20 @@ function closeDialog() {
                                 {{ t('general.number') }}
                             </div>
                             <div class="text-sm font-medium text-foreground">{{ transfer.number }}</div>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                                <User class="w-3 h-3" />
+                                {{ t('general.created_by') }}
+                            </div>
+                            <div class="text-sm font-medium text-foreground">{{ transfer.created_by?.name || '-' }}</div>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                                <User class="w-3 h-3" />
+                                {{ t('general.updated_by') }}
+                            </div>
+                            <div class="text-sm font-medium text-foreground">{{ transfer.updated_by?.name || '-' }}</div>
                         </div>
                     </div>
                 </div>

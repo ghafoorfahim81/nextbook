@@ -24,7 +24,7 @@ class DepartmentController extends Controller
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'asc');
 
-        $departments = Department::with('parent')
+        $departments = Department::with(['parent', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -43,6 +43,7 @@ class DepartmentController extends Controller
 
     public function show(Request $request, Department $department): DepartmentResource
     {
+        $department->load(['parent', 'createdBy', 'updatedBy']);
         return new DepartmentResource($department);
     }
 

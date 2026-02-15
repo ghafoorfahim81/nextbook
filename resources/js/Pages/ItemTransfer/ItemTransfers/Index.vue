@@ -59,6 +59,16 @@ const columns = computed(() => ([
   { key: 'to_store.name', label: t('item_transfer.to_store') },
   { key: 'status_label', label: t('general.status') },
   { key: 'transfer_cost', label: t('item_transfer.transfer_cost'), sortable: true },
+  {
+    key: 'created_by.name',
+    label: t('general.created_by'),
+    render: (row) => row.created_by?.name ?? '-',
+  },
+  {
+    key: 'updated_by.name',
+    label: t('general.updated_by'),
+    render: (row) => row.updated_by?.name ?? '-',
+  },
   { key: 'actions', label: t('general.actions') },
 ]))
 </script>

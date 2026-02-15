@@ -8,7 +8,6 @@ use App\Http\Requests\Administration\CurrencyUpdateRequest;
 use App\Http\Resources\Administration\CurrencyResource;
 use App\Models\Administration\Currency;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class CurrencyController extends Controller
 {
@@ -23,7 +22,8 @@ class CurrencyController extends Controller
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $currencies = Currency::search($request->query('search'))
+        $currencies = Currency::with(['createdBy', 'updatedBy'])
+            ->search($request->query('search'))
             ->where('is_active', true)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -40,8 +40,9 @@ class CurrencyController extends Controller
 
     }
 
-    public function show(Request $request, Currency $currency): Response
+    public function show(Request $request, Currency $currency): CurrencyResource
     {
+        $currency->load(['createdBy', 'updatedBy']);
         return new CurrencyResource($currency);
     }
 

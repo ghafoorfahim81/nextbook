@@ -63,56 +63,70 @@ function closeDialog() {
 
             <div v-else-if="receipt" class="space-y-6">
                 <!-- Receipt details -->
-                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div class="bg-card rounded-lg p-4 border border-border">
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div class="space-y-1">
-                            <div class="flex items-center gap-2 text-xs text-gray-500">
+                            <div class="flex items-center gap-2 text-xs text-muted-foreground">
                                 <Calendar class="w-3 h-3" />
                                 {{ t('general.date') }}
                             </div>
-                            <div class="text-sm font-medium text-gray-900">{{ receipt.date }}</div>
+                            <div class="text-sm font-medium text-foreground">{{ receipt.date }}</div>
                         </div>
                         <div class="space-y-1">
-                            <div class="flex items-center gap-2 text-xs text-gray-500">
+                            <div class="flex items-center gap-2 text-xs text-muted-foreground">
                                 <User class="w-3 h-3" />
                                 {{ t('ledger.customer.customer') || 'Ledger' }}
                             </div>
-                            <div class="text-sm font-medium text-gray-900">{{ receipt.ledger?.name || receipt.ledger_name || '-' }}</div>
+                            <div class="text-sm font-medium text-foreground">{{ receipt.ledger?.name || receipt.ledger_name || '-' }}</div>
                         </div>
                         <div class="space-y-1">
-                            <div class="flex items-center gap-2 text-xs text-gray-500">
+                            <div class="flex items-center gap-2 text-xs text-muted-foreground">
                                 <DollarSign class="w-3 h-3" />
                                 {{ t('general.amount') }}
                             </div>
-                            <div class="text-sm font-medium text-gray-900">{{ receipt.amount }} {{ receipt.currency_code }}</div>
+                            <div class="text-sm font-medium text-foreground">{{ receipt.amount }} {{ receipt.currency_code }}</div>
                         </div>
                         <div class="space-y-1">
-                            <div class="flex items-center gap-2 text-xs text-gray-500">
+                            <div class="flex items-center gap-2 text-xs text-muted-foreground">
                                 <FileText class="w-3 h-3" />
                                 {{ t('general.number') }}
                             </div>
-                            <div class="text-sm font-medium text-gray-900">{{ receipt.number }}</div>
+                            <div class="text-sm font-medium text-foreground">{{ receipt.number }}</div>
                         </div>
                         <div class="space-y-1">
-                            <div class="flex items-center gap-2 text-xs text-gray-500">
+                            <div class="flex items-center gap-2 text-xs text-muted-foreground">
                                 <FileText class="w-3 h-3" />
                                 {{ t('general.rate') }}
                             </div>
-                            <div class="text-sm font-medium text-gray-900">{{ receipt.rate }}</div>
+                            <div class="text-sm font-medium text-foreground">{{ receipt.rate }}</div>
                         </div>
                         <div class="space-y-1">
-                            <div class="flex items-center gap-2 text-xs text-gray-500">
+                            <div class="flex items-center gap-2 text-xs text-muted-foreground">
                                 <FileText class="w-3 h-3" />
                                 {{ t('receipt.cheque_no') }}
                             </div>
-                            <div class="text-sm font-medium text-gray-900">{{ receipt.cheque_no || '-' }}</div>
+                            <div class="text-sm font-medium text-foreground">{{ receipt.cheque_no || '-' }}</div>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                                <User class="w-3 h-3" />
+                                {{ t('general.created_by') }}
+                            </div>
+                            <div class="text-sm font-medium text-foreground">{{ receipt.created_by?.name || '-' }}</div>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                                <User class="w-3 h-3" />
+                                {{ t('general.updated_by') }}
+                            </div>
+                            <div class="text-sm font-medium text-foreground">{{ receipt.updated_by?.name || '-' }}</div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Transactions -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="border border-border rounded-lg p-4 bg-card">
                         <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('receipt.receive_credit') || 'Credit (Receive)' }}</div>
                         <div v-if="receipt.transaction" class="grid grid-cols-2 gap-2 text-sm">
                             <div class="text-muted-foreground">{{ t('general.amount') }}</div>
@@ -127,7 +141,7 @@ function closeDialog() {
                         </div>
                         <div v-else class="text-sm text-muted-foreground">-</div>
                     </div>
-                    <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="border border-border rounded-lg p-4 bg-card">
                         <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('receipt.bank_debit') || 'Debit (Bank)' }}</div>
                         <div v-if="receipt.transaction" class="grid grid-cols-2 gap-2 text-sm">
                             <div class="text-muted-foreground">{{ t('general.amount') }}</div>

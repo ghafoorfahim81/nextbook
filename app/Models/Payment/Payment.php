@@ -9,6 +9,7 @@ use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\BranchSpecific;
 class Payment extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     protected $fillable = [
         'number',

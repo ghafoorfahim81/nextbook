@@ -12,11 +12,12 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasCache;
+use App\Traits\HasUserTracking;
 use Symfony\Component\Uid\Ulid;
 use App\Traits\BranchSpecific;
 class Currency extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasCache, HasSearch, HasSorting, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, BranchSpecific, HasBranch, SoftDeletes;
 
 
     /**

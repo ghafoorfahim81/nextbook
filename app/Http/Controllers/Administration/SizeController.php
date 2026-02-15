@@ -22,7 +22,8 @@ class SizeController extends Controller
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $sizes = Size::search($request->query('search'))
+        $sizes = Size::with(['createdBy', 'updatedBy'])
+            ->search($request->query('search'))
             ->where('is_active', true)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -41,6 +42,7 @@ class SizeController extends Controller
 
     public function show(Request $request, Size $size)
     {
+        $size->load(['createdBy', 'updatedBy']);
         return new SizeResource($size);
     }
 

@@ -6,6 +6,7 @@ use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Account\AccountResource;
+use App\Http\Resources\UserManagement\UserSimpleResource;
 class ReceiptResource extends JsonResource
 {
     /**
@@ -31,6 +32,8 @@ class ReceiptResource extends JsonResource
             'bank_account_id' => $this->transaction?->lines[0]->account_id,
             'bank_account' => new AccountResource($this->transaction?->lines[0]->account),
             'transaction' => new TransactionResource($this->transaction),
+            'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
+            'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
         ];
     }
 }

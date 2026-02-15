@@ -275,6 +275,22 @@ const closeDialog = () => {
                                         {{ accountData.remark }}
                                     </div>
                                 </div>
+                                <div>
+                                    <div class="text-xs text-muted-foreground">
+                                        {{ t('general.created_by') }}
+                                    </div>
+                                    <div class="font-medium">
+                                        {{ accountData.created_by?.name || '' }}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-xs text-muted-foreground">
+                                        {{ t('general.updated_by') }}
+                                    </div>
+                                    <div class="font-medium">
+                                        {{ accountData.updated_by?.name || '' }}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

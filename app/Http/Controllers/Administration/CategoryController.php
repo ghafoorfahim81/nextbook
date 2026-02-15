@@ -9,7 +9,6 @@ use App\Http\Resources\Administration\CategoryCollection;
 use App\Http\Resources\Administration\CategoryResource;
 use App\Models\Administration\Category;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class CategoryController extends Controller
 {
@@ -24,7 +23,7 @@ class CategoryController extends Controller
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $categories = Category::with('parent')
+        $categories = Category::with(['parent', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -41,9 +40,9 @@ class CategoryController extends Controller
         return redirect()->route('categories.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.category')]));
     }
 
-    public function show(Request $request, Category $category): Response
+    public function show(Request $request, Category $category): CategoryResource
     {
-        $category->load('parent');
+        $category->load(['parent', 'createdBy', 'updatedBy']);
         return new CategoryResource($category);
     }
 

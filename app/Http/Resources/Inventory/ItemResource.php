@@ -7,6 +7,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Inventory\StockOpeningResource;
 use App\Enums\ItemType;
 use App\Http\Resources\Account\AccountResource;
+use App\Http\Resources\UserManagement\UserSimpleResource;
 class ItemResource extends JsonResource
 {
     /**
@@ -56,7 +57,9 @@ class ItemResource extends JsonResource
             'branch_id' => $this->branch_id,
             'quantity' => $this->stocks->sum(('quantity')),
             'on_hand' => $this->onHand(),
-            'openings' => StockOpeningResource::collection($this->openings),
+            'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
+            'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
+            'openings' => StockOpeningResource::collection($this->whenLoaded('openings')),
         ];
     }
 

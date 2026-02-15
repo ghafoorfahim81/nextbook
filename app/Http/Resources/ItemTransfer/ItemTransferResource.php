@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\ItemTransfer;
 
+use App\Http\Resources\UserManagement\UserSimpleResource;
 use App\Services\DateConversionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -37,16 +38,8 @@ class ItemTransferResource extends JsonResource
             'branch' => $this->whenLoaded('branch'),
             'remarks' => $this->remarks,
             'items' => ItemTransferItemResource::collection($this->whenLoaded('items')),
-            'created_by' => $this->created_by,
-            'created_by_user' => $this->whenLoaded('createdBy', fn() => [
-                'id' => $this->createdBy->id,
-                'name' => $this->createdBy->name,
-            ]),
-            'updated_by' => $this->updated_by,
-            'updated_by_user' => $this->whenLoaded('updatedBy', fn() => [
-                'id' => $this->updatedBy->id,
-                'name' => $this->updatedBy->name,
-            ]),
+            'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
+            'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
