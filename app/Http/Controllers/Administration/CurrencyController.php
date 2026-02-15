@@ -24,6 +24,7 @@ class CurrencyController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
 
         $currencies = Currency::search($request->query('search'))
+            ->where('is_active', true)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();

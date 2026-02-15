@@ -23,6 +23,7 @@ class SizeController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
 
         $sizes = Size::search($request->query('search'))
+            ->where('is_active', true)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();

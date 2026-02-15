@@ -28,7 +28,6 @@ use App\Enums\ItemType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Account\Account;
-use App\Models\Favorite;
 final class LookupShared
 {
     /**
@@ -48,7 +47,7 @@ final class LookupShared
             CacheKey::forCompanyBranchLocale($request, 'categories'),
             $cacheDuration,
             fn() => CategoryResource::collection(
-                Category::query()->orderBy('id')->limit(10)->get()
+                Category::query()->where('is_active', true)->orderBy('id')->limit(10)->get()
             )
         );
 
@@ -64,7 +63,7 @@ final class LookupShared
             CacheKey::forCompanyBranchLocale($request, 'currencies'),
             $cacheDuration,
             fn() => CurrencyResource::collection(
-                Currency::query()->orderBy('id')->get()
+                Currency::query()->where('is_active', true)->orderBy('id')->get()
             )
         );
 
@@ -72,7 +71,7 @@ final class LookupShared
             CacheKey::forCompanyBranchLocale($request, 'stores'),
             $cacheDuration,
             fn() => StoreResource::collection(
-                Store::query()->orderBy('id')->limit(10)->get()
+                Store::query()->where('is_active', true)->orderBy('id')->limit(10)->get()
             )
         );
 
@@ -84,38 +83,19 @@ final class LookupShared
             )
         );
 
-        $userId = $request->user()?->id ?? 'guest';
         $unitMeasures = Cache::remember(
-            CacheKey::forCompanyBranchLocale($request, "unit_measures:usable:user:{$userId}"),
+            CacheKey::forCompanyBranchLocale($request, 'unit_measures'),
             $cacheDuration,
-            function () use ($request) {
-                $user = $request->user();
-
-                $favoriteIds = $user
-                    ? Favorite::query()
-                        ->where('user_id', $user->id)
-                        ->where('favoritable_type', UnitMeasure::class)
-                        ->pluck('favoritable_id')
-                    : collect();
-
-                $query = UnitMeasure::query()
-                    ->where('is_active', true)
-                    ->orderBy('id')
-                    ->limit(1000);
-
-                if ($favoriteIds->isNotEmpty()) {
-                    $query->whereIn('id', $favoriteIds);
-                }
-
-                return UnitMeasureResource::collection($query->get());
-            }
+            fn() => UnitMeasureResource::collection(
+                UnitMeasure::query()->where('is_active', true)->orderBy('id')->limit(1000)->get()
+            )
         );
 
         $sizes = Cache::remember(
             CacheKey::forCompanyBranchLocale($request, 'sizes'),
             $cacheDuration,
             fn() => SizeResource::collection(
-                Size::query()->orderBy('id')->limit(10)->get()
+                Size::query()->where('is_active', true)->orderBy('id')->limit(10)->get()
             )
         );
 

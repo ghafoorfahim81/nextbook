@@ -112,6 +112,7 @@ class Ledger extends Model
         'branch_id',
         'email',
         'currency_id',
+        'is_main',
         'type',
         'is_active',
         'created_by',
@@ -131,6 +132,7 @@ class Ledger extends Model
             'updated_by' => 'string',
             'branch_id' => 'string',
             'is_active' => 'boolean',
+            'is_main' => 'boolean',
             'type' => LedgerType::class,
         ];
     }

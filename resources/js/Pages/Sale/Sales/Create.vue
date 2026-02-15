@@ -680,7 +680,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                     :searchable="true"
                     resource-type="ledgers"
                     :search-fields="['name', 'email', 'phone_no']"
-                    :search-options="{ type: 'supplier' }"
+                    :search-options="{ type: 'customer' }"
                 />
 
                 <NextInput placeholder="Number"  v-if="general_fields.number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />

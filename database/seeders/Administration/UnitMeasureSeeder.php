@@ -25,6 +25,7 @@ class UnitMeasureSeeder extends Seeder
                 'slug' => $quantity['slug'],
                 'branch_id' => $branch_id,
                 'is_main' => $quantity['is_main'],
+                'is_active' => false,
                 'created_by' => User::first()->id,
             ]);
         }
@@ -38,6 +39,7 @@ class UnitMeasureSeeder extends Seeder
                     'quantity_id' => $unitMeasure['quantity_id'],
                     'branch_id' => $branch_id,
                     'is_main' => $unitMeasure['is_main'],
+                    'is_active' => false,
                 'created_by' => User::where('name', 'admin')->first()->id,
             ]);
         }

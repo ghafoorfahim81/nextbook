@@ -43,6 +43,7 @@ class Quantity extends Model
         'slug',
         'branch_id',
         'is_main',
+        'is_active',
         'created_by',
         'updated_by',
     ];
@@ -59,6 +60,7 @@ class Quantity extends Model
         'branch_id' => 'string',
         'slug' => 'string',
         'is_main' => 'boolean',
+        'is_active' => 'boolean',
         'created_by' => 'string',
         'updated_by' => 'string',
         'parent_id' => 'string',
