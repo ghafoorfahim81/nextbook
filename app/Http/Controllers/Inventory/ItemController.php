@@ -75,6 +75,7 @@ class ItemController extends Controller
         //     $path = $request->file('photo')->store('items', 'public');
         //     $validated['photo'] = $path;
         // }
+        // dd($validated);
         $validated['item_type'] = $validated['item_type']??ItemType::INVENTORY_MATERIALS->value;
         DB::transaction(function () use ($validated, $request) {
             // 1) Create item
@@ -216,9 +217,18 @@ class ItemController extends Controller
 
     public function edit(Request $request, Item $item)
     {
-        $item = Item::with('unitMeasure', 'brand', 'category', 'size')->find($item->id);
+        $item = Item::with('unitMeasure', 'brand', 'category', 'size', 'assetAccount', 'incomeAccount', 'costAccount')->find($item->id);
+
+        $accountModel = new Account();
+        $otherCurrentAssetsAccounts = $accountModel->getAccountsByAccountTypeSlug('other-current-asset');
+        $incomeAccounts = $accountModel->getAccountsByAccountTypeSlug('income');
+        $costAccounts = $accountModel->getAccountsByAccountTypeSlug('cost-of-goods-sold');
+
         return inertia('Inventories/Items/Edit', [
-            'item' => new ItemResource($item)
+            'item' => new ItemResource($item),
+            'otherCurrentAssetsAccounts' => $otherCurrentAssetsAccounts,
+            'incomeAccounts' => $incomeAccounts,
+            'costAccounts' => $costAccounts,
         ]);
     }
 

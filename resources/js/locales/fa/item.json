@@ -39,5 +39,8 @@
     "sku": "کد واحد نگهداری موجودی",
     "asset_account": "حساب دارایی",
     "income_account": "حساب درآمد",
-    "cost_account": "حساب هزینه"
+    "cost_account": "حساب هزینه",
+    "duplicate_store_batch_expiry": "این موجودی با همین بچ و تاریخ انقضا قبلا وجود دارد.",
+    "low_price_warning": "هشدار قیمت پایین",
+    "sale_price_less_than_purchase_price": "قیمت فروش نمیتواند کمتر از قیمت خرید باشد."
 }
