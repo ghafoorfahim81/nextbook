@@ -29,7 +29,10 @@ class AccountTransferController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
 
         $transfers = AccountTransfer::with([
-                'transaction.lines.account', 'transaction.currency'
+                'transaction.lines.account',
+                'transaction.currency',
+                'createdBy',
+                'updatedBy',
             ])
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -117,7 +120,7 @@ class AccountTransferController extends Controller
 
     public function show(Request $request, AccountTransfer $accountTransfer)
     {
-        $accountTransfer->load(['transaction.lines.account', 'transaction.currency']);
+        $accountTransfer->load(['transaction.lines.account', 'transaction.currency', 'createdBy', 'updatedBy']);
         return response()->json([
             'data' => new AccountTransferResource($accountTransfer),
         ]);
@@ -125,7 +128,7 @@ class AccountTransferController extends Controller
 
     public function edit(Request $request, AccountTransfer $accountTransfer)
     {
-        $accountTransfer->load(['transaction.lines.account', 'transaction.currency']);
+        $accountTransfer->load(['transaction.lines.account', 'transaction.currency', 'createdBy', 'updatedBy']);
         return inertia('AccountTransfers/Edit', [
             'data' => new AccountTransferResource($accountTransfer),
         ]);

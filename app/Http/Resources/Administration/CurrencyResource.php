@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Administration;
 
+use App\Http\Resources\UserManagement\UserSimpleResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,6 +25,8 @@ class CurrencyResource extends JsonResource
             'flag' => $this->flag,
             'branch_id' => $this->branch_id,
             'tenant_id' => $this->tenant_id,
+            'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
+            'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
         ];
     }
 }

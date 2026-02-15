@@ -29,7 +29,7 @@ class PaymentController extends Controller
         $sortField = $request->input('sortField', 'date');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $payments = Payment::with(['ledger'])
+        $payments = Payment::with(['ledger', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -123,7 +123,7 @@ class PaymentController extends Controller
 
     public function show(Request $request, Payment $payment)
     {
-        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account']);
+        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy']);
         return response()->json([
             'data' => new PaymentResource($payment),
         ]);
@@ -131,7 +131,7 @@ class PaymentController extends Controller
 
     public function edit(Request $request, Payment $payment)
     {
-        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account']);
+        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy']);
         return inertia('Payments/Edit', [
             'data' => new PaymentResource($payment),
         ]);

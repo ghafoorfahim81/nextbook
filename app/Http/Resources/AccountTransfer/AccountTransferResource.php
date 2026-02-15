@@ -6,6 +6,7 @@ use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Account\AccountResource;
+use App\Http\Resources\UserManagement\UserSimpleResource;
 class AccountTransferResource extends JsonResource
 {
     public function toArray(Request $request): array
@@ -31,6 +32,8 @@ class AccountTransferResource extends JsonResource
             'currency_id' => $this->transaction?->currency?->id,
             'rate' => $this->transaction?->rate,
             'currency' => ($this->transaction?->currency),
+            'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
+            'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
         ];
     }
 

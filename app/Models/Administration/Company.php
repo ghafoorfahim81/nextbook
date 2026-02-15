@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Support\Facades\Storage;
 use App\Traits\HasCache;
@@ -20,7 +21,7 @@ use App\Enums\WorkingStyle;
 
 class Company extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasDependencyCheck;
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasDependencyCheck;
 
 
     /**
@@ -58,8 +59,8 @@ class Company extends Model
     protected function casts(): array
     {
         return [
-            'created_by' => 'integer',
-            'updated_by' => 'integer',
+            'created_by' => 'string',
+            'updated_by' => 'string',
             'calendar_type' => CalendarType::class,
             'working_style' => WorkingStyle::class,
             'business_type' => BusinessType::class,

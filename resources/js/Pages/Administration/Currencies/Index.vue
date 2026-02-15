@@ -29,6 +29,16 @@ const columns = computed(() => ([
     },
     { key: 'symbol', label: t('admin.shared.symbol') },
     { key: 'format', label: t('admin.currency.format') },
+    {
+        key: 'created_by.name',
+        label: t('general.created_by'),
+        render: (row) => row.created_by?.name ?? '-',
+    },
+    {
+        key: 'updated_by.name',
+        label: t('general.updated_by'),
+        render: (row) => row.updated_by?.name ?? '-',
+    },
     { key: 'actions', label: t('general.action') },
 ]));
 

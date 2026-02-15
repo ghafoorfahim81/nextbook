@@ -9,7 +9,6 @@ use App\Http\Resources\Administration\StoreCollection;
 use App\Http\Resources\Administration\StoreResource;
 use App\Models\Administration\Store;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 class StoreController extends Controller
 {
@@ -25,7 +24,8 @@ class StoreController extends Controller
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $stores = Store::search($request->query('search'))
+        $stores = Store::with(['createdBy', 'updatedBy'])
+            ->search($request->query('search'))
             ->where('is_active', true)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -44,8 +44,9 @@ class StoreController extends Controller
 
     }
 
-    public function show(Request $request, Store $store): Response
+    public function show(Request $request, Store $store): StoreResource
     {
+        $store->load(['createdBy', 'updatedBy']);
         return new StoreResource($store);
     }
 

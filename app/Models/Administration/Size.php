@@ -8,6 +8,7 @@ use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasCache;
+use App\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -16,7 +17,7 @@ use Symfony\Component\Uid\Ulid;
 use App\Traits\BranchSpecific;
 class Size extends Model
 {
-    use HasFactory, HasUlids, HasUserAuditable, HasCache, BranchSpecific, HasBranch, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasUserAuditable, HasUserTracking, HasCache, BranchSpecific, HasBranch, HasSearch, HasSorting, HasDependencyCheck, SoftDeletes;
 
     protected $table = 'sizes';
     protected $primaryKey = 'id';

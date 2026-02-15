@@ -4,7 +4,7 @@ import axios from 'axios'
 import {
   Package, Hash, Pill, Box, Tag, Layers, TrendingUp, TrendingDown,
   DollarSign, Palette, Ruler, Image, MapPin, Barcode, Search,
-  Building, Target
+  Building, Target, User
 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
@@ -27,6 +27,7 @@ const currentRecords = computed(() =>
   activeTab.value === 'in' ? inRecords.value : outRecords.value
 )
 
+console.log(props.item.created_by)
 const itemDetails = computed(() => [
   { label: t('general.name'), value: props.item?.name, icon: Package },
   { label: t('item.code'), value: props.item?.code, icon: Hash },
@@ -53,6 +54,8 @@ const itemDetails = computed(() => [
   { label: t('item.rate_c'), value: props.item?.rate_c, icon: DollarSign },
   { label: t('item.rack_no'), value: props.item?.rack_no, icon: MapPin },
   { label: t('item.fast_search'), value: props.item?.fast_search, icon: Search },
+  { label: t('general.created_by'), value: props.item?.created_by?.name || '—', icon: User },
+  { label: t('general.updated_by'), value: props.item?.updated_by?.name || '—', icon: User },
 ])
 
 const close = () => emit('update:modelValue', false)

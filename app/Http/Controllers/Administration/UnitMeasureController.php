@@ -33,7 +33,8 @@ class UnitMeasureController extends Controller
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $unitMeasures = UnitMeasure::search($request->query('search'))
+        $unitMeasures = UnitMeasure::with(['quantity', 'createdBy', 'updatedBy'])
+            ->search($request->query('search'))
             ->where('is_active', true)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -124,6 +125,7 @@ class UnitMeasureController extends Controller
 
     public function show(Request $request, UnitMeasure $unitMeasure): UnitMeasureResource
     {
+        $unitMeasure->load(['quantity', 'createdBy', 'updatedBy']);
         return new UnitMeasureResource($unitMeasure);
     }
 

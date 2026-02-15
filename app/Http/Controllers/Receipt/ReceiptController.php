@@ -29,7 +29,7 @@ class ReceiptController extends Controller
         $sortField = $request->input('sortField', 'date');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $receipts = Receipt::with(['ledger'])
+        $receipts = Receipt::with(['ledger', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -114,7 +114,7 @@ class ReceiptController extends Controller
 
     public function show(Request $request, Receipt $receipt)
     {
-        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account']);
+        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy']);
         return response()->json([
             'data' => new ReceiptResource($receipt),
         ]);
@@ -123,7 +123,7 @@ class ReceiptController extends Controller
 
     public function edit(Request $request, Receipt $receipt)
     {
-        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account']);
+        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy']);
         return inertia('Receipts/Edit', [
             'data' => new ReceiptResource($receipt),
         ]);

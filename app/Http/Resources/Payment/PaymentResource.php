@@ -6,6 +6,7 @@ use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Account\AccountResource;
+use App\Http\Resources\UserManagement\UserSimpleResource;
 
 class PaymentResource extends JsonResource
 {
@@ -30,6 +31,8 @@ class PaymentResource extends JsonResource
             'narration' => $this->narration,
             'transaction_id' => $this->transaction_id,
             'transaction' => new TransactionResource($this->transaction),
+            'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
+            'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
         ];
     }
 }

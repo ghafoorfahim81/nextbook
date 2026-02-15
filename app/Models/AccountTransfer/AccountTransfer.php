@@ -13,9 +13,10 @@ use App\Traits\HasUserAuditable;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\BranchSpecific;
+use App\Traits\HasUserTracking;
 class AccountTransfer extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;

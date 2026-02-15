@@ -12,7 +12,7 @@ import {
 } from '@/Components/ui/dialog'
 import { Button } from '@/Components/ui/button'
 import { Badge } from '@/Components/ui/badge'
-import { ArrowLeftRight, Calendar, Store, DollarSign, FileText } from 'lucide-vue-next'
+import { ArrowLeftRight, Calendar, Store, DollarSign, FileText, User } from 'lucide-vue-next'
 import { router } from '@inertiajs/vue3'
 import { useToast } from '@/Components/ui/toast/use-toast'
 
@@ -179,6 +179,20 @@ function closeDialog() {
                 {{ t('item_transfer.transfer_cost') }}
               </div>
               <div class="text-sm font-medium text-foreground">{{ transfer.transfer_cost || 0 }}</div>
+            </div>
+            <div class="space-y-1">
+              <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                <User class="w-3 h-3" />
+                {{ t('general.created_by') }}
+              </div>
+              <div class="text-sm font-medium text-foreground">{{ transfer.created_by?.name || '-' }}</div>
+            </div>
+            <div class="space-y-1">
+              <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                <User class="w-3 h-3" />
+                {{ t('general.updated_by') }}
+              </div>
+              <div class="text-sm font-medium text-foreground">{{ transfer.updated_by?.name || '-' }}</div>
             </div>
           </div>
         </div>

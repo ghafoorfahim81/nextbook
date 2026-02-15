@@ -22,7 +22,8 @@ class BrandController extends Controller
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $brands = Brand::search($request->query('search'))
+        $brands = Brand::with(['createdBy', 'updatedBy'])
+            ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
@@ -40,6 +41,7 @@ class BrandController extends Controller
 
     public function show(Request $request, Brand $brand)
     {
+        $brand->load(['createdBy', 'updatedBy']);
         return new BrandResource($brand);
     }
 

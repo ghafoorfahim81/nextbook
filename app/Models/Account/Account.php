@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasUserTracking;
 use App\Models\Administration\Branch;
 use App\Traits\BranchSpecific;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -21,7 +22,7 @@ use Illuminate\Support\Facades\DB;
 
 class Account extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;

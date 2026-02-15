@@ -7,6 +7,7 @@ use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasCache;
+use App\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,7 +19,7 @@ use App\Traits\HasBranch;
 use App\Traits\BranchSpecific;
 class Category extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasCache, HasSearch, HasSorting, HasDependencyCheck, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, HasDependencyCheck, BranchSpecific, HasBranch, SoftDeletes;
 
     /**
      * The table associated with the model.
@@ -71,8 +72,8 @@ class Category extends Model
         'id' => 'string',
         'parent_id' => 'string',
         'is_active' => 'boolean',
-        'created_by' => 'integer',
-        'updated_by' => 'integer',
+        'created_by' => 'string',
+        'updated_by' => 'string',
     ];
 
 
