@@ -82,7 +82,7 @@ class User extends Authenticatable
                 'item_type' => true,
                 'sku' => true,
             ],
-            'spec_text' => 'Item Spec',
+            'spec_text' => 'Batch',
         ],
         'sale' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'store' => true],

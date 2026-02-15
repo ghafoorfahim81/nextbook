@@ -184,6 +184,14 @@
   const searchableOptions = ref([...props.options])
   const { searchResources, isLoading } = useSearchResources()
 
+  // Stable option identity used for de-dupe/cache.
+  // Many usages pass `:reduce="o => o"` (model becomes an object), so we must
+  // never rely on object reference equality for de-duping quick-created options.
+  const optionKey = (option) => {
+    if (option && typeof option === 'object') return option?.[props.valueKey]
+    return option
+  }
+
   const reduceInternal = (option) => {
     if (props.reduce) return props.reduce(option)
     return option ? option[props.valueKey] : null
@@ -192,18 +200,23 @@
   const ensureSelectedOptionInOptions = () => {
     if (!props.modelValue) return
     const selectedValue = props.modelValue
-    const exists = searchableOptions.value.some(
-      o => reduceInternal(o) === selectedValue
-    )
+    // Multi-select: don't try to reconcile here (options are managed by v-select)
+    if (Array.isArray(selectedValue)) return
+    const selectedKey =
+      selectedValue && typeof selectedValue === 'object'
+        ? optionKey(selectedValue)
+        : selectedValue
+
+    const exists = searchableOptions.value.some((o) => optionKey(o) === selectedKey)
     if (!exists) {
       const found =
-        props.options.find(o => reduceInternal(o) === selectedValue) ||
-        cachedOptions.value.get(selectedValue)
+        props.options.find((o) => optionKey(o) === selectedKey) ||
+        cachedOptions.value.get(selectedKey)
 
       if (found) {
         searchableOptions.value = [
           found,
-          ...searchableOptions.value.filter(o => reduceInternal(o) !== selectedValue),
+          ...searchableOptions.value.filter((o) => optionKey(o) !== selectedKey),
         ]
       }
     }
@@ -259,15 +272,16 @@ const openAddDialog = () => {
 
 const addCreatedOptionToOptions = (created) => {
   if (!created) return
-  const createdValue = reduceInternal(created)
+  const createdKey = optionKey(created)
+  if (createdKey == null) return
 
   // cache for ensureSelectedOptionInOptions()
-  cachedOptions.value.set(createdValue, created)
+  cachedOptions.value.set(createdKey, created)
 
   // prepend and dedupe
   searchableOptions.value = [
     created,
-    ...searchableOptions.value.filter((o) => reduceInternal(o) !== createdValue),
+    ...searchableOptions.value.filter((o) => optionKey(o) !== createdKey),
   ]
 }
 

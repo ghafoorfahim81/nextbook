@@ -190,7 +190,8 @@
   "add_to_account": "Add to account",
   "cheque_no": "Cheque No",
   "narration": "Narration",
-  "saving": "Saving..."
+  "saving": "Saving...",
+  "duplicate_found": "Duplicate found"
 }
 
 

@@ -190,5 +190,6 @@
   "add_to_account": "اضافه کردن به حساب",
   "cheque_no": "شماره چک",
   "narration": "یادداشت",
-  "saving": "در حال ذخیره..."
+  "saving": "در حال ذخیره...",
+  "duplicate_found": "تکرار یافته شد"
 }
