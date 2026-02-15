@@ -77,7 +77,7 @@ const handleSubmitAction = (createAndNew = false) => {
                 class: 'bg-green-600',
             });
             if (isCreateAndNew) {
-                form.reset(); 
+                form.reset();
                 form.transform((d) => d); // Reset transform to identity
             }
         },
@@ -92,7 +92,7 @@ const handleSubmitAction = (createAndNew = false) => {
         .transform(transformFn)
         .post(route('account-transfers.store'), postOptions);
 };
- 
+
 </script>
 
 <template>
@@ -121,7 +121,7 @@ const handleSubmitAction = (createAndNew = false) => {
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput placeholder="Rate" :error="form.errors?.rate" :disabled="form.selected_currency.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+          <NextInput placeholder="Rate" :error="form.errors?.rate" :disabled="form?.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
 
           <NextSelect
             :options="accounts"
