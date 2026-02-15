@@ -6,6 +6,7 @@ use App\Models\User;
 use Database\Seeders\Account\AccountSeeder;
 use Database\Seeders\Administration\BranchSeeder;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Database\Seeders\Performance\PerformanceLoadSeeder;
 use Database\Seeders\Administration\CategorySeeder;
 use Database\Seeders\Administration\BrandSeeder;
 use Database\Seeders\Administration\DepartmentSeeder;
