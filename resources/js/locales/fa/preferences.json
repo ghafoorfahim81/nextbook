@@ -24,9 +24,17 @@
         "tax_currency": "مالیات و ارز",
         "notifications": "اعلان‌ها",
         "security": "امنیت",
+        "install_plugins": "نصب پلاگین‌ها",
         "backup": "پشتیبان‌گیری",
         "localization": "محلی‌سازی",
         "display": "نمایش"
+    },
+    "install_plugins": {
+        "description": "انتخاب کنید کدام داده‌ها در فهرست‌های انتخابی (dropdown) قابل استفاده باشند.",
+        "save": "ذخیره پلاگین‌ها",
+        "saved_description": "انتخاب‌های پلاگین با موفقیت ذخیره شد.",
+        "measures_title": "واحدها (Unit Measures)",
+        "measures_hint": "واحدهای مورد علاقه خود را انتخاب کنید. فقط موارد فعال در لیست‌های انتخابی نمایش داده می‌شوند."
     },
     "appearance": {
         "description": "شخصی‌سازی ظاهر برنامه",

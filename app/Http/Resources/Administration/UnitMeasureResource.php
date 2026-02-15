@@ -17,6 +17,7 @@ class UnitMeasureResource extends JsonResource
             'name' => $this->name,
             'unit' => $this->unit,
             'symbol' => $this->symbol,
+            'is_active' => $this->is_active,
             'branch_id' => $this->branch_id,
             'quantity_id' => $this->quantity_id,
             'quantity' => $this->quantity,

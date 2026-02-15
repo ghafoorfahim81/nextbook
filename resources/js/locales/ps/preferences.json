@@ -24,9 +24,17 @@
         "tax_currency": "مالیه او اسعار",
         "notifications": "خبرتیاوې",
         "security": "امنیت",
+        "install_plugins": "پلګینونه نصب",
         "backup": "بیکاپ",
         "localization": "ځایي کول",
         "display": "ښودنه"
+    },
+    "install_plugins": {
+        "description": "ټاکنه وکړئ کوم بنسټیز معلومات په ډراپ‌ډاونونو کې وکارول شي.",
+        "save": "پلګینونه خوندي کړئ",
+        "saved_description": "ستاسو د پلګینونو انتخابونه خوندي شول.",
+        "measures_title": "واحدونه (Unit Measures)",
+        "measures_hint": "خپل خوښ واحدونه وټاکئ. یوازې فعال خوښ واحدونه به په ډراپ‌ډاونونو کې ښکاره شي."
     },
     "appearance": {
         "description": "د غوښتنلیک ظاهر تنظیم کړئ",

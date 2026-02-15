@@ -4,6 +4,7 @@ import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
@@ -103,6 +104,7 @@ const handleSelectChange = (field, value) => {
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.create', { name: t('account.account') }) }}
                 </div>
+                <ModuleHelpButton module="chart_of_accounts" />
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextInput

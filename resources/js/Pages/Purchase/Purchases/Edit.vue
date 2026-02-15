@@ -18,6 +18,7 @@ import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next';
 import { useLazyProps } from '@/composables/useLazyProps'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 
 const { t } = useI18n();
 const { toast } = useToast()
@@ -418,6 +419,7 @@ const transactionSummary = computed(() => {
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.edit', { name: t('purchase.purchase') }) }}
                 </div>
+                <ModuleHelpButton module="purchase" />
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextSelect
                         :options="ledgers?.data || ledgers || []"

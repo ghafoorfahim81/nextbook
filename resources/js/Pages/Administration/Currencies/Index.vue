@@ -21,6 +21,12 @@ const columns = computed(() => ([
     { key: 'name', label: t('general.name'), sortable: true },
     { key: 'code', label: t('admin.currency.code'), sortable: true },
     { key: 'exchange_rate', label: t('admin.currency.exchange_rate'), sortable: true },
+    {
+        key: 'is_active',
+        label: t('general.status'),
+        sortable: true,
+        render: (row) => row.is_active ? t('general.active') : t('general.inactive'),
+    },
     { key: 'symbol', label: t('admin.shared.symbol') },
     { key: 'format', label: t('admin.currency.format') },
     { key: 'actions', label: t('general.action') },

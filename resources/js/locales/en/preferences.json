@@ -24,9 +24,17 @@
         "tax_currency": "Tax & Currency",
         "notifications": "Notifications",
         "security": "Security",
+        "install_plugins": "Install Plugins",
         "backup": "Backup",
         "localization": "Localization",
         "display": "Display"
+    },
+    "install_plugins": {
+        "description": "Choose which master data is usable in dropdowns across the system.",
+        "save": "Save Plugins",
+        "saved_description": "Your plugin selections have been saved.",
+        "measures_title": "Measures (Unit Measures)",
+        "measures_hint": "Select your favorite measures. Only active favorites will appear in unit measure dropdowns."
     },
     "appearance": {
         "description": "Customize the look and feel of your application",

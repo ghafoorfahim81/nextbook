@@ -18,6 +18,7 @@ import { Trash2 } from 'lucide-vue-next';
 import { Spinner } from "@/Components/ui/spinner";
 import { Button } from '@/Components/ui/button';
 import { useLazyProps } from '@/composables/useLazyProps'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 
 const { t } = useI18n();
 const { toast } = useToast()
@@ -293,6 +294,7 @@ const transactionSummary = computed(() => {
             <div class="flex justify-between items-center">
                 <h1 class="text-2xl font-bold">{{ t('sale.edit_sale') }}</h1>
                 <div class="flex gap-2">
+                    <ModuleHelpButton module="sales" positionClass="" />
                     <Button variant="outline" @click="$inertia.visit('/sales')">
                         {{ t('general.cancel') }}
                     </Button>

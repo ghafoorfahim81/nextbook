@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue';
 import { useForm } from '@inertiajs/vue3';
 import NextInput from "@/Components/next/NextInput.vue";
 import Checkbox from "@/Components/Checkbox.vue";
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/Components/ui/toast/use-toast';
@@ -82,6 +83,7 @@ const goBack = () => {
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.edit', { name: t('user_mangements.role') }) }}
                 </div>
+                <ModuleHelpButton module="user_management" />
                 <div class="grid grid-cols-1 gap-4 mt-3">
                     <NextInput
                         :label="t('general.name')"

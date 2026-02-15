@@ -17,6 +17,11 @@ import { router } from '@inertiajs/vue3'
         { key: 'contact_person', label: t('ledger.contact_person') },
         { key: 'phone_no', label: t('general.phone') },
         { key: 'email', label: t('general.email') },
+        {
+            key: 'is_active',
+            label: t('general.status'),
+            render: (row) => row.is_active ? t('general.active') : t('general.inactive'),
+        },
         { key: 'actions', label: t('general.actions') },
 
     ]));

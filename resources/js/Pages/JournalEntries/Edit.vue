@@ -7,6 +7,7 @@ import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n'
 import { Trash2, Plus, Upload } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
@@ -187,6 +188,7 @@ function submit() {
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.edit', { name: t('journal_entry.journal_entry') }) }}
         </div>
+        <ModuleHelpButton module="journal_entry" />
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextInput
             :placeholder="t('general.enter', { text: t('general.number') })"

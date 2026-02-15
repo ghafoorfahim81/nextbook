@@ -4,6 +4,7 @@ import AppLayout from '@/Layouts/Layout.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextInput from '@/Components/next/NextInput.vue'
 import { Button } from '@/Components/ui/button'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import { useI18n } from 'vue-i18n';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
@@ -121,6 +122,7 @@ const handleSubmit = () => {
                         <h2 class="text-lg font-semibold">{{ t('item.fast_opening') }}</h2>
                         <p class="text-sm text-muted-foreground">{{ t('item.remove_unwanted_items') }}</p>
                     </div>
+                    <ModuleHelpButton module="fast_opening" positionClass="" class="shrink-0" />
 
                 </div>
                 <div class="w-full max-w-xs p-2">
