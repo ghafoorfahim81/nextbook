@@ -76,7 +76,9 @@ import {
     ShoppingBasket,
     ArrowLeftRight,
     PlusCircle,
-    FileText
+    FileText,
+    Search,
+    X,
 } from 'lucide-vue-next'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -139,7 +141,7 @@ const data = {
 }
 
 const activeTeam = ref(data.teams[0])
-const page = usePage()
+const page = usePage<any>()
 
 function setActiveTeam(team: typeof data.teams[number]) {
     activeTeam.value = team
@@ -239,7 +241,7 @@ const navMain = computed(() => [
         icon: ChartColumn,
         items: [
             { title: t('sidebar.account.chart_of_account'), url: '/chart-of-accounts', permission: 'accounts.view_any' },
-            { title: t('sidebar.account.account_type'), url: '/account-types', permission: 'account_types.view_any' },
+            // { title: t('sidebar.account.account_type'), url: '/account-types', permission: 'account_types.view_any' },
             { title: t('sidebar.main.transfer'), url: '/account-transfers', icon: ArrowLeftRight, permission: 'account_transfers.view_any' },
             { title: t('sidebar.journal_entry.journal_entry'), url: '/journal-entries', icon: FileText, permission: 'journal_entries.view_any' },
         ],
@@ -373,6 +375,39 @@ const filteredNavMain = computed(() => {
         .filter(Boolean)
 })
 
+const menuSearchQuery = ref('')
+const menuSearchQueryNormalized = computed(() => menuSearchQuery.value.trim().toLowerCase())
+
+const searchedNavMain = computed(() => {
+    const q = menuSearchQueryNormalized.value
+    if (!q) return filteredNavMain.value
+
+    return filteredNavMain.value
+        .map((item: any) => {
+            const itemTitle = String(item?.title ?? '').toLowerCase()
+
+            if (!item.items) {
+                return itemTitle.includes(q) ? item : null
+            }
+
+            const children = Array.isArray(item.items) ? item.items : []
+            const matchingChildren = children.filter((child: any) =>
+                String(child?.title ?? '').toLowerCase().includes(q),
+            )
+
+            if (itemTitle.includes(q)) {
+                return item
+            }
+
+            if (matchingChildren.length > 0) {
+                return { ...item, items: matchingChildren }
+            }
+
+            return null
+        })
+        .filter(Boolean)
+})
+
 // assign to data after computed is available
 data.navMain = navMain.value
 
@@ -445,8 +480,34 @@ function logout() {
             <SidebarContent>
                 <SidebarGroup>
                         <SidebarGroupLabel>{{ t('sidebar.group.menu') }}</SidebarGroupLabel>
+                        <div class="px-2 pb-2 group-data-[collapsible=icon]:hidden">
+                            <div class="relative">
+                                <Search
+                                    class="absolute top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+                                    :class="isRTL ? 'right-2' : 'left-2'"
+                                />
+                                <input
+                                    v-model="menuSearchQuery"
+                                    type="text"
+                                    autocomplete="off"
+                                    :placeholder="t('layout.search_menu') || 'Search menu...'"
+                                    class="h-9 w-full rounded-md border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-violet-500"
+                                    :class="isRTL ? 'pr-8 pl-8' : 'pl-8 pr-8'"
+                                />
+                                <button
+                                    v-if="menuSearchQueryNormalized"
+                                    type="button"
+                                    class="absolute top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted"
+                                    :class="isRTL ? 'left-1' : 'right-1'"
+                                    @click="menuSearchQuery = ''"
+                                >
+                                    <X class="size-4" />
+                                    <span class="sr-only">Clear</span>
+                                </button>
+                            </div>
+                        </div>
                         <SidebarMenu>
-                        <template v-for="item in filteredNavMain" :key="item.title">
+                        <template v-for="item in searchedNavMain" :key="`${item.title}:${menuSearchQueryNormalized}`">
                             <!-- Simple menu item without sub-items (like Dashboard) -->
                             <SidebarMenuItem v-if="!item.items" >
                                 <SidebarMenuButton
@@ -464,7 +525,7 @@ function logout() {
                             <Collapsible
                                 v-else
                                 as-child
-                                :default-open="shouldExpandParent(item.items)"
+                                :default-open="Boolean(menuSearchQueryNormalized) || shouldExpandParent(item.items)"
                                 class="group/collapsible"
                             >
                                 <SidebarMenuItem>
