@@ -154,6 +154,7 @@ class SearchController extends Controller
     {
         $query = Ledger::query()
             ->select('id', 'name', 'type', 'email', 'phone_no', 'address')
+            ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'email', 'phone_no', 'address'])) {
@@ -421,6 +422,7 @@ class SearchController extends Controller
     {
         $query = Currency::query()
             ->select('id', 'name', 'code', 'symbol', 'exchange_rate')
+            ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'code', 'symbol'])) {
@@ -502,6 +504,7 @@ class SearchController extends Controller
     {
         $query = UnitMeasure::query()
             ->select('id', 'name', 'unit', 'symbol')
+            ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'unit', 'symbol'])) {
@@ -535,6 +538,7 @@ class SearchController extends Controller
     {
         $query = Category::query()
             ->select('id', 'name', 'description')
+            ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'description'])) {
@@ -542,6 +546,7 @@ class SearchController extends Controller
                     }
                 }
             });
+
         return $query->limit($limit)->get()->toArray();
     }
     /**
@@ -551,6 +556,7 @@ class SearchController extends Controller
     {
         $query = Store::query()
             ->select('id', 'name', 'address')
+            ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'address'])) {
@@ -558,6 +564,7 @@ class SearchController extends Controller
                     }
                 }
             });
+
         return $query->limit($limit)->get()->toArray();
     }
 
@@ -617,6 +624,7 @@ class SearchController extends Controller
     {
         $query = Size::query()
             ->select('id', 'name', 'code')
+            ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'code'])) {
@@ -624,6 +632,7 @@ class SearchController extends Controller
                     }
                 }
             });
+
         return $query->limit($limit)->get()->toArray();
     }
 

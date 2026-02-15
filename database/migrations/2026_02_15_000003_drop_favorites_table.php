@@ -8,6 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::dropIfExists('favorites');
+    }
+
+    public function down(): void
+    {
         Schema::create('favorites', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->ulid('user_id')->index();
@@ -24,11 +29,6 @@ return new class extends Migration
                 ->on('users')
                 ->onDelete('cascade');
         });
-    }
-
-    public function down(): void
-    {
-        Schema::dropIfExists('favorites');
     }
 };
 

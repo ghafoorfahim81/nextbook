@@ -17,6 +17,7 @@ class StoreSeeder extends Seeder
             'name' =>'Main Store',
             'address' =>'Main store',
             'is_main' => true,
+            'is_active' => false,
             'branch_id' => Branch::first()->id,
         ]);
     }

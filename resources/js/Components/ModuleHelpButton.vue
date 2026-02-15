@@ -44,14 +44,14 @@ const items = computed(() => {
 </script>
 
 <template>
-  <div :class="cn(props.positionClass, 'z-10', props.class)">
+  <div :class="cn(props.positionClass, 'z-50000', props.class)">
     <Dialog>
       <DialogTrigger as-child>
-        <div class="bg-card px-2 py-1 rounded-md shadow-sm border">
-          <Button type="button" variant="ghost" size="sm" class="h-6 px-2">
-            <Info class="w-4 h-4 mr-1" />
-            <span class="text-xs">{{ t('general.info') }}</span>
-          </Button>
+        <div class="bg-card px-2 py-1 rounded-md shadow-sm border mt-3 text-primary">
+          <!-- <Button type="button" variant="ghost" size="sm" class="h-6 px-2"> -->
+            <Info class="w-4 h-4 text-primary hover:cursor-pointer" />
+            <!-- <span class="text-xs">{{ t('general.info') }}</span>
+          </Button> -->
         </div>
       </DialogTrigger>
       <DialogContent class="max-w-2xl">

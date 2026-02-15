@@ -37,6 +37,8 @@ const props = defineProps({
 
 useLazyProps(props, ['ledgers', 'accounts', 'items'])
 
+const usableMeasures = computed(() => props.unitMeasures?.data ?? [])
+
 const purchase = props.purchase.data;
 console.log('this is purchase',purchase);
 const form = useForm({
@@ -71,7 +73,7 @@ const form = useForm({
         batch: item.batch || '',
         expire_date: '',
         unit_price: item.unit_price,
-        selected_measure: props.unitMeasures?.data?.find(u => u.id === item.unit_measure_id) || null,
+        selected_measure: usableMeasures.value?.find(u => u.id === item.unit_measure_id) || null,
         item_discount: item.discount || '',
         free: item.free || '',
         tax: item.tax || '',
@@ -289,7 +291,7 @@ const handleItemChange = async (index, selectedItem) => {
     const selUM = selectedItem?.unitMeasure || {};
     const selectedQuantityId = selUM.quantity_id ?? selUM.quantity?.id;
     const selectedQuantityName = (selUM.quantity?.name || selUM.quantity?.code || '').toString().toLowerCase();
-    row.available_measures = (props.unitMeasures?.data || []).filter(unit => {
+    row.available_measures = usableMeasures.value.filter(unit => {
         const unitQtyId = unit?.quantity_id ?? unit?.quantity?.id;
         const unitQtyName = (unit?.quantity?.name || unit?.quantity?.code || '').toString().toLowerCase();
         return (selectedQuantityId && unitQtyId === selectedQuantityId) || (!!selectedQuantityName && unitQtyName === selectedQuantityName);

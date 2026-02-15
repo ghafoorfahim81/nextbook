@@ -36,6 +36,7 @@ const props = defineProps({
 const page = usePage()
 useLazyProps(page.props, ['ledgers', 'accounts'])
 
+// dropdown options are already filtered by backend `is_active`
 // Form setup for editing sales
 const form = useForm({
     number: props.sale.number,

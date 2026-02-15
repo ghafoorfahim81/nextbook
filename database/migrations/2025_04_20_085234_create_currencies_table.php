@@ -23,7 +23,8 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->boolean('is_base_currency')->default(false);
             $table->string('flag')->index()->nullable();
-            $table->ulid('branch_id')->index(); 
+            $table->boolean('is_main')->default(false);
+            $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();

@@ -33,8 +33,22 @@
         "description": "Choose which master data is usable in dropdowns across the system.",
         "save": "Save Plugins",
         "saved_description": "Your plugin selections have been saved.",
+        "main_badge": "Main",
+        "base_badge": "Base",
         "measures_title": "Measures (Unit Measures)",
-        "measures_hint": "Select your favorite measures. Only active favorites will appear in unit measure dropdowns."
+        "measures_hint": "Select your favorite measures. Only active favorites will appear in unit measure dropdowns.",
+        "stores_title": "Stores",
+        "stores_hint": "Select usable stores. Only active favorites will appear in store dropdowns.",
+        "categories_title": "Categories",
+        "categories_hint": "Select usable categories. Only active favorites will appear in category dropdowns.",
+        "sizes_title": "Sizes",
+        "sizes_hint": "Select usable sizes. Only active favorites will appear in size dropdowns.",
+        "currencies_title": "Currencies",
+        "currencies_hint": "Select usable currencies. Only active favorites will appear in currency dropdowns.",
+        "ledgers_title": "Ledgers",
+        "ledgers_hint": "Select usable customers and suppliers. Only active favorites will appear in ledger dropdowns.",
+        "customers_title": "Customers",
+        "suppliers_title": "Suppliers"
     },
     "appearance": {
         "description": "Customize the look and feel of your application",

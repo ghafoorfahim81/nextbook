@@ -96,7 +96,7 @@ class Currency extends Model
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
                 'flag' => 'us.png',
-                'is_active' => true,
+                'is_active' => false,
                 'is_base_currency' => false,
             ],
             'IRR' => [
@@ -106,7 +106,7 @@ class Currency extends Model
                 'format' => '﷼ 1,0/00',
                 'exchange_rate' => 0.00,
                 'flag'     => 'ir.png',
-                'is_active' => true,
+                'is_active' => false,
                 'is_base_currency' => false,
             ],
             'INR' => [
@@ -116,7 +116,7 @@ class Currency extends Model
                 'format' => '1,0.00₹',
                 'exchange_rate' => 0.00,
                 'flag'     => 'in.png',
-                'is_active' => true,
+                'is_active' => false,
                 'is_base_currency' => false,
             ],
         ];

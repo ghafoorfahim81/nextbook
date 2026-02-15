@@ -26,7 +26,11 @@ const props = defineProps({
     sidebarMenus: Array,
     timezones: Object,
     unitMeasures: { type: [Array, Object], required: true },
-    favoriteUnitMeasureIds: { type: Array, required: false, default: () => [] },
+    categories: { type: [Array, Object], required: true },
+    stores: { type: [Array, Object], required: true },
+    sizes: { type: [Array, Object], required: true },
+    currencies: { type: [Array, Object], required: true },
+    ledgers: { type: [Array, Object], required: true },
 })
 
 const { t } = useI18n()
@@ -52,16 +56,32 @@ const tabs = [
 const form = useForm({ ...props.preferences })
 
 const allUnitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
+const allCategories = computed(() => props.categories?.data ?? props.categories ?? [])
+const allStores = computed(() => props.stores?.data ?? props.stores ?? [])
+const allSizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
+const allCurrencies = computed(() => props.currencies?.data ?? props.currencies ?? [])
+const allLedgers = computed(() => props.ledgers?.data ?? props.ledgers ?? [])
+
+const customerLedgers = computed(() => allLedgers.value.filter(l => l.type === 'customer'))
+const supplierLedgers = computed(() => allLedgers.value.filter(l => l.type === 'supplier'))
+
+const activeIds = (list) => (Array.isArray(list) ? list : []).filter(x => x?.is_active === true).map(x => x.id)
+
 const pluginForm = useForm({
-    unit_measures: [...(props.favoriteUnitMeasureIds ?? [])],
+    unit_measures: activeIds(allUnitMeasures.value),
+    categories: activeIds(allCategories.value),
+    stores: activeIds(allStores.value),
+    sizes: activeIds(allSizes.value),
+    currencies: activeIds(allCurrencies.value),
+    ledgers: activeIds(allLedgers.value),
 })
 const pluginSaving = computed(() => pluginForm.processing)
 
-const togglePluginMeasure = (id, checked) => {
-    const current = new Set(pluginForm.unit_measures || [])
+const togglePluginIds = (field, id, checked) => {
+    const current = new Set(pluginForm[field] || [])
     if (checked) current.add(id)
     else current.delete(id)
-    pluginForm.unit_measures = Array.from(current)
+    pluginForm[field] = Array.from(current)
 }
 
 const savePlugins = () => {
@@ -874,18 +894,151 @@ const receiptPaymentFields = [
                                         <Checkbox
                                             :id="`fav-measure-${m.id}`"
                                             :checked="pluginForm.unit_measures?.includes(m.id)"
-                                            :disabled="m.is_active === false"
-                                            @update:checked="(checked) => togglePluginMeasure(m.id, checked)"
+                                            @update:checked="(checked) => togglePluginIds('unit_measures', m.id, checked)"
                                         />
                                         <Label :for="`fav-measure-${m.id}`" class="font-normal cursor-pointer">
                                             {{ m.name }}
-                                            <span v-if="m.is_active === false" class="text-xs text-muted-foreground">
-                                                ({{ t('general.inactive') }})
-                                            </span>
                                         </Label>
                                         <span v-if="m.symbol" class="ml-auto text-xs text-muted-foreground">
                                             {{ m.symbol }}
                                         </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label class="text-base font-medium">{{ t('preferences.install_plugins.stores_title') }}</Label>
+                                <p class="text-sm text-muted-foreground">{{ t('preferences.install_plugins.stores_hint') }}</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    <div
+                                        v-for="s in allStores"
+                                        :key="s.id"
+                                        class="flex items-center gap-2 rounded-md border p-2"
+                                    >
+                                        <Checkbox
+                                            :id="`fav-store-${s.id}`"
+                                            :checked="pluginForm.stores?.includes(s.id)"
+                                            @update:checked="(checked) => togglePluginIds('stores', s.id, checked)"
+                                        />
+                                        <Label :for="`fav-store-${s.id}`" class="font-normal cursor-pointer">
+                                            {{ s.name }}
+                                        </Label>
+                                        <span v-if="s.is_main === true" class="ml-auto text-xs text-muted-foreground">
+                                            {{ t('preferences.install_plugins.main_badge') }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label class="text-base font-medium">{{ t('preferences.install_plugins.categories_title') }}</Label>
+                                <p class="text-sm text-muted-foreground">{{ t('preferences.install_plugins.categories_hint') }}</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    <div
+                                        v-for="c in allCategories"
+                                        :key="c.id"
+                                        class="flex items-center gap-2 rounded-md border p-2"
+                                    >
+                                        <Checkbox
+                                            :id="`fav-category-${c.id}`"
+                                            :checked="pluginForm.categories?.includes(c.id)"
+                                            @update:checked="(checked) => togglePluginIds('categories', c.id, checked)"
+                                        />
+                                        <Label :for="`fav-category-${c.id}`" class="font-normal cursor-pointer">
+                                            {{ c.name }}
+                                        </Label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label class="text-base font-medium">{{ t('preferences.install_plugins.sizes_title') }}</Label>
+                                <p class="text-sm text-muted-foreground">{{ t('preferences.install_plugins.sizes_hint') }}</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    <div
+                                        v-for="z in allSizes"
+                                        :key="z.id"
+                                        class="flex items-center gap-2 rounded-md border p-2"
+                                    >
+                                        <Checkbox
+                                            :id="`fav-size-${z.id}`"
+                                            :checked="pluginForm.sizes?.includes(z.id)"
+                                            @update:checked="(checked) => togglePluginIds('sizes', z.id, checked)"
+                                        />
+                                        <Label :for="`fav-size-${z.id}`" class="font-normal cursor-pointer">
+                                            {{ z.name }}
+                                        </Label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label class="text-base font-medium">{{ t('preferences.install_plugins.currencies_title') }}</Label>
+                                <p class="text-sm text-muted-foreground">{{ t('preferences.install_plugins.currencies_hint') }}</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    <div
+                                        v-for="cu in allCurrencies"
+                                        :key="cu.id"
+                                        class="flex items-center gap-2 rounded-md border p-2"
+                                    >
+                                        <Checkbox
+                                            :id="`fav-currency-${cu.id}`"
+                                            :checked="pluginForm.currencies?.includes(cu.id)"
+                                            @update:checked="(checked) => togglePluginIds('currencies', cu.id, checked)"
+                                        />
+                                        <Label :for="`fav-currency-${cu.id}`" class="font-normal cursor-pointer">
+                                            {{ cu.code || cu.name }}
+                                            <span v-if="cu.is_base_currency === true" class="text-xs text-muted-foreground">
+                                                ({{ t('preferences.install_plugins.base_badge') }})
+                                            </span>
+                                        </Label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label class="text-base font-medium">{{ t('preferences.install_plugins.ledgers_title') }}</Label>
+                                <p class="text-sm text-muted-foreground">{{ t('preferences.install_plugins.ledgers_hint') }}</p>
+
+                                <div class="space-y-3">
+                                    <div class="space-y-2">
+                                        <Label class="text-sm font-medium">{{ t('preferences.install_plugins.customers_title') }}</Label>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                            <div
+                                                v-for="l in customerLedgers"
+                                                :key="l.id"
+                                                class="flex items-center gap-2 rounded-md border p-2"
+                                            >
+                                                <Checkbox
+                                                    :id="`fav-ledger-customer-${l.id}`"
+                                                    :checked="pluginForm.ledgers?.includes(l.id)"
+                                                    @update:checked="(checked) => togglePluginIds('ledgers', l.id, checked)"
+                                                />
+                                                <Label :for="`fav-ledger-customer-${l.id}`" class="font-normal cursor-pointer">
+                                                    {{ l.name }}
+                                                </Label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label class="text-sm font-medium">{{ t('preferences.install_plugins.suppliers_title') }}</Label>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                            <div
+                                                v-for="l in supplierLedgers"
+                                                :key="l.id"
+                                                class="flex items-center gap-2 rounded-md border p-2"
+                                            >
+                                                <Checkbox
+                                                    :id="`fav-ledger-supplier-${l.id}`"
+                                                    :checked="pluginForm.ledgers?.includes(l.id)"
+                                                    @update:checked="(checked) => togglePluginIds('ledgers', l.id, checked)"
+                                                />
+                                                <Label :for="`fav-ledger-supplier-${l.id}`" class="font-normal cursor-pointer">
+                                                    {{ l.name }}
+                                                </Label>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
