@@ -57,6 +57,7 @@ class Category extends Model
         'name',
         'parent_id',
         'remark',
+        'is_active',
         'created_by',
         'updated_by',
     ];
@@ -69,6 +70,7 @@ class Category extends Model
     protected $casts = [
         'id' => 'string',
         'parent_id' => 'string',
+        'is_active' => 'boolean',
         'created_by' => 'integer',
         'updated_by' => 'integer',
     ];

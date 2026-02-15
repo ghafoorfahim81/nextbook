@@ -35,6 +35,12 @@ const columns = computed(() => ([
     { key: 'name', label: t('general.name'),sortable: true },
     { key: 'unit', label: t('admin.unit_measure.unit') },
     { key: 'symbol', label: t('admin.shared.symbol') },
+    {
+        key: 'is_active',
+        label: t('general.status'),
+        sortable: true,
+        render: (row) => row.is_active ? t('general.active') : t('general.inactive'),
+    },
     { key: 'actions', label: t('general.action') },
 ]));
 

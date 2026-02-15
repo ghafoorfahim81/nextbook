@@ -5,11 +5,15 @@ namespace App\Http\Controllers\Preferences;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Preferences\UpdatePreferencesRequest;
 use App\Models\Account\Account;
+use App\Models\Administration\UnitMeasure;
+use App\Models\Favorite;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Cache;
 use App\Support\Inertia\CacheKey;
+use Illuminate\Support\Facades\DB;
+use App\Http\Resources\Administration\UnitMeasureResource;
 class PreferencesController extends Controller
 {
     public function index(Request $request)
@@ -23,12 +27,26 @@ class PreferencesController extends Controller
             ->orderBy('name')
             ->get();
 
+        $unitMeasures = UnitMeasureResource::collection(
+            UnitMeasure::query()
+                ->orderBy('name')
+                ->get()
+        );
+
+        $favoriteUnitMeasureIds = Favorite::query()
+            ->where('user_id', $user->id)
+            ->where('favoritable_type', UnitMeasure::class)
+            ->pluck('favoritable_id')
+            ->values();
+
         return Inertia::render('Preferences/Index', [
             'preferences' => $preferences,
             'defaultPreferences' => User::DEFAULT_PREFERENCES,
             'cashAccounts' => $cashAccounts,
             'sidebarMenus' => $this->getSidebarMenuOptions(),
             'timezones' => $this->getTimezones(),
+            'unitMeasures' => $unitMeasures,
+            'favoriteUnitMeasureIds' => $favoriteUnitMeasureIds,
         ]);
     }
 
@@ -52,6 +70,42 @@ class PreferencesController extends Controller
         $user->resetPreferences($category)->save();
         Cache::forget(CacheKey::forUser($request, 'preferences'));          
         return redirect()->back()->with('success', __('preferences.preferences_reset'));
+    }
+
+    public function updateInstallPlugins(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'unit_measures' => ['array'],
+            'unit_measures.*' => ['string', 'exists:unit_measures,id'],
+        ]);
+
+        $unitMeasureIds = collect($validated['unit_measures'] ?? [])
+            ->filter()
+            ->unique()
+            ->values();
+
+        DB::transaction(function () use ($user, $unitMeasureIds) {
+            Favorite::query()
+                ->where('user_id', $user->id)
+                ->where('favoritable_type', UnitMeasure::class)
+                ->delete();
+
+            foreach ($unitMeasureIds as $id) {
+                Favorite::create([
+                    'user_id' => $user->id,
+                    'favoritable_type' => UnitMeasure::class,
+                    'favoritable_id' => $id,
+                ]);
+            }
+        });
+
+        Cache::forget(CacheKey::forUser($request, 'preferences'));
+        $userId = $user->id ?? 'guest';
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, "unit_measures:usable:user:{$userId}"));
+
+        return redirect()->back()->with('success', __('preferences.preferences_saved'));
     }
 
     public function exportPreferences(Request $request)

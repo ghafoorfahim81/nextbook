@@ -26,6 +26,7 @@ class Size extends Model
     protected $fillable = [
         'name',
         'code',
+        'is_active',
         'branch_id',
         'created_by',
         'updated_by',
@@ -33,6 +34,7 @@ class Size extends Model
 
     protected $casts = [
         'id' => 'string',
+        'is_active' => 'boolean',
         'branch_id' => 'string',
         'created_by' => 'string',
         'updated_by' => 'string',

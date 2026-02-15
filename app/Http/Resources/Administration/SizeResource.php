@@ -18,6 +18,7 @@ class SizeResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'code' => $this->code,
+            'is_active' => $this->is_active,
             'branch_id' => $this->branch_id,
             'created_by' => $this->created_by,
             'updated_by' => $this->updated_by,

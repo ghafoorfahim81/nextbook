@@ -5,6 +5,7 @@ import NextInput from '@/Components/next/NextInput.vue'
 import { useForm } from '@inertiajs/vue3'
 import NextSelect from "@/Components/next/NextSelect.vue";
 import NextDatePicker from '@/Components/next/NextDatePicker.vue'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner';
 const props = defineProps({
@@ -167,6 +168,7 @@ const specText = computed(() => user_preferences.value.item_management.spec_text
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.edit', { name: t('item.item') }) }}
                 </div>
+                <ModuleHelpButton module="inventory_item" />
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name" :placeholder="t('general.enter', { text: t('general.name') })" />
                     <NextInput :label="t('admin.currency.code')" v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />

@@ -19,6 +19,12 @@ const columns = computed(() => [
         sortable: true,
         render: (row) => row.parent?.name,
     },
+    {
+        key: 'is_active',
+        label: t('general.status'),
+        sortable: true,
+        render: (row) => row.is_active ? t('general.active') : t('general.inactive'),
+    },
     { key: 'remark', label: t('general.remarks') },
     { key: 'actions', label: t('general.action') },
 ]);

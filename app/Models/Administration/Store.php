@@ -32,6 +32,7 @@ class Store extends Model
         'name',
         'address',
         'is_main',
+        'is_active',
         'branch_id',
         'created_by',
         'updated_by',
@@ -45,6 +46,7 @@ class Store extends Model
     protected $casts = [
         'id' => 'string',
         'is_main' => 'boolean',
+        'is_active' => 'boolean',
         'branch_id' => 'string',
         'created_by' => 'string',
         'updated_by' => 'string',

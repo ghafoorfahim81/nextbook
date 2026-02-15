@@ -8,6 +8,7 @@ import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 const { t } = useI18n()
@@ -96,6 +97,7 @@ function submit(createAndNew = false) {
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: t('payment.payment') }) }}
         </div>
+        <ModuleHelpButton module="payments" />
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextSelect
             :options="ledgers"

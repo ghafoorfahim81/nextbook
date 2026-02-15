@@ -1,1 +1,152 @@
-﻿{}
+{
+  "no_tips_available": "No tips available yet for this screen.",
+  "modules": {
+    "chart_of_accounts": {
+      "title": "Chart of Accounts — Tips",
+      "description": "Use the chart of accounts to define your GL structure and (only when eligible) opening balances.",
+      "items": [
+        "Choose the correct Account Type first. In this system, only Cash/Bank type accounts show the Opening section.",
+        "Opening is intended for initial setup (migration). After you go live, use Journal Entries instead of changing openings.",
+        "If you use multi-currency, confirm Currency + Rate before saving; base currency accounts should keep rate locked.",
+        "Use a clear numbering structure (e.g. 1xxx Assets, 2xxx Liabilities, 3xxx Equity, 4xxx Income, 5xxx Expenses) so reports stay readable."
+      ]
+    },
+    "account_transfer": {
+      "title": "Account Transfer — Tips",
+      "description": "Move money between two accounts without affecting income/expense.",
+      "items": [
+        "From Account and To Account cannot be the same.",
+        "Use the correct currency and exchange rate for the transfer date (base currency rate is fixed).",
+        "Add a clear remark (reason/reference) so bank/cash reconciliation is easy later."
+      ]
+    },
+    "journal_entry": {
+      "title": "Journal Entry — Tips",
+      "description": "Use journal entries for adjustments, openings (when needed), and corrections.",
+      "items": [
+        "Total Debit must equal Total Credit before you can save.",
+        "Avoid posting directly to Cash/Bank for sales/purchases if you already use Sales/Purchase modules—keep entries consistent.",
+        "Use Ledger and Bill Number fields when you want the entry linked to a customer/supplier and document reference.",
+        "If you attach a document, keep it to one clear file (invoice/receipt) for audit trail."
+      ]
+    },
+    "inventory_item": {
+      "title": "Inventory Item — Tips",
+      "description": "Define items with the right type, codes, accounts, and opening stock.",
+      "items": [
+        "Item Type controls behavior: inventory/stock items affect on-hand quantity; non-inventory items are used for services/charges.",
+        "SKU: use a unique Stock Keeping Unit for fast search, barcode integration, and avoiding duplicates.",
+        "Account assignments matter: Asset account is used for stock value, Income account for sales, Cost account for cost of goods sold.",
+        "Min/Max stock levels help you detect under-stock and over-stock; set them for reorder alerts and planning.",
+        "Opening stock: use it only for your starting balance. Prefer entering it per store with correct batch/expiry when applicable."
+      ]
+    },
+    "fast_entry": {
+      "title": "Fast Entry (Items) — Tips",
+      "description": "Quickly create many items in one screen.",
+      "items": [
+        "Codes are auto-generated; fill the Name and Measure first for fastest workflow.",
+        "Leave completely empty rows blank—only filled rows are saved.",
+        "Use Store + Quantity + Batch/Expiry when you want to create items and set initial stock in one go."
+      ]
+    },
+    "fast_opening": {
+      "title": "Fast Opening (Items) — Tips",
+      "description": "Enter opening quantities for many items quickly.",
+      "items": [
+        "Use Fast Opening only for the first-time opening/migration; after go-live, use purchases, transfers, and adjustments.",
+        "Always select the correct Store; openings are store-specific.",
+        "For batch/expiry managed items, fill Batch + Expiry consistently to avoid duplicate/merged stock lines."
+      ]
+    },
+    "transfer": {
+      "title": "Transfer (Inventory) — Tips",
+      "description": "Move stock between stores/locations.",
+      "items": [
+        "Pick the correct From Store and To Store; transfers change on-hand quantity in both.",
+        "Use the same batch/expiry details when transferring batch-controlled items so reports remain consistent.",
+        "Add remarks for internal traceability (who requested, why, and reference)."
+      ]
+    },
+    "ledgers": {
+      "title": "Ledgers (Customers/Suppliers) — Tips",
+      "description": "Ledgers represent parties you buy from or sell to.",
+      "items": [
+        "Keep names consistent and unique to avoid duplicate parties.",
+        "If you are migrating, set Opening/Old Balance carefully (debit vs credit) so statements match.",
+        "Use phone/address details to improve invoice printing and follow-ups."
+      ]
+    },
+    "owner": {
+      "title": "Owner — Tips",
+      "description": "Owners represent partners/shareholders used for equity tracking.",
+      "items": [
+        "Create one owner record per partner so drawings and capital movements can be tracked separately.",
+        "Use clear remarks for initial capital, additional capital, or drawings references."
+      ]
+    },
+    "expense": {
+      "title": "Expense — Tips",
+      "description": "Record expense transactions with proper accounts and (optional) ledgers.",
+      "items": [
+        "If you use multiple lines, ensure totals balance as expected (debit/credit rules).",
+        "Use Ledger when the expense is payable/receivable to a party (supplier/employee).",
+        "Attach the supporting document (bill/receipt) to simplify audits."
+      ]
+    },
+    "purchase": {
+      "title": "Purchase — Tips",
+      "description": "Record purchases that affect inventory and supplier balance.",
+      "items": [
+        "Select the correct Supplier ledger so payables and statements are accurate.",
+        "Use the correct Store; it controls where stock increases.",
+        "Check item Measure and prices; incorrect units can distort stock valuation and reports."
+      ]
+    },
+    "sales": {
+      "title": "Sales — Tips",
+      "description": "Record sales that affect inventory and customer balance.",
+      "items": [
+        "Select the correct Customer ledger so receivables and statements are accurate.",
+        "Confirm item quantity and price; stock will reduce for inventory items.",
+        "Use discounts/taxes consistently to keep profit reports correct."
+      ]
+    },
+    "receipt": {
+      "title": "Receipt — Tips",
+      "description": "Record money received from customers or other sources.",
+      "items": [
+        "Choose the correct Cash/Bank account as the receiving account.",
+        "Use Cheque Number / reference fields for non-cash receipts.",
+        "If you see Old Balance, it helps you confirm how this receipt impacts the ledger balance."
+      ]
+    },
+    "payments": {
+      "title": "Payments — Tips",
+      "description": "Record money paid to suppliers or other parties.",
+      "items": [
+        "Choose the correct Cash/Bank account as the paying account.",
+        "Use cheque/reference details for bank payments.",
+        "Double-check currency and rate to avoid balance differences."
+      ]
+    },
+    "user_management": {
+      "title": "User Management — Tips",
+      "description": "Manage users, roles, and permissions safely.",
+      "items": [
+        "Use Roles to group permissions—avoid assigning many permissions directly to each user.",
+        "Give the minimum permissions required (least privilege) to reduce mistakes and risk.",
+        "If a user can edit financial transactions, consider enabling approval/locking rules in Preferences."
+      ]
+    },
+    "preferences": {
+      "title": "Preferences — Tips",
+      "description": "Preferences control how forms and transactions behave across the system.",
+      "items": [
+        "Item Management controls which fields appear on the Item screens; hide unused fields for faster data entry.",
+        "Sale/Purchase tabs let you choose visible columns and numbering; set them before daily usage starts.",
+        "Backup/Export preferences should be configured early so data recovery is always possible."
+      ]
+    }
+  }
+}

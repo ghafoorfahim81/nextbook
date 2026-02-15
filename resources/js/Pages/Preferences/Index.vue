@@ -5,6 +5,7 @@ import { useForm, router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/Components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { Label } from '@/Components/ui/label'
 import { Input } from '@/Components/ui/input'
 import { Switch } from '@/Components/ui/switch'
@@ -15,7 +16,7 @@ import { useToast } from '@/Components/ui/toast'
 import {
     Palette, Package, ShoppingCart, ShoppingBag, CreditCard, Calculator,
     Bell, Shield, Database, Globe, Monitor, RotateCcw, Download, Upload,
-    Save, SlidersHorizontal as preferencesIcon
+    Save, Plug, SlidersHorizontal as preferencesIcon
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -24,6 +25,8 @@ const props = defineProps({
     cashAccounts: Array,
     sidebarMenus: Array,
     timezones: Object,
+    unitMeasures: { type: [Array, Object], required: true },
+    favoriteUnitMeasureIds: { type: Array, required: false, default: () => [] },
 })
 
 const { t } = useI18n()
@@ -40,12 +43,39 @@ const tabs = [
     { id: 'tax_currency', label: 'preferences.tabs.tax_currency', icon: Calculator },
     { id: 'notifications', label: 'preferences.tabs.notifications', icon: Bell },
     { id: 'security', label: 'preferences.tabs.security', icon: Shield },
+    { id: 'install_plugins', label: 'preferences.tabs.install_plugins', icon: Plug },
     { id: 'backup', label: 'preferences.tabs.backup', icon: Database },
     { id: 'localization', label: 'preferences.tabs.localization', icon: Globe },
     { id: 'display', label: 'preferences.tabs.display', icon: Monitor },
 ]
 
 const form = useForm({ ...props.preferences })
+
+const allUnitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
+const pluginForm = useForm({
+    unit_measures: [...(props.favoriteUnitMeasureIds ?? [])],
+})
+const pluginSaving = computed(() => pluginForm.processing)
+
+const togglePluginMeasure = (id, checked) => {
+    const current = new Set(pluginForm.unit_measures || [])
+    if (checked) current.add(id)
+    else current.delete(id)
+    pluginForm.unit_measures = Array.from(current)
+}
+
+const savePlugins = () => {
+    pluginForm.put(route('preferences.install-plugins.update'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            toast({
+                title: t('preferences.saved'),
+                description: t('preferences.install_plugins.saved_description'),
+                variant: 'success',
+            })
+        },
+    })
+}
 
 const save = () => {
     form.put(route('preferences.update'), {
@@ -175,12 +205,13 @@ const receiptPaymentFields = [
                     </div>
                 </div>
                 <div class="flex gap-2">
+                    <ModuleHelpButton module="preferences" positionClass="" />
                     <input ref="fileInput" type="file" accept=".json" class="hidden" @change="handleFileUpload" />
-                    <Button variant="outline" size="sm" @click="importpreferences">
+                    <Button variant="outline" size="sm" @click="importPreferences">
                         <Upload class="w-4 h-4 mr-2" />
                         {{ t('preferences.import') }}
                     </Button>
-                    <Button variant="outline" size="sm" @click="exportpreferences">
+                    <Button variant="outline" size="sm" @click="exportPreferences">
                         <Download class="w-4 h-4 mr-2" />
                         {{ t('preferences.export') }}
                     </Button>
@@ -813,6 +844,49 @@ const receiptPaymentFields = [
                                 <div v-if="form.security.lock_reports" class="space-y-2 max-w-sm">
                                     <Label>{{ t('preferences.security.lock_password') }}</Label>
                                     <Input v-model="form.security.lock_password" type="password" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <!-- Install Plugins -->
+                    <Card v-show="activeTab === 'install_plugins'" class="animate-in fade-in duration-200">
+                        <CardHeader class="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>{{ t('preferences.tabs.install_plugins') }}</CardTitle>
+                                <CardDescription>{{ t('preferences.install_plugins.description') }}</CardDescription>
+                            </div>
+                            <Button variant="default" size="sm" @click="savePlugins" :disabled="pluginSaving">
+                                <Save class="w-4 h-4 mr-2" />
+                                {{ t('preferences.install_plugins.save') }}
+                            </Button>
+                        </CardHeader>
+                        <CardContent class="space-y-6">
+                            <div class="space-y-2">
+                                <Label class="text-base font-medium">{{ t('preferences.install_plugins.measures_title') }}</Label>
+                                <p class="text-sm text-muted-foreground">{{ t('preferences.install_plugins.measures_hint') }}</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    <div
+                                        v-for="m in allUnitMeasures"
+                                        :key="m.id"
+                                        class="flex items-center gap-2 rounded-md border p-2"
+                                    >
+                                        <Checkbox
+                                            :id="`fav-measure-${m.id}`"
+                                            :checked="pluginForm.unit_measures?.includes(m.id)"
+                                            :disabled="m.is_active === false"
+                                            @update:checked="(checked) => togglePluginMeasure(m.id, checked)"
+                                        />
+                                        <Label :for="`fav-measure-${m.id}`" class="font-normal cursor-pointer">
+                                            {{ m.name }}
+                                            <span v-if="m.is_active === false" class="text-xs text-muted-foreground">
+                                                ({{ t('general.inactive') }})
+                                            </span>
+                                        </Label>
+                                        <span v-if="m.symbol" class="ml-auto text-xs text-muted-foreground">
+                                            {{ m.symbol }}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>

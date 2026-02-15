@@ -21,6 +21,12 @@ const { t } = useI18n();
 const columns = computed(() => ([
     { key: 'name', label: t('general.name'), sortable: true },
     { key: 'code', label: t('admin.currency.code'), sortable: true },
+    {
+        key: 'is_active',
+        label: t('general.status'),
+        sortable: true,
+        render: (row) => row.is_active ? t('general.active') : t('general.inactive'),
+    },
     { key: 'actions', label: t('general.action') },
 ]));
 
