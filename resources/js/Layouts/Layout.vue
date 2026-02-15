@@ -420,7 +420,10 @@ function logout() {
 
 <template>
     <Toaster />
-    <Sonner :theme="sonnerTheme" />
+    <Sonner
+        :theme="sonnerTheme"
+        :position="isRTL ? 'bottom-left' : 'bottom-right'"
+    />
     <SidebarProvider :default-open="!props.sidebarCollapsed">
         <Sidebar collapsible="icon" :side="sidebarSide">
             <SidebarHeader>
