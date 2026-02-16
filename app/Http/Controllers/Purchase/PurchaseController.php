@@ -7,11 +7,14 @@ use App\Http\Requests\Purchase\PurchaseStoreRequest;
 use App\Http\Requests\Purchase\PurchaseUpdateRequest;
 use App\Http\Resources\Purchase\PurchaseResource;
 use App\Models\Purchase\Purchase;
+use App\Models\Ledger\Ledger;
+use App\Models\Administration\Currency;
+use App\Models\Administration\Store;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
 use App\Models\Account\Account;
-use App\Models\Administration\Currency;
 use App\Services\StockService;
 
 class PurchaseController extends Controller
@@ -26,14 +29,33 @@ class PurchaseController extends Controller
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
-        $purchases = Purchase::with('supplier')
+        $purchases = Purchase::with(['supplier', 'transaction.currency', 'stocks.store'])
             ->search($request->query('search'))
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
         return inertia('Purchase/Purchases/Index', [
             'purchases' => PurchaseResource::collection($purchases),
+            'filterOptions' => [
+                'suppliers' => Ledger::query()->where('type', 'supplier')->orderBy('name')->get(['id', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'stores' => Store::orderBy('name')->get(['id', 'name']),
+                'types' => [
+                    ['id' => 'cash', 'name' => 'Cash'],
+                    ['id' => 'credit', 'name' => 'Credit'],
+                ],
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 

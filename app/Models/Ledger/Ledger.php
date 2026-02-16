@@ -11,6 +11,7 @@ use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,7 +27,7 @@ use App\Traits\BranchSpecific;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 class Ledger extends Model
 {
-    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     // ... your existing code ...
 
@@ -136,6 +137,13 @@ class Ledger extends Model
             'type' => LedgerType::class,
         ];
     }
+
+    protected array $allowedFilters = [
+        'name',
+        'code',
+        'currency_id',
+        'created_by',
+    ];
 
     public function currency(): BelongsTo
     {

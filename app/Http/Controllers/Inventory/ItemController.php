@@ -23,6 +23,11 @@ use App\Http\Resources\Inventory\StockOutResource;
 use App\Models\Account\Account;
 use App\Models\Inventory\ItemOpeningTransaction;
 use App\Enums\ItemType;
+use App\Models\Administration\UnitMeasure;
+use App\Models\Administration\Category;
+use App\Models\Administration\Brand;
+use App\Models\Administration\Size;
+use App\Models\User;
 class ItemController extends Controller
 {
     public function __construct()
@@ -35,14 +40,34 @@ class ItemController extends Controller
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
         $items = Item::with('category', 'unitMeasure','createdBy', 'updatedBy')
             ->search($request->query('search'))
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
         return inertia('Inventories/Items/Index', [
             'items' => ItemResource::collection($items),
+            'filterOptions' => [
+                'itemTypes' => collect(ItemType::cases())->map(fn ($c) => [
+                    'id' => $c->value,
+                    'name' => $c->getLabel(),
+                ])->values(),
+                'unitMeasures' => UnitMeasure::orderBy('name')->get(['id', 'name']),
+                'categories' => Category::orderBy('name')->get(['id', 'name']),
+                'sizes' => Size::orderBy('name')->get(['id', 'name']),
+                'brands' => Brand::orderBy('name')->get(['id', 'name']),
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 

@@ -10,6 +10,8 @@ import { useAuth } from '@/composables/useAuth';
 const props = defineProps({
     accounts: Object,
     user: Object,
+    filters: Object,
+    filterOptions: Object,
 });
 console.log('user', props.user);
 const { t } = useI18n();
@@ -32,7 +34,22 @@ const showItem = (id) => {
     selectedAccountId.value = id;
     showDialog.value = true;
 };
-
+const filterFields = computed(() => ([
+    { key: 'number', label: t('general.number'), type: 'text' },
+    { key: 'name', label: t('general.name'), type: 'text' },
+    {
+        key: 'account_type_id',
+        label: t('account.account_type'),
+        type: 'select',
+        options: (props.filterOptions?.accountTypes || []).map((a) => ({ id: a.id, name: a.name })),
+    },
+    {
+        key: 'created_by',
+        label: t('general.created_by'),
+        type: 'select',
+        options: (props.filterOptions?.users || []).map((u) => ({ id: u.id, name: u.name })),
+    },
+]));
 const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {
     deleteResource('chart-of-accounts.destroy', id, {
@@ -49,6 +66,8 @@ const deleteItem = (id) => {
             can="accounts"
             :items="accounts"
             :columns="columns"
+            :filters="filters"
+            :filterFields="filterFields"
             @delete="deleteItem"
             @edit="editItem"
             @show="showItem"

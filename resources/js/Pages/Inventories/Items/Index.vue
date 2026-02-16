@@ -10,6 +10,8 @@ const { t } = useI18n()
 
 const props = defineProps({
   items: Object,
+  filters: Object,
+  filterOptions: Object,
 })
 
 const columns = computed(() => ([
@@ -46,6 +48,48 @@ const openInventory = (id) => {
   selectedItem.value = item
   showInventory.value = true
 }
+
+const filterFields = computed(() => ([
+  { key: 'code', label: t('admin.currency.code'), type: 'text' },
+  {
+    key: 'item_type',
+    label: t('item.item_type'),
+    type: 'select',
+    options: (props.filterOptions?.itemTypes || []).map((o) => ({ id: o.id, name: o.name })),
+  },
+  {
+    key: 'unit_measure_id',
+    label: t('admin.unit_measure.unit_measure'),
+    type: 'select',
+    options: (props.filterOptions?.unitMeasures || []).map((o) => ({ id: o.id, name: o.name })),
+  },
+  {
+    key: 'category_id',
+    label: t('admin.category.category'),
+    type: 'select',
+    options: (props.filterOptions?.categories || []).map((o) => ({ id: o.id, name: o.name })),
+  },
+  {
+    key: 'size_id',
+    label: t('admin.size.size'),
+    type: 'select',
+    options: (props.filterOptions?.sizes || []).map((o) => ({ id: o.id, name: o.name })),
+  },
+  {
+    key: 'brand_id',
+    label: t('admin.brand.brand'),
+    type: 'select',
+    options: (props.filterOptions?.brands || []).map((o) => ({ id: o.id, name: o.name })),
+  },
+  { key: 'purchase_price', label: t('item.purchase_price'), type: 'numberrange' },
+  { key: 'sale_price', label: t('item.sale_price'), type: 'numberrange' },
+  {
+    key: 'created_by',
+    label: t('general.created_by'),
+    type: 'select',
+    options: (props.filterOptions?.users || []).map((u) => ({ id: u.id, name: u.name })),
+  },
+]))
 </script>
 
 <template>
@@ -54,6 +98,8 @@ const openInventory = (id) => {
       can="items"
       :items="items"
       :columns="columns"
+      :filters="filters"
+      :filterFields="filterFields"
       @delete="deleteItem"
       @edit="editItem"
       @show="openInventory"

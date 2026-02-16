@@ -23,6 +23,7 @@ use App\Services\TransactionService;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Transaction\TransactionLine;
 use App\Models\Transaction\Transaction;
+use App\Models\User;
 class AccountController extends Controller
 {
     public function __construct()
@@ -36,13 +37,30 @@ class AccountController extends Controller
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'created_at');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
-        $accounts = Account::search($request->query('search'))
+        $accounts = Account::with(['accountType'])
+            ->search($request->query('search'))
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
         return inertia('Accounts/Accounts/Index', [
             'accounts' => AccountResource::collection($accounts),
+            'filterOptions' => [
+                'accountTypes' => AccountType::orderBy('name')->get(['id', 'name']),
+                'users' => User::query()
+                    ->whereNull('deleted_at')
+                    ->orderBy('name')
+                    ->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 

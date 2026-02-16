@@ -25,6 +25,7 @@ use App\Models\Transaction\TransactionLine;
 use Illuminate\Support\Facades\DB;
 use App\Models\Transaction\Transaction;
 use App\Support\Inertia\CacheKey;
+use App\Models\User;
 
 class SupplierController extends Controller
 {
@@ -41,17 +42,30 @@ class SupplierController extends Controller
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
         $type = $request->input('type', 'supplier'); // default to supplier
 
         $suppliers = Ledger::search($request->query('search'))
             ->where('type', $type) // Filter by type
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
 
         return inertia('Ledgers/Suppliers/Index', [
             'suppliers' => LedgerResource::collection($suppliers),
+            'filterOptions' => [
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 

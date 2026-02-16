@@ -13,6 +13,8 @@ const { toast } = useToast()
 
 const props = defineProps({
   transfers: Object,
+  filters: Object,
+  filterOptions: Object,
 })
 
 const showDialog = ref(false)
@@ -71,6 +73,34 @@ const columns = computed(() => ([
   },
   { key: 'actions', label: t('general.actions') },
 ]))
+
+const filterFields = computed(() => ([
+  {
+    key: 'from_store_id',
+    label: t('item_transfer.from_store'),
+    type: 'select',
+    options: (props.filterOptions?.stores || []).map((s) => ({ id: s.id, name: s.name })),
+  },
+  {
+    key: 'to_store_id',
+    label: t('item_transfer.to_store'),
+    type: 'select',
+    options: (props.filterOptions?.stores || []).map((s) => ({ id: s.id, name: s.name })),
+  },
+  {
+    key: 'items.item_id',
+    label: t('item.item'),
+    type: 'select',
+    options: (props.filterOptions?.items || []).map((i) => ({ id: i.id, name: i.name })),
+  },
+  { key: 'date', label: t('general.date'), type: 'daterange' },
+  {
+    key: 'created_by',
+    label: t('general.created_by'),
+    type: 'select',
+    options: (props.filterOptions?.users || []).map((u) => ({ id: u.id, name: u.name })),
+  },
+]))
 </script>
 
 <template>
@@ -79,6 +109,8 @@ const columns = computed(() => ([
       can="item_transfers"
       :items="transfers"
       :columns="columns"
+      :filters="filters"
+      :filterFields="filterFields"
       :title="t('item_transfer.item_transfers')"
       :url="`item-transfers.index`"
       :showAddButton="true"

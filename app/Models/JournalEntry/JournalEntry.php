@@ -13,6 +13,7 @@ use Laravel\Scout\Searchable;
 use App\Traits\HasBranch;
 use App\Traits\HasCache;
 use App\Traits\HasDependencyCheck;
+use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -20,7 +21,7 @@ use App\Traits\BranchSpecific;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 class JournalEntry extends Model
 {
-    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     protected $table = 'journal_entries';
     protected $primaryKey = 'id';
@@ -46,6 +47,12 @@ class JournalEntry extends Model
             'description',
         ];
     }
+
+    protected array $allowedFilters = [
+        'transaction.currency_id',
+        'date',
+        'created_by',
+    ];
 
     protected function getRelationships(): array
     {
