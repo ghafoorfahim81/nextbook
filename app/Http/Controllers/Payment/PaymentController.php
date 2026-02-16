@@ -16,6 +16,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\Support\Inertia\CacheKey;
+use App\Models\Administration\Currency;
+use App\Models\User;
 class PaymentController extends Controller
 {
     public function __construct()
@@ -28,15 +30,32 @@ class PaymentController extends Controller
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'date');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
-        $payments = Payment::with(['ledger', 'createdBy', 'updatedBy'])
+        $payments = Payment::with(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
 
         return inertia('Payments/Index', [
             'payments' => PaymentResource::collection($payments),
+            'filterOptions' => [
+                'suppliers' => Ledger::query()->where('type', 'supplier')->orderBy('name')->get(['id', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'bankAccounts' => Account::whereHas('accountType', fn ($q) => $q->whereIn('slug', ['cash-or-bank']))
+                    ->orderBy('name')
+                    ->get(['id', 'name']),
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 

@@ -11,12 +11,13 @@ use App\Http\Resources\Ledger\LedgerResource;
 use App\Http\Resources\Currency\CurrencyResource;
 use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
-use App\Models\Currency\Currency;
+use App\Models\Administration\Currency;
 use App\Http\Requests\JournalEntry\JournalEntryStoreRequest;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\Support\Inertia\CacheKey;
+use App\Models\User;
 
 class JournalEntryController extends Controller
 {
@@ -32,14 +33,27 @@ class JournalEntryController extends Controller
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'created_at');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
         $journalEntries = JournalEntry::with('transaction', 'transaction.lines.account')
             ->search($request->query('search'))
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
         return inertia('JournalEntries/Index', [
             'journalEntries' => JournalEntryResource::collection($journalEntries),
+            'filterOptions' => [
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
 
     }

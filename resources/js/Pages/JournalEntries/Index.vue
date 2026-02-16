@@ -10,6 +10,8 @@ const { t } = useI18n();
 
 const props = defineProps({
     journalEntries: Object,
+    filters: Object,
+    filterOptions: Object,
 })
 
 const { deleteResource } = useDeleteResource()
@@ -38,6 +40,22 @@ const columns = computed(() => ([
     { key: 'status', label: t('general.status'), sortable: true },
     { key: 'actions', label: t('general.actions') },
 ]))
+
+const filterFields = computed(() => ([
+    {
+        key: 'transaction.currency_id',
+        label: t('admin.currency.currency'),
+        type: 'select',
+        options: (props.filterOptions?.currencies || []).map((c) => ({ id: c.id, name: c.code })),
+    },
+    { key: 'date', label: t('general.date'), type: 'daterange' },
+    {
+        key: 'created_by',
+        label: t('general.created_by'),
+        type: 'select',
+        options: (props.filterOptions?.users || []).map((u) => ({ id: u.id, name: u.name })),
+    },
+]))
 </script>
 
 <template>
@@ -46,6 +64,8 @@ const columns = computed(() => ([
             can="journals.view_any"
             :items="journalEntries"
             :columns="columns"
+            :filters="filters"
+            :filterFields="filterFields"
             :title="t('sidebar.journal_entry.journal_entries')"
             :url="`journal-entries.index`"
             :showAddButton="true"

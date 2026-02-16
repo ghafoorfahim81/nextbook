@@ -3,18 +3,15 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import SaleShowDialog from '@/Components/SaleShowDialog.vue';
 import { ref, computed } from 'vue';
-import { Button } from '@/Components/ui/button';
 import { useI18n } from 'vue-i18n';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { router } from '@inertiajs/vue3'
 const { t } = useI18n();
 
-const showFilter = () => {
-    showFilter.value = true;
-}
-
 const props = defineProps({
     sales: Object,
+    filters: Object,
+    filterOptions: Object,
 })
 
 const showDialog = ref(false);
@@ -49,6 +46,40 @@ const columns = computed(() => ([
     { key: 'status', label: t('general.status') },
     { key: 'actions', label: t('general.actions') },
 ]))
+
+const filterFields = computed(() => ([
+    {
+        key: 'customer_id',
+        label: t('ledger.customer.customer'),
+        type: 'select',
+        options: (props.filterOptions?.customers || []).map((c) => ({ id: c.id, name: c.name })),
+    },
+    {
+        key: 'transaction.currency_id',
+        label: t('admin.currency.currency'),
+        type: 'select',
+        options: (props.filterOptions?.currencies || []).map((c) => ({ id: c.id, name: c.code })),
+    },
+    {
+        key: 'type',
+        label: t('general.type'),
+        type: 'select',
+        options: (props.filterOptions?.types || []).map((o) => ({ id: o.id, name: o.name })),
+    },
+    {
+        key: 'store_id',
+        label: t('admin.store.store'),
+        type: 'select',
+        options: (props.filterOptions?.stores || []).map((s) => ({ id: s.id, name: s.name })),
+    },
+    { key: 'date', label: t('general.date'), type: 'daterange' },
+    {
+        key: 'created_by',
+        label: t('general.created_by'),
+        type: 'select',
+        options: (props.filterOptions?.users || []).map((u) => ({ id: u.id, name: u.name })),
+    },
+]))
 </script>
 
 <template>
@@ -57,6 +88,8 @@ const columns = computed(() => ([
             can="sales"
             :items="sales"
             :columns="columns"
+            :filters="filters"
+            :filterFields="filterFields"
             :title="t('sale.sales')"
             :url="`sales.index`"
             :showAddButton="true"

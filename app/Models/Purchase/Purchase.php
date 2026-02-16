@@ -11,11 +11,12 @@ use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\BranchSpecific;
 class Purchase extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -66,6 +67,15 @@ class Purchase extends Model
             'status',
         ];
     }
+
+    protected array $allowedFilters = [
+        'supplier_id',
+        'transaction.currency_id',
+        'type',
+        'store_id',
+        'date',
+        'created_by',
+    ];
 
     public function supplier(): BelongsTo
     {

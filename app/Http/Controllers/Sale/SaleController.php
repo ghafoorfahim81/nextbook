@@ -7,11 +7,14 @@ use App\Http\Requests\Sale\SaleStoreRequest;
 use App\Http\Requests\Sale\SaleUpdateRequest;
 use App\Http\Resources\Sale\SaleResource;
 use App\Models\Sale\Sale;
+use App\Models\Ledger\Ledger;
+use App\Models\Administration\Currency;
+use App\Models\Administration\Store;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
 use App\Models\Account\Account;
-use App\Models\Administration\Currency;
 use App\Services\StockService;
 use App\Models\Transaction\Transaction;
 use Mpdf\Mpdf;
@@ -27,14 +30,33 @@ class SaleController extends Controller
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
-        $sales = Sale::with('customer')
+        $sales = Sale::with(['customer', 'transaction.currency', 'stockOuts.store'])
             ->search($request->query('search'))
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
         return inertia('Sale/Sales/Index', [
             'sales' => SaleResource::collection($sales),
+            'filterOptions' => [
+                'customers' => Ledger::query()->where('type', 'customer')->orderBy('name')->get(['id', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'stores' => Store::orderBy('name')->get(['id', 'name']),
+                'types' => [
+                    ['id' => 'cash', 'name' => 'Cash'],
+                    ['id' => 'credit', 'name' => 'Credit'],
+                ],
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 

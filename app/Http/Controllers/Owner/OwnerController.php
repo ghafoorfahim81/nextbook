@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Response;
 use App\Models\Transaction\Transaction;
+use App\Models\User;
 class OwnerController extends Controller
 {
     public function __construct()
@@ -29,9 +30,11 @@ class OwnerController extends Controller
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
         $owners = Owner::query()
             ->search($request->query('search'))
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
@@ -39,6 +42,16 @@ class OwnerController extends Controller
         return inertia('Owners/Owners/Index', [
             'owners' => OwnerResource::collection($owners),
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
+            'filterOptions' => [
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 

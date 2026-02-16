@@ -17,6 +17,7 @@ const props = defineProps({
   asChild: { type: Boolean, required: false },
   as: { type: null, required: false },
   class: { type: null, required: false },
+  overlayClass: { type: null, required: false },
 });
 const emits = defineEmits([
   'escapeKeyDown',
@@ -39,7 +40,10 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits);
 <template>
   <DialogPortal>
     <DialogOverlay
-      class="fixed inset-0 z-50 bg-black/10 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+      :class="cn(
+        'fixed inset-0 z-50 bg-black/10 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+        props.overlayClass,
+      )"
     />
     <DialogContent
       v-bind="forwarded"

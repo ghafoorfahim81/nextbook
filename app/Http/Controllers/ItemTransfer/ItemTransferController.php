@@ -8,6 +8,9 @@ use App\Http\Requests\ItemTransfer\ItemTransferStoreRequest;
 use App\Http\Requests\ItemTransfer\ItemTransferUpdateRequest;
 use App\Http\Resources\ItemTransfer\ItemTransferResource;
 use App\Models\ItemTransfer\ItemTransfer;
+use App\Models\Administration\Store;
+use App\Models\Inventory\Item;
+use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ItemTransferService;
 use Illuminate\Http\Request;
@@ -29,15 +32,29 @@ class ItemTransferController extends Controller
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'date');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
         $transfers = ItemTransfer::with(['fromStore', 'toStore', 'items.item', 'items.unitMeasure', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
 
         return inertia('ItemTransfer/ItemTransfers/Index', [
             'transfers' => ItemTransferResource::collection($transfers),
+            'filterOptions' => [
+                'stores' => Store::orderBy('name')->get(['id', 'name']),
+                'items' => Item::orderBy('name')->get(['id', 'name']),
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 

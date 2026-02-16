@@ -8,12 +8,14 @@ use App\Http\Requests\AccountTransfer\AccountTransferUpdateRequest;
 use App\Http\Resources\AccountTransfer\AccountTransferResource;
 use App\Models\Account\Account;
 use App\Models\AccountTransfer\AccountTransfer;
+use App\Models\Administration\Currency;
 use App\Models\Ledger\Ledger;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\User;
 
 class AccountTransferController extends Controller
 {
@@ -27,6 +29,7 @@ class AccountTransferController extends Controller
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'date');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
         $transfers = AccountTransfer::with([
                 'transaction.lines.account',
@@ -34,12 +37,25 @@ class AccountTransferController extends Controller
                 'createdBy',
                 'updatedBy',
             ])
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
 
         return inertia('AccountTransfers/Index', [
             'transfers' => AccountTransferResource::collection($transfers),
+            'filterOptions' => [
+                'accounts' => Account::orderBy('name')->get(['id', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 

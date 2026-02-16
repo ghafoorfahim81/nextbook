@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\Transaction\TransactionLine;
 use Illuminate\Support\Facades\DB;
 use App\Support\Inertia\CacheKey;
+use App\Models\User;
 
 class CustomerController extends Controller
 {
@@ -38,17 +39,30 @@ class CustomerController extends Controller
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
         $type = $request->input('type', 'customer'); // default to customer
 
         $customers = Ledger::search($request->query('search'))
             ->where('type', $type) // Filter by type
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
 
         return inertia('Ledgers/Customers/Index', [
             'customers' => LedgerResource::collection($customers),
+            'filterOptions' => [
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 

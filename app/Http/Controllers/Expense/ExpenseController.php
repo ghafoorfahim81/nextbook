@@ -15,6 +15,7 @@ use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Models\User;
 
 class ExpenseController extends Controller
 {
@@ -28,15 +29,34 @@ class ExpenseController extends Controller
         $perPage = $request->input('perPage', 10);
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
         $expenses = Expense::with(['category', 'details'])
             ->search($request->query('search'))
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
 
         return inertia('Expenses/Expenses/Index', [
             'expenses' => ExpenseResource::collection($expenses),
+            'filterOptions' => [
+                'categories' => ExpenseCategory::orderBy('name')->get(['id', 'name']),
+                'expenseAccounts' => Account::whereHas('accountType', fn ($q) => $q->where('slug', 'expense'))
+                    ->orderBy('name')
+                    ->get(['id', 'name']),
+                'bankAccounts' => Account::whereHas('accountType', fn ($q) => $q->whereIn('slug', ['cash-or-bank']))
+                    ->orderBy('name')
+                    ->get(['id', 'name']),
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 
