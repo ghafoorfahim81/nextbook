@@ -685,22 +685,22 @@ function logout() {
             <SidebarRail />
         </Sidebar>
         <SidebarInset>
-            <header class="flex h-16 shrink-0 items-center justify-between gap-2 px-4 rtl:pr-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <header class="flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-background/80 px-3 py-2 transition-[width,height] ease-linear supports-[backdrop-filter]:bg-background/60 sm:h-16 sm:flex-nowrap sm:px-4 sm:py-0 rtl:pr-3 sm:rtl:pr-4 group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
                 <!-- Left side: Sidebar trigger and breadcrumb -->
                 <div class="flex items-center gap-2">
                     <SidebarTrigger class="-ml-1"/>
-                    <Separator orientation="vertical" class="mr-2 h-4" />
+                    <Separator orientation="vertical" class="mr-2 hidden h-4 sm:block" />
                 </div>
-                <div class="flex items-center gap-3 pr-4">
+                <div class="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3 sm:pr-4">
 
                     <QuickLinks />
-                    <div v-if="isSuperAdmin" class="flex items-center max-start gap-2">
-                        <label class="text-xs text-muted-foreground" for="branch-switcher">
+                    <div v-if="isSuperAdmin" class="hidden items-center max-start gap-2 sm:flex">
+                        <label class="hidden text-xs text-muted-foreground md:block" for="branch-switcher">
                             {{ t('layout.branch') || 'Branch' }}
                         </label>
 
                         <Select v-model="selectedBranchId" @update:modelValue="switchBranch">
-                            <SelectTrigger class="w-[130px] h-7 text-xs border-input">
+                            <SelectTrigger class="h-7 w-[110px] text-xs border-input md:w-[130px]">
                                 <SelectValue :placeholder="t('layout.branch')" />
                             </SelectTrigger>
                             <SelectContent>
@@ -715,7 +715,7 @@ function logout() {
                             </SelectContent>
                         </Select>
                     </div>
-                    <div v-else class="text-xs text-muted-foreground">
+                    <div v-else class="hidden text-xs text-muted-foreground sm:block">
                         {{ activeBranchName || '—' }}
                     </div>
                     <LanguageSwitcher />

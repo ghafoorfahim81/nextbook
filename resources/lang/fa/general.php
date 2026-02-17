@@ -61,5 +61,6 @@ return [
 
     'error_occurred_while_creating' => 'هنگام ایجاد :resource خطایی رخ داد.',
     'error_occurred_while_updating' => 'هنگام به‌روزرسانی :resource خطایی رخ داد.',
+    'dependencies_found' => 'نمی‌توان این رکورد را حذف کنید چون در بخش های دیگر استفاده شده است.',
 ];
 
