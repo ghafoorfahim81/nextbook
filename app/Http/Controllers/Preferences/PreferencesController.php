@@ -82,7 +82,9 @@ class PreferencesController extends Controller
 
         $user->update(['preferences' => $newPreferences]);
         Cache::forget(CacheKey::forUser($request, 'preferences'));
-        return redirect()->back()->with('success', __('preferences.preferences_saved'));
+        Cache::forget(CacheKey::forUser($request, 'recordsPerPage'));
+        Cache::put('recordsPerPage', $newPreferences['appearance']['records_per_page']);
+        return redirect()->back()->with('success', value: __('preferences.preferences_saved'));
     }
 
     public function resetPreferences(Request $request, ?string $category = null)

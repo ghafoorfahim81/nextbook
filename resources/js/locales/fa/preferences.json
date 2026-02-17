@@ -58,7 +58,17 @@
         "dark": "تاریک",
         "system": "سیستم",
         "decimal_places": "تعداد اعشار",
-        "sidebar_menus": "منوهای سایدبار"
+        "sidebar_menus": "منوهای سایدبار",
+        "sidebar_font_size": "اندازه فونت سایدبار",
+        "heading_font_size": "اندازه فونت عنوان",
+        "table_header_font_size": "اندازه فونت سرآیند جدول",
+        "table_content_font_size": "اندازه فونت محتوای جدول",
+        "button_font_size": "اندازه فونت دکمه",
+        "label_font_size": "اندازه فونت برچسب",
+        "input_font_size": "اندازه فونت ورودی",
+        "select_font_size": "اندازه فونت انتخاب", 
+        "textarea_font_size": "اندازه فونت متن‌نویس",
+        "records_per_page": "تعداد رکورد در هر صفحه"
     },
     "item_management": {
         "description": "پیکربندی فیلدهای قابل مشاهده در فرم‌های اقلام",

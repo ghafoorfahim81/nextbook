@@ -12,7 +12,8 @@ import { Switch } from '@/Components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
 import { Textarea } from '@/Components/ui/textarea'
 import { Checkbox } from '@/Components/ui/checkbox'
-import { useToast } from '@/Components/ui/toast'
+import { toast } from 'vue-sonner';
+
 import {
     Palette, Package, ShoppingCart, ShoppingBag, CreditCard, Calculator,
     Bell, Shield, Database, Globe, Monitor, RotateCcw, Download, Upload,
@@ -34,7 +35,6 @@ const props = defineProps({
 })
 
 const { t } = useI18n()
-const { toast } = useToast()
 
 const activeTab = ref('appearance')
 
@@ -88,11 +88,10 @@ const savePlugins = () => {
     pluginForm.put(route('preferences.install-plugins.update'), {
         preserveScroll: true,
         onSuccess: () => {
-            toast({
-                title: t('preferences.saved'),
+            toast.success(t('general.success'), {
                 description: t('preferences.install_plugins.saved_description'),
-                variant: 'success',
-            })
+                class: 'bg-green-600',
+            });
         },
     })
 }
@@ -101,10 +100,9 @@ const save = () => {
     form.put(route('preferences.update'), {
         preserveScroll: true,
         onSuccess: () => {
-            toast({
-                 title: t('preferences.saved'),
+            toast.success(t('preferences.saved'), {
                 description: t('preferences.saved_description'),
-                variant: 'success'
+                class: 'bg-green-600',
             })
         // Store form values to local storage after a successful save
         localStorage.setItem('user_preferences', JSON.stringify(form));
@@ -118,7 +116,9 @@ const resetCategory = (category) => {
             preserveScroll: true,
             onSuccess: () => {
                 form[category] = props.defaultPreferences[category]
-                toast({ title: t('preferences.reset_success') })
+                toast.success(t('preferences.reset_success'), {
+                    class: 'bg-green-600',
+                })
             },
         })
     }
@@ -308,6 +308,46 @@ const receiptPaymentFields = [
                                             <SelectItem :value="3">3</SelectItem>
                                         </SelectContent>
                                     </Select>
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.records_per_page') }}</Label>
+                                    <Input v-model.number="form.appearance.records_per_page" type="number" min="1" max="100" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.sidebar_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.sidebar_font_size" type="number" min="10" max="24" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.heading_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.heading_font_size" type="number" min="10" max="24" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.table_header_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.table_header_font_size" type="number" min="10" max="24" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.table_content_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.table_content_font_size" type="number" min="10" max="24" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.button_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.button_font_size" type="number" min="10" max="24" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.label_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.label_font_size" type="number" min="10" max="24" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.input_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.input_font_size" type="number" min="10" max="24" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.select_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.select_font_size" type="number" min="10" max="24" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.textarea_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.textarea_font_size" type="number" min="10" max="24" />
                                 </div>
                             </div>
                             <div class="space-y-3">
