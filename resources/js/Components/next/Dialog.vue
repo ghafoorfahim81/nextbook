@@ -18,14 +18,14 @@ const props = defineProps({
   title: String,
   description: String,
   submitting: Boolean,
-    width: {
-        type: String,
-        default: "w-[500px] max-w-[500px]"
-    },
-    contentClass: {
-        type: String,
-        default: '',
-    },
+  width: {
+    type: String,
+    default: "w-[500px] max-w-[90vw] sm:max-w-[500px]",
+  },
+  contentClass: {
+    type: String,
+    default: '',
+  },
   confirmText: String,
   cancelText: String,
   showCancel: Boolean,
@@ -50,46 +50,53 @@ const preventOutsideDismiss = (event: any) => {
     <div v-if="open" class="fixed inset-0 z-[1090] bg-white/5" />
 
     <DialogContent
-        :class="[width, 'z-[1100] max-h-[90vh] p-0 flex flex-col overflow-hidden', contentClass]"
-        @pointer-down-outside="preventOutsideDismiss"
-        @interact-outside="preventOutsideDismiss"
+      :class="[
+        width, 
+        'z-[1100] p-0 flex flex-col overflow-hidden',
+        'max-h-[90vh]',                                    // Limit modal height for all screens
+        'w-[95vw] max-w-[95vw] sm:w-[500px] sm:max-w-[500px]',  // Responsiveness: almost full-width on mobile, capped at 500px on sm+
+        'rounded-none sm:rounded-2xl',                     // No border-radius on mobile, rounded on sm+
+        contentClass
+      ]"
+      @pointer-down-outside="preventOutsideDismiss"
+      @interact-outside="preventOutsideDismiss"
     >
-        <div class="flex flex-col max-h-[90vh]">
-            <div class="sticky top-0 z-10 bg-background px-6 pt-6 pb-4">
-                <DialogHeader>
-                    <DialogTitle>{{ title }}</DialogTitle>
-                    <DialogDescription v-if="description">
-                        {{ description }}
-                    </DialogDescription>
-                </DialogHeader>
-            </div>
-
-            <Separator class="sticky top-[72px] z-10" />
-
-            <div class="flex-1 overflow-y-auto px-6 py-4">
-                <slot />
-            </div>
-
-            <Separator class="sticky bottom-[72px] z-10" />
-
-            <div class="sticky bottom-0 z-10 bg-background px-6 pt-4 pb-6">
-                <DialogFooter class="justify-end gap-2">
-                    <Button type="button" variant="outline"
-                            @click="$emit('cancel'); $emit('update:open', false)">
-                        {{ cancelText || t('general.close') }}
-                    </Button>
-                    <Button
-                        variant="outline"
-                        :disabled="submitting"
-                        class="bg-primary text-white"
-                        @click="$emit('confirm')"
-                    >
-                        <span v-if="submitting">{{ t('general.saving') }}</span>
-                        <span v-else>{{ confirmText || t('general.save') }}</span>
-                    </Button>
-                </DialogFooter>
-            </div>
+      <div class="flex flex-col max-h-[90vh]">
+        <div class="sticky top-0 z-10 bg-background px-4 pt-5 pb-3 sm:px-6 sm:pt-6 sm:pb-4">
+          <DialogHeader>
+            <DialogTitle class="text-base sm:text-lg">{{ title }}</DialogTitle>
+            <DialogDescription v-if="description" class="text-sm sm:text-base">
+              {{ description }}
+            </DialogDescription>
+          </DialogHeader>
         </div>
+
+        <Separator class="sticky top-[64px] sm:top-[72px] z-10" />
+
+        <div class="flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
+          <slot />
+        </div>
+
+        <Separator class="sticky bottom-[64px] sm:bottom-[72px] z-10" />
+
+        <div class="sticky bottom-0 z-10 bg-background px-4 pt-3 pb-5 sm:px-6 sm:pt-4 sm:pb-6">
+          <DialogFooter class="justify-end gap-2">
+            <Button type="button" variant="outline"
+              @click="$emit('cancel'); $emit('update:open', false)">
+              {{ cancelText || t('general.close') }}
+            </Button>
+            <Button
+              variant="outline"
+              :disabled="submitting"
+              class="bg-primary text-white"
+              @click="$emit('confirm')"
+            >
+              <span v-if="submitting">{{ t('general.saving') }}</span>
+              <span v-else>{{ confirmText || t('general.save') }}</span>
+            </Button>
+          </DialogFooter>
+        </div>
+      </div>
     </DialogContent>
   </Dialog>
 </template>
