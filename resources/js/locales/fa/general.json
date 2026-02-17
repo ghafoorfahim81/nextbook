@@ -103,7 +103,7 @@
   "type": "نوع",
   "and": "و",
   "finish": "پایان",
-  "delete_description": "این {name} را به طور دائم حذف خواهی کرد.",
+  "delete_description": "این {name} را حذف خواهی کرد.",
   "create_and_new": "ایجاد و جدید",
   "rows": "ردیف ها",
   "add_row": "افزودن ردیف",
@@ -192,6 +192,8 @@
   "narration": "یادداشت",
   "saving": "در حال ذخیره...",
   "duplicate_found": "تکرار یافته شد",
-  "branch": "شعبه"
+  "branch": "شعبه",
+  "min": "حداقل",
+  "max": "حداکثر"
 }
     

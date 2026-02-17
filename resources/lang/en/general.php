@@ -64,6 +64,6 @@ return [
     'add_to_account' => 'Add to Account',
     'cheque_no' => 'Cheque No',
     'narration' => 'Narration',
-    
+    'dependencies_found' => 'Cannot delete this record because it has dependencies. Please delete those records first.',
 ];
 

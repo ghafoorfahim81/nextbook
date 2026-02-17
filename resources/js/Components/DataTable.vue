@@ -1,19 +1,19 @@
 <template>
     <div class="space-y-4">
         <!-- Search and Per Page -->
-        <div class="flex items-center justify-between">
-            <div class="flex relative w-full max-w-sm">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
                 <div class="flex justify-items-start">
                     <h1 :class="isRTL ? 'text-lg font-semibold ml-2 text-nowrap mt-1 text-primary' : 'text-lg font-semibold mr-2 text-nowrap mt-1 text-primary'">{{ props.title }}</h1>
                 </div>
-                <div class="flex relative gap-4">
+                <div class="relative w-full max-w-full sm:max-w-md">
                     <Input
                         id="search"
                         v-model="search"
                         @input="debouncedSearch"
                         type="text"
                         :placeholder="`${t('datatable.search')} ${props.title ? props.title : ''}`"
-                        :class="isRTL ? 'pl-8 w-72 pr-10 border-1 text-primary ' : 'pl-8 w-72 pr-20 text-primary  focus:text-primary/80'"
+                        :class="isRTL ? 'pl-8 w-full pr-10 border-1 text-primary' : 'pl-8 w-full pr-20 text-primary focus:text-primary/80'"
                     />
                     <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
                         <Search class="size-4 text-primary hover:text-primary/80" />
@@ -45,7 +45,7 @@
                                 :align="isRTL ? 'end' : 'start'"
                                 side="bottom"
                                 :sideOffset="8"
-                                class="w-[720px] p-5 bg-background shadow-lg"
+                                class="w-[calc(100vw-2rem)] max-w-[720px] p-5 bg-background shadow-lg"
                             >
                                 <DataTableFilterPanel
                                     v-model="advancedFilters"
@@ -61,7 +61,7 @@
             </div>
 
             <!-- Right actions (Add New) -->
-            <div class="ml-4 flex items-center gap-2" v-if="can(`${props.can}.create`)">
+            <div class="flex items-center gap-2 lg:ml-4" v-if="can(`${props.can}.create`)">
                 <AddNewButton
                     :title="addTitle"
                     :action="addAction"
@@ -76,8 +76,8 @@
         </div>
 
         <!-- Table -->
-        <div class="border rounded-md border-primary">
-            <Table>
+        <div class="overflow-x-auto rounded-md border border-primary">
+            <Table class="min-w-[720px]">
                 <TableHeader class="bg-violet-500">
                     <TableRow class="bg-primary hover:bg-purple-500 h-8 text-white">
                         <TableHead v-for="column in derivedColumns" :key="column.key" class="h-8 py-1 px-3">
@@ -154,7 +154,7 @@
         </div>
 
         <!-- Pagination -->
-        <div class="border-t pt-2 flex items-center justify-between">
+        <div class="flex flex-col gap-2 border-t pt-2 sm:flex-row sm:items-center sm:justify-between">
             <!-- Left: Showing X - Y of Z [title] -->
             <div class="text-xs text-muted-foreground">
                 {{ t('datatable.showing', { from: items.meta.from, to: items.meta.to, total: items.total }) }}
@@ -162,7 +162,7 @@
             </div>
 
             <!-- Right: Rows per page | First Prev  Page X of Y  Next Last -->
-            <div :class="isRTL ? 'flex items-center space-x-reverse space-x-2' : 'flex items-center space-x-2'">
+            <div :class="isRTL ? 'flex flex-wrap items-center gap-2 sm:space-x-reverse sm:space-x-2' : 'flex flex-wrap items-center gap-2 sm:space-x-2'">
                 <div class="flex items-center gap-1 text-xs text-muted-foreground">
                     <span>{{ t('datatable.per_page') }}:</span>
                     <Select v-model="perPage" @update:modelValue="updatePerPage">

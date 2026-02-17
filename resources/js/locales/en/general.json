@@ -104,7 +104,7 @@
   "type": "Type",
   "and": "and",
   "finish": "Finish",
-  "delete_description": "This will permanently delete this {name}.",
+  "delete_description": "This will delete this {name}.",
   "create_and_new": "Create and new",
   "rows": "Rows",
   "add_row": "Add row",
@@ -192,7 +192,9 @@
   "cheque_no": "Cheque No",
   "narration": "Narration",
   "saving": "Saving...",
-  "duplicate_found": "Duplicate found"
+  "duplicate_found": "Duplicate found",
+  "min": "Min",
+  "max": "Max"
 }
 
 
