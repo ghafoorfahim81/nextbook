@@ -20,6 +20,16 @@ use Illuminate\Validation\Rule;
             'appearance.font_size' => 'sometimes|integer|min:10|max:24',
             'appearance.theme' => 'sometimes|in:dark,light,system',
             'appearance.decimal_places' => 'sometimes|integer|in:0,2,3',
+            'appearance.records_per_page' => 'sometimes|integer|min:1|max:100',
+            'appearance.sidebar_font_size' => 'sometimes|integer|min:10|max:24',
+            'appearance.heading_font_size' => 'sometimes|integer|min:10|max:24',
+            'appearance.table_header_font_size' => 'sometimes|integer|min:10|max:24',
+            'appearance.table_content_font_size' => 'sometimes|integer|min:10|max:24',
+            'appearance.button_font_size' => 'sometimes|integer|min:10|max:24',
+            'appearance.label_font_size' => 'sometimes|integer|min:10|max:24',
+            'appearance.input_font_size' => 'sometimes|integer|min:10|max:24',
+            'appearance.select_font_size' => 'sometimes|integer|min:10|max:24',
+            'appearance.textarea_font_size' => 'sometimes|integer|min:10|max:24',
             'appearance.sidebar_menus' => 'sometimes|array',
 
             // Item Management

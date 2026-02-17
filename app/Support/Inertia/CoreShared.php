@@ -60,7 +60,8 @@ final class CoreShared
                 fn() => $user->preferences
             )
             : null;
-
+        // $recordsPerPage = $userPreferences['appearance']['records_per_page'] ?? 10;
+        // Cache::put('recordsPerPage', $recordsPerPage, $cacheDuration);
         return [
             'locale' => $locale,
             'direction' => $direction,
@@ -73,7 +74,7 @@ final class CoreShared
                     'branch_name' => $activeBranchName,
                     'permissions' => $permissions,
                     'roles' => $roles,
-                    'role_slugs' => $roleSlugs,
+                    'role_slugs' => $roleSlugs, 
                     'calendar_type' => $user->company?->calendar_type,
                 ] : null,
             ],
@@ -83,7 +84,7 @@ final class CoreShared
             ],
             'user_preferences' => $userPreferences,
             'activeBranchId' => $activeBranchId,
-            'activeBranchName' => $activeBranchName,
+            'activeBranchName' => $activeBranchName, 
         ];
     }
 }

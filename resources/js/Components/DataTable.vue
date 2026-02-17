@@ -112,7 +112,7 @@
                         </TableCell>
                     </TableRow>
                     <!-- Data Rows -->
-                    <TableRow v-else v-for="(item, rowIndex) in items.data" :key="item.id" class="h-14 hover:bg-muted/50">
+                    <TableRow v-else v-for="(item, rowIndex) in items.data" :key="item.id" class="h-11 hover:bg-muted/50">
                         <TableCell
                             v-for="column in derivedColumns"
                             :key="column.key"

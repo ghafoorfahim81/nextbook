@@ -58,7 +58,17 @@
         "dark": "Dark",
         "system": "System",
         "decimal_places": "Decimal Places",
-        "sidebar_menus": "Sidebar Menus"
+        "sidebar_menus": "Sidebar Menus",
+        "sidebar_font_size": "Sidebar Font Size",
+        "heading_font_size": "Heading Font Size",
+        "table_header_font_size": "Table Header Font Size",
+        "table_content_font_size": "Table Content Font Size",
+        "button_font_size": "Button Font Size",
+        "label_font_size": "Label Font Size",
+        "input_font_size": "Input Font Size",
+        "select_font_size": "Select Font Size",
+        "textarea_font_size": "Textarea Font Size",
+        "records_per_page": "Records Per Page"
     },
     "item_management": {
         "description": "Configure visible fields in item forms",

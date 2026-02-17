@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\User;
-
+use Illuminate\Support\Facades\Cache;
 if (!function_exists('user_preference')) {
     /**
      * Get a user preference value.
@@ -61,6 +61,13 @@ if (!function_exists('all_user_preferences')) {
         }
 
         return $user->getAllPreferences();
+    }
+}
+
+if (!function_exists('recordsPerPage')) {
+    function recordsPerPage()
+    {
+        return Cache::get('recordsPerPage', 15);
     }
 }
 

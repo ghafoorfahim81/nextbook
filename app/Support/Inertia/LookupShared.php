@@ -122,9 +122,7 @@ final class LookupShared
                 'raw-materials',
                 'finished-goods',
             ])->pluck('id', 'slug')
-        );
-        Cache::put('gl_accounts', $glAccounts);
-
+        ); 
         return [
             'mainBranch' => $mainBranch,
             'categories' => $categories,
