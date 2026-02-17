@@ -31,6 +31,7 @@ use Illuminate\Validation\Rule;
             'appearance.select_font_size' => 'sometimes|integer|min:10|max:24',
             'appearance.textarea_font_size' => 'sometimes|integer|min:10|max:24',
             'appearance.sidebar_menus' => 'sometimes|array',
+            'appearance.balance_nature_format' => 'sometimes|in:without_nature,with_nature',
 
             // Item Management
             'item_management' => 'sometimes|array',
@@ -38,7 +39,7 @@ use Illuminate\Validation\Rule;
             'item_management.visible_fields.*' => 'sometimes|boolean',
             'item_management.spec_text' => 'sometimes|nullable|string|max:500',
 
-            // Sale Preferences    
+            // Sale Preferences
             'sale' => 'sometimes|array',
             'sale.general_fields' => 'sometimes|array',
             'sale.general_fields.*' => 'sometimes|boolean',

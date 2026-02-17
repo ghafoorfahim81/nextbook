@@ -66,9 +66,12 @@
         "button_font_size": "اندازه فونت دکمه",
         "label_font_size": "اندازه فونت برچسب",
         "input_font_size": "اندازه فونت ورودی",
-        "select_font_size": "اندازه فونت انتخاب", 
+        "select_font_size": "اندازه فونت انتخاب",
         "textarea_font_size": "اندازه فونت متن‌نویس",
-        "records_per_page": "تعداد رکورد در هر صفحه"
+        "records_per_page": "تعداد رکورد در هر صفحه",
+        "balance_nature_format": "فرمت مانده با طبیعت",
+        "without_nature": "(+/-) بدون طبیعت ",
+        "with_nature": "(Debit/Credit) با طبیعت"
     },
     "item_management": {
         "description": "پیکربندی فیلدهای قابل مشاهده در فرم‌های اقلام",

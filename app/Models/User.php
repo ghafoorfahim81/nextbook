@@ -59,8 +59,9 @@ class User extends Authenticatable
             'input_font_size' => 14,
             'select_font_size' => 14,
             'textarea_font_size' => 14,
-            'decimal_places' => 2, 
+            'decimal_places' => 2,
             'records_per_page' => 15,
+            'balance_nature_format'=> 'with_nature',
             'sidebar_menus' => ['dashboard', 'sale', 'purchase', 'ledger', 'owners', 'account', 'purchase', 'sale', 'receipt', 'payment', 'transfer', 'user_management', 'preferences'],
         ],
         'item_management' => [

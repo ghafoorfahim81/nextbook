@@ -68,7 +68,10 @@
         "input_font_size": "Input Font Size",
         "select_font_size": "Select Font Size",
         "textarea_font_size": "Textarea Font Size",
-        "records_per_page": "Records Per Page"
+        "records_per_page": "Records Per Page",
+        "balance_nature_format": "Balance Nature Format",
+        "without_nature": "Without Nature(+/-)",
+        "with_nature": "With Nature(Debit/Credit)"
     },
     "item_management": {
         "description": "Configure visible fields in item forms",

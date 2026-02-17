@@ -74,7 +74,7 @@ final class CoreShared
                     'branch_name' => $activeBranchName,
                     'permissions' => $permissions,
                     'roles' => $roles,
-                    'role_slugs' => $roleSlugs, 
+                    'role_slugs' => $roleSlugs,
                     'calendar_type' => $user->company?->calendar_type,
                 ] : null,
             ],
@@ -84,7 +84,9 @@ final class CoreShared
             ],
             'user_preferences' => $userPreferences,
             'activeBranchId' => $activeBranchId,
-            'activeBranchName' => $activeBranchName, 
+            'activeBranchName' => $activeBranchName,
+            'balanceNatureFormat' => balanceNatureFormat(),
+
         ];
     }
 }

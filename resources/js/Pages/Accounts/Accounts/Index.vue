@@ -12,14 +12,15 @@ const props = defineProps({
     user: Object,
     filters: Object,
     filterOptions: Object,
+    balanceNatureFormat: String,
 });
-console.log('user', props.user);
 const { t } = useI18n();
 const columns = computed(() => ([
     { key: 'name', label: t('general.name') },
     { key: 'number', label: t('general.number') },
+    { key: 'remark', label: t('general.remark') },
     { key: 'account_type.name', label: t('account.account_type') },
-    { key: 'balance_with_nature', label: t('general.balance') },
+    { key: 'balance', label: t('general.balance') },
     { key: 'actions', label: t('general.actions') },
 ]));
 
@@ -82,6 +83,7 @@ const deleteItem = (id) => {
         <AccountShowDialog
             v-model:open="showDialog"
             :account-id="selectedAccountId"
+            :balance-nature-format="balanceNatureFormat"
         />
     </AppLayout>
 </template>

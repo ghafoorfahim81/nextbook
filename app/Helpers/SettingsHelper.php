@@ -14,7 +14,7 @@ if (!function_exists('user_preference')) {
     function user_preference(string $key, mixed $default = null, ?User $user = null): mixed
     {
         $user = $user ?? auth()->user();
-        
+
         if (!$user) {
             return data_get(User::DEFAULT_PREFERENCES, $key, $default);
         }
@@ -35,7 +35,7 @@ if (!function_exists('set_user_preference')) {
     function set_user_preference(string $key, mixed $value, ?User $user = null): bool
     {
         $user = $user ?? auth()->user();
-        
+
         if (!$user) {
             return false;
         }
@@ -55,7 +55,7 @@ if (!function_exists('all_user_preferences')) {
     function all_user_preferences(?User $user = null): array
     {
         $user = $user ?? auth()->user();
-        
+
         if (!$user) {
             return User::DEFAULT_PREFERENCES;
         }
@@ -68,6 +68,18 @@ if (!function_exists('recordsPerPage')) {
     function recordsPerPage()
     {
         return Cache::get('recordsPerPage', 15);
+    }
+}
+
+if (!function_exists('balance_nature_format')) {
+    /**
+     * Get the balance nature format for display (e.g., 'with_nature' or 'without_nature').
+     *
+     * @return string
+     */
+    function balanceNatureFormat(): string
+    {
+        return Cache::get('balance_nature_format', 'with_nature');
     }
 }
 

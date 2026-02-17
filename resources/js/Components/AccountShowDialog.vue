@@ -21,6 +21,10 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    balanceNatureFormat: {
+        type: String,
+        default: null,
+    },
 });
 
 const emit = defineEmits(['update:open']);
@@ -218,12 +222,10 @@ const closeDialog = () => {
                                         </div>
                                         <div
                                             class="text-base font-medium"
-                                            :class="statement.balance_nature === 'cr'
-                                                ? 'text-green-600'
-                                                : 'text-green-600'"
+
                                         >
-                                            {{ formatAmount(statement.balance) }}
-                                            {{ statement.balance > 0 ? statement.balance_nature : '' }}
+                                        {{ (balanceNatureFormat=='with_nature')?formatAmount(statement.balance)+'.'+statement.balance_nature:formatAmount(statement.balance) }}
+
                                         </div>
                                     </div>
                                 </div>
