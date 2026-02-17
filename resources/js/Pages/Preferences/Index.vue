@@ -310,6 +310,18 @@ const receiptPaymentFields = [
                                     </Select>
                                 </div>
                                 <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.balance_nature_format') }}</Label>
+                                    <Select v-model="form.appearance.balance_nature_format">
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem :value="'without_nature'">{{ t('preferences.appearance.without_nature') }}</SelectItem>
+                                            <SelectItem :value="'with_nature'">{{ t('preferences.appearance.with_nature') }}</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div class="space-y-2">
                                     <Label>{{ t('preferences.appearance.records_per_page') }}</Label>
                                     <Input v-model.number="form.appearance.records_per_page" type="number" min="1" max="100" />
                                 </div>

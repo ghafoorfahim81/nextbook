@@ -145,6 +145,11 @@ class Ledger extends Model
         'created_by',
     ];
 
+    protected static function searchableColumns(): array
+    {
+        return ['name', 'code', 'contact_person', 'phone_no', 'email'];
+    }
+
     public function currency(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Administration\Currency::class);

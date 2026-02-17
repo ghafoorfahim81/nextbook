@@ -83,7 +83,7 @@ import {
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/Components/ui/select'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 // @ts-ignore - Vue SFC default export shim
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue'
 import { usePage, Link, router } from '@inertiajs/vue3'
@@ -149,7 +149,6 @@ function setActiveTeam(team: typeof data.teams[number]) {
 
 // Normalize a URL to its pathname without query or trailing slash
 function normalizePath(url: string): string {
-    // Inertia provides relative URLs like "/branches?search=x"; split at '?' and remove trailing '/'
     const path = (url || '').split('?')[0]
     if (path === '/') return '/'
     return path.replace(/\/+$/, '')
@@ -162,6 +161,8 @@ function isMenuItemActive(itemUrl: string): boolean {
     return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`)
 }
 
+// --- EXCLUSIVE COLLAPSIBLE LOGIC START ---
+
 // Function to check if a parent menu should be expanded (has active child)
 function shouldExpandParent(items: any[] | undefined): boolean {
     if (!items || !Array.isArray(items)) {
@@ -169,7 +170,7 @@ function shouldExpandParent(items: any[] | undefined): boolean {
     }
     return items.some(item => isMenuItemActive(item.url))
 }
-import { useColorMode, useCycleList } from '@vueuse/core'
+import { useColorMode, useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '@/composables/useAuth'
 
@@ -194,6 +195,69 @@ const chevronIcon = computed(() => isRTL.value ? ChevronLeft : ChevronRight)
 const props = withDefaults(defineProps<{ sidebarCollapsed?: boolean }>(), { sidebarCollapsed: false })
 
 const { can, isSuperAdmin } = useAuth()
+
+// Keep track of sidebar open/collapsed state so we can alter menu behavior.
+// (We can't read sidebar context here because SidebarProvider is a child component.)
+const sidebarOpen = ref(!props.sidebarCollapsed)
+const isMobileViewport = useMediaQuery('(max-width: 767px)')
+const isSidebarCollapsed = computed(() => !sidebarOpen.value && !isMobileViewport.value)
+const flyoutSide = computed(() => sidebarSide.value === 'right' ? 'left' : 'right')
+
+// Collapsed sidebar flyout submenu state (hover or click).
+const flyoutOpenKey = ref<string | null>(null)
+let flyoutCloseTimer: number | null = null
+
+function getFlyoutKey(item: any): string {
+    // Parent items use url: '#', so use a stable key based on title.
+    return `flyout:${String(item?.title ?? '')}`
+}
+
+function clearFlyoutCloseTimer() {
+    if (flyoutCloseTimer !== null) {
+        window.clearTimeout(flyoutCloseTimer)
+        flyoutCloseTimer = null
+    }
+}
+
+function openFlyout(key: string) {
+    clearFlyoutCloseTimer()
+    flyoutOpenKey.value = key
+}
+
+function scheduleCloseFlyout(key: string) {
+    clearFlyoutCloseTimer()
+    flyoutCloseTimer = window.setTimeout(() => {
+        if (flyoutOpenKey.value === key) flyoutOpenKey.value = null
+    }, 2000)
+}
+
+function closeFlyout() {
+    clearFlyoutCloseTimer()
+    flyoutOpenKey.value = null
+}
+
+function setFlyoutOpen(key: string, open: boolean) {
+    clearFlyoutCloseTimer()
+    flyoutOpenKey.value = open ? key : (flyoutOpenKey.value === key ? null : flyoutOpenKey.value)
+}
+
+function isInsideFlyoutKey(target: EventTarget | null, key: string): boolean {
+    const el = target as HTMLElement | null
+    if (!el) return false
+    return Boolean(el.closest?.(`[data-flyout-key="${key}"]`))
+}
+
+function onFlyoutTriggerLeave(key: string, event: MouseEvent) {
+    // If we're moving into the flyout panel, keep it open.
+    if (isInsideFlyoutKey(event.relatedTarget, key)) return
+    if (flyoutOpenKey.value === key) flyoutOpenKey.value = null
+}
+
+function onFlyoutContentLeave(key: string, event: MouseEvent) {
+    // If we're moving back to the trigger icon button, keep it open.
+    if (isInsideFlyoutKey(event.relatedTarget, key)) return
+    if (flyoutOpenKey.value === key) flyoutOpenKey.value = null
+}
 
 const branches = computed(() => {
     const raw: any = page.props.branches
@@ -378,6 +442,25 @@ const filteredNavMain = computed(() => {
 const menuSearchQuery = ref('')
 const menuSearchQueryNormalized = computed(() => menuSearchQuery.value.trim().toLowerCase())
 
+// Keep only one parent menu expanded at a time (accordion behavior)
+const openParentKey = ref<string | null>(null)
+
+function getParentKey(item: any): string {
+    // Parent items use url: '#', so use a stable key based on title.
+    return `parent:${String(item?.title ?? '')}`
+}
+
+const activeParentKey = computed<string | null>(() => {
+    const items: any[] = filteredNavMain.value as any[]
+    const active = items.find((it) => Array.isArray(it?.items) && shouldExpandParent(it.items))
+    return active ? getParentKey(active) : null
+})
+
+function onParentOpenChange(item: any, nextOpen: boolean) {
+    const key = getParentKey(item)
+    openParentKey.value = nextOpen ? key : (openParentKey.value === key ? null : openParentKey.value)
+}
+
 const searchedNavMain = computed(() => {
     const q = menuSearchQueryNormalized.value
     if (!q) return filteredNavMain.value
@@ -408,6 +491,38 @@ const searchedNavMain = computed(() => {
         .filter(Boolean)
 })
 
+// Initialize / sync open parent with route changes
+watch(
+    () => normalizePath(page.url),
+    () => {
+        // Prefer opening the parent that matches the current route
+        openParentKey.value = activeParentKey.value
+    },
+    { immediate: true },
+)
+
+// When searching, auto-open the first parent in results (still only one open)
+watch(
+    () => menuSearchQueryNormalized.value,
+    (q) => {
+        if (!q) {
+            openParentKey.value = activeParentKey.value
+            return
+        }
+
+        const firstParent = (searchedNavMain.value as any[]).find((it) => Array.isArray(it?.items) && it.items.length)
+        openParentKey.value = firstParent ? getParentKey(firstParent) : null
+    },
+)
+
+// When sidebar expands back, ensure any flyout is closed.
+watch(
+    () => sidebarOpen.value,
+    (open) => {
+        if (open) closeFlyout()
+    },
+)
+
 // assign to data after computed is available
 data.navMain = navMain.value
 
@@ -424,7 +539,7 @@ function logout() {
         :theme="sonnerTheme"
         :position="isRTL ? 'bottom-left' : 'bottom-right'"
     />
-    <SidebarProvider :default-open="!props.sidebarCollapsed">
+    <SidebarProvider v-model:open="sidebarOpen" :default-open="!props.sidebarCollapsed">
         <Sidebar collapsible="icon" :side="sidebarSide">
             <SidebarHeader>
                 <SidebarMenu>
@@ -514,61 +629,106 @@ function logout() {
                             <!-- Simple menu item without sub-items (like Dashboard) -->
                             <SidebarMenuItem v-if="!item.items" >
                                 <SidebarMenuButton
+                                    :tooltip="item.title"
                                     :isActive="isMenuItemActive(item.url)"
                                     as-child
                                 >
                                     <Link :href="item.url" prefetch cache-for="1m">
                                         <component :is="item.icon" />
-                                        <span>{{ item.title }}</span>
+                                        <span class="group-data-[collapsible=icon]:hidden">{{ item.title }}</span>
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
 
-                            <!-- Collapsible menu item with sub-items -->
-                            <Collapsible
-                                v-else
-                                as-child
-                                :default-open="Boolean(menuSearchQueryNormalized) || shouldExpandParent(item.items)"
-                                class="group/collapsible"
-                            >
-                                <SidebarMenuItem>
-                                    <CollapsibleTrigger as-child>
+                            <template v-else>
+                                <!-- Collapsed (icon-only) sidebar: show submenus as a flyout on hover/click -->
+                                <DropdownMenu
+                                    v-if="isSidebarCollapsed"
+                                    :open="flyoutOpenKey === getFlyoutKey(item)"
+                                    @update:open="(v) => setFlyoutOpen(getFlyoutKey(item), v)"
+                                >
+                                    <DropdownMenuTrigger as-child>
                                         <SidebarMenuButton
                                             :tooltip="item.title"
                                             :isActive="shouldExpandParent(item.items)"
+                                            @mouseenter="openFlyout(getFlyoutKey(item))"
+                                            @mouseleave="scheduleCloseFlyout(getFlyoutKey(item))"
                                         >
                                             <component :is="item.icon" />
-                                            <span
-                                                class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500"
-                                            >
-                                                {{ item.title }}
-                                            </span>
-                                            <component
-                                                :is="chevronIcon"
-                                                :class="isRTL ? 'mr-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' : 'ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90'"
-                                            />
+                                            <span class="sr-only">{{ item.title }}</span>
                                         </SidebarMenuButton>
-                                    </CollapsibleTrigger>
-                                    <CollapsibleContent>
-                                        <SidebarMenuSub>
-                                            <SidebarMenuSubItem
-                                                v-for="subItem in item.items"
-                                                :key="subItem.title"
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        :side="flyoutSide"
+                                        align="start"
+                                        :side-offset="8"
+                                        class="min-w-48 rounded-lg"
+                                        @mouseenter="openFlyout(getFlyoutKey(item))"
+                                        @mouseleave="closeFlyout()"
+                                    >
+                                        <DropdownMenuLabel class="text-xs text-muted-foreground">
+                                            {{ item.title }}
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            v-for="subItem in item.items"
+                                            :key="subItem.title"
+                                            as-child
+                                        >
+                                            <Link :href="subItem.url" prefetch cache-for="1m" class="w-full">
+                                                <span>{{ subItem.title }}</span>
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                <!-- Expanded sidebar: keep collapsible behavior -->
+                                <Collapsible
+                                    v-else
+                                    as-child
+                                    :open="openParentKey === getParentKey(item)"
+                                    class="group/collapsible"
+                                    @update:open="(v) => onParentOpenChange(item, v)"
+                                >
+                                    <SidebarMenuItem>
+                                        <CollapsibleTrigger as-child>
+                                            <SidebarMenuButton
+                                                :tooltip="item.title"
+                                                :isActive="shouldExpandParent(item.items)"
                                             >
-                                                <SidebarMenuSubButton
-                                                    :isActive="isMenuItemActive(subItem.url)"
-                                                    as-child
-                                                    class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500 data-[active=true]:bg-transparent data-[active=true]:text-violet-500"
+                                                <component :is="item.icon" />
+                                                <span
+                                                    class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500"
                                                 >
-                                                    <Link :href="subItem.url" prefetch cache-for="1m">
-                                                        <span>{{ subItem.title }}</span>
-                                                    </Link>
-                                                </SidebarMenuSubButton>
-                                            </SidebarMenuSubItem>
-                                        </SidebarMenuSub>
-                                    </CollapsibleContent>
-                                </SidebarMenuItem>
-                            </Collapsible>
+                                                    {{ item.title }}
+                                                </span>
+                                                <component
+                                                    :is="chevronIcon"
+                                                    :class="isRTL ? 'mr-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' : 'ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90'"
+                                                />
+                                            </SidebarMenuButton>
+                                        </CollapsibleTrigger>
+                                        <CollapsibleContent>
+                                            <SidebarMenuSub>
+                                                <SidebarMenuSubItem
+                                                    v-for="subItem in item.items"
+                                                    :key="subItem.title"
+                                                >
+                                                    <SidebarMenuSubButton
+                                                        :isActive="isMenuItemActive(subItem.url)"
+                                                        as-child
+                                                        class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500 data-[active=true]:bg-transparent data-[active=true]:text-violet-500"
+                                                    >
+                                                        <Link :href="subItem.url" prefetch cache-for="1m">
+                                                            <span>{{ subItem.title }}</span>
+                                                        </Link>
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                            </SidebarMenuSub>
+                                        </CollapsibleContent>
+                                    </SidebarMenuItem>
+                                </Collapsible>
+                            </template>
                         </template>
                     </SidebarMenu>
                 </SidebarGroup>

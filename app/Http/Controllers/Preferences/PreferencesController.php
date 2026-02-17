@@ -84,6 +84,8 @@ class PreferencesController extends Controller
         Cache::forget(CacheKey::forUser($request, 'preferences'));
         Cache::forget(CacheKey::forUser($request, 'recordsPerPage'));
         Cache::put('recordsPerPage', $newPreferences['appearance']['records_per_page']);
+        Cache::forget('balance_nature_format');
+        Cache::put('balance_nature_format', $newPreferences['appearance']['balance_nature_format']);
         return redirect()->back()->with('success', value: __('preferences.preferences_saved'));
     }
 

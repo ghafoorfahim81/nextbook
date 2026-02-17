@@ -78,7 +78,7 @@ class Account extends Model
         'name',
         'account_type_id',
         'accountType.name',
-        'is_active', 
+        'is_active',
         'created_by',
         'createdBy.name',
     ];
@@ -99,22 +99,21 @@ class Account extends Model
 
                 $totalDebit  = (float) ($totals->total_debit ?? 0);
                 $totalCredit = (float) ($totals->total_credit ?? 0);
+                $nature = $this->accountType->nature ?? 'asset';
+                $natureFormat = balanceNatureFormat();
 
-                if ($totalDebit > $totalCredit) {
+                if ($nature === 'asset' || $nature === 'expense') {
                     $balanceAmount = $totalDebit - $totalCredit;
                     $balanceNature = 'dr';
-                } elseif ($totalCredit > $totalDebit) {
+                } else {
                     $balanceAmount = $totalCredit - $totalDebit;
                     $balanceNature = 'cr';
-                } else {
-                    $balanceAmount = 0;
-                    $balanceNature = '';
                 }
 
                 $netBalance = $totalDebit - $totalCredit;
 
                 return [
-                    'balance'               => $balanceAmount,
+                    'balance'               => ($natureFormat=='with_nature')?$balanceAmount.'.'.$balanceNature:abs($balanceAmount),
                     'balance_nature'        => $balanceNature,
                     'balance_with_nature'   => $balanceAmount>0?$balanceAmount . '.' . $balanceNature:0,
                     'total_debit'           => $totalDebit,
