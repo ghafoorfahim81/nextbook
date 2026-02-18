@@ -1,13 +1,16 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import NextInput from '@/Components/next/NextInput.vue'
 import { useForm } from '@inertiajs/vue3'
 import NextSelect from "@/Components/next/NextSelect.vue";
 import NextDatePicker from '@/Components/next/NextDatePicker.vue'
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
+import { Info } from 'lucide-vue-next'
+import { Popover, PopoverTrigger, PopoverContent } from '@/Components/ui/popover'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner';
+import JsBarcode from 'jsbarcode'
 const props = defineProps({
     item: { type: Object, required: true },
     stores: { type: [Array, Object], required: true },
@@ -159,7 +162,52 @@ const user_preferences = computed(() => props.user_preferences?.data ?? props.us
 const visibleFields = computed(() => user_preferences.value.item_management.visible_fields ?? []).value
 const specText = computed(() => user_preferences.value.item_management.spec_text ?? '')
 
+const isBarcodePopoverOpen = ref(false)
+const barcodeSvg = ref(null)
 
+const generateBarcode = () => {
+    const random = Math.floor(100000000 + Math.random() * 900000000)
+    form.barcode = `ITM${random}`
+}
+
+const renderBarcode = async (retries = 4) => {
+    if (!form.barcode) return
+
+    await nextTick()
+
+    // Popover content is mounted lazily, so SVG may not exist immediately.
+    if (!barcodeSvg.value) {
+        if (retries > 0) {
+            requestAnimationFrame(() => {
+                renderBarcode(retries - 1)
+            })
+        }
+        return
+    }
+
+    JsBarcode(barcodeSvg.value, form.barcode, {
+        format: "CODE128",
+        width: 2,
+        height: 60,
+        displayValue: true,
+        margin: 0,
+    })
+}
+
+watch(
+    () => form.barcode,
+    () => {
+        renderBarcode()
+    },
+    { immediate: true }
+)
+
+watch(
+    () => isBarcodePopoverOpen.value,
+    (open) => {
+        if (open) renderBarcode()
+    }
+)
 </script>
 <template>
     <AppLayout :title="t('general.edit', { name: t('item.item') })">
@@ -283,7 +331,37 @@ const specText = computed(() => user_preferences.value.item_management.spec_text
                     <NextInput v-show="visibleFields.rate_a" :label="t('item.rate_a')" type="number" :placeholder="t('general.enter', { text: t('item.rate_a') })" v-model="form.rate_a" :error="form.errors?.rate_a" />
                     <NextInput v-show="visibleFields.rate_b" :label="t('item.rate_b')" type="number" :placeholder="t('general.enter', { text: t('item.rate_b') })" v-model="form.rate_b" :error="form.errors?.rate_b" />
                     <NextInput v-show="visibleFields.rate_c" :label="t('item.rate_c')" type="number" :placeholder="t('general.enter', { text: t('item.rate_c') })" v-model="form.rate_c" :error="form.errors?.rate_c" />
-                    <NextInput v-show="visibleFields.barcode" :label="t('item.barcode')" v-model="form.barcode" :placeholder="t('general.enter', { text: t('item.barcode') })" :error="form.errors?.barcode" />
+                    <div v-show="visibleFields.barcode" class="flex items-center justify-between border rounded-md">
+                        <div class="w-full">
+                            <NextInput
+                            :label="t('item.barcode')"
+                            v-model="form.barcode"
+                            :placeholder="t('general.enter', { text: t('item.barcode') })"
+                            :error="form.errors?.barcode"
+                        />
+                        </div>
+                        <div class="flex items-center justify-end px-2">
+                            <Popover v-model:open="isBarcodePopoverOpen">
+                                <PopoverTrigger as-child>
+                                  <Button variant="outline">
+                                    <Info class="w-4 h-4 text-primary hover:cursor-pointer" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent class="w-80">
+                                  <div class="grid gap-4">
+                                    <svg ref="barcodeSvg" class="w-full h-[80px]"></svg>
+                                    <button
+                                    type="button"
+                                    class="text-sm text-primary underline mt-2"
+                                    @click="generateBarcode"
+                                >
+                                    {{ t('item.generate_new_barcode') || 'Generate New Barcode' }}
+                                </button>
+                                  </div>
+                                </PopoverContent>
+                              </Popover> 
+                        </div>
+                    </div>
                     <NextInput v-show="visibleFields.rack_no" :label="t('item.rack_no')" v-model="form.rack_no" :placeholder="t('general.enter', { text: t('item.rack_no') })" :error="form.errors?.rack_no" />
                     <NextInput v-show="visibleFields.fast_search" :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
                 </div>

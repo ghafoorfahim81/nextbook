@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import axios from 'axios'
 import {
   Package, Hash, Pill, Box, Tag, Layers, TrendingUp, TrendingDown,
@@ -7,6 +7,7 @@ import {
   Building, Target, User
 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
+import JsBarcode from 'jsbarcode'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -22,6 +23,7 @@ const outPage = ref(1)
 const inHasMore = ref(true)
 const outHasMore = ref(true)
 const loading = ref(false)
+const itemBarcodeSvg = ref(null)
 
 const currentRecords = computed(() =>
   activeTab.value === 'in' ? inRecords.value : outRecords.value
@@ -120,14 +122,47 @@ const switchTab = (tab) => {
   if (tab === 'out' && outRecords.value.length === 0) loadMore()
 }
 
+const renderItemBarcode = async (retries = 4) => {
+  const barcode = props.item?.barcode
+  if (!barcode) return
+
+  await nextTick()
+
+  if (!itemBarcodeSvg.value) {
+    if (retries > 0) {
+      requestAnimationFrame(() => {
+        renderItemBarcode(retries - 1)
+      })
+    }
+    return
+  }
+
+  JsBarcode(itemBarcodeSvg.value, barcode, {
+    format: 'CODE128',
+    width: 2,
+    height: 60,
+    displayValue: true,
+    margin: 0,
+  })
+}
+
 watch(
   () => props.modelValue,
   (open) => {
     if (open) {
       resetState()
       loadMore()
+      renderItemBarcode()
     }
   }
+)
+
+watch(
+  () => props.item?.barcode,
+  () => {
+    if (props.modelValue) renderItemBarcode()
+  },
+  { immediate: true }
 )
 </script>
 
@@ -174,8 +209,7 @@ watch(
                 <Layers class="w-4 h-4" />
               </div>
               <h3 class="text-sm font-semibold text-foreground">{{ t('general.info') }}</h3>
-            </div>
-
+            </div> 
             <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3">
               <div v-for="detail in itemDetails" :key="detail.label" class="flex items-start gap-2">
                 <component
@@ -190,6 +224,10 @@ watch(
                     {{ detail.value ?? '—' }}
                   </p>
                 </div>
+              </div>
+              <div v-if="item?.barcode" class="mb-4 rounded-lg border border-border   p-3">
+                <p class="text-xs text-muted-foreground mb-2">{{ t('item.barcode') }}</p>
+                <svg ref="itemBarcodeSvg" class="w-full h-[80px]"></svg>
               </div>
             </div>
             <hr class="my-4 border-border" />
