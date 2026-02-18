@@ -42,5 +42,6 @@
     "cost_account": "Cost Account",
     "duplicate_store_batch_expiry": "This store with the same batch and expiry already exists.",
     "sale_price_less_than_purchase_price": "Sale price cannot be less than purchase price.",
-    "low_price_warning": "Low Price Warning"
+    "low_price_warning": "Low Price Warning",
+    "generate_new_barcode": "Generate New Barcode"
 }

@@ -11,7 +11,7 @@
             :autocomplete="autocomplete"
             :placeholder="placeholder"
             @click="handleClick"
-            class="peer block w-full border-1 border-border bg-background px-3 py-3 text-sm shadow-sm
+            class="peer block w-full border-border bg-background px-3 py-3 text-sm shadow-sm
             placeholder:text-transparent focus:placeholder:text-muted-foreground
             disabled:cursor-not-allowed disabled:opacity-50"
         />
