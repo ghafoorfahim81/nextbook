@@ -270,6 +270,14 @@ const closeDialog = () => {
                                         {{ accountData.branch?.name || '' }}
                                     </div>
                                 </div>
+                                <div>   
+                                    <div class="text-xs text-muted-foreground"> 
+                                        {{ t('account.parent') }}
+                                    </div>
+                                    <div class="font-medium">
+                                        {{ accountData.parent?.name || '' }}
+                                    </div>
+                                </div>
                                 <div class="md:col-span-2">
                                     <div class="text-xs text-muted-foreground">
                                         {{ t('general.remark') }}

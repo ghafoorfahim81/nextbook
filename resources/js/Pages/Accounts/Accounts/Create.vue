@@ -5,33 +5,24 @@ import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
-import { useForm, router } from '@inertiajs/vue3';
+import { useForm, router, usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { useLazyProps } from '@/composables/useLazyProps'
 const { t } = useI18n();
-const props = defineProps({
-    accountTypes: {
-        type: Object,
-        required: false,
-        default: () => ({ data: [] }),
-    },
-    currencies: {
-        type: Object,
-        required: true,
-    },
-    homeCurrency: {
-        type: Object,
-        required: true,
-    },
-});
-
-useLazyProps(props, ['accountTypes'])
+const page = usePage();
+const accounts = computed(() => page.props.accounts?.data || [])
+const accountTypes = computed(() => page.props.accountTypes?.data || [])
+const currencies = computed(() => page.props.currencies?.data || [])
+const homeCurrency = computed(() => page.props.homeCurrency || {})
+useLazyProps(page.props, ['accounts'])
+  
 const form = useForm({
     name: '',
     number: '',
     remark: '',
+    parent_id: null,
     selected_currency: null,
     currency_id: null,
     rate: 1,
@@ -39,11 +30,11 @@ const form = useForm({
     selected_account_type: null,
     account_type_id: null,
 });
-watch(props.homeCurrency, (list) => {
-    if (props.homeCurrency && !form.currency_id) {
-        form.selected_currency = props.homeCurrency
-        form.currency_id = props.homeCurrency.id
-        form.rate = props.homeCurrency.exchange_rate
+watch(homeCurrency, (list) => {
+    if (homeCurrency.value && !form.currency_id) {
+        form.selected_currency = homeCurrency.value
+        form.currency_id = homeCurrency.value.id
+        form.rate = homeCurrency.value.exchange_rate
     }
 }, { immediate: true })
 
@@ -121,7 +112,7 @@ const handleSelectChange = (field, value) => {
                     />
 
                     <NextSelect
-                        :options="props.accountTypes?.data || []"
+                        :options="accountTypes"
                         v-model="form.selected_account_type"
                         label-key="name"
                         value-key="id"
@@ -133,6 +124,20 @@ const handleSelectChange = (field, value) => {
                         resource-type="account_types"
                         :search-fields="['name']"
                         :error="form.errors?.account_type_id"
+                    />
+                    <NextSelect
+                        :options="accounts"
+                        v-model="form.selected_parent_account"
+                        label-key="name"
+                        value-key="id"
+                        @update:modelValue="(value) => handleSelectChange('parent_id', value)"
+                        id="parent_account"
+                        :reduce="account => account"
+                        :floating-text="t('general.parent_account')"
+                        :error="form.errors?.parent_id"
+                        :searchable="true"
+                        resource-type="accounts"
+                        :search-fields="['name', 'number', 'slug']"
                     />
                       <NextTextarea
                         v-model="form.remark"
@@ -148,7 +153,7 @@ const handleSelectChange = (field, value) => {
                         <div class="mt-3">
                             <div class="grid grid-cols-3 gap-2">
                                 <NextSelect
-                                :options="currencies.data"
+                                :options="currencies"
                                 v-model="form.selected_currency"
                                 label-key="code"
                                 value-key="id"

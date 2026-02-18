@@ -7,5 +7,7 @@
     "at_least_one_detail": "At least one detail is required",
     "total_debit_and_credit_must_be_equal": "Total debit and credit must be equal",
     "total_debit_and_credit_must_be_equal_description": "Total debit and credit must be equal",
-    "equality_error": "Equality error"
+    "equality_error": "Equality error", 
+    "parent_account": "Parent Account",
+    "parent": "Parent"
 }

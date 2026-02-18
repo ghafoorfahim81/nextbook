@@ -4,31 +4,32 @@ import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
-import { useForm, router } from '@inertiajs/vue3';
+import { useForm, router, usePage } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n'; 
 import { toast } from 'vue-sonner';
 import { useLazyProps } from '@/composables/useLazyProps'
-
+import { computed } from 'vue';
 const { t } = useI18n();
 
-const props = defineProps({
-    account: { type: Object, required: true },
-    currencies: {type: Object, required: true},
-    accountTypes: {type: Object, required: false, default: () => ({ data: [] })},
-    homeCurrency: {type: Object, required: true},
-});
-
-useLazyProps(props, ['accountTypes'])
+const page = usePage();
+const accounts = computed(() => page.props.accounts?.data || [])
+const account = computed(() => page.props.account?.data || {})
+const accountTypes = computed(() => page.props.accountTypes?.data || [])
+const currencies = computed(() => page.props.currencies?.data || [])
+const homeCurrency = computed(() => page.props.homeCurrency || {})
+useLazyProps(page.props, ['accounts']) 
 
 const form = useForm({
-    ...props.account.data,
-    account_type_id: props.account.data.account_type_id,
-    selected_account_type: props.account.data.account_type,
-    currency_id: props.account.data.currency_id,
-    selected_currency: props.account.data?.opening?.currency,
-    currency_id: props.account.data?.opening?.currency_id,
-    rate: props.account.data?.opening?.rate??null,
-    amount: props.account.data?.opening?.amount??0,
+    ...account.value,
+    account_type_id: account.value.account_type_id,
+    parent_id: account.value.parent_id,
+    selected_parent_account: account.value.parent,
+    selected_account_type: account.value.account_type,
+    currency_id: account.value.currency_id,
+    selected_currency: account.value?.opening?.currency,
+    currency_id: account.value?.opening?.currency_id,
+    rate: account.value?.opening?.rate??null,
+    amount: account.value?.opening?.amount??0,
 });
 
 
@@ -54,7 +55,6 @@ const handleSelectChange = (field, value) => {
         form.currency_id = value?.id;
     }
     else{
-        console.log('this is value', value);
         form[field] = value.id;
     }
 
@@ -85,7 +85,7 @@ const handleSelectChange = (field, value) => {
                     />
 
                     <NextSelect
-                        :options="accountTypes?.data"
+                        :options="accountTypes"
                         v-model="form.selected_account_type"
                         @update:modelValue="(value) => handleSelectChange('account_type_id', value)"
                         label-key="name"
@@ -98,6 +98,15 @@ const handleSelectChange = (field, value) => {
                         :search-fields="['name']"
                         :error="form.errors.account_type_id"
                     /> 
+                    <NextSelect
+                        :options="accounts"
+                        v-model="form.selected_parent_account"
+                        label-key="name"
+                        value-key="id"
+                        @update:modelValue="(value) => handleSelectChange('parent_id', value)"
+                        id="parent_account"
+                        :reduce="account => account"
+                    />
                     <NextTextarea
                         v-model="form.remark"
                         :label="t('general.remark')"
@@ -112,7 +121,7 @@ const handleSelectChange = (field, value) => {
                         <div class="mt-3">
                             <div class="grid grid-cols-3 gap-2">
                                 <NextSelect
-                                :options="currencies.data"
+                                :options="currencies"
                                 v-model="form.selected_currency"
                                 label-key="code"
                                 value-key="id"

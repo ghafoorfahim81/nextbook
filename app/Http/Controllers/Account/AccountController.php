@@ -39,7 +39,7 @@ class AccountController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $accounts = Account::with(['accountType'])
+        $accounts = Account::with(['accountType', 'parent'])
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection)
@@ -125,6 +125,7 @@ class AccountController extends Controller
             'opening',
             'opening.transaction.currency',
             'opening.transaction.lines',
+            'parent',
             'createdBy',
             'updatedBy',
         ]);
@@ -166,7 +167,7 @@ class AccountController extends Controller
 
     public function edit(Request $request, Account $chart_of_account)
     {
-        $chart_of_account->load(['accountType','opening', 'opening.transaction.currency','opening.transaction.lines']);
+        $chart_of_account->load(['accountType','opening', 'opening.transaction.currency','opening.transaction.lines', 'parent']);
         return inertia('Accounts/Accounts/Edit', [
             'account' => new AccountResource($chart_of_account),
         ]);

@@ -7,5 +7,7 @@
     "at_least_one_detail": "حداقل یک جزئیات لازم است",
     "total_debit_and_credit_must_be_equal": "مجموع دریف و کردیت باید برابر باشد",
     "total_debit_and_credit_must_be_equal_description": "مجموع دبیب و کردیت باید برابر باشد",
-    "equality_error": "خصای مساوات"
+    "equality_error": "خصای مساوات",
+    "parent_account": "حساب والد",
+    "parent": "والد"
 }
