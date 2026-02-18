@@ -37,6 +37,7 @@ class Account extends Model
         'name',
         'number',
         'account_type_id',
+        'parent_id',
         'branch_id',
         'slug',
         'is_active',
@@ -55,6 +56,7 @@ class Account extends Model
     protected $casts = [
         'id' => 'string',
         'account_type_id' => 'string',
+        'parent_id' => 'string',
         'branch_id' => 'string',
         'slug' => 'string',
         'is_active' => 'boolean',
@@ -158,11 +160,6 @@ class Account extends Model
         return $this->belongsTo(AccountType::class);
     }
 
-    public function parent(): BelongsTo
-    {
-        return $this->belongsTo(Account::class);
-    }
-
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
@@ -195,7 +192,15 @@ class Account extends Model
         return $this->morphOne(LedgerOpening::class, 'ledgerable');
     }
 
+    public function children()
+    {
+        return $this->hasMany(Account::class, 'parent_id');
+    }
 
+    public function parent()
+    {
+        return $this->belongsTo(Account::class, 'parent_id');
+    }
     /**
      * Get relationships configuration for dependency checking
      */
@@ -205,6 +210,14 @@ class Account extends Model
             'transactions' => [
                 'model' => 'transactions',
                 'message' => 'This account is used in transactions'
+            ],
+            'children' => [
+                'model' => 'accounts',
+                'message' => 'This account has children accounts'
+            ],
+            'parent' => [
+                'model' => 'accounts',
+                'message' => 'This account has a parent account'
             ]
         ];
     }

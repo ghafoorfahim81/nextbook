@@ -43,6 +43,7 @@ class AccountUpdateRequest extends FormRequest
             'remark' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
             'is_main' => ['nullable', 'boolean'],
+            'parent_id' => ['nullable', 'string', 'exists:accounts,id'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric','required_with:currency_id'],
             'amount' => ['nullable', 'numeric','required_with:transaction_type'],
