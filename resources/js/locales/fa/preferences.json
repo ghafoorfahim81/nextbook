@@ -69,7 +69,7 @@
         "select_font_size": "اندازه فونت انتخاب",
         "textarea_font_size": "اندازه فونت متن‌نویس",
         "records_per_page": "تعداد رکورد در هر صفحه",
-        "balance_nature_format": "فرمت مانده با طبیعت",
+        "balance_nature_format": "فرمت بلانس",
         "without_nature": "(+/-) بدون طبیعت ",
         "with_nature": "(Debit/Credit) با طبیعت"
     },

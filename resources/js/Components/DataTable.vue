@@ -144,6 +144,11 @@
                             <template v-else-if="column.render">
                                 {{ column.render(item) }}
                             </template>
+                            <template v-else-if="isBalanceColumn(column.key)">
+                                <span dir="ltr" class="inline-block text-left tabular-nums">
+                                    {{ getNestedValue(item, column.key) }}
+                                </span>
+                            </template>
                             <template v-else>
                                 {{ getNestedValue(item, column.key) }}
                             </template>
@@ -331,6 +336,11 @@ const derivedColumns = computed(() => {
 const getNestedValue = (obj, path) => {
     if (!obj || !path) return ''
     return path.split('.').reduce((acc, part) => acc?.[part], obj)
+}
+
+const isBalanceColumn = (key) => {
+    if (!key) return false
+    return key === 'balance' || key.endsWith('_balance') || key.includes('.balance') || key.includes('amount')
 }
 
 // Search handling

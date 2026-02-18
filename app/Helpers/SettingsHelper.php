@@ -67,7 +67,11 @@ if (!function_exists('all_user_preferences')) {
 if (!function_exists('recordsPerPage')) {
     function recordsPerPage()
     {
-        return Cache::get('recordsPerPage', 15);
+        $user = auth()->user();
+        if ($user) {
+            return $user->preferences['appearance']['records_per_page'] ?? 15;
+        }
+        return 15;
     }
 }
 
@@ -79,7 +83,11 @@ if (!function_exists('balance_nature_format')) {
      */
     function balanceNatureFormat(): string
     {
-        return Cache::get('balance_nature_format', 'with_nature');
+        $user = auth()->user();
+        if ($user) {
+            return $user->preferences['appearance']['balance_nature_format'] ?? 'with_nature';
+        }
+        return 'with_nature';
     }
 }
 
