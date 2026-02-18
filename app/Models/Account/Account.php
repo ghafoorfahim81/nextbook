@@ -99,23 +99,40 @@ class Account extends Model
 
                 $totalDebit  = (float) ($totals->total_debit ?? 0);
                 $totalCredit = (float) ($totals->total_credit ?? 0);
-                $nature = $this->accountType->nature ?? 'asset';
-                $natureFormat = balanceNatureFormat();
 
-                if ($nature === 'asset' || $nature === 'expense') {
-                    $balanceAmount = $totalDebit - $totalCredit;
-                    $balanceNature = 'dr';
-                } else {
-                    $balanceAmount = $totalCredit - $totalDebit;
-                    $balanceNature = 'cr';
-                }
-
+                // ALWAYS calculate net this way
                 $netBalance = $totalDebit - $totalCredit;
 
+                // Determine real balance nature from math
+                if ($netBalance > 0) {
+                    $balanceNature = 'dr';
+                } elseif ($netBalance < 0) {
+                    $balanceNature = 'cr';
+                } else {
+                    $balanceNature = null;
+                }
+
+                $balanceAmount = abs($netBalance);
+
+                $natureFormat = balanceNatureFormat();
+
+                // Format based on system setting
+                if ($natureFormat === 'with_nature') {
+                    $formattedBalance = $balanceAmount > 0
+                        ? $balanceAmount . '.' . $balanceNature
+                        : 0;
+                } elseif ($natureFormat === 'without_nature') {
+                    $formattedBalance = $netBalance; // signed
+                } else { // with_balance (absolute only)
+                    $formattedBalance = $balanceAmount;
+                }
+
                 return [
-                    'balance'               => ($natureFormat=='with_nature')?$balanceAmount.'.'.$balanceNature:abs($balanceAmount),
+                    'balance'               => $formattedBalance,
                     'balance_nature'        => $balanceNature,
-                    'balance_with_nature'   => $balanceAmount>0?$balanceAmount . '.' . $balanceNature:0,
+                    'balance_with_nature'   => $balanceAmount > 0
+                        ? $balanceAmount . '.' . $balanceNature
+                        : 0,
                     'total_debit'           => $totalDebit,
                     'total_credit'          => $totalCredit,
                     'net_balance'           => $netBalance,
