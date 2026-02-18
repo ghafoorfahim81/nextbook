@@ -37,11 +37,10 @@ const loading = ref(false);
 const activeMainTab = ref('general');
 
 const accountData = computed(() => account.value ?? {});
-
+const balance = computed(() => accountData.value?.balance);
 const transactionRows = computed(() => {
     const txns = transactions.value || [];
     const accountId = accountData.value?.id || props.accountId;
-
     return txns.map((txn) => {
         const lines = Array.isArray(txn?.lines) ? txn.lines : [];
         const line = accountId
@@ -224,7 +223,9 @@ const closeDialog = () => {
                                             class="text-base font-medium"
 
                                         >
-                                        {{ (balanceNatureFormat=='with_nature')?formatAmount(statement.balance)+'.'+statement.balance_nature:formatAmount(statement.balance) }}
+                                        <span dir="ltr" class="inline-block text-left tabular-nums">
+                                            {{ balance }}
+                                        </span>
 
                                         </div>
                                     </div>
