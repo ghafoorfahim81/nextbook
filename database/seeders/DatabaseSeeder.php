@@ -64,7 +64,7 @@ class DatabaseSeeder extends Seeder
             $this->call(RolePermissionSeeder::class);
             $this->call(CompanySeeder::class);
             $this->call(SizeSeeder::class);
-        }
-
+        } 
+        $this->call(PerformanceLoadSeeder::class);
     }
 }
