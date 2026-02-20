@@ -108,6 +108,22 @@ class UnitMeasure extends Model
                 'quantity_slug' => 'count',
                 'is_main'   => true,
             ],
+            [
+                'name'        => 'باکس',
+                'unit'        => 6,
+                'symbol'      => "box",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'count')->first()->id,
+                'quantity_slug' => 'count',
+                'is_main'     => true,
+            ],
+            [
+                'name'        => 'بوتل',
+                'unit'        => 1,
+                'symbol'      => "btl",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'count')->first()->id,
+                'quantity_slug' => 'count',
+                'is_main'     => true,
+            ],
             // length
             [
                 'name'        => 'سانتی متر',
