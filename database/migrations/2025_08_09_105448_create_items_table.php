@@ -40,7 +40,8 @@ return new class extends Migration
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->unique(['branch_id', 'name', 'deleted_at']);
-            $table->unique(['branch_id', 'code', 'deleted_at']);
+    $table->unique(['branch_id', 'code', 'deleted_at']);
+            $table->unique(['branch_id', 'barcode', 'deleted_at']);
             $table->timestamps();
             $table->softDeletes();
         });

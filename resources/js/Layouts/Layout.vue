@@ -601,7 +601,7 @@ function logout() {
                         <div class="px-2 pb-2 group-data-[collapsible=icon]:hidden">
                             <div class="relative">
                                 <Search
-                                    class="absolute top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+                                    class="absolute top-1/2 -translate-y-1/2 size-4 text-muted-foreground text-primary"
                                     :class="isRTL ? 'right-2' : 'left-2'"
                                 />
                                 <input
@@ -609,7 +609,7 @@ function logout() {
                                     type="text"
                                     autocomplete="off"
                                     :placeholder="t('layout.search_menu') || 'Search menu...'"
-                                    class="h-9 w-full rounded-md border border-input bg-background text-sm outline-none focus:ring-2 focus:ring-violet-500"
+                                    class="h-9 w-full rounded-md border border-input border-primary bg-background text-sm outline-none focus:ring-2 focus:ring-violet-500"
                                     :class="isRTL ? 'pr-8 pl-8' : 'pl-8 pr-8'"
                                 />
                                 <button
