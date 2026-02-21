@@ -20,6 +20,7 @@ useLazyProps(page.props, ['accounts'])
   
 const form = useForm({
     name: '',
+    local_name: '',
     number: '',
     remark: '',
     parent_id: null,
@@ -105,6 +106,12 @@ const handleSelectChange = (field, value) => {
                         :placeholder="t('general.enter', { text: t('general.name') })"
                     />
                     <NextInput
+                        :label="t('account.local_name')"
+                        v-model="form.local_name"
+                        :error="form.errors?.local_name"
+                        :placeholder="t('general.enter', { text: t('account.local_name') })"
+                    />
+                    <NextInput
                         :label="t('general.number')"
                         v-model="form.number"
                         :error="form.errors?.number"
@@ -133,7 +140,7 @@ const handleSelectChange = (field, value) => {
                         @update:modelValue="(value) => handleSelectChange('parent_id', value)"
                         id="parent_account"
                         :reduce="account => account"
-                        :floating-text="t('general.parent_account')"
+                        :floating-text="t('account.parent_account')"
                         :error="form.errors?.parent_id"
                         :searchable="true"
                         resource-type="accounts"

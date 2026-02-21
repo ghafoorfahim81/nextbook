@@ -29,6 +29,11 @@ class AccountUpdateRequest extends FormRequest
                 'string',
                 Rule::unique('accounts', 'name')->ignore($chartOfAccount),
             ],
+            'local_name' => [
+                'nullable',
+                'string',
+                Rule::unique('accounts', 'local_name')->ignore($chartOfAccount),
+            ],
             'number' => [
                 'required',
                 'string',

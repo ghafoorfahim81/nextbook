@@ -9,5 +9,6 @@
     "total_debit_and_credit_must_be_equal_description": "Total debit and credit must be equal",
     "equality_error": "Equality error", 
     "parent_account": "Parent Account",
-    "parent": "Parent"
+    "parent": "Parent",
+    "local_name": "Local Name"
 }

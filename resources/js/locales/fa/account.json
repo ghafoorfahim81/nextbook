@@ -9,5 +9,6 @@
     "total_debit_and_credit_must_be_equal_description": "مجموع دبیب و کردیت باید برابر باشد",
     "equality_error": "خصای مساوات",
     "parent_account": "حساب والد",
-    "parent": "والد"
+    "parentش": "والد",
+    "local_name": "نام محلی"
 }

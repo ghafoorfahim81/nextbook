@@ -78,6 +78,12 @@ const handleSelectChange = (field, value) => {
                         :placeholder="t('general.enter', { text: t('general.name') })"
                     />
                     <NextInput
+                        :label="t('account.local_name')"
+                        v-model="form.local_name"
+                        :error="form.errors?.local_name"
+                        :placeholder="t('general.enter', { text: t('account.local_name') })"
+                    />
+                    <NextInput
                         :label="t('general.number')"
                         v-model="form.number"
                         :error="form.errors?.number"
