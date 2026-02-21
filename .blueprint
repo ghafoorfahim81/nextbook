@@ -1,14 +1,14 @@
 created:
-    - app/Http/Controllers/Purchase/PurchaseController.php
-    - database/factories/Purchase/PurchaseFactory.php
-    - database/migrations/2025_09_01_063044_create_purchases_table.php
-    - app/Models/Purchase/Purchase.php
-    - database/seeders/Purchase/PurchaseSeeder.php
-    - tests/Feature/Http/Controllers/Purchase/PurchaseControllerTest.php
-    - app/Http/Requests/Purchase/PurchaseStoreRequest.php
-    - app/Http/Requests/Purchase/PurchaseUpdateRequest.php
-    - app/Http/Resources/Purchase/PurchaseCollection.php
-    - app/Http/Resources/Purchase/PurchaseResource.php
+    - app/Http/Controllers/JournalEntry/JournalTypeController.php
+    - database/factories/JournalEntry/JournalTypeFactory.php
+    - database/migrations/2026_02_21_074817_create_journal_types_table.php
+    - app/Models/JournalEntry/JournalType.php
+    - database/seeders/JournalEntry/JournalTypeSeeder.php
+    - tests/Feature/Http/Controllers/JournalEntry/JournalTypeControllerTest.php
+    - app/Http/Requests/JournalEntry/JournalTypeStoreRequest.php
+    - app/Http/Requests/JournalEntry/JournalTypeUpdateRequest.php
+    - app/Http/Resources/JournalEntry/JournalTypeCollection.php
+    - app/Http/Resources/JournalEntry/JournalTypeResource.php
 updated:
     - routes/api.php
 models:
@@ -32,3 +32,4 @@ models:
     Transaction\Transaction: { id: 'char:26', account_id: 'char:26', amount: double, currency_id: 'char:26', rate: double, date: date, type: string, remark: 'text nullable', created_by: 'char:26', updated_by: 'char:26 nullable' }
     User: { id: 'char:26', name: string, email: string, email_verified_at: 'timestamp nullable', password: string, remember_token: 'string:100 nullable', profile_photo_path: 'string:2048 nullable', two_factor_secret: 'text nullable', two_factor_recovery_codes: 'text nullable', two_factor_confirmed_at: 'timestamp nullable', branch_id: 'char:26 nullable', company_id: 'char:26 nullable' }
     Purchase/Purchase: { id: char(26), number: 'string index', supplier_id: 'char(26) foreign:ledgers', date: date, transaction_id: 'char(26) foreign:transactions', discount: 'decimal nullable', discount_type: 'string nullable', type: string, description: 'text nullable', status: 'string nullable', created_by: 'char(26) foreign:users', updated_by: 'char(26) foreign:users nullable', timestamps: timestamps }
+    JournalEntry/JournalType: { id: char(26), name: 'string index', description: 'text nullable', created_by: 'char(26) foreign:users', updated_by: 'char(26) foreign:users nullable', deleted_by: 'char(26) foreign:users nullable', timestamps: timestamps }
