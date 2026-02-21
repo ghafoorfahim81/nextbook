@@ -45,7 +45,9 @@
   },
   "journal_entry": {
     "journal_entry": "ورودی حسابداری",
-    "journal_entries": "ورودی های حسابداری"
+    "journal_entries": "ورودی های حسابداری",
+    "journal_type": "نوعیت ژورنال",
+    "journal_types": "نوعیت های ژورنال"
   },
   "purchase": {
     "purchase": "خرید",

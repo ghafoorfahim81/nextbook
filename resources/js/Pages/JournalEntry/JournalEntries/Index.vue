@@ -4,7 +4,7 @@ import DataTable from '@/Components/DataTable.vue';
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDeleteResource } from '@/composables/useDeleteResource';
-import JournalEntryShowDialog from '@/Pages/JournalEntries/ShowDialog.vue'
+import JournalEntryShowDialog from '@/Pages/JournalEntry/JournalEntries/ShowDialog.vue'
 import { router } from '@inertiajs/vue3'
 const { t } = useI18n();
 

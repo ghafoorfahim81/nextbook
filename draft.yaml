@@ -1,24 +1,16 @@
 models:
-  Purchase/Purchase:
-    id: char(26)
-    number: string index
-    supplier_id: char(26) foreign:ledgers  
-    date: date
-    transaction_id: char(26) foreign:transactions  
-    discount: decimal nullable
-    discount_type: string nullable
-    type: string 
+  JournalEntry/JournalType:
+    id: char(26) 
+    name: string index
     description: text nullable
-    status: string nullable
     created_by: char(26) foreign:users
     updated_by: char(26) foreign:users nullable
+    deleted_by: char(26) foreign:users nullable
     timestamps: true
 controllers:
-  Purchase/Purchase:
-    resource: api
-
-seeders: Purchase/Purchase
-
+  JournalEntry/JournalType:
+    resource: api 
+seeders: JournalEntry/JournalType
 #models:
 #  Administration/Quantity:
 #    id: id

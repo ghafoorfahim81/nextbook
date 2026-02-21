@@ -41,7 +41,7 @@ class JournalEntryController extends Controller
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
-        return inertia('JournalEntries/Index', [
+        return inertia('JournalEntry/JournalEntries/Index', [
             'journalEntries' => JournalEntryResource::collection($journalEntries),
             'filterOptions' => [
                 'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
@@ -63,7 +63,7 @@ class JournalEntryController extends Controller
      */
     public function create()
     {
-        return inertia('JournalEntries/Create', [
+        return inertia('JournalEntry/JournalEntries/Create', [
             'accounts' => AccountResource::collection(Account::all()),
             'ledgers' => LedgerResource::collection(Ledger::all()),
         ]);
@@ -135,7 +135,7 @@ class JournalEntryController extends Controller
     public function edit(Request $request, JournalEntry $journalEntry)
     {
         $journalEntry->load(['transaction.currency', 'transaction.lines.account']);
-        return inertia('JournalEntries/Edit', [
+        return inertia('JournalEntry/JournalEntries/Edit', [
             'journalEntry' => new JournalEntryResource($journalEntry),
             'accounts' => AccountResource::collection(Account::all()),
             'ledgers' => LedgerResource::collection(Ledger::all()),
