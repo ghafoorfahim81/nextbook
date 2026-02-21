@@ -17,6 +17,7 @@ const props = defineProps({
 const { t } = useI18n();
 const columns = computed(() => ([
     { key: 'name', label: t('general.name') },
+    { key: 'local_name', label: t('account.local_name') },
     { key: 'number', label: t('general.number') },
     { key: 'remark', label: t('general.remark') },
     { key: 'parent.name', label: t('account.parent') },
@@ -39,6 +40,7 @@ const showItem = (id) => {
 const filterFields = computed(() => ([
     { key: 'number', label: t('general.number'), type: 'text' },
     { key: 'name', label: t('general.name'), type: 'text' },
+    { key: 'local_name', label: t('account.local_name'), type: 'text' },
     {
         key: 'account_type_id',
         label: t('account.account_type'),
