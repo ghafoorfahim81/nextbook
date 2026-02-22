@@ -4,7 +4,7 @@ namespace App\Http\Requests\JournalEntry;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class JournalEntryStoreRequest extends FormRequest
+class JournalEntryUpdateRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -29,7 +29,7 @@ class JournalEntryStoreRequest extends FormRequest
 
             'lines.*.remark' => ['nullable', 'string'],
             'lines.*.ledger_id' => ['nullable', 'exists:ledgers,id'],
-            'lines.*.bill_number' => ['nullable', 'string', 'max:255'],
+            'lines.*.journal_class_id' => ['nullable', 'exists:journal_classes,id'],
         ];
     }
 

@@ -18,7 +18,8 @@ const journalEntry = computed(() => page.props.journalEntry?.data || {})
 const accounts = computed(() => page.props.accounts?.data || [])
 const ledgers = computed(() => page.props.ledgers?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
-
+const journalClasses = computed(() => page.props.journalClasses?.data || []) 
+console.log('journal classes', journalClasses.value)
 useLazyProps(page.props, ['accounts', 'ledgers', 'currencies'])
 
 const form = useForm({
@@ -70,8 +71,8 @@ onMounted(() => {
     credit: Number(line.credit) || 0,
     selected_account: accounts.value.find(acc => acc.id === line.account_id) || null,
     remark: getLineRemark(line),
-    ledger: line.ledger ?? '',
-    bill_number: line.bill_number ?? '',
+    ledger: line.ledger ?? '', 
+    journal_class_id: line.journal_class_id ?? '',
   }))
 
   // If no transaction currency, sync selected_currency from currencies/currency_id for edit mode select
@@ -117,8 +118,8 @@ function addLine() {
     debit: 0,
     credit: 0,
     remark: '',
-    ledger: '',
-    bill_number: '',
+    ledger: '', 
+    journal_class_id: '',
   })
 }
 
@@ -279,7 +280,7 @@ function submit() {
               <th class="px-4 py-2">{{ t('general.credit') }} *</th>
               <th class="px-4 py-2">{{ t('general.remark') }}</th>
               <th class="px-4 py-2">{{ t('general.ledger') }}</th>
-              <th class="px-4 py-2">{{ t('general.bill_number') }}</th>
+              <th class="px-4 py-2">{{ t('sidebar.journal_entry.journal_class') }}</th>
               <th class="px-4 py-2 w-12"></th>
             </tr>
           </thead>
@@ -341,11 +342,15 @@ function submit() {
                     />
                 </td>
                 <td class="px-4 py-2 w-40">
-                    <NextInput
-                        v-model="line.bill_number"
-                        :placeholder="t('general.bill_number')"
-                        :error="form.errors?.[`line.${index}.bill_number`]"
-                        class="text-right"
+                    <NextSelect
+                        :options="journalClasses.data || journalClasses"
+                        v-model="line.selected_journal_class"
+                        @update:modelValue="(val) => { line.journal_class_id = val?.id || '' }"
+                        label-key="name"
+                        value-key="id"
+                        :reduce="journalClass => journalClass"
+                        :error="form.errors?.[`line.${index}.journal_class_id`]"
+                        :searchable="true"
                     />
                 </td>
 

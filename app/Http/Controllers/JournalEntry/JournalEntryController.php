@@ -13,6 +13,7 @@ use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
 use App\Http\Requests\JournalEntry\JournalEntryStoreRequest;
+use App\Http\Requests\JournalEntry\JournalEntryUpdateRequest;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -93,7 +94,7 @@ class JournalEntryController extends Controller
             'debit'       => $line['debit'] ?? 0,
             'credit'      => $line['credit'] ?? 0,
             'remark'      => $line['remark'] ?? null,
-            'bill_number' => $line['bill_number'] ?? null,
+            'journal_class_id' => $line['journal_class_id'] ?? null,
         ])
         ->toArray();
         $transactionService->post(
@@ -135,18 +136,19 @@ class JournalEntryController extends Controller
      */
     public function edit(Request $request, JournalEntry $journalEntry)
     {
-        $journalEntry->load(['transaction.currency', 'transaction.lines.account']);
+        $journalEntry->load(['transaction.currency', 'transaction.lines.account', 'transaction.lines.journalClass']);
         return inertia('JournalEntry/JournalEntries/Edit', [
             'journalEntry' => new JournalEntryResource($journalEntry),
             'accounts' => AccountResource::collection(Account::all()),
             'ledgers' => LedgerResource::collection(Ledger::all()),
+            'journalClasses' => JournalClass::all(),
         ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(JournalEntryStoreRequest $request, JournalEntry $journalEntry)
+    public function update(JournalEntryUpdateRequest $request, JournalEntry $journalEntry)
     {
         $validated = $request->validated();
 
@@ -179,7 +181,7 @@ class JournalEntryController extends Controller
                 'debit'       => $line['debit'] ?? 0,
                 'credit'      => $line['credit'] ?? 0,
                 'remark'      => $line['remark'] ?? null,
-                'bill_number' => $line['bill_number'] ?? null,
+                'journal_class_id' => $line['journal_class_id'] ?? null,
             ])
             ->toArray();
             $transactionService->post(
