@@ -28,8 +28,7 @@ class Transaction extends Model
      */
     protected $keyType = 'string';
     public $incrementing = false;
-    protected $fillable = [
-        'account_id',
+    protected $fillable = [ 
         'voucher_number',
         'status',
         'currency_id',

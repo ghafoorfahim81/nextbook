@@ -5,7 +5,7 @@ namespace App\Http\Resources\JournalEntry;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class JournalTypeResource extends JsonResource
+class JournalClassResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -15,6 +15,7 @@ class JournalTypeResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'code' => $this->code,
             'description' => $this->description,
         ];
     }

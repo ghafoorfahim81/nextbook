@@ -15,12 +15,13 @@ use App\Traits\HasUserAuditable;
 use App\Traits\BranchSpecific;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-class JournalType extends Model
+class JournalClass extends Model
 {
     use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
-    protected $table = 'journal_types';
+    protected $table = 'journal_classes';
     protected $primaryKey = 'id';
     public $incrementing = false;
     protected $keyType = 'string';
@@ -33,12 +34,14 @@ class JournalType extends Model
     {
         return [
             'name',
+            'code',
             'description',
         ];
     }
 
     protected array $allowedFilters = [
         'name',
+        'code',
         'description',
         'created_by',
     ];
@@ -63,6 +66,7 @@ class JournalType extends Model
      */
     protected $fillable = [
         'name',
+        'code',
         'description',
         'created_by',
         'updated_by',
@@ -77,6 +81,8 @@ class JournalType extends Model
     protected function casts(): array
     {
         return [
+            'id' => 'string',
+            'code' => 'string',
             'created_by' => 'integer',
             'updated_by' => 'integer',
             'deleted_by' => 'integer',

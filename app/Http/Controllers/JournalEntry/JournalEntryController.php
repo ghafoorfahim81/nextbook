@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\Support\Inertia\CacheKey;
 use App\Models\User;
-
+use App\Models\JournalEntry\JournalClass;
 class JournalEntryController extends Controller
 {
     /**
@@ -66,6 +66,7 @@ class JournalEntryController extends Controller
         return inertia('JournalEntry/JournalEntries/Create', [
             'accounts' => AccountResource::collection(Account::all()),
             'ledgers' => LedgerResource::collection(Ledger::all()),
+            'journalClasses' => JournalClass::all(),
         ]);
     }
 
