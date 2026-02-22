@@ -126,6 +126,8 @@ class JournalEntryController extends Controller
         $journalEntry->load([
             'transaction.currency',
             'transaction.lines.account',
+            'transaction.lines.journalClass',
+            'transaction.lines.ledger',
         ]);
         return response()->json([
             'data' => new JournalEntryResource($journalEntry),
