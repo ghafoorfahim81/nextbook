@@ -43,5 +43,7 @@
     "duplicate_store_batch_expiry": "این موجودی با همین بچ و تاریخ انقضا قبلا وجود دارد.",
     "low_price_warning": "هشدار قیمت پایین",
     "sale_price_less_than_purchase_price": "قیمت فروش نمیتواند کمتر از قیمت خرید باشد.",
-    "generate_new_barcode": "ایجاد بارکد جدید"
+    "generate_new_barcode": "ایجاد بارکد جدید",
+    "cost_and_purchase_price_required": "هزینه و قیمت خرید مورد نیاز است",
+    "cost_and_purchase_price_required_description": "هزینه و قیمت خرید مورد نیاز است برای باز کردن موجودی کالا."
 }

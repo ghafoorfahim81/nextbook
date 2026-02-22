@@ -44,7 +44,7 @@ const sizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
 const otherCurrentAssetsAccounts = computed(() => props.otherCurrentAssetsAccounts?.data ?? props.otherCurrentAssetsAccounts ?? [])
 const incomeAccounts = computed(() => props.incomeAccounts?.data ?? props.incomeAccounts ?? [])
 const costAccounts = computed(() => props.costAccounts?.data ?? props.costAccounts ?? [])
-
+console.log('stores', props)
 const itemTypes = computed(() => props.itemTypes?.data ?? props.itemTypes ?? [])
 // Format code with leading zeros based on the number
 const formatCode = (number) => {
