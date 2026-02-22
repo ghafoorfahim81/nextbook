@@ -3,7 +3,7 @@
 namespace Tests\Feature\Http\Controllers\JournalEntry;
 
 use App\Models\CreatedBy;
-use App\Models\JournalType;
+use App\Models\JournalEntry\JournalClass;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use JMac\Testing\Traits\AdditionalAssertions;
@@ -11,18 +11,18 @@ use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 /**
- * @see \App\Http\Controllers\JournalEntry\JournalTypeController
+ * @see \App\Http\Controllers\JournalEntry\JournalClassController
  */
-final class JournalTypeControllerTest extends TestCase
+final class JournalClassControllerTest extends TestCase
 {
     use AdditionalAssertions, RefreshDatabase, WithFaker;
 
     #[Test]
     public function index_behaves_as_expected(): void
     {
-        $journalTypes = JournalType::factory()->count(3)->create();
+        $journalClasses = JournalClass::factory()->count(3)->create();
 
-        $response = $this->get(route('journal-types.index'));
+        $response = $this->get(route('journal-classes.index'));
 
         $response->assertOk();
         $response->assertJsonStructure([]);
@@ -33,9 +33,9 @@ final class JournalTypeControllerTest extends TestCase
     public function store_uses_form_request_validation(): void
     {
         $this->assertActionUsesFormRequest(
-            \App\Http\Controllers\JournalEntry\JournalTypeController::class,
+            \App\Http\Controllers\JournalEntry\JournalClassController::class,
             'store',
-            \App\Http\Requests\JournalEntry\JournalTypeStoreRequest::class
+            \App\Http\Requests\JournalEntry\JournalClassStoreRequest::class
         );
     }
 
@@ -45,17 +45,17 @@ final class JournalTypeControllerTest extends TestCase
         $name = fake()->name();
         $created_by = CreatedBy::factory()->create();
 
-        $response = $this->post(route('journal-types.store'), [
+        $response = $this->post(route('journal-classes.store'), [
             'name' => $name,
             'created_by' => $created_by->id,
         ]);
 
-        $journalTypes = JournalType::query()
+        $journalClasses = JournalClass::query()
             ->where('name', $name)
             ->where('created_by', $created_by->id)
             ->get();
-        $this->assertCount(1, $journalTypes);
-        $journalType = $journalTypes->first();
+                $this->assertCount(1, $journalClasses);
+        $journalClass = $journalClasses->first();
 
         $response->assertCreated();
         $response->assertJsonStructure([]);
@@ -65,9 +65,9 @@ final class JournalTypeControllerTest extends TestCase
     #[Test]
     public function show_behaves_as_expected(): void
     {
-        $journalType = JournalType::factory()->create();
+        $journalClass = JournalClass::factory()->create();
 
-        $response = $this->get(route('journal-types.show', $journalType));
+        $response = $this->get(route('journal-classes.show', $journalClass));
 
         $response->assertOk();
         $response->assertJsonStructure([]);
@@ -78,43 +78,43 @@ final class JournalTypeControllerTest extends TestCase
     public function update_uses_form_request_validation(): void
     {
         $this->assertActionUsesFormRequest(
-            \App\Http\Controllers\JournalEntry\JournalTypeController::class,
+            \App\Http\Controllers\JournalEntry\JournalClassController::class,
             'update',
-            \App\Http\Requests\JournalEntry\JournalTypeUpdateRequest::class
+            \App\Http\Requests\JournalEntry\JournalClassUpdateRequest::class
         );
     }
 
     #[Test]
     public function update_behaves_as_expected(): void
     {
-        $journalType = JournalType::factory()->create();
+        $journalClass = JournalClass::factory()->create();
         $name = fake()->name();
         $created_by = CreatedBy::factory()->create();
 
-        $response = $this->put(route('journal-types.update', $journalType), [
+        $response = $this->put(route('journal-classes.update', $journalClass), [
             'name' => $name,
             'created_by' => $created_by->id,
         ]);
 
-        $journalType->refresh();
+        $journalClass->refresh();
 
         $response->assertOk();
         $response->assertJsonStructure([]);
 
-        $this->assertEquals($name, $journalType->name);
-        $this->assertEquals($created_by->id, $journalType->created_by);
+        $this->assertEquals($name, $journalClass->name);
+        $this->assertEquals($created_by->id, $journalClass->created_by);
     }
 
 
     #[Test]
     public function destroy_deletes_and_responds_with(): void
     {
-        $journalType = JournalType::factory()->create();
+                $journalClass = JournalClass::factory()->create();
 
-        $response = $this->delete(route('journal-types.destroy', $journalType));
+        $response = $this->delete(route('journal-classes.destroy', $journalClass));
 
         $response->assertNoContent();
 
-        $this->assertModelMissing($journalType);
+        $this->assertModelMissing($journalClass);
     }
 }

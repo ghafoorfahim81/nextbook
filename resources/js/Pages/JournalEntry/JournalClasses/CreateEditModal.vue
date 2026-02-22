@@ -52,8 +52,8 @@ const closeModal = () => {
 const handleSubmit = async () => {
     const isEdit = isEditing.value;
     const action = isEdit
-        ? () => form.patch(route('journal-types.update', props.editingItem.id), submitOptions)
-        : () => form.post('/journal-types', submitOptions);
+        ? () => form.patch(route('journal-classes.update', props.editingItem.id), submitOptions)
+        : () => form.post('/journal-classes', submitOptions);
 
     const submitOptions = {
         onSuccess: () => {
@@ -65,7 +65,7 @@ const handleSubmit = async () => {
                 {
                     description: t(
                         isEdit ? 'general.update_success' : 'general.create_success',
-                        { name: t('sidebar.journal_entry.journal_type') }
+                        { name: t('sidebar.journal_entry.journal_class') }
                     ),
                     class: 'bg-green-600',
                 }
@@ -81,7 +81,7 @@ const handleSubmit = async () => {
 <template>
     <ModalDialog
         :open="localDialogOpen"
-        :title="isEditing ? t('general.edit', { name: t('sidebar.journal_entry.journal_type') }) : t('general.create', { name: t('sidebar.journal_entry.journal_type') })"
+                :title="isEditing ? t('general.edit', { name: t('sidebar.journal_entry.journal_class') }) : t('general.create', { name: t('sidebar.journal_entry.journal_class') })"
         :confirmText="isEditing ? t('general.update') : t('general.create')"
         :cancel-text="t('general.close')"
         @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
@@ -98,11 +98,17 @@ const handleSubmit = async () => {
                     v-model="form.name" 
                     :error="form.errors.name" 
                 />
+                <NextInput 
+                    :label="t('general.code')" 
+                    :placeholder="t('general.enter', { text: t('general.code') })" 
+                    v-model="form.code" 
+                    :error="form.errors.code" 
+                />
                 <NextTextarea
-                    v-model="form.remarks"
-                    :label="t('general.remarks')"
-                    :placeholder="t('general.enter', { text: t('general.remarks') })"
-                    :error="form.errors?.remarks"
+                    v-model="form.description"
+                    :label="t('general.description')"
+                    :placeholder="t('general.enter', { text: t('general.description') })"
+                    :error="form.errors?.description"
                 /> 
             </div>
         </form>

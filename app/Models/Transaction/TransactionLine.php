@@ -22,7 +22,6 @@ class TransactionLine extends Model
         'ledger_id',
         'debit',
         'credit',
-        'bill_number',
         'remark',
         'deleted_by',
     ];

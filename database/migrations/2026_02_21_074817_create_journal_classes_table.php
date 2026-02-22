@@ -13,9 +13,10 @@ return new class extends Migration
     {
         Schema::disableForeignKeyConstraints();
 
-        Schema::create('journal_types', function (Blueprint $table) {
+        Schema::create('journal_classes', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->string('name')->index();
+            $table->string('code')->nullable()->index();
             $table->text('description')->nullable();
             $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
@@ -24,7 +25,7 @@ return new class extends Migration
             $table->softDeletes();
             $table->timestamps();
         });
-        Schema::table('journal_types', function (Blueprint $table) {
+        Schema::table('journal_classes', function (Blueprint $table) {
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('branch_id')->references('id')->on('branches');
@@ -37,6 +38,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('journal_types');
+        Schema::dropIfExists('journal_classes');
     }
 };

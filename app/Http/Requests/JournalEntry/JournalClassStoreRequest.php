@@ -4,7 +4,7 @@ namespace App\Http\Requests\JournalEntry;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class JournalTypeUpdateRequest extends FormRequest
+class JournalClassStoreRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -21,6 +21,7 @@ class JournalTypeUpdateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string'],
+            'code' => ['nullable', 'string'],
             'description' => ['nullable', 'string'], 
             'updated_by' => ['nullable'],
             'deleted_by' => ['nullable'],

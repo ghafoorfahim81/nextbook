@@ -194,7 +194,9 @@
   "saving": "Saving...",
   "duplicate_found": "Duplicate found",
   "min": "Min",
-  "max": "Max"
+  "max": "Max",
+  "code": "Code",
+  "description": "Description"
 }
 
 

@@ -45,9 +45,9 @@
   },
   "journal_entry": {
     "journal_entry": "Journal Entry",
-    "journal_entries": "Journal Entries",
-    "journal_type": "Journal Type",
-    "journal_types": "Journal Types"
+    "journal_entries": "Journal Entries", 
+    "journal_class": "Journal Class",
+    "journal_classes": "Journal Classes"
   },
   "purchase": {
     "purchase": "Purchase",
