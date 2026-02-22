@@ -43,5 +43,7 @@
     "duplicate_store_batch_expiry": "This store with the same batch and expiry already exists.",
     "sale_price_less_than_purchase_price": "Sale price cannot be less than purchase price.",
     "low_price_warning": "Low Price Warning",
-    "generate_new_barcode": "Generate New Barcode"
+    "generate_new_barcode": "Generate New Barcode",
+    "cost_and_purchase_price_required": "Cost and Purchase Price Required",
+    "cost_and_purchase_price_required_description": "Cost and Purchase Price are required for the opening of the item."
 }

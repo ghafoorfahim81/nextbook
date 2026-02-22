@@ -95,6 +95,15 @@ const normalize = () => {
 }
 
 const handleSubmit = () => {
+    if(form.openings.some(o => o.store_id != null && o.quantity>0)){
+        if(form.cost==0 || form.purchase_price==0){
+            toast.error(t('item.cost_and_purchase_price_required'), {
+                description: t('item.cost_and_purchase_price_required_description'),
+                class: 'bg-red-600',
+            });
+            return;
+        }
+    }
     normalize()
     form.patch(route('items.update', form.id), {
         onSuccess: () => {
@@ -155,7 +164,7 @@ watch(
 const handleOpeningSelectChange = (index, value) => {
     console.log('this is value', value);
     form.openings[index].selected_store = value;
-    form.openings[index].store_id = value ? value : null;
+    form.openings[index].store_id = value.id ? value.id : null;
 };
 
 const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])

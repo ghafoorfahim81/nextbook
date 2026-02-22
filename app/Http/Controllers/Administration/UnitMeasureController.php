@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use App\Support\Inertia\CacheKey;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 class UnitMeasureController extends Controller
@@ -114,7 +115,7 @@ class UnitMeasureController extends Controller
             // Create the measure (duplicate checking is handled by form request validation)
             $metric->measures()->create(attributes: $measureData);
 
-            Cache::forget('unitMeasures');
+            Cache::forget(CacheKey::forCompanyBranchLocale($request, 'unit_measures'));
             DB::commit();
             return redirect()->route('unit-measures.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.unit_measure')]));
         } catch (\Throwable $th) {
@@ -175,7 +176,7 @@ class UnitMeasureController extends Controller
             ]);
 
             DB::commit();
-            Cache::forget('unitMeasures');
+            Cache::forget(CacheKey::forCompanyBranchLocale($request, 'unit_measures'));
             return redirect()->route('unit-measures.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.unit_measure')]));
         } catch (\Throwable $th) {
             DB::rollBack();
@@ -195,14 +196,14 @@ class UnitMeasureController extends Controller
 
         $unitMeasure->delete();
 
-        Cache::forget('unitMeasures');
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'unit_measures'));
         return redirect()->route('unit-measures.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.unit_measure')]));
     }
 
     public function restore(Request $request, UnitMeasure $unitMeasure)
     {
         $unitMeasure->restore();
-        Cache::forget('unitMeasures');
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'unit_measures'));
         return redirect()->route('unit-measures.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.unit_measure')]));
     }
 }

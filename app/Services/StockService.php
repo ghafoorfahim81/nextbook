@@ -5,6 +5,7 @@ namespace App\Services;
 
 use App\Models\Inventory\Stock;
 use App\Models\Inventory\StockOut;
+use App\Support\Inertia\CacheKey;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
@@ -26,8 +27,9 @@ class StockService
                 'size_id' => $data['size_id'] ?? null,  // from item form
             ]);
 
-            return Stock::create($stockData);
-            Cache::forget('items');
+            $stock = Stock::create($stockData);
+            Cache::forget(CacheKey::forCompanyBranchLocale(request(), 'items'));
+            return $stock;
         });
     }
 
@@ -50,10 +52,10 @@ class StockService
             $stockData['store_id'] = $storeId;
             $stockData['source_type'] = $sourceType;
             $stockData['source_id'] = $sourceId;
-            return Stock::updateOrCreate($stockData);
-
-            });
-            Cache::forget('items');
+            $stock = Stock::updateOrCreate($stockData);
+            Cache::forget(CacheKey::forCompanyBranchLocale(request(), 'items'));
+            return $stock;
+        });
 
     }
 
@@ -117,7 +119,7 @@ class StockService
 
                 if ($stockOutData['quantity'] <= 0) break;
             }
-            Cache::forget('items');
+            Cache::forget(CacheKey::forCompanyBranchLocale(request(), 'items'));
 
             return $stockOutRecords[0];
         });

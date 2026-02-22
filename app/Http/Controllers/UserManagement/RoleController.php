@@ -8,6 +8,7 @@ use App\Http\Requests\UserManagement\RoleUpdateRequest;
 use App\Http\Resources\UserManagement\RoleResource;
 use App\Models\Role;
 use App\Models\Permission;
+use App\Support\Inertia\CacheKey;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -62,8 +63,7 @@ class RoleController extends Controller
         if ($request->input('create_and_new')) {
             return redirect()->route('roles.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.role')]));
         }
-        Cache::forget('roles');
-        Cache::forget('users');
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'roles'));
         return redirect()->route('roles.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.role')]));
     }
 
@@ -94,8 +94,7 @@ class RoleController extends Controller
             $role->syncPermissions($data['permissions'] ?? []);
         }
 
-        Cache::forget('roles');
-        Cache::forget('users');
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'roles'));
 
         return redirect()->route('roles.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.role')]));
     }
@@ -112,8 +111,7 @@ class RoleController extends Controller
         }
 
         $role->delete();
-        Cache::forget('roles');
-        Cache::forget('users');
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'roles'));
         return redirect()->route('roles.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.role')]));
     }
 
@@ -121,8 +119,7 @@ class RoleController extends Controller
     {
         $role = Role::withTrashed()->findOrFail($id);
         $role->restore();
-        Cache::forget('roles');
-        Cache::forget('users');
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'roles'));
         return redirect()->route('roles.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.role')]));
     }
 }

@@ -90,17 +90,13 @@ class ItemController extends Controller
         ]);
     }
     public function store(ItemStoreRequest $request)
-    {
-
-
-        $validated = $request->validated();
-        // dd($validated);
+    { 
+        $validated = $request->validated(); 
         // If you're uploading a photo here, handle it first (optional)
         // if ($request->hasFile('photo')) {
         //     $path = $request->file('photo')->store('items', 'public');
         //     $validated['photo'] = $path;
-        // }
-        // dd($validated);
+        // } 
         $validated['item_type'] = $validated['item_type']??ItemType::INVENTORY_MATERIALS->value;
         DB::transaction(function () use ($validated, $request) {
             // 1) Create item

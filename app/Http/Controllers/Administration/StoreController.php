@@ -8,6 +8,7 @@ use App\Http\Requests\Administration\StoreUpdateRequest;
 use App\Http\Resources\Administration\StoreCollection;
 use App\Http\Resources\Administration\StoreResource;
 use App\Models\Administration\Store;
+use App\Support\Inertia\CacheKey;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 class StoreController extends Controller
@@ -38,7 +39,7 @@ class StoreController extends Controller
     public function store(StoreStoreRequest $request)
     {
         $store = Store::create($request->validated());
-        Cache::forget('stores');
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'stores'));
         return redirect()->route('stores.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.store')]));
 
 
@@ -53,7 +54,7 @@ class StoreController extends Controller
     public function update(StoreUpdateRequest $request, Store $store)
     {
         $store->update($request->validated());
-        Cache::forget('stores');
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'stores'));
         return redirect()->route('stores.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.store')]));
 
     }
@@ -71,7 +72,7 @@ class StoreController extends Controller
         if($store->is_main) {
             return redirect()->route('stores.index')->with('error', __('general.cannot_delete_main_store'));
         }
-        Cache::forget('stores');
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'stores'));
 
         $store->delete();
         return redirect()->route('stores.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.store')]));
@@ -80,6 +81,6 @@ class StoreController extends Controller
     {
         $store->restore();
         return redirect()->route('stores.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.store')]));
-        Cache::forget('stores');
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'stores'));
     }
 }
