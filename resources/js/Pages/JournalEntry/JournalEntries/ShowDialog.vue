@@ -131,6 +131,8 @@ function closeDialog() {
                                     <th class="px-4 py-2">{{ t('account.account') }}</th>
                                     <th class="px-4 py-2 w-40 text-right">{{ t('general.debit') }}</th>
                                     <th class="px-4 py-2 w-40 text-right">{{ t('general.credit') }}</th>
+                                    <th class="px-4 py-2">{{ t('general.ledger') }}</th>
+                                    <th class="px-4 py-2">{{ t('sidebar.journal_entry.journal_class') }}</th>
                                     <th class="px-4 py-2">{{ t('general.remark') }}</th>
                                 </tr>
                             </thead>
@@ -145,6 +147,12 @@ function closeDialog() {
                                     </td>
                                     <td class="px-4 py-2 text-right font-medium">
                                         {{ formatNumber(line.credit) }}
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        {{ line.ledger?.name || line.ledger_id || '-' }}
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        {{ line.journalClass?.name || line.journal_class?.name || '-' }}
                                     </td>
                                     <td class="px-4 py-2">
                                         {{ line.remark || '-' }}
