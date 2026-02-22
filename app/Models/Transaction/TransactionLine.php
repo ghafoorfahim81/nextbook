@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
+use App\Models\JournalEntry\JournalClass;
 class TransactionLine extends Model
 {
     use HasFactory, HasUlids, SoftDeletes;
@@ -50,5 +51,9 @@ class TransactionLine extends Model
     public function ledger()
     {
         return $this->belongsTo(Ledger::class, 'ledger_id');
+    }
+    public function journalClass()
+    {
+        return $this->belongsTo(JournalClass::class, 'journal_class_id');
     }
 }

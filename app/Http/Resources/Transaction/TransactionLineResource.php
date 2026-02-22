@@ -5,7 +5,7 @@ namespace App\Http\Resources\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Account\AccountResource;
-
+use App\Http\Resources\JournalEntry\JournalClassResource;
 class TransactionLineResource extends JsonResource
 {
     /**
@@ -20,6 +20,8 @@ class TransactionLineResource extends JsonResource
             'debit' => $this->debit,
             'credit' => $this->credit,
             'remark' => $this->remark,
+            'journal_class_id' => $this->journal_class_id,
+            'journal_class' => $this->whenLoaded('journalClass', fn () => new JournalClassResource($this->journalClass)),
         ];
     }
 }

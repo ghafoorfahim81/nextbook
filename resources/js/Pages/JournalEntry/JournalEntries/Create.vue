@@ -19,6 +19,7 @@ const props = defineProps({
     ledgers: { type: Array, required: true },
     currencies: { type: Array, required: true },
     homeCurrency: { type: Object, required: true },
+    journalClasses: { type: Array, required: true },
 });
 
 const form = useForm({
@@ -35,8 +36,9 @@ const form = useForm({
             credit: '',
             remark: '',
             ledger_id: '',
-            selected_ledger:null,
-            bill_number: '',
+            selected_ledger:null, 
+            journal_class_id: '',
+            selected_journal_class:null,
         },
         {
             account_id: '',
@@ -46,7 +48,8 @@ const form = useForm({
             remark: '',
             ledger_id: '',
             selected_ledger:null,
-            bill_number: '',
+            journal_class_id: '',
+            selected_journal_class:null,
         },
         {
             account_id: '',
@@ -56,7 +59,8 @@ const form = useForm({
             remark: '',
             ledger_id: '',
             selected_ledger:null,
-            bill_number: '',
+            journal_class_id: '',
+            selected_journal_class:null,
         },
 
     ],
@@ -105,7 +109,7 @@ const baseTotal = computed(() => {
 
 // Add new detail line
 const addLine = () => {
-    form.lines.push({ account_id: '', debit: '', credit: '', remark: '', ledger_id: '', bill_number: '' });
+    form.lines.push({ account_id: '', debit: '', credit: '', remark: '', ledger_id: '', journal_class_id: '' });
 };
 
 // Remove detail line
@@ -183,7 +187,7 @@ const handleSubmit = (createAndNew = false) => {
         formData.append(`lines[${index}][credit]`, detail.credit);
         formData.append(`lines[${index}][remark]`, detail.remark);
         formData.append(`lines[${index}][ledger_id]`, detail.ledger_id);
-        formData.append(`lines[${index}][bill_number]`, detail.bill_number);
+        formData.append(`lines[${index}][journal_class_id]`, detail.journal_class_id);
     });
 
     if (createAndNew) {
@@ -200,7 +204,7 @@ const handleSubmit = (createAndNew = false) => {
             });
             if (createAndNew) {
                 form.reset();
-                form.lines = [{ account_id: '', debit: '', credit: '', remark: '', ledger_id: '', bill_number: '' }];
+                form.lines = [{ account_id: '', debit: '', credit: '', remark: '', ledger_id: '', journal_class_id: '' }];
                 attachmentPreview.value = null;
                 // Re-set default currency
                 if (props.currencies) {
@@ -364,7 +368,7 @@ onUnmounted(() => {
                             <th class="px-4 py-2 ">{{ t('general.credit') }} *</th>
                             <th class="px-4 py-2 ">{{ t('general.remark') }} </th>
                             <th class="px-4 py-2 ">{{ t('general.ledger') }} </th>
-                            <th class="px-4 py-2 ">{{ t('general.bill_number') }} </th>
+                            <th class="px-4 py-2 ">{{ t('sidebar.journal_entry.journal_class') }} </th>
                             <th class="px-4 py-2 w-12"></th>
                         </tr>
                     </thead>
@@ -426,11 +430,15 @@ onUnmounted(() => {
                                 />
                             </td>
                             <td class="px-4 py-2 w-40">
-                                <NextInput
-                                    v-model="line.bill_number"
-                                    :placeholder="t('general.bill_number')"
-                                    :error="form.errors?.[`line.${index}.bill_number`]"
-                                    class="text-right"
+                                <NextSelect
+                                    :options="journalClasses.data || journalClasses"
+                                    v-model="line.selected_journal_class"
+                                    @update:modelValue="(val) => { line.journal_class_id = val?.id || '' }"
+                                    label-key="name"
+                                    value-key="id"
+                                    :reduce="journalClass => journalClass"
+                                    :error="form.errors?.[`line.${index}.journal_class_id`]"
+                                    :searchable="true"
                                 />
                             </td>
 
