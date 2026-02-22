@@ -18,8 +18,7 @@ const journalEntry = computed(() => page.props.journalEntry?.data || {})
 const accounts = computed(() => page.props.accounts?.data || [])
 const ledgers = computed(() => page.props.ledgers?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
-const journalClasses = computed(() => page.props.journalClasses?.data || []) 
-console.log('journal classes', journalClasses.value)
+const journalClasses = computed(() => page.props.journalClasses?.data || [])   
 useLazyProps(page.props, ['accounts', 'ledgers', 'currencies'])
 
 const form = useForm({
@@ -72,7 +71,9 @@ onMounted(() => {
     selected_account: accounts.value.find(acc => acc.id === line.account_id) || null,
     remark: getLineRemark(line),
     ledger: line.ledger ?? '', 
+    selected_ledger: ledgers.value.find(ledger => ledger.id === line.ledger_id) || null,
     journal_class_id: line.journal_class_id ?? '',
+    selected_journal_class: line.journal_class || null,
   }))
 
   // If no transaction currency, sync selected_currency from currencies/currency_id for edit mode select

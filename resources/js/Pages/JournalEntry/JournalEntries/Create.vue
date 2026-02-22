@@ -420,7 +420,7 @@ onUnmounted(() => {
                             <td class="px-4 py-2 w-64">
                                 <NextSelect
                                     :options="ledgers.data || ledgers"
-                                        v-model="line.selected_ledger"
+                                    v-model="line.selected_ledger"
                                     @update:modelValue="(val) => { line.ledger_id = val?.id || '' }"
                                     label-key="name"
                                     value-key="id"
