@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Support\Inertia\CacheKey;
 use App\Models\User;
 use App\Models\JournalEntry\JournalClass;
+use App\Http\Resources\JournalEntry\JournalClassResource;
 class JournalEntryController extends Controller
 {
     /**
@@ -75,7 +76,7 @@ class JournalEntryController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(JournalEntryStoreRequest $request)
-    {
+    { 
         DB::transaction(function () use ($request) {
         $validated = $request->validated();
         $journalEntry = JournalEntry::create([
@@ -96,7 +97,7 @@ class JournalEntryController extends Controller
             'remark'      => $line['remark'] ?? null,
             'journal_class_id' => $line['journal_class_id'] ?? null,
         ])
-        ->toArray();
+        ->toArray(); 
         $transactionService->post(
             header: [
                 'currency_id' => $validated['currency_id'],
@@ -136,12 +137,12 @@ class JournalEntryController extends Controller
      */
     public function edit(Request $request, JournalEntry $journalEntry)
     {
-        $journalEntry->load(['transaction.currency', 'transaction.lines.account', 'transaction.lines.journalClass']);
+        $journalEntry->load(['transaction.currency', 'transaction.lines.account', 'transaction.lines.journalClass','transaction.lines.ledger']);
         return inertia('JournalEntry/JournalEntries/Edit', [
             'journalEntry' => new JournalEntryResource($journalEntry),
             'accounts' => AccountResource::collection(Account::all()),
             'ledgers' => LedgerResource::collection(Ledger::all()),
-            'journalClasses' => JournalClass::all(),
+            'journalClasses' => JournalClassResource::collection(JournalClass::all()),
         ]);
     }
 

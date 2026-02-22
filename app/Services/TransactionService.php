@@ -63,6 +63,7 @@ class TransactionService
                 $transaction->lines()->create([
                     'account_id' => $line['account_id'],
                     'ledger_id' => $line['ledger_id'] ?? null,
+                    'journal_class_id' => $line['journal_class_id'] ?? null,
                     'debit'      => $debit,
                     'credit'     => $credit,
                     'branch_id'  => $transaction->branch_id,
@@ -114,6 +115,7 @@ class TransactionService
                 'lines.*.ledger_id'    => 'nullable|exists:ledgers,id',
                 'lines.*.debit'        => 'nullable|numeric|min:0',
                 'lines.*.credit'       => 'nullable|numeric|min:0',
+                'lines.*.journal_class_id' => 'nullable|exists:journal_classes,id',
                 'lines.*.remark'       => 'nullable|string',
             ]
         )->validate();
@@ -146,9 +148,9 @@ class TransactionService
             foreach ($original->lines as $line) {
                 $reversal->lines()->create([
                     'account_id' => $line->account_id,
+                    'journal_class_id' => $line->journal_class_id,
                     'debit'      => $line->credit,
                     'credit'     => $line->debit,
-                    'branch_id'  => $line->branch_id,
                     'remark'     => 'Reversal',
                     'created_by' => Auth::id(),
                 ]);

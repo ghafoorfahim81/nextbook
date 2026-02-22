@@ -21,6 +21,7 @@ class TransactionLine extends Model
         'transaction_id',
         'account_id',
         'ledger_id',
+        'journal_class_id',
         'debit',
         'credit',
         'remark',
@@ -34,6 +35,7 @@ class TransactionLine extends Model
             'transaction_id' => 'string',
             'account_id' => 'string',
             'ledger_id' => 'string',
+            'journal_class_id' => 'string',
             'debit' => 'float',
             'credit' => 'float',
         ];
