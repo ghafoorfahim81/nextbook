@@ -20,7 +20,7 @@ const props = defineProps({
   submitting: Boolean,
   width: {
     type: String,
-    default: "w-[500px] max-w-[90vw] sm:max-w-[500px]",
+    default: "w-[95vw] max-w-[95vw] sm:w-[500px] sm:max-w-[500px]",
   },
   contentClass: {
     type: String,
@@ -54,7 +54,6 @@ const preventOutsideDismiss = (event: any) => {
         width, 
         'z-[1100] p-0 flex flex-col overflow-hidden',
         'max-h-[90vh]',                                    // Limit modal height for all screens
-        'w-[95vw] max-w-[95vw] sm:w-[500px] sm:max-w-[500px]',  // Responsiveness: almost full-width on mobile, capped at 500px on sm+
         'rounded-none sm:rounded-2xl',                     // No border-radius on mobile, rounded on sm+
         contentClass
       ]"

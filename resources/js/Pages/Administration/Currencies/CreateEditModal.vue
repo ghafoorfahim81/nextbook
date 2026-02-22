@@ -94,7 +94,7 @@ const handleSubmit = async () => {
         @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
         :closeable="true"
         :submitting="form.processing"
-        width="w-[800px] max-w-[800px]"
+        width="w-[95vw] max-w-[95vw] sm:w-[800px] sm:max-w-[800px]"
         @confirm="handleSubmit"
         @cancel="closeModal"
     >

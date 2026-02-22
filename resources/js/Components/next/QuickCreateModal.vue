@@ -160,7 +160,7 @@ function toPayload(data) {
     :confirmText="$t('general.create')"
     :cancel-text="$t('general.close')"
     :submitting="submitting"
-    width="w-[800px] max-w-[800px]"
+    width="w-[95vw] max-w-[95vw] sm:w-[800px] sm:max-w-[800px]"
     @update:open="emit('update:open', $event)"
     @confirm="submit"
     @cancel="close"

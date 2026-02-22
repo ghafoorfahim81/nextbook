@@ -114,7 +114,7 @@
             :confirmText="t('general.save')"
             @update:open="open = $event; emit('update:open', $event)"
             :closeable="true"
-            width="w-[600px] max-w-[600px]"
+            width="w-[95vw] max-w-[95vw] sm:w-[600px] sm:max-w-[600px]"
             @confirm="handleSubmit"
             @cancel="handleCancel"
             :cancel-text="t('general.cancel')"
