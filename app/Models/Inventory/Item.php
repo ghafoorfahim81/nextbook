@@ -18,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Enums\ItemType;
 use App\Traits\HasUserTracking;
+use App\Models\Transaction\Transaction;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 class Item extends Model
 {
     use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasBranch, BranchSpecific, HasDependencyCheck, SoftDeletes;
@@ -168,9 +170,9 @@ class Item extends Model
     {
         return $this->hasMany(StockOut::class);
     }
-    public function openingTransactions()
+    public function openingTransaction(): HasOne
     {
-        return $this->hasMany(ItemOpeningTransaction::class, 'item_id', 'id');
+        return $this->hasOne(Transaction::class, 'reference_id');
     }
 
     public function assetAccount(): BelongsTo

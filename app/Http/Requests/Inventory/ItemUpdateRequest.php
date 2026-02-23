@@ -32,6 +32,9 @@ class ItemUpdateRequest extends FormRequest
             'unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
             'brand_id' => ['nullable', 'string', 'exists:brands,id'],
             'category_id' => ['nullable', 'string', 'exists:categories,id'],
+            'asset_account_id' => ['required', 'string', 'exists:accounts,id'],
+            'income_account_id' => ['required', 'string', 'exists:accounts,id'],
+            'cost_account_id' => ['required', 'string', 'exists:accounts,id'],
             'minimum_stock' => ['nullable', 'numeric'],
             'maximum_stock' => ['nullable', 'numeric'],
             'colors' => ['nullable', 'array'],
@@ -48,7 +51,8 @@ class ItemUpdateRequest extends FormRequest
             'openings.*.batch' => ['nullable', 'string'],
             'openings.*.expire_date' => ['nullable', 'date'],
             'openings.*.quantity' => ['nullable', 'numeric'],
-            'openings.*.store_id' => ['nullable', 'string', 'exists:stores,id','required_with:openings.*.quantity'],
+            'openings.*.unit_price' => ['nullable', 'numeric','required_with:openings.*.quantity>0'],
+            'openings.*.store_id' => ['nullable', 'string', 'exists:stores,id','required_with:openings.*.quantity>0'],
         ];
     }
 }
