@@ -5,7 +5,8 @@ import { Button } from '@/Components/ui/button'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
-import { useToast } from '@/Components/ui/toast/use-toast'
+import { toast } from 'vue-sonner';
+
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n()
 import { useSidebar } from '@/Components/ui/sidebar/utils';
@@ -40,7 +41,6 @@ onUnmounted(() => {
 
 
 
-const { toast } = useToast()
 const stores        = computed(() => props.stores?.data ?? props.stores ?? [])
 const unitMeasures  = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 
@@ -160,10 +160,10 @@ const handleSubmit = () => {
 
     // If everything is empty, there is nothing to submit
     if (!normalizedItems.length) {
-        toast({
+        toast.error(t('item.no_data_to_save'),{
+            class: 'bg-red-600',
+            description: t('item.no_data_to_save'),
             title: t('general.error'),
-            variant: 'error',
-            description: t('general.no_data_to_save') ?? 'Nothing to save. Please fill at least one row.',
         })
         return
     }
@@ -187,11 +187,11 @@ const handleSubmit = () => {
             currentMaxCode.value = highestCode + 1
 
             notifySound('success');
-            toast({
-                title: t('general.success'),
-                variant: 'success',
+            toast.success(itemCount + ' ' + t('item.items') + ' ' + t('general.created_successfully'),{
+                class: 'bg-green-600',
                 description: itemCount + ' ' + t('item.items') + ' ' + t('general.created_successfully'),
-            });
+                title: t('general.success'),
+            })
 
             // Rebuild the items array so new rows start after the latest saved code
             form.items = Array.from({ length: 6 }, (_, idx) => blankRow(currentMaxCode.value + idx))
@@ -199,11 +199,11 @@ const handleSubmit = () => {
         },
         onError: () => {
             notifySound('error');
-            toast({
-                title: t('general.error'),
-                variant: 'error',
+            toast.error(t('general.create_error_message'),{
+                class: 'bg-red-600',
                 description: t('general.create_error_message'),
-            });
+                title: t('general.error'),
+            })
         }
 
     })

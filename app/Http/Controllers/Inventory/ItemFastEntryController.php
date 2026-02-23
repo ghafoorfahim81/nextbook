@@ -4,17 +4,13 @@ namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Inventory\FastEntryRequest;
-use App\Http\Requests\Inventory\ItemStoreRequest;
-use App\Models\Inventory\Item;
-use App\Models\Inventory\Stock;
+use App\Models\Inventory\Item; 
 use App\Models\Inventory\StockOpening;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
-use Inertia\Inertia;
-use App\Models\Inventory\ItemOpeningTransaction;
+use Illuminate\Support\Str; 
+use App\Enums\ItemType; 
 class ItemFastEntryController extends Controller
 {
 
@@ -30,20 +26,23 @@ class ItemFastEntryController extends Controller
     }
 
     public function store(FastEntryRequest  $request)
-    {
-//        return $request->all();
+    { 
         $validated = $request->validated();
         $rows = collect($validated['items']);
-
         DB::transaction(function () use ($rows) {
             $today = Carbon::now()->toDateString();
 
             $rows->each(function ($r) use ($today) {
-                // 1) Create the item
+                // 1) Create the item  
+                $glAccounts = Cache::get('gl_accounts');
                 $item = Item::create([
                     // Adjust fields to match your Item fillables/columns
                     'id'             => (string) Str::ulid(), // if your Item uses ULIDs; remove if auto-increment
                     'name'           => $r['name'],
+                    'item_type'      => ItemType::INVENTORY_MATERIALS->value,
+                    'asset_account_id' => $glAccounts['inventory-stock'],
+                    'income_account_id' => $glAccounts['product-income'],
+                    'cost_account_id' => $glAccounts['cost-of-goods-sold'],
                     'code'           => $r['code'] ?? null,
                     'unit_measure_id'=> $r['measure_id'],     // align with your schema
                     'purchase_price' => $r['purchase_price'] ?? null,
@@ -81,37 +80,31 @@ class ItemFastEntryController extends Controller
                     ]);
 
                     $cost = (float)($r['purchase_price'] ?? 0);
-                    $amount = (float)($r['quantity'] ?? 0);
+                    $quantity = (float)($r['quantity'] ?? 0);
                     $glAccounts      = Cache::get('gl_accounts');
                     $homeCurrency = Cache::get('home_currency');
-                    $inventoryTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['inventory'],
-                        'amount' => $cost*$amount,
-                        'currency_id' => $homeCurrency->id,
-                        'rate' => 1,
-                        'date' => $date,
-                        'type' => 'debit',
-                        'remark' => 'Opening balance for item ' . $item->name ,
-                        'reference_type' => Item::class,
-                        'reference_id' => $item->id,
-                    ]);
-                    $openingBalanceTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['opening-balance-equity'],
-                        'amount' => $cost*$amount,
-                        'currency_id' => $homeCurrency->id,
-                        'rate' => 1,
-                        'date' => $date,
-                        'type' => 'credit',
-                        'remark' => 'Opening balance for item ' . $item->name  ,
-                        'reference_type' => Item::class,
-                        'reference_id' => $item->id,
-                    ]);
-                    ItemOpeningTransaction::create([
-                        'id' => (string) Str::ulid(),
-                        'item_id' => $item->id,
-                        'inventory_transaction_id' => $inventoryTransaction->id,
-                        'opening_balance_transaction_id' => $openingBalanceTransaction->id,
-                    ]);
+                    $transaction = $transactionService->post(
+                        header: [
+                            'currency_id' => $homeCurrency->id,
+                            'rate' => 1,
+                            'date' => $date,
+                            'reference_type' => Item::class,
+                            'reference_id' => $item->id,
+                            'remark' => 'Opening balance for item ' . $item->name,
+                        ],
+                        lines: [
+                            [
+                                'account_id' => $glAccounts['inventory-stock'],
+                                'debit' => $cost*$quantity, 
+                                'credit' => 0,
+                            ],
+                            [
+                                'account_id' => $glAccounts['opening-balance-equity'],
+                                'debit' => 0,
+                                'credit' => $cost*$quantity,
+                            ]
+                        ]
+                    ); 
                 }
             });
         });
