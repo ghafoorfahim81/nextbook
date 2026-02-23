@@ -42,7 +42,7 @@
                                 </button>
                             </PopoverTrigger>
                             <PopoverContent
-                                :align="isRTL ? 'end' : 'start'"
+                                :align="isRTL ? 'start' : 'start'"
                                 side="bottom"
                                 :sideOffset="8"
                                 class="w-[calc(100vw-2rem)] max-w-[720px] p-5 bg-background shadow-lg"
