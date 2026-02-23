@@ -335,7 +335,7 @@ class SearchController extends Controller
         $itemIds = $items->pluck('id')->all();
 
         $stocks = Stock::query()
-            ->select(['id', 'item_id', 'batch', 'expire_date', 'quantity'])
+            ->select(['id', 'item_id', 'batch', 'expire_date', 'quantity', 'unit_price'])
             ->where('store_id', $storeId)
             ->whereIn('item_id', $itemIds)
             ->get();
@@ -368,6 +368,7 @@ class SearchController extends Controller
                             'batch' => $batchKey,
                             'expire_date' => $stock->expire_date,
                             'on_hand' => 0,
+                            'unit_price' => $stock->unit_price,
                         ];
                     }
                     $batchSummaries[$batchKey]['expire_date'] = $batchSummaries[$batchKey]['expire_date'] ?? $stock->expire_date;
@@ -382,6 +383,7 @@ class SearchController extends Controller
                     'batch' => $batch['batch'],
                     'expire_date' => $batch['expire_date'],
                     'on_hand' => round($batch['on_hand'] ?? 0, 2),
+                    'unit_price' => $batch['unit_price'],
                 ];
             }, $batchSummaries));
 
@@ -411,6 +413,7 @@ class SearchController extends Controller
                 'fast_search' => $item->fast_search,
                 'batches' => $batches,
                 'has_batches' => $hasBatches,
+                'selected_batch' => null,
                 'on_hand' => $totalOnHand,
             ];
         })->values()->all();
