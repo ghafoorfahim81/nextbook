@@ -46,5 +46,7 @@
     "generate_new_barcode": "ایجاد بارکد جدید",
     "cost_and_purchase_price_required": "هزینه و قیمت خرید مورد نیاز است",
     "cost_and_purchase_price_required_description": "هزینه ویا قیمت خرید مورد نیاز است برای باز کردن موجودی کالا.",
-    "no_data_to_save": "هیچ داده ای برای ذخیره نیست. لطفا حداقل یک ردیف را پر کنید."
+    "no_data_to_save": "هیچ داده ای برای ذخیره نیست. لطفا حداقل یک ردیف را پر کنید.",
+    "opening_amount": "مقدار موجودی",
+    "total_items_per_page": "تعداد کالاها در هر صفحه"
 }

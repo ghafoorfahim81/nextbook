@@ -231,7 +231,7 @@ const handleSubmit = () => {
                             <th class="px-1 py-1 w-36">{{ t('general.name') }}</th>
                             <th class="px-1 py-1 w-20">{{ t('item.code') }}</th>
                             <th class="px-1 py-1 w-28">{{ t('admin.unit_measure.unit_measure') }}</th>
-                            <th class="px-1 py-1 w-20">{{ t('item.quantity') }}</th>
+                            <th class="px-1 py-1 w-20">{{ t('item.opening_amount') }}</th>
                             <th class="px-1 py-1 w-20">{{ t('item.batch') }}</th>
                             <th class="px-1 py-1 w-36">{{ t('item.expire_date') }}</th>
                             <th class="px-1 py-1 w-32">{{ t('admin.store.store') }}</th>

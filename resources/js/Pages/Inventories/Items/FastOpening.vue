@@ -1,17 +1,16 @@
 <script setup>
-import { useForm } from '@inertiajs/vue3'
+import { router, useForm } from '@inertiajs/vue3'
 import AppLayout from '@/Layouts/Layout.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextInput from '@/Components/next/NextInput.vue'
 import { Button } from '@/Components/ui/button'
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
-import { useToast } from '@/Components/ui/toast/use-toast'
+import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
 
 const { t } = useI18n()
-const { toast } = useToast()
 
 let sidebar = null
 try {
@@ -34,26 +33,29 @@ onUnmounted(() => {
 })
 
 const props = defineProps({
-    items: { type: Array, required: true },
+    items: { type: [Array, Object], required: true },
     unitMeasures: { type: Array, required: true }, // Array of {id, name}
     stores: { type: Array, required: true },       // Array of {id, name}
-})
+}) 
+
+const paginatedItems = computed(() => props.items?.data ?? props.items ?? [])
 
 // Initialize form with _key for v-for
 const form = useForm({
-    items: props.items.map(item => ({
+    items: paginatedItems.value.map(item => ({
         _key: item.id,
         item_id: item.id,
         name: item.name,
         batch: item.batch,
         store_id: null,
         unit_measure_id: item.unit_measure_id,
+        measure_name: item.unit_measure.name,
         quantity: item.quantity ?? 0,
         expire_date: item.expire_date ?? '',
         cost: item.cost ?? 0,
     }))
 })
-
+ 
 const searchTerm = ref('')
 
 const filteredItemIndexes = computed(() => {
@@ -103,14 +105,43 @@ const handleSubmit = () => {
     normalize()
     form.post(route('fast-opening.store'), {
         onSuccess: () => {
-            toast({
-                title: t('general.success'),
-                variant: 'success',
+            toast.success(t('general.create_success', { name: t('item.opening') }),{
+                class: 'bg-green-600',
                 description: t('general.create_success', { name: t('item.opening') }),
-            });
+                title: t('general.success'),
+            })
+            window.location.reload()
         }
     })
 }
+
+const handleStoreChange = (rowIndex, value) => {
+    form.items[rowIndex].store_id = value
+}
+
+const pageOptions = [10,15, 20, 50, 100]
+const perPageOptions = pageOptions.map(value => ({ id: value, name: String(value) }))
+const serverPerPage = computed(() => Number(props.items?.meta?.per_page ?? props.items?.per_page ?? pageOptions[0]))
+const itemsPerPage = ref(serverPerPage.value)
+
+watch(serverPerPage, (value) => {
+    itemsPerPage.value = Number(value)
+})
+
+const updateItemsPerPage = (value) => {
+    itemsPerPage.value = Number(value)
+    router.get(
+        route('item.fast.opening'),
+        { perPage: itemsPerPage.value },
+        {
+            preserveScroll: true,
+            preserveState: false,
+            replace: true,
+            only: ['items'],
+        }
+    )
+}
+
 </script>
 
 <template>
@@ -119,28 +150,55 @@ const handleSubmit = () => {
             <div class="rounded-2xl border bg-card text-card-foreground shadow-sm p-1">
                 <div class="p-4 border-b flex items-center justify-between gap-4">
                     <div>
-                        <h2 class="text-lg font-semibold">{{ t('item.fast_opening') }}</h2>
-                        <p class="text-sm text-muted-foreground">{{ t('item.remove_unwanted_items') }}</p>
+                        <h2 class="text-lg font-semibold">
+                            {{ t('item.fast_opening') }}
+                        </h2>
+                        <p class="text-sm text-muted-foreground">
+                            {{ t('item.remove_unwanted_items') }}
+                        </p>
                     </div>
-                    <ModuleHelpButton module="fast_opening" positionClass="" class="shrink-0" />
-
-                </div>
-                <div class="w-full max-w-xs p-2">
-                    <NextInput
-                        v-model="searchTerm"
-                        type="text"
-                        :label="t('datatable.search')"
-                        :placeholder="t('item.search_item')"
+                
+                    <ModuleHelpButton
+                        module="fast_opening"
+                        positionClass=""
+                        class="shrink-0"
                     />
                 </div>
-                <div class="rounded-xl border bg-card shadow-sm overflow-x-auto p-3 mt-1 mb-1">
+                <div class="px-4 py-3 border-b flex items-center justify-between">
+
+                    <!-- LEFT SIDE (Search) -->
+                    <div class="w-72">
+                        <NextInput
+                            v-model="searchTerm"
+                            type="text"
+                            :placeholder="t('item.search_item')"
+                            :label="t('datatable.search')"
+                        />
+                    </div>
+                
+                    <!-- RIGHT SIDE (Per Page) -->
+                    <div class="flex items-center  ">
+                        <div class="w-40">
+                            <NextSelect v-model="itemsPerPage" 
+                                @update:modelValue="updateItemsPerPage" 
+                                :options="perPageOptions" 
+                                label-key="name" 
+                                value-key="id" 
+                                :searchable="false" :search-fields="[]"
+                                :search-options="{}" :show-arrow="false" 
+                                :floating-text="t('item.total_items_per_page')" >
+                             </NextSelect>
+                        </div>
+                    </div>
+                </div> 
+                <div class="rounded-xl border bg-card shadow-sm overflow-x-auto max-h-[1500px] overflow-y-auto p-3 mt-1 mb-1">
                     <table class="w-full table-fixed min-w-[1000px]">
                         <thead class="sticky top-0 bg-muted/40">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-white bg-primary">
                             <th class="px-1 py-1 w-5 min-w-5">#</th>
                             <th class="px-1 py-1 w-40">{{ t('item.item') }}</th>
                             <th class="px-1 py-1 w-36">{{ t('item.batch') }}</th>
-                            <th class="px-1 py-1 w-28">{{ t('item.quantity') }}</th>
+                            <th class="px-1 py-1 w-28">{{ t('item.opening_amount') }}</th>
                             <th class="px-1 py-1 w-28">{{ t('admin.unit_measure.unit_measure') }}</th>
                             <th class="px-1 py-1 w-44">{{ t('item.expire_date') }}</th>
                             <th class="px-1 py-1 w-40">{{ t('item.cost') }}</th>
@@ -182,15 +240,8 @@ const handleSubmit = () => {
                                 />
                             </td>
                             <!-- Unit Measure -->
-                            <td class="px-1 py-2 align-top">
-                                <NextSelect
-                                    v-model="form.items[rowIndex].unit_measure_id"
-                                    :options="props.unitMeasures.data"
-                                    label-key="symbol"
-                                    :show-arrow="false"
-                                    :disabled="true"
-                                    value-key="id"
-                                />
+                            <td class="px-1 py-2 align-top text-center">
+                                 {{ form.items[rowIndex].measure_name }}
                             </td>
                             <!-- Expiration Date -->
                             <td class="px-1 py-2 align-top">
@@ -216,7 +267,11 @@ const handleSubmit = () => {
                             <td class="px-1 py-2 align-top">
                                 <NextSelect
                                     v-model="form.items[rowIndex].store_id"
-                                    :options="props.stores.data"
+                                    :options="props.stores.data" 
+                                    @update:modelValue="(value) => handleStoreChange(rowIndex, value)"
+                                    resource-type="stores"
+                                    :searchable="true"
+                                    :search-fields="['name', 'address']"
                                     label-key="name"
                                     value-key="id"
                                     :show-arrow="false"
