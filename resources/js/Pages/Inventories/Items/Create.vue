@@ -10,7 +10,7 @@ import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import JsBarcode from 'jsbarcode'
-import { Info, RefreshCw } from 'lucide-vue-next'
+import { Info, RefreshCw, Trash2 } from 'lucide-vue-next'
 
 import {
   Popover,
@@ -43,8 +43,7 @@ const brands = computed(() => props.brands?.data ?? props.brands ?? [])
 const sizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
 const otherCurrentAssetsAccounts = computed(() => props.otherCurrentAssetsAccounts?.data ?? props.otherCurrentAssetsAccounts ?? [])
 const incomeAccounts = computed(() => props.incomeAccounts?.data ?? props.incomeAccounts ?? [])
-const costAccounts = computed(() => props.costAccounts?.data ?? props.costAccounts ?? [])
-console.log('stores', props)
+const costAccounts = computed(() => props.costAccounts?.data ?? props.costAccounts ?? []) 
 const itemTypes = computed(() => props.itemTypes?.data ?? props.itemTypes ?? [])
 // Format code with leading zeros based on the number
 const formatCode = (number) => {
@@ -99,7 +98,7 @@ const form = useForm({
     rack_no: '',
     photo: null, // file
     openings: [
-        { batch: '', expire_date: '', quantity: 0, store_id: null, selected_store: null },
+        { batch: '', expire_date: '','unit_price': 0, quantity: 0, store_id: null, selected_store: null },
     ],
 })
 
@@ -167,8 +166,7 @@ const defaultAssetAccountId = computed(() => {
 const preferredAssetAccountIdForItemType = computed(() => {
     const type = (itemTypes.value || []).find(t => t?.id === form.item_type) || null
     const typeName = String(type?.name || '').toLowerCase()
-    const typeSlug = String(type?.slug || '').toLowerCase()
-
+    const typeSlug = String(type?.id || '').toLowerCase() 
     // Best-effort mapping to common GL slugs used elsewhere in backend.
     let wantSlug = null
     if (typeSlug.includes('non') || typeName.includes('non')) wantSlug = 'non-inventory-items'
@@ -267,11 +265,11 @@ const onPhotoChange = (e) => {
 // rows
 const addRow = (index) => {
     if (index === form.openings.length - 1) {
-        form.openings.push({ batch: '', expire_date: '', quantity: 0, store_id: null, selected_store: null })
+        form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, store_id: null, selected_store: null })
     }
 }
 const addOpeningRow = () => {
-    form.openings.push({ batch: '', expire_date: '', quantity: 0, store_id: null, selected_store: null })
+    form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, store_id: null, selected_store: null })
 }
 const removeRow = (idx) => {
     if (form.openings.length > 1) form.openings.splice(idx, 1)
@@ -290,6 +288,7 @@ const normalize = () => {
     form.rate_c = toNum(form.rate_c)
     form.openings = form.openings.map(o => ({
         ...o,
+        unit_price: toNum(o.unit_price),
         quantity: toNum(o.quantity),
         expire_date: o.expire_date || null,
         batch: o.batch || null,
@@ -342,25 +341,30 @@ const disabled = ref(false);
 watch(
     () => form.openings.map(o => [o.selected_store, o.batch, o.expire_date].join('|')).join(';'),
     (newVal, oldVal) => {
+        let foundDuplicate = false;
         form.openings.forEach((currentOpening, index) => {
             const { selected_store, batch, expire_date } = currentOpening;
-            const duplicate = form.openings.some((o, i) =>
-                i !== index &&
-                o.store_id === selected_store &&
-                o.batch === batch &&
-                o.expire_date === expire_date
-            );
-            if (duplicate) {
-                disabled.value = true;
-                toast.error(t('general.duplicate_found'), {
-                    description: t('item.duplicate_store_batch_expiry') || 'This store with the same batch and expiry already exists.',
-                    class: 'bg-red-600',
-                });
-            }
-            else{
-                disabled.value = false;
+            if (selected_store && batch && expire_date) {
+                const duplicate = form.openings.some((o, i) =>
+                    i !== index &&
+                    o.store_id === selected_store &&
+                    o.batch === batch &&
+                    o.expire_date === expire_date &&
+                    o.store_id && o.batch && o.expire_date
+                );
+                if (duplicate && !foundDuplicate) {
+                    foundDuplicate = true;
+                    disabled.value = true;
+                    toast.error(t('general.duplicate_found'), {
+                        description: t('item.duplicate_store_batch_expiry') || 'This store with the same batch and expiry already exists.',
+                        class: 'bg-red-600',
+                    });
+                }
             }
         });
+        if (!foundDuplicate) {
+            disabled.value = false;
+        }
     },
     { deep: true }
 )
@@ -523,6 +527,7 @@ const generateBarcode = () => {
                     label-key="name"
                     value-key="id"
                     id="income_account"
+                    :has-clear-button="false"
                     :floating-text="t('item.income_account')"
                     :searchable="true"
                     resource-type="income_accounts"
@@ -587,7 +592,7 @@ const generateBarcode = () => {
                     <NextInput v-show="visibleFields.fast_search" :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
                 </div>
 
-                <div class="md:col-span-3 mt-4">
+                <div class="md:col-span-4 mt-4">
                     <div class="pt-2">
                         <div class="flex items-center justify-between">
                             <span class="font-bold">{{ t('item.opening') }}</span>
@@ -602,11 +607,12 @@ const generateBarcode = () => {
                         <div
                             v-for="(opening, index) in form.openings"
                             :key="index"
-                            class="mt-3 grid grid-cols-1 md:grid-cols-4 gap-4 items-start"
+                            class="mt-3 grid grid-cols-1 md:grid-cols-6 gap-4 items-start"
                         >
                             <NextInput :label="specText?? t('item.batch')" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
                             <NextDate v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
                             <NextInput :label="t('item.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
+                            <NextInput :label="t('general.unit_price')" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
                             <NextSelect
                                 v-model="opening.selected_store"
                                 :options="stores"
@@ -620,13 +626,13 @@ const generateBarcode = () => {
                                 resource-type="stores"
                                 :search-fields="['name', 'address']"
                             />
-                            <div class="md:col-span-4 flex justify-end -mt-2" v-if="form.openings.length > 1">
+                            <div  class="mt-2" v-if="form.openings.length > 1">
                                 <button
                                     type="button"
                                     class="btn btn-sm btn-outline-danger px-3"
                                     @click="removeRow(index)"
                                 >
-                                    −
+                                    <Trash2 class="w-4 h-4 text-fuchsia-800 hover:cursor-pointer" />
                                 </button>
                             </div>
                         </div>

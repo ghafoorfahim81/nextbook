@@ -93,6 +93,7 @@
 
     showArrow: { type: Boolean, default: true },
     hasAddButton: { type: Boolean, default: true },
+    hasClearButton: { type: Boolean, default: true },
     addNewLabel: { type: String, default: '' },
     clearable: { type: Boolean, default: true },
 

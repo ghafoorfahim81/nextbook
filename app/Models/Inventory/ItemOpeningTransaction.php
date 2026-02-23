@@ -46,9 +46,9 @@ class ItemOpeningTransaction extends Model
         return $this->belongsTo(Item::class);
     }
 
-    public function transaction()
+    public function transaction(): HasOne
     {
-        return $this->belongsTo(Transaction::class, 'transaction_id');
+        return $this->hasOne(Transaction::class, 'reference_id');
     }
 
 }

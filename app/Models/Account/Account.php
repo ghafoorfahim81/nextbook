@@ -230,7 +230,14 @@ class Account extends Model
     {
         return $this->whereHas('accountType', function ($query) use ($slug) {
             $query->where('slug', $slug);
-        })->get();
+        })->get()->map(function ($account) {
+            return [
+                'id' => $account->id,
+                'number' => $account->number,
+                'slug' => $account->slug,
+                'name' => $account->local_name ?? $account->name,
+            ];
+        });
     }
 
     public static function defaultAccounts(): array
