@@ -21,6 +21,7 @@ class FastOpeningRequest extends FormRequest
             'items.*.expire_date'     => ['nullable','date'],
             'items.*.cost'            => ['required','numeric'],
             'items.*.unit_measure_id' => ['required','exists:unit_measures,id'],
+            'items.*.store_id'        => ['nullable','exists:stores,id','required_with:items.*.quantity>0'],
         ];
     }
 
