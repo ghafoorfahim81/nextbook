@@ -113,6 +113,7 @@ final class LookupShared
                 'sales-revenue',
                 'accounts-receivable',
                 'accounts-payable',
+                'product-income',
                 'cash',
                 'cost-of-goods-sold',
                 'inventory-stock',

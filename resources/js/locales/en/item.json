@@ -45,5 +45,6 @@
     "low_price_warning": "Low Price Warning",
     "generate_new_barcode": "Generate New Barcode",
     "cost_and_purchase_price_required": "Cost and Purchase Price Required",
-    "cost_and_purchase_price_required_description": "Cost and Purchase Price are required for the opening of the item."
+    "cost_and_purchase_price_required_description": "Cost and Purchase Price are required for the opening of the item.",
+    "no_data_to_save": "No data to save. Please fill at least one row."
 }
