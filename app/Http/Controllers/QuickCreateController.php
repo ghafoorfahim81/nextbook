@@ -11,6 +11,7 @@ use App\Http\Resources\Administration\StoreResource;
 use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Http\Resources\Expense\ExpenseCategoryResource;
 use App\Http\Resources\Inventory\ItemResource;
+use App\Http\Resources\JournalEntry\JournalClassResource;
 use App\Http\Resources\Ledger\LedgerResource;
 use App\Models\Account\Account;
 use App\Models\Administration\Brand;
@@ -22,6 +23,7 @@ use App\Models\Administration\Store;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Expense\ExpenseCategory;
 use App\Models\Inventory\Item;
+use App\Models\JournalEntry\JournalClass;
 use App\Models\Ledger\Ledger;
 use App\Services\TransactionService;
 use App\Support\Inertia\CacheKey;
@@ -55,6 +57,7 @@ class QuickCreateController extends Controller
                 'accounts' => $this->createAccount($request),
                 'items' => $this->createItem($request),
                 'ledgers' => $this->createLedger($request),
+                'journal_classes' => $this->createJournalClass($request),
                 default => response()->json([
                     'success' => false,
                     'message' => "Unsupported resource type: {$resourceType}",
@@ -303,6 +306,25 @@ class QuickCreateController extends Controller
         return response()->json([
             'success' => true,
             'data' => (new LedgerResource($ledger))->resolve(),
+        ]);
+    }
+
+    private function createJournalClass(Request $request): JsonResponse
+    {
+        Gate::authorize('create', JournalClass::class);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string'],
+            'code' => ['nullable', 'string'],
+            'description' => ['nullable', 'string'],
+        ]);
+
+        $journalClass = JournalClass::create($validated);
+        $this->forgetInertiaCache($request, ['journal_classes']);
+
+        return response()->json([
+            'success' => true,
+            'data' => (new JournalClassResource($journalClass))->resolve(),
         ]);
     }
 

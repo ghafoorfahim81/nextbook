@@ -44,10 +44,10 @@
     "account_type": "نوع حساب"
   },
   "journal_entry": {
-    "journal_entry": "ورودی حسابداری",
-    "journal_entries": "ورودی های حسابداری",
-    "journal_class": "کلاس ورودی حسابداری",
-    "journal_classes": "کلاس های ورودی حسابداری"
+      "journal_entry": "ژورنال",
+    "journal_entries": "ژورنال ها",
+    "journal_class": "کلاس ژورنال",
+    "journal_classes": "کلاس های ژورنال"
   },
   "purchase": {
     "purchase": "خرید",
