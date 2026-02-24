@@ -303,6 +303,7 @@ onUnmounted(() => {
                             type="number"
                             step="any"
                             :label="t('general.rate')"
+                            :disabled="form.selected_currency?.is_base_currency === true"
                             :error="form.errors?.rate"
                         />
                     </div>
@@ -354,7 +355,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Expense Details Section -->
-            <div class="rounded-xl border bg-card shadow-sm overflow-x-auto mb-4">
+            <div class="rounded-xl border bg-card border-violet-500 shadow-sm overflow-x-auto mb-4">
                 <div class="p-4 border-b flex justify-between items-center">
                     <h3 class="font-semibold text-violet-500">{{ t('account.detail_lines') }}</h3>
 
@@ -427,9 +428,11 @@ onUnmounted(() => {
                                     :reduce="ledger => ledger"
                                     :error="form.errors?.[`line.${index}.ledger_id`]"
                                     :searchable="true"
+                                    resource-type="ledgers"
+                                    :search-fields="['name', 'email', 'phone_no']"
                                 />
                             </td>
-                            <td class="px-4 py-2 w-40">
+                            <td class="px-4 py-2 w-64">
                                 <NextSelect
                                     :options="journalClasses.data || journalClasses"
                                     v-model="line.selected_journal_class"
@@ -439,6 +442,8 @@ onUnmounted(() => {
                                     :reduce="journalClass => journalClass"
                                     :error="form.errors?.[`line.${index}.journal_class_id`]"
                                     :searchable="true"
+                                    resource-type="journal_classes" 
+                                    :search-fields="['name', 'code', 'description']"
                                 />
                             </td>
 

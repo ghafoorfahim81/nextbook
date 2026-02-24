@@ -189,6 +189,16 @@ export const quickCreateRegistry = {
       { key: 'is_active', labelKey: 'general.active', type: 'checkbox' },
     ],
   },
+
+  journal_classes: {
+    titleKey: 'sidebar.journal_entry.journal_class',
+    endpointType: 'journal_classes',
+    fields: [
+      { key: 'name', labelKey: 'general.name', type: 'text', required: true },
+      { key: 'code', labelKey: 'general.code', type: 'text' },
+      { key: 'description', labelKey: 'general.description', type: 'textarea' },
+    ],
+  },
 }
 
 export const isQuickCreatable = (resourceType) => Boolean(quickCreateRegistry?.[resourceType])
