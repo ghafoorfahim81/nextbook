@@ -140,7 +140,7 @@ const handleItemChange = (index, selectedItem) => {
   row.available_measures = buildAvailableMeasures(selectedItem)
   row.selected_measure = selectedItem.unitMeasure || null
   row.item_id = selectedItem.id
-  row.base_unit_price = selectedItem.purchase_price ?? selectedItem.unit_price ?? 0
+  row.base_unit_price = selectedItem.avg_cost ?? selectedItem.purchase_price ?? selectedItem.unit_price ?? 0
   const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1
   const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
   row.unit_price = (row.base_unit_price / baseUnit) * selectedUnit
@@ -199,7 +199,6 @@ const onhand = (index) => {
     const baseUnit = Number(selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
     const converted = (onHand * baseUnit) / selectedUnit
-    console.log("this is converted",converted,onHand,baseUnit,selectedUnit)
     const free = Number(item.free) || 0
     const qty = Number(item.quantity) || 0
     return converted - free - qty;

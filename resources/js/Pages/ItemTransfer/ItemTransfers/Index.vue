@@ -39,7 +39,7 @@ const deleteItem = (id) => {
     if(transfer.status === 'completed') {
         toast({
         title: t('general.error'),
-        description: t('item_transfer.cannot_edit_completed_or_cancelled_transfer'),
+        description: t('item_transfer.cannot_delete_completed_transfer'),
         variant: 'error',
         class: 'bg-red-600 text-white',
         })

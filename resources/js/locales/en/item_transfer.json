@@ -10,6 +10,8 @@
   "cancel_transfer": "Cancel transfer",
   "complete_transfer": "Complete transfer",
   "completed_successfully": "Transfer completed successfully",
-  "cancelled_successfully": "Transfer cancelled successfully"
+  "cancelled_successfully": "Transfer cancelled successfully",
+  "cannot_edit_completed_or_cancelled_transfer": "Cannot edit completed or cancelled transfers",
+  "cannot_delete_completed_transfer": "Cannot delete completed transfers"
 }
 

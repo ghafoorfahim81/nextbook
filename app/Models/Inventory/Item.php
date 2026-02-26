@@ -212,6 +212,13 @@ class Item extends Model
         $onHand = $stockSum - $stockOutSum;
         return $onHand;
     }
+
+    public function avgCost()
+    {
+        $sumPrice = $this->stocks()->sum('unit_price');
+        $count = $this->stocks()->count();
+        return $count > 0 ? $sumPrice / $count : 0;
+    }
     // public function inRecords()
     // {
     //     return $this->hasMany(Stock::class);
