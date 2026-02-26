@@ -20,7 +20,7 @@ const columns = computed(() => ([
   { key: 'category', label: t('admin.category.category') },
   { key: 'measure', label: t('admin.unit_measure.unit_measure') },
   { key: 'brand_name', label: t('admin.brand.brand') },
-  { key: 'cost', label: t('item.cost') },
+  { key: 'avg_cost', label: t('item.cost') },
   { key: 'on_hand', label: t('general.on_hand') },
   { key: 'sale_price', label: t('item.sale_price') },
   { key: 'actions', label: t('general.actions') },

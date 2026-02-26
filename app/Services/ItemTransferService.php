@@ -7,7 +7,8 @@ use App\Models\ItemTransfer\ItemTransfer;
 use App\Models\ItemTransfer\ItemTransferItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-
+use Illuminate\Support\Facades\Cache;
+use App\Models\Transaction\Transaction;
 class ItemTransferService
 {
     public function __construct(
@@ -119,6 +120,37 @@ class ItemTransferService
             // Validate stock availability
             $this->validateStockAvailability($transfer->items->toArray(), $transfer->from_store_id);
 
+            // Create transaction for transfer cost
+            if($transfer->transfer_cost>0){
+                    $transactionService = app(TransactionService::class);
+                    $glAccount = Cache::get('gl_accounts');
+                    $homeCurrency = Cache::get('home_currency');
+                    $transactionService->post(
+                        header: [
+                            'currency_id' => $homeCurrency->id,
+                            'rate' => 1,
+                            'date' => $transfer->date,
+                            'remark' => 'Transfer cost for item transfer ' . $transfer->id,
+                            'reference_type' => ItemTransfer::class,
+                            'reference_id' => $transfer->id,
+                            'status' => 'posted',
+                        ],
+                        lines: [
+                            [
+                                'account_id' => $glAccount['cash-in-hand'],
+                                'debit' => 0,
+                                'credit' => $transfer->transfer_cost,
+                                'remark' => $transfer->remarks,
+                            ],
+                            [
+                                'account_id' => $glAccount['other-expenses'],
+                                'debit' => $transfer->transfer_cost,
+                                'credit' => 0,
+                                'remark' => $transfer->remarks,
+                            ],
+                        ],
+                    );
+                }
             // Process each item
             foreach ($transfer->items as $item) {
                 // Remove stock from source store
@@ -168,6 +200,14 @@ class ItemTransferService
 
             // If transfer was completed, revert stock changes
             if ($transfer->status === TransferStatus::COMPLETED) {
+
+                // Reverse transaction for transfer cost
+                if($transfer->transfer_cost>0){
+                    $transactionService = app(TransactionService::class);
+                    $transactionService->reverse( Transaction::where('reference_type', ItemTransfer::class)
+                    ->where('reference_id', $transfer->id)
+                    ->first());
+                }
                 // Find and delete stock records related to this transfer
                 \App\Models\Inventory\Stock::where('source_type', ItemTransfer::class)
                     ->where('source_id', $transfer->id)

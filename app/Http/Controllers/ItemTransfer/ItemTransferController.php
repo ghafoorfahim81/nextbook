@@ -15,7 +15,8 @@ use App\Services\DateConversionService;
 use App\Services\ItemTransferService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-
+use App\Services\TransactionService;
+use Illuminate\Support\Facades\Cache;
 class ItemTransferController extends Controller
 {
     public function __construct(
@@ -73,7 +74,6 @@ class ItemTransferController extends Controller
     {
         $dateConversionService = app(DateConversionService::class);
         $validated = $request->validated();
-
         // Convert date properly
         $validated['date'] = $dateConversionService->toGregorian($validated['date']);
 
@@ -87,8 +87,7 @@ class ItemTransferController extends Controller
             }, $validated['items']);
         }
 
-        $transfer = $this->transferService->createTransfer($validated);
-
+        $transfer = $this->transferService->createTransfer($validated); 
         if ((bool) $request->create_and_new) {
             return redirect()->back()->with('success', __('general.created_successfully', ['resource' => __('general.resource.item_transfer')]));
         }

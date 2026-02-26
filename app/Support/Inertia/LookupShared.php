@@ -114,7 +114,7 @@ final class LookupShared
                 'accounts-receivable',
                 'accounts-payable',
                 'product-income',
-                'cash',
+                'cash-in-hand',
                 'cost-of-goods-sold',
                 'inventory-stock',
                 'retained-earnings',
@@ -122,6 +122,7 @@ final class LookupShared
                 'non-inventory-items',
                 'raw-materials',
                 'finished-goods',
+                'other-expenses',
             ])->pluck('id', 'slug')
         );
         Cache::put('gl_accounts', $glAccounts);

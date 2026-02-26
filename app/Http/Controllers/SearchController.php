@@ -415,6 +415,7 @@ class SearchController extends Controller
                 'has_batches' => $hasBatches,
                 'selected_batch' => null,
                 'on_hand' => $totalOnHand,
+                'avg_cost' => $item->avgCost(),
             ];
         })->values()->all();
     }
