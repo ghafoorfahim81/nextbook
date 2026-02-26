@@ -269,7 +269,7 @@ class HandleInertiaRequests extends Middleware
                     'permissions' => $request->user()?->getAllPermissions()->pluck('name')->toArray(),
                     'roles' => $request->user()->getRoleNames()->toArray(),
                     'role_slugs' => $request->user()->roles->pluck('slug')->toArray(),
-                    'calendar_type' => $request->user()->company->calendar_type,
+                    'calendar_type' => $request->user()->company?->calendar_type ?? 'AD',
                 ] : null,
             ],
             'flash' => [
