@@ -13,7 +13,7 @@ class ExpenseResource extends JsonResource
         $dateConversionService = app(\App\Services\DateConversionService::class);
 
         return [
-            'id' => $this->id, 
+            'id' => $this->id,
             'date' => $dateConversionService->toDisplay($this->date),
             'remarks' => $this->remarks,
             'category_id' => $this->category_id,
@@ -21,22 +21,18 @@ class ExpenseResource extends JsonResource
                 'id' => $this->category->id,
                 'name' => $this->category->name,
             ]),
-            'currency_id' => $this->bankTransaction?->currency_id,
-            'currency' => $this->bankTransaction?->currency,
-            'bank_account_id' => $this->bankTransaction?->account_id,
-            'bank_account' => $this->bankTransaction?->account,
-            'expense_account_id' => $this->expenseTransaction?->account_id,
-            'expense_account' => $this->expenseTransaction?->account,
-            'rate' => $this->expenseTransaction?->rate,
+            'currency_id' => $this->transaction?->currency_id,
+            'currency' => $this->transaction?->currency,
+            'bank_account_id' => $this->transaction?->lines->last()?->account_id,
+            'bank_account' => $this->transaction?->lines->last()?->account,
+            'expense_account_id' => $this->transaction?->lines->first()?->account_id,
+            'expense_account' => $this->transaction?->lines->first()?->account,
+            'rate' => $this->transaction?->rate,
             'attachment' => $this->attachment,
             'attachment_url' => $this->attachment ? asset('storage/' . $this->attachment) : null,
             'details' => ExpenseDetailResource::collection($this->whenLoaded('details')),
             'total' => $this->whenLoaded('details', fn() => $this->details->sum('amount')),
             'base_total' => $this->whenLoaded('details', fn() => $this->details->sum('amount') * ($this->rate ?? 1)),
-            'expense_transaction_id' => $this->expense_transaction_id,
-            'expense_transaction' => $this->whenLoaded('expenseTransaction'),
-            'bank_transaction_id' => $this->bank_transaction_id,
-            'bank_transaction' => $this->whenLoaded('bankTransaction'),
         ];
     }
 }
