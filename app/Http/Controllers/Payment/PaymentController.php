@@ -98,7 +98,7 @@ class PaymentController extends Controller
 
             // Debit Accounts Payable for selected ledger (reduce liability)
             $glAccounts = Cache::get('gl_accounts');
-            $apAccountId = $glAccounts['accounts-payable'];
+            $apAccountId = $glAccounts['account-payable'];
             $debitRemark = "Payment #{$payment->number} to {$ledger->name}";
 
             $transaction = $transactionService->post(
@@ -181,7 +181,7 @@ class PaymentController extends Controller
             $date = $validated['date'] ?? $payment->date;
             $bankAccountId = $validated['bank_account_id'] ?? $payment->transaction?->lines[0]->account_id;
             $glAccounts = Cache::get('gl_accounts');
-            $apAccountId = $glAccounts['accounts-payable'];
+            $apAccountId = $glAccounts['account-payable'];
 
             TransactionLine::where('transaction_id', $payment->transaction_id)->forceDelete();
             Transaction::where('id', $payment->transaction_id)->forceDelete();
