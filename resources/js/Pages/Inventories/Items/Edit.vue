@@ -159,7 +159,7 @@ watch(
     },
     { deep: true }
 )
-const handleOpeningSelectChange = (index, value) => { 
+const handleOpeningSelectChange = (index, value) => {
     form.openings[index].selected_store = value;
     form.openings[index].store_id = value.id ? value.id : null;
 };
@@ -365,7 +365,7 @@ watch(
                                 </button>
                                   </div>
                                 </PopoverContent>
-                              </Popover> 
+                              </Popover>
                         </div>
                     </div>
                     <NextInput v-show="visibleFields.rack_no" :label="t('item.rack_no')" v-model="form.rack_no" :placeholder="t('general.enter', { text: t('item.rack_no') })" :error="form.errors?.rack_no" />
@@ -425,6 +425,7 @@ watch(
             </progress>
             <div class="mt-4 flex gap-2">
                 <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white" :disabled="disabled">{{ t('general.update') }}</button>
+                <button type="button" class="btn px-4 py-2 rounded-md border" @click="() => $inertia.visit('/items')">{{ t('general.cancel') }}</button>
             </div>
         </form>
     </AppLayout>
