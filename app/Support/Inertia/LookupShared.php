@@ -111,8 +111,8 @@ final class LookupShared
             $cacheDuration,
             fn() => Account::query()->whereIn('slug', [
                 'sales-revenue',
-                'accounts-receivable',
-                'accounts-payable',
+                'account-receivable',
+                'account-payable',
                 'product-income',
                 'cash-in-hand',
                 'cost-of-goods-sold',

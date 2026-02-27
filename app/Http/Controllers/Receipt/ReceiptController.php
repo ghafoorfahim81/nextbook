@@ -90,7 +90,7 @@ class ReceiptController extends Controller
             ]);
             $glAccounts = Cache::get('gl_accounts');
             // Credit Accounts Receivable for selected ledger
-            $arAccountId = $glAccounts['accounts-receivable'];
+            $arAccountId = $glAccounts['account-receivable'];
 
             $creditRemark = "Receipt #{$receipt->number} from {$ledger->name}";
 
@@ -174,7 +174,7 @@ class ReceiptController extends Controller
             $date = $validated['date'] ?? $receipt->date;
             $bankAccountId = $validated['bank_account_id'] ?? $receipt->transaction?->lines[0]->account_id;
             $glAccounts = Cache::get('gl_accounts');
-            $arAccountId = $glAccounts['accounts-receivable'];
+            $arAccountId = $glAccounts['account-receivable'];
             TransactionLine::where('transaction_id', $receipt->transaction_id)->forceDelete();
              Transaction::where('id', $receipt->transaction_id)->forceDelete();
              $transactionService = app(TransactionService::class);
@@ -201,7 +201,7 @@ class ReceiptController extends Controller
             );
             $receipt->update([
                 'transaction_id' => $transaction->id,
-            ]); 
+            ]);
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         });
 
@@ -217,7 +217,7 @@ class ReceiptController extends Controller
             $receipt->delete();
         });
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
-  
+
         return redirect()->route('receipts.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.receipt')]));
     }
     public function restore(Request $request, Receipt $receipt)

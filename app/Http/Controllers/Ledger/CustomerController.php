@@ -107,7 +107,7 @@ class CustomerController extends Controller
                 lines: [
                 ['account_id' => $arId, 'ledger_id' => $ledger->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for customer ' . $ledger->name],
                 ['account_id' => $equityId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $ledger->name],
-            ]); 
+            ]);
             $transaction->opening()->create([
                 'ledgerable_id' => $ledger->id,
                 'ledgerable_type' => 'ledger',
@@ -190,7 +190,7 @@ class CustomerController extends Controller
 
         if ($validated['amount'] && $validated['amount'] > 0 && $validated['opening_currency_id'] && $validated['rate']) {  // Update existing opening balances
             $glAccounts = Cache::get('gl_accounts');
-            $arId = $glAccounts['accounts-receivable'];
+            $arId = $glAccounts['account-receivable'];
             $equityId = $glAccounts['opening-balance-equity'];
             $transactionService = app(TransactionService::class);
             abort_unless($arId && $equityId, 500, 'System accounts (AR/AP) are missing.');

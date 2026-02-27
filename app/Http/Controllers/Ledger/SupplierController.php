@@ -94,7 +94,7 @@ class SupplierController extends Controller
         if ($validated['opening_currency_id'] && $validated['amount'] && $validated['amount'] > 0) {
 
             $equityId = $glAccounts['opening-balance-equity'];
-            $apId = $glAccounts['accounts-payable'];
+            $apId = $glAccounts['account-payable'];
 
             abort_unless($equityId && $apId, 500, 'System accounts (AR/AP) are missing.');
 
@@ -176,7 +176,7 @@ class SupplierController extends Controller
      */
     public function update(LedgerUpdateRequest $request, Ledger $supplier)
     {
-        
+
         $validated = $request->validated();
         $supplier->update($validated);
 
@@ -192,7 +192,7 @@ class SupplierController extends Controller
         if ($validated['amount'] && $validated['amount'] > 0 && $validated['opening_currency_id'] && $validated['rate']) {  // Update existing opening balances
             $glAccounts = Cache::get('gl_accounts');
             $equityId = $glAccounts['opening-balance-equity'];
-            $apId = $glAccounts['accounts-payable'];
+            $apId = $glAccounts['account-payable'];
             $transactionService = app(TransactionService::class);
             abort_unless($equityId && $apId, 500, 'System accounts (AR/AP) are missing.');
 
