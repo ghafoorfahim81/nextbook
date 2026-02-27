@@ -120,9 +120,9 @@ const baseTotal = computed(() => {
                 <!-- Attachment -->
                 <div v-if="expense.attachment_url">
                     <span class="text-muted-foreground text-sm">{{ t('general.attachment') }}:</span>
-                    <a 
-                        :href="expense.attachment_url" 
-                        target="_blank" 
+                    <a
+                        :href="expense.attachment_url"
+                        target="_blank"
                         class="ml-2 text-violet-600 hover:underline"
                     >
                         {{ t('general.view_attachment') }}
@@ -132,18 +132,26 @@ const baseTotal = computed(() => {
                 <!-- Transactions -->
                 <Separator />
                 <div>
-                    <h4 class="font-semibold mb-3 text-violet-600">{{ t('expense.accounting_entries') }}</h4>
+                    <h4 class="font-semibold mb-3 text-violet-600 dark:text-violet-300">{{ t('expense.accounting_entries') }}</h4>
                     <div class="grid grid-cols-2 gap-4 text-sm">
-                        <div class="p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
-                            <Badge variant="destructive" class="mb-2">DR</Badge>
-                            <p class="font-medium">{{ expense.expense_account?.name }}</p>
+                        <!-- Credit (CR) box (should be green/bright on both modes) -->
+                        <div class="p-3 rounded-lg
+                            bg-green-100 border border-green-300
+                            dark:bg-green-900/[.94] dark:border-green-700 text-green-900 dark:text-green-100
+                            flex flex-col items-start min-h-[88px]">
+                            <Badge variant="success" class="bg-green-600 mb-2" style="direction: ltr;">CR</Badge>
+                            <p class="font-medium break-words">{{ expense.bank_account?.name }}</p>
                             <p class="text-muted-foreground">
                                 {{ expense.currency?.symbol }} {{ total.toLocaleString() }}
                             </p>
                         </div>
-                        <div class="p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
-                            <Badge variant="success" class="bg-green-600 mb-2">CR</Badge>
-                            <p class="font-medium">{{ expense.bank_account?.name }}</p>
+                        <!-- Debit (DR) box (should be red/bright on both modes) -->
+                        <div class="p-3 rounded-lg
+                            bg-red-100 border border-red-300
+                            dark:bg-red-900/[.93] dark:border-red-700 text-red-900 dark:text-red-100
+                            flex flex-col items-start min-h-[88px]">
+                            <Badge variant="destructive" class="mb-2" style="direction: ltr;">DR</Badge>
+                            <p class="font-medium break-words">{{ expense.expense_account?.name }}</p>
                             <p class="text-muted-foreground">
                                 {{ expense.currency?.symbol }} {{ total.toLocaleString() }}
                             </p>

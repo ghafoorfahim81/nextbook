@@ -102,20 +102,29 @@ class ExpenseController extends Controller
             $total = collect($validated['details'])->sum('amount');
 
             // Create accounting transactions
-            $transactions = $transactionService->createExpenseTransactions(
-                $expense,
-                $total,
-                $validated['currency_id'],
-                $validated['rate'] ?? 1,
-                $validated['expense_account_id'],
-                $validated['bank_account_id']
+            $transaction = $transactionService->post(
+                header: [
+                    'currency_id' => $validated['currency_id'],
+                    'rate' => $validated['rate'] ?? 1,
+                    'date' => $expense->date,
+                    'reference_type' => Expense::class,
+                    'reference_id' => $expense->id,
+                    'remark' => 'Expense: ' . $expense->category->name . ' - ' . $expense->remarks,
+                ],
+                lines: [
+                    [
+                        'account_id' => $validated['expense_account_id'],
+                        'debit' => $total,
+                        'credit' => 0,
+                    ],
+                    [
+                        'account_id' => $validated['bank_account_id'],
+                        'debit' => 0,
+                        'credit' => $total,
+                    ],
+                ],
             );
 
-            // Update expense with transaction IDs
-            $expense->update([
-                'expense_transaction_id' => $transactions['expense']->id,
-                'bank_transaction_id' => $transactions['bank']->id,
-            ]);
 
             return $expense;
         });
@@ -132,10 +141,8 @@ class ExpenseController extends Controller
         $expense->load([
             'category',
             'details',
-            'expenseTransaction.currency',
-            'expenseTransaction.account',
-            'bankTransaction.currency',
-            'bankTransaction.account',
+            'transaction.currency',
+            'transaction.lines.account',
         ]);
 
         return response()->json([
@@ -145,7 +152,7 @@ class ExpenseController extends Controller
 
     public function edit(Request $request, Expense $expense)
     {
-        $expense->load(['category', 'details', 'expenseTransaction.currency', 'bankTransaction.currency', 'bankTransaction.account', 'bankTransaction.account']);
+        $expense->load(['category', 'details', 'transaction.currency', 'transaction.lines.account']);
 
         // dd($expense);
         return inertia('Expenses/Expenses/Edit', [
@@ -153,11 +160,11 @@ class ExpenseController extends Controller
             'categories' => ExpenseCategoryResource::collection(
                 ExpenseCategory::where('is_active', true)->get()
             ),
-            'expenseAccounts' => Account::whereHas('accountType', fn($q) =>
-                $q->where('slug', 'office-expenses')
+           'expenseAccounts' => Account::whereHas('accountType', fn($q) =>
+                $q->where('slug', 'expense')
             )->get(),
             'bankAccounts' => Account::whereHas('accountType', fn($q) =>
-                $q->whereIn('slug', ['bank-account', 'cash','sarafi'])
+                $q->whereIn('slug', ['cash-or-bank'])
             )->get(),
         ]);
     }
@@ -197,38 +204,34 @@ class ExpenseController extends Controller
             $total = $expense->details()->sum('amount');
 
             // Store old transaction IDs before nulling them
-            $oldExpenseTransactionId = $expense->expense_transaction_id;
-            $oldBankTransactionId = $expense->bank_transaction_id;
+            $oldTransaction = $expense->transaction;
+            $oldTransaction->lines()->forceDelete();
+            $oldTransaction->forceDelete();
 
-            // Null out transaction IDs first to avoid foreign key constraint issues
-            $expense->update([
-                'expense_transaction_id' => null,
-                'bank_transaction_id' => null,
-            ]);
-
-            // Delete old transactions using stored IDs
-            if ($oldExpenseTransactionId) {
-                \App\Models\Transaction\Transaction::find($oldExpenseTransactionId)?->forceDelete();
-            }
-            if ($oldBankTransactionId) {
-                \App\Models\Transaction\Transaction::find($oldBankTransactionId)?->forceDelete();
-            }
-
-            // Create new transactions
-            $transactions = $transactionService->createExpenseTransactions(
-                $expense->fresh(),
-                $total,
-                $validated['currency_id'],
-                $validated['rate'],
-                $validated['expense_account_id'],
-                $validated['bank_account_id']
+            // Create new transaction
+            $transaction = $transactionService->post(
+                header: [
+                    'currency_id' => $validated['currency_id'],
+                    'rate' => $validated['rate'] ?? 1,
+                    'date' => $expense->date,
+                    'reference_type' => Expense::class,
+                    'reference_id' => $expense->id,
+                    'remark' => 'Expense: ' . $expense->category->name . ' - ' . $expense->remarks,
+                ],
+                lines: [
+                    [
+                        'account_id' => $validated['expense_account_id'],
+                        'debit' => $total,
+                        'credit' => 0,
+                    ],
+                    [
+                        'account_id' => $validated['bank_account_id'],
+                        'debit' => 0,
+                        'credit' => $total,
+                    ],
+                ],
             );
 
-            // Update expense with new transaction IDs
-            $expense->update([
-                'expense_transaction_id' => $transactions['expense']->id,
-                'bank_transaction_id' => $transactions['bank']->id,
-            ]);
         });
 
         return redirect()->route('expenses.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.expense')]));
@@ -237,11 +240,9 @@ class ExpenseController extends Controller
     {
         DB::transaction(function () use ($expense) {
             // Soft delete related transactions
-            if ($expense->expenseTransaction) {
-                $expense->expenseTransaction->delete();
-            }
-            if ($expense->bankTransaction) {
-                $expense->bankTransaction->delete();
+            if ($expense->transaction) {
+                $expense->transaction->lines()->delete();
+                $expense->transaction->delete();
             }
 
             // Soft delete details (if soft deletes enabled) or they cascade
@@ -259,13 +260,9 @@ class ExpenseController extends Controller
             $expense->restore();
             $expense->details()->restore();
             // Restore transactions
-            if ($expense->expense_transaction_id) {
-                \App\Models\Transaction\Transaction::withTrashed()
-                    ->find($expense->expense_transaction_id)?->restore();
-            }
-            if ($expense->bank_transaction_id) {
-                \App\Models\Transaction\Transaction::withTrashed()
-                    ->find($expense->bank_transaction_id)?->restore();
+            if ($expense->transaction) {
+                $expense->transaction->lines()->restore();
+                $expense->transaction->restore();
             }
         });
 

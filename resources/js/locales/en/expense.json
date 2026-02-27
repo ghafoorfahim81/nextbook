@@ -14,6 +14,8 @@
   "create_error": "Error creating expense",
   "update_error": "Error updating expense",
   "error": "Error",
-  "at_least_one_detail": "At least one expense detail is required"
+  "at_least_one_detail": "At least one expense detail is required",
+  "description_remark_placeholder": "Expense description e.g. Food, Rent, etc.",
+  "expnese_general_description": "Expense general description e.g. Rent for February 2026"
 }
 

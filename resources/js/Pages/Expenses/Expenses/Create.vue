@@ -84,7 +84,7 @@ const baseTotal = computed(() => {
 
 // Add new detail line
 const addDetailLine = () => {
-    form.details.push({ amount: '', title: '' });
+        form.details.push({ amount: '', title: '' });
 };
 
 // Remove detail line
@@ -235,6 +235,8 @@ onUnmounted(() => {
                         :floating-text="t('expense.category')"
                         :error="form.errors?.category_id"
                         :searchable="true"
+                        resource-type="expense_categories"
+                        :search-fields="['name', 'slug']"
                     />
                     <NextSelect
                         :options="expenseAccounts"
@@ -246,6 +248,8 @@ onUnmounted(() => {
                         :floating-text="t('expense.expense_account')"
                         :error="form.errors?.expense_account_id"
                         :searchable="true"
+                        resource-type="accounts"
+                        :search-fields="['name', 'number', 'slug']"
                     />
                     <NextSelect
                         :options="bankAccounts"
@@ -257,6 +261,8 @@ onUnmounted(() => {
                         :floating-text="t('expense.bank_account')"
                         :error="form.errors?.bank_account_id"
                         :searchable="true"
+                        resource-type="accounts"
+                        :search-fields="['name', 'number', 'slug']"
                     />
                     <div class="grid grid-cols-2 gap-2">
                         <NextSelect
@@ -276,12 +282,14 @@ onUnmounted(() => {
                             step="any"
                             :label="t('general.rate')"
                             :error="form.errors?.rate"
+                            :disabled="form?.selected_currency?.is_base_currency === true"
                         />
                     </div>
                     <NextTextarea
                         v-model="form.remarks"
                         :label="t('general.remarks')"
                         :error="form.errors?.remarks"
+                        :placeholder="t('expense.expnese_general_description')"
                         rows="2"
                     />
                 </div>
@@ -325,11 +333,11 @@ onUnmounted(() => {
             </div>
 
             <!-- Expense Details Section -->
-            <div class="rounded-xl border bg-card shadow-sm overflow-x-auto">
+            <div class="rounded-xl border border-violet-500 bg-card shadow-sm overflow-x-auto">
                 <div class="p-4 border-b flex justify-between items-center">
                     <h3 class="font-semibold text-violet-500">{{ t('expense.detail_lines') }}</h3>
-                    <Button type="button" variant="outline" size="sm" @click="addDetailLine">
-                        <Plus class="w-4 h-4 mr-1" />
+                    <Button type="button" variant="outline" class="flex" size="sm" @click="addDetailLine">
+                        <Plus class="w-4 h-4 mr-1 mt-1" />
                         {{ t('general.add_more') }}
                     </Button>
                 </div>
@@ -337,7 +345,7 @@ onUnmounted(() => {
                     <thead class="bg-muted/50">
                         <tr class="text-sm text-muted-foreground">
                             <th class="px-4 py-2 w-12">#</th>
-                            <th class="px-4 py-2 text-left">{{ t('expense.title') }} *</th>
+                            <th class="px-4 py-2 text-left">{{ t('general.description') }} *</th>
                             <th class="px-4 py-2 w-40 text-right">{{ t('general.amount') }} *</th>
                             <th class="px-4 py-2 w-12"></th>
                         </tr>
@@ -345,21 +353,22 @@ onUnmounted(() => {
                     <tbody>
                         <tr v-for="(detail, index) in form.details" :key="index" class="border-t hover:bg-muted/30">
                             <td class="px-4 py-2 text-center text-muted-foreground">{{ index + 1 }}</td>
-                            <td class="px-4 py-2">
+                            <td class="px-4 py-2 w-64">
                                 <NextInput
                                     v-model="detail.title"
-                                    :placeholder="t('expense.enter_title')"
+                                    :placeholder="t('expense.description_remark_placeholder')"
                                     :error="form.errors?.[`details.${index}.title`]"
+                                    class="w-full"
                                 />
                             </td>
-                            <td class="px-4 py-2">
+                            <td class="px-4 py-2 w-64">
                                 <NextInput
                                     v-model="detail.amount"
                                     type="number"
                                     step="any"
                                     :placeholder="t('general.amount')"
                                     :error="form.errors?.[`details.${index}.amount`]"
-                                    class="text-right"
+                                    class="text-right w-full"
                                 />
                             </td>
 

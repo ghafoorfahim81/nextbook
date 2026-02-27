@@ -2,9 +2,6 @@
 
 namespace App\Models\Expense;
 
-use App\Models\Account\Account;
-use App\Models\Administration\Currency;
-use App\Models\Transaction\Transaction;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
@@ -16,8 +13,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\BranchSpecific;
+use App\Models\Transaction\Transaction;
 class Expense extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, BranchSpecific, HasBranch, HasUserAuditable, HasDependencyCheck, SoftDeletes;
@@ -31,8 +30,6 @@ class Expense extends Model
         'category_id',
         'rate',
         'attachment',
-        'expense_transaction_id',
-        'bank_transaction_id',
         'created_by',
         'updated_by',
     ];
@@ -42,8 +39,6 @@ class Expense extends Model
         'date' => 'date',
         'category_id' => 'string',
         'rate' => 'float',
-        'expense_transaction_id' => 'string',
-        'bank_transaction_id' => 'string',
         'created_by' => 'string',
         'updated_by' => 'string',
     ];
@@ -55,8 +50,6 @@ class Expense extends Model
 
     protected array $allowedFilters = [
         'category_id',
-        'bankTransaction.lines.account_id',
-        'expenseTransaction.lines.account_id',
         'date',
         'created_by',
     ];
@@ -71,16 +64,6 @@ class Expense extends Model
         return $this->hasMany(ExpenseDetail::class);
     }
 
-    public function expenseTransaction(): BelongsTo
-    {
-        return $this->belongsTo(Transaction::class, 'expense_transaction_id');
-    }
-
-    public function bankTransaction(): BelongsTo
-    {
-        return $this->belongsTo(Transaction::class, 'bank_transaction_id');
-    }
-
     // Get total amount from details
     public function getTotalAttribute(): float
     {
@@ -92,6 +75,12 @@ class Expense extends Model
     {
         return $this->total * ($this->rate ?? 1);
     }
+
+    public function transaction(): HasOne
+    {
+        return $this->hasOne(Transaction::class, 'reference_id');
+    }
+
 
     protected function getRelationships(): array
     {
