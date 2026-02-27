@@ -140,7 +140,7 @@ const baseTotal = computed(() => {
                             dark:bg-green-900/[.94] dark:border-green-700 text-green-900 dark:text-green-100
                             flex flex-col items-start min-h-[88px]">
                             <Badge variant="success" class="bg-green-600 mb-2" style="direction: ltr;">CR</Badge>
-                            <p class="font-medium break-words">{{ expense.bank_account?.name }}</p>
+                            <p class="font-medium break-words">{{ expense.expense_account?.name }}</p>
                             <p class="text-muted-foreground">
                                 {{ expense.currency?.symbol }} {{ total.toLocaleString() }}
                             </p>
@@ -151,7 +151,7 @@ const baseTotal = computed(() => {
                             dark:bg-red-900/[.93] dark:border-red-700 text-red-900 dark:text-red-100
                             flex flex-col items-start min-h-[88px]">
                             <Badge variant="destructive" class="mb-2" style="direction: ltr;">DR</Badge>
-                            <p class="font-medium break-words">{{ expense.expense_account?.name }}</p>
+                            <p class="font-medium break-words">{{ expense.bank_account?.name }}</p>
                             <p class="text-muted-foreground">
                                 {{ expense.currency?.symbol }} {{ total.toLocaleString() }}
                             </p>

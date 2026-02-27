@@ -258,11 +258,12 @@ class ExpenseController extends Controller
     {
         DB::transaction(function () use ($expense) {
             $expense->restore();
-            $expense->details()->restore();
-            // Restore transactions
-            if ($expense->transaction) {
-                $expense->transaction->lines()->restore();
-                $expense->transaction->restore();
+            $expense->details()->withTrashed()->restore();
+
+            $transaction = $expense->transaction()->withTrashed()->first();
+            if ($transaction) {
+                $transaction->restore();
+                $transaction->lines()->withTrashed()->restore();
             }
         });
 
