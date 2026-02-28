@@ -25,8 +25,8 @@ class ItemTransfer extends Model
 
     protected $fillable = [
         'date',
-        'from_store_id',
-        'to_store_id',
+        'from_warehouse_id',
+        'to_warehouse_id',
         'status',
         'transfer_cost',
         'branch_id',
@@ -39,8 +39,8 @@ class ItemTransfer extends Model
     {
         return [
             'date' => 'date',
-            'from_store_id' => 'string',
-            'to_store_id' => 'string',
+            'from_warehouse_id' => 'string',
+            'to_warehouse_id' => 'string',
             'status' => TransferStatus::class,
             'transfer_cost' => 'decimal:4',
             'branch_id' => 'string',
@@ -55,27 +55,27 @@ class ItemTransfer extends Model
             'date',
             'status',
             'remarks',
-            'fromStore.name',
-            'toStore.name',
+            'fromWarehouse.name',
+            'toWarehouse.name',
         ];
     }
 
     protected array $allowedFilters = [
-        'from_store_id',
-        'to_store_id',
+        'from_warehouse_id',
+        'to_warehouse_id',
         'items.item_id',
         'date',
         'created_by',
     ];
 
-    public function fromStore(): BelongsTo
+    public function fromWarehouse(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Administration\Store::class, 'from_store_id');
+        return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'from_warehouse_id');
     }
 
-    public function toStore(): BelongsTo
+    public function toWarehouse(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Administration\Store::class, 'to_store_id');
+        return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'to_warehouse_id');
     }
 
     public function branch(): BelongsTo

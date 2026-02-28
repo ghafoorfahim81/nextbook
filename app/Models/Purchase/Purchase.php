@@ -14,6 +14,8 @@ use App\Traits\HasUserAuditable;
 use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\BranchSpecific;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Models\Transaction\Transaction;
 class Purchase extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
@@ -27,11 +29,9 @@ class Purchase extends Model
         'number',
         'supplier_id',
         'date',
-        'transaction_id',
         'discount',
         'discount_type',
         'type',
-        'store_id',
         'description',
         'status',
         'created_by',
@@ -48,7 +48,6 @@ class Purchase extends Model
         return [
             'supplier_id' => 'string',
             'date' => 'date',
-            'transaction_id' => 'string',
             'discount' => 'float',
             'created_by' => 'string',
             'updated_by' => 'string',
@@ -72,7 +71,7 @@ class Purchase extends Model
         'supplier_id',
         'transaction.currency_id',
         'type',
-        'store_id',
+        'warehouse_id',
         'date',
         'created_by',
     ];
@@ -82,9 +81,9 @@ class Purchase extends Model
         return $this->belongsTo(\App\Models\Ledger\Ledger::class);
     }
 
-    public function transaction(): BelongsTo
+    public function transaction(): HasOne
     {
-        return $this->belongsTo(\App\Models\Transaction\Transaction::class);
+        return $this->hasOne(Transaction::class, 'reference_id');
     }
 
     public function items()

@@ -9,7 +9,7 @@ use App\Http\Resources\Purchase\PurchaseResource;
 use App\Models\Purchase\Purchase;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
-use App\Models\Administration\Store;
+use App\Models\Administration\Warehouse;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +31,7 @@ class PurchaseController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $purchases = Purchase::with(['supplier', 'transaction.currency', 'stocks.store'])
+        $purchases = Purchase::with(['supplier', 'transaction.currency', 'stocks.warehouse'])
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection)
@@ -42,7 +42,7 @@ class PurchaseController extends Controller
             'filterOptions' => [
                 'suppliers' => Ledger::query()->where('type', 'supplier')->orderBy('name')->get(['id', 'name']),
                 'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
-                'stores' => Store::orderBy('name')->get(['id', 'name']),
+                'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
                 'types' => [
                     ['id' => 'cash', 'name' => 'Cash'],
                     ['id' => 'credit', 'name' => 'Credit'],
@@ -83,15 +83,16 @@ class PurchaseController extends Controller
             $validated['date'] = $dateConversionService->toGregorian($validated['date']);
 
             $purchase = Purchase::create($validated);
-            $validated['item_list'] = array_map(function ($item) use ($dateConversionService) {
+            $validated['item_list'] = array_map(function ($item) use ($dateConversionService, $validated) {
                 $item['expire_date'] = $item['expire_date'] ? $dateConversionService->toGregorian($item['expire_date']) : null;
                 $item['discount'] = $item['item_discount'] ? $item['item_discount'] : 0;
+                $item['warehouse_id'] = $validated['warehouse_id'];
                 return $item;
             }, $validated['item_list']);
             $purchase->items()->createMany($validated['item_list']);
 
             foreach ($validated['item_list'] as $item) {
-                $stockService->addStock($item, $validated['store_id'], Purchase::class, $purchase->id, $validated['date']);
+                $stockService->addStock($item, $validated['warehouse_id'], Purchase::class, $purchase->id, $validated['date']);
             }
 
             // Create accounting transactions
@@ -155,13 +156,14 @@ class PurchaseController extends Controller
                 // Remove old stock entries
                 // Delete old items and create new ones
                 $purchase->items()->forceDelete();
-                $validated['item_list'] = array_map(function ($item) use ($dateConversionService) {
+                $validated['item_list'] = array_map(function ($item) use ($dateConversionService, $validated) {
                     $item['expire_date'] = $item['expire_date'] ? $dateConversionService->toGregorian($item['expire_date']) : null;
                     $item['discount'] = $item['discount'] ? $item['discount'] : 0;
+                    $item['warehouse_id'] = $validated['warehouse_id'];
                     return $item;
                 }, $validated['item_list']);
                 $purchase->items()->createMany($validated['item_list']);
-                $stockService->updateStock($validated['item_list'], $validated['store_id'], Purchase::class, $purchase->id, $validated['date']);
+                $stockService->updateStock($validated['item_list'], $validated['warehouse_id'], Purchase::class, $purchase->id, $validated['date']);
 
             }
 

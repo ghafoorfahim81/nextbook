@@ -76,6 +76,18 @@ return [
         'finished_good_items' => 'محصولات تمام شده',
         'inventory_services' => 'خدمات انبار',
     ],
+    'stock_direction_type' => [
+        'in' => 'ورود',
+        'out' => 'خروج',
+    ], 
+    'stock_source_type' => [
+        'purchase' => 'خرید',
+        'purchase_return' => 'برگشت خرید',
+        'sale' => 'فروش',
+        'sale_return' => 'برگشت فروش',
+        'stock_adjustment' => 'تعدیل انبار',
+        'item_transfer' => 'ترجمه مورد',
+    ],
 ];
 
 

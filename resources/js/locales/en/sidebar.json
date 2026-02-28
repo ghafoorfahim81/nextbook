@@ -30,7 +30,7 @@
     "size": "Size",
     "branch": "Branch",
     "brand": "Brand",
-    "store": "Store",
+    "warehouse": "Warehouse",
     "company": "Company"
   },
   "inventory": {

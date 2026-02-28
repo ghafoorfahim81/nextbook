@@ -22,13 +22,13 @@ class ItemTransferService
     {
         return DB::transaction(function () use ($data) {
             // Validate stock availability for all items
-            $this->validateStockAvailability($data['items'], $data['from_store_id']);
+            $this->validateStockAvailability($data['items'], $data['from_warehouse_id']);
 
             // Create transfer record
             $transfer = ItemTransfer::create([
                 'date' => $data['date'],
-                'from_store_id' => $data['from_store_id'],
-                'to_store_id' => $data['to_store_id'],
+                'from_warehouse_id' => $data['from_warehouse_id'],
+                'to_warehouse_id' => $data['to_warehouse_id'],
                 'status' => TransferStatus::PENDING,
                 'transfer_cost' => $data['transfer_cost'] ?? null,
                 'remarks' => $data['remarks'] ?? null,
@@ -66,14 +66,14 @@ class ItemTransferService
 
             // If transfer was cancelled and we're reactivating, validate stock
             if ($transfer->status === TransferStatus::CANCELLED && isset($data['status']) && $data['status'] === TransferStatus::PENDING->value) {
-                $this->validateStockAvailability($data['items'] ?? $transfer->items->toArray(), $data['from_store_id'] ?? $transfer->from_store_id);
+                $this->validateStockAvailability($data['items'] ?? $transfer->items->toArray(), $data['from_warehouse_id'] ?? $transfer->from_warehouse_id);
             }
 
             // Update transfer record
             $transfer->update([
                 'date' => $data['date'] ?? $transfer->date,
-                'from_store_id' => $data['from_store_id'] ?? $transfer->from_store_id,
-                'to_store_id' => $data['to_store_id'] ?? $transfer->to_store_id,
+                'from_warehouse_id' => $data['from_warehouse_id'] ?? $transfer->from_warehouse_id,
+                'to_warehouse_id' => $data['to_warehouse_id'] ?? $transfer->to_warehouse_id,
                 'status' => $data['status'] ?? $transfer->status,
                 'transfer_cost' => $data['transfer_cost'] ?? $transfer->transfer_cost,
                 'remarks' => $data['remarks'] ?? $transfer->remarks,
@@ -118,7 +118,7 @@ class ItemTransferService
             }
 
             // Validate stock availability
-            $this->validateStockAvailability($transfer->items->toArray(), $transfer->from_store_id);
+            $this->validateStockAvailability($transfer->items->toArray(), $transfer->from_warehouse_id);
 
             // Create transaction for transfer cost
             if($transfer->transfer_cost>0){
@@ -153,19 +153,19 @@ class ItemTransferService
                 }
             // Process each item
             foreach ($transfer->items as $item) {
-                // Remove stock from source store
+                // Remove stock from source warehouse
                 $stockOut = $this->stockService->removeStock([
                     'item_id' => $item->item_id,
                     'quantity' => $item->quantity,
                     'unit_measure_id' => $item->measure_id,
                     'unit_price' => $item->unit_price ?? 0,
                     'date' => $transfer->date,
-                ], $transfer->from_store_id, ItemTransfer::class, $transfer->id);
+                ], $transfer->from_warehouse_id, ItemTransfer::class, $transfer->id);
 
                 // Get source stock details for transfer
                 $sourceStock = \App\Models\Inventory\Stock::find($stockOut->stock_id);
 
-                // Add stock to destination store
+                // Add stock to destination warehouse
                 $this->stockService->addStock([
                     'item_id' => $item->item_id,
                     'unit_measure_id' => $item->measure_id,
@@ -176,7 +176,7 @@ class ItemTransferService
                     'free' => $sourceStock->free ?? 0,
                     'discount' => $sourceStock->discount ?? 0,
                     'tax' => $sourceStock->tax ?? 0,
-                ], $transfer->to_store_id, ItemTransfer::class, $transfer->id, $transfer->date);
+                ], $transfer->to_warehouse_id, ItemTransfer::class, $transfer->id, $transfer->date);
             }
 
             // Update transfer status
@@ -228,13 +228,13 @@ class ItemTransferService
     /**
      * Validate stock availability for all items
      */
-    private function validateStockAvailability(array $items, string $fromStoreId): void
+    private function validateStockAvailability(array $items, string $fromWarehouseId): void
     {
         foreach ($items as $item) {
             $itemId = is_array($item) ? $item['item_id'] : $item->item_id;
             $quantity = is_array($item) ? $item['quantity'] : $item->quantity;
 
-            $stockLevel = $this->stockService->getStockLevel($itemId, $fromStoreId);
+            $stockLevel = $this->stockService->getStockLevel($itemId, $fromWarehouseId);
 
             if ($stockLevel['available'] < $quantity) {
                 $itemModel = \App\Models\Inventory\Item::find($itemId);

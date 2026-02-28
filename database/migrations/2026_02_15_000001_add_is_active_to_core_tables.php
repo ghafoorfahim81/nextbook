@@ -20,7 +20,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true)->index();
         });
 
-        Schema::table('stores', function (Blueprint $table) {
+        Schema::table('warehouses', function (Blueprint $table) {
             $table->boolean('is_active')->default(true)->index();
         });
 
@@ -43,7 +43,7 @@ return new class extends Migration
             $table->dropColumn('is_active');
         });
 
-        Schema::table('stores', function (Blueprint $table) {
+        Schema::table('warehouses', function (Blueprint $table) {
             $table->dropColumn('is_active');
         });
 

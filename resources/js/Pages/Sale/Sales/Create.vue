@@ -30,7 +30,7 @@ const props = defineProps({
     ledgers: {type: Object, required: false, default: () => ({ data: [] })},
     salePurchaseTypes: {type: Object, required: true},
     currencies: {type: Object, required: true},
-    stores: {type: Object, required: true},
+    warehouses: {type: Object, required: true},
     unitMeasures: {type: Object, required: true},
     accounts: {type: Object, required: false, default: () => ({ data: [] })},
     saleNumber: {type: String, required: true},
@@ -62,8 +62,8 @@ const form = useForm({
         note: '',
     },
     status: '',
-    store_id: '',
-    selected_store: '',
+    warehouse_id: '',
+    selected_warehouse: '',
     item_list:[],
     items: [
         {
@@ -145,21 +145,21 @@ const itemOptions = ref([])
 
 const itemSearchOptions = computed(() => {
     const additionalParams = {}
-    if (form.store_id) {
-        additionalParams.store_id = form.store_id
+    if (form.warehouse_id) {
+        additionalParams.warehouse_id = form.warehouse_id
     }
     return { additionalParams, limit: 200 }
 })
 
-const loadItemOptions = async (storeId = form.store_id) => {
-    if (!storeId) {
+const loadItemOptions = async (warehouseId = form.warehouse_id) => {
+    if (!warehouseId) {
         itemOptions.value = []
         return
     }
     try {
         const response = await axios.get(route('search.items-for-sale'), {
             params: {
-                store_id: storeId,
+                warehouse_id: warehouseId,
                 limit: 50,
             }
         })
@@ -211,22 +211,22 @@ watch(() => props.salePurchaseTypes, (salePurchaseTypes) => {
     }
 }, { immediate: true });
 
-watch(() => props.stores.data, (stores) => {
-    if (stores && !form.selected_store) {
-        const baseStore = stores.find(c => c.is_main === true);
-        if (baseStore) {
-            form.selected_store = baseStore;
-            form.store_id = baseStore.id;
+watch(() => props.warehouses.data, (warehouses) => {
+    if (warehouses && !form.selected_warehouse) {
+        const baseWarehouse = warehouses.find(c => c.is_main === true);
+        if (baseWarehouse) {
+            form.selected_warehouse = baseWarehouse;
+            form.warehouse_id = baseWarehouse.id;
         }
     }
 }, { immediate: true });
 
-watch(() => form.store_id, (storeId) => {
-    if (!storeId) {
+watch(() => form.warehouse_id, (warehouseId) => {
+    if (!warehouseId) {
         itemOptions.value = []
         return
     }
-    loadItemOptions(storeId)
+    loadItemOptions(warehouseId)
 }, { immediate: true });
 
 // Payment dialog state
@@ -275,9 +275,9 @@ const handleSelectChange = (field, value) => {
     }
 };
 
-const storeChange = (value) => {
+const warehouseChange = (value) => {
     loadItemOptions(value);
-    form.store_id = value;
+    form.warehouse_id = value;
     form.items.forEach(item => {
         item.selected_item = '';
         item.selected_batch = '';
@@ -346,12 +346,12 @@ function handleSubmit(createAndNew = false) {
                         form.transaction_type_id = baseSalePurchaseType.id;
                     }
                 }
-                // Re-initialize store with default
-                if (props.stores?.data) {
-                    const baseStore = props.stores.data.find(c => c.is_main === true);
-                    if (baseStore) {
-                        form.selected_store = baseStore;
-                        form.store_id = baseStore.id;
+                // Re-initialize warehouse with default
+                if (props.warehouses?.data) {
+                    const baseWarehouse = props.warehouses.data.find(c => c.is_main === true);
+                    if (baseWarehouse) {
+                        form.selected_warehouse = baseWarehouse;
+                        form.warehouse_id = baseWarehouse.id;
                     }
                 }
                 toast({
@@ -715,17 +715,17 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                 />
                 <NextSelect
                     v-if="general_fields.store"
-                    :options="stores.data"
-                    v-model="form.selected_store"
+                    :options="warehouses.data"
+                    v-model="form.selected_warehouse"
                     :clearable="false"
-                    @update:modelValue="(value) => storeChange(value)"
+                    @update:modelValue="(value) => warehouseChange(value)"
                     label-key="name"
                     value-key="id"
-                    :reduce="store => store.id"
-                    :floating-text="t('admin.store.store')"
-                    :error="form.errors?.store_id"
+                    :reduce="warehouse => warehouse.id"
+                    :floating-text="t('admin.warehouse.warehouse')"
+                    :error="form.errors?.warehouse_id"
                     :searchable="true"
-                    resource-type="stores"
+                    resource-type="warehouses"
                     :search-fields="['name', 'code', 'address']"
                 />
             </div>

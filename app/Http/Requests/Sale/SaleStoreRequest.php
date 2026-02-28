@@ -36,7 +36,7 @@ class SaleStoreRequest extends FormRequest
             'payment.note' => ['nullable', 'string'],
             'discount' => ['nullable', 'numeric'],
             'discount_type' => ['nullable', 'string', 'in:percentage,currency'],
-            'store_id' => ['nullable', 'string', 'exists:stores,id'],
+            'warehouse_id' => ['required', 'string', 'exists:warehouses,id'],
             'description' => ['nullable', 'string'],
             'status' => ['nullable', 'string'],
             'item_list' => ['required', 'array','min:1'],

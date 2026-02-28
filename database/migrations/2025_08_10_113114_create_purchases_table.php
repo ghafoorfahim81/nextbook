@@ -20,11 +20,9 @@ return new class extends Migration
             $table->integer('number')->index();
             $table->ulid('supplier_id')->index();
             $table->date('date');
-            $table->ulid('transaction_id')->nullable()->index();
             $table->decimal('discount', 10, 2)->nullable()->default(0);
             $table->enum('discount_type', DiscountType::values())->nullable()->default(DiscountType::PERCENTAGE->value);
             $table->enum('type', SalesPurchaseType::values())->default(SalesPurchaseType::Cash->value);
-            $table->ulid('store_id')->index();
             $table->text('description')->nullable();
             $table->enum('status', TransactionStatus::values())->default(TransactionStatus::POSTED->value);
             $table->ulid('branch_id')->index();
@@ -39,8 +37,6 @@ return new class extends Migration
 
         Schema::table('purchases', function (Blueprint $table) {
             $table->foreign('supplier_id')->references('id')->on('ledgers');
-            $table->foreign('transaction_id')->references('id')->on('transactions')->onDelete('set null');
-            $table->foreign('store_id')->references('id')->on('stores')->onDelete('set null');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('branch_id')->references('id')->on('branches');

@@ -108,7 +108,7 @@ class ItemController extends Controller
             $date = $dateConversionService->toGregorian(Carbon::now()->toDateString());
             $openings
                 ->filter(function ($o) {
-                    return !empty($o['store_id']) && $o['quantity'] > 0;
+                    return !empty($o['warehouse_id']) && $o['quantity'] > 0;
                 })
                 ->each(function ($o) use ($item, $validated, $dateConversionService, $transactionService, $date) {
                     $expire_date = $o['expire_date'] ? $dateConversionService->toGregorian($o['expire_date']) : null;
@@ -116,7 +116,6 @@ class ItemController extends Controller
                     $stockService = app(\App\Services\StockService::class);
                     $stock = $stockService->addStock([
                         'item_id' => $item->id,
-                        'store_id' => $o['store_id'],
                         'unit_measure_id' => $validated['unit_measure_id'], // from item form
                         'quantity'        => (float) $o['quantity'],
                         'unit_price'      => (float) $o['unit_price'],
@@ -125,7 +124,7 @@ class ItemController extends Controller
                         'date'            => $date,
                         'expire_date'     => $expire_date,
                         'size_id'         => $validated['size_id'] ?? null,
-                    ], $o['store_id'], 'opening', $item->id);
+                    ], $o['warehouse_id'], 'opening', $item->id, $date);
 
                     // mark it as an opening
                     StockOpening::create([
@@ -136,7 +135,7 @@ class ItemController extends Controller
                 });
                 // Create opening transactions
                 if ($openings->filter(function ($o) {
-                    return !empty($o['store_id']) && $o['quantity'] > 0;
+                    return !empty($o['warehouse_id']) && $o['quantity'] > 0;
                 })->count() > 0) {
                     $glAccounts      = Cache::get('gl_accounts');
                     $homeCurrency = Cache::get('home_currency');
@@ -196,7 +195,7 @@ class ItemController extends Controller
     }
     public function inRecords(Request $request, Item $item)
     {
-        $stocks = Stock::with(['store', 'unitMeasure', 'source'])
+        $stocks = Stock::with(['warehouse', 'unitMeasure', 'source'])
             ->where('item_id', $item->id)
             ->orderBy('date', 'desc')
             ->paginate($request->input('per_page', 10));
@@ -214,7 +213,7 @@ class ItemController extends Controller
 
     public function outRecords(Request $request, Item $item)
     {
-        $stockOuts = StockOut::with(['store', 'unitMeasure', 'source'])
+        $stockOuts = StockOut::with(['warehouse', 'unitMeasure', 'source'])
             ->where('item_id', $item->id)
             ->orderBy('date', 'desc')
             ->paginate($request->input('per_page', 10));
@@ -271,14 +270,13 @@ class ItemController extends Controller
                 $opening->stock()->forceDelete();
             });
             $openings
-                ->filter(fn($o) => !empty($o['store_id']) && (float)($o['quantity'] ?? 0) > 0)
+                ->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0)
                 ->each(function ($o) use ($item, $validated, $dateConversionService, $date) {
 
                     $expire_date = $o['expire_date'] ? $dateConversionService->toGregorian($o['expire_date']) : null;
                     $stockService = app(\App\Services\StockService::class);
                     $stock = $stockService->addStock([
                         'item_id' => $item->id,
-                        'store_id' => $o['store_id'],
                         'unit_measure_id' => $validated['unit_measure_id'], // from item form
                         'quantity'        => (float) $o['quantity'],
                         'unit_price'      => (float) $o['unit_price'],
@@ -287,7 +285,7 @@ class ItemController extends Controller
                         'date'            => $date,
                         'expire_date'     => $expire_date,
                         'size_id'         => $validated['size_id'] ?? null,
-                    ], $o['store_id'], 'opening', $item->id);
+                    ], $o['warehouse_id'], 'opening', $item->id, $date);
 
                     StockOpening::create([
                         'id'      => (string) Str::ulid(),
@@ -297,7 +295,7 @@ class ItemController extends Controller
                 });
 
                 // Delete opening stocks
-                $filteredOpenings = $openings->filter(fn($o) => !empty($o['store_id']) && (float)($o['quantity'] ?? 0) > 0);
+                $filteredOpenings = $openings->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0);
                 if ($filteredOpenings->count() == 0 && $item->openings()->count() > 0) {
                     $item->openings()->each(function ($opening) {
                         $opening->forceDelete();
@@ -323,7 +321,7 @@ class ItemController extends Controller
                     }
                 
                 // Create opening transactions
-                if ($filteredOpenings->filter(fn($o) => !empty($o['store_id']) && (float)($o['quantity'] ?? 0) > 0)->count() > 0) {
+                if ($filteredOpenings->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0)->count() > 0) {
                     $glAccounts = Cache::get('gl_accounts');
                     $homeCurrency = Cache::get('home_currency');
                     $itemType = $validated['item_type'];

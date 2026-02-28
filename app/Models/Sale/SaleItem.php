@@ -36,7 +36,7 @@ class SaleItem extends Model
         'discount',
         'free',
         'tax',
-        'store_id',
+        'warehouse_id',
         'created_by',
         'updated_by',
         'branch_id',
@@ -60,7 +60,7 @@ class SaleItem extends Model
             'discount' => 'decimal:2',
             'free' => 'decimal:2',
             'tax' => 'decimal:2',
-            'store_id' => 'string',
+            'warehouse_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'branch_id' => 'string',
@@ -99,8 +99,8 @@ class SaleItem extends Model
         return $this->belongsTo(\App\Models\Administration\UnitMeasure::class);
     }
 
-    public function store(): BelongsTo
+    public function warehouse(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Administration\Store::class);
+        return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'warehouse_id');
     }
 }

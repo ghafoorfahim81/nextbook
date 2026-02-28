@@ -2,8 +2,8 @@
 
 namespace App\Models\Inventory;
 
-use App\Models\Administration\Store;
 use App\Models\Administration\UnitMeasure;
+use App\Models\Administration\Warehouse;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -45,9 +45,9 @@ use App\Traits\HasBranch;
         return $this->hasMany(StockOut::class);
     }
 
-    public function store()
+    public function warehouse()
     {
-        return $this->belongsTo(Store::class);
+        return $this->belongsTo(Warehouse::class, 'warehouse_id');
     }
 
     public function opening()

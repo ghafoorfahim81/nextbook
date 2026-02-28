@@ -13,7 +13,6 @@ use Database\Seeders\Account\AccountSeeder;
 use Database\Seeders\Account\AccountTypeSeeder;
 use Database\Seeders\Administration\BranchSeeder;
 use Database\Seeders\Administration\CurrencySeeder;
-use Database\Seeders\Administration\StoreSeeder;
 use Database\Seeders\Administration\UnitMeasureSeeder;
 use Database\Seeders\Administration\UserSeeder;
 use App\Models\User;
@@ -58,8 +57,8 @@ class PerformanceLoadSeeder extends Seeder
 
             $this->command?->info("Preparing branch {$branchId}...");
 
-            $storeMainId = $this->ensureStore(self::STORE_MAIN_NAME, true, $branchId, $adminId, $now);
-            $store2Id = $this->ensureStore(self::STORE_2_NAME, false, $branchId, $adminId, $now);
+            $warehouseMainId = $this->ensureWarehouse(self::STORE_MAIN_NAME, true, $branchId, $adminId, $now);
+            $warehouse2Id = $this->ensureWarehouse(self::STORE_2_NAME, false, $branchId, $adminId, $now);
             $storeCount = 2;
 
             $currencyId = DB::table('currencies')
@@ -112,10 +111,10 @@ class PerformanceLoadSeeder extends Seeder
                 $now
             );
 
-            $this->command?->info('Creating stock openings in two stores...');
+            $this->command?->info('Creating stock openings in two warehouses...');
             $this->seedOpeningStocks(
                 $itemIds,
-                [$storeMainId, $store2Id],
+                [$warehouseMainId, $warehouse2Id],
                 $branchId,
                 $adminId,
                 $unitMeasureIds,
@@ -147,8 +146,8 @@ class PerformanceLoadSeeder extends Seeder
         if (!DB::table('unit_measures')->exists()) {
             $this->call(UnitMeasureSeeder::class);
         }
-        if (!DB::table('stores')->exists()) {
-            $this->call(StoreSeeder::class);
+        if (!DB::table('warehouses')->exists()) {
+            $this->call(\Database\Seeders\Administration\WarehouseSeeder::class);
         }
 
         // Accounts required by items (non-null FKs)
@@ -348,8 +347,8 @@ class PerformanceLoadSeeder extends Seeder
             $this->chunkInsert('unit_measures', $rows, 100);
         }
 
-        if (!DB::table('stores')->where('branch_id', $branchId)->where('is_main', true)->exists()) {
-            $this->ensureStore(self::STORE_MAIN_NAME, true, $branchId, $adminId, $now);
+        if (!DB::table('warehouses')->where('branch_id', $branchId)->where('is_main', true)->exists()) {
+            $this->ensureWarehouse(self::STORE_MAIN_NAME, true, $branchId, $adminId, $now);
         }
     }
 
@@ -377,9 +376,9 @@ class PerformanceLoadSeeder extends Seeder
         return (string) $adminId;
     }
 
-    private function ensureStore(string $name, bool $isMain, string $branchId, string $adminId, Carbon $now): string
+    private function ensureWarehouse(string $name, bool $isMain, string $branchId, string $adminId, Carbon $now): string
     {
-        $existingId = DB::table('stores')
+        $existingId = DB::table('warehouses')
             ->where('branch_id', $branchId)
             ->where('name', $name)
             ->value('id');
@@ -390,7 +389,7 @@ class PerformanceLoadSeeder extends Seeder
 
         $id = (string) Str::ulid();
 
-        DB::table('stores')->insert([
+        DB::table('warehouses')->insert([
             'id' => $id,
             'name' => $name,
             'address' => $name,

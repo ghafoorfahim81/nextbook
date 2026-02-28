@@ -15,14 +15,14 @@ use App\Http\Resources\Administration\BrandResource;
 use App\Http\Resources\Administration\CategoryResource;
 use App\Http\Resources\Administration\CurrencyResource;
 use App\Http\Resources\Administration\SizeResource;
-use App\Http\Resources\Administration\StoreResource;
+use App\Http\Resources\Administration\WarehouseResource;
 use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Brand;
 use App\Models\Administration\Category;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Size;
-use App\Models\Administration\Store;
+use App\Models\Administration\Warehouse;
 use App\Models\Administration\UnitMeasure;
 use App\Enums\ItemType;
 use Illuminate\Http\Request;
@@ -67,11 +67,11 @@ final class LookupShared
             )
         );
 
-        $stores = Cache::remember(
-            CacheKey::forCompanyBranchLocale($request, 'stores'),
+        $warehouses = Cache::remember(
+            CacheKey::forCompanyBranchLocale($request, 'warehouses'),
             $cacheDuration,
-            fn() => StoreResource::collection(
-                Store::query()->where('is_active', true)->orderBy('id')->limit(10)->get()
+            fn() => WarehouseResource::collection(
+                Warehouse::query()->where('is_active', true)->orderBy('id')->limit(10)->get()
             )
         );
 
@@ -131,7 +131,7 @@ final class LookupShared
             'categories' => $categories,
             'branches' => $branches,
             'currencies' => $currencies,
-            'stores' => $stores,
+            'warehouses' => $warehouses,
             'brands' => $brands,
             'unitMeasures' => $unitMeasures,
             'sizes' => $sizes,

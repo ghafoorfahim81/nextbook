@@ -19,8 +19,8 @@ class StockOpeningResource extends JsonResource
             'unit_price' => $this->stock?->unit_price,
             'batch' => $this->stock?->batch,
             'expire_date' => $this->stock?->expire_date,
-            'store_id' => $this->stock?->store_id,
-            'store' => $this->stock?->store,
+            'warehouse_id' => $this->stock?->warehouse_id,
+            'warehouse' => $this->stock?->warehouse,
         ];
     }
 }

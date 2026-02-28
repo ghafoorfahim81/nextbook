@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('batch')->nullable();
             $table->ulid('unit_measure_id')->index();
             $table->ulid('size_id')->nullable()->index();
-            $table->ulid('store_id')->index();
+            $table->ulid('warehouse_id')->index();
             $table->nullableUlidMorphs('source'); // adds source_type, source_id (ULID), nullable
             $table->ulid('branch_id')->index(); 
             $table->ulid('created_by')->index();
@@ -38,7 +38,7 @@ return new class extends Migration
             $table->foreign('stock_id')->references('id')->on('stocks');
             $table->foreign('item_id')->references('id')->on('items');
             $table->foreign('unit_measure_id')->references('id')->on('unit_measures');
-            $table->foreign('store_id')->references('id')->on('stores');
+            $table->foreign('warehouse_id')->references('id')->on('warehouses');
             $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');

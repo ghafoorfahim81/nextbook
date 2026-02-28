@@ -1,4 +1,4 @@
-﻿{
+{
     "category":{
         "category": "Category",
         "parent": "Parent",
@@ -7,6 +7,10 @@
     "store": {
         "store": "Store",
         "stores": "Stores"
+    },
+    "warehouse": {
+        "warehouse": "Warehouse",
+        "warehouses": "Warehouses"
     },
     "department": {
         "department": "Department",
