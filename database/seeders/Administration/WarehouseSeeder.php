@@ -3,22 +3,20 @@
 namespace Database\Seeders\Administration;
 
 use App\Models\Administration\Branch;
-use App\Models\Administration\Store;
+use App\Models\Administration\Warehouse;
 use Illuminate\Database\Seeder;
 
-class StoreSeeder extends Seeder
+class WarehouseSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        Store::create([
-            'name' =>'Main Store',
-            'address' =>'Main store',
+        Warehouse::create([
+            'name' => 'Main Warehouse',
+            'address' => 'Main warehouse',
             'is_main' => true,
             'is_active' => false,
             'branch_id' => Branch::first()->id,
         ]);
     }
 }
+

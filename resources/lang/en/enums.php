@@ -75,4 +75,16 @@ return [
         'finished_good_items' => 'Finished Good Items',
         'inventory_services' => 'Inventory Services',
     ],
-    ];
+    'stock_direction_type' => [
+        'in' => 'In',
+        'out' => 'Out',
+    ],
+    'stock_source_type' => [
+        'purchase' => 'Purchase',
+        'purchase_return' => 'Purchase Return',
+        'sale' => 'Sale',
+        'sale_return' => 'Sale Return',
+        'stock_adjustment' => 'Stock Adjustment',
+        'item_transfer' => 'Item Transfer',
+    ],
+];  

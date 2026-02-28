@@ -4,6 +4,8 @@ namespace App\Models\Administration;
 
 use App\Traits\BranchSpecific;
 use App\Traits\HasBranch;
+use App\Traits\HasCache;
+use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -13,22 +15,26 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Symfony\Component\Uid\Ulid;
-use App\Traits\HasDependencyCheck;
-use App\Traits\HasCache;
-use App\Models\Administration\Branch;
-class Store extends Model
+
+class Warehouse extends Model
 {
-    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, BranchSpecific, HasBranch, SoftDeletes, HasDependencyCheck;
+    use HasFactory;
+    use HasUserAuditable;
+    use HasUserTracking;
+    use HasUlids;
+    use HasCache;
+    use HasSearch;
+    use HasSorting;
+    use BranchSpecific;
+    use HasBranch;
+    use SoftDeletes;
+    use HasDependencyCheck;
 
-    protected $keyType = 'string'; // Set key type to string
-    public $incrementing = false; // Disable auto-incrementing
+    protected $table = 'warehouses';
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
+    protected $keyType = 'string';
+    public $incrementing = false;
+
     protected $fillable = [
         'name',
         'address',
@@ -39,11 +45,6 @@ class Store extends Model
         'updated_by',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected $casts = [
         'id' => 'string',
         'is_main' => 'boolean',
@@ -64,34 +65,29 @@ class Store extends Model
         ];
     }
 
-    /**
-     * Get relationships configuration for dependency checking
-     */
     protected function getRelationships(): array
     {
         return [
             'stocks' => [
                 'model' => 'stocks',
-                'message' => 'This store is associated with stocks'
-            ]
+                'message' => 'This warehouse is associated with stocks',
+            ],
         ];
     }
 
-
-    /**
-     * Relationship to stocks that use this store
-     */
     public function stocks()
     {
-        return $this->hasMany(\App\Models\Inventory\Stock::class);
+        return $this->hasMany(\App\Models\Inventory\Stock::class, 'warehouse_id');
     }
 
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
     }
+
     public static function main()
     {
         return self::where('is_main', true)->first();
     }
 }
+

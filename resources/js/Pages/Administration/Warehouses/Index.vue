@@ -3,22 +3,19 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
-import CreateEditModal from '@/Pages/Administration/Stores/CreateEditModal.vue';
+import CreateEditModal from '@/Pages/Administration/Warehouses/CreateEditModal.vue';
 import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
-    stores: Object,
-    branches: {
-        type: Array,
-        required: true,
-    },
+    warehouses: Object,
 });
-const isDialogOpen = ref(false)
-const editingStore = ref(null)
-const { t } = useI18n()
 
-const columns = computed(() => ([ 
-    { key: 'name', label: t('general.name'),sortable: true },
+const isDialogOpen = ref(false);
+const editingWarehouse = ref(null);
+const { t } = useI18n();
+
+const columns = computed(() => ([
+    { key: 'name', label: t('general.name'), sortable: true },
     { key: 'address', label: t('admin.shared.address') },
     {
         key: 'is_active',
@@ -40,46 +37,45 @@ const columns = computed(() => ([
 ]));
 
 const editItem = (item) => {
-    editingStore.value = item
-    isDialogOpen.value = true
-}
-const { deleteResource } = useDeleteResource()
-const deleteItem = (id) => {
-    deleteResource('stores.destroy', id, {
-        title: t('general.delete', { name: t('admin.store.store') }),
-        description: t('general.delete_description', { name: t('admin.store.store') }),
-        successMessage: t('general.delete_success', { name: t('admin.store.store') }),
-    })
-
+    editingWarehouse.value = item;
+    isDialogOpen.value = true;
 };
 
+const { deleteResource } = useDeleteResource();
+const deleteItem = (id) => {
+    deleteResource('warehouses.destroy', id, {
+        title: t('general.delete', { name: t('admin.warehouse.warehouse') }),
+        description: t('general.delete_description', { name: t('admin.warehouse.warehouse') }),
+        successMessage: t('general.delete_success', { name: t('admin.warehouse.warehouse') }),
+    });
+};
 </script>
 
 <template>
-    <AppLayout :title="t('admin.store.stores')">
+    <AppLayout :title="t('admin.warehouse.warehouses')">
         <CreateEditModal
             :isDialogOpen="isDialogOpen"
-            :editingItem="editingStore"
-            :stores="stores"
-            :branches="branches"
+            :editingItem="editingWarehouse"
             @update:isDialogOpen="(value) => {
                 isDialogOpen = value;
-                if (!value) editingStore = null;
+                if (!value) editingWarehouse = null;
             }"
-            @saved="() => { editingStore = null }"
+            @saved="() => { editingWarehouse = null }"
         />
+
         <DataTable
-            can="stores"
-            :items="stores"
+            can="warehouses"
+            :items="warehouses"
             :columns="columns"
             @edit="editItem"
             @delete="deleteItem"
             @add="isDialogOpen = true"
-            :title="t('admin.store.stores')"
-            :url="`stores.index`"
+            :title="t('admin.warehouse.warehouses')"
+            :url="`warehouses.index`"
             :showAddButton="true"
-            :addTitle="t('admin.store.store')"
+            :addTitle="t('admin.warehouse.warehouse')"
             :addAction="'modal'"
         />
     </AppLayout>
 </template>
+

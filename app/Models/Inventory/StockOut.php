@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Administration\UnitMeasure;
-use App\Models\Administration\Store;
+use App\Models\Administration\Warehouse;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\Stock;
 use App\Traits\HasUserAuditable;
@@ -53,9 +53,9 @@ class StockOut extends Model
         return $this->belongsTo(UnitMeasure::class, 'unit_measure_id');
     }
 
-    public function store()
+    public function warehouse()
     {
-        return $this->belongsTo(Store::class);
+        return $this->belongsTo(Warehouse::class, 'warehouse_id');
     }
 
     public function source()

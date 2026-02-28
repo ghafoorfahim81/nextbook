@@ -33,7 +33,7 @@ class Sale extends Model
         'type',
         'description',
         'status',
-        'store_id',
+        'warehouse_id',
         'created_by',
         'updated_by',
     ];
@@ -50,7 +50,7 @@ class Sale extends Model
             'date' => 'date',
             'transaction_id' => 'string',
             'discount' => 'float',
-            'store_id' => 'string',
+            'warehouse_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
         ];
@@ -73,7 +73,7 @@ class Sale extends Model
         'customer_id',
         'transaction.currency_id',
         'type',
-        'store_id',
+        'warehouse_id',
         'date',
         'created_by',
     ];

@@ -6,11 +6,8 @@ use App\Http\Resources\UserManagement\UserSimpleResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class StoreResource extends JsonResource
+class WarehouseResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     */
     public function toArray(Request $request): array
     {
         return [
@@ -26,3 +23,4 @@ class StoreResource extends JsonResource
         ];
     }
 }
+

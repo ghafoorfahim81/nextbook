@@ -7,7 +7,7 @@ use App\Http\Resources\Administration\BrandResource;
 use App\Http\Resources\Administration\CategoryResource;
 use App\Http\Resources\Administration\CurrencyResource;
 use App\Http\Resources\Administration\SizeResource;
-use App\Http\Resources\Administration\StoreResource;
+use App\Http\Resources\Administration\WarehouseResource;
 use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Http\Resources\Expense\ExpenseCategoryResource;
 use App\Http\Resources\Inventory\ItemResource;
@@ -19,7 +19,7 @@ use App\Models\Administration\Category;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Quantity;
 use App\Models\Administration\Size;
-use App\Models\Administration\Store;
+use App\Models\Administration\Warehouse;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Expense\ExpenseCategory;
 use App\Models\Inventory\Item;
@@ -50,7 +50,7 @@ class QuickCreateController extends Controller
                 'currencies' => $this->createCurrency($request),
                 'brands' => $this->createBrand($request),
                 'categories' => $this->createCategory($request),
-                'stores' => $this->createStore($request),
+                'warehouses' => $this->createWarehouse($request),
                 'sizes' => $this->createSize($request),
                 'unit_measures' => $this->createUnitMeasure($request),
                 'expense_categories' => $this->createExpenseCategory($request),
@@ -144,22 +144,22 @@ class QuickCreateController extends Controller
         ]);
     }
 
-    private function createStore(Request $request): JsonResponse
+    private function createWarehouse(Request $request): JsonResponse
     {
-        Gate::authorize('create', Store::class);
+        Gate::authorize('create', Warehouse::class);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'unique:stores,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'name' => ['required', 'string', 'unique:warehouses,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'address' => ['nullable', 'string'],
             'is_main' => ['nullable', 'boolean'],
         ]);
 
-        $store = Store::create($validated);
-        $this->forgetInertiaCache($request, ['stores']);
+        $warehouse = Warehouse::create($validated);
+        $this->forgetInertiaCache($request, ['warehouses']);
 
         return response()->json([
             'success' => true,
-            'data' => (new StoreResource($store))->resolve(),
+            'data' => (new WarehouseResource($warehouse))->resolve(),
         ]);
     }
 

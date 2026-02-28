@@ -1,4 +1,4 @@
-﻿{
+{
     "users.view_any": "View Any Users",
     "users.view": "View Users",
     "users.create": "Create Users",
@@ -159,13 +159,13 @@
     "brands.import": "Import Brands",
     "brands.export": "Export Brands",
 
-    "stores.view_any": "View Any Stores",
-    "stores.view": "View Stores",
-    "stores.create": "Create Stores",
-    "stores.update": "Update Stores",
-    "stores.delete": "Delete Stores",
-    "stores.import": "Import Stores",
-    "stores.export": "Export Stores",
+    "warehouses.view_any": "View Any Warehouses",
+    "warehouses.view": "View Warehouses",
+    "warehouses.create": "Create Warehouses",
+    "warehouses.update": "Update Warehouses",
+    "warehouses.delete": "Delete Warehouses",
+    "warehouses.import": "Import Warehouses",
+    "warehouses.export": "Export Warehouses",
 
     "branches.view_any": "View Any Branches",
     "branches.view": "View Branches",

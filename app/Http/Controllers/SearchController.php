@@ -11,7 +11,7 @@ use App\Models\Administration\Branch;
 use App\Models\Administration\Company;
 use App\Models\Administration\Brand;
 use App\Models\Administration\Category;
-use App\Models\Administration\Store;
+use App\Models\Administration\Warehouse;
 use App\Models\Expense\ExpenseCategory;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\Stock;
@@ -132,8 +132,8 @@ class SearchController extends Controller
             case 'categories':
                 return $this->searchCategories($searchTerm, $fields, $limit, $additionalParams);
 
-            case 'stores':
-                return $this->searchStores($searchTerm, $fields, $limit, $additionalParams);
+            case 'warehouses':
+                return $this->searchWarehouses($searchTerm, $fields, $limit, $additionalParams);
 
             case 'expense_categories':
                 return $this->searchExpenseCategories($searchTerm, $fields, $limit, $additionalParams);
@@ -204,11 +204,11 @@ class SearchController extends Controller
             $query->where('branch_id', $additionalParams['branch_id']);
         }
 
-        // For sales, filter items that have available stock in the specified store
-        if (isset($additionalParams['store_id'])) {
-            $storeId = $additionalParams['store_id'];
-            $query->whereHas('stocks', function ($q) use ($storeId) {
-                $q->where('store_id', $storeId)
+        // For sales, filter items that have available stock in the specified warehouse
+        if (isset($additionalParams['warehouse_id'])) {
+            $warehouseId = $additionalParams['warehouse_id'];
+            $query->whereHas('stocks', function ($q) use ($warehouseId) {
+                $q->where('warehouse_id', $warehouseId)
                   ->where('quantity', '>', 0);
             });
         }
@@ -222,7 +222,7 @@ class SearchController extends Controller
     public function searchItemsForSale(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'store_id' => 'nullable|string|exists:stores,id',
+            'warehouse_id' => 'nullable|string|exists:warehouses,id',
             'search' => 'nullable|string|max:255',
             'search_query' => 'nullable|string|max:255',
             'limit' => 'nullable|integer|min:1|max:250',
@@ -238,26 +238,26 @@ class SearchController extends Controller
 
         $searchTerm = trim($request->input('search_query') ?? $request->input('search', ''));
         $limit = $this->resolveItemLimit($request->input('limit'), $searchTerm);
-        $requestedStoreId = trim((string) ($request->input('store_id') ?? ''));
-        $storeId = $requestedStoreId ?: Store::main()?->id;
-        if (!$storeId || !Store::query()->where('id', $storeId)->first()) {
+        $requestedWarehouseId = trim((string) ($request->input('warehouse_id') ?? ''));
+        $warehouseId = $requestedWarehouseId ?: Warehouse::main()?->id;
+        if (!$warehouseId || !Warehouse::query()->where('id', $warehouseId)->first()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Store not found',
+                'message' => 'Warehouse not found',
             ], 404);
         }
 
         try {
-            $cacheKey = $this->makeItemCacheKey($storeId, $searchTerm, $limit);
-            $items = Cache::remember($cacheKey, now()->addMinutes(1), function () use ($storeId, $searchTerm, $limit) {
-                return $this->gatherItemsForStore($storeId, $searchTerm, $limit);
+            $cacheKey = $this->makeItemCacheKey($warehouseId, $searchTerm, $limit);
+            $items = Cache::remember($cacheKey, now()->addMinutes(1), function () use ($warehouseId, $searchTerm, $limit) {
+                return $this->gatherItemsForWarehouse($warehouseId, $searchTerm, $limit);
             });
 
             return response()->json([
                 'success' => true,
                 'data' => $items,
                 'meta' => [
-                    'store_id' => $storeId,
+                    'warehouse_id' => $warehouseId,
                     'search_query' => $searchTerm,
                     'limit' => $limit,
                     'total' => count($items),
@@ -279,13 +279,13 @@ class SearchController extends Controller
         return max(1, min(250, $limit));
     }
 
-    private function makeItemCacheKey(string $storeId, string $searchTerm, int $limit): string
+    private function makeItemCacheKey(string $warehouseId, string $searchTerm, int $limit): string
     {
         $hash = $searchTerm ? md5($searchTerm) : 'all';
-        return "items_with_batches:store:{$storeId}:search:{$hash}:limit:{$limit}";
+        return "items_with_batches:warehouse:{$warehouseId}:search:{$hash}:limit:{$limit}";
     }
 
-    private function gatherItemsForStore(string $storeId, string $searchTerm, int $limit): array
+    private function gatherItemsForWarehouse(string $warehouseId, string $searchTerm, int $limit): array
     {
         $searchableFields = ['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search'];
 
@@ -336,13 +336,13 @@ class SearchController extends Controller
 
         $stocks = Stock::query()
             ->select(['id', 'item_id', 'batch', 'expire_date', 'quantity', 'unit_price'])
-            ->where('store_id', $storeId)
+            ->where('warehouse_id', $warehouseId)
             ->whereIn('item_id', $itemIds)
             ->get();
 
         $stockOuts = StockOut::query()
             ->select(['stock_id', 'item_id', 'quantity'])
-            ->where('store_id', $storeId)
+            ->where('warehouse_id', $warehouseId)
             ->whereIn('item_id', $itemIds)
             ->get()
             ->groupBy('stock_id')
@@ -554,11 +554,11 @@ class SearchController extends Controller
         return $query->limit($limit)->get()->toArray();
     }
     /**
-     * Search stores
+     * Search warehouses
      */
-    private function searchStores(string $searchTerm, array $fields, int $limit, array $additionalParams): array
+    private function searchWarehouses(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
-        $query = Store::query()
+        $query = Warehouse::query()
             ->select('id', 'name', 'address')
             ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
@@ -655,7 +655,7 @@ class SearchController extends Controller
             'unit_measures' => 'Unit measures',
             'brands' => 'Brands',
             'categories' => 'Categories',
-            'stores' => 'Stores',
+            'warehouses' => 'Warehouses',
             'expense_categories' => 'Expense categories',
             'accounts' => 'Chart of accounts',
         ];

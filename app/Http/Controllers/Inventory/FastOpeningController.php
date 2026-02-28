@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Inventory\FastOpeningRequest;
-use App\Models\Administration\Store;
+use App\Models\Administration\Warehouse;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\Stock;
@@ -49,7 +49,7 @@ class FastOpeningController extends Controller
                         'expire_date'     => $itemData['expire_date'] ?? null,
                         'batch'           => $itemData['batch'] ?? null,
                         'unit_price'      => $itemData['cost'] ?? null,
-                        'store_id'        => $itemData['store_id']??Store::where('is_main',true)->first()->id,
+                        'warehouse_id'    => $itemData['warehouse_id'] ?? Warehouse::where('is_main', true)->first()->id,
                     ]);
 
                     $stock->opening()->create([

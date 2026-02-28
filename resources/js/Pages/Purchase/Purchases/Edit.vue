@@ -29,7 +29,7 @@ const props = defineProps({
     salePurchaseTypes: {type: Object, required: true},
     currencies: {type: Object, required: true},
     items: {type: Object, required: false, default: () => ({ data: [] })},
-    stores: {type: Object, required: true},
+    warehouses: {type: Object, required: true},
     unitMeasures: {type: Object, required: true},
     accounts: {type: Object, required: false, default: () => ({ data: [] })},
     purchaseNumber: {type: String, required: true},
@@ -55,8 +55,8 @@ const form = useForm({
     discount: purchase?.discount || '',
     discount_type: purchase?.discount_type || 'percentage',
     description: purchase?.description || '',
-    store_id: purchase?.store_id || '',
-    selected_store: purchase?.store || '',
+    warehouse_id: purchase?.warehouse_id || '',
+    selected_warehouse: purchase?.warehouse || '',
     item_list: purchase?.item_list || [],
     payment: purchase?.payment || {
         method: '',
@@ -118,10 +118,10 @@ onMounted(() => {
         }
     }
 
-    if (props.purchase?.store_id && props.stores?.data) {
-        const selectedStore = props.stores.data.find(s => s.id === props.purchase.store_id);
-        if (selectedStore) {
-            form.selected_store = selectedStore;
+    if (purchase?.warehouse_id && props.warehouses?.data) {
+        const selectedWarehouse = props.warehouses.data.find(s => s.id === purchase.warehouse_id);
+        if (selectedWarehouse) {
+            form.selected_warehouse = selectedWarehouse;
         }
     }
     for (let i = 0; i < 3; i++) {
@@ -469,14 +469,14 @@ const transactionSummary = computed(() => {
                         />
                     </div>
                     <NextSelect
-                        :options="stores?.data || stores || []"
-                        v-model="form.selected_store"
-                        @update:modelValue="(value) => handleSelectChange('store_id', value)"
+                        :options="warehouses?.data || warehouses || []"
+                        v-model="form.selected_warehouse"
+                        @update:modelValue="(value) => handleSelectChange('warehouse_id', value)"
                         label-key="name"
                         value-key="id"
-                        :reduce="store => store.id"
-                        :floating-text="t('admin.store.store')"
-                        :error="form.errors?.store_id"
+                        :reduce="warehouse => warehouse.id"
+                        :floating-text="t('admin.warehouse.warehouse')"
+                        :error="form.errors?.warehouse_id"
                     />
                 </div>
             </div>

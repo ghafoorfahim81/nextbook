@@ -39,7 +39,7 @@ class RolePermissionSeeder extends Seeder
             'sizes',
             'companies',
             'brands',
-            'stores',
+            'warehouses',
             'branches',
 
             'accounts',

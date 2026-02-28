@@ -9,7 +9,7 @@ use App\Http\Resources\Sale\SaleResource;
 use App\Models\Sale\Sale;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
-use App\Models\Administration\Store;
+use App\Models\Administration\Warehouse;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +32,7 @@ class SaleController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $sales = Sale::with(['customer', 'transaction.currency', 'stockOuts.store'])
+        $sales = Sale::with(['customer', 'transaction.currency', 'stockOuts.warehouse'])
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection)
@@ -43,7 +43,7 @@ class SaleController extends Controller
             'filterOptions' => [
                 'customers' => Ledger::query()->where('type', 'customer')->orderBy('name')->get(['id', 'name']),
                 'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
-                'stores' => Store::orderBy('name')->get(['id', 'name']),
+                'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
                 'types' => [
                     ['id' => 'cash', 'name' => 'Cash'],
                     ['id' => 'credit', 'name' => 'Credit'],
@@ -88,16 +88,17 @@ class SaleController extends Controller
             $validated['date'] = $dateConversionService->toGregorian($validated['date']);
 
             $sale = Sale::create($validated);
-            $validated['item_list'] = array_map(function ($item) use ($dateConversionService) {
+            $validated['item_list'] = array_map(function ($item) use ($dateConversionService, $validated) {
                 $item['expire_date'] = $item['expire_date'] ? $dateConversionService->toGregorian($item['expire_date']) : null;
                 $item['discount'] = $item['item_discount'] ? $item['item_discount'] : 0;
+                $item['warehouse_id'] = $validated['warehouse_id'];
                 return $item;
             }, $validated['item_list']);
             $sale->items()->createMany($validated['item_list']);
 
             // Handle stock deductions (reverse of purchase - remove from inventory)
             foreach ($validated['item_list'] as $item) {
-                $stockService->removeStock($item, $validated['store_id'], Sale::class, $sale->id);
+                $stockService->removeStock($item, $validated['warehouse_id'], Sale::class, $sale->id);
             }
 
             // Create accounting transactions (reverse of purchase)
@@ -158,16 +159,17 @@ class SaleController extends Controller
             if (isset($validated['item_list'])) {
                 // Remove old stock out entries
                 $sale->items()->forceDelete();
-                $validated['item_list'] = array_map(function ($item) use ($dateConversionService) {
+                $validated['item_list'] = array_map(function ($item) use ($dateConversionService, $validated) {
                     $item['expire_date'] = $item['expire_date'] ? $dateConversionService->toGregorian($item['expire_date']) : null;
                     $item['discount'] = $item['discount'] ? $item['discount'] : 0;
+                    $item['warehouse_id'] = $validated['warehouse_id'];
                     return $item;
                 }, $validated['item_list']);
                 $sale->items()->createMany($validated['item_list']);
                 $sale->stockOuts()->forceDelete();
                 // Add new stock out entries
                 foreach ($validated['item_list'] as $item) {
-                    $stockService->removeStock($item, $validated['store_id'], 'sale', $sale->id);
+                    $stockService->removeStock($item, $validated['warehouse_id'], 'sale', $sale->id);
                 }
             }
 

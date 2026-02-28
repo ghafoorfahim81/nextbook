@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::disableForeignKeyConstraints();
 
-        Schema::create('stores', function (Blueprint $table) {
+        Schema::create('warehouses', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->string('name')->index();
             $table->string('address')->nullable();
@@ -28,7 +28,7 @@ return new class extends Migration
         });
 
         Schema::enableForeignKeyConstraints();
-        Schema::table('stores', function (Blueprint $table) {
+        Schema::table('warehouses', function (Blueprint $table) {
             $table->foreign('branch_id')
                 ->references('id')
                 ->on('branches')
@@ -45,6 +45,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('stores');
+        Schema::dropIfExists('warehouses');
     }
 };
+

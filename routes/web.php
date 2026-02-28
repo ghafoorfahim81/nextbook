@@ -48,8 +48,8 @@ Route::middleware([
     Route::patch('/departments/{department}/restore', [\App\Http\Controllers\Administration\DepartmentController::class, 'restore'])->name('departments.restore')->withTrashed();
     Route::resource('/categories', \App\Http\Controllers\Administration\CategoryController::class);
     Route::patch('/categories/{category}/restore', [\App\Http\Controllers\Administration\CategoryController::class, 'restore'])->name('categories.restore')->withTrashed();
-    Route::resource('/stores', \App\Http\Controllers\Administration\StoreController::class);
-    Route::patch('/stores/{store}/restore', [\App\Http\Controllers\Administration\StoreController::class, 'restore'])->name('stores.restore')->withTrashed();
+    Route::resource('/warehouses', \App\Http\Controllers\Administration\WarehouseController::class);
+    Route::patch('/warehouses/{warehouse}/restore', [\App\Http\Controllers\Administration\WarehouseController::class, 'restore'])->name('warehouses.restore')->withTrashed();
     Route::resource('/companies', \App\Http\Controllers\Administration\CompanyController::class);
     Route::patch('/companies/{company}/restore', [\App\Http\Controllers\Administration\CompanyController::class, 'restore'])->name('companies.restore')->withTrashed();
     Route::resource('/brands', \App\Http\Controllers\Administration\BrandController::class);

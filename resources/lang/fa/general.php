@@ -25,6 +25,7 @@ return [
         'role' => 'نقش',
         'sale' => 'فروش',
         'size' => 'سایز',
+        'warehouse' => 'انبار/گدام',
         'store' => 'انبار/گدام',
         'supplier' => 'تأمین‌کننده',
         'unit_measure' => 'واحد اندازه‌گیری',
@@ -42,6 +43,7 @@ return [
     'items_created_successfully' => 'آیتم‌ها با موفقیت ایجاد شدند.',
     'items_saved_successfully' => 'آیتم‌ها با موفقیت ذخیره شدند.',
 
+    'cannot_delete_main_warehouse' => 'شما نمی‌توانید انبار اصلی را حذف کنید.',
     'cannot_delete_main_store' => 'شما نمی‌توانید انبار اصلی را حذف کنید.',
     'cannot_delete_main_branch' => 'شما نمی‌توانید شعبه اصلی را حذف کنید.',
     'cannot_delete_main_account' => 'شما نمی‌توانید حساب اصلی را حذف کنید.',

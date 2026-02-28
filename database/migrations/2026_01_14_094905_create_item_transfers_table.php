@@ -17,8 +17,8 @@ return new class extends Migration
         Schema::create('item_transfers', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->date('date')->index();
-            $table->ulid('from_store_id')->index();
-            $table->ulid('to_store_id')->index();
+            $table->ulid('from_warehouse_id')->index();
+            $table->ulid('to_warehouse_id')->index();
             $table->enum('status', TransferStatus::values())->default(TransferStatus::PENDING->value);
             $table->decimal('transfer_cost', 19, 4)->nullable();
             $table->ulid('branch_id')->index();
@@ -31,8 +31,8 @@ return new class extends Migration
         });
 
         Schema::table('item_transfers', function (Blueprint $table) {
-            $table->foreign('from_store_id')->references('id')->on('stores');
-            $table->foreign('to_store_id')->references('id')->on('stores');
+            $table->foreign('from_warehouse_id')->references('id')->on('warehouses');
+            $table->foreign('to_warehouse_id')->references('id')->on('warehouses');
             $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');

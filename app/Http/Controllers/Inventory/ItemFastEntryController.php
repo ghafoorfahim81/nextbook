@@ -50,9 +50,9 @@ class ItemFastEntryController extends Controller
                     // add any other default columns your Item requires
                 ]);
 
-                // 2) Opening stock (only when store & qty present)
+                // 2) Opening stock (only when warehouse & qty present)
                 $qty = (float) ($r['quantity'] ?? 0);
-                if (!empty($r['store_id']) && $qty > 0) {
+                if (!empty($r['warehouse_id']) && $qty > 0) {
                     $cost = (float) ($r['purchase_price'] ?? 0);
                     $dateConversionService = app(\App\Services\DateConversionService::class);
                     $expire_date = $r['expire_date']?$dateConversionService->toGregorian($r['expire_date']):null;
@@ -61,7 +61,6 @@ class ItemFastEntryController extends Controller
                     $stockService = app(\App\Services\StockService::class);
                     $stock = $stockService->addStock([
                         'item_id' => $item->id,
-                        'store_id' => $r['store_id'],
                         'unit_measure_id' => $r['measure_id'],
                         'quantity' => $qty,
                         'unit_price' => $cost,
@@ -71,7 +70,7 @@ class ItemFastEntryController extends Controller
                         'tax' => null,
                         'date' => $date,
                         'expire_date' => $expire_date,
-                    ], $r['store_id'], 'opening', $item->id);
+                    ], $r['warehouse_id'], 'opening', $item->id, $date);
 
                     StockOpening::create([
                         'id'      => (string) Str::ulid(),

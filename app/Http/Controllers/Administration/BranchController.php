@@ -16,7 +16,7 @@ use App\Models\Administration\Quantity;
 use App\Models\Administration\Size;
 use App\Models\Administration\Currency;
 use App\Models\Administration\UnitMeasure;
-use App\Models\Administration\Store;
+use App\Models\Administration\Warehouse;
 use App\Models\Ledger\Ledger;
 use Symfony\Component\Uid\Ulid;
 use Illuminate\Support\Facades\Auth;
@@ -145,12 +145,12 @@ class BranchController extends Controller
             });
         }
 
-        $store = Store::withoutGlobalScopes()->where('is_main', true)->first();
-            Store::withoutEvents(function () use ($store, $branch) {
-                Store::create([
+        $warehouse = Warehouse::withoutGlobalScopes()->where('is_main', true)->first();
+            Warehouse::withoutEvents(function () use ($warehouse, $branch) {
+                Warehouse::create([
                     'id' => (string) new Ulid(),
-                    'name' => $store['name'],
-                    'address' => 'Main store',
+                    'name' => $warehouse['name'],
+                    'address' => 'Main warehouse',
                     'branch_id' => $branch->id,
                     'is_main' => true,
                     'created_by' => Auth::id(),

@@ -34,7 +34,7 @@ const props = defineProps({
     salePurchaseTypes: {type: Object, required: true},
     currencies: {type: Object, required: true},
     items: {type: Object, required: false, default: () => ({ data: [] })},
-    stores: {type: Object, required: true},
+    warehouses: {type: Object, required: true},
     unitMeasures: {type: Object, required: true},
     accounts: {type: Object, required: false, default: () => ({ data: [] })},
     purchaseNumber: {type: String, required: true},
@@ -64,8 +64,8 @@ const form = useForm({
         note: '',
     },
     status: '',
-    store_id: '',
-    selected_store: '',
+    warehouse_id: '',
+    selected_warehouse: '',
     item_list:[],
     items: [
         {
@@ -179,12 +179,12 @@ watch(() => props.salePurchaseTypes, (salePurchaseTypes) => {
     }
 }, { immediate: true });
 
-watch(() => props.stores.data, (stores) => {
-    if (stores && !form.selected_store) {
-        const baseStore = stores.find(c => c.is_main === true);
-        if (baseStore) {
-            form.selected_store = baseStore;
-            form.store_id = baseStore.id;
+watch(() => props.warehouses.data, (warehouses) => {
+    if (warehouses && !form.selected_warehouse) {
+        const baseWarehouse = warehouses.find(c => c.is_main === true);
+        if (baseWarehouse) {
+            form.selected_warehouse = baseWarehouse;
+            form.warehouse_id = baseWarehouse.id;
         }
     }
 }, { immediate: true });
@@ -276,12 +276,12 @@ function handleSubmit(createAndNew = false) {
                         form.sale_purchase_type_id = baseSalePurchaseType.id;
                     }
                 }
-                // Re-initialize store with default
-                if (props.stores?.data) {
-                    const baseStore = props.stores.data.find(c => c.is_main === true);
-                    if (baseStore) {
-                        form.selected_store = baseStore;
-                        form.store_id = baseStore.id;
+                // Re-initialize warehouse with default
+                if (props.warehouses?.data) {
+                    const baseWarehouse = props.warehouses.data.find(c => c.is_main === true);
+                    if (baseWarehouse) {
+                        form.selected_warehouse = baseWarehouse;
+                        form.warehouse_id = baseWarehouse.id;
                     }
                 }
                 toast({
@@ -663,15 +663,15 @@ console.log('item_columns', item_columns);
                 />
                 </div>
                 <NextSelect v-if="general_fields.store"
-                    :options="stores.data"
+                    :options="warehouses.data"
                     :clearable="false"
-                    v-model="form.selected_store"
-                    @update:modelValue="(value) => handleSelectChange('store_id', value)"
+                    v-model="form.selected_warehouse"
+                    @update:modelValue="(value) => handleSelectChange('warehouse_id', value)"
                     label-key="name"
                     value-key="id"
-                    :reduce="store => store.id"
-                    :floating-text="t('admin.store.store')"
-                    :error="form.errors?.store_id"
+                    :reduce="warehouse => warehouse.id"
+                    :floating-text="t('admin.warehouse.warehouse')"
+                    :error="form.errors?.warehouse_id"
                 />
             </div>
             </div>

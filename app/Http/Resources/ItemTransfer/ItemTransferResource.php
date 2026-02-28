@@ -21,15 +21,15 @@ class ItemTransferResource extends JsonResource
         return [
             'id' => $this->id,
             'date' => $dateConversionService->toDisplay($this->date),
-            'from_store_id' => $this->from_store_id,
-            'from_store' => $this->whenLoaded('fromStore', fn() => [
-                'id' => $this->fromStore->id,
-                'name' => $this->fromStore->name,
+            'from_warehouse_id' => $this->from_warehouse_id,
+            'from_warehouse' => $this->whenLoaded('fromWarehouse', fn() => [
+                'id' => $this->fromWarehouse->id,
+                'name' => $this->fromWarehouse->name,
             ]),
-            'to_store_id' => $this->to_store_id,
-            'to_store' => $this->whenLoaded('toStore', fn() => [
-                'id' => $this->toStore->id,
-                'name' => $this->toStore->name,
+            'to_warehouse_id' => $this->to_warehouse_id,
+            'to_warehouse' => $this->whenLoaded('toWarehouse', fn() => [
+                'id' => $this->toWarehouse->id,
+                'name' => $this->toWarehouse->name,
             ]),
             'status' => $this->status->value,
             'status_label' => $this->status->getLabel(),
