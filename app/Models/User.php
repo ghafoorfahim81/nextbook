@@ -83,6 +83,8 @@ class User extends Authenticatable
                 'fast_search' => true,
                 'item_type' => true,
                 'sku' => true,
+                'is_batch_tracked' => false,
+                'is_expiry_tracked' => false,
             ],
             'spec_text' => 'Batch',
         ],

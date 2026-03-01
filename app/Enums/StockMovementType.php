@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum StockDirectionType: string
+enum StockMovementType: string
 {
     case IN = 'in';
     case OUT = 'out';

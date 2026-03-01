@@ -27,6 +27,8 @@ class ItemStoreRequest extends FormRequest
             'code' => ['required', 'string', 'unique:items,code,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'item_type' => ['nullable', 'string', Rule::in(ItemType::values()) ?? ItemType::INVENTORY_MATERIALS->value],
             'sku' => ['nullable', 'string', 'unique:items,sku,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'is_batch_tracked' => ['nullable', 'boolean'],
+            'is_expiry_tracked' => ['nullable', 'boolean'],
             'generic_name' => ['nullable', 'string'],
             'packing' => ['nullable', 'string'],
             'barcode' => ['nullable', 'string'],
@@ -54,6 +56,7 @@ class ItemStoreRequest extends FormRequest
             'openings.*.quantity' => ['nullable', 'numeric'],
             'openings.*.unit_price' => ['nullable', 'numeric','required_with:openings.*.quantity>0'],
             'openings.*.warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
+
         ];
     }
 }

@@ -11,7 +11,7 @@ import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import JsBarcode from 'jsbarcode'
 import { Info, RefreshCw, Trash2 } from 'lucide-vue-next'
-
+import { Switch } from '@/Components/ui/switch'
 import {
   Popover,
   PopoverContent,
@@ -43,7 +43,7 @@ const brands = computed(() => props.brands?.data ?? props.brands ?? [])
 const sizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
 const otherCurrentAssetsAccounts = computed(() => props.otherCurrentAssetsAccounts?.data ?? props.otherCurrentAssetsAccounts ?? [])
 const incomeAccounts = computed(() => props.incomeAccounts?.data ?? props.incomeAccounts ?? [])
-const costAccounts = computed(() => props.costAccounts?.data ?? props.costAccounts ?? []) 
+const costAccounts = computed(() => props.costAccounts?.data ?? props.costAccounts ?? [])
 const itemTypes = computed(() => props.itemTypes?.data ?? props.itemTypes ?? [])
 // Format code with leading zeros based on the number
 const formatCode = (number) => {
@@ -97,6 +97,8 @@ const form = useForm({
     rate_c: '',
     rack_no: '',
     photo: null, // file
+    is_batch_tracked: false,
+    is_expiry_tracked: false,
     openings: [
         { batch: '', expire_date: '','unit_price': 0, quantity: 0, warehouse_id: null, selected_warehouse: null },
     ],
@@ -166,7 +168,7 @@ const defaultAssetAccountId = computed(() => {
 const preferredAssetAccountIdForItemType = computed(() => {
     const type = (itemTypes.value || []).find(t => t?.id === form.item_type) || null
     const typeName = String(type?.name || '').toLowerCase()
-    const typeSlug = String(type?.id || '').toLowerCase() 
+    const typeSlug = String(type?.id || '').toLowerCase()
     // Best-effort mapping to common GL slugs used elsewhere in backend.
     let wantSlug = null
     if (typeSlug.includes('non') || typeName.includes('non')) wantSlug = 'non-inventory-items'
@@ -298,7 +300,7 @@ const normalize = () => {
 const handleSubmitAction = (createAndNew = false) => {
     const isCreateAndNew = createAndNew === true;
     submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
-    normalize() 
+    normalize()
     // Always show toast on success, regardless of which button is used
     const postOptions = {
         onSuccess: () => {
@@ -426,7 +428,7 @@ const generateBarcode = () => {
     form.barcode = `ITM${random}`
 }
 
- 
+
 
 </script>
 
@@ -556,7 +558,7 @@ const generateBarcode = () => {
                 <NextInput v-show="visibleFields.rate_b" :label="t('item.rate_b')" type="number" :placeholder="t('general.enter', { text: t('item.rate_b') })" v-model="form.rate_b" :error="form.errors?.rate_b" />
                 <NextInput v-show="visibleFields.rate_c" :label="t('item.rate_c')" type="number" :placeholder="t('general.enter', { text: t('item.rate_c') })" v-model="form.rate_c" :error="form.errors?.rate_c" />
                 <!-- <NextInput v-show="visibleFields.barcode" :label="t('item.barcode')" v-model="form.barcode" :placeholder="t('general.enter', { text: t('item.barcode') })" :error="form.errors?.barcode" /> -->
-                
+
                 <div v-show="visibleFields.barcode" class="flex items-center justify-between border rounded-md">
                     <div class="w-full">
                         <NextInput
@@ -585,12 +587,28 @@ const generateBarcode = () => {
                             </button>
                               </div>
                             </PopoverContent>
-                          </Popover> 
+                          </Popover>
                     </div>
                 </div>
                 <NextInput v-show="visibleFields.rack_no" :label="t('item.rack_no')" v-model="form.rack_no" :placeholder="t('general.enter', { text: t('item.rack_no') })" :error="form.errors?.rack_no" />
-                    <NextInput v-show="visibleFields.fast_search" :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
+                <NextInput v-show="visibleFields.fast_search" :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 rtl:text-right">
+                    <div v-show="visibleFields.is_batch_tracked" class="flex items-center gap-2">
+                        <Label class="text-base">{{ t('item.is_batch_tracked') }}</Label>
+                        <Switch
+                            :model-value="form.is_batch_tracked"
+                            @update:model-value="(v) => form.is_batch_tracked = v"
+                        />
+                    </div>
+                    <div v-show="visibleFields.is_expiry_tracked" class="flex items-center gap-2">
+                        <Label class="text-base">{{ t('item.is_expiry_tracked') }}</Label>
+                        <Switch
+                            :model-value="form.is_expiry_tracked"
+                            @update:model-value="(v) => form.is_expiry_tracked = v"
+                        />
+                    </div>
                 </div>
+            </div>
 
                 <div class="md:col-span-4 mt-4">
                     <div class="pt-2">
@@ -609,8 +627,8 @@ const generateBarcode = () => {
                             :key="index"
                             class="mt-3 grid grid-cols-1 md:grid-cols-6 gap-4 items-start"
                         >
-                            <NextInput :label="specText?? t('item.batch')" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
-                            <NextDate v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+                            <NextInput v-show="form.is_batch_tracked" :label="specText?? t('item.batch')" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
+                            <NextDate v-show="form.is_expiry_tracked" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
                             <NextInput :label="t('item.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
                             <NextInput :label="t('general.unit_price')" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
                             <NextSelect

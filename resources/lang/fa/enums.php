@@ -79,7 +79,7 @@ return [
     'stock_direction_type' => [
         'in' => 'ورود',
         'out' => 'خروج',
-    ], 
+    ],
     'stock_source_type' => [
         'purchase' => 'خرید',
         'purchase_return' => 'برگشت خرید',
@@ -87,6 +87,10 @@ return [
         'sale_return' => 'برگشت فروش',
         'stock_adjustment' => 'تعدیل انبار',
         'item_transfer' => 'ترجمه مورد',
+    ],
+    'costing_method' => [
+        'fifo' => 'اولین ورود اولین خروج',
+        'lifo' => 'آخرین ورود اولین خروج',
     ],
 ];
 

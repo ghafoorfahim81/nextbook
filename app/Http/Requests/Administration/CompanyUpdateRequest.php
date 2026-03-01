@@ -6,6 +6,7 @@ use App\Enums\BusinessType;
 use App\Enums\CalendarType;
 use App\Enums\Locale;
 use App\Enums\WorkingStyle;
+use App\Enums\CostingMethod;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CompanyUpdateRequest extends FormRequest
@@ -38,6 +39,7 @@ class CompanyUpdateRequest extends FormRequest
             'business_type' => ['required', 'in:' . implode(',', array_column(BusinessType::cases(), 'value'))],
             'locale' => ['required', 'in:' . implode(',', array_column(Locale::cases(), 'value'))],
             'currency_id' => ['required', 'exists:currencies,id'],
+            'costing_method' => ['required', 'in:' . implode(',', array_column(CostingMethod::cases(), 'value'))],
             'email' => ['nullable', 'email'],
             'website' => ['nullable', 'string'],
             'invoice_description' => ['nullable', 'string'],

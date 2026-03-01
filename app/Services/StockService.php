@@ -1,277 +1,242 @@
 <?php
-// app/Services/StockService.php
 
 namespace App\Services;
 
-use App\Models\Inventory\Stock;
-use App\Models\Inventory\StockOut;
-use App\Support\Inertia\CacheKey;
+use App\Models\Inventory\Item;
+use App\Models\Inventory\StockBalance;
+use App\Models\Inventory\StockMovement;
+use App\Models\Inventory\InventorySetting;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
+
 class StockService
 {
     /**
-     * Add stock from various sources
+     * Entry point
      */
-    public function addStock(array $data, $warehouseId, string $sourceType, $sourceId = null, $date = null): Stock
+    public function post(array $data): void
     {
-        return DB::transaction(function () use ($data, $warehouseId, $sourceType, $sourceId, $date) {
-            $stockData = $this->validateStockData($data);
+        DB::transaction(function () use ($data) {
 
-            $stockData = array_merge($stockData, [
-                'date' => $date,
-                'warehouse_id' => $warehouseId,
-                'source_type' => $sourceType,
-                'source_id' => $sourceId,
-                'size_id' => $data['size_id'] ?? null,  // from item form
+            $item = Item::lockForUpdate()->findOrFail($data['item_id']);
+
+            if ($data['movement_type'] === 'IN') {
+                $this->handleIn($item, $data);
+            } else {
+                $this->handleOut($item, $data);
+            }
+        });
+    }
+
+    /**
+     * Handle Stock IN
+     */
+    protected function handleIn(Item $item, array $data): void
+    {
+        $this->validateBatch($item, $data);
+
+        StockMovement::create([
+            ...$data,
+            'qty_remaining' => $data['quantity'],
+        ]);
+
+        $this->increaseBalance($data);
+    }
+
+    /**
+     * Handle Stock OUT
+     */
+    protected function handleOut(Item $item, array $data): void
+    {
+        $this->validateStockAvailability($data);
+
+        $method = $this->getCostingMethod($data['branch_id']);
+
+        if ($method === 'fifo') {
+            $this->deductFIFO($item, $data);
+        } else {
+            $this->deductWeightedAverage($item, $data);
+        }
+
+        $this->decreaseBalance($data);
+    }
+
+    /**
+     * FIFO Deduction
+     */
+    protected function deductFIFO(Item $item, array $data): void
+    {
+        $remaining = $data['quantity'];
+
+        $query = StockMovement::query()
+            ->where('branch_id', $data['branch_id'])
+            ->where('item_id', $data['item_id'])
+            ->where('warehous_id', $data['warehous_id'])
+            ->where('movement_type', 'IN')
+            ->where('qty_remaining', '>', 0);
+
+        if ($item->is_batch_tracked) {
+            $query->where('batch', $data['batch']);
+        }
+
+        $inMovements = $query
+            ->orderBy('date')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($inMovements as $movement) {
+
+            if ($remaining <= 0) break;
+
+            $deductQty = min($movement->qty_remaining, $remaining);
+
+            $movement->decrement('qty_remaining', $deductQty);
+
+            StockMovement::create([
+                ...$data,
+                'quantity' => $deductQty,
+                'unit_cost' => $movement->unit_cost,
+                'qty_remaining' => null,
             ]);
 
-            $stock = Stock::create($stockData);
-            Cache::forget(CacheKey::forCompanyBranchLocale(request(), 'items'));
-            return $stock;
-        });
-    }
+            $remaining -= $deductQty;
+        }
 
-    public function updateStock(array $data, $warehouseId, string $sourceType, $sourceId = null, $date = null): Stock
-    {
-        return DB::transaction(function () use ($data, $warehouseId, $sourceType, $sourceId, $date) {
-            $stockData = $this->validateStockData($data);
-            $stockData['date'] = $date;
-            $stockData['warehouse_id'] = $warehouseId;
-            $stockData['source_type'] = $sourceType;
-            $stockData['source_id'] = $sourceId;
-            $stockData['size_id'] = $data['size_id'] ?? null;
-            $stockData['unit_measure_id'] = $data['unit_measure_id'] ?? null;
-            $stockData['quantity'] = $data['quantity'] ?? 0;
-            $stockData['unit_price'] = $data['unit_price'] ?? 0;
-            $stockData['free'] = $data['free'] ?? 0;
-            $stockData['discount'] = $data['discount'] ?? 0;
-            $stockData['tax'] = $data['tax'] ?? 0;
-            $stockData['date'] = $date;
-            $stockData['warehouse_id'] = $warehouseId;
-            $stockData['source_type'] = $sourceType;
-            $stockData['source_id'] = $sourceId;
-            $stock = Stock::updateOrCreate($stockData);
-            Cache::forget(CacheKey::forCompanyBranchLocale(request(), 'items'));
-            return $stock;
-        });
-
+        if ($remaining > 0) {
+            throw ValidationException::withMessages([
+                'stock' => 'Insufficient stock for FIFO deduction.'
+            ]);
+        }
     }
 
     /**
-     * Remove stock for various reasons
+     * Weighted Average Deduction
      */
-    public function removeStock(array $data, $warehouseId, string $sourceType, $sourceId = null): StockOut
+    protected function deductWeightedAverage(Item $item, array $data): void
     {
-        return DB::transaction(function () use ($data, $warehouseId, $sourceType, $sourceId) {
-            $stockOutData = $this->validateStockOutData($data);
+        $balance = StockBalance::query()
+            ->where('branch_id', $data['branch_id'])
+            ->where('item_id', $data['item_id'])
+            ->where('warehous_id', $data['warehous_id'])
+            ->lockForUpdate()
+            ->firstOrFail();
 
-            // Override warehouse_id with the passed parameter
-            $stockOutData['warehouse_id'] = $warehouseId;
-            $stockOutData['size_id'] = $data['size_id'] ?? null; // from item form
-            $availableStock = $this->getAvailableStock(
-                $stockOutData['item_id'],
-                $stockOutData['warehouse_id'],
-                $stockOutData['quantity'],
-                $stockOutData['size_id']
-            );
-
-            // If there is no stock available in the selected warehouse, stop early
-            if ($availableStock->isEmpty()) {
-                throw ValidationException::withMessages([
-                    'item_id' => ['Stock not available in the selected warehouse.'],
-                ]);
-            }
-
-            // If total available across batches is less than requested, stop
-            $totalAvailable = $availableStock->sum('available_quantity');
-            if ($totalAvailable < $stockOutData['quantity']) {
-                throw ValidationException::withMessages([
-                    'quantity' => ["Insufficient stock. Available: {$totalAvailable}, Required: {$stockOutData['quantity']}."],
-                ]);
-            }
-
-            $stockOutRecords = [];
-
-            foreach ($availableStock as $stock) {
-                $quantityToTake = min($stock->available_quantity, $stockOutData['quantity']);
-
-                $stockOutRecord = StockOut::create([
-                    'stock_id' => $stock->id,
-                    'item_id' => $stockOutData['item_id'],
-                    'quantity' => $quantityToTake,
-                    'unit_price' => $stockOutData['unit_price'] ?? $stock->unit_price,
-                    'free' => $stockOutData['free'] ?? $stock->free,
-                    'tax' => $stockOutData['tax'] ?? $stock->tax,
-                    'discount' => $stockOutData['discount'] ?? $stock->discount,
-                    'date' => $stockOutData['date'] ?? now(),
-                    'batch' => $stock->batch,
-                    'unit_measure_id' => $stockOutData['unit_measure_id'] ?? $stock->unit_measure_id,
-                    'warehouse_id' => $stock->warehouse_id,
-                    'source_type' => $sourceType,
-                    'source_id' => $sourceId,
-                    'size_id' => $stockOutData['size_id'] ?? null,
-                ]);
-
-                $stockOutRecords[] = $stockOutRecord;
-                $stockOutData['quantity'] -= $quantityToTake;
-
-                if ($stockOutData['quantity'] <= 0) break;
-            }
-            Cache::forget(CacheKey::forCompanyBranchLocale(request(), 'items'));
-
-            return $stockOutRecords[0];
-        });
+        StockMovement::create([
+            ...$data,
+            'unit_cost' => $balance->average_cost,
+            'qty_remaining' => null,
+        ]);
     }
 
     /**
-     * Get current stock level for an item in a warehouse
+     * Increase Balance
      */
-    public function getStockLevel(string $itemId, string $warehouseId): array
+    protected function increaseBalance(array $data): void
     {
-        $totalStock = Stock::where('item_id', $itemId)
-            ->where('warehouse_id', $warehouseId)
-            ->sum('quantity');
+        $balance = StockBalance::firstOrCreate(
+            [
+                'branch_id' => $data['branch_id'],
+                'item_id' => $data['item_id'],
+                'warehous_id' => $data['warehous_id'],
+                'batch' => $data['batch'] ?? null,
+            ],
+            [
+                'quantity' => 0,
+                'average_cost' => 0,
+            ]
+        );
 
-        $totalOut = StockOut::where('item_id', $itemId)
-            ->where('warehouse_id', $warehouseId)
-            ->sum('quantity');
+        $newQty = $balance->quantity + $data['quantity'];
 
-        return [
-            'available' => $totalStock - $totalOut,
-            'total_in' => $totalStock,
-            'total_out' => $totalOut,
-        ];
+        $newAvg = $this->calculateNewAverage(
+            $balance->quantity,
+            $balance->average_cost,
+            $data['quantity'],
+            $data['unit_cost']
+        );
+
+        $balance->update([
+            'quantity' => $newQty,
+            'average_cost' => $newAvg,
+        ]);
     }
 
     /**
-     * Get available stock batches (FIFO)
+     * Decrease Balance
      */
-    private function getAvailableStock(string $itemId, string $warehouseId, float $requiredQuantity, ?string $sizeId = null)
+    protected function decreaseBalance(array $data): void
     {
-        return Stock::where('item_id', $itemId)
-            ->where('warehouse_id', $warehouseId)
-            ->when($sizeId, fn ($q) => $q->where('size_id', $sizeId))
-            ->where('quantity', '>', 0)
-            ->orderBy('date', 'asc') // FIFO - oldest first
-            ->orderBy('created_at', 'asc')
-            ->get()
-            ->map(function ($stock) {
-                $stock->available_quantity = $stock->quantity - $stock->stockOuts->sum('quantity');
-                return $stock;
-            })
-            ->where('available_quantity', '>', 0)
-            ->values();
+        $balance = StockBalance::query()
+            ->where('branch_id', $data['branch_id'])
+            ->where('item_id', $data['item_id'])
+            ->where('warehous_id', $data['warehous_id'])
+            ->lockForUpdate()
+            ->firstOrFail();
+
+        if ($balance->quantity < $data['quantity']) {
+            throw ValidationException::withMessages([
+                'stock' => 'Negative stock is not allowed.'
+            ]);
+        }
+
+        $balance->decrement('quantity', $data['quantity']);
     }
 
     /**
-     * Transfer stock between warehouses
+     * Average Cost Formula
      */
-    public function transferStock(array $transferData): array
-    {
-        return DB::transaction(function () use ($transferData) {
-            // Remove from source warehouse
-            $stockOut = $this->removeStock([
-                'item_id' => $transferData['item_id'],
-                'quantity' => $transferData['quantity'],
-                'date' => $transferData['date'],
-            ], $transferData['from_warehouse_id'], 'transfer', $transferData['transfer_id']);
+    protected function calculateNewAverage(
+        float $oldQty,
+        float $oldAvg,
+        float $newQty,
+        float $newCost
+    ): float {
+        if ($oldQty <= 0) {
+            return $newCost;
+        }
 
-            // Add to destination warehouse
-            $sourceStock = Stock::find($stockOut->stock_id);
-
-            $stockIn = $this->addStock([
-                'item_id' => $transferData['item_id'],
-                'unit_measure_id' => $sourceStock->unit_measure_id,
-                'quantity' => $transferData['quantity'],
-                'unit_price' => $sourceStock->unit_price,
-                'free' => $sourceStock->free,
-                'batch' => $sourceStock->batch,
-                'discount' => $sourceStock->discount,
-                'tax' => $sourceStock->tax,
-                'date' => $transferData['date'],
-                'expire_date' => $sourceStock->expire_date,
-                'size_id' => $sourceStock->size_id,
-            ], $transferData['to_warehouse_id'], 'transfer', $transferData['transfer_id']);
-
-            return [
-                'out' => $stockOut,
-                'in' => $stockIn,
-            ];
-        });
+        return (
+            ($oldQty * $oldAvg) + ($newQty * $newCost)
+        ) / ($oldQty + $newQty);
     }
 
     /**
-     * Stock adjustment (increase/decrease)
+     * Validate Batch Rules
      */
-    public function adjustStock(array $adjustmentData): array
+    protected function validateBatch(Item $item, array $data): void
     {
-        return DB::transaction(function () use ($adjustmentData) {
-            $results = [];
-            $warehouseId = $adjustmentData['warehouse_id'] ?? null;
-
-            if ($adjustmentData['type'] === 'increase') {
-                $results['in'] = $this->addStock([
-                    'item_id' => $adjustmentData['item_id'],
-                    'unit_measure_id' => $adjustmentData['unit_measure_id'],
-                    'quantity' => $adjustmentData['quantity'],
-                    'unit_price' => $adjustmentData['unit_price'] ?? ($adjustmentData['cost'] ?? 0),
-                    'free' => $adjustmentData['free'] ?? 0,
-                    'batch' => $adjustmentData['batch'] ?? null,
-                    'discount' => $adjustmentData['discount'] ?? 0,
-                    'tax' => $adjustmentData['tax'] ?? 0,
-                    'date' => $adjustmentData['date'],
-                    'expire_date' => $adjustmentData['expire_date'] ?? null,
-                    'size_id' => $adjustmentData['size_id'] ?? null,
-                ], $warehouseId, 'adjustment', $adjustmentData['adjustment_id'], $adjustmentData['date'] ?? null);
-            } else {
-                $results['out'] = $this->removeStock([
-                    'item_id' => $adjustmentData['item_id'],
-                    'quantity' => $adjustmentData['quantity'],
-                    'date' => $adjustmentData['date'],
-                ], $warehouseId, 'adjustment', $adjustmentData['adjustment_id']);
-            }
-
-            return $results;
-        });
+        if ($item->is_batch_tracked && empty($data['batch'])) {
+            throw ValidationException::withMessages([
+                'batch' => 'Batch is required for this item.'
+            ]);
+        }
     }
 
     /**
-     * Validation methods
+     * Check Stock Availability
      */
-    private function validateStockData(array $data): array
+    protected function validateStockAvailability(array $data): void
     {
-        return validator($data, [
-            'item_id' => 'required|exists:items,id',
-            'unit_measure_id' => 'required|exists:unit_measures,id',
-            'quantity' => 'required|numeric|min:0.0000001',
-            'unit_price' => 'required|numeric|min:0',
-            'free' => 'nullable|numeric|min:0',
-            'batch' => 'nullable|string',
-            'discount' => 'nullable|numeric|min:0',
-            'tax' => 'nullable|numeric|min:0',
-            'date' => 'nullable|date',
-            'expire_date' => 'nullable|date',
-            'size_id' => 'nullable|exists:sizes,id',
-        ])->validate();
+        $balance = StockBalance::query()
+            ->where('branch_id', $data['branch_id'])
+            ->where('item_id', $data['item_id'])
+            ->where('warehous_id', $data['warehous_id'])
+            ->first();
+
+        if (!$balance || $balance->quantity < $data['quantity']) {
+            throw ValidationException::withMessages([
+                'stock' => 'Insufficient stock.'
+            ]);
+        }
     }
 
-    private function validateStockOutData(array $data): array
+    /**
+     * Get Costing Method
+     */
+    protected function getCostingMethod(string $branchId): string
     {
-        return validator($data, [
-            'item_id' => 'required|exists:items,id',
-            'warehouse_id' => 'nullable|exists:warehouses,id',
-            'quantity' => 'required|numeric|min:0.01', 
-            'unit_price' => 'nullable|numeric|min:0',
-            'free' => 'nullable|numeric|min:0',
-            'tax' => 'nullable|numeric|min:0',
-            'discount' => 'nullable|numeric|min:0',
-            'unit_measure_id' => 'nullable|exists:unit_measures,id',
-            'date' => 'nullable|date',
-            'size_id' => 'nullable|exists:sizes,id',
-        ])->validate();
+        return InventorySetting::where('branch_id', $branchId)
+            ->value('costing_method') ?? 'fifo';
     }
-
-
 }
