@@ -67,10 +67,10 @@ const filterFields = computed(() => ([
         options: (props.filterOptions?.types || []).map((o) => ({ id: o.id, name: o.name })),
     },
     {
-        key: 'store_id',
-        label: t('admin.store.store'),
+        key: 'warehouse_id',
+        label: t('admin.warehouse.warehouse'),
         type: 'select',
-        options: (props.filterOptions?.stores || []).map((s) => ({ id: s.id, name: s.name })),
+        options: (props.filterOptions?.warehouses || []).map((w) => ({ id: w.id, name: w.name })),
     },
     { key: 'date', label: t('general.date'), type: 'daterange' },
     {

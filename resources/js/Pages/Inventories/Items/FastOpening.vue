@@ -35,7 +35,7 @@ onUnmounted(() => {
 const props = defineProps({
     items: { type: [Array, Object], required: true },
     unitMeasures: { type: Array, required: true }, // Array of {id, name}
-    stores: { type: Array, required: true },       // Array of {id, name}
+    warehouses: { type: Array, required: true },       // Array of {id, name}
 }) 
 
 const paginatedItems = computed(() => props.items?.data ?? props.items ?? [])
@@ -47,7 +47,7 @@ const form = useForm({
         item_id: item.id,
         name: item.name,
         batch: item.batch,
-        store_id: null,
+        warehouse_id: null,
         unit_measure_id: item.unit_measure_id,
         measure_name: item.unit_measure.name,
         quantity: item.quantity ?? 0,
@@ -92,7 +92,7 @@ const normalize = () => {
         quantity: r.quantity === '' ? null : Number(r.quantity),
         cost: r.cost === '' ? null : Number(r.cost),
         unit_measure_id: r.unit_measure_id ?? null,
-        store_id: r.store_id ?? null,
+        warehouse_id: r.warehouse_id ?? null,
         expire_date: r.expire_date || null,
     }))
 
@@ -103,7 +103,7 @@ const normalize = () => {
 // Handle form submit
 const handleSubmit = () => {
     normalize()
-    form.post(route('fast-opening.store'), {
+    form.post(route('fast-opening.warehouse'), {
         onSuccess: () => {
             toast.success(t('general.create_success', { name: t('item.opening') }),{
                 class: 'bg-green-600',
@@ -115,8 +115,8 @@ const handleSubmit = () => {
     })
 }
 
-const handleStoreChange = (rowIndex, value) => {
-    form.items[rowIndex].store_id = value
+const handleWarehouseChange = (rowIndex, value) => {
+    form.items[rowIndex].warehouse_id = value
 }
 
 const pageOptions = [10,15, 20, 50, 100]
@@ -202,7 +202,7 @@ const updateItemsPerPage = (value) => {
                             <th class="px-1 py-1 w-28">{{ t('admin.unit_measure.unit_measure') }}</th>
                             <th class="px-1 py-1 w-44">{{ t('item.expire_date') }}</th>
                             <th class="px-1 py-1 w-40">{{ t('item.cost') }}</th>
-                            <th class="px-1 py-1 w-44">{{ t('admin.store.store') }}</th>
+                            <th class="px-1 py-1 w-44">{{ t('admin.warehouse.warehouse') }}</th>
                             <th class="px-1 py-1 w-24">{{ t('general.actions') }}</th>
                         </tr>
                         </thead>
@@ -263,19 +263,19 @@ const updateItemsPerPage = (value) => {
                                 />
                             </td>
 
-                            <!-- Store Selection -->
+                            <!-- Warehouse Selection -->
                             <td class="px-1 py-2 align-top">
                                 <NextSelect
-                                    v-model="form.items[rowIndex].store_id"
-                                    :options="props.stores.data" 
-                                    @update:modelValue="(value) => handleStoreChange(rowIndex, value)"
-                                    resource-type="stores"
+                                    v-model="form.items[rowIndex].warehouse_id"
+                                    :options="props.warehouses.data" 
+                                    @update:modelValue="(value) => handleWarehouseChange(rowIndex, value)"
+                                    resource-type="warehouses"
                                     :searchable="true"
                                     :search-fields="['name', 'address']"
                                     label-key="name"
                                     value-key="id"
                                     :show-arrow="false"
-                                    :error="fieldError(rowIndex, 'store_id')"
+                                    :error="fieldError(rowIndex, 'warehouse_id')"
                                 />
                             </td>
 

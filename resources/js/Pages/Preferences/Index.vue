@@ -28,7 +28,7 @@ const props = defineProps({
     timezones: Object,
     unitMeasures: { type: [Array, Object], required: true },
     categories: { type: [Array, Object], required: true },
-    stores: { type: [Array, Object], required: true },
+    warehouses: { type: [Array, Object], required: true },
     sizes: { type: [Array, Object], required: true },
     currencies: { type: [Array, Object], required: true },
     ledgers: { type: [Array, Object], required: true },
@@ -57,7 +57,7 @@ const form = useForm({ ...props.preferences })
 
 const allUnitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 const allCategories = computed(() => props.categories?.data ?? props.categories ?? [])
-const allStores = computed(() => props.stores?.data ?? props.stores ?? [])
+const allWarehouses = computed(() => props.warehouses?.data ?? props.warehouses ?? [])
 const allSizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
 const allCurrencies = computed(() => props.currencies?.data ?? props.currencies ?? [])
 const allLedgers = computed(() => props.ledgers?.data ?? props.ledgers ?? [])
@@ -70,7 +70,7 @@ const activeIds = (list) => (Array.isArray(list) ? list : []).filter(x => x?.is_
 const pluginForm = useForm({
     unit_measures: activeIds(allUnitMeasures.value),
     categories: activeIds(allCategories.value),
-    stores: activeIds(allStores.value),
+    warehouses: activeIds(allWarehouses.value),
     sizes: activeIds(allSizes.value),
     currencies: activeIds(allCurrencies.value),
     ledgers: activeIds(allLedgers.value),
@@ -161,7 +161,7 @@ const generalFields = [
     { key: 'date', label: 'preferences.fields.date' },
     { key: 'currency', label: 'preferences.fields.currency' },
     { key: 'type', label: 'preferences.fields.type' },
-    { key: 'store', label: 'preferences.fields.store' },
+    { key: 'warehouse', label: 'preferences.fields.warehouse' },
 ]
 
 const itemColumns = [
@@ -959,23 +959,23 @@ const receiptPaymentFields = [
                             </div>
 
                             <div class="space-y-2">
-                                <Label class="text-base font-medium">{{ t('preferences.install_plugins.stores_title') }}</Label>
-                                <p class="text-sm text-muted-foreground">{{ t('preferences.install_plugins.stores_hint') }}</p>
+                                <Label class="text-base font-medium">{{ t('preferences.install_plugins.warehouses_title') }}</Label>
+                                <p class="text-sm text-muted-foreground">{{ t('preferences.install_plugins.warehouses_hint') }}</p>
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                     <div
-                                        v-for="s in allStores"
-                                        :key="s.id"
+                                        v-for="w in allWarehouses"
+                                        :key="w.id"
                                         class="flex items-center gap-2 rounded-md border p-2"
                                     >
                                         <Checkbox
-                                            :id="`fav-store-${s.id}`"
-                                            :checked="pluginForm.stores?.includes(s.id)"
-                                            @update:checked="(checked) => togglePluginIds('stores', s.id, checked)"
+                                            :id="`fav-warehouse-${w.id}`"
+                                            :checked="pluginForm.warehouses?.includes(w.id)"
+                                            @update:checked="(checked) => togglePluginIds('warehouses', w.id, checked)"
                                         />
-                                        <Label :for="`fav-store-${s.id}`" class="font-normal cursor-pointer">
-                                            {{ s.name }}
+                                        <Label :for="`fav-warehouse-${w.id}`" class="font-normal cursor-pointer">
+                                            {{ w.name }}
                                         </Label>
-                                        <span v-if="s.is_main === true" class="ml-auto text-xs text-muted-foreground">
+                                        <span v-if="w.is_main === true" class="ml-auto text-xs text-muted-foreground">
                                             {{ t('preferences.install_plugins.main_badge') }}
                                         </span>
                                     </div>

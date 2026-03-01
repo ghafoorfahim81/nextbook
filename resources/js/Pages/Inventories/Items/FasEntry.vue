@@ -13,7 +13,7 @@ import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
 
 const props = defineProps({
-    stores: { type: [Array, Object], required: true },
+    warehouses: { type: [Array, Object], required: true },
     unitMeasures: { type: [Array, Object], required: true },
     brands: { type: [Array, Object], required: true },
     maxCode: { type: Number, required: true },
@@ -41,7 +41,7 @@ onUnmounted(() => {
 
 
 
-const stores        = computed(() => props.stores?.data ?? props.stores ?? [])
+const warehouses        = computed(() => props.warehouses?.data ?? props.warehouses ?? [])
 const unitMeasures  = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 
 // Track the latest max code on the client so we can keep incrementing
@@ -68,7 +68,7 @@ const blankRow = (code = currentMaxCode.value) => ({
     batch: '',
     expire_date: '',
     quantity: '',
-    store_id: null,
+    warehouse_id: null,
 })
 
 const addRow = () => {
@@ -114,7 +114,7 @@ const isEmptyRow = (row) => {
         'quantity',
         'batch',
         'expire_date',
-        'store_id',
+        'warehouse_id',
         'purchase_price',
         'sale_price',
     ]
@@ -136,7 +136,7 @@ const normalize = () => {
             category_id: r.category_id ?? null,
             measure_id: r.measure_id ?? null,
             company_id: r.company_id ?? null,
-            store_id: r.store_id ?? null,
+            warehouse_id: r.warehouse_id ?? null,
             expire_date: r.expire_date || null,
         }))
         // drop rows that are effectively empty (ignore auto code)
@@ -174,7 +174,7 @@ const handleSubmit = () => {
     }))
 
     const itemCount = normalizedItems.length;
-    form.post(route('item.fast.store'), {
+        form.post(route('item.fast.warehouse'), {
         preserveScroll: true,
         // preserveState: true, // optional
         onSuccess: () => {
@@ -234,7 +234,7 @@ const handleSubmit = () => {
                             <th class="px-1 py-1 w-20">{{ t('item.opening_amount') }}</th>
                             <th class="px-1 py-1 w-20">{{ t('item.batch') }}</th>
                             <th class="px-1 py-1 w-36">{{ t('item.expire_date') }}</th>
-                            <th class="px-1 py-1 w-32">{{ t('admin.store.store') }}</th>
+                            <th class="px-1 py-1 w-32">{{ t('admin.warehouse.warehouse') }}</th>
                             <th class="px-1 py-1 w-28">{{ t('item.purchase_price') }}</th>
                             <th class="px-1 py-1 w-20">{{ t('item.sale_price') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.actions') }}</th>
@@ -294,8 +294,8 @@ const handleSubmit = () => {
                             </td>
                             <td class="px-1 py-2 align-top">
                                 <NextSelect
-                                    v-model="item.store_id"
-                                    :options="stores"
+                                    v-model="item.warehouse_id"
+                                    :options="warehouses"
                                     label-key="name"
                                     value-key="id"
                                     :show-arrow="false"

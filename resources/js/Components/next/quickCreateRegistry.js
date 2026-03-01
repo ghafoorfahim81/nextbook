@@ -98,9 +98,9 @@ export const quickCreateRegistry = {
     ],
   },
 
-  stores: {
-    titleKey: 'admin.store.store',
-    endpointType: 'stores',
+  warehouses: {
+    titleKey: 'admin.warehouse.warehouse',
+    endpointType: 'warehouses',
     fields: [
       { key: 'name', labelKey: 'general.name', type: 'text', required: true },
       { key: 'address', labelKey: 'admin.shared.address', type: 'textarea' },

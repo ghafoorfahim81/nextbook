@@ -42,7 +42,7 @@ return new class extends Migration
 
             // composite indexes
             $table->index(['branch_id', 'item_id', 'warehouse_id', 'date']);
-            $table->index(['reference_type', 'reference_id']);
+            // $table->index(['reference_type', 'reference_id']);
             $table->index(['branch_id', 'item_id', 'warehouse_id', 'batch', 'expire_date']);
         });
 
