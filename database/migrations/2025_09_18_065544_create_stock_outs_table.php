@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('stock_outs', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('stock_id')->nullable()->index();
+            $table->ulid('stock_movement_id')->nullable()->index();
             $table->ulid('item_id')->index();
             $table->double('quantity')->unsigned();
             $table->double('unit_price')->unsigned();
@@ -35,7 +35,7 @@ return new class extends Migration
         });
 
         Schema::table('stock_outs', function (Blueprint $table) {
-            $table->foreign('stock_id')->references('id')->on('stocks');
+            $table->foreign('stock_movement_id')->references('id')->on('stock_movements');
             $table->foreign('item_id')->references('id')->on('items');
             $table->foreign('unit_measure_id')->references('id')->on('unit_measures');
             $table->foreign('warehouse_id')->references('id')->on('warehouses');

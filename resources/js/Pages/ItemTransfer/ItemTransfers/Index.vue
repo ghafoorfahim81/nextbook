@@ -57,8 +57,8 @@ const showItem = (id) => {
 
 const columns = computed(() => ([
   { key: 'date', label: t('general.date'), sortable: true },
-  { key: 'from_store.name', label: t('item_transfer.from_store') },
-  { key: 'to_store.name', label: t('item_transfer.to_store') },
+  { key: 'from_warehouse.name', label: t('item_transfer.from_warehouse') },
+  { key: 'to_warehouse.name', label: t('item_transfer.to_warehouse') },
   { key: 'status_label', label: t('general.status') },
   { key: 'transfer_cost', label: t('item_transfer.transfer_cost'), sortable: true },
   {
@@ -76,16 +76,16 @@ const columns = computed(() => ([
 
 const filterFields = computed(() => ([
   {
-    key: 'from_store_id',
-    label: t('item_transfer.from_store'),
+    key: 'from_warehouse_id',
+    label: t('item_transfer.from_warehouse'),
     type: 'select',
-    options: (props.filterOptions?.stores || []).map((s) => ({ id: s.id, name: s.name })),
+    options: (props.filterOptions?.warehouses || []).map((w) => ({ id: w.id, name: w.name })),
   },
   {
-    key: 'to_store_id',
-    label: t('item_transfer.to_store'),
+    key: 'to_warehouse_id',
+    label: t('item_transfer.to_warehouse'),
     type: 'select',
-    options: (props.filterOptions?.stores || []).map((s) => ({ id: s.id, name: s.name })),
+    options: (props.filterOptions?.warehouses || []).map((w) => ({ id: w.id, name: w.name })),
   },
   {
     key: 'items.item_id',

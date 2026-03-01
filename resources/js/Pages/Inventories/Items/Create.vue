@@ -22,7 +22,7 @@ const isBarcodePopoverOpen = ref(false)
 const { t } = useI18n()
 // keep props reactive
 const props = defineProps({
-    stores: { type: [Array, Object], required: true },
+    warehouses: { type: [Array, Object], required: true },
     unitMeasures: { type: [Array, Object], required: true },
     categories: { type: [Array, Object], required: true },
     brands: { type: [Array, Object], required: true },
@@ -36,7 +36,7 @@ const props = defineProps({
 })
 
 // normalize lists whether they're paginated or not
-const stores = computed(() => props.stores?.data ?? props.stores ?? [])
+const warehouses = computed(() => props.warehouses?.data ?? props.warehouses ?? [])
 const unitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 const categories = computed(() => props.categories?.data ?? props.categories ?? [])
 const brands = computed(() => props.brands?.data ?? props.brands ?? [])
@@ -68,7 +68,7 @@ const form = useForm({
     packing: '',
     remark: '',
     branch_id: null,
-    store_id: null,
+    warehouse_id: null,
     colors: '',
     size_id: null,
     item_type: null,
@@ -98,7 +98,7 @@ const form = useForm({
     rack_no: '',
     photo: null, // file
     openings: [
-        { batch: '', expire_date: '','unit_price': 0, quantity: 0, store_id: null, selected_store: null },
+        { batch: '', expire_date: '','unit_price': 0, quantity: 0, warehouse_id: null, selected_warehouse: null },
     ],
 })
 
@@ -239,13 +239,13 @@ const submitAction = ref(null)
 const createLoading = computed(() => form.processing && submitAction.value === 'create')
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new')
 
-// By default select the main store if available
-watch(() => props.stores?.data ?? props.stores, (stores) => {
-    if (stores && stores.length) {
-        const mainStore = stores.find(s => s.is_main === true)
-        if (mainStore) {
-            form.openings[0].selected_store = mainStore
-            form.openings[0].store_id = mainStore.id
+// By default select the main warehouse if available
+watch(() => props.warehouses?.data ?? props.warehouses, (warehouses) => {
+    if (warehouses && warehouses.length) {
+        const mainWarehouse = warehouses.find(s => s.is_main === true)
+        if (mainWarehouse) {
+            form.openings[0].selected_warehouse = mainWarehouse
+            form.openings[0].warehouse_id = mainWarehouse.id
         }
     }
 }, { immediate: true })
@@ -265,11 +265,11 @@ const onPhotoChange = (e) => {
 // rows
 const addRow = (index) => {
     if (index === form.openings.length - 1) {
-        form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, store_id: null, selected_store: null })
+        form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null })
     }
 }
 const addOpeningRow = () => {
-    form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, store_id: null, selected_store: null })
+    form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null })
 }
 const removeRow = (idx) => {
     if (form.openings.length > 1) form.openings.splice(idx, 1)
@@ -292,7 +292,7 @@ const normalize = () => {
         quantity: toNum(o.quantity),
         expire_date: o.expire_date || null,
         batch: o.batch || null,
-        store_id: o.store_id || null,
+        warehouse_id: o.warehouse_id || null,
     }))
 }
 const handleSubmitAction = (createAndNew = false) => {
@@ -323,7 +323,7 @@ const handleSubmitAction = (createAndNew = false) => {
 
     form
         .transform(transformFn)
-        .post(route('items.store'), postOptions);
+        .post(route('items.warehouse'), postOptions);
 };
 
 const handleCancel = () => {
@@ -339,24 +339,24 @@ const handleSelectChange = (field, value) => {
 };
 const disabled = ref(false);
 watch(
-    () => form.openings.map(o => [o.selected_store, o.batch, o.expire_date].join('|')).join(';'),
+    () => form.openings.map(o => [o.selected_warehouse, o.batch, o.expire_date].join('|')).join(';'),
     (newVal, oldVal) => {
         let foundDuplicate = false;
         form.openings.forEach((currentOpening, index) => {
-            const { selected_store, batch, expire_date } = currentOpening;
-            if (selected_store && batch && expire_date) {
+            const { selected_warehouse, batch, expire_date } = currentOpening;
+            if (selected_warehouse && batch && expire_date) {
                 const duplicate = form.openings.some((o, i) =>
                     i !== index &&
-                    o.store_id === selected_store &&
+                    o.warehouse_id === selected_warehouse &&
                     o.batch === batch &&
                     o.expire_date === expire_date &&
-                    o.store_id && o.batch && o.expire_date
+                    o.warehouse_id && o.batch && o.expire_date
                 );
                 if (duplicate && !foundDuplicate) {
                     foundDuplicate = true;
                     disabled.value = true;
                     toast.error(t('general.duplicate_found'), {
-                        description: t('item.duplicate_store_batch_expiry') || 'This store with the same batch and expiry already exists.',
+                        description: t('item.duplicate_warehouse_batch_expiry') || 'This warehouse with the same batch and expiry already exists.',
                         class: 'bg-red-600',
                     });
                 }
@@ -369,8 +369,8 @@ watch(
     { deep: true }
 )
 const handleOpeningSelectChange = (index, value) => {
-    form.openings[index].selected_store = value;
-    form.openings[index].store_id = value ? value : null;
+    form.openings[index].selected_warehouse = value;
+    form.openings[index].warehouse_id = value ? value : null;
 };
 
 // render barcode
@@ -614,16 +614,16 @@ const generateBarcode = () => {
                             <NextInput :label="t('item.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
                             <NextInput :label="t('general.unit_price')" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
                             <NextSelect
-                                v-model="opening.selected_store"
-                                :options="stores"
+                                v-model="opening.selected_warehouse"
+                                :options="warehouses"
                                 label-key="name"
                                 @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
                                 value-key="id"
-                                id="store"
-                                :floating-text="t('admin.store.store')"
-                                :error="form.errors[`openings.${index}.store_id`]"
+                                id="warehouse_id"
+                                :floating-text="t('admin.warehouse.warehouse')"
+                                :error="form.errors[`openings.${index}.warehouse_id`]"
                                 :searchable="true"
-                                resource-type="stores"
+                                resource-type="warehouses"
                                 :search-fields="['name', 'address']"
                             />
                             <div  class="mt-2" v-if="form.openings.length > 1">

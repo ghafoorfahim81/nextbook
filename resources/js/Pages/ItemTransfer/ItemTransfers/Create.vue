@@ -18,7 +18,7 @@ const { t } = useI18n()
 const { toast } = useToast()
 
 const page = usePage()
-const stores = computed(() => page.props.stores?.data || page.props.stores || [])
+const warehouses = computed(() => page.props.warehouses?.data || page.props.warehouses || [])
 const itemOptions = ref([])
 const unitMeasures = computed(() => page.props.unitMeasures?.data || page.props.unitMeasures || [])
 
@@ -38,13 +38,13 @@ const createEmptyRow = () => ({
 
 const form = useForm({
   date: '',
-  from_store_id: '',
-  to_store_id: '',
-  selected_from_store: null,
-  selected_to_store: null,
+  from_warehouse_id: '',
+  to_warehouse_id: '',
+  selected_from_warehouse: null,
+  selected_to_warehouse: null,
   transfer_cost: '',
   remarks: '',
-  items: [createEmptyRow(), createEmptyRow(), createEmptyRow()],
+  items: [createEmptyRow(), createEmptyRow(), createEmptyRow(), createEmptyRow()],
 })
 
 const submitAction = ref(null)
@@ -58,21 +58,21 @@ const handleSubmitAction = (createAndNew = false) => {
 
 const itemSearchOptions = computed(() => {
   const additionalParams = {}
-  if (form.from_store_id) {
-    additionalParams.store_id = form.from_store_id
+  if (form.from_warehouse_id) {
+    additionalParams.warehouse_id = form.from_warehouse_id
   }
   return { additionalParams, limit: 200 }
 })
 
-const loadItemOptions = async (storeId = form.store_id) => {
-    if (!storeId) {
+const loadItemOptions = async (warehouseId = form.warehouse_id) => {
+    if (!warehouseId) {
         itemOptions.value = []
         return
     }
     try {
         const response = await axios.get(route('search.items-for-sale'), {
             params: {
-                store_id: storeId,
+                warehouse_id: warehouseId,
                 limit: 50,
             }
         })
@@ -84,28 +84,28 @@ const loadItemOptions = async (storeId = form.store_id) => {
 }
 
 watch(
-  stores,
-  (availableStores = []) => {
-    if (availableStores.length && !form.from_store_id) {
-      const preferredStore = availableStores.find(str => str.is_main) || availableStores[0]
-      form.selected_from_store = preferredStore || null
-      form.from_store_id = preferredStore?.id || ''
+  warehouses,
+  (availableWarehouses = []) => {
+    if (availableWarehouses.length && !form.from_warehouse_id) {
+      const preferredWarehouse = availableWarehouses.find(str => str.is_main) || availableWarehouses[0]
+      form.selected_from_warehouse = preferredWarehouse || null
+      form.from_warehouse_id = preferredWarehouse?.id || ''
     }
   },
   { immediate: true }
 )
 
 
-watch(() => form.from_store_id, (storeId) => {
-    if (!storeId) {
+    watch(() => form.from_warehouse_id, (warehouseId) => {
+    if (!warehouseId) {
         itemOptions.value = []
         return
     }
-    loadItemOptions(storeId)
+    loadItemOptions(warehouseId)
 }, { immediate: true });
 
-const sameStoreError = computed(() => {
-  return form.from_store_id && form.to_store_id && form.from_store_id === form.to_store_id
+const sameWarehouseError = computed(() => {
+  return form.from_warehouse_id && form.to_warehouse_id && form.from_warehouse_id === form.to_warehouse_id
 })
 
 const handleSelectChange = (field, value) => {
@@ -159,7 +159,7 @@ const handleBatchChange = (index, batch) => {
 
 
 const isRowEnabled = (index) => {
-  if (!form.selected_from_store || !form.selected_to_store) return false
+  if (!form.selected_from_warehouse || !form.selected_to_warehouse) return false
   for (let i = 0; i < index; i++) {
     if (!form.items[i]?.selected_item) return false
   }
@@ -205,10 +205,10 @@ const onhand = (index) => {
 }
 
 function handleSubmit(createAndNew = false) {
-  if (sameStoreError.value) {
+  if (sameWarehouseError.value) {
     toast({
       title: t('general.error'),
-      description: t('item_transfer.stores_cannot_be_same'),
+      description: t('item_transfer.warehouses_cannot_be_same'),
       variant: 'destructive',
       class: 'bg-pink-600 text-white',
     })
@@ -238,13 +238,13 @@ function handleSubmit(createAndNew = false) {
 
   form.transform(() => ({
     date: form.date,
-    from_store_id: form.from_store_id,
-    to_store_id: form.to_store_id,
+    from_warehouse_id: form.from_warehouse_id,
+    to_warehouse_id: form.to_warehouse_id,
     transfer_cost: form.transfer_cost,
     remarks: form.remarks,
     items: payloadItems,
     ...(createAndNew ? { create_and_new: true } : {}),
-  })).post(route('item-transfers.store'), {
+  })).post(route('item-transfers.warehouse'), {
     onSuccess: () => {
       toast({
         title: t('general.success'),
@@ -293,25 +293,25 @@ onUnmounted(() => {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
           <NextSelect
-            :options="stores"
-            v-model="form.selected_from_store"
-            @update:modelValue="(value) => handleSelectChange('from_store_id', value.id)"
+            :options="warehouses"
+            v-model="form.selected_from_warehouse"
+            @update:modelValue="(value) => handleSelectChange('from_warehouse_id', value.id)"
             label-key="name"
             value-key="id"
-            :reduce="store => store"
-            :floating-text="t('item_transfer.from_store')"
-            :error="form.errors?.from_store_id"
+            :reduce="warehouse => warehouse"
+            :floating-text="t('item_transfer.from_warehouse')"
+            :error="form.errors?.from_warehouse_id"
             :searchable="true"
           />
           <NextSelect
-            :options="stores"
-            v-model="form.selected_to_store"
-            @update:modelValue="(value) => handleSelectChange('to_store_id', value.id)"
+            :options="warehouses"
+            v-model="form.selected_to_warehouse"
+            @update:modelValue="(value) => handleSelectChange('to_warehouse_id', value.id)"
             label-key="name"
             value-key="id"
-            :reduce="store => store"
-            :floating-text="t('item_transfer.to_store')"
-            :error="form.errors?.to_store_id"
+            :reduce="warehouse => warehouse"
+            :floating-text="t('item_transfer.to_warehouse')"
+            :error="form.errors?.to_warehouse_id"
             :searchable="true"
           />
           <NextInput

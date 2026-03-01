@@ -27,7 +27,7 @@ const props = defineProps({
     ledgers: {type: Object, required: false, default: () => ({ data: [] })},
     salePurchaseTypes: {type: Object, required: true},
     currencies: {type: Object, required: true},
-    stores: {type: Object, required: true},
+    warehouses: {type: Object, required: true},
     unitMeasures: {type: Object, required: true},
     accounts: {type: Object, required: false, default: () => ({ data: [] })},
     sale: {type: Object, required: true},
@@ -59,8 +59,8 @@ const form = useForm({
         note: '',
     },
     status: props.sale.status,
-    store_id: props.sale.store_id,
-    selected_store: props.sale.store,
+    warehouse_id: props.sale.warehouse_id,
+    selected_warehouse: props.sale.warehouse,
     item_list: props.sale.item_list || [],
     items: props.sale.items ? props.sale.items.map(item => ({
         item_id: item.item_id,
@@ -338,12 +338,12 @@ const transactionSummary = computed(() => {
                     />
 
                     <NextSelect
-                        v-model="form.store_id"
+                        v-model="form.warehouse_id"
                         :label="t('administration.store.store')"
-                        :options="$page.props.stores"
+                        :options="$page.props.warehouses"
                         option-value="id"
                         option-label="name"
-                        :error="form.errors.store_id"
+                        :error="form.errors.warehouse_id"
                         searchable
                     />
 
