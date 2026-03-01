@@ -25,6 +25,7 @@ use App\Models\Administration\Size;
 use App\Models\Administration\Warehouse;
 use App\Models\Administration\UnitMeasure;
 use App\Enums\ItemType;
+use App\Enums\CostingMethod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Account\Account;
@@ -140,6 +141,7 @@ final class LookupShared
             'calendarTypes' => EnumOptions::forLocale($request, CalendarType::class, 'calendar_types'),
             'workingStyles' => EnumOptions::forLocale($request, WorkingStyle::class, 'working_styles'),
             'locales' => EnumOptions::forLocale($request, Locale::class, 'locales'),
+            'costingMethods' => EnumOptions::forLocale($request, CostingMethod::class, 'costing_methods'),
             'salePurchaseTypes' => EnumOptions::forLocale($request, SalesPurchaseType::class, 'sale_purchase_types'),
             'discountTypes' => EnumOptions::forLocale($request, DiscountType::class, 'discount_types'),
             'itemTypes' => EnumOptions::forLocale($request, ItemType::class, 'item_types'),

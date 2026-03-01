@@ -8,6 +8,7 @@ use App\Http\Resources\Inventory\StockOpeningResource;
 use App\Enums\ItemType;
 use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\UserManagement\UserSimpleResource;
+use App\Enums\StockMovementType;
 class ItemResource extends JsonResource
 {
     /**
@@ -52,10 +53,9 @@ class ItemResource extends JsonResource
             'sku' => $this->sku,
             'item_type' => $this->item_type ? $this->item_type?->getLabel() : null,
             'item_type_id' => $this->item_type,
-            'stock_count' => $this->stocks->sum('quantity'),
-            'stock_out_count' => $this->stockOut->sum('quantity'),
+            'stock_count' => $this->stocks->where('movement_type', StockMovementType::IN->value)->sum('quantity'),
+            'stock_out_count' => $this->stocks->where('movement_type', StockMovementType::OUT->value)->sum('quantity'),
             'branch_id' => $this->branch_id,
-            'quantity' => $this->stocks->sum(('quantity')),
             'on_hand' => $this->onHand(),
             'avg_cost' => $this->avgCost(),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),

@@ -90,13 +90,8 @@ class ItemController extends Controller
         ]);
     }
     public function store(ItemStoreRequest $request)
-    { 
-        $validated = $request->validated(); 
-        // If you're uploading a photo here, handle it first (optional)
-        // if ($request->hasFile('photo')) {
-        //     $path = $request->file('photo')->store('items', 'public');
-        //     $validated['photo'] = $path;
-        // } 
+    {
+        $validated = $request->validated();
         $validated['item_type'] = $validated['item_type']??ItemType::INVENTORY_MATERIALS->value;
         DB::transaction(function () use ($validated, $request) {
             // 1) Create item
@@ -114,12 +109,13 @@ class ItemController extends Controller
                     $expire_date = $o['expire_date'] ? $dateConversionService->toGregorian($o['expire_date']) : null;
                     // create stock
                     $stockService = app(\App\Services\StockService::class);
-                    $stock = $stockService->addStock([
-                        'item_id' => $item->id,
+                    $stock = $stockService->post([
+                        'item_id'         => $item->id,
+                        'movement_type'   => "IN",
                         'unit_measure_id' => $validated['unit_measure_id'], // from item form
                         'quantity'        => (float) $o['quantity'],
+                        'source'          => 'opening',
                         'unit_price'      => (float) $o['unit_price'],
-                        'free'            => isset($o['free']) ? (float) $o['free'] : null,
                         'batch'           => $o['batch'] ?? null,
                         'date'            => $date,
                         'expire_date'     => $expire_date,
@@ -145,13 +141,13 @@ class ItemController extends Controller
                         $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['inventory-stock'];
                     }
                     elseif ($itemType == ItemType::NON_INVENTORY_MATERIALS->value) {
-                        $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['non-inventory-items']; 
+                        $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['non-inventory-items'];
                     }
                     elseif ($itemType == ItemType::RAW_MATERIALS->value) {
-                        $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['raw-materials']; 
+                        $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['raw-materials'];
                     }
                     elseif ($itemType == ItemType::FINISHED_GOOD_ITEMS->value) {
-                        $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['finished-goods']; 
+                        $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['finished-goods'];
                     }
                     $openingBalanceTransaction = $transactionService->post(
                         header: [
@@ -162,7 +158,7 @@ class ItemController extends Controller
                           'reference_id' => $item->id,
                           'remark' => 'Opening balance for item ' . $item->name,
                         ],
-                        lines: [ 
+                        lines: [
                           ['account_id' => $inventoryAccount,   'debit' => $openings->sum(function ($o) {
                             return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
                         }), 'credit' => 0],
@@ -173,7 +169,7 @@ class ItemController extends Controller
                       );
                     // ItemOpeningTransaction::create([
                     //     'id' => (string) Str::ulid(),
-                    //     'item_id' => $item->id, 
+                    //     'item_id' => $item->id,
                     // ]);
                 }
 
@@ -232,7 +228,7 @@ class ItemController extends Controller
     public function edit(Request $request, Item $item)
     {
         $item = Item::with('unitMeasure', 'brand', 'category', 'size', 'assetAccount', 'incomeAccount', 'costAccount', 'openings')->find($item->id);
-  
+
         $accountModel = new Account();
         $otherCurrentAssetsAccounts = $accountModel->getAccountsByAccountTypeSlug('other-current-asset');
         $incomeAccounts = $accountModel->getAccountsByAccountTypeSlug('income');
@@ -303,23 +299,23 @@ class ItemController extends Controller
                     });
 
                     // Delete opening transactions
-                    $openingTransaction = $item->openingTransaction()->first();  
+                    $openingTransaction = $item->openingTransaction()->first();
                         // Then safely delete the related transactions
                         if ($openingTransaction) {
                             TransactionLine::where('transaction_id', $openingTransaction->id)->forceDelete();
                             Transaction::where('id', $openingTransaction->id)->forceDelete();
-                        } 
+                        }
                 }
 
-                $openingTransaction = $item->openingTransaction()->first(); 
+                $openingTransaction = $item->openingTransaction()->first();
                     if ($openingTransaction) {
                         // Then safely delete the related transactions
                         if ($openingTransaction->id) {
                             TransactionLine::where('transaction_id', $openingTransaction->id)->forceDelete();
                             Transaction::where('id', $openingTransaction->id)->forceDelete();
-                        } 
+                        }
                     }
-                
+
                 // Create opening transactions
                 if ($filteredOpenings->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0)->count() > 0) {
                     $glAccounts = Cache::get('gl_accounts');
@@ -385,13 +381,13 @@ class ItemController extends Controller
                 });
 
                 // Delete opening transactions with their related models
-                $openingTransaction = $item->openingTransaction()->first(); 
+                $openingTransaction = $item->openingTransaction()->first();
                     if ($openingTransaction) {
                         // Then safely delete the related transactions
                         if ($openingTransaction->id) {
                             TransactionLine::where('transaction_id', $openingTransaction->id)->delete();
                             Transaction::where('id', $openingTransaction->id)->delete();
-                        } 
+                        }
                     }
 
                 // Finally delete the main item
@@ -428,13 +424,13 @@ class ItemController extends Controller
                 });
 
                 // Restore opening transactions with their related models
-                $openingTransaction = $item->openingTransaction()->first(); 
+                $openingTransaction = $item->openingTransaction()->first();
                     if ($openingTransaction) {
                         // Then safely delete the related transactions
                         if ($openingTransaction->id) {
                             TransactionLine::where('transaction_id', $openingTransaction->id)->restore();
                             Transaction::where('id', $openingTransaction->id)->restore();
-                        } 
+                        }
                     }
             });
 
@@ -465,13 +461,13 @@ class ItemController extends Controller
                 });
 
                 // Force delete opening transactions with their related models
-                $openingTransaction = $item->openingTransaction()->first(); 
+                $openingTransaction = $item->openingTransaction()->first();
                     if ($openingTransaction) {
                         // Then safely delete the related transactions
                         if ($openingTransaction->id) {
                             TransactionLine::where('transaction_id', $openingTransaction->id)->forceDelete();
                             Transaction::where('id', $openingTransaction->id)->forceDelete();
-                        } 
+                        }
 
                 // Finally force delete the main item
                 $item->forceDelete();

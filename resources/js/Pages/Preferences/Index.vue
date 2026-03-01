@@ -201,7 +201,9 @@ const itemManagementFields = [
     { key: 'fast_search', label: 'preferences.item_fields.fast_search' },
     { key: 'item_type', label: 'preferences.fields.item_type' },
     { key: 'sku', label: 'preferences.fields.sku' },
-]
+    { key: 'is_batch_tracked', label: 'preferences.item_fields.is_batch_tracked' },
+    { key: 'is_expiry_tracked', label: 'preferences.item_fields.is_expiry_tracked' },
+    ]
 
 const receiptPaymentFields = [
     { key: 'number', label: 'preferences.fields.number' },

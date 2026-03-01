@@ -48,5 +48,9 @@
     "cost_and_purchase_price_required_description": "هزینه ویا قیمت خرید مورد نیاز است برای باز کردن موجودی کالا.",
     "no_data_to_save": "هیچ داده ای برای ذخیره نیست. لطفا حداقل یک ردیف را پر کنید.",
     "opening_amount": "مقدار موجودی",
-    "total_items_per_page": "تعداد کالاها در هر صفحه"
+    "total_items_per_page": "تعداد کالاها در هر صفحه",
+    "is_batch_tracked": "داری بچ",
+    "is_batch_tracked_desc": "بچ برای کالا را فعال کنید.",
+    "is_expiry_tracked": "داری انقضا",
+    "is_expiry_tracked_desc": "انقضا برای کالا را فعال کنید."
 }

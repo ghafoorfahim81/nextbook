@@ -94,7 +94,9 @@
         "rack_no": "Rack No",
         "fast_search": "Fast Search",
         "item_type": "Item Type",
-        "sku": "Stock keeping unit"
+        "sku": "Stock keeping unit",
+        "is_batch_tracked": "Batch Tracked",
+        "is_expiry_tracked": "Expiry Tracked"
     },
     "fields": {
         "number": "Number",
@@ -117,7 +119,11 @@
         "maximum_stock": "Maximum Stock",
         "rack_no": "Rack No",
         "category": "Category",
-        "rates": "Rates"
+        "rates": "Rates",
+        "item_type": "Item Type",
+        "sku": "Stock keeping unit",
+        "is_batch_tracked": "Batch Tracked",
+        "is_expiry_tracked": "Expiry Tracked"
     },
     "sale": {
         "description": "Configure sale transaction preferences",

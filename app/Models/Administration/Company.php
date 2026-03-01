@@ -18,6 +18,7 @@ use App\Enums\CalendarType;
 use App\Enums\BusinessType;
 use App\Enums\Locale;
 use App\Enums\WorkingStyle;
+use App\Enums\CostingMethod;
 
 class Company extends Model
 {
@@ -44,6 +45,7 @@ class Company extends Model
         'business_type',
         'locale',
         'currency_id',
+        'costing_method',
         'email',
         'website',
         'invoice_description',
@@ -65,6 +67,7 @@ class Company extends Model
             'working_style' => WorkingStyle::class,
             'business_type' => BusinessType::class,
             'locale' => Locale::class,
+            'costing_method' => CostingMethod::class,
         ];
     }
 

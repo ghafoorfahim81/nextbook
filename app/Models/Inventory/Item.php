@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Enums\ItemType;
+use App\Models\Inventory\StockBalance;
 use App\Traits\HasUserTracking;
 use App\Models\Transaction\Transaction;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -41,6 +42,8 @@ class Item extends Model
         'packing',
         'barcode',
         'unit_measure_id',
+        'is_batch_tracked',
+        'is_expiry_tracked',
         'brand_id',
         'category_id',
         'cost_account_id',
@@ -89,6 +92,8 @@ class Item extends Model
             'created_by' => 'string',
             'updated_by' => 'string',
             'colors' => 'array',
+            'is_batch_tracked' => 'boolean',
+            'is_expiry_tracked' => 'boolean',
         ];
     }
 
@@ -149,7 +154,7 @@ class Item extends Model
     public function size(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Administration\Size::class);
-    }
+     }
 
     public function branch(): BelongsTo
     {
@@ -158,7 +163,7 @@ class Item extends Model
 
     public function stocks()
     {
-        return $this->hasMany(Stock::class);
+        return $this->hasMany(StockMovement::class);
     }
 
     public function openings()
@@ -190,34 +195,25 @@ class Item extends Model
         return $this->belongsTo(\App\Models\Account\Account::class, 'cost_account_id');
     }
 
-    public function onHand()
+    public function stockBalances()
     {
-        $stocks = $this->stocks()->with('unitMeasure')->get();
-        $stockOuts = $this->stockOut()->with('unitMeasure')->get();
+        return $this->hasMany(StockBalance::class);
+    }
 
-        $stockSum = $stocks->sum(function($stock) {
-            if($stock->unitMeasure->unit != $this->unitMeasure->unit){
-                $stock->quantity = $stock->quantity * ($stock->unitMeasure->unit / $this->unitMeasure->unit);
-            }
-            return $stock->quantity;
-        });
-
-        $stockOutSum = $stockOuts->sum(function($stockOut) {
-            if($stockOut->unitMeasure->unit != $this->unitMeasure->unit){
-                $stockOut->quantity = $stockOut->quantity * ($stockOut->unitMeasure->unit / $this->unitMeasure->unit);
-            }
-            return $stockOut->quantity;
-        });
-
-        $onHand = $stockSum - $stockOutSum;
-        return $onHand;
+    public function onHand(): string
+    {
+        return (string) $this->stockBalances()->sum('quantity');
+    }
+    public function onHandByStore(string $storeId): string
+    {
+    return (string) $this->stockBalances()
+        ->where('store_id', $storeId)
+        ->sum('quantity');
     }
 
     public function avgCost()
     {
-        $sumPrice = $this->stocks()->sum('unit_price');
-        $count = $this->stocks()->count();
-        return $count > 0 ? $sumPrice / $count : 0;
+        return (string) $this->stockBalances()->avg('average_cost');
     }
     // public function inRecords()
     // {

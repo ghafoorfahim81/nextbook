@@ -48,5 +48,9 @@
     "cost_and_purchase_price_required_description": "Cost and Purchase Price are required for the opening of the item.",
     "no_data_to_save": "No data to save. Please fill at least one row.",
     "opening_amount": "Opening Amount",
-    "total_items_per_page": "Total Items Per Page"
+    "total_items_per_page": "Total Items Per Page",
+    "is_batch_tracked": "Batch Tracked",
+    "is_batch_tracked_desc": "Enable batch tracking for the item.",
+    "is_expiry_tracked": "Expiry Tracked",
+    "is_expiry_tracked_desc": "Enable expiry tracking for the item."
 }

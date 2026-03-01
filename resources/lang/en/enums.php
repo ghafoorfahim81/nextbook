@@ -87,4 +87,8 @@ return [
         'stock_adjustment' => 'Stock Adjustment',
         'item_transfer' => 'Item Transfer',
     ],
-];  
+    'costing_method' => [
+        'fifo' => 'FIFO',
+        'lifo' => 'LIFO',
+    ],
+];

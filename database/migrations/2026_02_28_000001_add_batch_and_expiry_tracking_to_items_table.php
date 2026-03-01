@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('items', function (Blueprint $table) {
-            $table->boolean('is_batch_tracked')->default(false)->after('sku');
+            $table->boolean(column: 'is_batch_tracked')->default(false)->after('sku');
             $table->boolean('is_expiry_tracked')->default(false)->after('is_batch_tracked');
         });
     }

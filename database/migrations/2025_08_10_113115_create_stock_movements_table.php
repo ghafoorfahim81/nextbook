@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use App\Enums\StockSourceType;
-use App\Enums\StockDirectionType;
+use App\Enums\StockMovementType;
 return new class extends Migration
 {
     /**
@@ -22,8 +22,8 @@ return new class extends Migration
             $table->ulid('unit_measure_id')->index();
             $table->ulid('size_id')->nullable()->index();
 
-            $table->enum('direction', StockDirectionType::values()); // IN / OUT
-            $table->enum('source_type', StockSourceType::values());     // purchase, sale, adjustment, transfer...
+            $table->enum('movement_type', allowed: StockMovementType::values()); // IN / OUT
+            $table->enum('source', StockSourceType::values());     // purchase, sale, adjustment, transfer...
 
             $table->string('batch')->nullable();
             $table->date('expire_date')->nullable();
@@ -32,17 +32,18 @@ return new class extends Migration
 
             $table->decimal('quantity', 18, 4);
             $table->decimal('unit_cost', 18, 4);
+            $table->decimal('qty_remaining', 18, 4)->nullable();
 
-            $table->nullableUlidMorphs('reference');
+            $table->ulidMorphs('reference');
 
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
-
+            $table->ulid('deleted_by')->nullable();
             $table->timestamps();
-
+            $table->softDeletes();
             // composite indexes
             $table->index(['branch_id', 'item_id', 'warehouse_id', 'date']);
-            // $table->index(['reference_type', 'reference_id']);
+            $table->index(['branch_id', 'reference_id', 'reference_type']);
             $table->index(['branch_id', 'item_id', 'warehouse_id', 'batch', 'expire_date']);
         });
 
@@ -54,6 +55,7 @@ return new class extends Migration
             $table->foreign('updated_by')->references('id')->on('users');
             $table->foreign('unit_measure_id')->references('id')->on('unit_measures');
             $table->foreign('size_id')->references('id')->on('sizes');
+            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('set null');
         });
     }
 
