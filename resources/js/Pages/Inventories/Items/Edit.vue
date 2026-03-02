@@ -11,6 +11,8 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/Components/ui/popover
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner';
 import JsBarcode from 'jsbarcode'
+import { Switch } from '@/Components/ui/switch'
+import { Label } from '@/Components/ui/label'
 const props = defineProps({
     item: { type: Object, required: true },
     warehouses: { type: [Array, Object], required: true },
@@ -370,6 +372,24 @@ watch(
                     </div>
                     <NextInput v-show="visibleFields.rack_no" :label="t('item.rack_no')" v-model="form.rack_no" :placeholder="t('general.enter', { text: t('item.rack_no') })" :error="form.errors?.rack_no" />
                     <NextInput v-show="visibleFields.fast_search" :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 rtl:text-right">
+                        <div v-show="visibleFields.is_batch_tracked" class="flex items-center gap-2">
+                            <Label class="text-base">{{ t('item.is_batch_tracked') }}</Label>
+                            <Switch
+                                disabled="true"
+                                :model-value="form.is_batch_tracked"
+                                @update:model-value="(v) => form.is_batch_tracked = v"
+                            />
+                        </div>
+                        <div v-show="visibleFields.is_expiry_tracked" class="flex items-center gap-2">
+                            <Label class="text-base">{{ t('item.is_expiry_tracked') }}</Label>
+                            <Switch
+                                disabled="true"
+                                :model-value="form.is_expiry_tracked"
+                                @update:model-value="(v) => form.is_expiry_tracked = v"
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 <div class="md:col-span-3 mt-4">
@@ -389,8 +409,8 @@ watch(
                             :key="index"
                             class="mt-3 grid grid-cols-1 md:grid-cols-6 gap-4 items-start"
                         >
-                            <NextInput :label="t('item.batch')" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
-                            <NextDatePicker v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+                            <NextInput :label="t('item.batch')" v-show="form.is_batch_tracked" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
+                            <NextDatePicker v-show="form.is_expiry_tracked" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
                             <NextInput :label="t('general.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
                             <NextInput :label="t('general.unit_price')" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
                             <NextSelect

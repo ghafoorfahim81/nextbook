@@ -28,6 +28,10 @@ use App\Models\Administration\Category;
 use App\Models\Administration\Brand;
 use App\Models\Administration\Size;
 use App\Models\User;
+use App\Enums\StockSourceType;
+use App\Enums\StockMovementType;
+use App\Http\Resources\Inventory\StockMovementResource;
+use App\Models\Inventory\StockMovement;
 class ItemController extends Controller
 {
     public function __construct()
@@ -42,8 +46,7 @@ class ItemController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $items = Item::with('category', 'unitMeasure','createdBy', 'updatedBy')
-            ->search($request->query('search'))
+        $items = Item::search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -91,7 +94,7 @@ class ItemController extends Controller
     }
     public function store(ItemStoreRequest $request)
     {
-        $validated = $request->validated();
+        $validated = $request->validated(); 
         $validated['item_type'] = $validated['item_type']??ItemType::INVENTORY_MATERIALS->value;
         DB::transaction(function () use ($validated, $request) {
             // 1) Create item
@@ -111,23 +114,26 @@ class ItemController extends Controller
                     $stockService = app(\App\Services\StockService::class);
                     $stock = $stockService->post([
                         'item_id'         => $item->id,
-                        'movement_type'   => "IN",
+                        'movement_type'   => StockMovementType::IN->value,
                         'unit_measure_id' => $validated['unit_measure_id'], // from item form
                         'quantity'        => (float) $o['quantity'],
-                        'source'          => 'opening',
-                        'unit_price'      => (float) $o['unit_price'],
+                        'source'          => StockSourceType::OPENING->value,
+                        'unit_cost'      => (float) $o['unit_price'],
+
                         'batch'           => $o['batch'] ?? null,
                         'date'            => $date,
                         'expire_date'     => $expire_date,
                         'size_id'         => $validated['size_id'] ?? null,
-                    ], $o['warehouse_id'], 'opening', $item->id, $date);
+                        'warehouse_id'    => $o['warehouse_id'],
+                        'branch_id'       => auth()->user()->company->branch_id, 
+                    ]);
 
                     // mark it as an opening
-                    StockOpening::create([
-                        'id'      => (string) Str::ulid(),
-                        'item_id' => $item->id,
-                        'stock_id' => $stock->id,
-                    ]);
+                    // StockOpening::create([
+                    //     'id'      => (string) Str::ulid(),
+                    //     'item_id' => $item->id,
+                    //     'stock_id' => $stock->id,
+                    // ]);
                 });
                 // Create opening transactions
                 if ($openings->filter(function ($o) {
@@ -183,21 +189,22 @@ class ItemController extends Controller
     public function show(Request $request, Item $item)
     {
         // $item->load(['stock_count', 'stock_out_count']);
-        $item->load('assetAccount', 'incomeAccount', 'costAccount', 'createdBy', 'updatedBy');
-
-        return inertia('Inventories/Items/Show', [
-            'item' => new ItemResource($item),
+        $item->load('assetAccount', 'incomeAccount', 'costAccount', 'createdBy', 'updatedBy', 'brand', 'size');
+        return response()->json([
+            'data' => ItemResource::make($item),
         ]);
+        
     }
     public function inRecords(Request $request, Item $item)
     {
-        $stocks = Stock::with(['warehouse', 'unitMeasure', 'source'])
+        $stocks = StockMovement::with(['warehouse', 'unitMeasure', 'source'])
             ->where('item_id', $item->id)
+            ->where('movement_type', StockMovementType::IN->value)
             ->orderBy('date', 'desc')
             ->paginate($request->input('per_page', 10));
 
         return response()->json([
-            'data' => StockResource::collection($stocks),
+            'data' => StockMovementResource::collection($stocks),
             'meta' => [
                 'current_page' => $stocks->currentPage(),
                 'last_page' => $stocks->lastPage(),
@@ -209,13 +216,14 @@ class ItemController extends Controller
 
     public function outRecords(Request $request, Item $item)
     {
-        $stockOuts = StockOut::with(['warehouse', 'unitMeasure', 'source'])
+        $stockOuts = StockMovement::with(['warehouse', 'unitMeasure', 'source'])
             ->where('item_id', $item->id)
+            ->where('movement_type', StockMovementType::OUT->value)
             ->orderBy('date', 'desc')
             ->paginate($request->input('per_page', 10));
 
         return response()->json([
-            'data' => StockOutResource::collection($stockOuts),
+            'data' => StockMovementResource::collection($stockOuts),
             'meta' => [
                 'current_page' => $stockOuts->currentPage(),
                 'last_page' => $stockOuts->lastPage(),
@@ -227,13 +235,11 @@ class ItemController extends Controller
 
     public function edit(Request $request, Item $item)
     {
-        $item = Item::with('unitMeasure', 'brand', 'category', 'size', 'assetAccount', 'incomeAccount', 'costAccount', 'openings')->find($item->id);
-
+        $item = Item::with('unitMeasure', 'brand', 'category', 'size', 'assetAccount', 'incomeAccount', 'costAccount', 'openings.warehouse')->find($item->id);
         $accountModel = new Account();
         $otherCurrentAssetsAccounts = $accountModel->getAccountsByAccountTypeSlug('other-current-asset');
         $incomeAccounts = $accountModel->getAccountsByAccountTypeSlug('income');
-        $costAccounts = $accountModel->getAccountsByAccountTypeSlug('cost-of-goods-sold');
-        // dd(new ItemResource($item));
+        $costAccounts = $accountModel->getAccountsByAccountTypeSlug('cost-of-goods-sold'); 
         return inertia('Inventories/Items/Edit', [
             'item' => new ItemResource($item),
             'otherCurrentAssetsAccounts' => $otherCurrentAssetsAccounts,

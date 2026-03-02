@@ -325,7 +325,7 @@ const handleSubmitAction = (createAndNew = false) => {
 
     form
         .transform(transformFn)
-        .post(route('items.warehouse'), postOptions);
+        .post(route('items.store'), postOptions);
 };
 
 const handleCancel = () => {
@@ -606,7 +606,7 @@ const generateBarcode = () => {
                             :model-value="form.is_expiry_tracked"
                             @update:model-value="(v) => form.is_expiry_tracked = v"
                         />
-                    </div>
+                    </div> 
                 </div>
             </div>
 

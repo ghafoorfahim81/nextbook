@@ -10,8 +10,8 @@ import { useI18n } from 'vue-i18n'
 import JsBarcode from 'jsbarcode'
 
 const props = defineProps({
-  modelValue: { type: Boolean, default: false },
-  item: { type: Object, required: true },
+  modelValue: { type: Boolean, default: false }, 
+  item_id: { type: String, required: true },
 })
 const emit = defineEmits(['update:modelValue'])
 const { t } = useI18n()
@@ -24,40 +24,40 @@ const inHasMore = ref(true)
 const outHasMore = ref(true)
 const loading = ref(false)
 const itemBarcodeSvg = ref(null)
-
+const item = ref(null)
 const currentRecords = computed(() =>
   activeTab.value === 'in' ? inRecords.value : outRecords.value
 )
 
-console.log(props.item.created_by)
+console.log(item.value)
 const itemDetails = computed(() => [
-  { label: t('general.name'), value: props.item?.name, icon: Package },
-  { label: t('item.code'), value: props.item?.code, icon: Hash },
-  { label: t('item.generic_name'), value: props.item?.generic_name, icon: Pill },
-  { label: t('item.packing'), value: props.item?.packing, icon: Box },
-  { label: t('item.barcode'), value: props.item?.barcode, icon: Barcode },
-  { label: t('item.sku'), value: props.item?.sku, icon: Barcode },
-  { label: t('item.item_type'), value: props.item?.item_type, icon: Tag },
-  { label: t('item.unit_measure'), value: props.item?.measure, icon: Ruler },
-  { label: t('item.brand'), value: props.item?.brand_name, icon: Tag },
-  { label: t('item.category'), value: props.item?.category, icon: Layers },
-  { label: t('item.asset_account'), value: props.item?.asset_account?.name, icon: Building },
-  { label: t('item.income_account'), value: props.item?.income_account?.name, icon: TrendingUp },
-  { label: t('item.cost_account'), value: props.item?.cost_account?.name, icon: TrendingDown },
-  { label: t('item.maximum_stock'), value: props.item?.maximum_stock, icon: TrendingUp },
-  { label: t('item.current_stock'), value: props.item?.on_hand || 0, icon: Target },
-  { label: t('item.colors'), value: props.item?.colors, icon: Palette },
-  { label: t('item.size'), value: props.item?.size?.name, icon: Ruler },
-  { label: t('item.purchase_price'), value: props.item?.purchase_price, icon: DollarSign },
-  { label: t('item.cost'), value: props.item?.cost, icon: DollarSign },
-  { label: t('item.sale_price'), value: props.item?.sale_price, icon: DollarSign },
-  { label: t('item.rate_a'), value: props.item?.rate_a, icon: DollarSign },
-  { label: t('item.rate_b'), value: props.item?.rate_b, icon: DollarSign },
-  { label: t('item.rate_c'), value: props.item?.rate_c, icon: DollarSign },
-  { label: t('item.rack_no'), value: props.item?.rack_no, icon: MapPin },
-  { label: t('item.fast_search'), value: props.item?.fast_search, icon: Search },
-  { label: t('general.created_by'), value: props.item?.created_by?.name || '—', icon: User },
-  { label: t('general.updated_by'), value: props.item?.updated_by?.name || '—', icon: User },
+  { label: t('general.name'), value: item.value?.name, icon: Package },
+  { label: t('item.code'), value: item.value?.code, icon: Hash },
+  { label: t('item.generic_name'), value: item.value?.generic_name, icon: Pill },
+  { label: t('item.packing'), value: item.value?.packing, icon: Box },
+  { label: t('item.barcode'), value: item.value?.barcode, icon: Barcode },
+  { label: t('item.sku'), value: item.value?.sku, icon: Barcode },
+  { label: t('item.item_type'), value: item.value?.item_type, icon: Tag },
+  { label: t('item.unit_measure'), value: item.value?.measure, icon: Ruler },
+  { label: t('item.brand'), value: item.value?.brand_name, icon: Tag },
+  { label: t('item.category'), value: item.value?.category, icon: Layers },
+  { label: t('item.asset_account'), value: item.value?.asset_account?.name, icon: Building },
+  { label: t('item.income_account'), value: item.value?.income_account?.name, icon: TrendingUp },
+  { label: t('item.cost_account'), value: item.value?.cost_account?.name, icon: TrendingDown },
+  { label: t('item.maximum_stock'), value: item.value?.maximum_stock, icon: TrendingUp },
+  { label: t('item.current_stock'), value: item.value?.on_hand || 0, icon: Target },
+  { label: t('item.colors'), value: item.value?.colors, icon: Palette },
+        { label: t('item.size'), value: item.value?.size?.name, icon: Ruler },
+  { label: t('item.purchase_price'), value: item.value?.purchase_price, icon: DollarSign },
+  { label: t('item.cost'), value: item.value?.cost, icon: DollarSign },
+  { label: t('item.sale_price'), value: item.value?.sale_price, icon: DollarSign },
+  { label: t('item.rate_a'), value: item.value?.rate_a, icon: DollarSign },
+  { label: t('item.rate_b'), value: item.value?.rate_b, icon: DollarSign },
+  { label: t('item.rate_c'), value: item.value?.rate_c, icon: DollarSign },
+  { label: t('item.rack_no'), value: item.value?.rack_no, icon: MapPin },
+  { label: t('item.fast_search'), value: item.value?.fast_search, icon: Search },
+  { label: t('general.created_by'), value: item.value?.created_by?.name || '—', icon: User },
+  { label: t('general.updated_by'), value: item.value?.updated_by?.name || '—', icon: User },
 ])
 
 const close = () => emit('update:modelValue', false)
@@ -77,8 +77,20 @@ onMounted(() => {
     loadMore()
   }
 })
+
+const fetchItem = async () => {
+  const res = await axios.get(`/items/${props.item_id}`)
+  item.value = res.data.data
+  return res.data.data
+}
+watch(item.value, () => { 
+  if (props.modelValue && props.item_id) {
+    fetchItem()
+  }
+}, { immediate: true })
+
 const fetchRecords = async (type, page) => {
-  const res = await axios.get(`/items/${props.item.id}/${type}-records`, {
+  const res = await axios.get(`/items/${props.item_id}/${type}-records`, {
     params: { page, per_page: 10 },
   })
   return {
@@ -123,7 +135,7 @@ const switchTab = (tab) => {
 }
 
 const renderItemBarcode = async (retries = 4) => {
-  const barcode = props.item?.barcode
+  const barcode = item.value?.barcode
   if (!barcode) return
 
   await nextTick()
@@ -158,7 +170,7 @@ watch(
 )
 
 watch(
-  () => props.item?.barcode,
+  () => item.value?.barcode,
   () => {
     if (props.modelValue) renderItemBarcode()
   },
@@ -312,7 +324,7 @@ watch(
                 <th class="py-3 px-3 text-left rtl:text-right whitespace-nowrap">{{ t('item.batch') }}</th>
                 <th class="py-3 px-3 text-left rtl:text-right whitespace-nowrap">{{ t('item.expire_date') }}</th>
                 <th class="py-3 px-3 text-right rtl:text-right whitespace-nowrap">{{ t('general.unit_price') }}</th>
-                <th class="py-3 px-3 text-left rtl:text-right whitespace-nowrap">{{ t('admin.store.store') }}</th>
+                <th class="py-3 px-3 text-left rtl:text-right whitespace-nowrap">{{ t('admin.warehouse.warehouse') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -334,10 +346,10 @@ watch(
                   {{ row.quantity }}
                 </td>
                 <td class="py-3 px-3 align-middle whitespace-nowrap text-muted-foreground">
-                  {{ row.source_type }}
+                  {{ row.source }}
                 </td>
                 <td class="py-3 px-3 align-middle whitespace-nowrap text-muted-foreground">
-                  {{ row.measure_unit }}
+                  {{ row.unit_measure_name }}
                 </td>
                 <td class="py-3 px-3 align-middle whitespace-nowrap text-muted-foreground">
                   {{ row.date }}
@@ -346,13 +358,13 @@ watch(
                   {{ row.batch || '—' }}
                 </td>
                 <td class="py-3 px-3 align-middle whitespace-nowrap text-muted-foreground">
-                  {{ row.expiry || '—' }}
+                  {{ row.expire_date || '—' }}
                 </td>
                 <td class="py-3 px-3 text-right align-middle whitespace-nowrap font-semibold text-foreground">
-                  {{ row.unit_price }}
+                  {{ row.unit_cost }}
                 </td>
                 <td class="py-3 px-3 align-middle whitespace-nowrap text-muted-foreground">
-                  {{ row.store }}
+                  {{ row.warehouse_name }}
                 </td>
               </tr>
 
