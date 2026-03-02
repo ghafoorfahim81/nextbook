@@ -28,7 +28,7 @@ const columns = computed(() => ([
 
 const { deleteResource } = useDeleteResource()
 const showInventory = ref(false)
-const selectedItem = ref(null)
+const itemId = ref(null)
 
 const editItem = (item) => {
   router.visit(route('items.edit', item.id));
@@ -43,9 +43,7 @@ const deleteItem = (id) => {
 }
 
 const openInventory = (id) => {
-  const item = props.items?.data?.find((row) => row.id === id)
-  if (!item) return
-  selectedItem.value = item
+  itemId.value = id
   showInventory.value = true
 }
 
@@ -113,9 +111,9 @@ const filterFields = computed(() => ([
     />
 
     <ItemInventoryModal
-      v-if="selectedItem"
+      v-if="itemId"
       v-model="showInventory"
-      :item="selectedItem"
+      :item_id="itemId"
     />
   </AppLayout>
 </template>

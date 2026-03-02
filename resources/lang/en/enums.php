@@ -86,6 +86,8 @@ return [
         'sale_return' => 'Sale Return',
         'stock_adjustment' => 'Stock Adjustment',
         'item_transfer' => 'Item Transfer',
+        'adjustment' => 'Adjustment',
+        'opening' => 'Opening',
     ],
     'costing_method' => [
         'fifo' => 'FIFO',

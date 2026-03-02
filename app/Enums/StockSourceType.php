@@ -10,7 +10,7 @@ enum StockSourceType: string
     case SALE_RETURN = 'sale_return';
     case STOCK_ADJUSTMENT = 'stock_adjustment';
     case ITEM_TRANSFER = 'item_transfer';
-
+    case ADJUSTMENT = 'adjustment';
     case OPENING       = 'opening';
 
 
@@ -23,7 +23,8 @@ enum StockSourceType: string
             self::SALE_RETURN => __('enums.stock_source_type.sale_return'),
             self::STOCK_ADJUSTMENT => __('enums.stock_source_type.stock_adjustment'),
             self::ITEM_TRANSFER => __('enums.stock_source_type.item_transfer'),
-            
+            self::ADJUSTMENT => __('enums.stock_source_type.adjustment'),
+            self::OPENING => __('enums.stock_source_type.opening'),
         };
     }
 

@@ -21,6 +21,7 @@ use App\Models\Inventory\StockBalance;
 use App\Traits\HasUserTracking;
 use App\Models\Transaction\Transaction;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Enums\StockSourceType;
 class Item extends Model
 {
     use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasBranch, BranchSpecific, HasDependencyCheck, SoftDeletes;
@@ -168,7 +169,7 @@ class Item extends Model
 
     public function openings()
     {
-        return $this->hasMany(StockOpening::class, 'item_id', 'id');
+        return $this->hasMany(StockMovement::class, 'item_id', 'id')->where('source', StockSourceType::OPENING->value);
     }
 
     public function stockOut()
@@ -202,7 +203,7 @@ class Item extends Model
 
     public function onHand(): string
     {
-        return (string) $this->stockBalances()->sum('quantity');
+        return $this->stockBalances()->sum('quantity');
     }
     public function onHandByStore(string $storeId): string
     {
@@ -213,7 +214,7 @@ class Item extends Model
 
     public function avgCost()
     {
-        return (string) $this->stockBalances()->avg('average_cost');
+        return  $this->stockBalances()->avg('average_cost');
     }
     // public function inRecords()
     // {

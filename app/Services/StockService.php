@@ -15,12 +15,12 @@ class StockService
      * Entry point
      */
     public function post(array $data): void
-    {
+    { 
         DB::transaction(function () use ($data) {
 
             $item = Item::lockForUpdate()->findOrFail($data['item_id']);
 
-            if ($data['movement_type'] === 'IN') {
+            if ($data['movement_type'] === 'in') {
                 $this->handleIn($item, $data);
             } else {
                 $this->handleOut($item, $data);
@@ -118,7 +118,7 @@ class StockService
         $balance = StockBalance::query()
             ->where('branch_id', $data['branch_id'])
             ->where('item_id', $data['item_id'])
-            ->where('warehous_id', $data['warehous_id'])
+            ->where('warehouse_id', $data['warehouse_id'])
             ->lockForUpdate()
             ->firstOrFail();
 
@@ -133,13 +133,14 @@ class StockService
      * Increase Balance
      */
     protected function increaseBalance(array $data): void
-    {
+    { 
         $balance = StockBalance::firstOrCreate(
             [
                 'branch_id' => $data['branch_id'],
                 'item_id' => $data['item_id'],
-                'warehous_id' => $data['warehous_id'],
+                'warehouse_id' => $data['warehouse_id'],
                 'batch' => $data['batch'] ?? null,
+                'expire_date' => $data['expire_date'] ?? null,
             ],
             [
                 'quantity' => 0,
@@ -170,7 +171,7 @@ class StockService
         $balance = StockBalance::query()
             ->where('branch_id', $data['branch_id'])
             ->where('item_id', $data['item_id'])
-            ->where('warehous_id', $data['warehous_id'])
+            ->where('warehouse_id', $data['warehouse_id'])
             ->lockForUpdate()
             ->firstOrFail();
 
@@ -221,7 +222,7 @@ class StockService
         $balance = StockBalance::query()
             ->where('branch_id', $data['branch_id'])
             ->where('item_id', $data['item_id'])
-            ->where('warehous_id', $data['warehous_id'])
+            ->where('warehouse_id', $data['warehouse_id'])
             ->first();
 
         if (!$balance || $balance->quantity < $data['quantity']) {
@@ -236,7 +237,6 @@ class StockService
      */
     protected function getCostingMethod(string $branchId): string
     {
-        return InventorySetting::where('branch_id', $branchId)
-            ->value('costing_method') ?? 'fifo';
+        return auth()->user()->company->costing_method;
     }
 }

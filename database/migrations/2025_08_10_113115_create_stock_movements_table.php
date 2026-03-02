@@ -5,6 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use App\Enums\StockSourceType;
 use App\Enums\StockMovementType;
+use App\Enums\StockStatus;
 return new class extends Migration
 {
     /**
@@ -27,14 +28,14 @@ return new class extends Migration
 
             $table->string('batch')->nullable();
             $table->date('expire_date')->nullable();
-
+            $table->enum('status', StockStatus::values())->default(StockStatus::DRAFT->value);
             $table->date('date'); // NOT NULL
 
             $table->decimal('quantity', 18, 4);
             $table->decimal('unit_cost', 18, 4);
             $table->decimal('qty_remaining', 18, 4)->nullable();
 
-            $table->ulidMorphs('reference');
+            $table->nullableUlidMorphs('reference');
 
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();

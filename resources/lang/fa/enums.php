@@ -87,6 +87,8 @@ return [
         'sale_return' => 'برگشت فروش',
         'stock_adjustment' => 'تعدیل انبار',
         'item_transfer' => 'ترجمه مورد',
+        'adjustment' => 'تعدیل',
+        'opening' => 'موجودی اولیه',
     ],
     'costing_method' => [
         'fifo' => 'اولین ورود اولین خروج',

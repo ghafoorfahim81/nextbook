@@ -48,7 +48,7 @@ final class LookupShared
             CacheKey::forCompanyBranchLocale($request, 'categories'),
             $cacheDuration,
             fn() => CategoryResource::collection(
-                Category::query()->where('is_active', true)->orderBy('id')->limit(10)->get()
+                Category::query()->orderBy('id')->limit(10)->get()
             )
         );
 
@@ -64,7 +64,7 @@ final class LookupShared
             CacheKey::forCompanyBranchLocale($request, 'currencies'),
             $cacheDuration,
             fn() => CurrencyResource::collection(
-                Currency::query()->where('is_active', true)->orderBy('id')->get()
+                Currency::query()->orderBy('id')->get()
             )
         );
 
@@ -72,7 +72,7 @@ final class LookupShared
             CacheKey::forCompanyBranchLocale($request, 'warehouses'),
             $cacheDuration,
             fn() => WarehouseResource::collection(
-                Warehouse::query()->where('is_active', true)->orderBy('id')->limit(10)->get()
+                Warehouse::query()->orderBy('id')->limit(10)->get()
             )
         );
 
@@ -88,7 +88,7 @@ final class LookupShared
             CacheKey::forCompanyBranchLocale($request, 'unit_measures'),
             $cacheDuration,
             fn() => UnitMeasureResource::collection(
-                UnitMeasure::query()->where('is_active', true)->orderBy('id')->limit(1000)->get()
+                UnitMeasure::query()->orderBy('id')->limit(1000)->get()
             )
         );
 
@@ -96,7 +96,7 @@ final class LookupShared
             CacheKey::forCompanyBranchLocale($request, 'sizes'),
             $cacheDuration,
             fn() => SizeResource::collection(
-                Size::query()->where('is_active', true)->orderBy('id')->limit(10)->get()
+                Size::query()->orderBy('id')->limit(10)->get()
             )
         );
 
