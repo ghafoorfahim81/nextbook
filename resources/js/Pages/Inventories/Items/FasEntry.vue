@@ -174,7 +174,7 @@ const handleSubmit = () => {
     }))
 
     const itemCount = normalizedItems.length;
-        form.post(route('item.fast.warehouse'), {
+        form.post(route('item.fast.store'), {
         preserveScroll: true,
         // preserveState: true, // optional
         onSuccess: () => {
