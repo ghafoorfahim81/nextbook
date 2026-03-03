@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\StockStatus;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
@@ -141,6 +142,7 @@ class StockService
                 'warehouse_id' => $data['warehouse_id'],
                 'batch' => $data['batch'] ?? null,
                 'expire_date' => $data['expire_date'] ?? null,
+                'status' => $data['status'] ?? StockStatus::DRAFT->value,
             ],
             [
                 'quantity' => 0,

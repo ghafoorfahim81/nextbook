@@ -8,6 +8,7 @@
             v-model="model"
             :step="step"
             :disabled="disabled"
+            :readonly="readonly"
             :autocomplete="autocomplete"
             :placeholder="placeholder"
             @click="handleClick"
@@ -49,6 +50,7 @@ const props = defineProps({
     type: { type: String, default: 'text' },
     disabled: Boolean,
     isRequired: Boolean,
+    readonly: { type: Boolean, default: false },
     autocomplete: { type: String, default: 'off' },
     error: String,
     step: { type: String, default: 'any' },

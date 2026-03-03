@@ -30,8 +30,10 @@ use App\Models\Administration\Size;
 use App\Models\User;
 use App\Enums\StockSourceType;
 use App\Enums\StockMovementType;
+use App\Enums\StockStatus;
 use App\Http\Resources\Inventory\StockMovementResource;
 use App\Models\Inventory\StockMovement;
+use App\Models\Inventory\StockBalance;
 class ItemController extends Controller
 {
     public function __construct()
@@ -118,22 +120,15 @@ class ItemController extends Controller
                         'unit_measure_id' => $validated['unit_measure_id'], // from item form
                         'quantity'        => (float) $o['quantity'],
                         'source'          => StockSourceType::OPENING->value,
-                        'unit_cost'      => (float) $o['unit_price'],
-
+                        'unit_cost'       => (float) $o['unit_price'],
+                        'status'          => StockStatus::DRAFT->value,
                         'batch'           => $o['batch'] ?? null,
                         'date'            => $date,
                         'expire_date'     => $expire_date,
                         'size_id'         => $validated['size_id'] ?? null,
                         'warehouse_id'    => $o['warehouse_id'],
                         'branch_id'       => auth()->user()->company->branch_id, 
-                    ]);
-
-                    // mark it as an opening
-                    // StockOpening::create([
-                    //     'id'      => (string) Str::ulid(),
-                    //     'item_id' => $item->id,
-                    //     'stock_id' => $stock->id,
-                    // ]);
+                    ]); 
                 });
                 // Create opening transactions
                 if ($openings->filter(function ($o) {
@@ -173,10 +168,6 @@ class ItemController extends Controller
                         })],
                         ]
                       );
-                    // ItemOpeningTransaction::create([
-                    //     'id' => (string) Str::ulid(),
-                    //     'item_id' => $item->id,
-                    // ]);
                 }
 
         });
@@ -250,7 +241,7 @@ class ItemController extends Controller
 
     public function update(ItemUpdateRequest $request, Item $item)
     {
-        $validated = $request->validated();
+        $validated = $request->validated(); 
         // Handle photo update
         // dd($request->all());
         if ($request->hasFile('photo')) {
@@ -267,51 +258,53 @@ class ItemController extends Controller
             $date =   $dateConversionService->toGregorian(Carbon::now()->toDateString());
             $transactionService = app(\App\Services\TransactionService::class);
             // Remove old openings (optional: you may also soft-delete instead)
-            $item->openings->each(function ($opening) {
+            $itemOpening = StockMovement::where('item_id', $item->id)
+                ->where('source', StockSourceType::OPENING->value)
+                ->where('status', StockStatus::DRAFT->value)
+                ->get(); 
+            $itemOpening->each(function ($opening) {
+                $stockBalance = StockBalance::where('item_id', $opening->item_id)
+                ->where('warehouse_id', $opening->warehouse_id)
+                ->where('status', StockStatus::DRAFT->value)
+                ->orWhere('batch', $opening->batch)
+                ->orWhere('expire_date', $opening->expire_date)->first();
+
+                if($stockBalance) { 
+                    if($stockBalance->quantity == $opening->quantity) { 
+                        $stockBalance->forceDelete();
+                    }
+                    else{
+                        $stockBalance->decrement('quantity', $opening->quantity);
+                    }
+                } 
                 $opening->forceDelete();
-                $opening->stock()->forceDelete();
             });
             $openings
-                ->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0)
+                ->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0 && $o['status'] == StockStatus::DRAFT->value)
                 ->each(function ($o) use ($item, $validated, $dateConversionService, $date) {
-
-                    $expire_date = $o['expire_date'] ? $dateConversionService->toGregorian($o['expire_date']) : null;
                     $stockService = app(\App\Services\StockService::class);
-                    $stock = $stockService->addStock([
-                        'item_id' => $item->id,
+                    $expire_date = $o['expire_date'] ? $dateConversionService->toGregorian($o['expire_date']) : null;
+                    
+                    $stock = $stockService->post([
+                        'item_id'         => $item->id,
+                        'movement_type'   => StockMovementType::IN->value,
                         'unit_measure_id' => $validated['unit_measure_id'], // from item form
                         'quantity'        => (float) $o['quantity'],
-                        'unit_price'      => (float) $o['unit_price'],
-                        'free'            => isset($o['free']) ? (float) $o['free'] : null,
+                        'source'          => StockSourceType::OPENING->value,
+                        'unit_cost'       => (float) $o['unit_price'],
+                        'status'          => StockStatus::DRAFT->value,
                         'batch'           => $o['batch'] ?? null,
                         'date'            => $date,
                         'expire_date'     => $expire_date,
                         'size_id'         => $validated['size_id'] ?? null,
-                    ], $o['warehouse_id'], 'opening', $item->id, $date);
-
-                    StockOpening::create([
-                        'id'      => (string) Str::ulid(),
-                        'item_id' => $item->id,
-                        'stock_id' => $stock->id,
+                        'warehouse_id'    => $o['warehouse_id'],
+                        'branch_id'       => auth()->user()->company->branch_id, 
                     ]);
+                     
                 });
 
                 // Delete opening stocks
-                $filteredOpenings = $openings->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0);
-                if ($filteredOpenings->count() == 0 && $item->openings()->count() > 0) {
-                    $item->openings()->each(function ($opening) {
-                        $opening->forceDelete();
-                        $opening->stock->forceDelete();
-                    });
-
-                    // Delete opening transactions
-                    $openingTransaction = $item->openingTransaction()->first();
-                        // Then safely delete the related transactions
-                        if ($openingTransaction) {
-                            TransactionLine::where('transaction_id', $openingTransaction->id)->forceDelete();
-                            Transaction::where('id', $openingTransaction->id)->forceDelete();
-                        }
-                }
+                $filteredOpenings = $openings->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0); 
 
                 $openingTransaction = $item->openingTransaction()->first();
                     if ($openingTransaction) {
@@ -379,12 +372,34 @@ class ItemController extends Controller
 
             DB::transaction(function () use ($item) {
                 // Delete openings with their stocks (with existence checks)
-                $item->openings()->with('stock')->each(function ($opening) {
-                    if ($opening->stock) {
-                        $opening->stock->delete();
+
+                $stockMovement = StockMovement::where('item_id', $item->id) 
+                ->where('status', StockStatus::POSTED->value)
+                ->get();
+                if($stockMovement->count() > 0) {
+                    return redirect()->back()->with([
+                        'error' => __('general.cannot_delete_item_with_posted_stock_movements'),
+                        'title' => __('general.posted_stock_movements_found'),
+                    ]);
+                }
+                else{
+                    $stockMovement = StockMovement::where('item_id', $item->id) 
+                    ->where('status', StockStatus::DRAFT->value)
+                    ->get();
+                    if($stockMovement->count() > 0) {
+                        $stockMovement->each(function ($movement) {
+                            $movement->delete();
+                        });
                     }
-                    $opening->delete();
-                });
+                    $stockBalance = StockBalance::where('item_id', $item->id) 
+                    ->where('status', StockStatus::DRAFT->value)
+                    ->get();
+                    if($stockBalance->count() > 0) {
+                        $stockBalance->each(function ($balance) {
+                            $balance->delete();
+                        });
+                    }
+                } 
 
                 // Delete opening transactions with their related models
                 $openingTransaction = $item->openingTransaction()->first();
@@ -418,24 +433,16 @@ class ItemController extends Controller
             DB::transaction(function () use ($item) {
                 // Restore the main item first
                 $item->restore();
-
-                // Restore openings with their stocks (only trashed records)
-                $item->openings()->with(['stock' => function ($query) {
-                    $query->withTrashed();
-                }])->withTrashed()->each(function ($opening) {
-                    if ($opening->stock) {
-                        $opening->stock->restore();
-                    }
-                    $opening->restore();
-                });
+                $item->stocks()->withTrashed()->restore();
+                $item->stockBalances()->withTrashed()->restore(); 
 
                 // Restore opening transactions with their related models
-                $openingTransaction = $item->openingTransaction()->first();
+                $openingTransaction = $item->openingTransaction()->withTrashed()->first();
                     if ($openingTransaction) {
                         // Then safely delete the related transactions
                         if ($openingTransaction->id) {
-                            TransactionLine::where('transaction_id', $openingTransaction->id)->restore();
-                            Transaction::where('id', $openingTransaction->id)->restore();
+                            $openingTransaction->lines()->withTrashed()->restore();
+                            $openingTransaction->restore();
                         }
                     }
             });

@@ -65,5 +65,7 @@ return [
     'cheque_no' => 'Cheque No',
     'narration' => 'Narration',
     'dependencies_found' => 'Cannot delete this record because it has dependencies. Please delete those records first.',
+    'cannot_delete_item_with_posted_stock_movements' => 'Cannot delete item with posted stock movements.',
+    'posted_stock_movements_found' => 'Posted stock movements found.',
 ];
 

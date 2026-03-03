@@ -52,5 +52,15 @@
     "is_batch_tracked": "Batch Tracked",
     "is_batch_tracked_desc": "Enable batch tracking for the item.",
     "is_expiry_tracked": "Expiry Tracked",
-    "is_expiry_tracked_desc": "Enable expiry tracking for the item."
+    "is_expiry_tracked_desc": "Enable expiry tracking for the item.",
+    "opening_lock_warning": "Opening Lock Warning",
+    "opening_lock_warning_description": "Some of the openings of this item are locked. Because this records are already in use and you can't edit them.",
+    "opening_warning": "Opening Warning",
+    "opening_key_points": "Opening key Points",
+    "opening_warning_description": "Be careful to enter real opening quantities. If you enter wrong quantities, you can't edit them after they are used.",
+    "opening_key_points_1": "Be careful to enter real opening quantities.",
+    "opening_key_points_2": "If you enter wrong quantities, you can't edit them after they are used.",
+    "opening_key_points_3": "Be careful to select the correct warehouse.",
+    "batch_warning": "If you enable batch tracking, you can't edit it once it is created.",
+    "expiry_warning": "If you enable expiry tracking, you can't edit it once it is created."
 }
