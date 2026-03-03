@@ -90,7 +90,7 @@ class CustomerController extends Controller
         $transactionService = app(TransactionService::class);
         if ($validated['opening_currency_id'] && $validated['amount'] && $validated['amount'] > 0) {
 
-            $arId = $glAccounts['accounts-receivable'];
+            $arId = $glAccounts['account-receivable'];
             $equityId = $glAccounts['opening-balance-equity'];
 
             abort_unless($arId && $equityId, 500, 'System accounts (AR/AP) are missing.');
