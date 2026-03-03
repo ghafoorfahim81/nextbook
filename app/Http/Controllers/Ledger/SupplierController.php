@@ -141,8 +141,8 @@ class SupplierController extends Controller
         ]);
 
         $purchases = $supplier->purchases->load('transaction.currency');
-        $receipts = $supplier->receipts->load('receiveTransaction.currency');
-        $payments = $supplier->payments->load('bankTransaction.currency');
+        $receipts = $supplier->receipts->load('transaction.currency');
+        $payments = $supplier->payments->load('transaction.currency');
         if ($request->expectsJson()) {
             return response()->json([
                 'supplier' => new LedgerResource($supplier),

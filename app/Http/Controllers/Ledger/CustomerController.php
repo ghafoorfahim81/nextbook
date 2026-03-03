@@ -141,8 +141,8 @@ class CustomerController extends Controller
         ]);
 
         $sales = $customer->sales->load('transaction.currency');
-        $receipts = $customer->receipts->load('receiveTransaction.currency');
-        $payments = $customer->payments->load('bankTransaction.currency');
+        $receipts = $customer->receipts->load('transaction.currency');
+        $payments = $customer->payments->load('transaction.currency');
         if ($request->expectsJson()) {
             return response()->json([
                 'customer' => new LedgerResource($customer),
