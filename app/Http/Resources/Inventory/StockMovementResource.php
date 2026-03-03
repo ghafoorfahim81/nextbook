@@ -23,6 +23,7 @@ class StockMovementResource extends JsonResource
             'warehouse_id' => $this->warehouse_id,
             'batch' => $this->batch,
             'source' => $this->source?->getLabel() ?? null,
+            'status' => $this->status,
             'movement_type' => $this->movement_type?->getLabel() ?? null,
             'quantity' => (new DecimalNumberFormat())->removeTrailingDecimalZeros($this->quantity),
             'unit_cost' => $this->unit_cost,

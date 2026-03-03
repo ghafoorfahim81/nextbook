@@ -9,6 +9,7 @@ use App\Traits\HasUserAuditable;
 use App\Traits\BranchSpecific;
 use App\Traits\HasBranch;
 use App\Models\Administration\Branch;
+use App\Enums\StockStatus;
 class StockBalance extends Model
 {
     use HasUlids, SoftDeletes, HasUserAuditable, BranchSpecific, HasBranch;
@@ -21,6 +22,7 @@ class StockBalance extends Model
         'quantity',
         'average_cost',
         'warehouse_id',
+        'status',
         'batch',
         'expire_date',
         'created_by',
@@ -35,6 +37,7 @@ class StockBalance extends Model
         'warehouse_id' => 'string',
         'batch' => 'string',
         'expire_date' => 'date',
+        'status' => StockStatus::class,
         'created_by' => 'string',
         'updated_by' => 'string',
     ];

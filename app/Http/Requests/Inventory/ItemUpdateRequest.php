@@ -54,6 +54,7 @@ class ItemUpdateRequest extends FormRequest
             'openings.*.expire_date' => ['nullable', 'date'],
             'openings.*.quantity' => ['nullable', 'numeric'],
             'openings.*.unit_price' => ['nullable', 'numeric','required_with:openings.*.quantity>0'],
+            'openings.*.status' => ['nullable', 'string'],
             'openings.*.warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
         ];
     }

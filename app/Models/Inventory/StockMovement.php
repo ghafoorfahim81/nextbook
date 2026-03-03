@@ -12,6 +12,7 @@ use App\Traits\BranchSpecific;
 use App\Traits\HasBranch;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
+use App\Enums\StockStatus;
 class StockMovement extends Model
 {
     use HasUlids, SoftDeletes, HasUserAuditable, BranchSpecific, HasBranch,BranchSpecific;
@@ -34,6 +35,7 @@ class StockMovement extends Model
         'created_by' => 'string',
         'quantity' => 'decimal:4',
         'unit_cost' => 'decimal:4',
+        'status' => StockStatus::class,
         'qty_remaining' => 'decimal:4',
         'batch' => 'string',
         'expire_date' => 'date',
@@ -61,6 +63,7 @@ class StockMovement extends Model
         'created_by',
         'updated_by',
         'deleted_by',
+        'status',
     ];
 
     public function item()

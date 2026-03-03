@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\StockStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -19,7 +20,7 @@ return new class extends Migration
 
             $table->string('batch')->nullable();
             $table->date('expire_date')->nullable();
-
+            $table->enum('status', StockStatus::values())->default(StockStatus::DRAFT->value);
             $table->decimal('quantity', 18, 4);
             $table->decimal('average_cost', 18, 4)->nullable();
             $table->ulid('branch_id')->index();

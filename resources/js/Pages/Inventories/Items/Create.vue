@@ -10,13 +10,18 @@ import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import JsBarcode from 'jsbarcode'
-import { Info, RefreshCw, Trash2 } from 'lucide-vue-next'
+import { Info, RefreshCw, Trash2, AlertCircleIcon } from 'lucide-vue-next'
 import { Switch } from '@/Components/ui/switch'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/Components/ui/popover'
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@/Components/ui/alert'
 const barcodeSvg = ref(null)
 const isBarcodePopoverOpen = ref(false)
 const { t } = useI18n()
@@ -609,54 +614,74 @@ const generateBarcode = () => {
                     </div> 
                 </div>
             </div>
-
-                <div class="md:col-span-4 mt-4">
-                    <div class="pt-2">
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold">{{ t('item.opening') }}</span>
+            <div class="mt-2">
+                <div class="w-full flex justify-center items-center  w-3/4">
+                    <div class="w-full">
+                        <Alert variant="destructive">
+                            <div class="flex items-center gap-2">
+                                <AlertCircleIcon class="w-4 h-4 text-orange-500" />
+                                <AlertTitle class="text-orange-500">{{ t('item.opening_key_points') }}</AlertTitle>
+                            </div>
+                            <AlertDescription class="mx-2 text-orange-500 mt-2"> 
+                                <ul class=" list-inside list-disc space-y-1">
+                                    <li>{{ t('item.opening_key_points_1') }}</li>
+                                    <li>{{ t('item.opening_key_points_2') }}</li>
+                                    <li>{{ t('item.opening_key_points_3') }}</li>
+                                    <li v-show="form.is_batch_tracked">{{ t('item.batch_warning') }}</li>
+                                    <li v-show="form.is_expiry_tracked">{{ t('item.expiry_warning') }}</li>
+                                </ul>
+                            </AlertDescription>
+                        </Alert>
+                    </div>
+                </div>
+            </div>
+            <div class="md:col-span-4 mt-4">
+                <div class="pt-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold">{{ t('item.opening') }}</span>
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary px-3"
+                            @click="addOpeningRow"
+                        >
+                            + {{ t('general.add', { title: t('item.opening') }) }}
+                        </button>
+                    </div>
+                    <div
+                        v-for="(opening, index) in form.openings"
+                        :key="index"
+                        class="mt-3 grid grid-cols-1 md:grid-cols-6 gap-4 items-start"
+                    >
+                        <NextInput v-show="form.is_batch_tracked" :label="specText?? t('item.batch')" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
+                        <NextDate v-show="form.is_expiry_tracked" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+                        <NextInput :label="t('item.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
+                        <NextInput :label="t('general.unit_price')" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
+                        <NextSelect
+                            v-model="opening.selected_warehouse"
+                            :options="warehouses"
+                            label-key="name"
+                            @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
+                            value-key="id"
+                            id="warehouse_id"
+                            :floating-text="t('admin.warehouse.warehouse')"
+                            :error="form.errors[`openings.${index}.warehouse_id`]"
+                            :searchable="true"
+                            resource-type="warehouses"
+                            :search-fields="['name', 'address']"
+                        />
+                        <div  class="mt-2" v-if="form.openings.length > 1">
                             <button
                                 type="button"
-                                class="btn btn-sm btn-outline-primary px-3"
-                                @click="addOpeningRow"
+                                class="btn btn-sm btn-outline-danger px-3"
+                                @click="removeRow(index)"
                             >
-                                + {{ t('general.add', { title: t('item.opening') }) }}
+                                <Trash2 class="w-4 h-4 text-fuchsia-800 hover:cursor-pointer" />
                             </button>
-                        </div>
-                        <div
-                            v-for="(opening, index) in form.openings"
-                            :key="index"
-                            class="mt-3 grid grid-cols-1 md:grid-cols-6 gap-4 items-start"
-                        >
-                            <NextInput v-show="form.is_batch_tracked" :label="specText?? t('item.batch')" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
-                            <NextDate v-show="form.is_expiry_tracked" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
-                            <NextInput :label="t('item.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
-                            <NextInput :label="t('general.unit_price')" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
-                            <NextSelect
-                                v-model="opening.selected_warehouse"
-                                :options="warehouses"
-                                label-key="name"
-                                @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
-                                value-key="id"
-                                id="warehouse_id"
-                                :floating-text="t('admin.warehouse.warehouse')"
-                                :error="form.errors[`openings.${index}.warehouse_id`]"
-                                :searchable="true"
-                                resource-type="warehouses"
-                                :search-fields="['name', 'address']"
-                            />
-                            <div  class="mt-2" v-if="form.openings.length > 1">
-                                <button
-                                    type="button"
-                                    class="btn btn-sm btn-outline-danger px-3"
-                                    @click="removeRow(index)"
-                                >
-                                    <Trash2 class="w-4 h-4 text-fuchsia-800 hover:cursor-pointer" />
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
 
             <SubmitButtons
                 :create-label="t('general.create')"

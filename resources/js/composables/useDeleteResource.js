@@ -99,7 +99,7 @@ export function useDeleteResource() {
                                     errorMessage.includes('used in')
                             }
 
-                            toast.error(errorMessage, {
+                            toast.error(errorMessage?.title ? errorMessage.title : errorMessage, {
                                 description: errorMessage,
                                 className: 'bg-pink-600 text-white',
                                 duration: isDependencyError ? 10000 : 7000,

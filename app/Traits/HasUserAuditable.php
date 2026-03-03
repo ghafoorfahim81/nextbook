@@ -2,7 +2,6 @@
 
 namespace App\Traits;
 
-// use Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\Uid\Ulid;
@@ -21,21 +20,34 @@ trait HasUserAuditable
                 'preferences' => User::DEFAULT_PREFERENCES,
             ]);
         }
-        $user = Auth::user()??$adminUser;
-        static::creating(function ($model) use ($user) {
-            $model->created_by =  $user->id ?? null;
+
+        static::creating(function ($model) use ($adminUser) {
+            $user = Auth::user() ?? $adminUser;
+            $model->created_by = $user->id ?? null;
         });
 
-        static::updating(function ($model) use ($user) {
-            $model->updated_by =  $user->id;
+        static::updating(function ($model) use ($adminUser) {
+            $user = Auth::user() ?? $adminUser;
+            $model->updated_by = $user->id;
         });
+
         if (in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive(static::class))) {
-            static::deleting(function ($model) use ($user) {
+            static::deleting(function ($model) use ($adminUser) {
+                $user = Auth::user() ?? $adminUser;
                 $model->deleted_by = $user->id;
                 $model->save();
             });
-            static::restoring(function ($model) {
+            
+            static::restored(function ($model) use ($adminUser) {
+                // Get the current user or fallback to admin
+                $user = Auth::user() ?? $adminUser;
+                
+                // Set deleted_by to null and updated_by to the restoring user
                 $model->deleted_by = null;
+                $model->updated_by = $user->id;
+                
+                // Save without firing events to avoid infinite loop
+                $model->saveQuietly();
             });
         }
     }

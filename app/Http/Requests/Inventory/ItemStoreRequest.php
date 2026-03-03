@@ -54,7 +54,7 @@ class ItemStoreRequest extends FormRequest
             'openings.*.batch' => ['nullable', 'string'],
             'openings.*.expire_date' => ['nullable', 'date'],
             'openings.*.quantity' => ['nullable', 'numeric'],
-            'openings.*.unit_price' => ['nullable', 'numeric','required_with:openings.*.quantity>0'],
+            'openings.*.unit_price' => ['nullable', 'numeric','required_with:openings.*.quantity>0'], 
             'openings.*.warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
 
         ];

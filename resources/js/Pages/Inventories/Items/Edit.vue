@@ -6,13 +6,18 @@ import { useForm } from '@inertiajs/vue3'
 import NextSelect from "@/Components/next/NextSelect.vue";
 import NextDatePicker from '@/Components/next/NextDatePicker.vue'
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
-import { Info, Trash2 } from 'lucide-vue-next'
+import { Info, Trash2,AlertCircleIcon, CheckCircle2Icon, PopcornIcon } from 'lucide-vue-next'
 import { Popover, PopoverTrigger, PopoverContent } from '@/Components/ui/popover'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner';
 import JsBarcode from 'jsbarcode'
 import { Switch } from '@/Components/ui/switch'
 import { Label } from '@/Components/ui/label'
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from '@/Components/ui/alert'
 const props = defineProps({
     item: { type: Object, required: true },
     warehouses: { type: [Array, Object], required: true },
@@ -25,8 +30,9 @@ const props = defineProps({
     otherCurrentAssetsAccounts:{ type:Object, required: true},
     incomeAccounts:{ type:Object, required: true},
     costAccounts:{ type:Object, required: true},
-})
+}) 
 
+console.log('this is the item', props.item.data)
 const { t } = useI18n()
 const warehouses = computed(() => props.warehouses?.data ?? props.warehouses ?? [])
 const unitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
@@ -53,9 +59,10 @@ const form = useForm({
             unit_price: o.unit_price,
             quantity: o.quantity,
             warehouse_id: o.warehouse_id,
-            selected_warehouse: o.warehouse
+            selected_warehouse: o.warehouse,
+            status: o.status
         }))
-        : [{ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null, warehouse: null }],
+        : [{ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null, warehouse: null, status: null }],
 })
 
 
@@ -67,11 +74,11 @@ const onPhotoChange = (e) => {
 // Rows
 const addRow = (index) => {
     if (index === form.openings.length - 1) {
-        form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null, warehouse: null })
+        form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null, warehouse: null, status: null })
     }
 }
 const addOpeningRow = () => {
-    form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null, warehouse: null })
+    form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null, warehouse: null, status: 'draft' })
 }
 const removeRow = (idx) => {
     if (form.openings.length > 1) form.openings.splice(idx, 1)
@@ -216,6 +223,10 @@ watch(
         if (open) renderBarcode()
     }
 )
+const showOpeningWarning = computed(() => {
+    return props.item.data.openings.some(o => o.status === 'posted')
+})
+console.log('this is the showOpeningWarning', showOpeningWarning.value)
 </script>
 <template>
     <AppLayout :title="t('general.edit', { name: t('item.item') })">
@@ -344,6 +355,7 @@ watch(
                             <NextInput
                             :label="t('item.barcode')"
                             v-model="form.barcode"
+                            readonly="true"
                             :placeholder="t('general.enter', { text: t('item.barcode') })"
                             :error="form.errors?.barcode"
                         />
@@ -360,6 +372,7 @@ watch(
                                     <svg ref="barcodeSvg" class="w-full h-[80px]"></svg>
                                     <button
                                     type="button"
+                                    v-if="!form.barcode"
                                     class="text-sm text-primary underline mt-2"
                                     @click="generateBarcode"
                                 >
@@ -391,10 +404,22 @@ watch(
                         </div>
                     </div>
                 </div>
-
+                <div class="mt-2" v-if="showOpeningWarning">
+                    <div class="w-full max-w-md">
+                        <Alert variant="destructive">
+                            <div class="flex items-center gap-2">
+                                <AlertCircleIcon class="w-4 h-4 text-red-400" />
+                                <AlertTitle class="text-red-500">{{ t('item.opening_lock_warning') }}</AlertTitle>
+                            </div>
+                            <AlertDescription>
+                                <p class="text-red-500">{{ t('item.opening_lock_warning_description') }}</p>
+                            </AlertDescription>
+                        </Alert>
+                    </div>
+                </div>
                 <div class="md:col-span-3 mt-4">
                     <div class="pt-2">
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between" >
                             <span class="font-bold">{{ t('item.opening') }}</span>
                             <button
                                 type="button"
@@ -406,15 +431,17 @@ watch(
                         </div>
                         <div
                             v-for="(opening, index) in form.openings"
-                            :key="index"
+                            :key="index" 
                             class="mt-3 grid grid-cols-1 md:grid-cols-6 gap-4 items-start"
-                        >
-                            <NextInput :label="t('item.batch')" v-show="form.is_batch_tracked" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
-                            <NextDatePicker v-show="form.is_expiry_tracked" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
-                            <NextInput :label="t('general.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
-                            <NextInput :label="t('general.unit_price')" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
+                            :class="{ 'opacity-50': opening.status === 'posted' }"
+                        > 
+                            <NextInput :label="t('item.batch')" v-show="form.is_batch_tracked" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" :disabled="opening.status === 'posted'" />
+                            <NextDatePicker v-show="form.is_expiry_tracked" :disabled="opening.status === 'posted'" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+                            <NextInput :label="t('general.quantity')" :disabled="opening.status === 'posted'" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
+                            <NextInput :label="t('general.unit_price')" :disabled="opening.status === 'posted'" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
                             <NextSelect
                                 v-model="opening.selected_warehouse"
+                                :disabled="opening.status === 'posted'"
                                 @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
                                 :options="warehouses"
                                 label-key="name"
@@ -427,9 +454,10 @@ watch(
                                 resource-type="warehouses"
                                 :search-fields="['name', 'address']"
                             />
-                            <div  class="mt-2" v-if="form.openings.length > 1">
+                            <div  class="mt-2" v-if="form.openings.length > 1 && opening.status !== 'posted' ">
                                 <button
                                     type="button"
+                                    :disabled="opening.status === 'posted'"
                                     class="btn btn-sm btn-outline-danger px-3"
                                     @click="removeRow(index)"
                                 >
