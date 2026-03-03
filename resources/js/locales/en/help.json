@@ -38,7 +38,9 @@
         "SKU: use a unique Stock Keeping Unit for fast search, barcode integration, and avoiding duplicates.",
         "Account assignments matter: Asset account is used for stock value, Income account for sales, Cost account for cost of goods sold.",
         "Min/Max stock levels help you detect under-stock and over-stock; set them for reorder alerts and planning.",
-        "Opening stock: use it only for your starting balance. Prefer entering it per store with correct batch/expiry when applicable."
+        "Opening stock: use it only for your starting balance. Prefer entering it per store with correct batch/expiry when applicable.",
+        "Batch/Expiry Tracking: enable it for items that need batch/expiry tracking. This will allow you to track stock by batch/expiry.Once it is enabled, you will be able to track stock by batch/expiry and you can not deselect it.",
+        "Costing Method: if you are using batch/expiry tracking, by default the costing method is FIFO. This will affect the cost of the item when you sell it."
       ]
     },
     "fast_entry": {
