@@ -7,12 +7,13 @@ use App\Http\Requests\Inventory\FastOpeningRequest;
 use App\Models\Administration\Warehouse;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Inventory\Item;
-use App\Models\Inventory\Stock;
-use App\Models\Inventory\StockOpening;
+use App\Enums\StockMovementType;
+use App\Enums\StockStatus;
+use App\Enums\StockSourceType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Cache; 
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 use App\Services\TransactionService;
 class FastOpeningController extends Controller
@@ -24,6 +25,7 @@ class FastOpeningController extends Controller
         // Fetch items with their related units and other necessary details
         $items = Item::with('unitMeasure')
             ->whereDoesntHave('openings') // Only items with NO opening
+            ->orderBy('created_at','desc')
             ->paginate($perPage)
             ->withQueryString();
         return Inertia::render('Inventories/Items/FastOpening', [
@@ -38,23 +40,29 @@ class FastOpeningController extends Controller
         // Only keep items that have quantity > 0
         $itemsWithQuantity = $rows->filter(function ($item) {
             return isset($item['quantity']) && $item['quantity'] > 0;
-        });  
+        });
         DB::transaction(function () use ($itemsWithQuantity) {
-            foreach ($itemsWithQuantity as $itemData) { 
+            foreach ($itemsWithQuantity as $itemData) {
                 // Create new stock + opening
-                    $stock = Stock::create([
-                        'item_id'         => $itemData['item_id'],
-                        'quantity'        => $itemData['quantity'],
-                        'unit_measure_id' => $itemData['unit_measure_id'],
-                        'expire_date'     => $itemData['expire_date'] ?? null,
-                        'batch'           => $itemData['batch'] ?? null,
-                        'unit_price'      => $itemData['cost'] ?? null,
-                        'warehouse_id'    => $itemData['warehouse_id'] ?? Warehouse::where('is_main', true)->first()->id,
-                    ]);
+            $dateConversionService = app(abstract: \App\Services\DateConversionService::class);
 
-                    $stock->opening()->create([
-                        'item_id' => $itemData['item_id']
-                    ]);
+                $expire_date = $itemData['expire_date'] ? $dateConversionService->toGregorian($itemData['expire_date']) : null;
+                $stockService = app(\App\Services\StockService::class);
+                    $stock = $stockService->post([
+                        'item_id'         => $itemData['item_id'],
+                        'movement_type'   => StockMovementType::IN->value,
+                        'unit_measure_id' => $itemData['unit_measure_id'], // from item form
+                        'quantity'        => (float) $itemData['quantity'],
+                        'source'          => StockSourceType::OPENING->value,
+                        'unit_cost'       => (float) $itemData['cost'],
+                        'status'          => StockStatus::DRAFT->value,
+                        'batch'           => $itemData['batch'] ?? null,
+                        'date'            => Carbon::now()->toDateString(),
+                        'expire_date'     => $expire_date,
+                        'size_id'         => $itemData['size_id'] ?? null,
+                        'warehouse_id'    => $itemData['warehouse_id'],
+                        'branch_id'       => auth()->user()->company->branch_id,
+                    ]); 
 
                     $homeCurrency = Cache::get('home_currency');
                     $date = Carbon::now()->toDateString();
@@ -81,7 +89,7 @@ class FastOpeningController extends Controller
                                 'credit' => $itemData['cost']*$itemData['quantity'],
                             ]
                         ]
-                    ); 
+                    );
             }
 
         });

@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Inventory;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Inventory\FastEntryRequest;
-use App\Models\Inventory\Item; 
+use App\Models\Inventory\Item;
 use App\Models\Inventory\StockOpening;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str; 
-use App\Enums\ItemType; 
+use Illuminate\Support\Str;
+use App\Enums\ItemType;
+use App\Enums\StockMovementType;
+use App\Enums\StockSourceType;
+use App\Enums\StockStatus;
 class ItemFastEntryController extends Controller
 {
 
@@ -26,14 +29,14 @@ class ItemFastEntryController extends Controller
     }
 
     public function store(FastEntryRequest  $request)
-    { 
+    {
         $validated = $request->validated();
         $rows = collect($validated['items']);
         DB::transaction(function () use ($rows) {
             $today = Carbon::now()->toDateString();
 
             $rows->each(function ($r) use ($today) {
-                // 1) Create the item  
+                // 1) Create the item
                 $glAccounts = Cache::get('gl_accounts');
                 $item = Item::create([
                     // Adjust fields to match your Item fillables/columns
@@ -47,6 +50,8 @@ class ItemFastEntryController extends Controller
                     'unit_measure_id'=> $r['measure_id'],     // align with your schema
                     'purchase_price' => $r['purchase_price'] ?? null,
                     'sale_price'     => $r['sale_price'] ?? null,
+                    'is_batch_tracked' => $r['batch']?true:false,
+                    'is_expiry_tracked' => $r['expire_date']?true:false,
                     // add any other default columns your Item requires
                 ]);
 
@@ -59,23 +64,22 @@ class ItemFastEntryController extends Controller
                     $date = $dateConversionService->toGregorian(Carbon::now()->toDateString());
                     $transactionService = app(\App\Services\TransactionService::class);
                     $stockService = app(\App\Services\StockService::class);
-                    $stock = $stockService->addStock([
-                        'item_id' => $item->id,
-                        'unit_measure_id' => $r['measure_id'],
-                        'quantity' => $qty,
-                        'unit_price' => $cost,
-                        'free' => null,
-                        'batch' => $r['batch'] ?? null,
-                        'discount' => null,
-                        'tax' => null,
-                        'date' => $date,
-                        'expire_date' => $expire_date,
-                    ], $r['warehouse_id'], 'opening', $item->id, $date);
 
-                    StockOpening::create([
-                        'id'      => (string) Str::ulid(),
-                        'item_id'  => $item->id,
-                        'stock_id' => $stock->id,
+
+                    $stock = $stockService->post([
+                        'item_id'         => $item->id,
+                        'movement_type'   => StockMovementType::IN->value,
+                        'unit_measure_id' => $r['measure_id'], // from item form
+                        'quantity'        => (float) $r['quantity'],
+                        'source'          => StockSourceType::OPENING->value,
+                        'unit_cost'       => (float) $r['purchase_price'],
+                        'status'          => StockStatus::DRAFT->value,
+                        'batch'           => $r['batch'] ?? null,
+                        'date'            => $date,
+                        'expire_date'     => $expire_date,
+                        'size_id'         => $r['size_id'] ?? null,
+                        'warehouse_id'    => $r['warehouse_id'],
+                        'branch_id'       => auth()->user()->company->branch_id,
                     ]);
 
                     $cost = (float)($r['purchase_price'] ?? 0);
@@ -94,7 +98,7 @@ class ItemFastEntryController extends Controller
                         lines: [
                             [
                                 'account_id' => $glAccounts['inventory-stock'],
-                                'debit' => $cost*$quantity, 
+                                'debit' => $cost*$quantity,
                                 'credit' => 0,
                             ],
                             [
@@ -103,7 +107,7 @@ class ItemFastEntryController extends Controller
                                 'credit' => $cost*$quantity,
                             ]
                         ]
-                    ); 
+                    );
                 }
             });
         });

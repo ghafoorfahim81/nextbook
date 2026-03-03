@@ -36,7 +36,7 @@ const props = defineProps({
     items: { type: [Array, Object], required: true },
     unitMeasures: { type: Array, required: true }, // Array of {id, name}
     warehouses: { type: Array, required: true },       // Array of {id, name}
-}) 
+})
 
 const paginatedItems = computed(() => props.items?.data ?? props.items ?? [])
 
@@ -47,6 +47,8 @@ const form = useForm({
         item_id: item.id,
         name: item.name,
         batch: item.batch,
+        is_batch_tracked: item.is_batch_tracked,
+        is_expiry_tracked: item.is_expiry_tracked,
         warehouse_id: null,
         unit_measure_id: item.unit_measure_id,
         measure_name: item.unit_measure.name,
@@ -55,7 +57,7 @@ const form = useForm({
         cost: item.cost ?? 0,
     }))
 })
- 
+
 const searchTerm = ref('')
 
 const filteredItemIndexes = computed(() => {
@@ -103,7 +105,7 @@ const normalize = () => {
 // Handle form submit
 const handleSubmit = () => {
     normalize()
-    form.post(route('fast-opening.warehouse'), {
+    form.post(route('fast-opening.store'), {
         onSuccess: () => {
             toast.success(t('general.create_success', { name: t('item.opening') }),{
                 class: 'bg-green-600',
@@ -157,7 +159,7 @@ const updateItemsPerPage = (value) => {
                             {{ t('item.remove_unwanted_items') }}
                         </p>
                     </div>
-                
+
                     <ModuleHelpButton
                         module="fast_opening"
                         positionClass=""
@@ -175,31 +177,31 @@ const updateItemsPerPage = (value) => {
                             :label="t('datatable.search')"
                         />
                     </div>
-                
+
                     <!-- RIGHT SIDE (Per Page) -->
                     <div class="flex items-center  ">
                         <div class="w-40">
-                            <NextSelect v-model="itemsPerPage" 
-                                @update:modelValue="updateItemsPerPage" 
-                                :options="perPageOptions" 
-                                label-key="name" 
-                                value-key="id" 
+                            <NextSelect v-model="itemsPerPage"
+                                @update:modelValue="updateItemsPerPage"
+                                :options="perPageOptions"
+                                label-key="name"
+                                value-key="id"
                                 :searchable="false" :search-fields="[]"
-                                :search-options="{}" :show-arrow="false" 
+                                :search-options="{}" :show-arrow="false"
                                 :floating-text="t('item.total_items_per_page')" >
                              </NextSelect>
                         </div>
                     </div>
-                </div> 
+                </div>
                 <div class="rounded-xl border bg-card shadow-sm overflow-x-auto max-h-[1500px] overflow-y-auto p-3 mt-1 mb-1">
                     <table class="w-full table-fixed min-w-[1000px]">
                         <thead class="sticky top-0 bg-muted/40">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-white bg-primary">
                             <th class="px-1 py-1 w-5 min-w-5">#</th>
                             <th class="px-1 py-1 w-40">{{ t('item.item') }}</th>
-                            <th class="px-1 py-1 w-36">{{ t('item.batch') }}</th>
                             <th class="px-1 py-1 w-28">{{ t('item.opening_amount') }}</th>
                             <th class="px-1 py-1 w-28">{{ t('admin.unit_measure.unit_measure') }}</th>
+                            <th class="px-1 py-1 w-36">{{ t('item.batch') }}</th>
                             <th class="px-1 py-1 w-44">{{ t('item.expire_date') }}</th>
                             <th class="px-1 py-1 w-40">{{ t('item.cost') }}</th>
                             <th class="px-1 py-1 w-44">{{ t('admin.warehouse.warehouse') }}</th>
@@ -220,16 +222,6 @@ const updateItemsPerPage = (value) => {
                                 <NextInput type="hidden" v-model="form.items[rowIndex].item_id" />
                             </td>
 
-                            <!-- Batch -->
-                            <td class="px-1 py-2 align-top">
-                                <NextInput
-                                    v-model="form.items[rowIndex].batch"
-                                    type="text"
-                                    :error="fieldError(rowIndex, 'batch')"
-                                    @keyup.enter.prevent="addRowAfter(rowIndex)"
-                                />
-                            </td>
-
                             <!-- Quantity (editable) -->
                             <td class="px-1 py-2 align-top">
                                 <NextInput
@@ -243,11 +235,23 @@ const updateItemsPerPage = (value) => {
                             <td class="px-1 py-2 align-top text-center">
                                  {{ form.items[rowIndex].measure_name }}
                             </td>
+
+                            <!-- Batch -->
+                            <td class="px-1 py-2 align-top">
+                                <NextInput
+                                    v-model="form.items[rowIndex].batch"
+                                    type="text"
+                                    :readonly="form.items[rowIndex].is_batch_tracked?false:true"
+                                    :error="fieldError(rowIndex, 'batch')"
+                                    @keyup.enter.prevent="addRowAfter(rowIndex)"
+                                />
+                            </td>
                             <!-- Expiration Date -->
                             <td class="px-1 py-2 align-top">
                                 <NextDate
                                     v-model="form.items[rowIndex].expire_date"
                                     :error="fieldError(rowIndex, 'expire_date')"
+                                    :disabled="form.items[rowIndex].is_expiry_tracked?false:true"
                                     :placeholder="t('general.enter', { text: t('item.expire_date') })"
 
                                 />
@@ -267,7 +271,7 @@ const updateItemsPerPage = (value) => {
                             <td class="px-1 py-2 align-top">
                                 <NextSelect
                                     v-model="form.items[rowIndex].warehouse_id"
-                                    :options="props.warehouses.data" 
+                                    :options="props.warehouses.data"
                                     @update:modelValue="(value) => handleWarehouseChange(rowIndex, value)"
                                     resource-type="warehouses"
                                     :searchable="true"
