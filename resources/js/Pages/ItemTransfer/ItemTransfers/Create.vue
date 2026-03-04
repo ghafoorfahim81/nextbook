@@ -20,7 +20,7 @@ const { toast } = useToast()
 const page = usePage()
 const warehouses = computed(() => page.props.warehouses?.data || page.props.warehouses || [])
 const unitMeasures = computed(() => page.props.unitMeasures?.data || page.props.unitMeasures || [])
-const itemOptions = ref([]) 
+const itemOptions = ref([])
 const createEmptyRow = () => ({
   item_id: '',
   selected_item: null,
@@ -122,7 +122,7 @@ const buildAvailableMeasures = (selectedItem) => {
 }
 
 const handleItemChange = (index, selectedItem) => {
-  const row = form.items[index] 
+  const row = form.items[index]
   if (!row || !selectedItem) {
     row.selected_item = null
     row.item_id = ''
@@ -141,23 +141,23 @@ const handleItemChange = (index, selectedItem) => {
   const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1
   const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
   row.unit_price = (row.base_unit_price / baseUnit) * selectedUnit
- 
+
     row.selected_batch = null
     row.batch = ''
-    row.expire_date = '' 
+    row.expire_date = ''
 }
 
 function handleBatchChange(index, batch){
-    const row = form.items[index] 
+    const row = form.items[index]
     row.batch = batch?.batch
     row.on_hand = onhand(row)
-    row.expire_date = batch?.expire_date 
+    row.expire_date = batch?.expire_date
 }
 
 function onhand(index) {
   const item = form.items[index]
   if (!item || !item.selected_item) return ''
-  const selected_item = item.selected_item 
+  const selected_item = item.selected_item
   const onHand = item?.selected_batch?.on_hand ?? item.selected_item.on_hand
   const baseUnit = Number(selected_item?.unitMeasure?.unit) || 1
   const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
@@ -198,7 +198,7 @@ const rowTotal = (index) => {
 const totalRows = computed(() => form.items.length)
 const totalQuantity = computed(() => form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0))
 const totalAmount = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.quantity, 0) * toNum(item.unit_price, 0)), 0))
- 
+
 function handleSubmit(createAndNew = false) {
   if (sameWarehouseError.value) {
     toast({
@@ -308,6 +308,9 @@ onUnmounted(() => {
             :floating-text="t('item_transfer.to_warehouse')"
             :error="form.errors?.to_warehouse_id"
             :searchable="true"
+            resource-type="warehouses"
+            :search-fields="['name','code']"
+
           />
           <NextInput
             v-model="form.transfer_cost"
