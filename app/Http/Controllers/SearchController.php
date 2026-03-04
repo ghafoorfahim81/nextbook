@@ -13,7 +13,7 @@ use App\Models\Administration\Brand;
 use App\Models\Administration\Category;
 use App\Models\Administration\Warehouse;
 use App\Models\Expense\ExpenseCategory;
-use App\Models\Inventory\Item; 
+use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
 use App\Models\Ledger\Ledger;
@@ -270,14 +270,14 @@ class SearchController extends Controller
     }
 
     private function gatherItemsForWarehouse(string $warehouseId, string $searchTerm, int $limit): array
-{
+    {
     $searchableFields = ['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search'];
 
     // Refactor the query to be more efficient with searching
     $query = Item::query()
         ->select([
-            'id', 'name', 'code', 'generic_name', 'packing', 'barcode', 
-            'unit_measure_id', 'brand_id', 'category_id', 'colors', 'size_id', 
+            'id', 'name', 'code', 'generic_name', 'packing', 'barcode',
+            'unit_measure_id', 'brand_id', 'category_id', 'colors', 'size_id',
             'purchase_price', 'sale_price', 'rate_a', 'rate_b', 'rate_c', 'rack_no', 'fast_search',
         ])
         ->when($searchTerm, function ($query) use ($searchTerm, $searchableFields) {
@@ -316,8 +316,8 @@ class SearchController extends Controller
         });
 
     // Map stock balances to items
-    return $items->map(function (Item $item) use ($stockBalances, $stockMovements) {
-        $itemStockBalances = $stockBalances->where('item_id', $item->id);
+    return $items->map(function (Item $item) use ($stockBalances, $stockMovements, $warehouseId) {
+        $itemStockBalances = $stockBalances->where('item_id', $item->id)->where('warehouse_id', $warehouseId);
         $itemStockMovements = $stockMovements->filter(function ($movement) use ($item) {
             return $movement->item_id == $item->id;
         });

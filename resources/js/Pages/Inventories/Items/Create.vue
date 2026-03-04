@@ -138,9 +138,9 @@ const defaultItemTypeId = computed(() => {
 const defaultIncomeAccountId = computed(() => {
     const list = incomeAccounts.value || []
     const a =
-        findBySlugOrName(list, 'income-account') ||
-        findBySlugOrName(list, 'income account') ||
-        list.find(x => String(x?.name || '').toLowerCase().includes('income account')) ||
+        findBySlugOrName(list, 'product-income') ||
+        findBySlugOrName(list, 'product income') ||
+        list.find(x => String(x?.name || '').toLowerCase().includes('product income')) ||
         list?.[0] ||
         null
     return a?.id ?? null
@@ -611,7 +611,7 @@ const generateBarcode = () => {
                             :model-value="form.is_expiry_tracked"
                             @update:model-value="(v) => form.is_expiry_tracked = v"
                         />
-                    </div> 
+                    </div>
                 </div>
             </div>
             <div class="mt-2">
@@ -622,7 +622,7 @@ const generateBarcode = () => {
                                 <AlertCircleIcon class="w-4 h-4 text-orange-500" />
                                 <AlertTitle class="text-orange-500">{{ t('item.opening_key_points') }}</AlertTitle>
                             </div>
-                            <AlertDescription class="mx-2 text-orange-500 mt-2"> 
+                            <AlertDescription class="mx-2 text-orange-500 mt-2">
                                 <ul class=" list-inside list-disc space-y-1">
                                     <li>{{ t('item.opening_key_points_1') }}</li>
                                     <li>{{ t('item.opening_key_points_2') }}</li>

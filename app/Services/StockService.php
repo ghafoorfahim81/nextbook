@@ -16,13 +16,13 @@ class StockService
      * Entry point
      */
     public function post(array $data): void
-    {  
+    {
         DB::transaction(function () use ($data) {
 
-            $item = Item::lockForUpdate()->findOrFail($data['item_id']); 
+            $item = Item::lockForUpdate()->findOrFail($data['item_id']);
             if ($data['movement_type'] === 'in') {
                 $this->handleIn($item, $data);
-            } else { 
+            } else {
                 $this->handleOut($item, $data);
             }
         });
@@ -48,7 +48,7 @@ class StockService
      */
     protected function handleOut(Item $item, array $data): void
     {
-        $this->validateStockAvailability($data); 
+        $this->validateStockAvailability($data);
         $method = $this->getCostingMethod($data['branch_id']);
 
         if ($method === 'fifo') {
@@ -65,7 +65,7 @@ class StockService
      */
     protected function deductFIFO(Item $item, array $data): void
     {
-        $remaining = $data['quantity']; 
+        $remaining = $data['quantity'];
         $query = StockMovement::query()
             ->where('branch_id', $data['branch_id'])
             ->where('item_id', $data['item_id'])
@@ -75,7 +75,7 @@ class StockService
 
         if ($item->is_batch_tracked) {
             $query->where('batch', $data['batch']);
-        } 
+        }
         $inMovements = $query
             ->orderBy('date')
             ->orderBy('id')
@@ -130,35 +130,41 @@ class StockService
      * Increase Balance
      */
     protected function increaseBalance(array $data): void
-    { 
-        $balance = StockBalance::firstOrCreate(
-            [
-                'branch_id' => $data['branch_id'],
-                'item_id' => $data['item_id'],
-                'warehouse_id' => $data['warehouse_id'],
-                'batch' => $data['batch'] ?? null,
-                'expire_date' => $data['expire_date'] ?? null,
-                'status' => $data['status'] ?? StockStatus::DRAFT->value,
-            ],
-            [
-                'quantity' => 0,
-                'average_cost' => 0,
-            ]
-        );
+    {
+        $currentBalance = StockBalance::where('item_id',$data['item_id'])
+        ->where('warehouse_id',$data['warehouse_id'])
+        ->orWhere('batch',$data['batch'])
+        ->orWhere('expire_date',$data['expire_date'])
+        ->first();
 
-        $newQty = $balance->quantity + $data['quantity'];
+        if(!$currentBalance){
+            $currentBalance = StockBalance::create(
+                [
+                    'branch_id' => $data['branch_id'],
+                    'item_id' => $data['item_id'],
+                    'quantity' => $data['quantity'],
+                    'average_cost' => $data['unit_cost'],
+                    'warehouse_id' => $data['warehouse_id'],
+                    'batch' => $data['batch'] ?? null,
+                    'expire_date' => $data['expire_date'] ?? null,
+                    'status' => $data['status'] ?? StockStatus::DRAFT->value,
+                ],
+            );
+        }
+        else{
+            $newQty = $currentBalance->quantity + $data['quantity'];
+            $newAvg = $this->calculateNewAverage(
+                $currentBalance->quantity,
+                $currentBalance->average_cost,
+                $data['quantity'],
+                $data['unit_cost']
+            );
 
-        $newAvg = $this->calculateNewAverage(
-            $balance->quantity,
-            $balance->average_cost,
-            $data['quantity'],
-            $data['unit_cost']
-        );
-
-        $balance->update([
-            'quantity' => $newQty,
-            'average_cost' => $newAvg,
-        ]);
+            $currentBalance->update([
+                'quantity' => $newQty,
+                'average_cost' => $newAvg,
+            ]);
+        }
     }
 
     /**
