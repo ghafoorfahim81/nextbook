@@ -9,6 +9,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Transaction\Transaction;
+use App\Enums\StockMovementType;
+use App\Enums\StockSourceType;
+use App\Enums\StockStatus;
 class ItemTransferService
 {
     public function __construct(
@@ -154,29 +157,41 @@ class ItemTransferService
             // Process each item
             foreach ($transfer->items as $item) {
                 // Remove stock from source warehouse
-                $stockOut = $this->stockService->removeStock([
-                    'item_id' => $item->item_id,
-                    'quantity' => $item->quantity,
-                    'unit_measure_id' => $item->measure_id,
-                    'unit_price' => $item->unit_price ?? 0,
-                    'date' => $transfer->date,
-                ], $transfer->from_warehouse_id, ItemTransfer::class, $transfer->id);
+                $stock = $this->stockService->post([
+                    'item_id'         => $item->item_id,
+                    'movement_type'   => StockMovementType::OUT->value,
+                    'unit_measure_id' => $item->measure_id, // from item form
+                    'quantity'        => (float) $item->quantity,
+                    'source'          => StockSourceType::ITEM_TRANSFER->value,
+                    'unit_cost'       => (float) $item->unit_price,
+                    'status'          => StockStatus::DRAFT->value,
+                    'batch'           => $item->batch ?? null,
+                    'date'            => $transfer->date,
+                    'expire_date'     => $item->expire_date ?? null,
+                    'size_id'         => $item->size_id ?? null,
+                    'warehouse_id'    => $transfer->from_warehouse_id,
+                    'branch_id'       => $transfer->branch_id, 
+                    'reference_type'  => ItemTransfer::class,
+                    'reference_id'    => $transfer->id,
+                ]); 
 
-                // Get source stock details for transfer
-                $sourceStock = \App\Models\Inventory\Stock::find($stockOut->stock_id);
-
-                // Add stock to destination warehouse
-                $this->stockService->addStock([
-                    'item_id' => $item->item_id,
-                    'unit_measure_id' => $item->measure_id,
-                    'quantity' => $item->quantity,
-                    'unit_price' => $item->unit_price ?? $sourceStock->unit_price ?? 0,
-                    'batch' => $item->batch ?? $sourceStock->batch ?? null,
-                    'expire_date' => $item->expire_date ?? $sourceStock->expire_date ?? null,
-                    'free' => $sourceStock->free ?? 0,
-                    'discount' => $sourceStock->discount ?? 0,
-                    'tax' => $sourceStock->tax ?? 0,
-                ], $transfer->to_warehouse_id, ItemTransfer::class, $transfer->id, $transfer->date);
+                $stock = $this->stockService->post([
+                    'item_id'         => $item->item_id,
+                    'movement_type'   => StockMovementType::IN->value,
+                    'unit_measure_id' => $item->measure_id, // from item form
+                    'quantity'        => (float) $item->quantity,
+                    'source'          => StockSourceType::ITEM_TRANSFER->value,
+                    'unit_cost'       => (float) $item->unit_price,
+                    'status'          => StockStatus::DRAFT->value,
+                    'batch'           => $item->batch ?? null,
+                    'date'            => $transfer->date,
+                    'expire_date'     => $item->expire_date ?? null,
+                    'size_id'         => $item->size_id ?? null,
+                    'warehouse_id'    => $transfer->to_warehouse_id,
+                    'branch_id'       => $transfer->branch_id, 
+                    'reference_type'  => ItemTransfer::class,
+                    'reference_id'    => $transfer->id,
+                ]);  
             }
 
             // Update transfer status
@@ -234,7 +249,7 @@ class ItemTransferService
             $itemId = is_array($item) ? $item['item_id'] : $item->item_id;
             $quantity = is_array($item) ? $item['quantity'] : $item->quantity;
 
-            $stockLevel = $this->stockService->getStockLevel($itemId, $fromWarehouseId);
+            $stockLevel = $this->stockService->getStockLevel($itemId, $fromWarehouseId, $item['batch'] ?? null, $item['expire_date'] ?? null);
 
             if ($stockLevel['available'] < $quantity) {
                 $itemModel = \App\Models\Inventory\Item::find($itemId);

@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Services;
-
+use App\Enums\StockMovementType;
 use App\Enums\StockStatus;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
@@ -9,21 +9,20 @@ use App\Models\Inventory\StockMovement;
 use App\Models\Inventory\InventorySetting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-
+use Illuminate\Support\Facades\Log;
 class StockService
 {
     /**
      * Entry point
      */
     public function post(array $data): void
-    { 
+    {  
         DB::transaction(function () use ($data) {
 
-            $item = Item::lockForUpdate()->findOrFail($data['item_id']);
-
+            $item = Item::lockForUpdate()->findOrFail($data['item_id']); 
             if ($data['movement_type'] === 'in') {
                 $this->handleIn($item, $data);
-            } else {
+            } else { 
                 $this->handleOut($item, $data);
             }
         });
@@ -49,8 +48,7 @@ class StockService
      */
     protected function handleOut(Item $item, array $data): void
     {
-        $this->validateStockAvailability($data);
-
+        $this->validateStockAvailability($data); 
         $method = $this->getCostingMethod($data['branch_id']);
 
         if ($method === 'fifo') {
@@ -67,19 +65,17 @@ class StockService
      */
     protected function deductFIFO(Item $item, array $data): void
     {
-        $remaining = $data['quantity'];
-
+        $remaining = $data['quantity']; 
         $query = StockMovement::query()
             ->where('branch_id', $data['branch_id'])
             ->where('item_id', $data['item_id'])
-            ->where('warehous_id', $data['warehous_id'])
-            ->where('movement_type', 'IN')
+            ->where('warehouse_id', $data['warehouse_id'])
+            ->where('movement_type', StockMovementType::IN->value)
             ->where('qty_remaining', '>', 0);
 
         if ($item->is_batch_tracked) {
             $query->where('batch', $data['batch']);
-        }
-
+        } 
         $inMovements = $query
             ->orderBy('date')
             ->orderBy('id')
@@ -225,6 +221,12 @@ class StockService
             ->where('branch_id', $data['branch_id'])
             ->where('item_id', $data['item_id'])
             ->where('warehouse_id', $data['warehouse_id'])
+            ->when($data['batch'], function($query) use ($data) {
+                return $query->where('batch', $data['batch']);
+            })
+            ->when($data['expire_date'], function($query) use ($data) {
+                return $query->where('expire_date', $data['expire_date']);
+            })
             ->first();
 
         if (!$balance || $balance->quantity < $data['quantity']) {
@@ -239,6 +241,23 @@ class StockService
      */
     protected function getCostingMethod(string $branchId): string
     {
-        return auth()->user()->company->costing_method;
+        return auth()->user()->company->costing_method->value;
+    }
+
+    public function getStockLevel(string $itemId, string $warehouseId, string $batch = null, string $expireDate = null): array
+    {
+        $totalStock = StockBalance::where('item_id', $itemId)
+            ->where('warehouse_id', $warehouseId)
+            ->when($batch, function($query) use ($batch) {
+                return $query->where('batch', $batch);
+            })
+            ->when($expireDate, function($query) use ($expireDate) {
+                return $query->where('expire_date', $expireDate);
+            })
+            ->sum('quantity');
+
+        return [
+            'available' => $totalStock,
+        ];
     }
 }
