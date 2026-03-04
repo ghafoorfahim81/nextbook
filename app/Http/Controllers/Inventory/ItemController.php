@@ -253,7 +253,7 @@ class ItemController extends Controller
             $item->update($validated);
 
             // 2) Handle openings
-            $openings = collect($validated['openings'] ?? []);
+            $openings = collect($validated['openings'] ?? []); 
             $dateConversionService = app(\App\Services\DateConversionService::class);
             $date =   $dateConversionService->toGregorian(Carbon::now()->toDateString());
             $transactionService = app(\App\Services\TransactionService::class);
@@ -263,28 +263,24 @@ class ItemController extends Controller
                 ->where('status', StockStatus::DRAFT->value)
                 ->get(); 
             $itemOpening->each(function ($opening) {
-                $stockBalance = StockBalance::where('item_id', $opening->item_id)
-                ->where('warehouse_id', $opening->warehouse_id)
-                ->where('status', StockStatus::DRAFT->value)
-                ->orWhere('batch', $opening->batch)
-                ->orWhere('expire_date', $opening->expire_date)->first();
-
-                if($stockBalance) { 
-                    if($stockBalance->quantity == $opening->quantity) { 
-                        $stockBalance->forceDelete();
-                    }
-                    else{
-                        $stockBalance->decrement('quantity', $opening->quantity);
-                    }
-                } 
                 $opening->forceDelete();
             });
+ 
             $openings
                 ->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0 && $o['status'] == StockStatus::DRAFT->value)
                 ->each(function ($o) use ($item, $validated, $dateConversionService, $date) {
                     $stockService = app(\App\Services\StockService::class);
                     $expire_date = $o['expire_date'] ? $dateConversionService->toGregorian($o['expire_date']) : null;
-                    
+
+                    StockBalance::where('item_id', $item->id)
+                    ->where('status', StockStatus::DRAFT->value)
+                    ->when(isset($o['batch']), function($query) use ($o) {
+                        return $query->where('batch', $o['batch']);
+                    })
+                    ->when(isset($o['expire_date']), function($query) use ($o) {
+                        return $query->where('expire_date', $o['expire_date']);
+                    })
+                    ->forceDelete();
                     $stock = $stockService->post([
                         'item_id'         => $item->id,
                         'movement_type'   => StockMovementType::IN->value,

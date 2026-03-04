@@ -85,8 +85,7 @@ class ItemTransferController extends Controller
                 }
                 return $item;
             }, $validated['items']);
-        }
-
+        } 
         $transfer = $this->transferService->createTransfer($validated); 
         if ((bool) $request->create_and_new) {
             return redirect()->back()->with('success', __('general.created_successfully', ['resource' => __('general.resource.item_transfer')]));
