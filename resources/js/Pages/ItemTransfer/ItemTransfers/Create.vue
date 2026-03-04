@@ -19,9 +19,8 @@ const { toast } = useToast()
 
 const page = usePage()
 const warehouses = computed(() => page.props.warehouses?.data || page.props.warehouses || [])
-const itemOptions = ref([])
 const unitMeasures = computed(() => page.props.unitMeasures?.data || page.props.unitMeasures || [])
-
+const itemOptions = ref([]) 
 const createEmptyRow = () => ({
   item_id: '',
   selected_item: null,
@@ -95,13 +94,12 @@ watch(
   { immediate: true }
 )
 
-
-    watch(() => form.from_warehouse_id, (warehouseId) => {
-    if (!warehouseId) {
-        itemOptions.value = []
-        return
-    }
-    loadItemOptions(warehouseId)
+watch(() => form.from_warehouse_id, (warehouseId) => {
+  if (!warehouseId) {
+    itemOptions.value = []
+    return
+  }
+  loadItemOptions(warehouseId)
 }, { immediate: true });
 
 const sameWarehouseError = computed(() => {
@@ -124,7 +122,7 @@ const buildAvailableMeasures = (selectedItem) => {
 }
 
 const handleItemChange = (index, selectedItem) => {
-  const row = form.items[index]
+  const row = form.items[index] 
   if (!row || !selectedItem) {
     row.selected_item = null
     row.item_id = ''
@@ -134,7 +132,6 @@ const handleItemChange = (index, selectedItem) => {
     row.batch = ''
     row.expire_date = ''
     row.unit_price = ''
-    row.base_unit_price = ''
     return
   }
   row.available_measures = buildAvailableMeasures(selectedItem)
@@ -144,19 +141,31 @@ const handleItemChange = (index, selectedItem) => {
   const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1
   const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
   row.unit_price = (row.base_unit_price / baseUnit) * selectedUnit
-
-  if (index === form.items.length - 1) {
-    addRow()
-  }
+ 
+    row.selected_batch = null
+    row.batch = ''
+    row.expire_date = '' 
 }
 
-const handleBatchChange = (index, batch) => {
-    const row = form.items[index]
+function handleBatchChange(index, batch){
+    const row = form.items[index] 
     row.batch = batch?.batch
-    row.expire_date = batch?.expire_date
-    row.unit_price = batch?.unit_price ?? 0
+    row.on_hand = onhand(row)
+    row.expire_date = batch?.expire_date 
 }
 
+function onhand(index) {
+  const item = form.items[index]
+  if (!item || !item.selected_item) return ''
+  const selected_item = item.selected_item 
+  const onHand = item?.selected_batch?.on_hand ?? item.selected_item.on_hand
+  const baseUnit = Number(selected_item?.unitMeasure?.unit) || 1
+  const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
+  const converted = (onHand * baseUnit) / selectedUnit
+  const free = Number(item.free) || 0
+  const qty = Number(item.quantity) || 0
+  return converted - free - qty
+}
 
 const isRowEnabled = (index) => {
   if (!form.selected_from_warehouse || !form.selected_to_warehouse) return false
@@ -189,21 +198,7 @@ const rowTotal = (index) => {
 const totalRows = computed(() => form.items.length)
 const totalQuantity = computed(() => form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0))
 const totalAmount = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.quantity, 0) * toNum(item.unit_price, 0)), 0))
-
-
-const onhand = (index) => {
-    const item = form.items[index]
-    if (!item || !item.selected_item) return ''
-    const selected_item = item.selected_item
-    const onHand = selected_item.on_hand
-    const baseUnit = Number(selected_item?.unitMeasure?.unit) || 1
-    const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
-    const converted = (onHand * baseUnit) / selectedUnit
-    const free = Number(item.free) || 0
-    const qty = Number(item.quantity) || 0
-    return converted - free - qty;
-}
-
+ 
 function handleSubmit(createAndNew = false) {
   if (sameWarehouseError.value) {
     toast({
@@ -244,7 +239,7 @@ function handleSubmit(createAndNew = false) {
     remarks: form.remarks,
     items: payloadItems,
     ...(createAndNew ? { create_and_new: true } : {}),
-  })).post(route('item-transfers.warehouse'), {
+  })).post(route('item-transfers.store'), {
     onSuccess: () => {
       toast({
         title: t('general.success'),
@@ -358,7 +353,7 @@ onUnmounted(() => {
                   label-key="name"
                   :placeholder="t('general.search_or_select')"
                   id="item_id"
-                  :error="form.errors?.[`items.${index}.item_id`]"
+                  :error="form.errors?.[`items.${index}.item_id`]"`
                   :show-arrow="false"
                   :searchable="true"
                   resource-type="items-for-sale"
@@ -376,7 +371,7 @@ onUnmounted(() => {
                     label-key="batch"
                     :placeholder="t('general.search_or_select')"
                     id="batch_id"
-                    :error="form.errors?.[`items.${index}.batch`]"
+                    :error="form.errors?.[`items.${index}.batch`]"`
                     :show-arrow="false"
                     value-key="batch"
                     :reduce="batch => batch"
@@ -395,18 +390,18 @@ onUnmounted(() => {
                   type="number"
                   step="any"
                   inputmode="decimal"
-                  :error="form.errors?.[`items.${index}.quantity`]"
+                  :error="form.errors?.[`items.${index}.quantity`]"`
                 />
               </td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                <span :title="String(onhand(index))">{{ Number(onhand(index)).toFixed(1) }}</span>
+                <span :title="String(onhand(index))">{{ Number(onhand(index)).toFixed(2) }}</span>
               </td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                 <NextSelect
                   :options="item.available_measures || []"
                   v-model="item.selected_measure"
                   label-key="name"
-                  :error="form.errors?.[`items.${index}.measure_id`]"
+                  :error="form.errors?.[`items.${index}.measure_id`]"`
                   value-key="id"
                   :show-arrow="false"
                   :reduce="unit => unit"
@@ -426,7 +421,7 @@ onUnmounted(() => {
                   type="number"
                   step="any"
                   inputmode="decimal"
-                  :error="form.errors?.[`items.${index}.unit_price`]"
+                  :error="form.errors?.[`items.${index}.unit_price`]"`
                 />
               </td>
               <td class="text-center">
@@ -480,4 +475,3 @@ onUnmounted(() => {
   overflow: hidden;
 }
 </style>
-
