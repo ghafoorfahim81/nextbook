@@ -31,6 +31,7 @@ class Purchase extends Model
         'date',
         'discount',
         'discount_type',
+        'bank_account_id',
         'type',
         'description',
         'status',
@@ -49,6 +50,7 @@ class Purchase extends Model
             'supplier_id' => 'string',
             'date' => 'date',
             'discount' => 'float',
+            'bank_account_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
         ];
@@ -98,7 +100,12 @@ class Purchase extends Model
 
     public function stocks()
     {
-        return $this->hasMany(\App\Models\Inventory\Stock::class, 'source_id', 'id');
+        return $this->hasMany(\App\Models\Inventory\StockMovement::class, 'reference_id', 'id');
+    }
+    
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Account\Account::class);
     }
 
 }

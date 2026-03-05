@@ -608,6 +608,17 @@ class Account extends Model
                 'remark' => 'Service revenues',
                 'is_main' => true,
             ],
+            [
+                'name' => 'Discount to Customer',
+                'local_name' => 'تخفیف به مشتری',
+                'number' => '7030',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'income')->first()->id,
+                'account_type_slug' => 'income',
+                'slug' => 'discount-to-customer',
+                'remark' => 'Discount to customer',
+                'is_main' => true,
+            ],
+
 
             // COGS
             [
@@ -638,6 +649,16 @@ class Account extends Model
                 'account_type_slug' => 'cost-of-goods-sold',
                 'slug' => 'direct-working-cost',
                 'remark' => 'Direct working cost of goods sold',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Discount from Supplier',
+                'local_name' => 'تخفیف از فروشنده',
+                'number' => '8030',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'cost-of-goods-sold')->first()->id,
+                'account_type_slug' => 'cost-of-goods-sold',
+                'slug' => 'discount-from-supplier',
+                'remark' => 'Discount from supplier',
                 'is_main' => true,
             ],
 
@@ -1126,6 +1147,7 @@ class Account extends Model
                 'remark' => '',
                 'is_main' => true,
             ],
+
         ];
     }
 }
