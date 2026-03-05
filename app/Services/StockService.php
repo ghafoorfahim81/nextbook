@@ -20,7 +20,7 @@ class StockService
         DB::transaction(function () use ($data) {
 
             $item = Item::lockForUpdate()->findOrFail($data['item_id']);
-            if ($data['movement_type'] === 'in') {
+            if ($data['movement_type'] === StockMovementType::IN->value) {
                 $this->handleIn($item, $data);
             } else {
                 $this->handleOut($item, $data);
@@ -40,7 +40,7 @@ class StockService
             'qty_remaining' => $data['quantity'],
         ]);
 
-        $this->increaseBalance($data);
+        $this->increaseBalance($item, $data);
     }
 
     /**
@@ -129,45 +129,83 @@ class StockService
     /**
      * Increase Balance
      */
-    protected function increaseBalance(array $data): void
+    protected function increaseBalance(Item $item, array $data): void
     {
-        $currentBalance = StockBalance::where('item_id', $data['item_id'])
-        ->where('warehouse_id', $data['warehouse_id'])
-        ->where(function($query) use ($data) {
-            $query->where('batch', $data['batch'])
-                  ->orWhere('expire_date', $data['expire_date']);
-        })
-        ->first();
+        $balance = StockBalance::firstOrCreate(
+            [
+                'branch_id' => $data['branch_id'],
+                'item_id' => $data['item_id'],
+                'warehouse_id' => $data['warehouse_id'],
+                'batch' => $data['batch'] ?? null,
+                'expire_date' => $data['expire_date'] ?? null,
+                'status' => $data['status'] ?? StockStatus::DRAFT->value,
+            ],
+            [
+                'quantity' => 0,
+                'average_cost' => 0,
+            ]
+        );
 
+        $newQty = $balance->quantity + $data['quantity'];
 
-        if(!$currentBalance){
-            $currentBalance = StockBalance::create(
-                [
-                    'branch_id' => $data['branch_id'],
-                    'item_id' => $data['item_id'],
-                    'quantity' => $data['quantity'],
-                    'average_cost' => $data['unit_cost'],
-                    'warehouse_id' => $data['warehouse_id'],
-                    'batch' => $data['batch'] ?? null,
-                    'expire_date' => $data['expire_date'] ?? null,
-                    'status' => $data['status'] ?? StockStatus::DRAFT->value,
-                ],
-            );
-        }
-        else{
-            $newQty = $currentBalance->quantity + $data['quantity'];
-            $newAvg = $this->calculateNewAverage(
-                $currentBalance->quantity,
-                $currentBalance->average_cost,
-                $data['quantity'],
-                $data['unit_cost']
-            );
+        $newAvg = $this->calculateNewAverage(
+            $balance->quantity,
+            $balance->average_cost,
+            $data['quantity'],
+            $data['unit_cost']
+        );
 
-            $currentBalance->update([
-                'quantity' => $newQty,
-                'average_cost' => $newAvg,
-            ]);
-        }
+        $balance->update([
+            'quantity' => $newQty,
+            'average_cost' => $newAvg,
+        ]);
+
+        // // Check if item is batch-tracked (you should have this flag in your item model)
+        // $isBatchTracked = $item->is_batch_tracked;  // Assuming 'is_batch_tracked' is a boolean column
+    
+        // // Build the query based on whether the item is batch-tracked
+        // $query = StockBalance::where('item_id', $item->id)
+        //     ->where('warehouse_id', $data['warehouse_id']);
+    
+        // if ($isBatchTracked) {
+        //     // For batch-tracked items, use both batch and expire_date
+        //     $query->where('batch', $data['batch'])
+        //           ->where('expire_date', $data['expire_date']);
+        // } else {
+        //     // For non-batch items, only use expire_date
+        //     $query->where('expire_date', $data['expire_date']);
+        // }
+    
+        // // Fetch the existing balance record, if it exists
+        // $currentBalance = $query->first();
+    
+        // if (!$currentBalance) {
+        //     // If no balance exists, create a new record
+        //     $currentBalance = StockBalance::create([
+        //         'branch_id' => $data['branch_id'],
+        //         'item_id' => $data['item_id'],
+        //         'quantity' => $data['quantity'],
+        //         'average_cost' => $data['unit_cost'],
+        //         'warehouse_id' => $data['warehouse_id'],
+        //         'batch' => $data['batch'] ?? null,  // If item is batch-tracked, batch will be set
+        //         'expire_date' => $data['expire_date'] ?? null,
+        //         'status' => $data['status'] ?? StockStatus::DRAFT->value,
+        //     ]);
+        // } else {
+        //     // If the balance exists, update the quantity and average cost
+        //     $newQty = $currentBalance->quantity + $data['quantity'];
+        //     $newAvg = $this->calculateNewAverage(
+        //         $currentBalance->quantity,
+        //         $currentBalance->average_cost,
+        //         $data['quantity'],
+        //         $data['unit_cost']
+        //     );
+    
+        //     $currentBalance->update([
+        //         'quantity' => $newQty,
+        //         'average_cost' => $newAvg,
+        //     ]);
+        // }
     }
 
     /**
@@ -253,7 +291,7 @@ class StockService
         return auth()->user()->company->costing_method->value;
     }
 
-    public function getStockLevel(string $itemId, string $warehouseId, string $batch = null, string $expireDate = null): array
+    public function getStockLevel(string $itemId, string $warehouseId, ?string $batch = null, ?string $expireDate = null): array
     {
         $totalStock = StockBalance::where('item_id', $itemId)
             ->where('warehouse_id', $warehouseId)
@@ -264,7 +302,6 @@ class StockService
                 return $query->where('expire_date', $expireDate);
             })
             ->sum('quantity');
-
         return [
             'available' => $totalStock,
         ];
