@@ -167,16 +167,32 @@
                   @update:modelValue="(value) => updatePayment('note', value)"
                 />  
             
-            <div class="grid grid-cols-4 gap-4 text-nowrap border rounded-md pt-2 mt-2 divide-x divide-gray-200 p-2"> 
-              <div class="col-span-1 text-sm text-gray-700 mt-2">
-                  <span class="font-bold">{{ t('general.bill_amount') }}:</span> {{ (props.billTotal) }}
-                </div>
-                <div class="col-span-1 text-sm text-gray-700 mt-2">
-                  <span class="font-bold">{{ t('general.paid_amount') }}:</span> {{ (localPayment.amount) }}
-                </div>
-                <div class="col-span-1 text-sm text-gray-700 mt-2">
-                  <span class="font-bold">{{ t('general.remaining_balance') }}:</span> {{ (props.billTotal - localPayment.amount) }}
-                </div>
+            <div class="grid grid-cols-3 gap-4 bg-muted/50 border rounded-lg py-3 px-4 mt-4">
+              <div class="flex flex-col items-start">
+                <span class="font-bold text-violet-600 text-xs">
+                  {{ t('general.bill_amount') }}
+                </span>
+                <span class="text-base tabular-nums text-gray-900">
+                  {{ Number(props.billTotal ?? 0).toLocaleString() }}
+                </span>
+              </div>
+              <div class="flex flex-col items-start">
+                <span class="font-bold text-violet-600 text-xs">
+                  {{ t('general.paid_amount') }}
+                </span>
+                <span class="text-base tabular-nums text-gray-900">
+                  {{ Number(localPayment.amount ?? 0).toLocaleString() }}
+                </span>
+              </div>
+              <div class="flex flex-col items-start">
+                <span class="font-bold text-violet-600 text-xs">
+                  {{ t('general.remaining_balance') }}
+                </span>
+                <span class="text-base tabular-nums text-gray-900"
+                      :class="{'text-rose-600': (props.billTotal - localPayment.amount) > 0}">
+                  {{ Number(props.billTotal - localPayment.amount || 0).toLocaleString() }}
+                </span>
+              </div>
             </div>
           </div> 
         </ModalDialog>

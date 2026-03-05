@@ -121,7 +121,7 @@ export const quickCreateRegistry = {
     ],
   },
 
-  'items-for-sale': {
+  'items-list': {
     titleKey: 'item.item',
     endpointType: 'items',
     fields: [

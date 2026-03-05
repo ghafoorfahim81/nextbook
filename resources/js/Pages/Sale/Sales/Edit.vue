@@ -131,7 +131,7 @@ watch(() => form.store_id, async (newStoreId) => {
 // Load items available in selected store
 const loadItemsForStore = async (storeId) => {
     try {
-        const response = await axios.post('/api/search/items-for-sale', {
+        const response = await axios.post('/api/search/items-list', {
             store_id: storeId
         });
         availableItems.value = response.data.data;

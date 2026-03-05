@@ -227,14 +227,15 @@ class Account extends Model
 
     public function getAccountsByAccountTypeSlug(string $slug)
     {
-        return $this->whereHas('accountType', function ($query) use ($slug) {
+        $locale = app()->getLocale();
+        return $this->withoutGlobalScopes()->whereHas('accountType', function ($query) use ($slug, $locale) {
             $query->where('slug', $slug);
-        })->get()->map(function ($account) {
+        })->get()->map(function ($account) use ($locale) {
             return [
                 'id' => $account->id,
                 'number' => $account->number,
                 'slug' => $account->slug,
-                'name' => $account->local_name ?? $account->name,
+                'name' => $locale === 'en' ? $account->name : ($account->local_name ?? $account->name),
             ];
         });
     }

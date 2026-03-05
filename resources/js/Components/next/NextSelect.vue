@@ -298,7 +298,7 @@ const onGlobalQuickCreated = (event) => {
   const myEndpoint = quickCreateConfig.value?.endpointType
   if (!myEndpoint) return
 
-  // match on endpointType so aliases like items-for-sale update items selects too
+  // match on endpointType so aliases like items-list update items selects too
   if (detail.endpointType && detail.endpointType === myEndpoint) {
     addCreatedOptionToOptions(detail.created)
   }

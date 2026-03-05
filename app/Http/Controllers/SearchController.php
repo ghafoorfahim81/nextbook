@@ -219,7 +219,7 @@ class SearchController extends Controller
     /**
      * Search items for sales with store filtering and batch information
      */
-    public function searchItemsForSale(Request $request)
+    public function searchItemsList(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'warehouse_id' => 'nullable|string|exists:warehouses,id',

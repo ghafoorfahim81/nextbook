@@ -32,16 +32,16 @@ const { toast } = useToast()
 const props = defineProps({
     ledgers: {type: Object, required: false, default: () => ({ data: [] })},
     salePurchaseTypes: {type: Object, required: true},
-    currencies: {type: Object, required: true},
-    items: {type: Object, required: false, default: () => ({ data: [] })},
+    currencies: {type: Object, required: true}, 
     warehouses: {type: Object, required: true},
     unitMeasures: {type: Object, required: true},
     accounts: {type: Object, required: false, default: () => ({ data: [] })},
     purchaseNumber: {type: String, required: true},
     user_preferences: {type: Object, required: true},
+    bankAccounts: {type: Object, required: true},
 })
 
-useLazyProps(props, ['ledgers', 'accounts', 'items'])
+useLazyProps(props, ['ledgers', 'accounts'])
 
 const form = useForm({
     number: props.purchaseNumber,
@@ -53,6 +53,8 @@ const form = useForm({
     selected_currency: '',
     selected_ledger: '',
     selected_sale_purchase_type: '',
+    selected_bank_account: '',
+    bank_account_id: '',
     discount: '',
     transaction_total: 0,
     discount_type: 'percentage',
@@ -67,87 +69,59 @@ const form = useForm({
     warehouse_id: '',
     selected_warehouse: '',
     item_list:[],
-    items: [
-        {
-            item_id: '',
-            selected_item: '',
-            quantity: '',
-            unit_measure_id: '',
-            batch: '',
-            expire_date: '',
-            unit_price: '',
-            selected_measure: '',
-            item_discount: '',
-            free: '',
-            tax: '',
-        },
-        {
-            item_id: '',
-            selected_item: '',
-            quantity: '',
-            unit_measure_id: '',
-            batch: '',
-            expire_date: '',
-            unit_price: '',
-            selected_measure: '',
-            item_discount: '',
-            free: '',
-            tax: '',
-        },
-        {
-            item_id: '',
-            selected_item: '',
-            quantity: '',
-            unit_measure_id: '',
-            batch: '',
-            expire_date: '',
-            unit_price: '',
-            selected_measure: '',
-            item_discount: '',
-            free: '',
-            tax: '',
-        },
-        {
-            item_id: '',
-            selected_item: '',
-            quantity: '',
-            unit_measure_id: '',
-            batch: '',
-            expire_date: '',
-            unit_price: '',
-            selected_measure: '',
-            item_discount: '',
-            free: '',
-            tax: '',
-        },
-        {
-            item_id: '',
-            selected_item: '',
-            quantity: '',
-            unit_measure_id: '',
-            batch: '',
-            expire_date: '',
-            unit_price: '',
-            selected_measure: '',
-            item_discount: '',
-            free: '',
-            tax: '',
-        },
-        {
-            item_id: '',
-            selected_item: '',
-            quantity: '',
-            unit_measure_id: '',
-            batch: '',
-            expire_date: '',
-            unit_price: '',
-            selected_measure: '',
-            item_discount: '',
-            free: '',
-            tax: '',
-        },
-    ],
+    items: Array.from({ length: 6 }, () => ({
+        item_id: '',
+        selected_item: '',
+        quantity: '',
+        unit_measure_id: '',
+        batch: '',
+        expire_date: '',
+        unit_price: '',
+        selected_measure: '',
+        item_discount: '',
+        free: '',
+        tax: '',
+    })),
 })
+
+//  load items
+const itemSearchOptions = computed(() => {
+  const additionalParams = {}
+  if (form.warehouse_id) {
+    additionalParams.warehouse_id = form.warehouse_id
+  }
+  return { additionalParams, limit: 200 }
+})
+
+const itemOptions = ref([]);
+const loadItemOptions = async (warehouseId = form.warehouse_id) => {
+    if (!warehouseId) {
+        itemOptions.value = []
+        return
+    }
+    try {
+        const response = await axios.get(route('search.items-list'), {
+            params: {
+                warehouse_id: warehouseId,
+                limit: 50,
+            }
+        })
+        itemOptions.value = response.data?.data || []
+    } catch (error) {
+        console.error('Failed to load items', error)
+        itemOptions.value = []
+    }
+}
+
+watch(() => form.warehouse_id, (warehouseId) => {
+  if (!warehouseId) {
+    itemOptions.value = []
+    return
+  }
+  loadItemOptions()
+}, { immediate: true });
+
+
 
 // Watch for purchaseNumber prop changes and update form.number
 watch(() => props.purchaseNumber, (newPurchaseNumber) => {
@@ -189,6 +163,16 @@ watch(() => props.warehouses.data, (warehouses) => {
     }
 }, { immediate: true });
 
+watch(() => props.bankAccounts, (bankAccounts) => {
+    if (bankAccounts && !form.selected_bank_account) {
+        const baseBankAccount = bankAccounts.find(c => c.slug === 'cash-in-hand');
+        if (baseBankAccount) {
+            form.selected_bank_account = baseBankAccount;
+            form.bank_account_id = baseBankAccount.id;
+        }
+    }
+}, { immediate: true });
+
 // Payment dialog state
 const showPaymentDialog = ref(false);
 
@@ -226,7 +210,7 @@ const handleSelectChange = (field, value) => {
     if(field === 'sale_purchase_type_id' && value === 'cash') {
         handleResetPayment();
     }
-    form[field] = value;
+    form[field] = value.id;
 };
 
 
@@ -390,9 +374,9 @@ const notifySound = (type) => {
     }
 }
 
-const handleItemChange = async (index, selectedItem) => {
+const handleItemChange = async (index, selected_item) => {
     const row = form.items[index]
-    if (!row || !selectedItem){
+    if (!row || !selected_item){
         row.available_measures = []
         row.selected_measure = ''
         row.unit_price = ''
@@ -404,10 +388,9 @@ const handleItemChange = async (index, selectedItem) => {
         row.tax = ''
         // do not add a new row on deselect
         return
-    }
-
+    } 
     // Build available measures robustly by matching quantity id
-    const selUM = selectedItem?.unitMeasure || {}
+    const selUM = selected_item?.unitMeasure || {}
     const selectedQuantityId = selUM.quantity_id ?? selUM.quantity?.id
     const selectedQuantityName = (selUM.quantity?.name || selUM.quantity?.code || '').toString().toLowerCase()
     row.available_measures = (props.unitMeasures?.data || []).filter(unit => {
@@ -415,15 +398,15 @@ const handleItemChange = async (index, selectedItem) => {
         const unitQtyName = (unit?.quantity?.name || unit?.quantity?.code || '').toString().toLowerCase()
         return (selectedQuantityId && unitQtyId === selectedQuantityId) || (!!selectedQuantityName && unitQtyName === selectedQuantityName)
     })
-    row.selected_measure = selectedItem.unitMeasure
-    row.item_id = selectedItem.id
-    row.on_hand = selectedItem.on_hand
+    row.selected_measure = selected_item.unitMeasure
+    row.item_id = selected_item.id
+    row.on_hand = selected_item.on_hand
 
     // Set the base unit price - this is the price per base unit
-    row.base_unit_price = selectedItem.unit_price ?? selectedItem.purchase_price ?? 0
+    row.base_unit_price = selected_item.purchase_price ?? selected_item.avg_cost ?? 0
 
     // Set the initial unit_price based on the base unit measure
-    const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1
+    const baseUnit = Number(selected_item.unitMeasure?.unit) || 1
     row.unit_price = (row.base_unit_price * Number(row.selected_measure.unit)*form.rate)/baseUnit;
 
     // Add a new empty row only when selecting into the last row
@@ -522,7 +505,7 @@ const rowTotal = (index) => {
     const price = toNum(item.unit_price, 0)
     const disc = toNum(item.item_discount, 0)
     const tax = toNum(item.tax, 0)
-    return qty * price - disc + tax
+    return Number((qty * price - disc + tax).toFixed(2))
 }
 
 const deleteRow = (index) => {
@@ -562,10 +545,10 @@ const transactionSummary = computed(() => {
     const paid = toNum(form.payment.amount, 0)
     const oldBalance = toNum(form?.selected_ledger?.statement?.balance, 0)
     const nature = form?.selected_ledger?.statement?.balance_nature // 'Dr' | 'Cr'
-    const hasSelectedItem = Array.isArray(form.items) && form.items.some(r => !!r.selected_item)
+    const hasSelected_item = Array.isArray(form.items) && form.items.some(r => !!r.selected_item)
     const netAmount = goodsTotal.value - totalDiscount.value + totalTax.value
     const grandTotal = netAmount - paid;
-    const balance = hasSelectedItem
+    const balance = hasSelected_item
         ? (nature === 'dr' ? (grandTotal + oldBalance) : (grandTotal - oldBalance))
         : 0
     return {
@@ -604,8 +587,7 @@ const item_columns = computed(() => user_preferences.value?.purchase.item_column
 const purchase_preferences = computed(() => user_preferences.value?.purchase ?? user_preferences.value.purchase ?? []).value
 const item_management = computed(() => user_preferences.value?.item_management ?? user_preferences.value.item_management ?? []).value
 const spec_text = computed(() => item_management?.spec_text ?? item_management?.spec_text ?? 'batch').value
-
-console.log('item_columns', item_columns);
+ 
 </script>
 
 <template>
@@ -618,7 +600,7 @@ console.log('item_columns', item_columns);
                 <NextSelect
                     :options="ledgers?.data || []"
                     v-model="form.selected_ledger"
-                    @update:modelValue="(value) => handleSelectChange('supplier_id', value.id)"
+                    @update:modelValue="(value) => handleSelectChange('supplier_id', value)"
                     label-key="name"
                     value-key="id"
                     :reduce="ledger => ledger"
@@ -638,7 +620,7 @@ console.log('item_columns', item_columns);
                     label-key="code"
                     value-key="id"
                     :clearable="false"
-                    @update:modelValue="(value) => handleSelectChange('currency_id', value.id)"
+                    @update:modelValue="(value) => handleSelectChange('currency_id', value)"
                     :reduce="currency => currency"
                    :floating-text="t('admin.currency.currency')"
                     :error="form.errors?.currency_id"
@@ -646,9 +628,21 @@ console.log('item_columns', item_columns);
                     resource-type="currencies"
                     :search-fields="['name', 'code', 'symbol']"
                 />
-                <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')"/>
+                <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" :disabled="form.selected_currency?.is_base_currency === true" v-model="form.rate" :label="t('general.rate')"/>
                 </div>
-
+                <NextSelect
+                    :options="bankAccounts"
+                    v-model="form.selected_bank_account"
+                    @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
+                    label-key="name"
+                    :searchable="true"
+                    :floating-text="t('general.bank_account')"
+                    :error="form.errors?.bank_account_id"
+                    resource-type="accounts"
+                    :search-fields="['name', 'number', 'slug']"
+                    value-key="id"
+                    :reduce="bankAccount => bankAccount"
+                /> 
                <div class="grid grid-cols-1 gap-2" v-if="general_fields.type">
                 <NextSelect
                     :options="salePurchaseTypes"
@@ -672,10 +666,12 @@ console.log('item_columns', item_columns);
                     :reduce="warehouse => warehouse.id"
                     :floating-text="t('admin.warehouse.warehouse')"
                     :error="form.errors?.warehouse_id"
+                    resource-type="warehouses"
+                    :search-fields="['name', 'code', 'address']"
                 />
             </div>
             </div>
-            <div class="rounded-xl border bg-card shadow-sm">
+            <div class="rounded-xl border bg-card shadow-sm border-violet-500">
                 <table class="w-full table-fixed min-w-[1200px] purchase-table border-separate">
                     <thead class=" " :class="form.sale_purchase_type_id === 'cash' ? 'bg-card sticky top-0 z-[200]' : ''">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
@@ -701,20 +697,21 @@ console.log('item_columns', item_columns);
                             <td class="px-1 py-2 align-top w-5">{{ index + 1 }}</td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
-                                    :options="items?.data || []"
+                                    :options="itemOptions"
                                     v-model="item.selected_item"
                                     label-key="name"
                                     :placeholder="t('general.search_or_select')"
                                     id="item_id"
-                                    :error="form.errors?.item_id"
+                                    :error="form.errors?.[`items.${index}.item_id`]"`
                                     :show-arrow="false"
                                     :searchable="true"
-                                    resource-type="items"
-                                    :search-fields="['name', 'code', 'generic_name', 'packing', 'barcode','fast_search']"
+                                    resource-type="items-list"
+                                    :search-fields="['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search']"
                                     value-key="id"
-                                    :reduce="item => item"
-                                    @update:modelValue=" value => { handleItemChange(index, value); }"
-                                />
+                                    :reduce="itemValue => itemValue"
+                                    :search-options="itemSearchOptions"
+                                    @update:modelValue="value => { handleItemChange(index, value) }"
+                                    />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.batch">
                                 <NextInput
@@ -866,6 +863,7 @@ console.log('item_columns', item_columns);
          <!-- Payment Dialog for Credit Transactions -->
          <PaymentDialog
              :open="showPaymentDialog"
+             :bill-total="totalRowTotal"
              :payment="form.payment"
              :errors="form.errors"
              :accounts="props.accounts?.data || []"

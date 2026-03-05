@@ -160,8 +160,8 @@ Route::middleware([
     Route::patch('/journal-entries/{journalEntry}/restore', [\App\Http\Controllers\JournalEntry\JournalEntryController::class, 'restore'])->name('journal-entries.restore')->withTrashed();
     Route::resource('/journal-classes', \App\Http\Controllers\JournalEntry\JournalClassController::class);
     Route::patch('/journal-classes/{journalClass}/restore', [\App\Http\Controllers\JournalEntry\JournalClassController::class, 'restore'])->name('journal-classes.restore')->withTrashed();
-    Route::match(['get', 'post'], '/search/items-for-sale', [SearchController::class, 'searchItemsForSale'])
-        ->name('search.items-for-sale');
+    Route::match(['get', 'post'], '/search/items-list', [SearchController::class, 'searchItemsList'])
+        ->name('search.items-list');
     Route::get('/search/{resourceType}', [SearchController::class, 'search']);
     Route::get('/search/resource-types', [SearchController::class, 'getResourceTypes']);
 
