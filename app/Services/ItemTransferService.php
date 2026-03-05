@@ -249,8 +249,8 @@ class ItemTransferService
             $itemId = is_array($item) ? $item['item_id'] : $item->item_id;
             $quantity = is_array($item) ? $item['quantity'] : $item->quantity;
 
+            // dd($quantity);
             $stockLevel = $this->stockService->getStockLevel($itemId, $fromWarehouseId, $item['batch'] ?? null, $item['expire_date'] ?? null);
-
             if ($stockLevel['available'] < $quantity) {
                 $itemModel = \App\Models\Inventory\Item::find($itemId);
                 $itemName = $itemModel->name ?? 'Unknown';

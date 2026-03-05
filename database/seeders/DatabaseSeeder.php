@@ -50,7 +50,7 @@ class DatabaseSeeder extends Seeder
             $this->call(RolePermissionSeeder::class);
             $this->call(CompanySeeder::class);
             $this->call(SizeSeeder::class);
-            $this->call(ItemSeeder::class);
+            // $this->call(ItemSeeder::class);
         }
         if(app()->environment('production')){
             $this->call(BranchSeeder::class);
