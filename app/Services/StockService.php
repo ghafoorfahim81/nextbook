@@ -137,7 +137,7 @@ class StockService
             $query->where('batch', $data['batch'])
                   ->orWhere('expire_date', $data['expire_date']);
         })
-        ->get();
+        ->first();
 
 
         if(!$currentBalance){
