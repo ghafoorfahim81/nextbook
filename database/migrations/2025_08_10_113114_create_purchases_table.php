@@ -30,6 +30,9 @@ return new class extends Migration
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
+            $table->index(['branch_id', 'date']);
+            $table->index(['branch_id', 'supplier_id']);
+            $table->index(['branch_id', 'bank_account_id']);
             $table->timestamps();
             $table->softDeletes();
         });

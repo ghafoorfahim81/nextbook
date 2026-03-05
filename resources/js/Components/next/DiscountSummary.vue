@@ -1,6 +1,6 @@
 <template>
-    <div class="rounded-xl border bg-gradient-to-b from-muted/50 to-background p-4 shadow-sm">
-        <div class="text-lg font-semibold mb-3 text-violet-500 text-sm">{{ t('general.discount_summary') }}</div>
+    <div class="rounded-xl border bg-gradient-to-b from-muted/50 to-background p-4 shadow-sm border-primary">
+        <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.discount_summary') }}</div>
 
         <div class="space-y-2">
             <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500">

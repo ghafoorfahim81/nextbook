@@ -157,7 +157,7 @@ const loadItemOptions = async (warehouseId = form.warehouse_id) => {
         return
     }
     try {
-        const response = await axios.get(route('search.items-for-sale'), {
+        const response = await axios.get(route('search.items-list'), {
             params: {
                 warehouse_id: warehouseId,
                 limit: 50,
@@ -764,7 +764,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                                     :error="form.errors?.item_id"
                                     :show-arrow="false"
                                     :searchable="true"
-                                    resource-type="items-for-sale"
+                                    resource-type="items-list"
                                     :search-fields="['name', 'code', 'generic_name', 'packing', 'barcode','fast_search']"
                                     :search-options="itemSearchOptions"
                                     value-key="id"

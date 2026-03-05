@@ -1,5 +1,5 @@
 <template>
-    <div class="rounded-xl border border-violet-500 bg-gradient-to-b from-muted/50 to-background p-4 shadow-sm">
+    <div class="rounded-xl border border-primary bg-gradient-to-b from-muted/50 to-background p-4 shadow-sm ">
         <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.transaction_summary') }}</div>
 
         <div class="space-y-2">

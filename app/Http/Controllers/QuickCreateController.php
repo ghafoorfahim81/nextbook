@@ -41,7 +41,7 @@ class QuickCreateController extends Controller
     {
         // Normalize some alias types used in selects/search
         $resourceType = match ($resourceType) {
-            'items-for-sale' => 'items',
+            'items-list' => 'items',
             default => $resourceType,
         };
 

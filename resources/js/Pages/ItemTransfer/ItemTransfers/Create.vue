@@ -69,7 +69,7 @@ const loadItemOptions = async (warehouseId = form.warehouse_id) => {
         return
     }
     try {
-        const response = await axios.get(route('search.items-for-sale'), {
+        const response = await axios.get(route('search.items-list'), {
             params: {
                 warehouse_id: warehouseId,
                 limit: 50,
@@ -359,7 +359,7 @@ onUnmounted(() => {
                   :error="form.errors?.[`items.${index}.item_id`]"`
                   :show-arrow="false"
                   :searchable="true"
-                  resource-type="items-for-sale"
+                  resource-type="items-list"
                   :search-fields="['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search']"
                   value-key="id"
                   :reduce="itemValue => itemValue"

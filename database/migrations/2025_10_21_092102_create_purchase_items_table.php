@@ -32,6 +32,11 @@ return new class extends Migration
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
+            $table->index(['branch_id', 'purchase_id']);
+            $table->index(['branch_id', 'item_id']);
+            $table->index(['branch_id', 'warehouse_id']);
+            $table->index(['branch_id', 'batch']);
+            $table->index(['branch_id', 'expire_date']);
             $table->timestamps();
             $table->softDeletes();
         });
