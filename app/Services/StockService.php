@@ -131,11 +131,14 @@ class StockService
      */
     protected function increaseBalance(array $data): void
     {
-        $currentBalance = StockBalance::where('item_id',$data['item_id'])
-        ->where('warehouse_id',$data['warehouse_id'])
-        ->orWhere('batch',$data['batch'])
-        ->orWhere('expire_date',$data['expire_date'])
-        ->first();
+        $currentBalance = StockBalance::where('item_id', $data['item_id'])
+        ->where('warehouse_id', $data['warehouse_id'])
+        ->where(function($query) use ($data) {
+            $query->where('batch', $data['batch'])
+                  ->orWhere('expire_date', $data['expire_date']);
+        })
+        ->get();
+
 
         if(!$currentBalance){
             $currentBalance = StockBalance::create(
