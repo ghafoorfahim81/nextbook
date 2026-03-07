@@ -32,7 +32,7 @@ const { toast } = useToast()
 const props = defineProps({
     ledgers: {type: Object, required: false, default: () => ({ data: [] })},
     salePurchaseTypes: {type: Object, required: true},
-    currencies: {type: Object, required: true}, 
+    currencies: {type: Object, required: true},
     warehouses: {type: Object, required: true},
     unitMeasures: {type: Object, required: true},
     accounts: {type: Object, required: false, default: () => ({ data: [] })},
@@ -49,14 +49,15 @@ const form = useForm({
     date: '',
     currency_id: '',
     rate: '',
-    sale_purchase_type_id: '',
+    purchase_type: '',
     selected_currency: '',
     selected_ledger: '',
-    selected_sale_purchase_type: '',
+    selected_purchase_type: '',
     selected_bank_account: '',
     bank_account_id: '',
     discount: '',
     transaction_total: 0,
+    discount_total: 0,
     discount_type: 'percentage',
     description: '',
     payment:{
@@ -144,11 +145,11 @@ watch(() => props.currencies?.data, (currencies) => {
 
 
 watch(() => props.salePurchaseTypes, (salePurchaseTypes) => {
-    if (salePurchaseTypes && !form.selected_sale_purchase_type) {
+    if (salePurchaseTypes && !form.selected_purchase_type) {
         const baseSalePurchaseType = salePurchaseTypes.find(c => c.id === 'cash');
         if (baseSalePurchaseType) {
-            form.selected_sale_purchase_type = baseSalePurchaseType;
-            form.sale_purchase_type_id = baseSalePurchaseType.id;
+            form.selected_purchase_type = baseSalePurchaseType;
+            form.purchase_type = baseSalePurchaseType.id;
         }
     }
 }, { immediate: true });
@@ -177,7 +178,7 @@ watch(() => props.bankAccounts, (bankAccounts) => {
 const showPaymentDialog = ref(false);
 
 // Watch for sale/purchase type changes and show payment dialog for credit transactions
-watch(() => form.selected_sale_purchase_type, (newType) => {
+watch(() => form.selected_purchase_type, (newType) => {
     if (newType && newType === 'credit') {
         showPaymentDialog.value = true;
     }
@@ -204,12 +205,18 @@ const handleResetPayment = () => {
     }
 }
 const handleSelectChange = (field, value) => {
+
     if(field === 'currency_id') {
         form.rate = value.exchange_rate;
     }
-    if(field === 'sale_purchase_type_id' && value === 'cash') {
-        handleResetPayment();
-    }
+    if(field === 'purchase_type') {
+        if(value === 'cash') {
+            handleResetPayment();
+        }
+        else{
+            form[field] = value;
+            }
+        }
     form[field] = value.id;
 };
 
@@ -229,7 +236,7 @@ function handleSubmit(createAndNew = false) {
         const FormItems = form.items.filter(item => item.selected_item && item.item_id);
         form.item_list = FormItems;
         form.transaction_total = toNum(goodsTotal.value - totalDiscount.value + totalTax.value);
-
+        form.discount_total = toNum(totalDiscount.value);
         // Filter out empty items and set unit_measure_id
         form.item_list.forEach(item => {
             item.unit_measure_id = item.selected_measure.id;
@@ -256,8 +263,8 @@ function handleSubmit(createAndNew = false) {
                 if (props.salePurchaseTypes) {
                     const baseSalePurchaseType = props.salePurchaseTypes.find(c => c.id === 'cash');
                     if (baseSalePurchaseType) {
-                        form.selected_sale_purchase_type = baseSalePurchaseType;
-                        form.sale_purchase_type_id = baseSalePurchaseType.id;
+                        form.selected_purchase_type = baseSalePurchaseType;
+                        form.purchase_type = baseSalePurchaseType.id;
                     }
                 }
                 // Re-initialize warehouse with default
@@ -322,7 +329,7 @@ const handlePaymentDialogCancel = () => {
 
         const debitType = props.salePurchaseTypes.find(type => type.id === 'debit');
         if (debitType) {
-            form.selected_sale_purchase_type = debitType;
+            form.selected_purchase_type = debitType;
         }
     }
     showPaymentDialog.value = false;
@@ -388,7 +395,7 @@ const handleItemChange = async (index, selected_item) => {
         row.tax = ''
         // do not add a new row on deselect
         return
-    } 
+    }
     // Build available measures robustly by matching quantity id
     const selUM = selected_item?.unitMeasure || {}
     const selectedQuantityId = selUM.quantity_id ?? selUM.quantity?.id
@@ -587,7 +594,7 @@ const item_columns = computed(() => user_preferences.value?.purchase.item_column
 const purchase_preferences = computed(() => user_preferences.value?.purchase ?? user_preferences.value.purchase ?? []).value
 const item_management = computed(() => user_preferences.value?.item_management ?? user_preferences.value.item_management ?? []).value
 const spec_text = computed(() => item_management?.spec_text ?? item_management?.spec_text ?? 'batch').value
- 
+
 </script>
 
 <template>
@@ -642,18 +649,18 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                     :search-fields="['name', 'number', 'slug']"
                     value-key="id"
                     :reduce="bankAccount => bankAccount"
-                /> 
+                />
                <div class="grid grid-cols-1 gap-2" v-if="general_fields.type">
                 <NextSelect
                     :options="salePurchaseTypes"
-                    v-model="form.selected_sale_purchase_type"
+                    v-model="form.selected_purchase_type"
                     :clearable="false"
-                    @update:modelValue="(value) => handleSelectChange('sale_purchase_type_id', value)"
+                    @update:modelValue="(value) => handleSelectChange('purchase_type', value)"
                     label-key="name"
                     value-key="id"
-                    :reduce="salePurchaseType => salePurchaseType.id"
+                    :reduce="salePurchaseType => salePurchaseType"
                     :floating-text="t('general.payment_type')"
-                    :error="form.errors?.sale_purchase_type_id"
+                    :error="form.errors?.purchase_type"
                 />
                 </div>
                 <NextSelect v-if="general_fields.store"
@@ -673,7 +680,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
             </div>
             <div class="rounded-xl border bg-card shadow-sm border-violet-500">
                 <table class="w-full table-fixed min-w-[1200px] purchase-table border-separate">
-                    <thead class=" " :class="form.sale_purchase_type_id === 'cash' ? 'bg-card sticky top-0 z-[200]' : ''">
+                    <thead class=" " :class="form.purchase_type === 'cash' ? 'bg-card sticky top-0 z-[200]' : ''">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 min-w-5">#</th>
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>

@@ -1,16 +1,17 @@
 models:
-  JournalEntry/JournalType:
-    id: char(26) 
-    name: string index
-    description: text nullable
+  Purchase/PurchasePayment:
+    id: char(26)
+    purchase_id: char(26) index
+    payment_id: char(26) index
+    amount: decimal
     created_by: char(26) foreign:users
     updated_by: char(26) foreign:users nullable
     deleted_by: char(26) foreign:users nullable
     timestamps: true
 controllers:
-  JournalEntry/JournalType:
-    resource: api 
-seeders: JournalEntry/JournalType
+  Purchase/PurchasePayment:
+    resource: api
+seeders: Purchase/PurchasePayment
 #models:
 #  Administration/Quantity:
 #    id: id

@@ -274,6 +274,11 @@ class QuickCreateController extends Controller
             $validated['item_type'] = \App\Enums\ItemType::INVENTORY_MATERIALS->value;
         }
 
+        $account = new Account();
+        $validated['asset_account_id'] = $validated['asset_account_id'] ?? $account->where('slug', 'inventory-stock c ,c,p io')->value('id');
+        $validated['income_account_id'] = $validated['income_account_id'] ?? $account->where('slug', 'product-income')->value('id');
+        $validated['cost_account_id'] = $validated['cost_account_id'] ?? $account->where('slug', 'cost-of-goods-sold')->value('id');
+
         $item = Item::create($validated);
         $this->forgetInertiaCache($request, ['items']);
 

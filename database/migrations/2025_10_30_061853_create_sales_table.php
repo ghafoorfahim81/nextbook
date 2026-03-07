@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use App\Enums\SalesPurchaseType;
+use App\Enums\SalePurchaseType;
 use App\Enums\TransactionStatus;
 use App\Enums\DiscountType;
 return new class extends Migration
@@ -23,7 +23,7 @@ return new class extends Migration
             $table->ulid('transaction_id')->nullable()->index();
             $table->decimal('discount', 10, 2)->nullable();
             $table->enum('discount_type', DiscountType::values())->nullable();
-            $table->enum('type', SalesPurchaseType::values())->default(SalesPurchaseType::Cash->value);
+            $table->enum('type', SalePurchaseType::values())->default(SalePurchaseType::Cash->value);
             $table->text('description')->nullable();
             $table->enum('status', TransactionStatus::values())->default(TransactionStatus::POSTED->value);
             $table->ulid('warehouse_id')->index();

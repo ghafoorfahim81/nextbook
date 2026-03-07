@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('items', function (Blueprint $table) {
-            $table->ulid('cost_account_id')->index();
+            $table->ulid(column: 'cost_account_id')->index();
             $table->ulid('income_account_id')->index();
             $table->ulid('asset_account_id')->index();
-            
+
         });
         Schema::table('items', function (Blueprint $table) {
             $table->foreign('cost_account_id')->references('id')->on('accounts');

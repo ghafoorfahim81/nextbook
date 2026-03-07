@@ -16,7 +16,11 @@ use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
 use App\Models\Account\Account;
 use App\Services\StockService;
-
+use App\Enums\StockMovementType;
+use App\Enums\StockSourceType;
+use App\Enums\StockStatus;
+use App\Enums\TransactionStatus;
+use Illuminate\Support\Facades\Cache;
 class PurchaseController extends Controller
 {
     public function __construct()
@@ -63,7 +67,7 @@ class PurchaseController extends Controller
     {
         $purchaseNumber = Purchase::max('number') ? Purchase::max('number') + 1 : 1;
         $bankAccounts = new Account();
-        $bankAccounts = $bankAccounts->getAccountsByAccountTypeSlug('cash-or-bank'); 
+        $bankAccounts = $bankAccounts->getAccountsByAccountTypeSlug('cash-or-bank');
         return inertia('Purchase/Purchases/Create', [
             'purchaseNumber' => $purchaseNumber,
             'bankAccounts' => $bankAccounts,
@@ -73,13 +77,14 @@ class PurchaseController extends Controller
     public function store(PurchaseStoreRequest $request, TransactionService $transactionService, StockService $stockService)
     {
         //dd($request->all());
+        $validated = $request->validated();
         $purchase = DB::transaction(function () use ($request, $transactionService, $stockService) {
             // Create purchase
             $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
 
-            $validated['type']  = $validated['sale_purchase_type_id'] ?? null;
-            $validated['status'] = 'pending';
+            $validated['type']  = $validated['purchase_type'] ?? 'cash';
+            $validated['status'] = TransactionStatus::POSTED->value;
 
             // Convert date properly
             $validated['date'] = $dateConversionService->toGregorian($validated['date']);
@@ -93,20 +98,75 @@ class PurchaseController extends Controller
             }, $validated['item_list']);
             $purchase->items()->createMany($validated['item_list']);
 
+            $lines = [];
             foreach ($validated['item_list'] as $item) {
-                $stockService->addStock($item, $validated['warehouse_id'], Purchase::class, $purchase->id, $validated['date']);
+                $stock = $stockService->post([
+                    'item_id'         => $item['item_id'],
+                    'movement_type'   => StockMovementType::IN->value,
+                    'unit_measure_id' => $item['unit_measure_id'], // from item form
+                    'quantity'        => (float) $item['quantity'],
+                    'source'          => StockSourceType::PURCHASE->value,
+                    'unit_cost'       => (float) $item['unit_price'],
+                    'status'          => StockStatus::DRAFT->value,
+                    'batch'           => $item['batch'] ?? null,
+                    'date'            => $validated['date'],
+                    'expire_date'     => $item['expire_date'],
+                    'size_id'         => $validated['size_id'] ?? null,
+                    'warehouse_id'    => $validated['warehouse_id'],
+                    'branch_id'       => $purchase->branch_id,
+                    'reference_type'  => Purchase::class,
+                    'reference_id'    => $purchase->id,
+                ]);
+                $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
+                $accountId = $itemModel->asset_account_id ?? $itemModel->cost_account_id;
+                $lines[] = [
+                    'account_id' => $accountId,
+                    'ledger_id'  => null,
+                    'debit'      => (float)$item['quantity'] * (float)$item['unit_price'],
+                    'credit'     => 0,
+                    'remark'     => 'Purchase item: '.$itemModel->name,
+                ];
+
+                // $stockService->addStock($item, $validated['warehouse_id'], Purchase::class, $purchase->id, $validated['date']);
+            }
+            if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
+
+                $lines[] = [
+                    'account_id' => $validated['bank_account_id'], // cash/bank
+                    'ledger_id'  => null,
+                    'debit'      => 0,
+                    'credit'     => $validated['transaction_total'],
+                    'remark'     => 'Payment for purchase #' . $purchase->number,
+                ];
             }
 
-            // Create accounting transactions
-            $transactions = $transactionService->createPurchaseTransactions(
-                $purchase,
-                \App\Models\Ledger\Ledger::find($validated['supplier_id']),
-                $validated['transaction_total'],
-                $validated['sale_purchase_type_id'] ?? 'cash',
-                $validated['payment'] ?? [],
-                $validated['currency_id'] ?? null,
-                $validated['rate'] ?? null,
+            if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
+                $glAccounts = Cache::get('gl_accounts');
+                $lines[] = [
+                    'account_id' => $glAccounts['account-payable'], // cash/bank
+                    'ledger_id'  => $validated['supplier_id'],
+                    'debit'      => 0,
+                    'credit'     => $validated['transaction_total'],
+                    'remark'     => 'Payment for purchase #' . $purchase->number,
+                ];
+            }
+
+            $transactionService->post(
+                header: [
+                    'currency_id'   => $validated['currency_id'],
+                    'rate'          => $validated['rate'],
+                    'date'          => $validated['date'],
+                    'remark'        => 'Purchase #' . $purchase->number,
+                    'status'        => TransactionStatus::POSTED->value,
+                    'reference_type'=> Purchase::class,
+                    'reference_id'  => $purchase->id,
+                ],
+                lines: $lines
             );
+
+
+            // Create accounting transactions
+
 
             return $purchase;
         });

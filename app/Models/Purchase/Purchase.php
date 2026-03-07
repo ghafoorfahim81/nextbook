@@ -2,6 +2,7 @@
 
 namespace App\Models\Purchase;
 
+use App\Enums\SalePurchaseType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -51,6 +52,7 @@ class Purchase extends Model
             'date' => 'date',
             'discount' => 'float',
             'bank_account_id' => 'string',
+            'type' => SalePurchaseType::class,
             'created_by' => 'string',
             'updated_by' => 'string',
         ];
@@ -102,7 +104,7 @@ class Purchase extends Model
     {
         return $this->hasMany(\App\Models\Inventory\StockMovement::class, 'reference_id', 'id');
     }
-    
+
     public function bankAccount(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Account\Account::class);
