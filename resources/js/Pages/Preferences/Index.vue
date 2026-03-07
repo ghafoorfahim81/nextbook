@@ -216,17 +216,17 @@ const receiptPaymentFields = [
 
 <template>
     <AppLayout :title="t('preferences.title')">
-        <div class="container mx-auto py-6 space-y-6">
+        <div class="container mx-auto space-y-6 px-4 py-6 sm:px-6 lg:px-8">
             <!-- Header -->
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div class="flex items-start gap-3 sm:items-center">
                     <preferencesIcon class="w-8 h-8 text-primary" />
                     <div>
                         <h1 class="text-2xl font-bold">{{ t('preferences.title') }}</h1>
                         <p class="text-muted-foreground">{{ t('preferences.description') }}</p>
                     </div>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex w-full flex-wrap gap-2 md:w-auto">
                     <ModuleHelpButton module="preferences" positionClass="" />
                     <input ref="fileInput" type="file" accept=".json" class="hidden" @change="handleFileUpload" />
                     <Button variant="outline" size="sm" @click="importPreferences">
@@ -244,16 +244,16 @@ const receiptPaymentFields = [
                 </div>
             </div>
 
-            <div class="flex gap-6">
+            <div class="flex flex-col gap-6 lg:flex-row">
                 <!-- Sidebar Navigation -->
-                <div class="w-64 shrink-0">
-                    <nav class="space-y-1 sticky top-4">
+                <div class="w-full shrink-0 lg:w-64">
+                    <nav class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:sticky lg:top-4 lg:block lg:space-y-1">
                         <button
                             v-for="tab in tabs"
                             :key="tab.id"
                             @click="activeTab = tab.id"
                             :class="[
-                                'w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors',
+                                'w-full justify-start flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors',
                                 activeTab === tab.id
                                     ? 'bg-primary text-primary-foreground'
                                     : 'hover:bg-muted text-muted-foreground hover:text-foreground'
@@ -269,7 +269,7 @@ const receiptPaymentFields = [
                 <div class="flex-1 min-w-0">
                     <!-- Appearance preferences -->
                     <Card v-show="activeTab === 'appearance'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.appearance') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.appearance.description') }}</CardDescription>
@@ -280,7 +280,7 @@ const receiptPaymentFields = [
                             </Button>
                         </CardHeader>
                         <CardContent class="space-y-6">
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.appearance.font_size') }}</Label>
                                     <Input v-model.number="form.appearance.font_size" type="number" min="10" max="24" />
@@ -366,7 +366,7 @@ const receiptPaymentFields = [
                             </div>
                             <div class="space-y-3">
                                 <Label>{{ t('preferences.appearance.sidebar_menus') }}</Label>
-                                <div class="grid grid-cols-3 gap-3">
+                                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                     <div v-for="menu in sidebarMenus" :key="menu.value" class="flex items-center gap-2">
                                         <Checkbox
                                             :id="`menu-${menu.value}`"
@@ -389,7 +389,7 @@ const receiptPaymentFields = [
 
                     <!-- Item Management preferences -->
                     <Card v-show="activeTab === 'item_management'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.item_management') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.item_management.description') }}</CardDescription>
@@ -402,7 +402,7 @@ const receiptPaymentFields = [
                         <CardContent>
                             <div class="space-y-3">
                                 <Label class="text-base font-medium">{{ t('preferences.item_management.visible_fields') }}</Label>
-                                <div class="grid grid-cols-3 gap-4">
+                                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     <div v-for="field in itemManagementFields" :key="field.key" class="flex items-center gap-2">
                                         <Checkbox
                                             :id="`item-${field.key}`"
@@ -422,7 +422,7 @@ const receiptPaymentFields = [
 
                     <!-- Sale preferences -->
                     <Card v-show="activeTab === 'sale'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.sale') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.sale.description') }}</CardDescription>
@@ -434,7 +434,7 @@ const receiptPaymentFields = [
                         </CardHeader>
                         <CardContent class="space-y-6">
                             <!-- Transaction Type Tabs -->
-                            <div class="flex gap-2 border-b pb-4">
+                            <div class="flex flex-wrap gap-2 border-b pb-4">
                                 <Button
                                     v-for="type in saleTransactionTypes"
                                     :key="type"
@@ -483,7 +483,7 @@ const receiptPaymentFields = [
                             </div>
 
                             <!-- Additional preferences -->
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.sale.invoice_prefix') }}</Label>
                                     <Input v-model="form[activeSaleType].invoice_prefix" />
@@ -495,7 +495,7 @@ const receiptPaymentFields = [
                             </div>
 
                             <template v-if="activeSaleType === 'sale' || activeSaleType === 'sale_order'">
-                                <div class="grid grid-cols-2 gap-6">
+                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                     <div class="space-y-2">
                                         <Label>{{ t('preferences.sale.due_days') }}</Label>
                                         <Input v-model.number="form[activeSaleType].due_days" type="number" min="0" />
@@ -508,7 +508,7 @@ const receiptPaymentFields = [
                             </template>
 
                             <template v-if="activeSaleType === 'sale'">
-                                <div class="grid grid-cols-3 gap-6">
+                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                                     <div class="flex items-center gap-3">
                                         <Switch
                                             :model-value="form.sale.auto_reminders"
@@ -525,7 +525,7 @@ const receiptPaymentFields = [
                                         <Input v-model.number="form.sale.late_fee_percentage" type="number" min="0" max="100" step="0.1" />
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-2 gap-6">
+                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                     <div class="space-y-2">
                                         <Label>{{ t('preferences.sale.tax_percentage') }}</Label>
                                         <Input v-model.number="form.sale.tax_percentage" type="number" min="0" max="100" step="0.1" />
@@ -538,7 +538,7 @@ const receiptPaymentFields = [
                                         <Label>{{ t('preferences.sale.auto_calculate_tax') }}</Label>
                                     </div>
                                 </div>
-                                <div class="flex gap-6">
+                                <div class="flex flex-col gap-4 sm:flex-row sm:gap-6">
                                     <div class="flex items-center gap-3">
                                         <Switch
                                             :model-value="form.sale.show_ledger_transactions"
@@ -560,7 +560,7 @@ const receiptPaymentFields = [
 
                     <!-- Purchase preferences -->
                     <Card v-show="activeTab === 'purchase'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.purchase') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.purchase.description') }}</CardDescription>
@@ -572,7 +572,7 @@ const receiptPaymentFields = [
                         </CardHeader>
                         <CardContent class="space-y-6">
                             <!-- Transaction Type Tabs -->
-                            <div class="flex gap-2 border-b pb-4">
+                            <div class="flex flex-wrap gap-2 border-b pb-4">
                                 <Button
                                     v-for="type in purchaseTransactionTypes"
                                     :key="type"
@@ -621,7 +621,7 @@ const receiptPaymentFields = [
                             </div>
 
                             <!-- Additional preferences -->
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.purchase.invoice_prefix') }}</Label>
                                     <Input v-model="form[activePurchaseType].invoice_prefix" />
@@ -633,7 +633,7 @@ const receiptPaymentFields = [
                             </div>
 
                             <template v-if="activePurchaseType === 'purchase'">
-                                <div class="grid grid-cols-2 gap-6">
+                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                     <div class="space-y-2">
                                             <Label>{{ t('preferences.purchase.due_days') }}</Label>
                                         <Input v-model.number="form.purchase.due_days" type="number" min="0" />
@@ -643,7 +643,7 @@ const receiptPaymentFields = [
                                         <Textarea v-model="form.purchase.terms" rows="2" />
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-3 gap-6">
+                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                                     <div class="flex items-center gap-3">
                                         <Switch
                                                 :model-value="form.purchase.auto_reminders"
@@ -660,7 +660,7 @@ const receiptPaymentFields = [
                                         <Input v-model.number="form.purchase.late_fee_percentage" type="number" min="0" max="100" step="0.1" />
                                     </div>
                                 </div>
-                                <div class="flex gap-6">
+                                <div class="flex flex-col gap-4 sm:flex-row sm:gap-6">
                                     <div class="flex items-center gap-3">
                                         <Switch
                                                 :model-value="form.purchase.show_ledger_transactions"
@@ -682,7 +682,7 @@ const receiptPaymentFields = [
 
                     <!-- Receipt & Payment preferences -->
                     <Card v-show="activeTab === 'receipt_payment'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.receipt_payment') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.receipt_payment.description') }}</CardDescription>
@@ -706,7 +706,7 @@ const receiptPaymentFields = [
                                     </div>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.receipt_payment.default_cash_account') }}</Label>
                                     <Select v-model="form.receipt_payment.default_cash_account">
@@ -746,7 +746,7 @@ const receiptPaymentFields = [
 
                     <!-- Tax & Currency preferences -->
                     <Card v-show="activeTab === 'tax_currency'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.tax_currency') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.tax_currency.description') }}</CardDescription>
@@ -786,7 +786,7 @@ const receiptPaymentFields = [
 
                     <!-- Notification preferences -->
                     <Card v-show="activeTab === 'notifications'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.notifications') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.notifications.description') }}</CardDescription>
@@ -798,7 +798,7 @@ const receiptPaymentFields = [
                         </CardHeader>
                         <CardContent class="space-y-4">
                             <div class="space-y-4">
-                                <div class="flex items-center justify-between py-2 border-b">
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.notifications.email_notifications') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.email_notifications_desc') }}</p>
@@ -808,7 +808,7 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.notifications.email_notifications = v"
                                     />
                                 </div>
-                                <div class="flex items-center justify-between py-2 border-b">
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.notifications.low_balance_alert') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.low_balance_alert_desc') }}</p>
@@ -818,7 +818,7 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.notifications.low_balance_alert = v"
                                     />
                                 </div>
-                                <div class="flex items-center justify-between py-2 border-b">
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.notifications.overdue_invoice_alert') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.overdue_invoice_alert_desc') }}</p>
@@ -828,7 +828,7 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.notifications.overdue_invoice_alert = v"
                                     />
                                 </div>
-                                <div class="flex items-center justify-between py-2 border-b">
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.notifications.new_transaction_alert') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.new_transaction_alert_desc') }}</p>
@@ -838,7 +838,7 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.notifications.new_transaction_alert = v"
                                     />
                                 </div>
-                                <div class="flex items-center justify-between py-2 border-b">
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.notifications.daily_summary_report') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.daily_summary_report_desc') }}</p>
@@ -848,7 +848,7 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.notifications.daily_summary_report = v"
                                     />
                                 </div>
-                                <div class="flex items-center justify-between py-2">
+                                <div class="flex flex-col gap-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.notifications.weekly_financial_summary') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.weekly_financial_summary_desc') }}</p>
@@ -864,7 +864,7 @@ const receiptPaymentFields = [
 
                     <!-- Security preferences -->
                     <Card v-show="activeTab === 'security'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.security') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.security.description') }}</CardDescription>
@@ -875,7 +875,7 @@ const receiptPaymentFields = [
                             </Button>
                         </CardHeader>
                         <CardContent class="space-y-6">
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.security.session_timeout') }}</Label>
                                     <Input v-model.number="form.security.session_timeout" type="number" min="5" max="1440" />
@@ -886,7 +886,7 @@ const receiptPaymentFields = [
                                     <Input v-model.number="form.security.login_attempts_limit" type="number" min="3" max="10" />
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.security.password_min_length') }}</Label>
                                     <Input v-model.number="form.security.password_min_length" type="number" min="6" max="32" />
@@ -925,7 +925,7 @@ const receiptPaymentFields = [
 
                     <!-- Install Plugins -->
                     <Card v-show="activeTab === 'install_plugins'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.install_plugins') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.install_plugins.description') }}</CardDescription>
@@ -1101,7 +1101,7 @@ const receiptPaymentFields = [
 
                     <!-- Backup preferences -->
                     <Card v-show="activeTab === 'backup'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.backup') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.backup.description') }}</CardDescription>
@@ -1112,7 +1112,7 @@ const receiptPaymentFields = [
                             </Button>
                         </CardHeader>
                         <CardContent class="space-y-6">
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.backup.auto_backup') }}</Label>
                                     <Select v-model="form.backup.auto_backup">
@@ -1156,7 +1156,7 @@ const receiptPaymentFields = [
                             </div>
                             <div class="space-y-3">
                                 <Label class="text-base font-medium">{{ t('preferences.backup.export_formats') }}</Label>
-                                <div class="flex gap-6">
+                                <div class="flex flex-col gap-4 sm:flex-row sm:gap-6">
                                     <div class="flex items-center gap-2">
                                         <Checkbox
                                             id="export-pdf"
@@ -1188,7 +1188,7 @@ const receiptPaymentFields = [
 
                     <!-- Localization preferences -->
                     <Card v-show="activeTab === 'localization'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.localization') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.localization.description') }}</CardDescription>
@@ -1199,7 +1199,7 @@ const receiptPaymentFields = [
                             </Button>
                         </CardHeader>
                         <CardContent class="space-y-6">
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.localization.language') }}</Label>
                                     <Select v-model="form.localization.language">
@@ -1227,7 +1227,7 @@ const receiptPaymentFields = [
                                     </Select>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.localization.date_format') }}</Label>
                                     <Select v-model="form.localization.date_format">
@@ -1255,7 +1255,7 @@ const receiptPaymentFields = [
                                     </Select>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.localization.number_format') }}</Label>
                                     <Select v-model="form.localization.number_format">
@@ -1287,7 +1287,7 @@ const receiptPaymentFields = [
 
                     <!-- Display preferences -->
                     <Card v-show="activeTab === 'display'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.display') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.display.description') }}</CardDescription>
@@ -1298,7 +1298,7 @@ const receiptPaymentFields = [
                             </Button>
                         </CardHeader>
                         <CardContent class="space-y-6">
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.display.theme') }}</Label>
                                     <Select v-model="form.display.theme">
@@ -1328,7 +1328,7 @@ const receiptPaymentFields = [
                                 </div>
                             </div>
                             <div class="space-y-4">
-                                <div class="flex items-center justify-between py-2 border-b">
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.display.dashboard_charts') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.display.dashboard_charts_desc') }}</p>
@@ -1338,7 +1338,7 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.display.dashboard_charts = v"
                                     />
                                 </div>
-                                <div class="flex items-center justify-between py-2 border-b">
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.display.show_currency_symbol') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.display.show_currency_symbol_desc') }}</p>
@@ -1348,7 +1348,7 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.display.show_currency_symbol = v"
                                     />
                                 </div>
-                                <div class="flex items-center justify-between py-2 border-b">
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.display.compact_view') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.display.compact_view_desc') }}</p>
@@ -1358,7 +1358,7 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.display.compact_view = v"
                                     />
                                 </div>
-                                <div class="flex items-center justify-between py-2">
+                                <div class="flex flex-col gap-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.display.sidebar_collapsed') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.display.sidebar_collapsed_desc') }}</p>
