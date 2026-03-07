@@ -5,10 +5,18 @@ namespace App\Models\Purchase;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
+use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\HasBranch;
+use App\Traits\HasDependencyCheck;
+use App\Traits\HasSearch;
+use App\Traits\HasSorting;
+use App\Traits\HasUserAuditable;
+use App\Traits\HasDynamicFilters;
+use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use App\Traits\BranchSpecific; 
 class PurchasePayment extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -18,7 +26,7 @@ class PurchasePayment extends Model
     protected $fillable = [
         'purchase_id',
         'payment_id',
-        'amount',
+        'branch_id',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -32,25 +40,38 @@ class PurchasePayment extends Model
     protected function casts(): array
     {
         return [
-            'amount' => 'decimal',
-            'created_by' => 'integer',
-            'updated_by' => 'integer',
-            'deleted_by' => 'integer',
+            'purchase_id' => 'string',
+            'payment_id' => 'string',
+            'branch_id' => 'string',
+            'created_by' => 'string',
+            'updated_by' => 'string',
+            'deleted_by' => 'string',
         ];
     }
 
-    public function createdBy(): BelongsTo
+    protected static function searchableColumns(): array
     {
-        return $this->belongsTo(\App\Models\User::class);
+        return [
+            'purchase_id',
+            'payment_id',
+        ];
     }
 
-    public function updatedBy(): BelongsTo
+    protected array $allowedFilters = [
+        'purchase_id',
+        'payment_id',
+        'branch_id',
+        'created_by',
+    ];
+
+    public function purchase(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class);
+        return $this->belongsTo(\App\Models\Purchase\Purchase::class);
     }
 
-    public function deletedBy(): BelongsTo
+    public function payment(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class);
+        return $this->belongsTo(\App\Models\Payment\Payment::class);
     }
+
 }
