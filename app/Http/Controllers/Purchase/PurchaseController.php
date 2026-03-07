@@ -20,6 +20,7 @@ use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
 use App\Enums\TransactionStatus;
+use App\Models\Payment\Payment;
 use Illuminate\Support\Facades\Cache;
 class PurchaseController extends Controller
 {
@@ -149,6 +150,48 @@ class PurchaseController extends Controller
                     'credit'     => $validated['transaction_total'],
                     'remark'     => 'Payment for purchase #' . $purchase->number,
                 ];
+            }
+            if($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
+                if($validated['payment']['amount'] > 0) {
+                    $amount = (float) $validated['payment']['amount'];
+                    $transactionService->post(
+                        header: [
+                            'currency_id'   => $validated['currency_id'],
+                            'rate'          => $validated['rate'],
+                            'date'          => $validated['date'],
+                            'remark'        => 'Purchase #' . $purchase->number,
+                            'status'        => TransactionStatus::POSTED->value,
+                            'reference_type'=> Purchase::class,
+                            'reference_id'  => $purchase->id,
+                        ],
+                        lines: [
+                            [
+                                'account_id' => $validated['payment']['account_id'],
+                                'debit' => 0,
+                                'credit' => $amount,
+                            ],
+                            [
+                                'account_id' => $glAccounts['account-payable'],
+                                'ledger_id' => $validated['supplier_id'],
+                                'debit' => $amount,
+                                'credit' => 0,
+                            ],
+        
+                        ],
+                    );                
+                    $supplier = Ledger::find($validated['supplier_id']);
+                    $payment = Payment::create([
+                        'number' => 'PAY-'.date('Ymd').'-'.str_pad(Payment::count() + 1, 4, '0', STR_PAD_LEFT),
+                        'date' => $validated['date'],
+                        'ledger_id' => $validated['supplier_id'],
+                        'cheque_no' => null,
+                        'narration' => 'Payment for purchase #' . $purchase->number . ' to ' . $supplier->name,  
+                    ]);
+                    $purchase->payments()->create([
+                        'payment_id' => $payment->id, 
+                        'purchase_id' => $purchase->id,
+                    ]);
+                }
             }
 
             $transactionService->post(

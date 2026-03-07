@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\BranchSpecific;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 class Payment extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
@@ -25,7 +26,6 @@ class Payment extends Model
         'number',
         'date',
         'ledger_id',
-        'transaction_id',
         'cheque_no',
         'narration',
         'branch_id',
@@ -36,7 +36,6 @@ class Payment extends Model
     protected $casts = [
         'id' => 'string',
         'ledger_id' => 'string',
-        'transaction_id' => 'string',
         'date' => 'date',
         'created_by' => 'string',
         'updated_by' => 'string',
@@ -66,9 +65,9 @@ class Payment extends Model
         return $this->belongsTo(Ledger::class);
     }
 
-    public function transaction(): BelongsTo
+    public function transaction(): HasOne
     {
-        return $this->belongsTo(Transaction::class);
+        return $this->hasOne(Transaction::class, 'reference_id');
     }
 
     protected function getRelationships(): array
