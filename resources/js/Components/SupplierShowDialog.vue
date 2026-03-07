@@ -283,7 +283,7 @@ const closeDialog = () => {
                                             >
                                                 <td class="py-2 pr-4">{{  index + 1 }}</td>
                                                 <td class="py-2 pr-4">{{ row.number }}</td>
-                                                <td class="py-2 pr-4 capitalize">{{ row.transaction?.type }}</td>
+                                                <td class="py-2 pr-4 capitalize">{{ row?.type }}</td>
                                                 <td class="py-2 pr-4">{{ row?.date }}</td>
                                                 <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
                                                 <td class="py-2 pr-4">

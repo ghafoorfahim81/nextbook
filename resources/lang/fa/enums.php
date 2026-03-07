@@ -34,7 +34,7 @@ return [
     'sales_purchase_type' => [
         'cash' => 'نقدی',
         'credit' => 'قرض/اعتباری',
-        'on_loan' => 'امانی',
+        'on_loan' => 'قرض',
     ],
     'discount_type' => [
         'percentage' => 'فیصدی',

@@ -2,7 +2,7 @@
 
 namespace App\Enums;
 
-enum SalesPurchaseType: string
+enum SalePurchaseType: string
 {
     case Cash = 'cash';
     case Credit = 'credit';
@@ -19,5 +19,5 @@ enum SalesPurchaseType: string
     public static function values(): array
     {
         return array_column(self::cases(), 'value');
-    } 
+    }
 }

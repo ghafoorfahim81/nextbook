@@ -17,3 +17,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/search/{resourceType}', [App\Http\Controllers\SearchController::class, 'search']);
     Route::get('/search/resource-types', [App\Http\Controllers\SearchController::class, 'getResourceTypes']);
 });
+
+
+Route::apiResource('purchase-payments', App\Http\Controllers\Purchase\PurchasePaymentController::class);
