@@ -152,6 +152,7 @@ class QuickCreateController extends Controller
             'name' => ['required', 'string', 'unique:warehouses,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'address' => ['nullable', 'string'],
             'is_main' => ['nullable', 'boolean'],
+            'is_active' => true,
         ]);
 
         $warehouse = Warehouse::create($validated);

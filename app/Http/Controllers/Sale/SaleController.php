@@ -18,6 +18,11 @@ use App\Models\Account\Account;
 use App\Services\StockService;
 use App\Models\Transaction\Transaction;
 use Mpdf\Mpdf;
+use App\Enums\TransactionStatus;
+use App\Enums\StockMovementType;
+use App\Enums\StockSourceType;
+use App\Enums\StockStatus;
+use Illuminate\Support\Facades\Cache;
 class SaleController extends Controller
 {
     public function __construct()
@@ -63,26 +68,25 @@ class SaleController extends Controller
     public function create(Request $request)
     {
         $saleNumber = Sale::max('number') ? Sale::max('number') + 1 : 1;
+        $bankAccounts = new Account();
+        $bankAccounts = $bankAccounts->getAccountsByAccountTypeSlug('cash-or-bank');
 
         return inertia('Sale/Sales/Create', [
             'saleNumber' => $saleNumber,
+            'bankAccounts' => $bankAccounts,
         ]);
     }
 
     public function store(SaleStoreRequest $request, TransactionService $transactionService, StockService $stockService)
     {
-        // dd($request->validated());
+        $validated = $request->validated();
         $sale = DB::transaction(function () use ($request, $transactionService, $stockService) {
-            // Create sale
+            // Create purchase
             $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
 
-            if(!isset($validated['date'])) {
-                $validated['date'] = now()->toDateString();
-            }
-
-            $validated['type']  = $validated['transaction_type_id'] ?? 'cash';
-            $validated['status'] = 'pending';
+            $validated['type']  = $validated['purchase_type'] ?? 'cash';
+            $validated['status'] = TransactionStatus::POSTED->value;
 
             // Convert date properly
             $validated['date'] = $dateConversionService->toGregorian($validated['date']);
@@ -96,21 +100,100 @@ class SaleController extends Controller
             }, $validated['item_list']);
             $sale->items()->createMany($validated['item_list']);
 
-            // Handle stock deductions (reverse of purchase - remove from inventory)
+            $lines = [];
             foreach ($validated['item_list'] as $item) {
-                $stockService->removeStock($item, $validated['warehouse_id'], Sale::class, $sale->id);
+                $stock = $stockService->post([
+                    'item_id'         => $item['item_id'],
+                    'movement_type'   => StockMovementType::OUT->value,
+                    'unit_measure_id' => $item['unit_measure_id'], // from item form
+                    'quantity'        => (float) $item['quantity'],
+                    'source'          => StockSourceType::SALE->value,
+                    'unit_cost'       => (float) $item['unit_price'],
+                    'status'          => StockStatus::POSTED->value,
+                    'batch'           => $item['batch'] ?? null,
+                    'date'            => $validated['date'],
+                    'expire_date'     => $item['expire_date'],
+                    'size_id'         => $validated['size_id'] ?? null,
+                    'warehouse_id'    => $validated['warehouse_id'],
+                    'branch_id'       => $sale->branch_id,
+                    'reference_type'  => Sale::class,
+                    'reference_id'    => $sale->id,
+                ]);
+                $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
+                $accountId = $itemModel->asset_account_id ?? $itemModel->cost_account_id;
+                $lines[] = [
+                    'account_id' => $accountId,
+                    'ledger_id'  => null,
+                    'debit'      => (float)$item['quantity'] * (float)$item['unit_price'],
+                    'credit'     => 0,
+                    'remark'     => 'Sale item: '.$itemModel->name,
+                ];
+
+                // $stockService->addStock($item, $validated['warehouse_id'], Sale::class, $sale->id, $validated['date']);
+            }
+            if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
+
+                $lines[] = [
+                    'account_id' => $validated['bank_account_id'], // cash/bank
+                    'ledger_id'  => null,
+                    'debit'      => 0,
+                    'credit'     => $validated['transaction_total'],
+                        'remark'     => 'Payment for sale #' . $sale->number,
+                ];
+            }
+            $glAccounts = Cache::get('gl_accounts');
+            if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
+                $lines[] = [
+                    'account_id' => $glAccounts['account-payable'], // cash/bank
+                    'ledger_id'  => $validated['supplier_id'],
+                    'debit'      => 0,
+                    'credit'     => $validated['transaction_total'],
+                    'remark'     => 'Payment for sale #' . $sale->number,
+                ];
+            }
+            if($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
+                if($validated['payment']['amount'] > 0) {
+                    $amount = (float) $validated['payment']['amount'];
+                    $lines[] = [
+                        'account_id' => $validated['payment']['account_id'],
+                        'debit' => 0,
+                        'credit' => $amount,
+                    ];
+                    $lines[] = [
+                        'account_id' => $glAccounts['account-payable'],
+                        'ledger_id' => $validated['supplier_id'],
+                        'debit' => 0,
+                        'credit' => $validated['transaction_total'] - $amount,
+                        'remark' => 'Payment for sale #' . $sale->number,
+                    ];
+                }
+                else{
+                    $lines[] = [
+                        'account_id' => $glAccounts['account-payable'],
+                        'ledger_id' => $validated['supplier_id'],
+                        'debit' => 0,
+                        'credit' => $validated['transaction_total'],
+                        'remark' => 'Payment for sale #' . $sale->number,
+                    ];
+                }
             }
 
-            // Create accounting transactions (reverse of purchase)
-            $transactions = $transactionService->createSaleTransactions(
-                $sale,
-                \App\Models\Ledger\Ledger::find($validated['customer_id']),
-                $validated['transaction_total'],
-                $validated['type'],
-                $validated['payment'] ?? [],
-                $validated['currency_id'] ?? null,
-                $validated['rate'] ?? null,
+            $transactionService->post(
+                header: [
+                    'currency_id'   => $validated['currency_id'],
+                    'rate'          => $validated['rate'],
+                    'date'          => $validated['date'],
+                    'remark'        => 'Sale #' . $sale->number,
+                    'status'        => TransactionStatus::POSTED->value,
+                    'reference_type'=> Sale::class,
+                    'reference_id'  => $sale->id,
+                ],
+                lines: $lines
             );
+
+
+            // Create accounting transactions
+
 
             return $sale;
         });

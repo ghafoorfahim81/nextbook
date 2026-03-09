@@ -1,11 +1,12 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import { h, ref, watch, onUnmounted, computed } from 'vue';
+import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
 import axios from 'axios'
 import { useForm } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
+import NextTextarea from '@/Components/next/NextTextarea.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
 import PaymentDialog from '@/Components/next/PaymentDialog.vue';
 import { useI18n } from 'vue-i18n';
@@ -24,6 +25,8 @@ const { t } = useI18n();
 const showFilter = () => {
     showFilter.value = true;
 }
+
+
 const { toast } = useToast()
 
 const props = defineProps({
@@ -36,9 +39,12 @@ const props = defineProps({
     saleNumber: {type: String, required: true},
     items: {type: Object, required: false, default: () => ({ data: [] })},
     user_preferences: {type: Object, required: true},
+    bankAccounts: {type: Object, required: true},
+
 })
 
-console.log('this is ledgers', props);
+
+useLazyProps(props, ['ledgers', 'accounts'])
 
 const form = useForm({
     number: props.saleNumber,
@@ -46,15 +52,17 @@ const form = useForm({
     date: '',
     currency_id: '',
     rate: '',
-    transaction_type_id: '',
+    sale_type: '',
     selected_currency: '',
     selected_ledger: '',
-    selected_transaction_type: '',
+    selected_sale_type: '',
+    selected_bank_account: '',
+    bank_account_id: '',
     discount: '',
     transaction_total: 0,
+    discount_total: 0,
     discount_type: 'percentage',
     description: '',
-    is_on_loan: false,
     payment:{
         method: '',
         amount: '',
@@ -65,98 +73,38 @@ const form = useForm({
     warehouse_id: '',
     selected_warehouse: '',
     item_list:[],
-    items: [
-        {
-            item_id: '',
-            selected_item: '',
-            quantity: '',
-            unit_measure_id: '',
-            batches: [],
-            selected_batch: '',
-            expire_date: '',
-            unit_price: '',
-            selected_measure: '',
-            item_discount: '',
-            free: '',
-            tax: '',
-        },
-        {
-            item_id: '',
-            selected_item: '',
-            quantity: '',
-            unit_measure_id: '',
-            batches: [],
-            selected_batch: '',
-            expire_date: '',
-            unit_price: '',
-            selected_measure: '',
-            item_discount: '',
-            free: '',
-            tax: '',
-        },
-        {
-            item_id: '',
-            selected_item: '',
-            quantity: '',
-            unit_measure_id: '',
-            batches: [],
-            selected_batch: '',
-            expire_date: '',
-            unit_price: '',
-            selected_measure: '',
-            item_discount: '',
-            free: '',
-            tax: '',
-        },
-        {
-            item_id: '',
-            selected_item: '',
-            quantity: '',
-            unit_measure_id: '',
-            batches: [],
-            selected_batch: '',
-            expire_date: '',
-            unit_price: '',
-            selected_measure: '',
-            item_discount: '',
-            free: '',
-            tax: '',
-        },
-        {
-            item_id: '',
-            selected_item: '',
-            quantity: '',
-            unit_measure_id: '',
-            batches: [],
-            selected_batch: '',
-            expire_date: '',
-            unit_price: '',
-            selected_measure: '',
-            item_discount: '',
-            free: '',
-            tax: '',
-        },
-    ],
+    items: Array.from({ length: 6 }, () => ({
+        item_id: '',
+        selected_item: '',
+        quantity: '',
+        unit_measure_id: '',
+        batch: '',
+        expire_date: '',
+        unit_price: '',
+        selected_measure: '',
+        item_discount: '',
+        free: '',
+        tax: '',
+    })),
 })
 
-useLazyProps(props, ['ledgers', 'accounts', 'items'])
-
-const itemOptions = ref([])
-
+//  load items
 const itemSearchOptions = computed(() => {
-    const additionalParams = {}
-    if (form.warehouse_id) {
-        additionalParams.warehouse_id = form.warehouse_id
-    }
-    return { additionalParams, limit: 200 }
+  const additionalParams = {}
+  if (form.warehouse_id) {
+    additionalParams.warehouse_id = form.warehouse_id
+  }
+  return { additionalParams, limit: 200 }
 })
 
+const itemOptions = ref([]);
 const loadItemOptions = async (warehouseId = form.warehouse_id) => {
     if (!warehouseId) {
         itemOptions.value = []
         return
     }
-    try {
+    // console.log('warehouseId', warehouseId);
+    try { 
         const response = await axios.get(route('search.items-list'), {
             params: {
                 warehouse_id: warehouseId,
@@ -170,14 +118,16 @@ const loadItemOptions = async (warehouseId = form.warehouse_id) => {
     }
 }
 
-// Watch for purchaseNumber prop changes and update form.number
-watch(() => props.saleNumber, (newPurchaseNumber) => {
-    if (newPurchaseNumber) {
-        form.number = newPurchaseNumber;
-    }
+watch(() => form.warehouse_id, (warehouseId) => {
+  if (!warehouseId) {
+    itemOptions.value = []
+    return
+  }
+  loadItemOptions()
 }, { immediate: true });
 
 
+// selected ledger
 watch(() => props.ledgers?.data, (ledgers) => {
     if (ledgers && !form.selected_ledger) {
         const baseLedger = ledgers.find(c => c.code === 'CASH-CUST');
@@ -185,6 +135,13 @@ watch(() => props.ledgers?.data, (ledgers) => {
             form.selected_ledger = baseLedger;
             form.customer_id = baseLedger.id;
         }
+    }
+}, { immediate: true });
+
+// Watch for purchaseNumber prop changes and update form.number
+watch(() => props.saleNumber, (newSaleNumber) => {
+    if (newSaleNumber) {
+        form.number = newSaleNumber;
     }
 }, { immediate: true });
 
@@ -202,11 +159,11 @@ watch(() => props.currencies?.data, (currencies) => {
 
 
 watch(() => props.salePurchaseTypes, (salePurchaseTypes) => {
-    if (salePurchaseTypes && !form.selected_transaction_type) {
+    if (salePurchaseTypes && !form.selected_sale_type) {
         const baseSalePurchaseType = salePurchaseTypes.find(c => c.id === 'cash');
         if (baseSalePurchaseType) {
-            form.selected_transaction_type = baseSalePurchaseType;
-            form.transaction_type_id = baseSalePurchaseType.id;
+            form.selected_sale_type = baseSalePurchaseType;
+            form.sale_type = baseSalePurchaseType.id;
         }
     }
 }, { immediate: true });
@@ -221,20 +178,22 @@ watch(() => props.warehouses.data, (warehouses) => {
     }
 }, { immediate: true });
 
-watch(() => form.warehouse_id, (warehouseId) => {
-    if (!warehouseId) {
-        itemOptions.value = []
-        return
+watch(() => props.bankAccounts, (bankAccounts) => {
+    if (bankAccounts && !form.selected_bank_account) {
+        const baseBankAccount = bankAccounts.find(c => c.slug === 'cash-in-hand');
+        if (baseBankAccount) {
+            form.selected_bank_account = baseBankAccount;
+            form.bank_account_id = baseBankAccount.id;
+        }
     }
-    loadItemOptions(warehouseId)
 }, { immediate: true });
 
 // Payment dialog state
 const showPaymentDialog = ref(false);
 
 // Watch for sale/purchase type changes and show payment dialog for credit transactions
-watch(() => form.selected_transaction_type, (newType) => {
-    if (newType && newType === 'credit') {
+watch(() => form.selected_sale_type, (newType) => {
+    if (newType && newType.id === 'credit') {
         showPaymentDialog.value = true;
     }
 });
@@ -260,53 +219,52 @@ const handleResetPayment = () => {
     }
 }
 const handleSelectChange = (field, value) => {
+    if(field === 'warehouse_id') {
+    // Deselect all selected items when warehouse changes
+        form.items.forEach(item => {
+            item.selected_item = null;
+            item.available_measures = [];
+            item.selected_measure = '';
+            item.unit_price = '';
+            item.quantity = '';
+            item.batch = '';
+            item.expire_date = '';
+            item.discount = '';
+            item.free = '';
+            item.tax = '';
+        });
+    }
     if(field === 'currency_id') {
-        form.rate = value?.exchange_rate;
+        form.rate = value.exchange_rate;
     }
-    if(field === 'transaction_type_id' && value === 'cash') {
-        handleResetPayment();
-    }
-    if(field === 'transaction_type_id') {
-        console.log('this is value',value)
-        form.transaction_type_id = value;
-    }
-    else{
-        form[field] = value.id;
-    }
+    if(field === 'sale_type') {
+        if(value === 'cash') {
+            handleResetPayment();
+        }
+        else{
+            form[field] = value;
+            }
+        }
+    form[field] = value.id;
 };
-
-const warehouseChange = (value) => {
-    loadItemOptions(value);
-    form.warehouse_id = value;
-    form.items.forEach(item => {
-        item.selected_item = '';
-        item.selected_batch = '';
-        item.expire_date = '';
-        item.quantity = '';
-        item.unit_price = '';
-        item.selected_measure = '';
-        item.item_discount = '';
-    });
-}
 
 
 function handleSubmit(createAndNew = false) {
-
     if(form.items[0]?.selected_item === '' || form.items[0]?.selected_item === null) {
         notifySound('error');
         toast({
-            title: t('general.please_add_items'),
-            description: t('general.please_add_at_least_one_item_to_create_sale'),
+            title: 'Please add items',
+            description: 'Please add at least one item to create a sale',
             variant: 'destructive',
             class:'bg-yellow-600 text-white',
         })
         return;
     }
-
     else{
         const FormItems = form.items.filter(item => item.selected_item && item.item_id);
         form.item_list = FormItems;
         form.transaction_total = toNum(goodsTotal.value - totalDiscount.value + totalTax.value);
+        form.discount_total = toNum(totalDiscount.value);
         // Filter out empty items and set unit_measure_id
         form.item_list.forEach(item => {
             item.unit_measure_id = item.selected_measure.id;
@@ -329,21 +287,12 @@ function handleSubmit(createAndNew = false) {
                         form.currency_id = baseCurrency.id;
                     }
                 }
-                if(props.ledgers?.data) {
-                    const baseLedger = props.ledgers.data.find(c => c.code === 'CASH-CUST');
-                    if (baseLedger) {
-                        form.selected_ledger = baseLedger;
-                        form.customer_id = baseLedger.id;
-                    }
-                }
-
-                form.date = new Date().toISOString().split('T')[0];
-                // Re-initialize sale_purchase_type with default
+                // Re-initialize sale_sale_type with default
                 if (props.salePurchaseTypes) {
                     const baseSalePurchaseType = props.salePurchaseTypes.find(c => c.id === 'cash');
                     if (baseSalePurchaseType) {
-                        form.selected_transaction_type = baseSalePurchaseType;
-                        form.transaction_type_id = baseSalePurchaseType.id;
+                        form.selected_sale_type = baseSalePurchaseType;
+                        form.sale_type = baseSalePurchaseType.id;
                     }
                 }
                 // Re-initialize warehouse with default
@@ -355,8 +304,8 @@ function handleSubmit(createAndNew = false) {
                     }
                 }
                 toast({
-                    title: t('general.success'),
-                    description: t('general.create_success', { name: t('sale.sale') }),
+                    title: 'Success',
+                    description: 'Sale created successfully',
                     variant: 'success',
                     class:'bg-green-600 text-white',
                 })
@@ -364,8 +313,8 @@ function handleSubmit(createAndNew = false) {
             onError: () => {
                 notifySound('error');
                 toast({
-                    title: t('general.error'),
-                    description: t('general.create_error', { name: t('sale.sale') }),
+                    title: 'Error creating sale',
+                    description: 'Error creating sale',
                     variant: 'destructive',
                     class:'bg-pink-600 text-white',
                 })
@@ -375,9 +324,10 @@ function handleSubmit(createAndNew = false) {
             form.post(route('sales.store'), {
             onSuccess: () => {
                 notifySound('success');
+
                 toast({
-                    title: t('general.success'),
-                    description: t('general.create_success', { name: t('sale.sale') }),
+                    title: 'Sale created successfully',
+                    description: 'Sale created successfully',
                     variant: 'success',
                     class:'bg-green-600 text-white',
                 })
@@ -385,8 +335,8 @@ function handleSubmit(createAndNew = false) {
             onError: () => {
                 notifySound('error');
                 toast({
-                        title: t('general.error'),
-                    description: t('general.create_error', { name: t('sale.sale') }),
+                    title: 'Error creating sale',
+                    description: 'Error creating sale',
                     variant: 'destructive',
                     class:'bg-pink-600 text-white',
                 })
@@ -394,7 +344,6 @@ function handleSubmit(createAndNew = false) {
         })
     }
 }
-
 
 // Payment dialog handlers
 const handlePaymentDialogConfirm = () => {
@@ -405,21 +354,43 @@ const handlePaymentDialogConfirm = () => {
 const handlePaymentDialogCancel = () => {
     // Reset the sale/purchase type back to debit when dialog is cancelled
     if (props.salePurchaseTypes) {
-        const debitType = props.salePurchaseTypes.find(type => type.id === 'cash');
+
+        const debitType = props.salePurchaseTypes.find(type => type.id === 'debit');
         if (debitType) {
-            form.selected_transaction_type = debitType;
+            form.selected_sale_type = debitType;
         }
     }
     showPaymentDialog.value = false;
 };
 
-
+// Collapse sidebar while on this page, restore on leave (safe if provider missing)
+let sidebar = null
+try {
+    sidebar = useSidebar()
+} catch (e) {
+    sidebar = null
+}
+const prevSidebarOpen = ref(true)
+onMounted(() => {
+    if (sidebar) {
+        prevSidebarOpen.value = sidebar.open.value
+        sidebar.setOpen(false)
+    }
+    // Auto-generate bill number: latest + 1
+    ;(async () => {
+    })()
+})
+onUnmounted(() => {
+    if (sidebar) {
+        sidebar.setOpen(prevSidebarOpen.value)
+    }
+})
 
 // Recalculate item unit prices when currency rate changes
 watch(() => form.rate, (newRate) => {
     if (!Array.isArray(form.items)) return
     form.items.forEach((row) => {
-        if (!row || !row.selected_item) return
+        if (!row || !row?.selected_item) return
         const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
         const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
         const baseUnitPrice = Number(row.base_unit_price ?? row.selected_item?.unit_price ?? row.selected_item?.sale_price ?? 0)
@@ -438,24 +409,23 @@ const notifySound = (type) => {
     }
 }
 
-const handleItemChange = async (index, selectedItem) => {
+const handleItemChange = async (index, selected_item) => {
     const row = form.items[index]
-    if (!row || !selectedItem){
+    if (!row || !selected_item){
         row.available_measures = []
         row.selected_measure = ''
         row.unit_price = ''
         row.quantity = ''
         row.batch = ''
-        row.selected_batch = ''
         row.expire_date = ''
         row.discount = ''
         row.free = ''
         row.tax = ''
+        // do not add a new row on deselect
         return
     }
-    row.batches = selectedItem.batches || []
     // Build available measures robustly by matching quantity id
-    const selUM = selectedItem?.unitMeasure || {}
+    const selUM = selected_item?.unitMeasure || {}
     const selectedQuantityId = selUM.quantity_id ?? selUM.quantity?.id
     const selectedQuantityName = (selUM.quantity?.name || selUM.quantity?.code || '').toString().toLowerCase()
     row.available_measures = (props.unitMeasures?.data || []).filter(unit => {
@@ -463,14 +433,15 @@ const handleItemChange = async (index, selectedItem) => {
         const unitQtyName = (unit?.quantity?.name || unit?.quantity?.code || '').toString().toLowerCase()
         return (selectedQuantityId && unitQtyId === selectedQuantityId) || (!!selectedQuantityName && unitQtyName === selectedQuantityName)
     })
-    row.selected_measure = selectedItem.unitMeasure
-    row.item_id = selectedItem.id
-    row.on_hand = (selectedItem.on_hand * selectedItem.unitMeasure?.unit)/(selectedItem.unitMeasure?.unit) - row.quantity;
+    row.selected_measure = selected_item.unitMeasure
+    row.item_id = selected_item.id
+    row.on_hand = selected_item.on_hand
+
     // Set the base unit price - this is the price per base unit
-    row.base_unit_price = selectedItem.unit_price ?? selectedItem.sale_price ?? 0
+    row.base_unit_price = selected_item.sale_price ?? selected_item.avg_cost ?? 0
 
     // Set the initial unit_price based on the base unit measure
-    const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1
+    const baseUnit = Number(selected_item.unitMeasure?.unit) || 1
     row.unit_price = (row.base_unit_price * Number(row.selected_measure.unit)*form.rate)/baseUnit;
 
     // Add a new empty row only when selecting into the last row
@@ -479,12 +450,6 @@ const handleItemChange = async (index, selectedItem) => {
     }
 
     notifyIfDuplicate(index)
-}
-
-const handleBatchChange = (index, batch) => {
-    const row = form.items[index]
-    row.batch = batch?.batch
-    row.expire_date = batch?.expire_date
 }
 const isRowEnabled = (index) => {
     if (!form.selected_ledger) return false
@@ -505,7 +470,6 @@ const buildRowKey = (r) => {
         (r?.selected_measure?.id || r?.selected_measure?.id || '').toString()
     ].join('|')
 }
-
 const isDuplicateRow = (index) => {
     const r = form.items[index]
     if (!r || !r.selected_item || !r.selected_measure) return false
@@ -557,7 +521,7 @@ const onhand = (index) => {
     if (!item || !item.selected_item) return ''
     const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
-    const onHand = item.selected_batch ? Number(item.selected_batch.on_hand) : Number(item.on_hand) || 0
+    const onHand = Number(item.on_hand) || 0
     const converted = (onHand * baseUnit) / selectedUnit
     const free = Number(item.free) || 0
     const qty = Number(item.quantity) || 0
@@ -576,7 +540,7 @@ const rowTotal = (index) => {
     const price = toNum(item.unit_price, 0)
     const disc = toNum(item.item_discount, 0)
     const tax = toNum(item.tax, 0)
-    return qty * price - disc + tax
+    return Number((qty * price - disc + tax).toFixed(2))
 }
 
 const deleteRow = (index) => {
@@ -609,16 +573,17 @@ const totalDiscount = computed(() => billDiscountCurrency.value + totalItemDisco
 const totalRowTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0) - toNum(item.item_discount, 0) + toNum(item.tax, 0)), 0))
 const totalQuantity = computed(() => form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0))
 const totalFree = computed(() => form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0))
+const totalSalePrice = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0)), 0))
 
 // Transaction summary for card (spec-compliant)
 const transactionSummary = computed(() => {
     const paid = toNum(form.payment.amount, 0)
     const oldBalance = toNum(form?.selected_ledger?.statement?.balance, 0)
     const nature = form?.selected_ledger?.statement?.balance_nature // 'Dr' | 'Cr'
-    const hasSelectedItem = Array.isArray(form.items) && form.items.some(r => !!r.selected_item)
+    const hasSelected_item = Array.isArray(form.items) && form.items.some(r => !!r.selected_item)
     const netAmount = goodsTotal.value - totalDiscount.value + totalTax.value
     const grandTotal = netAmount - paid;
-    const balance = hasSelectedItem
+    const balance = hasSelected_item
         ? (nature === 'dr' ? (grandTotal + oldBalance) : (grandTotal - oldBalance))
         : 0
     return {
@@ -651,7 +616,6 @@ const addRow = () => {
         tax: '',
     })
 }
-
 const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
 const general_fields = computed(() =>  user_preferences.value?.sale.general_fields ?? user_preferences.value.sale.general_fields ?? []).value
 const item_columns = computed(() => user_preferences.value?.sale.item_columns ?? user_preferences.value.sale.item_columns ?? []).value
@@ -682,11 +646,10 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                     :search-fields="['name', 'email', 'phone_no']"
                     :search-options="{ type: 'customer' }"
                 />
-
-                <NextInput placeholder="Number"  v-if="general_fields.number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
+                <NextInput placeholder="Number" v-if="general_fields.number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
                 <NextDate v-if="general_fields.date" v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
-                <NextSelect
-                    v-if="general_fields.currency"
+                <div class="grid grid-cols-2 gap-2" v-if="general_fields.currency">
+                    <NextSelect
                     :options="currencies.data"
                     v-model="form.selected_currency"
                     label-key="code"
@@ -700,39 +663,52 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                     resource-type="currencies"
                     :search-fields="['name', 'code', 'symbol']"
                 />
-                <NextInput placeholder="Rate" v-if="general_fields.currency" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')"/>
+                <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" :disabled="form.selected_currency?.is_base_currency === true" v-model="form.rate" :label="t('general.rate')"/>
+                </div>
+                <NextSelect
+                    :options="bankAccounts"
+                    v-model="form.selected_bank_account"
+                    @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
+                    label-key="name"
+                    :searchable="true"
+                    :floating-text="t('general.bank_account')"
+                    :error="form.errors?.bank_account_id"
+                    resource-type="accounts"
+                    :search-fields="['name', 'number', 'slug']"
+                    value-key="id"
+                    :reduce="bankAccount => bankAccount"
+                />
+               <div class="grid grid-cols-1 gap-2" v-if="general_fields.type">
                 <NextSelect
                     :options="salePurchaseTypes"
-                    v-if="general_fields.type"
-                    v-model="form.selected_transaction_type"
+                    v-model="form.selected_sale_type"
                     :clearable="false"
-                    @update:modelValue="(value) => { handleSelectChange('transaction_type_id', value) }"
+                    @update:modelValue="(value) => handleSelectChange('sale_type', value)"
                     label-key="name"
                     value-key="id"
-                    :reduce="salePurchaseType => salePurchaseType.id"
-                    :floating-text="t('general.payment_type')"
-                    :error="form.errors?.transaction_type_id"
+                    :reduce="salePurchaseType => salePurchaseType"
+                    :floating-text="t('general.sale_type')"
+                    :error="form.errors?.sale_type"
                 />
-                <NextSelect
-                    v-if="general_fields.store"
+                </div>
+                <NextSelect v-if="general_fields.warehouse"
                     :options="warehouses.data"
-                    v-model="form.selected_warehouse"
                     :clearable="false"
-                    @update:modelValue="(value) => warehouseChange(value)"
+                    v-model="form.selected_warehouse"
+                    @update:modelValue="(value) => handleSelectChange('warehouse_id', value)"
                     label-key="name"
                     value-key="id"
-                    :reduce="warehouse => warehouse.id"
+                    :reduce="warehouse => warehouse"
                     :floating-text="t('admin.warehouse.warehouse')"
                     :error="form.errors?.warehouse_id"
-                    :searchable="true"
                     resource-type="warehouses"
                     :search-fields="['name', 'code', 'address']"
                 />
             </div>
             </div>
-            <div class="rounded-xl border bg-card shadow-sm overflow-x-auto max-h-80">
-                <table class="w-full table-fixed min-w-[1000px] purchase-table border-separate">
-                    <thead :class="form.transaction_type_id === 'cash' ? 'bg-card sticky top-0 z-[200]' : ''">
+            <div class="rounded-xl border bg-card shadow-sm border-violet-500">
+                <table class="w-full table-fixed min-w-[1200px] sale-table border-separate">
+                    <thead class=" " :class="form.sale_type === 'cash' ? 'bg-card sticky top-0 z-[200]' : ''">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 min-w-5">#</th>
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
@@ -751,8 +727,8 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                             </th>
                         </tr>
                     </thead>
-                    <tbody class="p-2 ">
-                        <tr v-for="(item, index) in form.items" :key="item.id" class="hover:bg-muted/40 transition-colors">
+                    <tbody class="p-2">
+                        <tr v-for="(item, index) in form.items" :key="item?.id" class="hover:bg-muted/40 transition-colors">
                             <td class="px-1 py-2 align-top w-5">{{ index + 1 }}</td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
@@ -761,52 +737,44 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                                     label-key="name"
                                     :placeholder="t('general.search_or_select')"
                                     id="item_id"
-                                    :error="form.errors?.item_id"
+                                    :error="form.errors?.[`items.${index}.item_id`]"`
                                     :show-arrow="false"
                                     :searchable="true"
                                     resource-type="items-list"
-                                    :search-fields="['name', 'code', 'generic_name', 'packing', 'barcode','fast_search']"
-                                    :search-options="itemSearchOptions"
+                                    :search-fields="['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search']"
                                     value-key="id"
-                                    :reduce="item => item"
-                                    @update:modelValue=" value => { handleItemChange(index, value) }"
-                                />
+                                    :reduce="itemValue => itemValue"
+                                    :search-options="itemSearchOptions"
+                                    @update:modelValue="value => { handleItemChange(index, value) }"
+                                    />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.batch">
-                                <NextSelect
-                                    :options="item.selected_item?.batches"
-                                    v-model="item.selected_batch"
-                                    label-key="batch"
-                                    :placeholder="t('general.search_or_select')"
-                                    id="batch_id"
+                                <NextInput
+                                    v-model="item.batch"
+                                    :disabled="!item?.selected_item"
                                     :error="form.errors?.[`item_list.${index}.batch`]"
-                                    :show-arrow="false"
-                                    value-key="batch"
-                                    :reduce="batch => batch"
-                                    @update:modelValue=" value => { handleBatchChange(index, value); }"
+                                    @input="notifyIfDuplicate(index)"
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none relative relative wq': !isRowEnabled(index) }" v-if="item_columns.expiry">
-                                <NextDate v-model="item.expire_date"
-                                disabled='true'
+                                <NextDate   v-model="item.expire_date"
                                 popover="top-left"
                                 :error="form.errors?.[`item_list.${index}.expire_date`]"   />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
                                     v-model="item.quantity"
-                                    :disabled="!item.selected_item"
+                                    :disabled="!item?.selected_item"
                                     type="number" step="any"
                                     inputmode="decimal"
                                     :error="form.errors?.[`item_list.${index}.quantity`]"
                                 />
                             </td>
                             <td class="text-center" v-if="item_columns.on_hand">
-                                 <span :title="String(onhand(index))">{{ Number(onhand(index)).toFixed(1) }}</span>
+                                 <span :title="String(onhand(index))" >{{ Number(onhand(index)).toFixed(1) }}</span>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
-                                    v-if="item_columns.measure"
                                     :options="item.available_measures"
                                     v-model="item.selected_measure"
                                     label-key="name"
@@ -815,10 +783,10 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                                     :show-arrow="false"
                                     :reduce="unit => unit"
                                     @update:modelValue="(measure) => {
-                                        const baseUnit = Number(form.items[index]?.selected_item?.unitMeasure?.unit) || 1
-                                        const selectedUnit = Number(measure?.unit) || baseUnit
-                                        const baseUnitPrice = Number(form.items[index]?.base_unit_price) || 0
-                                        form.items[index].unit_price = (baseUnitPrice * selectedUnit*form.rate)/baseUnit;
+                                            const baseUnit = Number(form.items[index]?.selected_item?.unitMeasure?.unit) || 1
+                                            const selectedUnit = Number(measure?.unit) || baseUnit
+                                            const baseUnitPrice = Number(form.items[index]?.base_unit_price) || 0
+                                            form.items[index].unit_price = (baseUnitPrice * selectedUnit*form.rate)/baseUnit;
 
                                         notifyIfDuplicate(index)
                                     }"
@@ -827,7 +795,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
                                     v-model="item.unit_price"
-                                    :disabled="!item.selected_item"
+                                    :disabled="!item?.selected_item"
                                     type="number" step="any"
                                     inputmode="decimal"
                                     :error="form.errors?.[`item_list.${index}.unit_price`]"
@@ -836,7 +804,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.discount">
                                 <NextInput
                                     v-model="item.item_discount"
-                                    :disabled="!item.selected_item"
+                                    :disabled="!item?.selected_item"
                                     type="number" step="any"
                                     inputmode="decimal"
                                     :error="form.errors?.[`item_list.${index}.item_discount`]"
@@ -845,7 +813,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.free">
                                 <NextInput
                                     v-model="item.free"
-                                    :disabled="!item.selected_item"
+                                    :disabled="!item?.selected_item"
                                     type="number" step="any"
                                     inputmode="decimal"
                                     :error="form.errors?.[`item_list.${index}.free`]"
@@ -854,14 +822,14 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.tax">
                                 <NextInput
                                     v-model="item.tax"
-                                    :disabled="!item.selected_item"
+                                    :disabled="!item?.selected_item"
                                     type="number" step="any"
                                     inputmode="decimal"
                                     :error="form.errors?.[`item_list.${index}.tax`]"
                                 />
                             </td>
                             <td class="text-center">
-                                 {{ rowTotal(index) }} {{ item.selected_item?transactionSummary?.currencySymbol:'' }}
+                                 {{ rowTotal(index) }} {{ item?.selected_item?transactionSummary?.currencySymbol:'' }}
                             </td>
                             <td class="w-10 text-center">
                                 <Trash2 class="w-4 h-4 cursor-pointer text-fuchsia-500 inline" @click="deleteRow(index)" />
@@ -899,7 +867,6 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                     </tfoot>
                 </table>
             </div>
-
             <div class="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 items-start">
                 <DiscountSummary :summary="form.summary" :total-item-discount="totalItemDiscount" :bill-discount="billDiscountCurrency" :total-discount="totalDiscount" />
                 <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
@@ -930,42 +897,34 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
 
          <!-- Payment Dialog for Credit Transactions -->
          <PaymentDialog
-                 :open="showPaymentDialog"
-                 :payment="form.payment"
-                 :errors="form.errors"
-                 :accounts="props.accounts?.data || []"
-                 :submitting="false"
-                :billTotal="transactionSummary.valueOfGoods"
-                 @update:open="(value) => showPaymentDialog = value"
-                 @confirm="handlePaymentDialogConfirm"
-                 @cancel="handlePaymentDialogCancel"
-                 @update:payment="(payment) => form.payment = payment"
-             />
+             :open="showPaymentDialog"
+             :bill-total="totalRowTotal"
+             :payment="form.payment"
+             :errors="form.errors"
+             :accounts="props.accounts?.data || []"
+             :submitting="false"
+             @update:open="(value) => showPaymentDialog = value"
+             @confirm="handlePaymentDialogConfirm"
+             @cancel="handlePaymentDialogCancel"
+             @update:payment="(payment) => form.payment = payment"
+         />
+
     </AppLayout>
 </template>
 
 <style scoped>
-.purchase-table thead {
+.sale-table thead {
     border: 2px solid hsl(var(--border));
     border-radius: 8px;
 }
 
-.purchase-table thead th {
+.sale-table thead th {
     border-bottom: 1px solid hsl(var(--border));
     padding: 0.5rem;
     white-space: nowrap;
     overflow: hidden;
 }
 
-/* Keep sticky footer visible but below any popovers (datepicker/select) opened inside table rows */
-.purchase-table tfoot.sticky {
-    z-index: 50;
-}
 
-/* Ensure datepicker popover renders above sticky footer (fixes “missing” last week row) */
-:deep(.purchase-table .vpd-content),
-:deep(.purchase-table .vpd-calendar) {
-    z-index: 9999 !important;
-}
 
 </style>

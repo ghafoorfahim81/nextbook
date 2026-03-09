@@ -23,7 +23,6 @@ class PurchaseResource extends JsonResource
             'supplier' => $this->whenLoaded('supplier'),
             'supplier_name' => $this->supplier?->name,
             'date' => $dateConversionService->toDisplay($this->date),
-            'transaction_id' => $this->transaction_id,
             'amount' => $this->transaction->lines->sum('credit'),
             'discount' => $this->discount,
             'discount_type' => $this->discount_type,

@@ -196,7 +196,8 @@
   "min": "Min",
   "max": "Max",
   "code": "Code",
-  "description": "Description"
+  "description": "Description",
+  "sale_type": "Sale Type"
 }
 
 

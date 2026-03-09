@@ -91,6 +91,7 @@ const itemSearchOptions = computed(() => {
   if (form.warehouse_id) {
     additionalParams.warehouse_id = form.warehouse_id
   }
+  additionalParams.in_stock_only = false
   return { additionalParams, limit: 200 }
 })
 
@@ -104,6 +105,7 @@ const loadItemOptions = async (warehouseId = form.warehouse_id) => {
         const response = await axios.get(route('search.items-list'), {
             params: {
                 warehouse_id: warehouseId,
+                in_stock_only: false,
                 limit: 50,
             }
         })
@@ -670,7 +672,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                     @update:modelValue="(value) => handleSelectChange('warehouse_id', value)"
                     label-key="name"
                     value-key="id"
-                    :reduce="warehouse => warehouse.id"
+                    :reduce="warehouse => warehouse"
                     :floating-text="t('admin.warehouse.warehouse')"
                     :error="form.errors?.warehouse_id"
                     resource-type="warehouses"

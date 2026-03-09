@@ -15,21 +15,28 @@ return new class extends Migration
 
         Schema::create('sale_items', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('sale_id')->index();
-            $table->ulid('item_id')->index();
+            $table->ulid('sale_id');
+            $table->ulid('item_id');
             $table->string('batch')->nullable();
             $table->date('expire_date')->nullable();
             $table->decimal('quantity', 10, 2);
-            $table->ulid('unit_measure_id')->index();
-            $table->decimal('unit_price', 10, 2);
-            $table->decimal('discount', 10, 2)->default(0)->nullable();
-            $table->decimal('free', 10, 2)->default(0)->nullable();
-            $table->decimal('tax', 10, 2)->default(0)->nullable();
-            $table->ulid('warehouse_id')->nullable()->index();
-            $table->ulid('branch_id')->index(); 
+            $table->ulid('unit_measure_id')->nullable()->index();
+            $table->ulid('warehouse_id')->index();
+            $table->ulid('size_id')->nullable()->index();
+            $table->decimal('unit_price', 18, 4);
+            $table->decimal('net_unit_cost', 18, 4)->nullable();
+            $table->decimal('discount', 18, 4)->default(0)->nullable();
+            $table->decimal('free', 18, 4)->default(0)->nullable();
+            $table->decimal('tax', 18, 4)->default(0)->nullable();
+            $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
+            $table->index(['branch_id', 'sale_id']);
+            $table->index(['branch_id', 'item_id']);
+            $table->index(['branch_id', 'warehouse_id']);
+            $table->index(['branch_id', 'batch']);
+            $table->index(['branch_id', 'expire_date']);
             $table->softDeletes();
             $table->timestamps();
         });
