@@ -5,6 +5,7 @@ namespace App\Http\Resources\Sale;
 use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Enums\SalePurchaseType;
 
 class SaleResource extends JsonResource
 {
@@ -22,12 +23,16 @@ class SaleResource extends JsonResource
             'customer' => $this->whenLoaded('customer'),
             'customer_name' => $this->customer?->name,
             'date' => $dateConversionService->toDisplay($this->date),
-            'transaction_id' => $this->transaction_id,
-            'amount' => $this->transaction?->amount,
+            'transaction_id' => $this->transaction_id, 
+            'amount' => $this->transaction->lines->sum('credit'),
             'discount' => $this->discount,
             'discount_type' => $this->discount_type,
-            'type' => $this->type   ,
-            'sale_purchase_type_id' => $this->type,
+            'type' => ($this->type instanceof SalePurchaseType)
+                ? $this->type->getLabel()
+                : (SalePurchaseType::tryFrom((string) $this->type)?->getLabel() ?? $this->type),
+            'sale_purchase_type_id' => ($this->type instanceof SalePurchaseType)
+                ? $this->type->value
+                : $this->type,
             'description' => $this->description,
             'status' => $this->status,
             'transaction_total' => $this->transaction?->amount,

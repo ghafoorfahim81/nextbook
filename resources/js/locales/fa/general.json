@@ -196,6 +196,7 @@
   "min": "حداقل",
   "max": "حداکثر",
   "code": "کد",
-  "description": "توضیحات"
+  "description": "توضیحات",
+  "sale_type": "نوع فروش"
 }
     

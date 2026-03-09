@@ -34,6 +34,8 @@ class SaleItem extends Model
         'unit_measure_id',
         'unit_price',
         'discount',
+        'size_id',
+        'net_unit_cost',
         'free',
         'tax',
         'warehouse_id',
