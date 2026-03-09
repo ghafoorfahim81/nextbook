@@ -8,7 +8,7 @@ import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import { QUICK_CREATE_EVENT, quickCreateRegistry } from '@/Components/next/quickCreateRegistry'
 import { useI18n } from 'vue-i18n'
-
+import { toast } from 'vue-sonner'
 const props = defineProps({
   open: { type: Boolean, default: false },
   resourceType: { type: String, required: true },
@@ -96,6 +96,10 @@ const submit = async () => {
     })
 
     const created = res?.data?.data
+    toast.success(t('general.success'), {
+      description: t('general.create_success', { name: title.value }),
+      class: 'bg-green-600',
+    })
     if (!created) {
       throw new Error('Unexpected response from server.')
     }
