@@ -275,7 +275,7 @@ class QuickCreateController extends Controller
         }
 
         $account = new Account();
-        $validated['asset_account_id'] = $validated['asset_account_id'] ?? $account->where('slug', 'inventory-stock c ,c,p io')->value('id');
+        $validated['asset_account_id'] = $validated['asset_account_id'] ?? $account->where('slug', 'inventory-stock')->value('id');
         $validated['income_account_id'] = $validated['income_account_id'] ?? $account->where('slug', 'product-income')->value('id');
         $validated['cost_account_id'] = $validated['cost_account_id'] ?? $account->where('slug', 'cost-of-goods-sold')->value('id');
 
