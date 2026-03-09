@@ -179,7 +179,7 @@ const showPaymentDialog = ref(false);
 
 // Watch for sale/purchase type changes and show payment dialog for credit transactions
 watch(() => form.selected_purchase_type, (newType) => {
-    if (newType && newType === 'credit') {
+    if (newType && newType.id === 'credit') {
         showPaymentDialog.value = true;
     }
 });
@@ -663,7 +663,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                     :error="form.errors?.purchase_type"
                 />
                 </div>
-                <NextSelect v-if="general_fields.store"
+                <NextSelect v-if="general_fields.warehouse"
                     :options="warehouses.data"
                     :clearable="false"
                     v-model="form.selected_warehouse"

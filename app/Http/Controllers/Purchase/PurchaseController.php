@@ -140,9 +140,8 @@ class PurchaseController extends Controller
                     'remark'     => 'Payment for purchase #' . $purchase->number,
                 ];
             }
-
+            $glAccounts = Cache::get('gl_accounts');
             if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
-                $glAccounts = Cache::get('gl_accounts');
                 $lines[] = [
                     'account_id' => $glAccounts['account-payable'], // cash/bank
                     'ledger_id'  => $validated['supplier_id'],
@@ -151,46 +150,30 @@ class PurchaseController extends Controller
                     'remark'     => 'Payment for purchase #' . $purchase->number,
                 ];
             }
-            if($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
+            if($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
                 if($validated['payment']['amount'] > 0) {
                     $amount = (float) $validated['payment']['amount'];
-                    $transactionService->post(
-                        header: [
-                            'currency_id'   => $validated['currency_id'],
-                            'rate'          => $validated['rate'],
-                            'date'          => $validated['date'],
-                            'remark'        => 'Purchase #' . $purchase->number,
-                            'status'        => TransactionStatus::POSTED->value,
-                            'reference_type'=> Purchase::class,
-                            'reference_id'  => $purchase->id,
-                        ],
-                        lines: [
-                            [
-                                'account_id' => $validated['payment']['account_id'],
-                                'debit' => 0,
-                                'credit' => $amount,
-                            ],
-                            [
-                                'account_id' => $glAccounts['account-payable'],
-                                'ledger_id' => $validated['supplier_id'],
-                                'debit' => $amount,
-                                'credit' => 0,
-                            ],
-        
-                        ],
-                    );                
-                    $supplier = Ledger::find($validated['supplier_id']);
-                    $payment = Payment::create([
-                        'number' => 'PAY-'.date('Ymd').'-'.str_pad(Payment::count() + 1, 4, '0', STR_PAD_LEFT),
-                        'date' => $validated['date'],
+                    $lines[] = [
+                        'account_id' => $validated['payment']['account_id'],
+                        'debit' => 0,
+                        'credit' => $amount,
+                    ];
+                    $lines[] = [
+                        'account_id' => $glAccounts['account-payable'],
                         'ledger_id' => $validated['supplier_id'],
-                        'cheque_no' => null,
-                        'narration' => 'Payment for purchase #' . $purchase->number . ' to ' . $supplier->name,  
-                    ]);
-                    $purchase->payments()->create([
-                        'payment_id' => $payment->id, 
-                        'purchase_id' => $purchase->id,
-                    ]);
+                        'debit' => 0,
+                        'credit' => $validated['transaction_total'] - $amount,
+                        'remark' => 'Payment for purchase #' . $purchase->number,
+                    ];
+                }
+                else{
+                    $lines[] = [
+                        'account_id' => $glAccounts['account-payable'],
+                        'ledger_id' => $validated['supplier_id'],
+                        'debit' => 0,
+                        'credit' => $validated['transaction_total'],
+                        'remark' => 'Payment for purchase #' . $purchase->number,
+                    ];
                 }
             }
 
