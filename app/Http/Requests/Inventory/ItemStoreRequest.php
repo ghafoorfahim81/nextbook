@@ -44,7 +44,7 @@ class ItemStoreRequest extends FormRequest
             'size_id' => ['nullable', 'string', 'exists:sizes,id'],
             'purchase_price' => ['nullable', 'numeric'],
             'cost' => ['nullable', 'numeric'],
-            'sale_price' => ['required', 'numeric'],
+            'sale_price' => ['nullable', 'numeric'],
             'rate_a' => ['nullable', 'numeric'],
             'rate_b' => ['nullable', 'numeric'],
             'rate_c' => ['nullable', 'numeric'],
