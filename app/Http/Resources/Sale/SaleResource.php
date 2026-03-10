@@ -24,7 +24,9 @@ class SaleResource extends JsonResource
             'customer_name' => $this->customer?->name,
             'date' => $dateConversionService->toDisplay($this->date),
             'transaction_id' => $this->transaction_id, 
-            'amount' => $this->transaction->lines->sum('credit'),
+            'amount' => $this->items->sum(function ($item) {
+                return $item->quantity * $item->unit_price;
+            }),
             'discount' => $this->discount,
             'discount_type' => $this->discount_type,
             'type' => ($this->type instanceof SalePurchaseType)
@@ -37,8 +39,8 @@ class SaleResource extends JsonResource
             'status' => $this->status,
             'transaction_total' => $this->transaction?->amount,
             'transaction' => new TransactionResource($this->whenLoaded('transaction', $this->transaction)),
-            'warehouse' => $this->stockOuts[0]?->warehouse,
-            'warehouse_id' => $this->warehouse_id ?? $this->stockOuts[0]?->warehouse?->id,
+            'warehouse' => $this->warehouse(),
+            'warehouse_id' => $this->warehouse()?->id,
             'currency_id' => $this->transaction?->currency_id,
             'rate' => $this->transaction?->rate,
             'items' => $this->whenLoaded('items', SaleItemResource::collection($this->items)),

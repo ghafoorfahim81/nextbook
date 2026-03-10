@@ -100,4 +100,8 @@ class Sale extends Model
     {
         return 'You cannot delete this sale because it has dependencies.';
     }
+    public function warehouse()
+    {
+        return $this->items?->first()?->warehouse;
+    }
 }
