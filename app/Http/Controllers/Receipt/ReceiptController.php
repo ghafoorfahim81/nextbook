@@ -116,11 +116,7 @@ class ReceiptController extends Controller
                         'credit' => $amount,
                     ],
                 ],
-            );
-
-            $receipt->update([
-                'transaction_id' => $transaction->id,
-            ]);
+            ); 
         });
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
@@ -175,8 +171,8 @@ class ReceiptController extends Controller
             $bankAccountId = $validated['bank_account_id'] ?? $receipt->transaction?->lines[0]->account_id;
             $glAccounts = Cache::get('gl_accounts');
             $arAccountId = $glAccounts['account-receivable'];
-            TransactionLine::where('transaction_id', $receipt->transaction_id)->forceDelete();
-             Transaction::where('id', $receipt->transaction_id)->forceDelete();
+            TransactionLine::where('transaction_id', $receipt->transaction->id)->forceDelete();
+             Transaction::where('id', $receipt->transaction->id)->forceDelete();
              $transactionService = app(TransactionService::class);
              $transaction = $transactionService->post(
                 header: [
@@ -199,9 +195,6 @@ class ReceiptController extends Controller
                     ],
                 ],
             );
-            $receipt->update([
-                'transaction_id' => $transaction->id,
-            ]);
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         });
 
@@ -212,8 +205,8 @@ class ReceiptController extends Controller
     {
         DB::transaction(function () use ($receipt) {
             // Soft delete linked transactions then the receipt
-                Transaction::where('id', $receipt->transaction_id)->delete();
-                TransactionLine::where('transaction_id', $receipt->transaction_id)->delete();
+                Transaction::where('id', $receipt->transaction->id)->delete();
+                TransactionLine::where('transaction_id', $receipt->transaction->id)->delete();
             $receipt->delete();
         });
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
@@ -223,8 +216,8 @@ class ReceiptController extends Controller
     public function restore(Request $request, Receipt $receipt)
     {
         $receipt->restore();
-        Transaction::where('id', $receipt->transaction_id)->restore();
-        TransactionLine::where('transaction_id', $receipt->transaction_id)->restore();
+        Transaction::where('id', $receipt->transaction->id)->restore();
+        TransactionLine::where('transaction_id', $receipt->transaction->id)->restore();
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
         return redirect()->route('receipts.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.receipt')]));

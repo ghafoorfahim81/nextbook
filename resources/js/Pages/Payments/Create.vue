@@ -137,7 +137,7 @@ function submit(createAndNew = false) {
             label-key="name"
             value-key="id"
             :reduce="acc => acc"
-            :floating-text="t('general.add_to_account')"
+            :floating-text="t('payment.pay_from_account')"
             :error="form.errors?.bank_account_id"
             :searchable="true"
             resource-type="accounts"

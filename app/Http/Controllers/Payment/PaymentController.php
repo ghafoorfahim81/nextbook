@@ -125,10 +125,7 @@ class PaymentController extends Controller
 
                 ],
             );
-
-            $payment->update([
-                'transaction_id' => $transaction->id,
-            ]);
+ 
         });
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
@@ -183,8 +180,8 @@ class PaymentController extends Controller
             $glAccounts = Cache::get('gl_accounts');
             $apAccountId = $glAccounts['account-payable'];
 
-            TransactionLine::where('transaction_id', $payment->transaction_id)->forceDelete();
-            Transaction::where('id', $payment->transaction_id)->forceDelete();
+            TransactionLine::where('transaction_id', $payment->transaction->id)->forceDelete();
+            Transaction::where('id', $payment->transaction->id)->forceDelete();
             $transactionService = app(TransactionService::class);
             $transaction = $transactionService->post(
                 header: [
@@ -207,9 +204,6 @@ class PaymentController extends Controller
                     ],
                 ],
             );
-            $payment->update([
-                'transaction_id' => $transaction->id,
-            ]);
         });
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
@@ -221,8 +215,8 @@ class PaymentController extends Controller
     {
         DB::transaction(function () use ($payment) {
 
-            TransactionLine::where('transaction_id', $payment->transaction_id)->delete();
-            Transaction::where('id', $payment->transaction_id)->delete();
+            TransactionLine::where('transaction_id', $payment->transaction->id)->delete();
+            Transaction::where('id', $payment->transaction->id)->delete();
             $payment->delete();
         });
 
@@ -234,8 +228,8 @@ class PaymentController extends Controller
     public function restore(Request $request, Payment $payment)
     {
         $payment->restore();
-        TransactionLine::where('transaction_id', $payment->transaction_id)->restore();
-        Transaction::where('id', operator: $payment->transaction_id)->restore();
+        TransactionLine::where('transaction_id', $payment->transaction->id)->restore();
+        Transaction::where('id', operator: $payment->transaction->id)->restore();
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
         return redirect()->route('payments.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.payment')]));

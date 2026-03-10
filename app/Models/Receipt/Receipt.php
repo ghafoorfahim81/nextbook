@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\BranchSpecific;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 class Receipt extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
@@ -24,8 +25,7 @@ class Receipt extends Model
     protected $fillable = [
         'number',
         'date',
-        'ledger_id',
-        'transaction_id',
+        'ledger_id', 
         'cheque_no',
         'narration',
         'currency_id',
@@ -38,8 +38,7 @@ class Receipt extends Model
 
     protected $casts = [
         'id' => 'string',
-        'ledger_id' => 'string',
-        'transaction_id' => 'string',
+        'ledger_id' => 'string', 
         'currency_id' => 'string',
         'rate' => 'float',
         'amount' => 'float',
@@ -72,9 +71,9 @@ class Receipt extends Model
         return $this->belongsTo(Ledger::class);
     }
 
-    public function transaction(): BelongsTo
+    public function transaction(): HasOne
     {
-        return $this->belongsTo(Transaction::class, 'transaction_id');
+        return $this->hasOne(Transaction::class, 'reference_id');
     }
 
 
