@@ -23,6 +23,7 @@ use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
 use Illuminate\Support\Facades\Cache;
+use App\Models\Inventory\Item;
 class SaleController extends Controller
 {
     public function __construct()
@@ -80,12 +81,12 @@ class SaleController extends Controller
     public function store(SaleStoreRequest $request, TransactionService $transactionService, StockService $stockService)
     {
         $validated = $request->validated();
-        $sale = DB::transaction(function () use ($request, $transactionService, $stockService) {
+        $sale = DB::transaction(function () use ($request, $transactionService, $stockService, $validated) {
             // Create purchase
             $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
 
-            $validated['type']  = $validated['purchase_type'] ?? 'cash';
+            $validated['type']  = $validated['sale_type'] ?? 'cash';
             $validated['status'] = TransactionStatus::POSTED->value;
 
             // Convert date properly
@@ -99,16 +100,20 @@ class SaleController extends Controller
                 return $item;
             }, $validated['item_list']);
             $sale->items()->createMany($validated['item_list']);
-
+            
             $lines = [];
             foreach ($validated['item_list'] as $item) {
+                $total = (float) $item['quantity'] * (float) $item['unit_price']; 
+                $itemModel = \App\Models\Inventory\Item::find($item['item_id']); 
+                $unitCost = $itemModel->avgCost();
+                $totalCost = $unitCost * $item['quantity'];
                 $stock = $stockService->post([
                     'item_id'         => $item['item_id'],
                     'movement_type'   => StockMovementType::OUT->value,
                     'unit_measure_id' => $item['unit_measure_id'], // from item form
                     'quantity'        => (float) $item['quantity'],
                     'source'          => StockSourceType::SALE->value,
-                    'unit_cost'       => (float) $item['unit_price'],
+                    'unit_cost'       => $unitCost,
                     'status'          => StockStatus::POSTED->value,
                     'batch'           => $item['batch'] ?? null,
                     'date'            => $validated['date'],
@@ -119,13 +124,25 @@ class SaleController extends Controller
                     'reference_type'  => Sale::class,
                     'reference_id'    => $sale->id,
                 ]);
-                $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
-                $accountId = $itemModel->asset_account_id ?? $itemModel->cost_account_id;
                 $lines[] = [
-                    'account_id' => $accountId,
+                    'account_id' => $itemModel->income_account_id,
                     'ledger_id'  => null,
-                    'debit'      => (float)$item['quantity'] * (float)$item['unit_price'],
+                    'debit'      => 0,
+                    'credit'     => $total,
+                    'remark'     => 'Sale item: '.$itemModel->name,
+                ];
+                $lines[] = [
+                    'account_id' => $itemModel->cost_account_id,
+                    'ledger_id'  => null,
+                    'debit'      => $totalCost,
                     'credit'     => 0,
+                    'remark'     => 'Sale item: '.$itemModel->name,
+                ];
+                $lines[] = [
+                    'account_id' => $itemModel->asset_account_id,
+                    'ledger_id'  => null,
+                    'debit'      => 0,
+                    'credit'     => $totalCost,
                     'remark'     => 'Sale item: '.$itemModel->name,
                 ];
 
@@ -136,19 +153,19 @@ class SaleController extends Controller
                 $lines[] = [
                     'account_id' => $validated['bank_account_id'], // cash/bank
                     'ledger_id'  => null,
-                    'debit'      => 0,
-                    'credit'     => $validated['transaction_total'],
-                        'remark'     => 'Payment for sale #' . $sale->number,
+                    'debit'      => $validated['transaction_total'],
+                    'credit'     => 0,
+                    'remark'     => 'Customer payment received for sale #' . $sale->number,
                 ];
             }
             $glAccounts = Cache::get('gl_accounts');
             if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
                 $lines[] = [
-                    'account_id' => $glAccounts['account-payable'], // cash/bank
-                    'ledger_id'  => $validated['supplier_id'],
-                    'debit'      => 0,
-                    'credit'     => $validated['transaction_total'],
-                    'remark'     => 'Payment for sale #' . $sale->number,
+                    'account_id' => $glAccounts['account-receivable'],
+                    'ledger_id'  => $validated['customer_id'],
+                    'debit'      => $validated['transaction_total'],
+                    'credit'     => 0,
+                    'remark'     => 'Customer payment received for sale #' . $sale->number,
                 ];
             }
             if($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
@@ -156,24 +173,24 @@ class SaleController extends Controller
                     $amount = (float) $validated['payment']['amount'];
                     $lines[] = [
                         'account_id' => $validated['payment']['account_id'],
-                        'debit' => 0,
-                        'credit' => $amount,
+                        'debit' => $amount,
+                        'credit' => 0,
                     ];
                     $lines[] = [
-                        'account_id' => $glAccounts['account-payable'],
-                        'ledger_id' => $validated['supplier_id'],
-                        'debit' => 0,
-                        'credit' => $validated['transaction_total'] - $amount,
-                        'remark' => 'Payment for sale #' . $sale->number,
+                        'account_id' => $glAccounts['account-receivable'],
+                        'ledger_id' => $validated['customer_id'],
+                        'debit' => $validated['transaction_total'] - $amount,
+                        'credit' => 0,
+                        'remark' => 'Customer payment received for sale #' . $sale->number,
                     ];
                 }
                 else{
                     $lines[] = [
-                        'account_id' => $glAccounts['account-payable'],
-                        'ledger_id' => $validated['supplier_id'],
-                        'debit' => 0,
-                        'credit' => $validated['transaction_total'],
-                        'remark' => 'Payment for sale #' . $sale->number,
+                        'account_id' => $glAccounts['account-receivable'],
+                        'ledger_id' => $validated['customer_id'],
+                        'debit' => $validated['transaction_total'],
+                        'credit' => 0,
+                        'remark' => 'Payment of sale #' . $sale->number,
                     ];
                 }
             }

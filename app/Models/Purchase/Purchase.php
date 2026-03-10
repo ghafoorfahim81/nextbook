@@ -110,4 +110,9 @@ class Purchase extends Model
         return $this->belongsTo(\App\Models\Account\Account::class);
     }
 
+    public function warehouse()
+    {
+        return $this->items?->first()?->warehouse;
+    }
+
 }
