@@ -88,8 +88,7 @@ class Ledger extends Model
                 ];
             }
         );
-    }
-فاز دوم 
+    } 
 
 
     /**
