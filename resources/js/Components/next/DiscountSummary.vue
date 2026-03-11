@@ -1,18 +1,18 @@
 <template>
-    <div class="rounded-xl border bg-gradient-to-b from-muted/50 to-background p-4 shadow-sm border-primary">
+    <div class="rounded-xl border bg-gradient-to-b from-muted/50 to-background p-4 shadow-sm border-primary hover:bg-muted">
         <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.discount_summary') }}</div>
 
         <div class="space-y-2">
-            <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
+            <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500 hover:rounded-md hover:p-1">
                 <span class="text-muted-foreground hover:text-violet-500">{{ t('general.total_item_discount') }}:</span>
                 <span class="tabular-nums text-sm">{{ format(totalItemDiscount) }}</span>
             </div>
-            <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500">
+            <div class="flex items-center justify-between hover:bg-muted hover:text-violet-500 hover:rounded-md hover:p-1">
                 <span class="text-muted-foreground hover:text-violet-500">{{ t('general.bill_disc') }}:</span>
                 <span class="tabular-nums text-sm hover:text-violet-500">{{ format(billDiscount) }}</span>
             </div>
 
-            <div class="flex items-center justify-between font-semibold hover:bg-muted hover:text-violet-500">
+            <div class="flex items-center justify-between font-semibold hover:bg-muted hover:text-violet-500 hover:rounded-md hover:p-1">
                 <span class="text-sm">{{ t('general.total_discount') }}:</span>
                 <span class="tabular-nums text-sm">{{ format(totalDiscount) }}</span>
             </div>
