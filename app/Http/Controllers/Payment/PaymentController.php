@@ -86,8 +86,7 @@ class PaymentController extends Controller
             $amount = (float) $validated['amount'];
             $currencyId = $validated['currency_id'];
             $rate = (float) $validated['rate'];
-            $bankAccountId = $validated['bank_account_id'];
-
+            $bankAccountId = $validated['bank_account_id']; 
             $payment = Payment::create([
                 'number' => $validated['number'],
                 'date' => $validated['date'],
@@ -200,6 +199,7 @@ class PaymentController extends Controller
                     [
                         'account_id' => $apAccountId,
                         'debit' => $amount,
+                        'ledger_id' => $ledger->id,
                         'credit' => 0,
                     ],
                 ],
@@ -215,8 +215,13 @@ class PaymentController extends Controller
     {
         DB::transaction(function () use ($payment) {
 
-            TransactionLine::where('transaction_id', $payment->transaction->id)->delete();
-            Transaction::where('id', $payment->transaction->id)->delete();
+            $transaction = $payment->transaction()->first();
+
+            if ($transaction) {
+                $transaction->lines()->delete();
+                $transaction->delete();
+            }
+
             $payment->delete();
         });
 
@@ -227,9 +232,17 @@ class PaymentController extends Controller
 
     public function restore(Request $request, Payment $payment)
     {
-        $payment->restore();
-        TransactionLine::where('transaction_id', $payment->transaction->id)->restore();
-        Transaction::where('id', operator: $payment->transaction->id)->restore();
+        DB::transaction(function () use ($payment) {
+            $transaction = $payment->transaction()->withTrashed()->first();
+
+            if ($transaction) {
+                $transaction->restore();
+                $transaction->lines()->withTrashed()->restore();
+            }
+
+            $payment->restore();
+        });
+
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
         return redirect()->route('payments.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.payment')]));

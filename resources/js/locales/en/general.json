@@ -197,7 +197,9 @@
   "max": "Max",
   "code": "Code",
   "description": "Description",
-  "sale_type": "Sale Type"
+  "sale_type": "Sale Type",
+  "payable": "Payable",
+  "receivable": "Receivable"
 }
 
 

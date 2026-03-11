@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Receipt extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
-
+ 
     protected $fillable = [
         'number',
         'date',

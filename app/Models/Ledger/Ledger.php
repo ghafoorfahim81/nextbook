@@ -38,65 +38,58 @@ class Ledger extends Model
     {
         return Attribute::make(
             get: function () {
-                // Get all transaction lines related to this ledger (not account_id)
-                $transactionLines = TransactionLine::whereHas('transaction', function ($query) {
-                    $query->where('ledger_id', $this->id);  // Filter transaction lines by ledger_id
-                })->get(); // Fetch all transaction lines related to the current ledger
-
-                if ($transactionLines->isNotEmpty()) {
-                    // Initialize debit and credit totals
-                    $totals = ['debit' => 0, 'credit' => 0];
-
-                    // Iterate through each transaction line
-                    foreach ($transactionLines as $transactionLine) {
-                        // Add the debit and credit amounts to the respective totals
-                        $totals['debit'] += $transactionLine->debit;
-                        $totals['credit'] += $transactionLine->credit;
-                    }
-
-                    // Net balance calculation
-                    $netBalance = $totals['debit'] - $totals['credit'];
-                    $balanceAmount = abs($netBalance);  // Always positive balance amount
-                    $balanceNature = $netBalance >= 0 ? 'dr' : 'cr'; // Debit if net balance is positive, credit if negative
-
-                    // Check if this ledger is a supplier
-                    $isSupplier = $this->type === 'supplier';
-
-                    return [
-                        'balance' => $balanceAmount,
-                        'balance_nature' => $balanceNature,
-                        'normal_balance_nature' => $isSupplier ? 'cr' : 'dr',
-                        'is_normal_balance' => $balanceNature === ($isSupplier ? 'cr' : 'dr'),
-                        'total_debit' => $totals['debit'],
-                        'total_credit' => $totals['credit'],
-                        'net_balance' => $netBalance,
-                        'account_type' => $this->type,
-                        'payable_amount' => $balanceNature === 'cr' ? $balanceAmount : 0,
-                        'receivable_amount' => $balanceNature === 'dr' ? $balanceAmount : 0,
-                        'meaning' => $isSupplier
-                            ? ($balanceNature === 'cr'
-                                ? "You owe {$balanceAmount} to this supplier"
-                                : "Supplier owes you {$balanceAmount}")
-                            : ($balanceNature === 'dr'
-                                ? "Customer owes you {$balanceAmount}"
-                                : "You owe {$balanceAmount} to this customer"),
-                    ];
+    
+                $totals = TransactionLine::whereHas('transaction', function ($query) {
+                        $query->where('ledger_id', $this->id);
+                              //->where('status', 'posted');
+                    })
+                    ->selectRaw('
+                        SUM(debit) as total_debit,
+                        SUM(credit) as total_credit
+                    ')
+                    ->first();
+    
+                $totalDebit  = (float) ($totals->total_debit ?? 0);
+                $totalCredit = (float) ($totals->total_credit ?? 0);
+    
+                $netBalance = $totalDebit - $totalCredit;
+    
+                $balanceAmount = abs($netBalance);
+                $balanceNature = $netBalance >= 0 ? 'dr' : 'cr';
+    
+                $natureFormat = balanceNatureFormat();
+    
+                // Format balance based on user preference
+                if ($natureFormat === 'with_nature') {
+                    $balance = $balanceAmount . ' ' . $balanceNature;
                 } else {
-                    // If there are no transaction lines, return empty statement
-                    return [
-                        'balance' => 0,
-                        'balance_nature' => null,
-                        'normal_balance_nature' => null,
-                        'is_normal_balance' => true,
-                        'total_debit' => 0,
-                        'total_credit' => 0,
-                        'net_balance' => 0,
-                    ];
+                    $balance = $netBalance >= 0
+                        ? '+' . $balanceAmount
+                        : '-' . $balanceAmount;
                 }
+    
+                $normalNature = $this->type === 'supplier' ? 'cr' : 'dr';
+    
+                return [
+                    'balance' => $balance,
+                    'balance_amount' => $balanceAmount,
+                    'balance_nature' => $balanceNature,
+                    'normal_balance_nature' => $normalNature,
+                    'is_normal_balance' => $balanceNature === $normalNature,
+    
+                    'total_debit' => $totalDebit,
+                    'total_credit' => $totalCredit,
+                    'net_balance' => $netBalance,
+    
+                    'account_type' => $this->type,
+    
+                    'payable_amount' => $balanceNature === 'cr' ? $balanceAmount : 0,
+                    'receivable_amount' => $balanceNature === 'dr' ? $balanceAmount : 0,
+                ];
             }
         );
     }
-
+فاز دوم 
 
 
     /**

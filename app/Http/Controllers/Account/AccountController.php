@@ -229,21 +229,28 @@ class AccountController extends Controller
         }
 
         if($chart_of_account->opening) {
-            TransactionLine::where('transaction_id', $chart_of_account->opening->transaction_id)->delete();
-                Transaction::where('id', $chart_of_account->opening->transaction_id)->delete();
-                $chart_of_account->opening()->delete();
+            DB::transaction(function () use ($chart_of_account) {
+            $transaction = $chart_of_account->opening()->first();
+            if ($transaction) {
+                $transaction->lines()->delete();
+                $transaction->delete();
             }
-        $chart_of_account->delete();
-
-        return redirect()->route('chart-of-accounts.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.account')]));
+            $chart_of_account->opening()->delete();
+            });
+            $chart_of_account->delete();
+            return redirect()->route('chart-of-accounts.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.account')]));
+        }
     }
     public function restore(Request $request, Account $chart_of_account)
     {
-        $chart_of_account->transactions()->whereHas('opening')->get()->each(function ($transaction) {
+        DB::transaction(function () use ($chart_of_account) {
+            $transactions = $chart_of_account->transactions()->whereHas('opening')->get();
+            foreach ($transactions as $transaction) {
             $transaction->opening()->restore();
-            $transaction->restore();
+                $transaction->restore();
+            }
+            $chart_of_account->restore();
         });
-        $chart_of_account->restore();
         return redirect()->route('chart-of-accounts.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.account')]));
     }
 }
