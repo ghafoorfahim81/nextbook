@@ -197,6 +197,8 @@
   "max": "حداکثر",
   "code": "کد",
   "description": "توضیحات",
-  "sale_type": "نوع فروش"
+  "sale_type": "نوع فروش",
+  "payable": "پرداختی",
+  "receivable": "دریافتی"
 }
     
