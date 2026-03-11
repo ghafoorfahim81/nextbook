@@ -278,7 +278,7 @@ class SearchController extends Controller
             ->select([
                 'id', 'name', 'code', 'generic_name', 'packing', 'barcode',
                 'unit_measure_id', 'brand_id', 'category_id', 'colors', 'size_id',
-                'purchase_price', 'sale_price', 'rate_a', 'rate_b', 'rate_c', 'rack_no', 'fast_search',
+                'purchase_price', 'sale_price', 'margin_percentage', 'rate_a', 'rate_b', 'rate_c', 'rack_no', 'fast_search',
             ])
             ->with(['unitMeasure', 'brand', 'category', 'size'])
             ->when($searchTerm, function ($query) use ($searchTerm, $searchableFields) {
@@ -413,11 +413,12 @@ class SearchController extends Controller
             'size' => $item->size,
             'purchase_price' => $item->purchase_price,
             'sale_price' => $item->sale_price,
+            'margin_percentage' => $item->margin_percentage,
             'rate_a' => $item->rate_a,
             'selected_batch' => null,
             'rate_b' => $item->rate_b,
             'rate_c' => $item->rate_c,
-            'rack_no' => $item->rack_no,
+            'rack_no' => $item->rack_no, 
             'fast_search' => $item->fast_search,
             'batches' => array_values($batches ?? []),
             'expiry_batches' => array_values($expiryBatches ?? []),

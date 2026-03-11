@@ -48,6 +48,7 @@ class ItemResource extends JsonResource
             'purchase_price' => $this->purchase_price,
             'cost' => $this->cost,
             'sale_price' => $this->sale_price,
+            'margin_percentage' => $this->margin_percentage,
             'rate_a' => $this->rate_a,
             'rate_b' => $this->rate_b,
             'rate_c' => $this->rate_c,

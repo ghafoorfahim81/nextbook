@@ -42,7 +42,13 @@ const props = defineProps({
     bankAccounts: {type: Object, required: true},
 
 })
-
+const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
+const general_fields = computed(() =>  user_preferences.value?.sale.general_fields ?? user_preferences.value.sale.general_fields ?? []).value
+const item_columns = computed(() => user_preferences.value?.sale.item_columns ?? user_preferences.value.sale.item_columns ?? []).value
+const sale_preferences = computed(() => user_preferences.value?.sale ?? user_preferences.value.sale ?? []).value
+const item_management = computed(() => user_preferences.value?.item_management ?? user_preferences.value.item_management ?? []).value
+const spec_text = computed(() => item_management?.spec_text ?? item_management?.spec_text ?? 'batch').value
+const decimalPlaces = computed(() => user_preferences.value?.appearance?.decimal_places ?? user_preferences.value.appearance.decimal_places ?? 2).value 
 
 useLazyProps(props, ['ledgers', 'accounts'])
 
@@ -435,14 +441,14 @@ const handleItemChange = async (index, selected_item) => {
     })
     row.selected_measure = selected_item.unitMeasure
     row.item_id = selected_item.id
-    row.on_hand = selected_item.on_hand
-
+    row.on_hand = selected_item.on_hand 
+    const marginPercentage = toNum(selected_item.margin_percentage, 0).toFixed(decimalPlaces);
     // Set the base unit price - this is the price per base unit
-    row.base_unit_price = selected_item.sale_price ?? selected_item.avg_cost ?? 0
+    row.base_unit_price = selected_item.sale_price ?? selected_item.avg_cost*(1+marginPercentage/100) ?? 0
 
     // Set the initial unit_price based on the base unit measure
     const baseUnit = Number(selected_item.unitMeasure?.unit) || 1
-    row.unit_price = (row.base_unit_price * Number(row.selected_measure.unit)*form.rate)/baseUnit;
+    row.unit_price = Number(((row.base_unit_price * Number(row.selected_measure.unit)*form.rate)/baseUnit).toFixed(2));
 
     // Add a new empty row only when selecting into the last row
     if (index === form.items.length - 1) {
@@ -540,7 +546,7 @@ const rowTotal = (index) => {
     const price = toNum(item.unit_price, 0)
     const disc = toNum(item.item_discount, 0)
     const tax = toNum(item.tax, 0)
-    return Number((qty * price - disc + tax).toFixed(2))
+    return Number((qty * price - disc + tax).toFixed(decimalPlaces))
 }
 
 const deleteRow = (index) => {
@@ -569,11 +575,11 @@ const billDiscountPercent = computed(() => {
     const gt = goodsTotal.value
     return gt > 0 ? (billDisc / gt) * 100 : 0
 })
-const totalDiscount = computed(() => billDiscountCurrency.value + totalItemDiscount.value)
-const totalRowTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0) - toNum(item.item_discount, 0) + toNum(item.tax, 0)), 0))
-const totalQuantity = computed(() => form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0))
-const totalFree = computed(() => form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0))
-const totalSalePrice = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0)), 0))
+const totalDiscount = computed(() => Number((billDiscountCurrency.value + totalItemDiscount.value).toFixed(decimalPlaces)))
+const totalRowTotal = computed(() => Number(form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0) - toNum(item.item_discount, 0) + toNum(item.tax, 0)), 0).toFixed(decimalPlaces)))
+const totalQuantity = computed(() => Number(form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0).toFixed(decimalPlaces)))
+const totalFree = computed(() => Number(form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0).toFixed(decimalPlaces)))
+const totalSalePrice = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0)), 0))      
 
 // Transaction summary for card (spec-compliant)
 const transactionSummary = computed(() => {
@@ -587,7 +593,7 @@ const transactionSummary = computed(() => {
         ? (nature === 'dr' ? (grandTotal + oldBalance) : (grandTotal - oldBalance))
         : 0
     return {
-        valueOfGoods: goodsTotal.value,
+        valueOfGoods: Number(goodsTotal.value.toFixed(decimalPlaces)),
         billDiscountPercent: billDiscountPercent.value,
         billDiscount: billDiscountCurrency.value,
         itemDiscount: totalItemDiscount.value,
@@ -616,12 +622,6 @@ const addRow = () => {
         tax: '',
     })
 }
-const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
-const general_fields = computed(() =>  user_preferences.value?.sale.general_fields ?? user_preferences.value.sale.general_fields ?? []).value
-const item_columns = computed(() => user_preferences.value?.sale.item_columns ?? user_preferences.value.sale.item_columns ?? []).value
-const sale_preferences = computed(() => user_preferences.value?.sale ?? user_preferences.value.sale ?? []).value
-const item_management = computed(() => user_preferences.value?.item_management ?? user_preferences.value.item_management ?? []).value
-const spec_text = computed(() => item_management?.spec_text ?? item_management?.spec_text ?? 'batch').value
 
 </script>
 

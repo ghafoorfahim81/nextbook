@@ -92,6 +92,7 @@ const normalize = () => {
     form.purchase_price = toNum(form.purchase_price)
     form.cost = toNum(form.cost)
     form.sale_price = toNum(form.sale_price)
+    form.margin_percentage = toNum(form.margin_percentage)
     form.rate_a = toNum(form.rate_a)
     form.rate_b = toNum(form.rate_b)
     form.rate_c = toNum(form.rate_c)
@@ -346,7 +347,42 @@ console.log('this is the showOpeningWarning', showOpeningWarning.value)
                     <NextInput v-show="visibleFields.maximum_stock" :label="t('item.maximum_stock')" type="number" :placeholder="t('general.enter', { text: t('item.maximum_stock') })" v-model="form.maximum_stock" :error="form.errors?.maximum_stock" />
                     <NextInput :label="t('item.purchase_price')" type="number" :placeholder="t('general.enter', { text: t('item.purchase_price') })" v-model="form.purchase_price" :error="form.errors?.purchase_price" />
                     <NextInput :label="t('item.cost')" type="number" v-model="form.cost" :error="form.errors?.cost" />
-                    <NextInput :label="t('item.sale_price')" type="number" :placeholder="t('general.enter', { text: t('item.sale_price') })" v-model="form.sale_price" :error="form.errors?.sale_price" />
+                    <div class="flex flex-row gap-4 w-full">
+                        <div class="flex-1">
+                            <NextInput 
+                                :label="t('item.sale_price')" 
+                                type="number" 
+                                :placeholder="t('general.enter', { text: t('item.sale_price') })" 
+                                v-model="form.sale_price" 
+                                :error="form.errors?.sale_price" 
+                            />
+                        </div>
+                        <div class="flex-1 flex items-center justify-between border rounded-md">
+                            <div>
+                                <NextInput 
+                                :label="t('item.margin_percentage')" 
+                                type="number" 
+                                :placeholder="t('general.enter', { text: t('item.margin_percentage') })" 
+                                v-model="form.margin_percentage" 
+                                :error="form.errors?.margin_percentage" 
+                            /> 
+                            </div>
+                        <div class="flex items-center justify-end px-2">
+                            <Popover v-model:open="isMarginPercentagePopoverOpen">
+                                <PopoverTrigger as-child>
+                                  <Button variant="outline">
+                                    <Info class="w-4 h-4 text-primary hover:cursor-pointer" />
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent class="w-80">
+                                  <div class="grid gap-4">
+                                    <p>{{ t('item.margin_percentage_description') || 'Margin percentage is the percentage of the sale price that is profit.' }}</p>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                        </div>
+                        </div>
+                    </div>
                     <NextInput v-show="visibleFields.rate_a" :label="t('item.rate_a')" type="number" :placeholder="t('general.enter', { text: t('item.rate_a') })" v-model="form.rate_a" :error="form.errors?.rate_a" />
                     <NextInput v-show="visibleFields.rate_b" :label="t('item.rate_b')" type="number" :placeholder="t('general.enter', { text: t('item.rate_b') })" v-model="form.rate_b" :error="form.errors?.rate_b" />
                     <NextInput v-show="visibleFields.rate_c" :label="t('item.rate_c')" type="number" :placeholder="t('general.enter', { text: t('item.rate_c') })" v-model="form.rate_c" :error="form.errors?.rate_c" />
