@@ -45,6 +45,7 @@ class ItemStoreRequest extends FormRequest
             'purchase_price' => ['nullable', 'numeric'],
             'cost' => ['nullable', 'numeric'],
             'sale_price' => ['nullable', 'numeric'],
+            'margin_percentage' => ['nullable', 'numeric', 'required_with:sale_price<0'],
             'rate_a' => ['nullable', 'numeric'],
             'rate_b' => ['nullable', 'numeric'],
             'rate_c' => ['nullable', 'numeric'],

@@ -42,6 +42,7 @@ class Item extends Model
         'generic_name',
         'packing',
         'barcode',
+        'margin_percentage',
         'unit_measure_id',
         'is_batch_tracked',
         'is_expiry_tracked',
@@ -80,15 +81,16 @@ class Item extends Model
             'brand_id' => 'string',
             'category_id' => 'string',
             'size_id' => 'string',
+            'margin_percentage' => 'decimal:4',
             'item_type' => ItemType::class,
-            'minimum_stock' => 'double',
-            'maximum_stock' => 'double',
-            'purchase_price' => 'double',
-            'cost' => 'double',
-            'sale_price' => 'double',
-            'rate_a' => 'double',
-            'rate_b' => 'double',
-            'rate_c' => 'double',
+            'minimum_stock' => 'decimal:2',
+            'maximum_stock' => 'decimal:2',
+            'purchase_price' => 'decimal:2',
+            'cost' => 'decimal:2',
+            'sale_price' => 'decimal:2',
+            'rate_a' => 'decimal:2',
+            'rate_b' => 'decimal:2',
+            'rate_c' => 'decimal:2',
             'branch_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
@@ -207,7 +209,7 @@ class Item extends Model
     }
     public function onHandByStore(string $storeId): string
     {
-    return (string) $this->stockBalances()
+      return (string) $this->stockBalances()
         ->where('store_id', $storeId)
         ->sum('quantity');
     }
@@ -231,10 +233,14 @@ class Item extends Model
     protected function getRelationships(): array
     {
         return [
-            'stockOut' => [
-                'model' => 'stock out records',
-                'message' => 'This item has stock out records'
-            ]
+            'stock_movements' => [
+                'model' => 'stock_movements',
+                'message' => 'This item has stock movements'
+            ],
+            'stock_balances' => [
+                'model' => 'stock_balances',
+                'message' => 'This item has stock balances'
+            ] 
         ];
     }
 }

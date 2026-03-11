@@ -51,6 +51,7 @@ const itemDetails = computed(() => [
   { label: t('item.purchase_price'), value: item.value?.purchase_price, icon: DollarSign },
   { label: t('item.cost'), value: item.value?.cost, icon: DollarSign },
   { label: t('item.sale_price'), value: item.value?.sale_price, icon: DollarSign },
+  { label: t('item.margin_percentage'), value: item.value?.margin_percentage, icon: DollarSign },
   { label: t('item.rate_a'), value: item.value?.rate_a, icon: DollarSign },
   { label: t('item.rate_b'), value: item.value?.rate_b, icon: DollarSign },
   { label: t('item.rate_c'), value: item.value?.rate_c, icon: DollarSign },

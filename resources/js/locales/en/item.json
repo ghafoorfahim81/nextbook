@@ -5,6 +5,8 @@
     "quantity": "Quantity",
     "purchase_price": "Purchase Price",
     "sale_price": "Sale Price",
+    "margin_percentage": "Margin Percentage (%)",
+    "margin_percentage_description": "Margin percentage is the percentage of the sale price that is profit. For example, if the margin percentage is 10%, the sale price will be 10% more than the purchase price or average cost.This will only applied if the sale price is not set.",
     "minimum_stock": "Minimum Stock",
     "maximum_stock": "Maximum Stock",
     "colors": "Colors",
