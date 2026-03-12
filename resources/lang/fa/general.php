@@ -64,5 +64,7 @@ return [
     'dependencies_found' => 'نمی‌توان این رکورد را حذف کنید چون در بخش های دیگر استفاده شده است.',
     'cannot_delete_item_with_posted_stock_movements' => 'نمی‌توان جنسی را حذف کنید که دارای حرکات انبار ثبت شده است.',
     'posted_stock_movements_found' => 'جنسی با حرکات انبار ثبت شده وجود دارد.',
+    'owe_to' => 'طلبکار',
+    'owe_you' => 'بدهکار',
 ];
 
