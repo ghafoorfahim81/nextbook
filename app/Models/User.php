@@ -60,6 +60,8 @@ class User extends Authenticatable
             'select_font_size' => 14,
             'textarea_font_size' => 14,
             'decimal_places' => 2,
+            'records_per_page' => 15,
+            'balance_nature_format'=> 'with_nature',
             'sidebar_menus' => ['dashboard', 'sale', 'purchase', 'ledger', 'owners', 'account', 'purchase', 'sale', 'receipt', 'payment', 'transfer', 'user_management', 'preferences'],
         ],
         'item_management' => [
@@ -79,8 +81,12 @@ class User extends Authenticatable
                 'barcode' => true,
                 'rack_no' => false,
                 'fast_search' => true,
+                'item_type' => true,
+                'sku' => true,
+                'is_batch_tracked' => false,
+                'is_expiry_tracked' => false,
             ],
-            'spec_text' => 'Item Spec',
+            'spec_text' => 'Batch',
         ],
         'sale' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'store' => true],

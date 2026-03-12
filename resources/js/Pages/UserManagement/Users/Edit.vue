@@ -5,9 +5,11 @@ import { useForm } from '@inertiajs/vue3';
 import NextInput from "@/Components/next/NextInput.vue";
 import NextSelect from "@/Components/next/NextSelect.vue";
 import Checkbox from "@/Components/Checkbox.vue";
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { Input } from "@/Components/ui/input";
+import { useLazyProps } from '@/composables/useLazyProps'
 
 const { t, locale } = useI18n();
 const { toast } = useToast();
@@ -15,9 +17,15 @@ const { toast } = useToast();
 const props = defineProps({
     user: Object,
     permissions: Array,
-    roles: Array,
+    roles: {
+        type: Array,
+        required: false,
+        default: () => [],
+    },
 });
 const user = props.user?.data;
+
+useLazyProps(props, ['roles'])
 
 // Add a loading state as in many create pages
 const loading = ref(false);
@@ -105,6 +113,7 @@ const goBack = () => {
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.edit', { name: t('user_mangements.user') }) }}
                 </div>
+                <ModuleHelpButton module="user_management" />
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <!-- Basic Information -->
                     <NextInput

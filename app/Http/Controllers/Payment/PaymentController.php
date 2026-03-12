@@ -10,10 +10,14 @@ use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
 use App\Models\Payment\Payment;
 use App\Models\Transaction\Transaction;
+use App\Models\Transaction\TransactionLine;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use App\Support\Inertia\CacheKey;
+use App\Models\Administration\Currency;
+use App\Models\User;
 class PaymentController extends Controller
 {
     public function __construct()
@@ -23,18 +27,35 @@ class PaymentController extends Controller
 
     public function index(Request $request)
     {
-        $perPage = $request->input('perPage', 10);
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'date');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
-        $payments = Payment::with(['ledger'])
+        $payments = Payment::with(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
 
         return inertia('Payments/Index', [
             'payments' => PaymentResource::collection($payments),
+            'filterOptions' => [
+                'suppliers' => Ledger::query()->where('type', 'supplier')->orderBy('name')->get(['id', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'bankAccounts' => Account::whereHas('accountType', fn ($q) => $q->whereIn('slug', ['cash-or-bank']))
+                    ->orderBy('name')
+                    ->get(['id', 'name']),
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 
@@ -65,8 +86,7 @@ class PaymentController extends Controller
             $amount = (float) $validated['amount'];
             $currencyId = $validated['currency_id'];
             $rate = (float) $validated['rate'];
-            $bankAccountId = $validated['bank_account_id'];
-
+            $bankAccountId = $validated['bank_account_id']; 
             $payment = Payment::create([
                 'number' => $validated['number'],
                 'date' => $validated['date'],
@@ -77,43 +97,37 @@ class PaymentController extends Controller
 
             // Debit Accounts Payable for selected ledger (reduce liability)
             $glAccounts = Cache::get('gl_accounts');
-            $apAccountId = $glAccounts['accounts-payable'];
+            $apAccountId = $glAccounts['account-payable'];
             $debitRemark = "Payment #{$payment->number} to {$ledger->name}";
-            $debitTxn = $transactionService->createTransaction([
-                'account_id' => $apAccountId,
-                'amount' => $amount,
-                'currency_id' => $currencyId,
-                'rate' => $rate,
-                'date' => $payment->date,
-                'type' => 'debit',
-                'remark' => $debitRemark,
-                'reference_type' => 'payment',
-                'reference_id' => $payment->id,
-            ]);
 
-            // Credit selected bank account
-            $creditRemark = "Bank payment for payment #{$payment->number}";
-            $creditTxn = $transactionService->createTransaction([
-                'account_id' => $bankAccountId,
-                'amount' => $amount,
-                'currency_id' => $currencyId,
-                'rate' => $rate,
-                'date' => $payment->date,
-                'type' => 'credit',
-                'remark' => $creditRemark,
-                'reference_type' => 'payment',
-                'reference_id' => $payment->id,
-            ]);
+            $transaction = $transactionService->post(
+                header: [
+                    'currency_id' => $currencyId,
+                    'rate' => $rate,
+                    'date' => $payment->date,
+                    'reference_type' => Payment::class,
+                    'reference_id' => $payment->id,
+                    'remark' => $debitRemark,
+                ],
+                lines: [
+                    [
+                        'account_id' => $bankAccountId,
+                        'debit' => 0,
+                        'credit' => $amount,
+                    ],
+                    [
+                        'account_id' => $apAccountId,
+                        'ledger_id' => $ledger->id,
+                        'debit' => $amount,
+                        'credit' => 0,
+                    ],
 
-            $ledger->ledgerTransactions()->create([
-                'transaction_id' => $debitTxn->id,
-            ]);
-
-            $payment->update([
-                'payment_transaction_id' => $debitTxn->id,
-                'bank_transaction_id' => $creditTxn->id,
-            ]);
+                ],
+            );
+ 
         });
+
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
         if ($request->input('create_and_new')) {
             return redirect()->route('payments.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.payment')]));
@@ -124,7 +138,7 @@ class PaymentController extends Controller
 
     public function show(Request $request, Payment $payment)
     {
-        $payment->load(['ledger', 'paymentTransaction.currency', 'bankTransaction.currency', 'bankTransaction.account']);
+        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy']);
         return response()->json([
             'data' => new PaymentResource($payment),
         ]);
@@ -132,7 +146,7 @@ class PaymentController extends Controller
 
     public function edit(Request $request, Payment $payment)
     {
-        $payment->load(['ledger', 'paymentTransaction.currency', 'bankTransaction.currency', 'bankTransaction.account']);
+        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy']);
         return inertia('Payments/Edit', [
             'data' => new PaymentResource($payment),
         ]);
@@ -157,38 +171,42 @@ class PaymentController extends Controller
             ]);
 
             $ledger = Ledger::findOrFail($payment->ledger_id);
-            $amount = isset($validated['amount']) ? (float) $validated['amount'] : ($payment->bankTransaction?->amount ?? 0);
-            $currencyId = $validated['currency_id'] ?? $payment->bankTransaction?->currency_id;
-            $rate = isset($validated['rate']) ? (float) $validated['rate'] : ($payment->bankTransaction?->rate ?? 0);
+            $amount = isset($validated['amount']) ? (float) $validated['amount'] : ($payment->transaction?->lines[0]->debit ?? 0);
+            $currencyId = $validated['currency_id'] ?? $payment->transaction?->currency_id;
+            $rate = isset($validated['rate']) ? (float) $validated['rate'] : ($payment->transaction?->rate ?? 0);
             $date = $validated['date'] ?? $payment->date;
-            $bankAccountId = $validated['bank_account_id'] ?? $payment->bankTransaction?->account_id;
+            $bankAccountId = $validated['bank_account_id'] ?? $payment->transaction?->lines[0]->account_id;
             $glAccounts = Cache::get('gl_accounts');
-            $apAccountId = $glAccounts['accounts-payable'];
+            $apAccountId = $glAccounts['account-payable'];
 
-            if ($payment->payment_transaction_id) {
-                Transaction::where('id', $payment->payment_transaction_id)->update([
-                    'account_id' => $apAccountId,
-                    'amount' => $amount,
+            TransactionLine::where('transaction_id', $payment->transaction->id)->forceDelete();
+            Transaction::where('id', $payment->transaction->id)->forceDelete();
+            $transactionService = app(TransactionService::class);
+            $transaction = $transactionService->post(
+                header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
                     'date' => $date,
-                    'type' => 'debit',
-                    'remark' => "Payment #{$payment->number} to {$ledger->name}",
-                ]);
-            }
-
-            if ($payment->bank_transaction_id) {
-                Transaction::where('id', $payment->bank_transaction_id)->update([
-                    'account_id' => $bankAccountId,
-                    'amount' => $amount,
-                    'currency_id' => $currencyId,
-                    'rate' => $rate,
-                    'date' => $date,
-                    'type' => 'credit',
-                    'remark' => "Bank payment for payment #{$payment->number}",
-                ]);
-            }
+                    'reference_type' => Payment::class,
+                    'reference_id' => $payment->id,
+                ],
+                lines: [
+                    [
+                        'account_id' => $bankAccountId,
+                        'debit' => 0,
+                        'credit' => $amount,
+                    ],
+                    [
+                        'account_id' => $apAccountId,
+                        'debit' => $amount,
+                        'ledger_id' => $ledger->id,
+                        'credit' => 0,
+                    ],
+                ],
+            );
         });
+
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
         return redirect()->route('payments.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.payment')]));
     }
@@ -196,29 +214,37 @@ class PaymentController extends Controller
     public function destroy(Request $request, Payment $payment)
     {
         DB::transaction(function () use ($payment) {
-            if ($payment->payment_transaction_id) {
-                Transaction::where('id', $payment->payment_transaction_id)->delete();
-                $payment->ledger->ledgerTransactions()->where('transaction_id', $payment->payment_transaction_id)->delete();
+
+            $transaction = $payment->transaction()->first();
+
+            if ($transaction) {
+                $transaction->lines()->delete();
+                $transaction->delete();
             }
-            if ($payment->bank_transaction_id) {
-                Transaction::where('id', $payment->bank_transaction_id)->delete();
-            }
+
             $payment->delete();
         });
+
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
         return redirect()->route('payments.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.payment')]));
     }
 
     public function restore(Request $request, Payment $payment)
     {
-        $payment->restore();
-        if ($payment->payment_transaction_id) {
-            Transaction::where('id', $payment->payment_transaction_id)->restore();
-            $payment->ledger->ledgerTransactions()->where('transaction_id', $payment->payment_transaction_id)->restore();
-        }
-        if ($payment->bank_transaction_id) {
-            Transaction::where('id', $payment->bank_transaction_id)->restore();
-        }
+        DB::transaction(function () use ($payment) {
+            $transaction = $payment->transaction()->withTrashed()->first();
+
+            if ($transaction) {
+                $transaction->restore();
+                $transaction->lines()->withTrashed()->restore();
+            }
+
+            $payment->restore();
+        });
+
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
         return redirect()->route('payments.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.payment')]));
     }
 }

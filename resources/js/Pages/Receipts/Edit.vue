@@ -1,20 +1,25 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import { useForm, usePage } from '@inertiajs/vue3'
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import axios from 'axios'
+import { useLazyProps } from '@/composables/useLazyProps'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@/Components/ui/toast/use-toast'
 const { t } = useI18n()
 const { toast } = useToast()
 const page = usePage()
-const ledgers = page.props.ledgers?.data || []
-const accounts = page.props.accounts?.data || []
-const currencies = page.props.currencies?.data || []
+
+const ledgers = computed(() => page.props.ledgers?.data || [])
+const accounts = computed(() => page.props.accounts?.data || [])
+const currencies = computed(() => page.props.currencies?.data || [])
+const homeCurrency = computed(() => page.props.homeCurrency?.data || null)
+useLazyProps(page.props, ['ledgers', 'accounts'])
 const form = useForm({
   id: '',
   number: '',
@@ -52,18 +57,27 @@ onMounted(async () => {
   form.rate = r.rate
   form.cheque_no = r.cheque_no
   form.narration = r.narration
-  form.selected_ledger = ledgers.find(l => l.id === r.ledger_id) || r.ledger || null
-  form.selected_currency = currencies.find(c => c.id === r.currency_id) || null
+  form.selected_ledger = ledgers.value.find(l => l.id === r.ledger_id) || r.ledger || null
+  form.selected_currency = currencies.value.find(c => c.id === r.currency_id) || null
   const bankId = r?.bank_transaction?.account_id || r.bank_transaction_id
   form.bank_account_id = bankId
   form.selected_bank_account = r.bank_account
   form.bank_account_id = r.bank_account_id
+  oldBalanceText();
+})
 
+watch([ledgers, currencies], () => {
+  if (form.ledger_id && !form.selected_ledger) {
+    form.selected_ledger = ledgers.value.find(l => l.id === form.ledger_id) || form.selected_ledger
+  }
+  if (form.currency_id && !form.selected_currency) {
+    form.selected_currency = currencies.value.find(c => c.id === form.currency_id) || form.selected_currency
+  }
 })
 function handleSelectChange(field, value) {
   form[field] = value
   if (field === 'currency_id') {
-    const chosen = currencies.find(c => c.id === value)
+    const chosen = currencies.value.find(c => c.id === value)
     if (chosen) form.rate = chosen.exchange_rate
   }
 }
@@ -92,12 +106,13 @@ function submit() {
 </script>
 
 <template>
-  <AppLayout :title="t('general.edit', { name: 'Receipt' })">
+  <AppLayout :title="t('general.edit', { name: t('receipt.receipt') })">
     <form @submit.prevent="submit()">
-      <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
+      <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
-          {{ t('general.edit', { name: 'Receipt' }) }}
+          {{ t('general.edit', { name: t('receipt.receipt') }) }}
         </div>
+        <ModuleHelpButton module="receipt" />
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextSelect
             :options="ledgers"
@@ -127,7 +142,8 @@ function submit() {
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+
+          <NextInput placeholder="Rate" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
           <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
           <NextSelect
             :options="accounts"
@@ -136,16 +152,16 @@ function submit() {
             label-key="name"
             value-key="id"
             :reduce="acc => acc"
-            :floating-text="'Bank Account'"
+            :floating-text="t('general.add_to_account')"
             :error="form.errors?.bank_account_id"
             :searchable="true"
             resource-type="accounts"
             :search-fields="['name', 'number', 'slug']"
           />
-          <NextInput placeholder="Cheque No" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="'Cheque No'" />
+          <NextInput placeholder="Cheque No" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('general.cheque_no')" />
           <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="md:col-span-2">
-              <NextTextarea placeholder="Narration" :error="form.errors?.narration" v-model="form.narration" :label="'Narration'" />
+              <NextTextarea :placeholder="t('general.enter', { text: t('general.narration') })" :error="form.errors?.narration" v-model="form.narration" :label="t('general.narration')" />
             </div>
             <div class="md:col-span-1">
               <div class="rounded-xl border p-4 w-full md:w-64 ml-auto">

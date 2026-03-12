@@ -9,22 +9,23 @@ use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasUserTracking;
+use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\BranchSpecific;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 class Receipt extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
-
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+ 
     protected $fillable = [
         'number',
         'date',
-        'ledger_id',
-        'receive_transaction_id',
-        'bank_transaction_id',
+        'ledger_id', 
         'cheque_no',
         'narration',
         'currency_id',
@@ -37,9 +38,7 @@ class Receipt extends Model
 
     protected $casts = [
         'id' => 'string',
-        'ledger_id' => 'string',
-        'receive_transaction_id' => 'string',
-        'bank_transaction_id' => 'string',
+        'ledger_id' => 'string', 
         'currency_id' => 'string',
         'rate' => 'float',
         'amount' => 'float',
@@ -59,32 +58,31 @@ class Receipt extends Model
         ];
     }
 
+    protected array $allowedFilters = [
+        'ledger_id',
+        'transaction.currency_id',
+        'transaction.lines.account_id',
+        'date',
+        'created_by',
+    ];
+
     public function ledger(): BelongsTo
     {
         return $this->belongsTo(Ledger::class);
     }
 
-    public function receiveTransaction(): BelongsTo
+    public function transaction(): HasOne
     {
-        return $this->belongsTo(Transaction::class, 'receive_transaction_id');
+        return $this->hasOne(Transaction::class, 'reference_id');
     }
 
-
-    public function bankTransaction(): BelongsTo
-    {
-        return $this->belongsTo(Transaction::class, 'bank_transaction_id');
-    }
 
     protected function getRelationships(): array
     {
         return [
-            'receiveTransaction' => [
+            'transaction' => [
                 'model' => 'transactions',
-                'message' => 'This receipt has a linked receive transaction',
-            ],
-            'bankTransaction' => [
-                'model' => 'transactions',
-                'message' => 'This receipt has a linked bank transaction',
+                'message' => 'This receipt has a linked transaction',
             ],
         ];
     }

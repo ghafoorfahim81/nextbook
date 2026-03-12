@@ -23,7 +23,7 @@ const createAndNewText = computed(() => (props.createAndNewLoading ? props.creat
 </script>
 
 <template>
-    <div class="flex items-center gap-2 [--radius:1.1rem]">
+    <div class="flex items-center gap-2 [--radius:1.1rem] mt-2">
         <button
             type="submit"
             class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white disabled:bg-gray-300"

@@ -28,6 +28,7 @@
   "create_success": "{name} created successfully ",
   "update_success": "{name} updated successfully ",
   "delete_success": "{name} deleted successfully ",
+  "delete_sucessfully": "deleted successfully",
   "status": "Status",
   "enter": "Enter {text}",
   "text": "Text",
@@ -81,6 +82,7 @@
   "phone": "Phone",
   "format": "Format",
   "save": "Save",
+  "branch": "Branch",
   "save_and_new": "Save and new",
   "from": "From",
   "to": "To",
@@ -102,7 +104,7 @@
   "type": "Type",
   "and": "and",
   "finish": "Finish",
-  "delete_description": "This will permanently delete this {name}.",
+  "delete_description": "This will delete this {name}.",
   "create_and_new": "Create and new",
   "rows": "Rows",
   "add_row": "Add row",
@@ -135,6 +137,7 @@
   "try_again":"Try again",
   "restore":"Restore",
   "restore_success":"{name} restored successfully",
+  "restore_successful":"Restored successful",
   "restore_error_message":"Failed to restore {name}",
   "bill_number":"Bill Number",
   "account_transfer":"Account Transfer",
@@ -184,7 +187,19 @@
   "no_results": "No results found",
   "payment_type": "Payment Type",
   "please_add_items": "Please add items",
-  "please_add_at_least_one_item_to_create_sale": "Please add at least one item to create a sale"
+  "please_add_at_least_one_item_to_create_sale": "Please add at least one item to create a sale",
+  "add_to_account": "Add to account",
+  "cheque_no": "Cheque No",
+  "narration": "Narration",
+  "saving": "Saving...",
+  "duplicate_found": "Duplicate found",
+  "min": "Min",
+  "max": "Max",
+  "code": "Code",
+  "description": "Description",
+  "sale_type": "Sale Type",
+  "payable": "Payable",
+  "receivable": "Receivable"
 }
 
 

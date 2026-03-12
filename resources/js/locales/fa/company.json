@@ -27,5 +27,6 @@
     "selected_business_type": "نوع عملیات انتخاب شده",
     "upload_logo": "بارگذاری لوگو",
     "upload_logo_description": "PNG, JPG, GIF حداکثر 2 مگابایت",
-    "logo_can_be_updated_in_edit_mode": "لوگو می تواند در حالت ویرایش به روز شود"
+    "logo_can_be_updated_in_edit_mode": "لوگو می تواند در حالت ویرایش به روز شود",
+    "costing_method": "روش محاسبه هزینه"
 }

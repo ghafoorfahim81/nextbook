@@ -3,8 +3,10 @@ import AppLayout from '@/Layouts/Layout.vue'
 import { useForm, usePage } from '@inertiajs/vue3'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n'
 import { computed, watch } from 'vue'
+import { useLazyProps } from '@/composables/useLazyProps'
 const { t } = useI18n()
 
 const page = usePage()
@@ -14,15 +16,25 @@ const owner = page.props.owner?.data || page.props.owner
 const allAccounts = computed(() => page.props.accounts?.data ?? page.props.accounts ?? [])
 const currencies = computed(() => page.props.currencies?.data ?? page.props.currencies ?? [])
 
+useLazyProps(page.props, ['accounts', 'capitalAccounts', 'drawingAccounts'])
+
 // Derived lists
 const capitalAccounts = computed(() => {
+  const shared = page.props.capitalAccounts?.data ?? page.props.capitalAccounts
+  if (Array.isArray(shared) && shared.length) {
+    return shared
+  }
   const list = Array.isArray(allAccounts.value) ? allAccounts.value : []
   return list.filter(a => a?.slug === 'owners-capital' || (a?.name || '').toLowerCase().includes('capital'))
 })
 const drawingAccounts = computed(() => {
+  const shared = page.props.drawingAccounts?.data ?? page.props.drawingAccounts
+  if (Array.isArray(shared) && shared.length) {
+    return shared
+  }
   const list = Array.isArray(allAccounts.value) ? allAccounts.value : []
   return list.filter(a => a?.slug === 'owners-drawing' || (a?.name || '').toLowerCase().includes('drawing'))
-}) 
+})
 const form = useForm({
   name: owner?.name || '',
   father_name: owner?.father_name || '',
@@ -84,10 +96,11 @@ function submit() {
 <template>
   <AppLayout :title="t('general.edit', { name: t('owner.owner') })">
     <form @submit.prevent="submit()">
-      <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
+      <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.edit', { name: t('owner.owner') }) }}
         </div>
+        <ModuleHelpButton module="owner" />
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name" />
           <NextInput :label="t('owner.father_name')" v-model="form.father_name" :error="form.errors?.father_name" />

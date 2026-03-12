@@ -7,6 +7,7 @@ use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +18,7 @@ use App\Traits\HasCache;
 use App\Traits\BranchSpecific;
 class UnitMeasure extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasCache, HasSearch, HasSorting, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
@@ -40,6 +41,7 @@ class UnitMeasure extends Model
         'unit',
         'symbol',
         'description',
+        'is_active',
         'branch_id',
         'quantity_id',
         'is_main',
@@ -58,6 +60,7 @@ class UnitMeasure extends Model
         'id' => 'string',
         'branch_id' => 'string',
         'quantity_id' => 'string',
+        'is_active' => 'boolean',
         'is_main' => 'boolean',
         'value' => 'double',
         'created_by' => 'string',
@@ -104,6 +107,22 @@ class UnitMeasure extends Model
                 'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'count')->first()->id,
                 'quantity_slug' => 'count',
                 'is_main'   => true,
+            ],
+            [
+                'name'        => 'باکس',
+                'unit'        => 6,
+                'symbol'      => "box",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'count')->first()->id,
+                'quantity_slug' => 'count',
+                'is_main'     => true,
+            ],
+            [
+                'name'        => 'بوتل',
+                'unit'        => 1,
+                'symbol'      => "btl",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'count')->first()->id,
+                'quantity_slug' => 'count',
+                'is_main'     => true,
             ],
             // length
             [

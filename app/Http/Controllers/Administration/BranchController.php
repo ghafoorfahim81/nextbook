@@ -9,7 +9,6 @@ use App\Http\Resources\Administration\BranchCollection;
 use App\Http\Resources\Administration\BranchResource;
 use App\Models\Administration\Branch;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Http\JsonResponse;
 use App\Models\Account\Account;
 use App\Models\Account\AccountType;
@@ -17,9 +16,10 @@ use App\Models\Administration\Quantity;
 use App\Models\Administration\Size;
 use App\Models\Administration\Currency;
 use App\Models\Administration\UnitMeasure;
-use App\Models\Administration\Store;
+use App\Models\Administration\Warehouse;
 use App\Models\Ledger\Ledger;
 use Symfony\Component\Uid\Ulid;
+use Illuminate\Support\Facades\Auth;
 class BranchController extends Controller
 {
     public function __construct()
@@ -29,11 +29,11 @@ class BranchController extends Controller
 
     public function index(Request $request)
     {
-        $perPage = $request->input('perPage', 10);
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $branches = Branch::with('parent')
+        $branches = Branch::with(['parent', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -57,7 +57,7 @@ class BranchController extends Controller
                 'is_main' => $accountType['is_main'],
                 'slug' => $accountType['slug'],
                 'branch_id' => $branch->id,
-                'created_by' => auth()->user()->id,
+                'created_by' => Auth::id(),
             ]);
             });
         }
@@ -75,7 +75,7 @@ class BranchController extends Controller
                     'slug' => $account['slug'],
                     'remark' => $account['remark'],
                     'is_main' => $account['is_main'],
-                    'created_by' => auth()->user()->id,
+                    'created_by' => Auth::id(),
                 ]);
             });
         }
@@ -88,7 +88,7 @@ class BranchController extends Controller
                     'name' => $size['name'],
                     'code' => $size['code'],
                     'branch_id' => $branch->id,
-                    'created_by' => auth()->user()->id,
+                    'created_by' => Auth::id(),
                 ]);
             });
         }
@@ -107,7 +107,7 @@ class BranchController extends Controller
                     'is_base_currency' => $currency['is_base_currency'] ?? false,
                     'flag' => $currency['flag'],
                     'branch_id' => $branch->id,
-                    'created_by' => auth()->user()->id,
+                    'created_by' => Auth::id(),
                 ]);
             });
         }
@@ -122,7 +122,7 @@ class BranchController extends Controller
                     'symbol' => $quantity['symbol'],
                     'slug' => $quantity['slug'],
                     'branch_id' => $branch->id,
-                    'created_by' => auth()->user()->id,
+                    'created_by' => Auth::id(),
                 ]);
             });
         }
@@ -140,20 +140,20 @@ class BranchController extends Controller
                 ->where('slug', $unitMeasure['quantity_slug'])
                 ->first()->id,
                 'is_main' => true,
-                'created_by' => auth()->user()->id,
+                'created_by' => Auth::id(),
             ]);
             });
         }
 
-        $store = Store::withoutGlobalScopes()->where('is_main', true)->first();
-            Store::withoutEvents(function () use ($store, $branch) {
-                Store::create([
+        $warehouse = Warehouse::withoutGlobalScopes()->where('is_main', true)->first();
+            Warehouse::withoutEvents(function () use ($warehouse, $branch) {
+                Warehouse::create([
                     'id' => (string) new Ulid(),
-                    'name' => $store['name'],
-                    'address' => 'Main store',
+                    'name' => $warehouse['name'],
+                    'address' => 'Main warehouse',
                     'branch_id' => $branch->id,
                     'is_main' => true,
-                    'created_by' => auth()->user()->id,
+                    'created_by' => Auth::id(),
                 ]);
             });
 
@@ -164,7 +164,7 @@ class BranchController extends Controller
                 'code' => 'CASH-CUST',
                 'type' => 'customer',
                 'branch_id' => $branch->id,
-                'created_by' => auth()->user()->id,
+                'created_by' => Auth::id(),
             ]);
         });
 
@@ -172,8 +172,9 @@ class BranchController extends Controller
         return redirect()->route('branches.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.branch')]));
     }
 
-    public function show(Request $request, Branch $branch): Response
+    public function show(Request $request, Branch $branch): BranchResource
     {
+        $branch->load(['parent', 'createdBy', 'updatedBy']);
         return new BranchResource($branch);
     }
 

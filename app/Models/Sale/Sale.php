@@ -11,11 +11,15 @@ use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\BranchSpecific;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Models\Transaction\Transaction;
+
 class Sale extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -26,13 +30,11 @@ class Sale extends Model
         'number',
         'customer_id',
         'date',
-        'transaction_id',
         'discount',
         'discount_type',
         'type',
         'description',
         'status',
-        'store_id',
         'created_by',
         'updated_by',
     ];
@@ -47,9 +49,7 @@ class Sale extends Model
         return [
             'customer_id' => 'string',
             'date' => 'date',
-            'transaction_id' => 'string',
             'discount' => 'float',
-            'store_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
         ];
@@ -68,14 +68,22 @@ class Sale extends Model
         ];
     }
 
+    protected array $allowedFilters = [
+        'customer_id',
+        'transaction.currency_id',
+        'type',
+        'date',
+        'created_by',
+    ];
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Ledger\Ledger::class);
     }
 
-    public function transaction(): BelongsTo
+    public function transaction(): HasOne
     {
-        return $this->belongsTo(\App\Models\Transaction\Transaction::class);
+        return $this->hasOne(Transaction::class, 'reference_id');
     }
 
     public function items()
@@ -91,5 +99,9 @@ class Sale extends Model
     public function getDependencyMessage(): string
     {
         return 'You cannot delete this sale because it has dependencies.';
+    }
+    public function warehouse()
+    {
+        return $this->items?->first()?->warehouse;
     }
 }

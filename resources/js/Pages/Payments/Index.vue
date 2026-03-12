@@ -10,6 +10,8 @@ const { t } = useI18n();
 
 const props = defineProps({
     payments: Object,
+    filters: Object,
+    filterOptions: Object,
 })
 
 const { deleteResource } = useDeleteResource()
@@ -21,8 +23,8 @@ const editItem = (item) => {
 }
 const deleteItem = (id) => {
     deleteResource('payments.destroy', id, {
-        title: t('general.delete', { name: 'Payment' }),
-        name: 'Payment',
+        title: t('general.delete', { name: t('payment.payment') }),
+        name: t('payment.payment'),
     })
 }
 const showItem = (id) => {
@@ -36,7 +38,45 @@ const columns = computed(() => ([
     { key: 'amount', label: t('general.amount'), sortable: true },
     { key: 'currency_code', label: t('admin.currency.currency') },
     { key: 'date', label: t('general.date'), sortable: true },
+    {
+        key: 'created_by.name',
+        label: t('general.created_by'),
+        render: (row) => row.created_by?.name ?? '-',
+    },
+    {
+        key: 'updated_by.name',
+        label: t('general.updated_by'),
+        render: (row) => row.updated_by?.name ?? '-',
+    },
     { key: 'actions', label: t('general.actions') },
+]))
+
+const filterFields = computed(() => ([
+    {
+        key: 'ledger_id',
+        label: t('ledger.supplier.supplier'),
+        type: 'select',
+        options: (props.filterOptions?.suppliers || []).map((s) => ({ id: s.id, name: s.name })),
+    },
+    {
+        key: 'transaction.currency_id',
+        label: t('admin.currency.currency'),
+        type: 'select',
+        options: (props.filterOptions?.currencies || []).map((c) => ({ id: c.id, name: c.code })),
+    },
+    {
+        key: 'transaction.lines.account_id',
+        label: t('expense.bank_account'),
+        type: 'select',
+        options: (props.filterOptions?.bankAccounts || []).map((a) => ({ id: a.id, name: a.name })),
+    },
+    { key: 'date', label: t('general.date'), type: 'daterange' },
+    {
+        key: 'created_by',
+        label: t('general.created_by'),
+        type: 'select',
+        options: (props.filterOptions?.users || []).map((u) => ({ id: u.id, name: u.name })),
+    },
 ]))
 </script>
 
@@ -46,6 +86,8 @@ const columns = computed(() => ([
             can="payments"
             :items="payments"
             :columns="columns"
+            :filters="filters"
+            :filterFields="filterFields"
             :title="t('payment.payments')"
             :url="`payments.index`"
             :showAddButton="true"

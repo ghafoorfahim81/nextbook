@@ -22,6 +22,7 @@ class LedgerSeeder extends Seeder
                 'name' => 'Cash customer',
                 'code' => 'CASH-CUST',
                 'type' => 'customer',
+                'is_active' => false,
                 'branch_id' => Branch::withoutGlobalScopes()->where('is_main', true)->first()->id,
                 'created_by' => User::withoutGlobalScopes()->where('email', 'admin@nextbook.com')->first()->id,
             ],

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Support\Facades\Storage;
 use App\Traits\HasCache;
@@ -17,10 +18,11 @@ use App\Enums\CalendarType;
 use App\Enums\BusinessType;
 use App\Enums\Locale;
 use App\Enums\WorkingStyle;
+use App\Enums\CostingMethod;
 
 class Company extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasDependencyCheck;
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasDependencyCheck;
 
 
     /**
@@ -43,6 +45,7 @@ class Company extends Model
         'business_type',
         'locale',
         'currency_id',
+        'costing_method',
         'email',
         'website',
         'invoice_description',
@@ -58,12 +61,13 @@ class Company extends Model
     protected function casts(): array
     {
         return [
-            'created_by' => 'integer',
-            'updated_by' => 'integer',
+            'created_by' => 'string',
+            'updated_by' => 'string',
             'calendar_type' => CalendarType::class,
             'working_style' => WorkingStyle::class,
             'business_type' => BusinessType::class,
             'locale' => Locale::class,
+            'costing_method' => CostingMethod::class,
         ];
     }
 

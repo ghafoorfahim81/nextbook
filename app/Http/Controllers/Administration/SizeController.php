@@ -18,11 +18,13 @@ class SizeController extends Controller
 
     public function index(Request $request)
     {
-        $perPage = $request->input('perPage', 10);
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $sizes = Size::search($request->query('search'))
+        $sizes = Size::with(['createdBy', 'updatedBy'])
+            ->search($request->query('search'))
+            ->where('is_active', true)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
@@ -40,6 +42,7 @@ class SizeController extends Controller
 
     public function show(Request $request, Size $size)
     {
+        $size->load(['createdBy', 'updatedBy']);
         return new SizeResource($size);
     }
 

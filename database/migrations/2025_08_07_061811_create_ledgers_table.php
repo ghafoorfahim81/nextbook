@@ -22,7 +22,8 @@ return new class extends Migration
             $table->string('phone_no')->nullable();
             $table->string('email')->nullable();
             $table->ulid('currency_id')->nullable()->index();
-                    $table->ulid('branch_id')->nullable()->index();
+            $table->ulid('branch_id')->nullable()->index();
+            $table->boolean('is_main')->default(false); 
             $table->enum('type', LedgerType::values())->default(LedgerType::CUSTOMER->value);
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();

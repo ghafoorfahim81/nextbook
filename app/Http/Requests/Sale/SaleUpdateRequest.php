@@ -4,7 +4,7 @@ namespace App\Http\Requests\Sale;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Enums\SalesPurchaseType;
+use App\Enums\SalePurchaseType;
 
 class SaleUpdateRequest extends FormRequest
 {
@@ -28,7 +28,8 @@ class SaleUpdateRequest extends FormRequest
             'transaction_total' => ['required', 'numeric'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric'],
-            'sale_purchase_type_id' => ['nullable', 'string', Rule::in(SalesPurchaseType::values())],
+            'sale_type' => ['nullable', 'string', Rule::in(SalePurchaseType::values())],
+            'bank_account_id' => ['nullable', 'string', 'exists:accounts,id'],
             'payment' => ['nullable', 'array'],
             'payment.method' => ['nullable', 'string'],
             'payment.amount' => ['nullable', 'numeric'],
@@ -36,7 +37,7 @@ class SaleUpdateRequest extends FormRequest
             'payment.note' => ['nullable', 'string'],
             'discount' => ['nullable', 'numeric'],
             'discount_type' => ['nullable', 'string', 'in:percentage,currency'],
-            'store_id' => ['nullable', 'string', 'exists:stores,id'],
+            'warehouse_id' => ['required', 'string', 'exists:warehouses,id'],
             'description' => ['nullable', 'string'],
             'status' => ['nullable', 'string'],
             'item_list' => ['required', 'array'],

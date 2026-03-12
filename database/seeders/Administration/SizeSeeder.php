@@ -17,10 +17,12 @@ class SizeSeeder extends Seeder
 
         $sizes = Size::defaultSizes();
         foreach ($sizes as $size) {
-            Size::create([  
+            Size::create([
                 'name' => $size['name'],
                 'code' => $size['code'],
                 'branch_id' => Branch::where('is_main', true)->first()->id,
+                'is_main' => true,
+                'is_active' => false,
             ]);
         }
     }

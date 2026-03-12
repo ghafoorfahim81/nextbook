@@ -25,7 +25,7 @@ return [
         'role' => 'Role',
         'sale' => 'Sale',
         'size' => 'Size',
-        'store' => 'Store',
+        'warehouse' => 'Warehouse',
         'supplier' => 'Supplier',
         'unit_measure' => 'Unit measure',
         'user' => 'User',
@@ -42,7 +42,7 @@ return [
     'items_created_successfully' => 'Items created successfully.',
     'items_saved_successfully' => 'Items saved successfully.',
 
-    'cannot_delete_main_store' => 'You cannot delete the main store.',
+    'cannot_delete_main_warehouse' => 'You cannot delete the main warehouse.', 
     'cannot_delete_main_branch' => 'You cannot delete the main branch.',
     'cannot_delete_main_account' => 'You cannot delete the main account.',
     'cannot_delete_own_account' => 'You cannot delete your own account.',
@@ -61,5 +61,11 @@ return [
 
     'error_occurred_while_creating' => 'An error occurred while creating :resource.',
     'error_occurred_while_updating' => 'An error occurred while updating :resource.',
+    'add_to_account' => 'Add to Account',
+    'cheque_no' => 'Cheque No',
+    'narration' => 'Narration',
+    'dependencies_found' => 'Cannot delete this record because it has dependencies. Please delete those records first.',
+    'cannot_delete_item_with_posted_stock_movements' => 'Cannot delete item with posted stock movements.',
+    'posted_stock_movements_found' => 'Posted stock movements found.',
 ];
 

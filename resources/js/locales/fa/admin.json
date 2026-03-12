@@ -1,12 +1,13 @@
-﻿{
+{
     "category":{
         "category": "دسته بندی",
         "parent": "والد",
         "categories": "دسته بندی ها"
     },
-    "store": {
-        "store": "فروشگاه",
-        "stores": "فروشگاه ها"
+ 
+    "warehouse": {
+        "warehouse": "گدام/انبار",
+        "warehouses": "گدام/انبار ها"
     },
     "department": {
         "department": "دپارتمان",

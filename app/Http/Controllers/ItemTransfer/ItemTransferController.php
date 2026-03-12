@@ -8,11 +8,15 @@ use App\Http\Requests\ItemTransfer\ItemTransferStoreRequest;
 use App\Http\Requests\ItemTransfer\ItemTransferUpdateRequest;
 use App\Http\Resources\ItemTransfer\ItemTransferResource;
 use App\Models\ItemTransfer\ItemTransfer;
+use App\Models\Administration\Warehouse;
+use App\Models\Inventory\Item;
+use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ItemTransferService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-
+use App\Services\TransactionService;
+use Illuminate\Support\Facades\Cache;
 class ItemTransferController extends Controller
 {
     public function __construct(
@@ -26,18 +30,32 @@ class ItemTransferController extends Controller
      */
     public function index(Request $request)
     {
-        $perPage = $request->input('perPage', 10);
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'date');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
-        $transfers = ItemTransfer::with(['fromStore', 'toStore', 'items.item', 'items.unitMeasure'])
+        $transfers = ItemTransfer::with(['fromWarehouse', 'toWarehouse', 'items.item', 'items.unitMeasure', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
 
         return inertia('ItemTransfer/ItemTransfers/Index', [
             'transfers' => ItemTransferResource::collection($transfers),
+            'filterOptions' => [
+                'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
+                'items' => Item::orderBy('name')->get(['id', 'name']),
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 
@@ -56,7 +74,6 @@ class ItemTransferController extends Controller
     {
         $dateConversionService = app(DateConversionService::class);
         $validated = $request->validated();
-
         // Convert date properly
         $validated['date'] = $dateConversionService->toGregorian($validated['date']);
 
@@ -68,10 +85,8 @@ class ItemTransferController extends Controller
                 }
                 return $item;
             }, $validated['items']);
-        }
-
-        $transfer = $this->transferService->createTransfer($validated);
-
+        } 
+        $transfer = $this->transferService->createTransfer($validated); 
         if ((bool) $request->create_and_new) {
             return redirect()->back()->with('success', __('general.created_successfully', ['resource' => __('general.resource.item_transfer')]));
         }
@@ -84,7 +99,7 @@ class ItemTransferController extends Controller
      */
     public function show(Request $request, ItemTransfer $itemTransfer)
     {
-        $itemTransfer->load(['fromStore', 'toStore', 'items.item', 'items.unitMeasure', 'branch', 'createdBy', 'updatedBy']);
+        $itemTransfer->load(['fromWarehouse', 'toWarehouse', 'items.item', 'items.unitMeasure', 'branch', 'createdBy', 'updatedBy']);
 
         return response()->json([
             'data' => new ItemTransferResource($itemTransfer),
@@ -99,7 +114,7 @@ class ItemTransferController extends Controller
         if ($itemTransfer->status === TransferStatus::COMPLETED || $itemTransfer->status === TransferStatus::CANCELLED) {
             return redirect()->back()->withErrors(['error' => __('general.cannot_edit_completed_or_cancelled_transfer')]);
         }
-        $itemTransfer->load(['fromStore', 'toStore', 'items.item', 'items.unitMeasure']);
+        $itemTransfer->load(['fromWarehouse', 'toWarehouse', 'items.item', 'items.unitMeasure']);
 
         return inertia('ItemTransfer/ItemTransfers/Edit', [
             'transfer' => new ItemTransferResource($itemTransfer),

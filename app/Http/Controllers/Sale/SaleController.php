@@ -7,14 +7,23 @@ use App\Http\Requests\Sale\SaleStoreRequest;
 use App\Http\Requests\Sale\SaleUpdateRequest;
 use App\Http\Resources\Sale\SaleResource;
 use App\Models\Sale\Sale;
+use App\Models\Ledger\Ledger;
+use App\Models\Administration\Currency;
+use App\Models\Administration\Warehouse;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
 use App\Models\Account\Account;
-use App\Models\Administration\Currency;
 use App\Services\StockService;
 use App\Models\Transaction\Transaction;
 use Mpdf\Mpdf;
+use App\Enums\TransactionStatus;
+use App\Enums\StockMovementType;
+use App\Enums\StockSourceType;
+use App\Enums\StockStatus;
+use Illuminate\Support\Facades\Cache;
+use App\Models\Inventory\Item;
 class SaleController extends Controller
 {
     public function __construct()
@@ -24,70 +33,184 @@ class SaleController extends Controller
 
     public function index(Request $request)
     {
-        $perPage = $request->input('perPage', 10);
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
-        $sales = Sale::with('customer')
+        $sales = Sale::with(['customer', 'transaction.currency', 'stockOuts.warehouse'])
             ->search($request->query('search'))
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
         return inertia('Sale/Sales/Index', [
             'sales' => SaleResource::collection($sales),
+            'filterOptions' => [
+                'customers' => Ledger::query()->where('type', 'customer')->orderBy('name')->get(['id', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
+                'types' => [
+                    ['id' => 'cash', 'name' => 'Cash'],
+                    ['id' => 'credit', 'name' => 'Credit'],
+                ],
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 
     public function create(Request $request)
     {
         $saleNumber = Sale::max('number') ? Sale::max('number') + 1 : 1;
+        $bankAccounts = new Account();
+        $bankAccounts = $bankAccounts->getAccountsByAccountTypeSlug('cash-or-bank');
 
         return inertia('Sale/Sales/Create', [
             'saleNumber' => $saleNumber,
+            'bankAccounts' => $bankAccounts,
         ]);
     }
 
     public function store(SaleStoreRequest $request, TransactionService $transactionService, StockService $stockService)
     {
-        // dd($request->validated());
-        $sale = DB::transaction(function () use ($request, $transactionService, $stockService) {
-            // Create sale
+        $validated = $request->validated();
+        $sale = DB::transaction(function () use ($request, $transactionService, $stockService, $validated) {
+            // Create purchase
             $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
 
-            if(!isset($validated['date'])) {
-                $validated['date'] = now()->toDateString();
-            }
-
-            $validated['type']  = $validated['transaction_type_id'] ?? 'cash';
-            $validated['status'] = 'pending';
+            $validated['type']  = $validated['sale_type'] ?? 'cash';
+            $validated['status'] = TransactionStatus::POSTED->value;
 
             // Convert date properly
             $validated['date'] = $dateConversionService->toGregorian($validated['date']);
 
             $sale = Sale::create($validated);
-            $validated['item_list'] = array_map(function ($item) use ($dateConversionService) {
+            $validated['item_list'] = array_map(function ($item) use ($dateConversionService, $validated) {
                 $item['expire_date'] = $item['expire_date'] ? $dateConversionService->toGregorian($item['expire_date']) : null;
                 $item['discount'] = $item['item_discount'] ? $item['item_discount'] : 0;
+                $item['warehouse_id'] = $validated['warehouse_id'];
                 return $item;
             }, $validated['item_list']);
             $sale->items()->createMany($validated['item_list']);
-
-            // Handle stock deductions (reverse of purchase - remove from inventory)
+            
+            $lines = [];
             foreach ($validated['item_list'] as $item) {
-                $stockService->removeStock($item, $validated['store_id'], Sale::class, $sale->id);
+                $total = (float) $item['quantity'] * (float) $item['unit_price']; 
+                $itemModel = \App\Models\Inventory\Item::find($item['item_id']); 
+                $unitCost = $itemModel->avgCost();
+                $totalCost = $unitCost * $item['quantity'];
+                $stock = $stockService->post([
+                    'item_id'         => $item['item_id'],
+                    'movement_type'   => StockMovementType::OUT->value,
+                    'unit_measure_id' => $item['unit_measure_id'], // from item form
+                    'quantity'        => (float) $item['quantity'],
+                    'source'          => StockSourceType::SALE->value,
+                    'unit_cost'       => $unitCost,
+                    'status'          => StockStatus::POSTED->value,
+                    'batch'           => $item['batch'] ?? null,
+                    'date'            => $validated['date'],
+                    'expire_date'     => $item['expire_date'],
+                    'size_id'         => $validated['size_id'] ?? null,
+                    'warehouse_id'    => $validated['warehouse_id'],
+                    'branch_id'       => $sale->branch_id,
+                    'reference_type'  => Sale::class,
+                    'reference_id'    => $sale->id,
+                ]);
+                $lines[] = [
+                    'account_id' => $itemModel->income_account_id,
+                    'ledger_id'  => null,
+                    'debit'      => 0,
+                    'credit'     => $total,
+                    'remark'     => 'Sale item: '.$itemModel->name,
+                ];
+                $lines[] = [
+                    'account_id' => $itemModel->cost_account_id,
+                    'ledger_id'  => null,
+                    'debit'      => $totalCost,
+                    'credit'     => 0,
+                    'remark'     => 'Sale item: '.$itemModel->name,
+                ];
+                $lines[] = [
+                    'account_id' => $itemModel->asset_account_id,
+                    'ledger_id'  => null,
+                    'debit'      => 0,
+                    'credit'     => $totalCost,
+                    'remark'     => 'Sale item: '.$itemModel->name,
+                ];
+
+                // $stockService->addStock($item, $validated['warehouse_id'], Sale::class, $sale->id, $validated['date']);
+            }
+            if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
+
+                $lines[] = [
+                    'account_id' => $validated['bank_account_id'], // cash/bank
+                    'ledger_id'  => null,
+                    'debit'      => $validated['transaction_total'],
+                    'credit'     => 0,
+                    'remark'     => 'Customer payment received for sale #' . $sale->number,
+                ];
+            }
+            $glAccounts = Cache::get('gl_accounts');
+            if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
+                $lines[] = [
+                    'account_id' => $glAccounts['account-receivable'],
+                    'ledger_id'  => $validated['customer_id'],
+                    'debit'      => $validated['transaction_total'],
+                    'credit'     => 0,
+                    'remark'     => 'Customer payment received for sale #' . $sale->number,
+                ];
+            }
+            if($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
+                if($validated['payment']['amount'] > 0) {
+                    $amount = (float) $validated['payment']['amount'];
+                    $lines[] = [
+                        'account_id' => $validated['payment']['account_id'],
+                        'debit' => $amount,
+                        'credit' => 0,
+                    ];
+                    $lines[] = [
+                        'account_id' => $glAccounts['account-receivable'],
+                        'ledger_id' => $validated['customer_id'],
+                        'debit' => $validated['transaction_total'] - $amount,
+                        'credit' => 0,
+                        'remark' => 'Customer payment received for sale #' . $sale->number,
+                    ];
+                }
+                else{
+                    $lines[] = [
+                        'account_id' => $glAccounts['account-receivable'],
+                        'ledger_id' => $validated['customer_id'],
+                        'debit' => $validated['transaction_total'],
+                        'credit' => 0,
+                        'remark' => 'Payment of sale #' . $sale->number,
+                    ];
+                }
             }
 
-            // Create accounting transactions (reverse of purchase)
-            $transactions = $transactionService->createSaleTransactions(
-                $sale,
-                \App\Models\Ledger\Ledger::find($validated['customer_id']),
-                $validated['transaction_total'],
-                $validated['type'],
-                $validated['payment'] ?? [],
-                $validated['currency_id'] ?? null,
-                $validated['rate'] ?? null,
+            $transactionService->post(
+                header: [
+                    'currency_id'   => $validated['currency_id'],
+                    'rate'          => $validated['rate'],
+                    'date'          => $validated['date'],
+                    'remark'        => 'Sale #' . $sale->number,
+                    'status'        => TransactionStatus::POSTED->value,
+                    'reference_type'=> Sale::class,
+                    'reference_id'  => $sale->id,
+                ],
+                lines: $lines
             );
+
+
+            // Create accounting transactions
+
 
             return $sale;
         });
@@ -136,16 +259,17 @@ class SaleController extends Controller
             if (isset($validated['item_list'])) {
                 // Remove old stock out entries
                 $sale->items()->forceDelete();
-                $validated['item_list'] = array_map(function ($item) use ($dateConversionService) {
+                $validated['item_list'] = array_map(function ($item) use ($dateConversionService, $validated) {
                     $item['expire_date'] = $item['expire_date'] ? $dateConversionService->toGregorian($item['expire_date']) : null;
                     $item['discount'] = $item['discount'] ? $item['discount'] : 0;
+                    $item['warehouse_id'] = $validated['warehouse_id'];
                     return $item;
                 }, $validated['item_list']);
                 $sale->items()->createMany($validated['item_list']);
                 $sale->stockOuts()->forceDelete();
                 // Add new stock out entries
                 foreach ($validated['item_list'] as $item) {
-                    $stockService->removeStock($item, $validated['store_id'], 'sale', $sale->id);
+                    $stockService->removeStock($item, $validated['warehouse_id'], 'sale', $sale->id);
                 }
             }
 

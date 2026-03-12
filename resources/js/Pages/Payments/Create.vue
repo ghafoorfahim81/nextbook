@@ -2,20 +2,23 @@
 import AppLayout from '@/Layouts/Layout.vue'
 import { useForm, usePage } from '@inertiajs/vue3'
 import { ref, watch, computed } from 'vue'
+import { useLazyProps } from '@/composables/useLazyProps'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n'
-import { useToast } from '@/Components/ui/toast/use-toast'
+import { toast } from 'vue-sonner'
 const { t } = useI18n()
-const { toast } = useToast()
 
 const page = usePage()
-const ledgers = page.props.ledgers?.data || []
-const accounts = page.props.accounts?.data || []
-const currencies = page.props.currencies?.data || []
+const ledgers = computed(() => page.props.ledgers?.data || [])
+const accounts = computed(() => page.props.accounts?.data || [])
+const currencies = computed(() => page.props.currencies?.data || [])
+
+useLazyProps(page.props, ['ledgers', 'accounts'])
 
 const form = useForm({
   number: page.props.latestNumber ?? '',
@@ -29,7 +32,7 @@ const form = useForm({
   selected_currency: null,
   rate: '',
   cheque_no: '',
-  description: '',
+  narration: '',
 })
 
 const submitAction = ref(null)
@@ -42,7 +45,7 @@ const submitActionHandler = (createAndNew = false) => {
   submit(isCreateAndNew)
 }
 
-watch(() => currencies, (list) => {
+watch(currencies, (list) => {
   if (list && list.length && !form.currency_id) {
     const base = list.find(c => c.is_base_currency)
     if (base) {
@@ -56,7 +59,7 @@ watch(() => currencies, (list) => {
 function handleSelectChange(field, value) {
   form[field] = value
   if (field === 'currency_id') {
-    const chosen = currencies.find(c => c.id === value)
+    const chosen = currencies.value.find(c => c.id === value)
     if (chosen) form.rate = chosen.exchange_rate
   }
 }
@@ -75,14 +78,12 @@ function submit(createAndNew = false) {
     onSuccess: () => {
       const latest = Number(form.number || 0)
       if (createAndNew) {
-        form.reset('date', 'amount', 'cheque_no', 'description')
+        form.reset('date', 'amount', 'cheque_no', 'narration')
         form.number = String((isNaN(latest) ? 0 : latest) + 1)
       }
-      toast({
-        title: t('general.success'),
+      toast.success(t('general.success'), {
         description: t('general.create_success', { name: 'Payment' }),
-        variant: 'success',
-        class:'bg-green-600 text-white',
+        class: 'bg-green-600 text-white',
       })
     }
   })
@@ -90,12 +91,13 @@ function submit(createAndNew = false) {
 </script>
 
 <template>
-  <AppLayout :title="t('general.create', { name: 'Payment' })">
+  <AppLayout :title="t('general.create', { name: t('payment.payment') })">
     <form @submit.prevent="submitActionHandler(false)">
-      <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
+      <div class="mb-5 rounded-xl border border-primary p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
-          {{ t('general.create', { name: 'Payment' }) }}
+          {{ t('general.create', { name: t('payment.payment') }) }}
         </div>
+        <ModuleHelpButton module="payments" />
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextSelect
             :options="ledgers"
@@ -126,8 +128,8 @@ function submit(createAndNew = false) {
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
-          <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
+          <NextInput :placeholder="t('general.enter', { text: t('general.rate') })" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+          <NextInput :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
           <NextSelect
             :options="accounts"
             v-model="form.selected_bank_account"
@@ -135,16 +137,16 @@ function submit(createAndNew = false) {
             label-key="name"
             value-key="id"
             :reduce="acc => acc"
-            :floating-text="'Debit from Account'"
+            :floating-text="t('payment.pay_from_account')"
             :error="form.errors?.bank_account_id"
             :searchable="true"
             resource-type="accounts"
             :search-fields="['name', 'number', 'slug']"
           />
-          <NextInput placeholder="Cheque No" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('receipt.cheque_no')" />
+          <NextInput :placeholder="t('general.enter', { text: t('general.cheque_no') })" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('general.cheque_no')" />
           <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="md:col-span-2">
-              <NextTextarea placeholder="Description" :error="form.errors?.description" v-model="form.description" :label="'Description'" />
+              <NextTextarea :placeholder="t('general.enter', { text: t('general.narration') })" :error="form.errors?.narration" v-model="form.narration" :label="t('general.narration')" />
             </div>
             <div class="md:col-span-1">
               <div class="rounded-xl border p-4 w-full md:w-64 ml-auto">
@@ -160,7 +162,7 @@ function submit(createAndNew = false) {
         :create-label="t('general.create')"
         :create-and-new-label="t('general.create_and_new')"
         :cancel-label="t('general.cancel')"
-        :creating-label="t('general.creating', { name: 'Payment' })"
+        :creating-label="t('general.creating', { name: t('payment.payment') })"
         :create-loading="createLoading"
         :create-and-new-loading="createAndNewLoading"
         @create-and-new="submitActionHandler(true)"

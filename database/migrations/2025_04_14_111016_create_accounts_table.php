@@ -15,6 +15,7 @@ return new class extends Migration
         Schema::create('accounts', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->string('name')->index();
+            $table->string('local_name')->nullable();
             $table->string('number')->index();
             $table->ulid('account_type_id')->index();
             $table->boolean('is_active')->default(true);

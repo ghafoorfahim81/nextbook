@@ -1,6 +1,7 @@
 import './bootstrap';
 import '../css/app.css';
 import '../css/vue-select.css';
+import 'vue-sonner/style.css';
 import { createApp, h } from 'vue';
 import { createInertiaApp, Head, Link, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';

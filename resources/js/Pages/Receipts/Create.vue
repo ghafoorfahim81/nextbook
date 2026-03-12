@@ -2,19 +2,21 @@
 import AppLayout from '@/Layouts/Layout.vue'
 import { useForm, usePage, Link } from '@inertiajs/vue3'
 import { ref, watch, computed } from 'vue'
+import { useLazyProps } from '@/composables/useLazyProps'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
-import { useToast } from '@/Components/ui/toast/use-toast'
 const page = usePage()
-const ledgers = page.props.ledgers?.data || []
-const accounts = page.props.accounts?.data || []
-const currencies = page.props.currencies?.data || []
-const { toast } = useToast()
+const ledgers = computed(() => page.props.ledgers?.data || [])
+const accounts = computed(() => page.props.accounts?.data || [])
+const currencies = computed(() => page.props.currencies?.data || [])
+import { toast } from 'vue-sonner'
+useLazyProps(page.props, ['ledgers', 'accounts'])
 const form = useForm({
   number: page.props.latestNumber ?? '',
   date: '',
@@ -34,6 +36,21 @@ const submitAction = ref(null)
 const createLoading = computed(() => form.processing && submitAction.value === 'create')
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new')
 
+const refreshLedgersAndAccounts = () => {
+  // For Inertia lazy props, best is to force reload the props from server
+  // We do it by making a GET request to the same page (`/receipts/create`)
+  // with preserveState to keep the modal open, and then update the page.props with the new ledgers/accounts
+  // Since we're in a SPA context, we'll forcibly reload the page props for ledgers/accounts.
+  // You can use $inertia.reload or router.reload in newer Inertia, or a manual inertia visit with only for fresh props.
+  // Here, we use Inertia visit with preserveScroll, only to update those lazy props
+  window.$inertia.visit('/receipts/create', {
+    method: 'get',
+    preserveState: true,
+    preserveScroll: true,
+    only: ['ledgers', 'accounts'],
+  })
+}
+
 const submitActionHandler = (createAndNew = false) => {
   const isCreateAndNew = createAndNew === true
   submitAction.value = isCreateAndNew ? 'create_and_new' : 'create'
@@ -41,7 +58,7 @@ const submitActionHandler = (createAndNew = false) => {
 }
 
 // default currency
-watch(() => currencies, (list) => {
+watch(currencies, (list) => {
   if (list && list.length && !form.currency_id) {
     const base = list.find(c => c.is_base_currency)
     if (base) {
@@ -52,12 +69,10 @@ watch(() => currencies, (list) => {
   }
 }, { immediate: true })
 
-
-
 function handleSelectChange(field, value) {
   form[field] = value
   if (field === 'currency_id') {
-    const chosen = currencies.find(c => c.id === value)
+    const chosen = currencies.value.find(c => c.id === value)
     if (chosen) form.rate = chosen.exchange_rate
   }
 }
@@ -76,29 +91,34 @@ function submit(createAndNew = false) {
     onSuccess: () => {
       if (createAndNew) {
         const latest = Number(form.number || 0)
-        form.reset('date', 'amount', 'cheque_no', 'narration')
+        form.reset('date', 'amount', 'cheque_no', 'narration', 'selected_ledger')
+        // Refresh ledgers and accounts after create and new
+        refreshLedgersAndAccounts()
         form.number = String((isNaN(latest) ? 0 : latest) + 1)
-
       }
-      toast({
-        title: t('general.success'),
+      toast.success(t('general.success'), {
         description: t('general.create_success', { name: t('receipt.receipt') }),
-        variant: 'success',
-        class:'bg-green-600 text-white',
-      })
-    }
-
-  })
+        class:'bg-green-600',
+      });
+    },
+    onError: () => {
+      toast.error(t('general.error'), {
+        description: t('general.create_error', { name: t('receipt.receipt') }),
+        class:'bg-red-600',
+      });
+    },
+  });
 }
 </script>
 
 <template>
-  <AppLayout :title="t('general.create', { name: 'Receipt' })"  >
+  <AppLayout :title="t('general.create', { name: t('receipt.receipt') })"  >
     <form @submit.prevent="submitActionHandler(false)">
-      <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
+      <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
-          {{ t('general.create', { name: 'Receipt' }) }}
+          {{ t('general.create', { name: t('receipt.receipt') }) }}
         </div>
+        <ModuleHelpButton module="receipt" />
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextSelect
             :options="ledgers"
@@ -128,8 +148,8 @@ function submit(createAndNew = false) {
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
-          <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
+          <NextInput :placeholder="t('general.enter', { text: t('general.rate') })" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+          <NextInput :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
           <NextSelect
             :options="accounts"
             v-model="form.selected_bank_account"
@@ -137,16 +157,16 @@ function submit(createAndNew = false) {
             label-key="name"
             value-key="id"
             :reduce="acc => acc"
-            :floating-text="'Add to Account'"
+            :floating-text="t('general.add_to_account')"
             :error="form.errors?.bank_account_id"
             :searchable="true"
             resource-type="accounts"
             :search-fields="['name', 'number', 'slug']"
           />
-          <NextInput placeholder="Cheque No" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="'Cheque No'" />
+          <NextInput placeholder="Cheque No" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('general.cheque_no')" />
           <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="md:col-span-2">
-              <NextTextarea placeholder="Narration" :error="form.errors?.narration" v-model="form.narration" :label="'Narration'" />
+              <NextTextarea :placeholder="t('general.enter', { text: t('general.narration') })" :error="form.errors?.narration" v-model="form.narration" :label="t('general.narration')" />
             </div>
             <div class="md:col-span-1">
               <div class="rounded-xl border p-4 w-full md:w-64 ml-auto">
@@ -170,5 +190,3 @@ function submit(createAndNew = false) {
     </form>
   </AppLayout>
 </template>
-
-

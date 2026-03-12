@@ -44,14 +44,20 @@ return [
         'currency' => 'Currency',
     ],
     'transaction_status' => [
-        'pending' => 'Pending',
+        'posted' => 'Posted',
         'approved' => 'Approved',
         'rejected' => 'Rejected',
+        'cancelled' => 'Cancelled',
+        'reversed' => 'Reversed',
     ],
     'transfer_status' => [
         'pending' => 'Pending',
         'completed' => 'Completed',
         'cancelled' => 'Cancelled',
+    ],
+    'opening_type' => [
+        'debit' => 'Debit',
+        'credit' => 'Credit',
     ],
     'user_status' => [
         'active' => 'Active',
@@ -62,4 +68,29 @@ return [
         'customer' => 'Customer',
         'supplier' => 'Supplier',
     ],
-    ];
+    'item_type' => [
+        'inventory_materials' => 'Inventory Materials',
+        'non_inventory_materials' => 'Non-Inventory Materials',
+        'raw_materials' => 'Raw Materials',
+        'finished_good_items' => 'Finished Good Items',
+        'inventory_services' => 'Inventory Services',
+    ],
+    'stock_direction_type' => [
+        'in' => 'In',
+        'out' => 'Out',
+    ],
+    'stock_source_type' => [
+        'purchase' => 'Purchase',
+        'purchase_return' => 'Purchase Return',
+        'sale' => 'Sale',
+        'sale_return' => 'Sale Return',
+        'stock_adjustment' => 'Stock Adjustment',
+        'item_transfer' => 'Item Transfer',
+        'adjustment' => 'Adjustment',
+        'opening' => 'Opening',
+    ],
+    'costing_method' => [
+        'fifo' => 'FIFO',
+        'lifo' => 'LIFO',
+    ],
+];

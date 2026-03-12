@@ -8,6 +8,7 @@ use App\Traits\HasBranch;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\BranchSpecific;
 class Owner extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -62,6 +63,12 @@ class Owner extends Model
             'phone_number',
         ];
     }
+
+    protected array $allowedFilters = [
+        'name',
+        'nic',
+        'created_by',
+    ];
 
     public function capitalTransaction(): BelongsTo
     {

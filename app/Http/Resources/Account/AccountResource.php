@@ -5,7 +5,8 @@ namespace App\Http\Resources\Account;
 use App\Http\Resources\Ledger\LedgerOpeningResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-
+use App\Http\Resources\Transaction\TransactionLineResource;
+use App\Http\Resources\UserManagement\UserSimpleResource;
 class AccountResource extends JsonResource
 {
     /**
@@ -13,9 +14,11 @@ class AccountResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $locale = app()->getLocale();
         return [
             'id' => $this->id,
-            'name' => $this->name,
+            'name' => $locale === 'en' ? $this->name : ($this->local_name ?? $this->name),
+            'local_name' => $this->local_name,
             'number' => $this->number,
             'account_type_id' => $this->account_type_id,
             'balance' => $this->statement['balance'],
@@ -24,12 +27,17 @@ class AccountResource extends JsonResource
             'slug' => $this->slug,
             'is_active' => $this->is_active,
             'is_main' => $this->is_main,
-            'parent'    => $this->parent,
+            'parent'    => new AccountResource($this->whenLoaded('parent')),
+            'children' => AccountResource::collection($this->whenLoaded('children')),
             'branch_id' => $this->branch_id,
             'branch'    => $this->branch,
             'remark' => $this->remark,
-            'openings' => LedgerOpeningResource::collection($this->whenLoaded('openings')),
-
+            'transactions' => TransactionLineResource::collection($this->transactionLines),  // Return the transaction lines
+            'opening' => $this->relationLoaded('opening') && $this->opening
+                ? new LedgerOpeningResource($this->opening)
+                : null,
+            'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
+            'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
         ];
     }
 }

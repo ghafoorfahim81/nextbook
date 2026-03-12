@@ -24,9 +24,31 @@
         "tax_currency": "Tax & Currency",
         "notifications": "Notifications",
         "security": "Security",
+        "install_plugins": "Install Plugins",
         "backup": "Backup",
         "localization": "Localization",
         "display": "Display"
+    },
+    "install_plugins": {
+        "description": "Choose which master data is usable in dropdowns across the system.",
+        "save": "Save Plugins",
+        "saved_description": "Your plugin selections have been saved.",
+        "main_badge": "Main",
+        "base_badge": "Base",
+        "measures_title": "Measures (Unit Measures)",
+        "measures_hint": "Select your favorite measures. Only active favorites will appear in unit measure dropdowns.",
+        "warehouses_title": "Warehouses",
+        "warehouses_hint": "Select usable warehouses. Only active favorites will appear in warehouse dropdowns.",
+        "categories_title": "Categories",
+        "categories_hint": "Select usable categories. Only active favorites will appear in category dropdowns.",
+        "sizes_title": "Sizes",
+        "sizes_hint": "Select usable sizes. Only active favorites will appear in size dropdowns.",
+        "currencies_title": "Currencies",
+        "currencies_hint": "Select usable currencies. Only active favorites will appear in currency dropdowns.",
+        "ledgers_title": "Ledgers",
+        "ledgers_hint": "Select usable customers and suppliers. Only active favorites will appear in ledger dropdowns.",
+        "customers_title": "Customers",
+        "suppliers_title": "Suppliers"
     },
     "appearance": {
         "description": "Customize the look and feel of your application",
@@ -36,7 +58,20 @@
         "dark": "Dark",
         "system": "System",
         "decimal_places": "Decimal Places",
-        "sidebar_menus": "Sidebar Menus"
+        "sidebar_menus": "Sidebar Menus",
+        "sidebar_font_size": "Sidebar Font Size",
+        "heading_font_size": "Heading Font Size",
+        "table_header_font_size": "Table Header Font Size",
+        "table_content_font_size": "Table Content Font Size",
+        "button_font_size": "Button Font Size",
+        "label_font_size": "Label Font Size",
+        "input_font_size": "Input Font Size",
+        "select_font_size": "Select Font Size",
+        "textarea_font_size": "Textarea Font Size",
+        "records_per_page": "Records Per Page",
+        "balance_nature_format": "Balance Nature Format",
+        "without_nature": "Without Nature(+/-)",
+        "with_nature": "With Nature(Debit/Credit)"
     },
     "item_management": {
         "description": "Configure visible fields in item forms",
@@ -57,14 +92,18 @@
         "rate_c": "Rate C",
         "barcode": "Barcode",
         "rack_no": "Rack No",
-        "fast_search": "Fast Search"
+        "fast_search": "Fast Search",
+        "item_type": "Item Type",
+        "sku": "Stock keeping unit",
+        "is_batch_tracked": "Batch Tracked",
+        "is_expiry_tracked": "Expiry Tracked"
     },
     "fields": {
         "number": "Number",
         "date": "Date",
         "currency": "Currency",
         "type": "Type",
-        "store": "Store",
+        "warehouse": "Warehouse",
         "packing": "Packing",
         "batch": "Batch",
         "expiry": "Expiry",
@@ -80,7 +119,11 @@
         "maximum_stock": "Maximum Stock",
         "rack_no": "Rack No",
         "category": "Category",
-        "rates": "Rates"
+        "rates": "Rates",
+        "item_type": "Item Type",
+        "sku": "Stock keeping unit",
+        "is_batch_tracked": "Batch Tracked",
+        "is_expiry_tracked": "Expiry Tracked"
     },
     "sale": {
         "description": "Configure sale transaction preferences",

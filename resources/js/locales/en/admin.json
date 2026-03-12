@@ -1,12 +1,12 @@
-﻿{
+{
     "category":{
         "category": "Category",
         "parent": "Parent",
         "categories": "Categories"
     },
-    "store": {
-        "store": "Store",
-        "stores": "Stores"
+    "warehouse": {
+        "warehouse": "Warehouse",
+        "warehouses": "Warehouses"
     },
     "department": {
         "department": "Department",

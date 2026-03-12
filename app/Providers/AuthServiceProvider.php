@@ -13,7 +13,7 @@ use App\Models\Administration\Currency;
 use App\Models\Administration\Department;
 use App\Models\Administration\Designation;
 use App\Models\Administration\Size;
-use App\Models\Administration\Store;
+use App\Models\Administration\Warehouse;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Expense\Expense;
 use App\Models\Expense\ExpenseCategory;
@@ -47,7 +47,7 @@ use App\Policies\ReceiptPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SalePolicy;
 use App\Policies\SizePolicy;
-use App\Policies\StorePolicy;
+use App\Policies\WarehousePolicy;
 use App\Policies\UnitMeasurePolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
@@ -67,7 +67,7 @@ class AuthServiceProvider extends ServiceProvider
         Designation::class => DesignationPolicy::class,
         Branch::class => BranchPolicy::class,
         Brand::class => BrandPolicy::class,
-        Store::class => StorePolicy::class,
+        Warehouse::class => WarehousePolicy::class,
         Company::class => CompanyPolicy::class,
         Currency::class => CurrencyPolicy::class,
         UnitMeasure::class => UnitMeasurePolicy::class,
