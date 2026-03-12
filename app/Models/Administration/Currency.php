@@ -12,11 +12,12 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasCache;
+use App\Traits\HasUserTracking;
 use Symfony\Component\Uid\Ulid;
 use App\Traits\BranchSpecific;
 class Currency extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasCache, HasSearch, HasSorting, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, BranchSpecific, HasBranch, SoftDeletes;
 
 
     /**
@@ -96,7 +97,7 @@ class Currency extends Model
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
                 'flag' => 'us.png',
-                'is_active' => true,
+                'is_active' => false,
                 'is_base_currency' => false,
             ],
             'IRR' => [
@@ -106,7 +107,7 @@ class Currency extends Model
                 'format' => '﷼ 1,0/00',
                 'exchange_rate' => 0.00,
                 'flag'     => 'ir.png',
-                'is_active' => true,
+                'is_active' => false,
                 'is_base_currency' => false,
             ],
             'INR' => [
@@ -116,7 +117,7 @@ class Currency extends Model
                 'format' => '1,0.00₹',
                 'exchange_rate' => 0.00,
                 'flag'     => 'in.png',
-                'is_active' => true,
+                'is_active' => false,
                 'is_base_currency' => false,
             ],
         ];

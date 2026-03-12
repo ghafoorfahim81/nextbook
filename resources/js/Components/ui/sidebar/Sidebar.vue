@@ -39,6 +39,7 @@ const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
     @update:open="setOpenMobile"
   >
     <SheetContent
+      :side="side"
       data-sidebar="sidebar"
       data-mobile="true"
       class="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"

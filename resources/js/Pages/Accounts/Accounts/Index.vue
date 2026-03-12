@@ -5,19 +5,24 @@ import AccountShowDialog from '@/Components/AccountShowDialog.vue';
 import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { useI18n } from 'vue-i18n';
-import { router } from '@inertiajs/vue3'; 
+import { router } from '@inertiajs/vue3';
 import { useAuth } from '@/composables/useAuth';
 const props = defineProps({
     accounts: Object,
     user: Object,
+    filters: Object,
+    filterOptions: Object,
+    balanceNatureFormat: String,
 });
-console.log('user', props.user);
-const { t } = useI18n(); 
+const { t } = useI18n();
 const columns = computed(() => ([
     { key: 'name', label: t('general.name') },
+    { key: 'local_name', label: t('account.local_name') },
     { key: 'number', label: t('general.number') },
+    { key: 'remark', label: t('general.remark') },
+    { key: 'parent.name', label: t('account.parent') },
     { key: 'account_type.name', label: t('account.account_type') },
-    { key: 'balance_with_nature', label: t('general.balance') },
+    { key: 'balance', label: t('general.balance') },
     { key: 'actions', label: t('general.actions') },
 ]));
 
@@ -32,7 +37,23 @@ const showItem = (id) => {
     selectedAccountId.value = id;
     showDialog.value = true;
 };
-
+const filterFields = computed(() => ([
+    { key: 'number', label: t('general.number'), type: 'text' },
+    { key: 'name', label: t('general.name'), type: 'text' },
+    { key: 'local_name', label: t('account.local_name'), type: 'text' },
+    {
+        key: 'account_type_id',
+        label: t('account.account_type'),
+        type: 'select',
+        options: (props.filterOptions?.accountTypes || []).map((a) => ({ id: a.id, name: a.name })),
+    },
+    {
+        key: 'created_by',
+        label: t('general.created_by'),
+        type: 'select',
+        options: (props.filterOptions?.users || []).map((u) => ({ id: u.id, name: u.name })),
+    },
+]));
 const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {
     deleteResource('chart-of-accounts.destroy', id, {
@@ -49,12 +70,14 @@ const deleteItem = (id) => {
             can="accounts"
             :items="accounts"
             :columns="columns"
+            :filters="filters"
+            :filterFields="filterFields"
             @delete="deleteItem"
             @edit="editItem"
             @show="showItem"
             :title="t('account.chart_of_accounts')"
             :url="`chart-of-accounts.index`"
-            :hasShow="true" 
+            :hasShow="true"
             :addTitle="t('account.account')"
             :addAction="'redirect'"
             :addRoute="'chart-of-accounts.create'"
@@ -63,6 +86,7 @@ const deleteItem = (id) => {
         <AccountShowDialog
             v-model:open="showDialog"
             :account-id="selectedAccountId"
+            :balance-nature-format="balanceNatureFormat"
         />
     </AppLayout>
 </template>

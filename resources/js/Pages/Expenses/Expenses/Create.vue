@@ -7,13 +7,12 @@ import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import NextDate from '@/Components/next/NextDatePicker.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
-import { useToast } from '@/Components/ui/toast/use-toast';
 import { Trash2, Plus, Upload } from 'lucide-vue-next';
-
+import { toast } from 'vue-sonner';
 const { t } = useI18n();
-const { toast } = useToast();
 
 const props = defineProps({
     categories: { type: Object, required: true },
@@ -22,8 +21,6 @@ const props = defineProps({
     currencies: { type: Array, required: true },
     homeCurrency: { type: Object, required: true },
 });
-
-console.log('this is homeCurrency', props.homeCurrency);
 
 const form = useForm({
     date: '',
@@ -87,7 +84,7 @@ const baseTotal = computed(() => {
 
 // Add new detail line
 const addDetailLine = () => {
-    form.details.push({ amount: '', title: '' });
+        form.details.push({ amount: '', title: '' });
 };
 
 // Remove detail line
@@ -127,10 +124,9 @@ const handleSubmit = (createAndNew = false) => {
     // Validate at least one detail
     const validDetails = form.details.filter(d => d.title && d.amount);
     if (validDetails.length === 0) {
-        toast({
-            title: t('expense.error'),
+        toast.error(t('expense.expense_details'), {
             description: t('expense.at_least_one_detail'),
-            variant: 'destructive',
+            class: 'bg-red-600',
         });
         return;
     }
@@ -161,10 +157,9 @@ const handleSubmit = (createAndNew = false) => {
         data: formData,
         forceFormData: true,
         onSuccess: () => {
-            toast({
-                title: t('general.success'),
-                description: t('expense.created_successfully'),
-                class: 'bg-green-600 text-white',
+            toast.success(t('general.success'), {
+                description: t('general.create_success', { name: t('expense.expense') }),
+                class: 'bg-green-600',
             });
             if (createAndNew) {
                 form.reset();
@@ -222,6 +217,7 @@ onUnmounted(() => {
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">
                     {{ t('general.general_info') }}
                 </div>
+                <ModuleHelpButton module="expense" />
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextDate
                         v-model="form.date"
@@ -239,6 +235,8 @@ onUnmounted(() => {
                         :floating-text="t('expense.category')"
                         :error="form.errors?.category_id"
                         :searchable="true"
+                        resource-type="expense_categories"
+                        :search-fields="['name', 'slug']"
                     />
                     <NextSelect
                         :options="expenseAccounts"
@@ -250,6 +248,8 @@ onUnmounted(() => {
                         :floating-text="t('expense.expense_account')"
                         :error="form.errors?.expense_account_id"
                         :searchable="true"
+                        resource-type="accounts"
+                        :search-fields="['name', 'number', 'slug']"
                     />
                     <NextSelect
                         :options="bankAccounts"
@@ -261,6 +261,8 @@ onUnmounted(() => {
                         :floating-text="t('expense.bank_account')"
                         :error="form.errors?.bank_account_id"
                         :searchable="true"
+                        resource-type="accounts"
+                        :search-fields="['name', 'number', 'slug']"
                     />
                     <div class="grid grid-cols-2 gap-2">
                         <NextSelect
@@ -280,12 +282,14 @@ onUnmounted(() => {
                             step="any"
                             :label="t('general.rate')"
                             :error="form.errors?.rate"
+                            :disabled="form?.selected_currency?.is_base_currency === true"
                         />
                     </div>
                     <NextTextarea
                         v-model="form.remarks"
                         :label="t('general.remarks')"
                         :error="form.errors?.remarks"
+                        :placeholder="t('expense.expnese_general_description')"
                         rows="2"
                     />
                 </div>
@@ -329,11 +333,11 @@ onUnmounted(() => {
             </div>
 
             <!-- Expense Details Section -->
-            <div class="rounded-xl border bg-card shadow-sm overflow-x-auto">
+            <div class="rounded-xl border border-violet-500 bg-card shadow-sm overflow-x-auto">
                 <div class="p-4 border-b flex justify-between items-center">
                     <h3 class="font-semibold text-violet-500">{{ t('expense.detail_lines') }}</h3>
-                    <Button type="button" variant="outline" size="sm" @click="addDetailLine">
-                        <Plus class="w-4 h-4 mr-1" />
+                    <Button type="button" variant="outline" class="flex" size="sm" @click="addDetailLine">
+                        <Plus class="w-4 h-4 mr-1 mt-1" />
                         {{ t('general.add_more') }}
                     </Button>
                 </div>
@@ -341,7 +345,7 @@ onUnmounted(() => {
                     <thead class="bg-muted/50">
                         <tr class="text-sm text-muted-foreground">
                             <th class="px-4 py-2 w-12">#</th>
-                            <th class="px-4 py-2 text-left">{{ t('expense.title') }} *</th>
+                            <th class="px-4 py-2 text-left">{{ t('general.description') }} *</th>
                             <th class="px-4 py-2 w-40 text-right">{{ t('general.amount') }} *</th>
                             <th class="px-4 py-2 w-12"></th>
                         </tr>
@@ -349,21 +353,22 @@ onUnmounted(() => {
                     <tbody>
                         <tr v-for="(detail, index) in form.details" :key="index" class="border-t hover:bg-muted/30">
                             <td class="px-4 py-2 text-center text-muted-foreground">{{ index + 1 }}</td>
-                            <td class="px-4 py-2">
+                            <td class="px-4 py-2 w-64">
                                 <NextInput
                                     v-model="detail.title"
-                                    :placeholder="t('expense.enter_title')"
+                                    :placeholder="t('expense.description_remark_placeholder')"
                                     :error="form.errors?.[`details.${index}.title`]"
+                                    class="w-full"
                                 />
                             </td>
-                            <td class="px-4 py-2">
+                            <td class="px-4 py-2 w-64">
                                 <NextInput
                                     v-model="detail.amount"
                                     type="number"
                                     step="any"
                                     :placeholder="t('general.amount')"
                                     :error="form.errors?.[`details.${index}.amount`]"
-                                    class="text-right"
+                                    class="text-right w-full"
                                 />
                             </td>
 

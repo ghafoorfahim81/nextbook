@@ -32,11 +32,12 @@ class AppServiceProvider extends ServiceProvider
             'expense' => 'App\Models\Expense\Expense',
             'income' => 'App\Models\Income\Income',
             'transfer' => 'App\Models\Transfer\Transfer',
-            'item transfer' => 'App\Models\ItemTransfer\ItemTransfer',
-            'adjustment' => 'App\Models\Adjustment\Adjustment',
+            'item_transfer' => 'App\Models\ItemTransfer\ItemTransfer',
+            'stock_adjustment' => 'App\Models\Adjustment\Adjustment',
             'opening' => 'App\Models\Inventory\StockOpening',
             'stock_out' => 'App\Models\Inventory\StockOut',
             'item' => 'App\Models\Inventory\Item',
+            'journal_entry' => 'App\Models\JournalEntry\JournalEntry',
 
         ]);
     }

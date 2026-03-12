@@ -14,11 +14,9 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->string('number')->index();
             $table->date('date');
-            $table->ulid('ledger_id')->index();
-            $table->ulid('payment_transaction_id')->nullable()->index();
-            $table->ulid('bank_transaction_id')->nullable()->index();
+            $table->ulid('ledger_id')->index(); 
             $table->string('cheque_no')->nullable();
-            $table->text('description')->nullable();
+            $table->text('narration')->nullable();
             $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
@@ -31,8 +29,6 @@ return new class extends Migration
 
         Schema::table('payments', function (Blueprint $table) {
             $table->foreign('ledger_id')->references('id')->on('ledgers');
-            $table->foreign('payment_transaction_id')->references('id')->on('transactions')->onDelete('set null');
-            $table->foreign('bank_transaction_id')->references('id')->on('transactions')->onDelete('set null');
             $table->foreign('branch_id')->references('id')->on('branches')->onDelete('set null');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');

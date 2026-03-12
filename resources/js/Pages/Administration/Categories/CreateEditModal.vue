@@ -1,17 +1,14 @@
 <script setup>
 import { computed, ref, reactive, watch } from 'vue'
-import { useForm, router } from '@inertiajs/vue3'
-import { Input } from '@/Components/ui/input'
-import { Textarea } from '@/Components/ui/textarea'
-import { Label } from '@/Components/ui/label'
-import ModalDialog from '@/Components/next/Dialog.vue'
-import vSelect from 'vue-select'
-import NextInput from "@/Components/next/NextInput.vue";
-import FloatingLabel from "@/Components/next/FloatingLabel.vue";
+import { useForm, router } from '@inertiajs/vue3' 
+import ModalDialog from '@/Components/next/Dialog.vue' 
+import NextInput from "@/Components/next/NextInput.vue"; 
 import NextTextarea from "@/Components/next/NextTextarea.vue";
 import NextSelect from "@/Components/next/NextSelect.vue";
 import { useI18n } from 'vue-i18n';
-const { t } = useI18n()
+import { toast } from 'vue-sonner'
+const { t } = useI18n() 
+
 const props = defineProps({
     isDialogOpen: Boolean,
     editingItem: Object, // ✅ this is passed from Index.vue
@@ -64,25 +61,33 @@ const handleParentSelectChange = (value) => {
 }
 
 const handleSubmit = async () => {
-    if (isEditing.value) {
-        form.patch(route('categories.update', props.editingItem.id), {
-            onSuccess: () => {
-                emit('saved')
-                form.reset();
-                closeModal()
-            },
-        })
-    } else {
-        form.post('/categories', {
-            onSuccess: () => {
-                emit('saved')
-                form.reset();
-                closeModal()
-            },
-        })
-    }
-}
+    const isEdit = isEditing.value;
+    const action = isEdit
+        ? () => form.patch(route('categories.update', props.editingItem.id), submitOptions)
+        : () => form.post('/categories', submitOptions);
 
+    const submitOptions = {
+        onSuccess: () => {
+            emit('saved');
+            form.reset();
+            closeModal();
+            toast.success(
+                t('general.success'),
+                {
+                    description: t(
+                        isEdit ? 'general.update_success' : 'general.create_success',
+                        { name: t('admin.category.category') }
+                    ),
+                    class: 'bg-green-600',
+                }
+            );
+        },
+        onError: () => console.error('error', form.errors),
+    };
+
+    await action();
+};
+  
 
 </script>
 
@@ -94,6 +99,7 @@ const handleSubmit = async () => {
         :cancel-text="t('general.close')"
         @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
         :closeable="true"
+        :submitting="form.processing"
         @confirm="handleSubmit"
         @cancel="closeModal"
     >

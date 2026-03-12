@@ -32,6 +32,7 @@ class PurchaseItem extends Model
         'expire_date',
         'quantity',
         'unit_measure_id',
+        'warehouse_id',
         'unit_price',
         'discount',
         'free',
@@ -55,6 +56,7 @@ class PurchaseItem extends Model
             'expire_date' => 'date',
             'quantity' => 'decimal:2',
             'unit_measure_id' => 'string',
+            'warehouse_id' => 'string',
             'unit_price' => 'decimal:2',
             'discount' => 'decimal:2',
             'free' => 'decimal:2',
@@ -91,9 +93,9 @@ class PurchaseItem extends Model
     {
         return $this->belongsTo(\App\Models\Inventory\Item::class);
     }
-    public function store(): BelongsTo
+    public function warehouse(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Administration\Store::class);
+        return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'warehouse_id');
     }
 
     public function unitMeasure(): BelongsTo

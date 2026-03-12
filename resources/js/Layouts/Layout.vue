@@ -75,17 +75,22 @@ import {
     Banknote,
     ShoppingBasket,
     ArrowLeftRight,
-    PlusCircle
+    PlusCircle,
+    FileText,
+    Search,
+    X,
 } from 'lucide-vue-next'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/Components/ui/select'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 // @ts-ignore - Vue SFC default export shim
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue'
 import { usePage, Link, router } from '@inertiajs/vue3'
 // @ts-ignore - Vue SFC default export shim
 import Toaster from '@/Components/ui/toast/Toaster.vue'
+// @ts-ignore - Vue SFC default export shim
+import Sonner from '@/Components/ui/sonner/Sonner.vue'
 import { HousePlug, ShoppingCart, Receipt as ReceiptIcon } from 'lucide-vue-next'
 import QuickLinks from '@/Components/next/QuickLinks.vue'
 const { t } = useI18n()
@@ -136,7 +141,7 @@ const data = {
 }
 
 const activeTeam = ref(data.teams[0])
-const page = usePage()
+const page = usePage<any>()
 
 function setActiveTeam(team: typeof data.teams[number]) {
     activeTeam.value = team
@@ -144,7 +149,6 @@ function setActiveTeam(team: typeof data.teams[number]) {
 
 // Normalize a URL to its pathname without query or trailing slash
 function normalizePath(url: string): string {
-    // Inertia provides relative URLs like "/branches?search=x"; split at '?' and remove trailing '/'
     const path = (url || '').split('?')[0]
     if (path === '/') return '/'
     return path.replace(/\/+$/, '')
@@ -157,6 +161,8 @@ function isMenuItemActive(itemUrl: string): boolean {
     return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`)
 }
 
+// --- EXCLUSIVE COLLAPSIBLE LOGIC START ---
+
 // Function to check if a parent menu should be expanded (has active child)
 function shouldExpandParent(items: any[] | undefined): boolean {
     if (!items || !Array.isArray(items)) {
@@ -164,7 +170,7 @@ function shouldExpandParent(items: any[] | undefined): boolean {
     }
     return items.some(item => isMenuItemActive(item.url))
 }
-import { useColorMode, useCycleList } from '@vueuse/core'
+import { useColorMode, useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '@/composables/useAuth'
 
@@ -176,6 +182,11 @@ const mode = useColorMode({
     },
 })
 
+// vue-sonner has its own theme system; keep it in sync with Tailwind dark mode.
+const sonnerTheme = computed(() =>
+    String(mode.value || '').includes('dark') ? 'dark' : 'light',
+)
+
 const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
 const sidebarSide = computed(() => isRTL.value ? 'right' : 'left')
 const chevronIcon = computed(() => isRTL.value ? ChevronLeft : ChevronRight)
@@ -184,6 +195,69 @@ const chevronIcon = computed(() => isRTL.value ? ChevronLeft : ChevronRight)
 const props = withDefaults(defineProps<{ sidebarCollapsed?: boolean }>(), { sidebarCollapsed: false })
 
 const { can, isSuperAdmin } = useAuth()
+
+// Keep track of sidebar open/collapsed state so we can alter menu behavior.
+// (We can't read sidebar context here because SidebarProvider is a child component.)
+const sidebarOpen = ref(!props.sidebarCollapsed)
+const isMobileViewport = useMediaQuery('(max-width: 767px)')
+const isSidebarCollapsed = computed(() => !sidebarOpen.value && !isMobileViewport.value)
+const flyoutSide = computed(() => sidebarSide.value === 'right' ? 'left' : 'right')
+
+// Collapsed sidebar flyout submenu state (hover or click).
+const flyoutOpenKey = ref<string | null>(null)
+let flyoutCloseTimer: number | null = null
+
+function getFlyoutKey(item: any): string {
+    // Parent items use url: '#', so use a stable key based on title.
+    return `flyout:${String(item?.title ?? '')}`
+}
+
+function clearFlyoutCloseTimer() {
+    if (flyoutCloseTimer !== null) {
+        window.clearTimeout(flyoutCloseTimer)
+        flyoutCloseTimer = null
+    }
+}
+
+function openFlyout(key: string) {
+    clearFlyoutCloseTimer()
+    flyoutOpenKey.value = key
+}
+
+function scheduleCloseFlyout(key: string) {
+    clearFlyoutCloseTimer()
+    flyoutCloseTimer = window.setTimeout(() => {
+        if (flyoutOpenKey.value === key) flyoutOpenKey.value = null
+    }, 2000)
+}
+
+function closeFlyout() {
+    clearFlyoutCloseTimer()
+    flyoutOpenKey.value = null
+}
+
+function setFlyoutOpen(key: string, open: boolean) {
+    clearFlyoutCloseTimer()
+    flyoutOpenKey.value = open ? key : (flyoutOpenKey.value === key ? null : flyoutOpenKey.value)
+}
+
+function isInsideFlyoutKey(target: EventTarget | null, key: string): boolean {
+    const el = target as HTMLElement | null
+    if (!el) return false
+    return Boolean(el.closest?.(`[data-flyout-key="${key}"]`))
+}
+
+function onFlyoutTriggerLeave(key: string, event: MouseEvent) {
+    // If we're moving into the flyout panel, keep it open.
+    if (isInsideFlyoutKey(event.relatedTarget, key)) return
+    if (flyoutOpenKey.value === key) flyoutOpenKey.value = null
+}
+
+function onFlyoutContentLeave(key: string, event: MouseEvent) {
+    // If we're moving back to the trigger icon button, keep it open.
+    if (isInsideFlyoutKey(event.relatedTarget, key)) return
+    if (flyoutOpenKey.value === key) flyoutOpenKey.value = null
+}
 
 const branches = computed(() => {
     const raw: any = page.props.branches
@@ -231,8 +305,10 @@ const navMain = computed(() => [
         icon: ChartColumn,
         items: [
             { title: t('sidebar.account.chart_of_account'), url: '/chart-of-accounts', permission: 'accounts.view_any' },
-            { title: t('sidebar.account.account_type'), url: '/account-types', permission: 'account_types.view_any' },
-            { title: t('sidebar.main.transfer'), url: '/account-transfers', icon: ArrowLeftRight, permission: 'account_transfers.view_any' }
+            // { title: t('sidebar.account.account_type'), url: '/account-types', permission: 'account_types.view_any' },
+            { title: t('sidebar.main.transfer'), url: '/account-transfers', icon: ArrowLeftRight, permission: 'account_transfers.view_any' },
+            { title: t('sidebar.journal_entry.journal_class'), url: '/journal-classes', icon: FileText, permission: 'journal_classes.view_any' },
+            { title: t('sidebar.journal_entry.journal_entry'), url: '/journal-entries', icon: FileText, permission: 'journal_entries.view_any' },
         ],
     },
     {
@@ -246,7 +322,7 @@ const navMain = computed(() => [
             { title: t('sidebar.administration.size'), url: '/sizes', permission: 'sizes.view_any' },
             { title: t('sidebar.administration.branch'), url: '/branches', permission: 'branches.view_any' },
             { title: t('sidebar.administration.brand'), url: '/brands', permission: 'brands.view_any' },
-            { title: t('sidebar.administration.store'), url: '/stores', permission: 'stores.view_any' },
+            { title: t('sidebar.administration.warehouse'), url: '/warehouses', permission: 'warehouses.view_any' },
             { title: t('sidebar.administration.company'), url: '/company', permission: 'companies.view_any' },
         ],
     },
@@ -364,6 +440,90 @@ const filteredNavMain = computed(() => {
         .filter(Boolean)
 })
 
+const menuSearchQuery = ref('')
+const menuSearchQueryNormalized = computed(() => menuSearchQuery.value.trim().toLowerCase())
+
+// Keep only one parent menu expanded at a time (accordion behavior)
+const openParentKey = ref<string | null>(null)
+
+function getParentKey(item: any): string {
+    // Parent items use url: '#', so use a stable key based on title.
+    return `parent:${String(item?.title ?? '')}`
+}
+
+const activeParentKey = computed<string | null>(() => {
+    const items: any[] = filteredNavMain.value as any[]
+    const active = items.find((it) => Array.isArray(it?.items) && shouldExpandParent(it.items))
+    return active ? getParentKey(active) : null
+})
+
+function onParentOpenChange(item: any, nextOpen: boolean) {
+    const key = getParentKey(item)
+    openParentKey.value = nextOpen ? key : (openParentKey.value === key ? null : openParentKey.value)
+}
+
+const searchedNavMain = computed(() => {
+    const q = menuSearchQueryNormalized.value
+    if (!q) return filteredNavMain.value
+
+    return filteredNavMain.value
+        .map((item: any) => {
+            const itemTitle = String(item?.title ?? '').toLowerCase()
+
+            if (!item.items) {
+                return itemTitle.includes(q) ? item : null
+            }
+
+            const children = Array.isArray(item.items) ? item.items : []
+            const matchingChildren = children.filter((child: any) =>
+                String(child?.title ?? '').toLowerCase().includes(q),
+            )
+
+            if (itemTitle.includes(q)) {
+                return item
+            }
+
+            if (matchingChildren.length > 0) {
+                return { ...item, items: matchingChildren }
+            }
+
+            return null
+        })
+        .filter(Boolean)
+})
+
+// Initialize / sync open parent with route changes
+watch(
+    () => normalizePath(page.url),
+    () => {
+        // Prefer opening the parent that matches the current route
+        openParentKey.value = activeParentKey.value
+    },
+    { immediate: true },
+)
+
+// When searching, auto-open the first parent in results (still only one open)
+watch(
+    () => menuSearchQueryNormalized.value,
+    (q) => {
+        if (!q) {
+            openParentKey.value = activeParentKey.value
+            return
+        }
+
+        const firstParent = (searchedNavMain.value as any[]).find((it) => Array.isArray(it?.items) && it.items.length)
+        openParentKey.value = firstParent ? getParentKey(firstParent) : null
+    },
+)
+
+// When sidebar expands back, ensure any flyout is closed.
+watch(
+    () => sidebarOpen.value,
+    (open) => {
+        if (open) closeFlyout()
+    },
+)
+
 // assign to data after computed is available
 data.navMain = navMain.value
 
@@ -376,7 +536,11 @@ function logout() {
 
 <template>
     <Toaster />
-    <SidebarProvider :default-open="!props.sidebarCollapsed">
+    <Sonner
+        :theme="sonnerTheme"
+        :position="isRTL ? 'bottom-left' : 'bottom-right'"
+    />
+    <SidebarProvider v-model:open="sidebarOpen" :default-open="!props.sidebarCollapsed">
         <Sidebar collapsible="icon" :side="sidebarSide">
             <SidebarHeader>
                 <SidebarMenu>
@@ -435,66 +599,137 @@ function logout() {
             <SidebarContent>
                 <SidebarGroup>
                         <SidebarGroupLabel>{{ t('sidebar.group.menu') }}</SidebarGroupLabel>
+                        <div class="px-2 pb-2 group-data-[collapsible=icon]:hidden">
+                            <div class="relative">
+                                <Search
+                                    class="absolute top-1/2 -translate-y-1/2 size-4 text-muted-foreground text-primary"
+                                    :class="isRTL ? 'right-2' : 'left-2'"
+                                />
+                                <input
+                                    v-model="menuSearchQuery"
+                                    type="text"
+                                    autocomplete="off"
+                                    :placeholder="t('layout.search_menu') || 'Search menu...'"
+                                    class="h-9 w-full rounded-md border border-input border-primary bg-background text-sm outline-none focus:ring-2 focus:ring-violet-500"
+                                    :class="isRTL ? 'pr-8 pl-8' : 'pl-8 pr-8'"
+                                />
+                                <button
+                                    v-if="menuSearchQueryNormalized"
+                                    type="button"
+                                    class="absolute top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted"
+                                    :class="isRTL ? 'left-1' : 'right-1'"
+                                    @click="menuSearchQuery = ''"
+                                >
+                                    <X class="size-4" />
+                                    <span class="sr-only">Clear</span>
+                                </button>
+                            </div>
+                        </div>
                         <SidebarMenu>
-                        <template v-for="item in filteredNavMain" :key="item.title">
+                        <template v-for="item in searchedNavMain" :key="`${item.title}:${menuSearchQueryNormalized}`">
                             <!-- Simple menu item without sub-items (like Dashboard) -->
                             <SidebarMenuItem v-if="!item.items" >
                                 <SidebarMenuButton
+                                    :tooltip="item.title"
                                     :isActive="isMenuItemActive(item.url)"
                                     as-child
                                 >
                                     <Link :href="item.url" prefetch cache-for="1m">
                                         <component :is="item.icon" />
-                                        <span>{{ item.title }}</span>
+                                        <span class="group-data-[collapsible=icon]:hidden">{{ item.title }}</span>
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
 
-                            <!-- Collapsible menu item with sub-items -->
-                            <Collapsible
-                                v-else
-                                as-child
-                                :default-open="shouldExpandParent(item.items)"
-                                class="group/collapsible"
-                            >
-                                <SidebarMenuItem>
-                                    <CollapsibleTrigger as-child>
+                            <template v-else>
+                                <!-- Collapsed (icon-only) sidebar: show submenus as a flyout on hover/click -->
+                                <DropdownMenu
+                                    v-if="isSidebarCollapsed"
+                                    :open="flyoutOpenKey === getFlyoutKey(item)"
+                                    @update:open="(v) => setFlyoutOpen(getFlyoutKey(item), v)"
+                                >
+                                    <DropdownMenuTrigger as-child>
                                         <SidebarMenuButton
                                             :tooltip="item.title"
                                             :isActive="shouldExpandParent(item.items)"
+                                            @mouseenter="openFlyout(getFlyoutKey(item))"
+                                            @mouseleave="scheduleCloseFlyout(getFlyoutKey(item))"
                                         >
                                             <component :is="item.icon" />
-                                            <span
-                                                class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500"
-                                            >
-                                                {{ item.title }}
-                                            </span>
-                                            <component
-                                                :is="chevronIcon"
-                                                :class="isRTL ? 'mr-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' : 'ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90'"
-                                            />
+                                            <span class="sr-only">{{ item.title }}</span>
                                         </SidebarMenuButton>
-                                    </CollapsibleTrigger>
-                                    <CollapsibleContent>
-                                        <SidebarMenuSub>
-                                            <SidebarMenuSubItem
-                                                v-for="subItem in item.items"
-                                                :key="subItem.title"
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                        :side="flyoutSide"
+                                        align="start"
+                                        :side-offset="8"
+                                        class="min-w-48 rounded-lg"
+                                        @mouseenter="openFlyout(getFlyoutKey(item))"
+                                        @mouseleave="closeFlyout()"
+                                    >
+                                        <DropdownMenuLabel class="text-xs text-muted-foreground">
+                                            {{ item.title }}
+                                        </DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            v-for="subItem in item.items"
+                                            :key="subItem.title"
+                                            as-child
+                                        >
+                                            <Link :href="subItem.url" prefetch cache-for="1m" class="w-full">
+                                                <span>{{ subItem.title }}</span>
+                                            </Link>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                <!-- Expanded sidebar: keep collapsible behavior -->
+                                <Collapsible
+                                    v-else
+                                    as-child
+                                    :open="openParentKey === getParentKey(item)"
+                                    class="group/collapsible"
+                                    @update:open="(v) => onParentOpenChange(item, v)"
+                                >
+                                    <SidebarMenuItem>
+                                        <CollapsibleTrigger as-child>
+                                            <SidebarMenuButton
+                                                :tooltip="item.title"
+                                                :isActive="shouldExpandParent(item.items)"
                                             >
-                                                <SidebarMenuSubButton
-                                                    :isActive="isMenuItemActive(subItem.url)"
-                                                    as-child
-                                                    class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500 data-[active=true]:bg-transparent data-[active=true]:text-violet-500"
+                                                <component :is="item.icon" />
+                                                <span
+                                                    class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500"
                                                 >
-                                                    <Link :href="subItem.url" prefetch cache-for="1m">
-                                                        <span>{{ subItem.title }}</span>
-                                                    </Link>
-                                                </SidebarMenuSubButton>
-                                            </SidebarMenuSubItem>
-                                        </SidebarMenuSub>
-                                    </CollapsibleContent>
-                                </SidebarMenuItem>
-                            </Collapsible>
+                                                    {{ item.title }}
+                                                </span>
+                                                <component
+                                                    :is="chevronIcon"
+                                                    :class="isRTL ? 'mr-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' : 'ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90'"
+                                                />
+                                            </SidebarMenuButton>
+                                        </CollapsibleTrigger>
+                                        <CollapsibleContent>
+                                            <SidebarMenuSub>
+                                                <SidebarMenuSubItem
+                                                    v-for="subItem in item.items"
+                                                    :key="subItem.title"
+                                                >
+                                                    <SidebarMenuSubButton
+                                                        :isActive="isMenuItemActive(subItem.url)"
+                                                        as-child
+                                                        class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500 data-[active=true]:bg-transparent data-[active=true]:text-violet-500"
+                                                    >
+                                                        <Link :href="subItem.url" prefetch cache-for="1m">
+                                                            <span>{{ subItem.title }}</span>
+                                                        </Link>
+                                                    </SidebarMenuSubButton>
+                                                </SidebarMenuSubItem>
+                                            </SidebarMenuSub>
+                                        </CollapsibleContent>
+                                    </SidebarMenuItem>
+                                </Collapsible>
+                            </template>
                         </template>
                     </SidebarMenu>
                 </SidebarGroup>
@@ -611,22 +846,22 @@ function logout() {
             <SidebarRail />
         </Sidebar>
         <SidebarInset>
-            <header class="flex h-16 shrink-0 items-center justify-between gap-2 px-4 rtl:pr-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <header class="flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-background/80 px-3 py-2 transition-[width,height] ease-linear supports-[backdrop-filter]:bg-background/60 sm:h-16 sm:flex-nowrap sm:px-4 sm:py-0 rtl:pr-3 sm:rtl:pr-4 group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
                 <!-- Left side: Sidebar trigger and breadcrumb -->
                 <div class="flex items-center gap-2">
                     <SidebarTrigger class="-ml-1"/>
-                    <Separator orientation="vertical" class="mr-2 h-4" />
+                    <Separator orientation="vertical" class="mr-2 hidden h-4 sm:block" />
                 </div>
-                <div class="flex items-center gap-3 pr-4">
+                <div class="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3 sm:pr-4">
 
                     <QuickLinks />
-                    <div v-if="isSuperAdmin" class="flex items-center max-start gap-2">
-                        <label class="text-xs text-muted-foreground" for="branch-switcher">
+                    <div v-if="isSuperAdmin" class="hidden items-center max-start gap-2 sm:flex">
+                        <label class="hidden text-xs text-muted-foreground md:block" for="branch-switcher">
                             {{ t('layout.branch') || 'Branch' }}
                         </label>
 
                         <Select v-model="selectedBranchId" @update:modelValue="switchBranch">
-                            <SelectTrigger class="w-[130px] h-7 text-xs border-input">
+                            <SelectTrigger class="h-7 w-[110px] text-xs border-input md:w-[130px]">
                                 <SelectValue :placeholder="t('layout.branch')" />
                             </SelectTrigger>
                             <SelectContent>
@@ -641,7 +876,7 @@ function logout() {
                             </SelectContent>
                         </Select>
                     </div>
-                    <div v-else class="text-xs text-muted-foreground">
+                    <div v-else class="hidden text-xs text-muted-foreground sm:block">
                         {{ activeBranchName || '—' }}
                     </div>
                     <LanguageSwitcher />

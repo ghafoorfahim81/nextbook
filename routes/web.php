@@ -14,6 +14,7 @@ use App\Http\Controllers\SearchController;
 use App\Http\Middleware\CheckCompany;
 use App\Http\Controllers\Administration\SwitchBranchController;
 use App\Http\Controllers\LocaleController;
+use App\Http\Controllers\QuickCreateController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -47,8 +48,8 @@ Route::middleware([
     Route::patch('/departments/{department}/restore', [\App\Http\Controllers\Administration\DepartmentController::class, 'restore'])->name('departments.restore')->withTrashed();
     Route::resource('/categories', \App\Http\Controllers\Administration\CategoryController::class);
     Route::patch('/categories/{category}/restore', [\App\Http\Controllers\Administration\CategoryController::class, 'restore'])->name('categories.restore')->withTrashed();
-    Route::resource('/stores', \App\Http\Controllers\Administration\StoreController::class);
-    Route::patch('/stores/{store}/restore', [\App\Http\Controllers\Administration\StoreController::class, 'restore'])->name('stores.restore')->withTrashed();
+    Route::resource('/warehouses', \App\Http\Controllers\Administration\WarehouseController::class);
+    Route::patch('/warehouses/{warehouse}/restore', [\App\Http\Controllers\Administration\WarehouseController::class, 'restore'])->name('warehouses.restore')->withTrashed();
     Route::resource('/companies', \App\Http\Controllers\Administration\CompanyController::class);
     Route::patch('/companies/{company}/restore', [\App\Http\Controllers\Administration\CompanyController::class, 'restore'])->name('companies.restore')->withTrashed();
     Route::resource('/brands', \App\Http\Controllers\Administration\BrandController::class);
@@ -105,6 +106,7 @@ Route::middleware([
     // Search routes
     Route::post('/search/{resourceType}', [\App\Http\Controllers\SearchController::class, 'search']);
     Route::get('/search/resource-types', [\App\Http\Controllers\SearchController::class, 'getResourceTypes']);
+    Route::post('/quick-create/{resourceType}', [QuickCreateController::class, 'store'])->name('quick-create.store');
 
     // Receipts
     Route::resource('/receipts', \App\Http\Controllers\Receipt\ReceiptController::class);
@@ -135,9 +137,10 @@ Route::middleware([
     // Settings
     Route::get('/preferences', [\App\Http\Controllers\Preferences\PreferencesController::class, 'index'])->name('preferences.index');
     Route::put('/preferences', [\App\Http\Controllers\Preferences\PreferencesController::class, 'update'])->name('preferences.update');
-    Route::post('/preferences/reset/{category?}', [\App\Http\Controllers\Preferences\PreferencesController::class, 'reset'])->name('preferences.reset');
-    Route::get('/preferences/export', [\App\Http\Controllers\Preferences\PreferencesController::class, 'export'])->name('preferences.export');
-    Route::post('/preferences/import', [\App\Http\Controllers\Preferences\PreferencesController::class, 'import'])->name('preferences.import');
+    Route::post('/preferences/reset/{category?}', [\App\Http\Controllers\Preferences\PreferencesController::class, 'resetPreferences'])->name('preferences.reset');
+    Route::get('/preferences/export', [\App\Http\Controllers\Preferences\PreferencesController::class, 'exportPreferences'])->name('preferences.export');
+    Route::post('/preferences/import', [\App\Http\Controllers\Preferences\PreferencesController::class, 'importPreferences'])->name('preferences.import');
+    Route::put('/preferences/install-plugins', [\App\Http\Controllers\Preferences\PreferencesController::class, 'updateInstallPlugins'])->name('preferences.install-plugins.update');
 
     // Expense Categories
     Route::resource('/expense-categories', \App\Http\Controllers\Expense\ExpenseCategoryController::class);
@@ -152,10 +155,13 @@ Route::middleware([
     Route::patch('/item-transfers/{itemTransfer}/restore', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'restore'])->name('item-transfers.restore')->withTrashed();
     Route::patch('/item-transfers/{itemTransfer}/complete', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'complete'])->name('item-transfers.complete');
     Route::patch('/item-transfers/{itemTransfer}/cancel', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'cancel'])->name('item-transfers.cancel');
-
-
-    Route::match(['get', 'post'], '/search/items-for-sale', [SearchController::class, 'searchItemsForSale'])
-        ->name('search.items-for-sale');
+    // Journal Entries
+    Route::resource('/journal-entries', \App\Http\Controllers\JournalEntry\JournalEntryController::class);
+    Route::patch('/journal-entries/{journalEntry}/restore', [\App\Http\Controllers\JournalEntry\JournalEntryController::class, 'restore'])->name('journal-entries.restore')->withTrashed();
+    Route::resource('/journal-classes', \App\Http\Controllers\JournalEntry\JournalClassController::class);
+    Route::patch('/journal-classes/{journalClass}/restore', [\App\Http\Controllers\JournalEntry\JournalClassController::class, 'restore'])->name('journal-classes.restore')->withTrashed();
+    Route::match(['get', 'post'], '/search/items-list', [SearchController::class, 'searchItemsList'])
+        ->name('search.items-list');
     Route::get('/search/{resourceType}', [SearchController::class, 'search']);
     Route::get('/search/resource-types', [SearchController::class, 'getResourceTypes']);
 

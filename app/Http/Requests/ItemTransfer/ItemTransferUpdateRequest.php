@@ -25,8 +25,8 @@ class ItemTransferUpdateRequest extends FormRequest
     {
         return [
             'date' => ['sometimes', 'required', 'date'],
-            'from_store_id' => ['sometimes', 'required', 'string', 'exists:stores,id'],
-            'to_store_id' => ['sometimes', 'required', 'string', 'exists:stores,id', 'different:from_store_id'],
+            'from_warehouse_id' => ['sometimes', 'required', 'string', 'exists:warehouses,id'],
+            'to_warehouse_id' => ['sometimes', 'required', 'string', 'exists:warehouses,id', 'different:from_warehouse_id'],
             'status' => ['sometimes', 'nullable', 'string', Rule::in(TransferStatus::values())],
             'transfer_cost' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'remarks' => ['sometimes', 'nullable', 'string'],

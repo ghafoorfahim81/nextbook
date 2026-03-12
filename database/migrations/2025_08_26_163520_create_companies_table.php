@@ -7,6 +7,7 @@ use App\Enums\CalendarType;
 use App\Enums\BusinessType;
 use App\Enums\Locale;
 use App\Enums\WorkingStyle;
+use App\Enums\CostingMethod;
 return new class extends Migration
 {
     /**
@@ -32,6 +33,7 @@ return new class extends Migration
             $table->enum('business_type', BusinessType::values())->nullable()->default(BusinessType::PHARMACY_SHOP->value);
             $table->enum('locale', Locale::values())->nullable()->default(Locale::EN->value);
             $table->ulid('currency_id')->index();
+            $table->enum('costing_method', CostingMethod::values())->nullable()->default(CostingMethod::FIFO->value);
             $table->string('email')->nullable();
             $table->string('website')->nullable();
             $table->text('invoice_description')->nullable();
@@ -43,7 +45,7 @@ return new class extends Migration
         Schema::enableForeignKeyConstraints();
 
         Schema::table('companies', function (Blueprint $table) {
-            $table->foreign('currency_id')->references('id')->on('currencies'); 
+            $table->foreign('currency_id')->references('id')->on('currencies');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');
         });

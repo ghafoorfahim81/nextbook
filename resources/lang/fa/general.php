@@ -25,7 +25,7 @@ return [
         'role' => 'نقش',
         'sale' => 'فروش',
         'size' => 'سایز',
-        'store' => 'انبار/گدام',
+        'warehouse' => 'انبار/گدام',
         'supplier' => 'تأمین‌کننده',
         'unit_measure' => 'واحد اندازه‌گیری',
         'user' => 'کاربر',
@@ -42,7 +42,7 @@ return [
     'items_created_successfully' => 'آیتم‌ها با موفقیت ایجاد شدند.',
     'items_saved_successfully' => 'آیتم‌ها با موفقیت ذخیره شدند.',
 
-    'cannot_delete_main_store' => 'شما نمی‌توانید انبار اصلی را حذف کنید.',
+    'cannot_delete_main_warehouse' => 'شما نمی‌توانید انبار اصلی را حذف کنید.',
     'cannot_delete_main_branch' => 'شما نمی‌توانید شعبه اصلی را حذف کنید.',
     'cannot_delete_main_account' => 'شما نمی‌توانید حساب اصلی را حذف کنید.',
     'cannot_delete_own_account' => 'شما نمی‌توانید حساب خودتان را حذف کنید.',
@@ -61,5 +61,8 @@ return [
 
     'error_occurred_while_creating' => 'هنگام ایجاد :resource خطایی رخ داد.',
     'error_occurred_while_updating' => 'هنگام به‌روزرسانی :resource خطایی رخ داد.',
+    'dependencies_found' => 'نمی‌توان این رکورد را حذف کنید چون در بخش های دیگر استفاده شده است.',
+    'cannot_delete_item_with_posted_stock_movements' => 'نمی‌توان جنسی را حذف کنید که دارای حرکات انبار ثبت شده است.',
+    'posted_stock_movements_found' => 'جنسی با حرکات انبار ثبت شده وجود دارد.',
 ];
 

@@ -1,24 +1,17 @@
 models:
-  Purchase/Purchase:
+  Purchase/PurchasePayment:
     id: char(26)
-    number: string index
-    supplier_id: char(26) foreign:ledgers  
-    date: date
-    transaction_id: char(26) foreign:transactions  
-    discount: decimal nullable
-    discount_type: string nullable
-    type: string 
-    description: text nullable
-    status: string nullable
+    purchase_id: char(26) index
+    payment_id: char(26) index
+    amount: decimal
     created_by: char(26) foreign:users
     updated_by: char(26) foreign:users nullable
+    deleted_by: char(26) foreign:users nullable
     timestamps: true
 controllers:
-  Purchase/Purchase:
+  Purchase/PurchasePayment:
     resource: api
-
-seeders: Purchase/Purchase
-
+seeders: Purchase/PurchasePayment
 #models:
 #  Administration/Quantity:
 #    id: id

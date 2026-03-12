@@ -9,6 +9,8 @@ import { router } from '@inertiajs/vue3'
 const props = defineProps({
     owners: Object,
     currencies: Object,
+    filters: Object,
+    filterOptions: Object,
 });
 
 const isDialogOpen = ref(false);
@@ -43,6 +45,17 @@ const showItem = (id) => {
     selectedOwnerId.value = id;
     showDialog.value = true;
 };
+
+const filterFields = computed(() => ([
+    { key: 'name', label: t('general.name'), type: 'text' },
+    { key: 'nic', label: t('owner.nic'), type: 'text' },
+    {
+        key: 'created_by',
+        label: t('general.created_by'),
+        type: 'select',
+        options: (props.filterOptions?.users || []).map((u) => ({ id: u.id, name: u.name })),
+    },
+]));
 </script>
 
 <template>
@@ -51,6 +64,8 @@ const showItem = (id) => {
             can="owners"
             :items="owners"
             :columns="columns"
+            :filters="filters"
+            :filterFields="filterFields"
             :hasShow="true"
             @edit="editItem"
             @delete="deleteItem"

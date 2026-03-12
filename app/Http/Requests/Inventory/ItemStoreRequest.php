@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Inventory;
 
+use App\Enums\ItemType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -19,24 +20,32 @@ class ItemStoreRequest extends FormRequest
      * Get the validation rules that apply to the request.
      */
     public function rules(): array
-    { 
+    {
 
         return [
             'name' => ['required', 'string', 'unique:items,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'code' => ['required', 'string', 'unique:items,code,NULL,id,branch_id,NULL,deleted_at,NULL'], 
+            'code' => ['required', 'string', 'unique:items,code,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'item_type' => ['nullable', 'string', Rule::in(ItemType::values()) ?? ItemType::INVENTORY_MATERIALS->value],
+            'sku' => ['nullable', 'string', 'unique:items,sku,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'is_batch_tracked' => ['nullable', 'boolean'],
+            'is_expiry_tracked' => ['nullable', 'boolean'],
             'generic_name' => ['nullable', 'string'],
             'packing' => ['nullable', 'string'],
             'barcode' => ['nullable', 'string'],
             'unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
             'brand_id' => ['nullable', 'string', 'exists:brands,id'],
             'category_id' => ['nullable', 'string', 'exists:categories,id'],
+            'asset_account_id' => ['required', 'string', 'exists:accounts,id'],
+            'income_account_id' => ['required', 'string', 'exists:accounts,id'],
+            'cost_account_id' => ['required', 'string', 'exists:accounts,id'],
             'minimum_stock' => ['nullable', 'numeric'],
             'maximum_stock' => ['nullable', 'numeric'],
             'colors' => ['nullable', 'array'],
             'size_id' => ['nullable', 'string', 'exists:sizes,id'],
             'purchase_price' => ['nullable', 'numeric'],
             'cost' => ['nullable', 'numeric'],
-            'sale_price' => ['required', 'numeric'],
+            'sale_price' => ['nullable', 'numeric'],
+            'margin_percentage' => ['nullable', 'numeric', 'required_with:sale_price<0'],
             'rate_a' => ['nullable', 'numeric'],
             'rate_b' => ['nullable', 'numeric'],
             'rate_c' => ['nullable', 'numeric'],
@@ -46,7 +55,9 @@ class ItemStoreRequest extends FormRequest
             'openings.*.batch' => ['nullable', 'string'],
             'openings.*.expire_date' => ['nullable', 'date'],
             'openings.*.quantity' => ['nullable', 'numeric'],
-            'openings.*.store_id' => ['nullable', 'string', 'exists:stores,id'],
+            'openings.*.unit_price' => ['nullable', 'numeric','required_with:openings.*.quantity>0'], 
+            'openings.*.warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
+
         ];
     }
 }

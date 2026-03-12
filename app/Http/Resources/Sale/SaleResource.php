@@ -5,6 +5,7 @@ namespace App\Http\Resources\Sale;
 use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Enums\SalePurchaseType;
 
 class SaleResource extends JsonResource
 {
@@ -22,18 +23,24 @@ class SaleResource extends JsonResource
             'customer' => $this->whenLoaded('customer'),
             'customer_name' => $this->customer?->name,
             'date' => $dateConversionService->toDisplay($this->date),
-            'transaction_id' => $this->transaction_id,
-            'amount' => $this->transaction?->amount,
+            'transaction_id' => $this->transaction_id, 
+            'amount' => $this->items->sum(function ($item) {
+                return $item->quantity * $item->unit_price;
+            }),
             'discount' => $this->discount,
             'discount_type' => $this->discount_type,
-            'type' => $this->type   ,
-            'sale_purchase_type_id' => $this->type,
+            'type' => ($this->type instanceof SalePurchaseType)
+                ? $this->type->getLabel()
+                : (SalePurchaseType::tryFrom((string) $this->type)?->getLabel() ?? $this->type),
+            'sale_purchase_type_id' => ($this->type instanceof SalePurchaseType)
+                ? $this->type->value
+                : $this->type,
             'description' => $this->description,
             'status' => $this->status,
             'transaction_total' => $this->transaction?->amount,
             'transaction' => new TransactionResource($this->whenLoaded('transaction', $this->transaction)),
-            'store' => $this->stockOuts[0]?->store,
-            'store_id' => $this->stockOuts[0]?->store?->id,
+            'warehouse' => $this->warehouse(),
+            'warehouse_id' => $this->warehouse()?->id,
             'currency_id' => $this->transaction?->currency_id,
             'rate' => $this->transaction?->rate,
             'items' => $this->whenLoaded('items', SaleItemResource::collection($this->items)),
@@ -45,8 +52,8 @@ class SaleResource extends JsonResource
                     'expire_date' => $item->expire_date ? $dateConversionService->toDisplay($item->expire_date) : null,
                     'free' => $item->free,
                     'batch' => $item->batch,
-                    'store_id' => $item->store_id,
-                    'store' => $item->store,
+                    'warehouse_id' => $item->warehouse_id,
+                    'warehouse' => $item->warehouse,
                     'item_discount' => $item->discount,
                     'tax' => $item->tax,
                     'unit_measure_id' => $item->unit_measure_id,

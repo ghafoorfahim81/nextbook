@@ -30,7 +30,7 @@
     "size": "Size",
     "branch": "Branch",
     "brand": "Brand",
-    "store": "Store",
+    "warehouse": "Warehouse",
     "company": "Company"
   },
   "inventory": {
@@ -42,6 +42,12 @@
   "account": {
     "chart_of_account": "Chart of Account",
     "account_type": "Account Type"
+  },
+  "journal_entry": {
+    "journal_entry": "Journal Entry",
+    "journal_entries": "Journal Entries", 
+    "journal_class": "Journal Class",
+    "journal_classes": "Journal Classes"
   },
   "purchase": {
     "purchase": "Purchase",

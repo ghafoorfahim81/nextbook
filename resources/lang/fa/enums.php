@@ -34,7 +34,7 @@ return [
     'sales_purchase_type' => [
         'cash' => 'نقدی',
         'credit' => 'قرض/اعتباری',
-        'on_loan' => 'امانی',
+        'on_loan' => 'قرض',
     ],
     'discount_type' => [
         'percentage' => 'فیصدی',
@@ -49,9 +49,11 @@ return [
         'credit' => 'طلبکار',
     ],
     'transaction_status' => [
-        'pending' => 'در انتظار',
+        'posted' => 'ثبت شده',
         'approved' => 'تأیید شده',
         'rejected' => 'رد شده',
+        'cancelled' => 'لغو شده',
+        'reversed' => 'معکوس شده',
     ],
     'transfer_status' => [
         'pending' => 'در انتظار',
@@ -66,6 +68,31 @@ return [
     'ledger_type' => [
         'customer' => 'مشتری',
         'supplier' => 'تأمین‌کننده',
+    ],
+    'item_type' => [
+        'inventory_materials' => 'مواد و محصولات انبار',
+        'non_inventory_materials' => 'مواد غیر انبار',
+        'raw_materials' => 'مواد اولیه',
+        'finished_good_items' => 'محصولات تمام شده',
+        'inventory_services' => 'خدمات انبار',
+    ],
+    'stock_direction_type' => [
+        'in' => 'ورود',
+        'out' => 'خروج',
+    ],
+    'stock_source_type' => [
+        'purchase' => 'خرید',
+        'purchase_return' => 'برگشت خرید',
+        'sale' => 'فروش',
+        'sale_return' => 'برگشت فروش',
+        'stock_adjustment' => 'تعدیل انبار',
+        'item_transfer' => 'ترجمه مورد',
+        'adjustment' => 'تعدیل',
+        'opening' => 'موجودی اولیه',
+    ],
+    'costing_method' => [
+        'fifo' => 'اولین ورود اولین خروج',
+        'lifo' => 'آخرین ورود اولین خروج',
     ],
 ];
 
