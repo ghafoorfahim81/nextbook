@@ -36,19 +36,18 @@ const activeTxnTab = ref('sales');
 const customerData = computed(() => customer.value ?? {});
 const statement = computed(() => customerData.value.statement ?? {});
 const opening = computed(() => customerData.value.opening ?? {});
-
 const formatAmount = (value) => {
     if (value === null || value === undefined) return '-';
     return Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-const loadCustomer = async (id) => {
-    console.log('id', id);
+const loadCustomer = async (id) => { 
     if (!id) return;
     loading.value = true;
     try {
         const response = await axios.get(`/customers/${id}`);
         const data = response.data;
+        console.log('data', customerData.value);
         customer.value = data.customer?.data ?? data.customer ?? null;
         sales.value = data.sales?.data ?? data.sales ?? [];
         receipts.value = data.receipts?.data ?? data.receipts ?? [];
@@ -160,13 +159,13 @@ const closeDialog = () => {
                                     <div class="w-full bg-card border rounded-xl overflow-hidden mt-4">
                                         <div class="flex flex-col divide-y divide-border">
                                             <div class="flex items-center px-5 py-2">
-                                                <div class="flex-1 text-base text-muted-foreground">{{ t('general.credit') }}</div>
+                                                <div class="flex-1 text-base text-muted-foreground">{{ t('general.receivable') }}</div>
                                                 <div class="text-base font-medium text-primary">
                                                     {{ formatAmount(statement.total_credit) }}
                                                 </div>
                                             </div>
                                             <div class="flex items-center px-5 py-2 mt-1">
-                                                <div class="flex-1 text-base text-muted-foreground">{{ t('general.debit') }}</div>
+                                                <div class="flex-1 text-base text-muted-foreground">{{ t('general.payable') }}</div>
                                                 <div class="text-base font-medium text-primary">
                                                     {{ formatAmount(statement.total_debit) }}
                                                 </div>
@@ -177,7 +176,7 @@ const closeDialog = () => {
                                                     class="text-base font-medium"
                                                     :class="statement.balance_nature === 'cr' ? 'text-green-600' : 'text-primary'"
                                                 >
-                                                    {{ formatAmount(statement.balance) }} {{statement.balance > 0 ? (statement.balance_nature === 'cr' ? t('general.owe_to') : t('general.owe_you')) : '' }}
+                                                    {{ statement.balance }}  
                                                 </div>
                                             </div>
                                         </div>

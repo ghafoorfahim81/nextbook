@@ -38,7 +38,7 @@ class Ledger extends Model
     {
         return Attribute::make(
             get: function () {
-    
+
                 $totals = TransactionLine::whereHas('transaction', function ($query) {
                         $query->where('ledger_id', $this->id);
                               //->where('status', 'posted');
@@ -48,47 +48,59 @@ class Ledger extends Model
                         SUM(credit) as total_credit
                     ')
                     ->first();
-    
+
                 $totalDebit  = (float) ($totals->total_debit ?? 0);
                 $totalCredit = (float) ($totals->total_credit ?? 0);
-    
+
                 $netBalance = $totalDebit - $totalCredit;
-    
+
                 $balanceAmount = abs($netBalance);
                 $balanceNature = $netBalance >= 0 ? 'dr' : 'cr';
-    
+
                 $natureFormat = balanceNatureFormat();
-    
+
+                $isSupplier = $this->type === 'supplier';
                 // Format balance based on user preference
                 if ($natureFormat === 'with_nature') {
                     $balance = $balanceAmount . ' ' . $balanceNature;
                 } else {
-                    $balance = $netBalance >= 0
-                        ? '+' . $balanceAmount
-                        : '-' . $balanceAmount;
+                    if($isSupplier) {
+                        $balance = $balanceNature === 'cr'
+                            ? __('general.owe_to') . ' ' . $balanceAmount
+                            : __('general.owe_you') . ' ' . $balanceAmount;
+                    } else {
+                        $balance = $netBalance >= 0
+                            ? __('general.owe_you') . ' ' . $balanceAmount
+                            : __('general.owe_to') . ' ' . $balanceAmount;
+                    }
                 }
-    
+
                 $normalNature = $this->type === 'supplier' ? 'cr' : 'dr';
-    
                 return [
-                    'balance' => $balance,
+                    'balance' => $balanceAmount>0 ? $balance : 0,
                     'balance_amount' => $balanceAmount,
                     'balance_nature' => $balanceNature,
                     'normal_balance_nature' => $normalNature,
                     'is_normal_balance' => $balanceNature === $normalNature,
-    
+
                     'total_debit' => $totalDebit,
                     'total_credit' => $totalCredit,
                     'net_balance' => $netBalance,
-    
+                    'meaning' => $isSupplier
+                        ? ($balanceNature === 'cr'
+                            ? "You owe {$balanceAmount} to this supplier"
+                            : "Supplier owes you {$balanceAmount}")
+                        : ($balanceNature === 'dr'
+                            ? "Customer owes you {$balanceAmount}"
+                            : "You owe {$balanceAmount} to this customer"),
                     'account_type' => $this->type,
-    
+
                     'payable_amount' => $balanceNature === 'cr' ? $balanceAmount : 0,
                     'receivable_amount' => $balanceNature === 'dr' ? $balanceAmount : 0,
                 ];
             }
         );
-    } 
+    }
 
 
     /**
