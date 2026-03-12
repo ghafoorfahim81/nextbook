@@ -26,7 +26,7 @@ class WarehouseController extends Controller
 
         $warehouses = Warehouse::with(['createdBy', 'updatedBy'])
             ->search($request->query('search'))
-            ->where('is_active', true)
+            // ->where('is_active', true)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
