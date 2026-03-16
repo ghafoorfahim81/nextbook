@@ -20,11 +20,11 @@ class CompanyController extends Controller
 
     public function index(Request $request)
     {
-        $perPage = $request->input('perPage', 10);
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $companies = Company::with('parent')
+        $companies = Company::with(['createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -62,6 +62,6 @@ class CompanyController extends Controller
     public function restore(Request $request, Company $company)
     {
         $company->restore();
-        return redirect()->route('companies.index')->with('success', 'Company restored successfully.');
+        return redirect()->route('companies.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.company')]));
     }
 }

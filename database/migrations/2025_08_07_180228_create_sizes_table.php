@@ -17,6 +17,7 @@ return new class extends Migration
             $table->ulid('id')->primary();
             $table->string('name')->index();
             $table->string('code')->index();
+            $table->boolean('is_main')->default(false);
             $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();

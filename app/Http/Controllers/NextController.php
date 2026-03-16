@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use App\Models\Administration\Store;
+use App\Models\Administration\Warehouse;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\Stock;
 use App\Models\Inventory\StockOut;
@@ -16,28 +16,28 @@ class NextController extends Controller
     {
         $validated = $request->validate([
             'item_id' => ['required', 'string'],
-            'store_id' => ['required', 'string'],
+            'warehouse_id' => ['required', 'string'],
         ]);
 
         $itemId = $validated['item_id'];
-        $storeId = $validated['store_id'];
+        $warehouseId = $validated['warehouse_id'];
 
         $item = DB::table('items')->where('id', $itemId)->first();
-        $storeExists = DB::table('stores')->where('id', $storeId)->exists();
-        if (!$item || !$storeExists) {
-            return response()->json(['message' => 'Item or store not found'], 404);
+        $warehouseExists = DB::table('warehouses')->where('id', $warehouseId)->exists();
+        if (!$item || !$warehouseExists) {
+            return response()->json(['message' => 'Item or warehouse not found'], 404);
         }
 
         // Compute on hand: sum(stocks.quantity) - sum(stock_outs.qut_out)
         $stockIn = DB::table('stocks')
             ->where('item_id', $itemId)
-            ->where('store_id', $storeId)
+            ->where('warehouse_id', $warehouseId)
             ->sum('quantity');
 
         $stockOut = DB::table('stock_outs')
             ->where('item_id', $itemId)
-            ->where('store_id', $storeId)
-            ->sum('qut_out');
+            ->where('warehouse_id', $warehouseId)
+            ->sum('quantity');
 
         $onHand = (float)$stockIn - (float)$stockOut;
 
@@ -49,7 +49,7 @@ class NextController extends Controller
 
         return response()->json([
             'itemId' => $itemId,
-            'storeId' => $storeId,
+            'warehouseId' => $warehouseId,
             'onHand' => (float)$onHand,
             'measure' => $measure,
             'purchasePrice' => $purchasePrice,
@@ -58,30 +58,30 @@ class NextController extends Controller
 
     public function getItemWithBatches(Request $request)
     {
-        $storeId = $request->store_id??Store::main()->id;
+        $warehouseId = $request->warehouse_id ?? Warehouse::main()->id;
         $itemId  = $request->item_id;
         $items   = Item::where('id', $itemId)->get();
-        $items = $this->mapItem($items, $storeId);
+        $items = $this->mapItem($items, $warehouseId);
         if (!$items->count()>0) {
             $items = Item::limit(10)->get();
-           $items = $this->mapItem($items, $storeId);
+           $items = $this->mapItem($items, $warehouseId);
         }
 
         return $items;
     }
 
-    public function mapItem($items, $storeId)
+    public function mapItem($items, $warehouseId)
     {
-        return $items->map(function ($item) use ($storeId) {
+        return $items->map(function ($item) use ($warehouseId) {
             $batchesIn = Stock::where('item_id', $item->id)
-                ->where('store_id', $storeId)
+                ->where('warehouse_id', $warehouseId)
                 ->groupBy('batch','id')
                 ->get();
             $batches = [];
             $onHand = 0;
             if($batchesIn){
                 $batchesOut = StockOut::where('item_id', $item->id)
-                    ->where('store_id', $storeId)
+                    ->where('warehouse_id', $warehouseId)
                     ->groupBy('batch','id')
                     ->get();
 
@@ -97,7 +97,7 @@ class NextController extends Controller
                 $onHand = $batchesIn->sum('quantity') - $batchesOut->sum('quantity');
             } else {
                 $batches = [];
-                $onHand = $item->stocks->where('store_id', $storeId)->sum('quantity') - $item->stockOut->where('store_id', $storeId)->sum('quantity');
+                $onHand = $item->stocks->where('warehouse_id', $warehouseId)->sum('quantity') - $item->stockOut->where('warehouse_id', $warehouseId)->sum('quantity');
             }
             return [
                 'id' => $item->id,
@@ -109,7 +109,7 @@ class NextController extends Controller
                 'colors' => $item->colors,
                 'size' => $item->size,
                 'purchase_price' => $item->purchase_price,
-                'unit_price' => $item->stocks->where('store_id', $storeId)->avg('unit_price'),
+                'unit_price' => $item->stocks->where('warehouse_id', $warehouseId)->avg('unit_price'),
                 'cost' => $item->cost,
                 'sale_price' => $item->sale_price,
                 'rate_a' => $item->rate_a,

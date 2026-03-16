@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Account;
 
+use App\Enums\TransactionType;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class AccountStoreRequest extends FormRequest
 {
@@ -21,16 +23,16 @@ class AccountStoreRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'unique:accounts,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'local_name' => ['nullable', 'string', 'unique:accounts,local_name,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'number' => ['required', 'string', 'unique:accounts,number,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'account_type_id' => ['required', 'string', 'exists:account_types,id'],
+            'parent_id' => ['nullable', 'string', 'exists:accounts,id'],
             'is_active' => ['nullable', 'boolean'],
             'remark' => ['nullable', 'string'],
             'slug' => ['nullable', 'string'],
-            'openings' => ['nullable', 'array'],
-            'openings.*.currency_id' => ['nullable', 'string', 'exists:currencies,id'],
-            'openings.*.amount' => ['nullable', 'numeric'],
-            'openings.*.rate' => ['required', 'numeric'],
-            'openings.*.type' => ['nullable', 'string', 'in:debit,credit'],
+            'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
+            'rate' => ['nullable', 'numeric','required_with:currency_id'],
+            'amount' => ['nullable', 'numeric','required_with:currency_id'], 
         ];
     }
 }

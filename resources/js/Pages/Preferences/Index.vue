@@ -5,17 +5,19 @@ import { useForm, router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/Components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { Label } from '@/Components/ui/label'
 import { Input } from '@/Components/ui/input'
 import { Switch } from '@/Components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
 import { Textarea } from '@/Components/ui/textarea'
 import { Checkbox } from '@/Components/ui/checkbox'
-import { useToast } from '@/Components/ui/toast' 
+import { toast } from 'vue-sonner';
+
 import {
     Palette, Package, ShoppingCart, ShoppingBag, CreditCard, Calculator,
     Bell, Shield, Database, Globe, Monitor, RotateCcw, Download, Upload,
-    Save, SlidersHorizontal as preferencesIcon
+    Save, Plug, SlidersHorizontal as preferencesIcon
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -24,10 +26,15 @@ const props = defineProps({
     cashAccounts: Array,
     sidebarMenus: Array,
     timezones: Object,
+    unitMeasures: { type: [Array, Object], required: true },
+    categories: { type: [Array, Object], required: true },
+    warehouses: { type: [Array, Object], required: true },
+    sizes: { type: [Array, Object], required: true },
+    currencies: { type: [Array, Object], required: true },
+    ledgers: { type: [Array, Object], required: true },
 })
 
 const { t } = useI18n()
-const { toast } = useToast()
 
 const activeTab = ref('appearance')
 
@@ -40,6 +47,7 @@ const tabs = [
     { id: 'tax_currency', label: 'preferences.tabs.tax_currency', icon: Calculator },
     { id: 'notifications', label: 'preferences.tabs.notifications', icon: Bell },
     { id: 'security', label: 'preferences.tabs.security', icon: Shield },
+    { id: 'install_plugins', label: 'preferences.tabs.install_plugins', icon: Plug },
     { id: 'backup', label: 'preferences.tabs.backup', icon: Database },
     { id: 'localization', label: 'preferences.tabs.localization', icon: Globe },
     { id: 'display', label: 'preferences.tabs.display', icon: Monitor },
@@ -47,20 +55,57 @@ const tabs = [
 
 const form = useForm({ ...props.preferences })
 
+const allUnitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
+const allCategories = computed(() => props.categories?.data ?? props.categories ?? [])
+const allWarehouses = computed(() => props.warehouses?.data ?? props.warehouses ?? [])
+const allSizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
+const allCurrencies = computed(() => props.currencies?.data ?? props.currencies ?? [])
+const allLedgers = computed(() => props.ledgers?.data ?? props.ledgers ?? [])
+
+const customerLedgers = computed(() => allLedgers.value.filter(l => l.type === 'customer'))
+const supplierLedgers = computed(() => allLedgers.value.filter(l => l.type === 'supplier'))
+
+const activeIds = (list) => (Array.isArray(list) ? list : []).filter(x => x?.is_active === true).map(x => x.id)
+
+const pluginForm = useForm({
+    unit_measures: activeIds(allUnitMeasures.value),
+    categories: activeIds(allCategories.value),
+    warehouses: activeIds(allWarehouses.value),
+    sizes: activeIds(allSizes.value),
+    currencies: activeIds(allCurrencies.value),
+    ledgers: activeIds(allLedgers.value),
+})
+const pluginSaving = computed(() => pluginForm.processing)
+
+const togglePluginIds = (field, id, checked) => {
+    const current = new Set(pluginForm[field] || [])
+    if (checked) current.add(id)
+    else current.delete(id)
+    pluginForm[field] = Array.from(current)
+}
+
+const savePlugins = () => {
+    pluginForm.put(route('preferences.install-plugins.update'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            toast.success(t('general.success'), {
+                description: t('preferences.install_plugins.saved_description'),
+                class: 'bg-green-600',
+            });
+        },
+    })
+}
+
 const save = () => {
     form.put(route('preferences.update'), {
         preserveScroll: true,
         onSuccess: () => {
-            toast({
-                 title: t('preferences.saved'),
+            toast.success(t('preferences.saved'), {
                 description: t('preferences.saved_description'),
-                variant: 'success'
+                class: 'bg-green-600',
             })
         // Store form values to local storage after a successful save
         localStorage.setItem('user_preferences', JSON.stringify(form));
-        if(form.locale && form.locale !== 'en') {
-            localStorage.setItem('locale', form.locale)
-        }
         },
     })
 }
@@ -71,7 +116,9 @@ const resetCategory = (category) => {
             preserveScroll: true,
             onSuccess: () => {
                 form[category] = props.defaultPreferences[category]
-                toast({ title: t('preferences.reset_success') })
+                toast.success(t('preferences.reset_success'), {
+                    class: 'bg-green-600',
+                })
             },
         })
     }
@@ -114,14 +161,14 @@ const generalFields = [
     { key: 'date', label: 'preferences.fields.date' },
     { key: 'currency', label: 'preferences.fields.currency' },
     { key: 'type', label: 'preferences.fields.type' },
-    { key: 'store', label: 'preferences.fields.store' },
+    { key: 'warehouse', label: 'preferences.fields.warehouse' },
 ]
 
 const itemColumns = [
     { key: 'packing', label: 'preferences.fields.packing' },
     { key: 'colors', label: 'preferences.fields.colors' },
     { key: 'size', label: 'preferences.fields.size' },
-    { key: 'brand', label: 'preferences.fields.brand' }, 
+    { key: 'brand', label: 'preferences.fields.brand' },
     { key: 'rack_no', label: 'preferences.fields.rack_no' },
     { key: 'category', label: 'preferences.fields.category' },
     { key: 'rates', label: 'preferences.fields.rates' },
@@ -132,6 +179,8 @@ const itemColumns = [
     { key: 'discount', label: 'preferences.fields.discount' },
     { key: 'tax', label: 'preferences.fields.tax' },
     { key: 'free', label: 'preferences.fields.free' },
+
+
 ]
 
 const itemManagementFields = [
@@ -150,7 +199,11 @@ const itemManagementFields = [
     { key: 'barcode', label: 'preferences.item_fields.barcode' },
     { key: 'rack_no', label: 'preferences.item_fields.rack_no' },
     { key: 'fast_search', label: 'preferences.item_fields.fast_search' },
-]
+    { key: 'item_type', label: 'preferences.fields.item_type' },
+    { key: 'sku', label: 'preferences.fields.sku' },
+    { key: 'is_batch_tracked', label: 'preferences.item_fields.is_batch_tracked' },
+    { key: 'is_expiry_tracked', label: 'preferences.item_fields.is_expiry_tracked' },
+    ]
 
 const receiptPaymentFields = [
     { key: 'number', label: 'preferences.fields.number' },
@@ -163,23 +216,24 @@ const receiptPaymentFields = [
 
 <template>
     <AppLayout :title="t('preferences.title')">
-        <div class="container mx-auto py-6 space-y-6">
+        <div class="container mx-auto space-y-6 px-4 py-6 sm:px-6 lg:px-8">
             <!-- Header -->
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div class="flex items-start gap-3 sm:items-center">
                     <preferencesIcon class="w-8 h-8 text-primary" />
                     <div>
                         <h1 class="text-2xl font-bold">{{ t('preferences.title') }}</h1>
                         <p class="text-muted-foreground">{{ t('preferences.description') }}</p>
                     </div>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex w-full flex-wrap gap-2 md:w-auto">
+                    <ModuleHelpButton module="preferences" positionClass="" />
                     <input ref="fileInput" type="file" accept=".json" class="hidden" @change="handleFileUpload" />
-                    <Button variant="outline" size="sm" @click="importpreferences">
+                    <Button variant="outline" size="sm" @click="importPreferences">
                         <Upload class="w-4 h-4 mr-2" />
                         {{ t('preferences.import') }}
                     </Button>
-                    <Button variant="outline" size="sm" @click="exportpreferences">
+                    <Button variant="outline" size="sm" @click="exportPreferences">
                         <Download class="w-4 h-4 mr-2" />
                         {{ t('preferences.export') }}
                     </Button>
@@ -190,16 +244,16 @@ const receiptPaymentFields = [
                 </div>
             </div>
 
-            <div class="flex gap-6">
+            <div class="flex flex-col gap-6 lg:flex-row">
                 <!-- Sidebar Navigation -->
-                <div class="w-64 shrink-0">
-                    <nav class="space-y-1 sticky top-4">
+                <div class="w-full shrink-0 lg:w-64">
+                    <nav class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:sticky lg:top-4 lg:block lg:space-y-1">
                         <button
                             v-for="tab in tabs"
                             :key="tab.id"
                             @click="activeTab = tab.id"
                             :class="[
-                                'w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors',
+                                'w-full justify-start flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors',
                                 activeTab === tab.id
                                     ? 'bg-primary text-primary-foreground'
                                     : 'hover:bg-muted text-muted-foreground hover:text-foreground'
@@ -215,7 +269,7 @@ const receiptPaymentFields = [
                 <div class="flex-1 min-w-0">
                     <!-- Appearance preferences -->
                     <Card v-show="activeTab === 'appearance'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.appearance') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.appearance.description') }}</CardDescription>
@@ -226,7 +280,7 @@ const receiptPaymentFields = [
                             </Button>
                         </CardHeader>
                         <CardContent class="space-y-6">
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.appearance.font_size') }}</Label>
                                     <Input v-model.number="form.appearance.font_size" type="number" min="10" max="24" />
@@ -257,10 +311,62 @@ const receiptPaymentFields = [
                                         </SelectContent>
                                     </Select>
                                 </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.balance_nature_format') }}</Label>
+                                    <Select v-model="form.appearance.balance_nature_format">
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem :value="'without_nature'">{{ t('preferences.appearance.without_nature') }}</SelectItem>
+                                            <SelectItem :value="'with_nature'">{{ t('preferences.appearance.with_nature') }}</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.records_per_page') }}</Label>
+                                    <Input v-model.number="form.appearance.records_per_page" type="number" min="1" max="100" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.sidebar_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.sidebar_font_size" type="number" min="10" max="24" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.heading_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.heading_font_size" type="number" min="10" max="24" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.table_header_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.table_header_font_size" type="number" min="10" max="24" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.table_content_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.table_content_font_size" type="number" min="10" max="24" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.button_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.button_font_size" type="number" min="10" max="24" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.label_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.label_font_size" type="number" min="10" max="24" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.input_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.input_font_size" type="number" min="10" max="24" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.select_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.select_font_size" type="number" min="10" max="24" />
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.textarea_font_size') }}</Label>
+                                    <Input v-model.number="form.appearance.textarea_font_size" type="number" min="10" max="24" />
+                                </div>
                             </div>
                             <div class="space-y-3">
                                 <Label>{{ t('preferences.appearance.sidebar_menus') }}</Label>
-                                <div class="grid grid-cols-3 gap-3">
+                                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                     <div v-for="menu in sidebarMenus" :key="menu.value" class="flex items-center gap-2">
                                         <Checkbox
                                             :id="`menu-${menu.value}`"
@@ -283,7 +389,7 @@ const receiptPaymentFields = [
 
                     <!-- Item Management preferences -->
                     <Card v-show="activeTab === 'item_management'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.item_management') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.item_management.description') }}</CardDescription>
@@ -296,7 +402,7 @@ const receiptPaymentFields = [
                         <CardContent>
                             <div class="space-y-3">
                                 <Label class="text-base font-medium">{{ t('preferences.item_management.visible_fields') }}</Label>
-                                <div class="grid grid-cols-3 gap-4">
+                                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                     <div v-for="field in itemManagementFields" :key="field.key" class="flex items-center gap-2">
                                         <Checkbox
                                             :id="`item-${field.key}`"
@@ -316,7 +422,7 @@ const receiptPaymentFields = [
 
                     <!-- Sale preferences -->
                     <Card v-show="activeTab === 'sale'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.sale') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.sale.description') }}</CardDescription>
@@ -328,7 +434,7 @@ const receiptPaymentFields = [
                         </CardHeader>
                         <CardContent class="space-y-6">
                             <!-- Transaction Type Tabs -->
-                            <div class="flex gap-2 border-b pb-4">
+                            <div class="flex flex-wrap gap-2 border-b pb-4">
                                 <Button
                                     v-for="type in saleTransactionTypes"
                                     :key="type"
@@ -377,7 +483,7 @@ const receiptPaymentFields = [
                             </div>
 
                             <!-- Additional preferences -->
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.sale.invoice_prefix') }}</Label>
                                     <Input v-model="form[activeSaleType].invoice_prefix" />
@@ -389,7 +495,7 @@ const receiptPaymentFields = [
                             </div>
 
                             <template v-if="activeSaleType === 'sale' || activeSaleType === 'sale_order'">
-                                <div class="grid grid-cols-2 gap-6">
+                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                     <div class="space-y-2">
                                         <Label>{{ t('preferences.sale.due_days') }}</Label>
                                         <Input v-model.number="form[activeSaleType].due_days" type="number" min="0" />
@@ -402,7 +508,7 @@ const receiptPaymentFields = [
                             </template>
 
                             <template v-if="activeSaleType === 'sale'">
-                                <div class="grid grid-cols-3 gap-6">
+                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                                     <div class="flex items-center gap-3">
                                         <Switch
                                             :model-value="form.sale.auto_reminders"
@@ -419,7 +525,7 @@ const receiptPaymentFields = [
                                         <Input v-model.number="form.sale.late_fee_percentage" type="number" min="0" max="100" step="0.1" />
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-2 gap-6">
+                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                     <div class="space-y-2">
                                         <Label>{{ t('preferences.sale.tax_percentage') }}</Label>
                                         <Input v-model.number="form.sale.tax_percentage" type="number" min="0" max="100" step="0.1" />
@@ -432,7 +538,7 @@ const receiptPaymentFields = [
                                         <Label>{{ t('preferences.sale.auto_calculate_tax') }}</Label>
                                     </div>
                                 </div>
-                                <div class="flex gap-6">
+                                <div class="flex flex-col gap-4 sm:flex-row sm:gap-6">
                                     <div class="flex items-center gap-3">
                                         <Switch
                                             :model-value="form.sale.show_ledger_transactions"
@@ -454,7 +560,7 @@ const receiptPaymentFields = [
 
                     <!-- Purchase preferences -->
                     <Card v-show="activeTab === 'purchase'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.purchase') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.purchase.description') }}</CardDescription>
@@ -466,7 +572,7 @@ const receiptPaymentFields = [
                         </CardHeader>
                         <CardContent class="space-y-6">
                             <!-- Transaction Type Tabs -->
-                            <div class="flex gap-2 border-b pb-4">
+                            <div class="flex flex-wrap gap-2 border-b pb-4">
                                 <Button
                                     v-for="type in purchaseTransactionTypes"
                                     :key="type"
@@ -515,7 +621,7 @@ const receiptPaymentFields = [
                             </div>
 
                             <!-- Additional preferences -->
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.purchase.invoice_prefix') }}</Label>
                                     <Input v-model="form[activePurchaseType].invoice_prefix" />
@@ -527,7 +633,7 @@ const receiptPaymentFields = [
                             </div>
 
                             <template v-if="activePurchaseType === 'purchase'">
-                                <div class="grid grid-cols-2 gap-6">
+                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                     <div class="space-y-2">
                                             <Label>{{ t('preferences.purchase.due_days') }}</Label>
                                         <Input v-model.number="form.purchase.due_days" type="number" min="0" />
@@ -537,7 +643,7 @@ const receiptPaymentFields = [
                                         <Textarea v-model="form.purchase.terms" rows="2" />
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-3 gap-6">
+                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                                     <div class="flex items-center gap-3">
                                         <Switch
                                                 :model-value="form.purchase.auto_reminders"
@@ -554,7 +660,7 @@ const receiptPaymentFields = [
                                         <Input v-model.number="form.purchase.late_fee_percentage" type="number" min="0" max="100" step="0.1" />
                                     </div>
                                 </div>
-                                <div class="flex gap-6">
+                                <div class="flex flex-col gap-4 sm:flex-row sm:gap-6">
                                     <div class="flex items-center gap-3">
                                         <Switch
                                                 :model-value="form.purchase.show_ledger_transactions"
@@ -576,7 +682,7 @@ const receiptPaymentFields = [
 
                     <!-- Receipt & Payment preferences -->
                     <Card v-show="activeTab === 'receipt_payment'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.receipt_payment') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.receipt_payment.description') }}</CardDescription>
@@ -600,7 +706,7 @@ const receiptPaymentFields = [
                                     </div>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.receipt_payment.default_cash_account') }}</Label>
                                     <Select v-model="form.receipt_payment.default_cash_account">
@@ -640,7 +746,7 @@ const receiptPaymentFields = [
 
                     <!-- Tax & Currency preferences -->
                     <Card v-show="activeTab === 'tax_currency'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.tax_currency') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.tax_currency.description') }}</CardDescription>
@@ -680,7 +786,7 @@ const receiptPaymentFields = [
 
                     <!-- Notification preferences -->
                     <Card v-show="activeTab === 'notifications'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.notifications') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.notifications.description') }}</CardDescription>
@@ -692,7 +798,7 @@ const receiptPaymentFields = [
                         </CardHeader>
                         <CardContent class="space-y-4">
                             <div class="space-y-4">
-                                <div class="flex items-center justify-between py-2 border-b">
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.notifications.email_notifications') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.email_notifications_desc') }}</p>
@@ -702,7 +808,7 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.notifications.email_notifications = v"
                                     />
                                 </div>
-                                <div class="flex items-center justify-between py-2 border-b">
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.notifications.low_balance_alert') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.low_balance_alert_desc') }}</p>
@@ -712,7 +818,7 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.notifications.low_balance_alert = v"
                                     />
                                 </div>
-                                <div class="flex items-center justify-between py-2 border-b">
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.notifications.overdue_invoice_alert') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.overdue_invoice_alert_desc') }}</p>
@@ -722,7 +828,7 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.notifications.overdue_invoice_alert = v"
                                     />
                                 </div>
-                                <div class="flex items-center justify-between py-2 border-b">
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.notifications.new_transaction_alert') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.new_transaction_alert_desc') }}</p>
@@ -732,7 +838,7 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.notifications.new_transaction_alert = v"
                                     />
                                 </div>
-                                <div class="flex items-center justify-between py-2 border-b">
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.notifications.daily_summary_report') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.daily_summary_report_desc') }}</p>
@@ -742,7 +848,7 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.notifications.daily_summary_report = v"
                                     />
                                 </div>
-                                <div class="flex items-center justify-between py-2">
+                                <div class="flex flex-col gap-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.notifications.weekly_financial_summary') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.weekly_financial_summary_desc') }}</p>
@@ -758,7 +864,7 @@ const receiptPaymentFields = [
 
                     <!-- Security preferences -->
                     <Card v-show="activeTab === 'security'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.security') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.security.description') }}</CardDescription>
@@ -769,7 +875,7 @@ const receiptPaymentFields = [
                             </Button>
                         </CardHeader>
                         <CardContent class="space-y-6">
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.security.session_timeout') }}</Label>
                                     <Input v-model.number="form.security.session_timeout" type="number" min="5" max="1440" />
@@ -780,7 +886,7 @@ const receiptPaymentFields = [
                                     <Input v-model.number="form.security.login_attempts_limit" type="number" min="3" max="10" />
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.security.password_min_length') }}</Label>
                                     <Input v-model.number="form.security.password_min_length" type="number" min="6" max="32" />
@@ -817,9 +923,185 @@ const receiptPaymentFields = [
                         </CardContent>
                     </Card>
 
+                    <!-- Install Plugins -->
+                    <Card v-show="activeTab === 'install_plugins'" class="animate-in fade-in duration-200">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <CardTitle>{{ t('preferences.tabs.install_plugins') }}</CardTitle>
+                                <CardDescription>{{ t('preferences.install_plugins.description') }}</CardDescription>
+                            </div>
+                            <Button variant="default" size="sm" @click="savePlugins" :disabled="pluginSaving">
+                                <Save class="w-4 h-4 mr-2" />
+                                {{ t('preferences.install_plugins.save') }}
+                            </Button>
+                        </CardHeader>
+                        <CardContent class="space-y-6">
+                            <div class="space-y-2">
+                                <Label class="text-base font-medium">{{ t('preferences.install_plugins.measures_title') }}</Label>
+                                <p class="text-sm text-muted-foreground">{{ t('preferences.install_plugins.measures_hint') }}</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    <div
+                                        v-for="m in allUnitMeasures"
+                                        :key="m.id"
+                                        class="flex items-center gap-2 rounded-md border p-2"
+                                    >
+                                        <Checkbox
+                                            :id="`fav-measure-${m.id}`"
+                                            :checked="pluginForm.unit_measures?.includes(m.id)"
+                                            @update:checked="(checked) => togglePluginIds('unit_measures', m.id, checked)"
+                                        />
+                                        <Label :for="`fav-measure-${m.id}`" class="font-normal cursor-pointer">
+                                            {{ m.name }}
+                                        </Label>
+                                        <span v-if="m.symbol" class="ml-auto text-xs text-muted-foreground">
+                                            {{ m.symbol }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label class="text-base font-medium">{{ t('preferences.install_plugins.warehouses_title') }}</Label>
+                                <p class="text-sm text-muted-foreground">{{ t('preferences.install_plugins.warehouses_hint') }}</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    <div
+                                        v-for="w in allWarehouses"
+                                        :key="w.id"
+                                        class="flex items-center gap-2 rounded-md border p-2"
+                                    >
+                                        <Checkbox
+                                            :id="`fav-warehouse-${w.id}`"
+                                            :checked="pluginForm.warehouses?.includes(w.id)"
+                                            @update:checked="(checked) => togglePluginIds('warehouses', w.id, checked)"
+                                        />
+                                        <Label :for="`fav-warehouse-${w.id}`" class="font-normal cursor-pointer">
+                                            {{ w.name }}
+                                        </Label>
+                                        <span v-if="w.is_main === true" class="ml-auto text-xs text-muted-foreground">
+                                            {{ t('preferences.install_plugins.main_badge') }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label class="text-base font-medium">{{ t('preferences.install_plugins.categories_title') }}</Label>
+                                <p class="text-sm text-muted-foreground">{{ t('preferences.install_plugins.categories_hint') }}</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    <div
+                                        v-for="c in allCategories"
+                                        :key="c.id"
+                                        class="flex items-center gap-2 rounded-md border p-2"
+                                    >
+                                        <Checkbox
+                                            :id="`fav-category-${c.id}`"
+                                            :checked="pluginForm.categories?.includes(c.id)"
+                                            @update:checked="(checked) => togglePluginIds('categories', c.id, checked)"
+                                        />
+                                        <Label :for="`fav-category-${c.id}`" class="font-normal cursor-pointer">
+                                            {{ c.name }}
+                                        </Label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label class="text-base font-medium">{{ t('preferences.install_plugins.sizes_title') }}</Label>
+                                <p class="text-sm text-muted-foreground">{{ t('preferences.install_plugins.sizes_hint') }}</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    <div
+                                        v-for="z in allSizes"
+                                        :key="z.id"
+                                        class="flex items-center gap-2 rounded-md border p-2"
+                                    >
+                                        <Checkbox
+                                            :id="`fav-size-${z.id}`"
+                                            :checked="pluginForm.sizes?.includes(z.id)"
+                                            @update:checked="(checked) => togglePluginIds('sizes', z.id, checked)"
+                                        />
+                                        <Label :for="`fav-size-${z.id}`" class="font-normal cursor-pointer">
+                                            {{ z.name }}
+                                        </Label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label class="text-base font-medium">{{ t('preferences.install_plugins.currencies_title') }}</Label>
+                                <p class="text-sm text-muted-foreground">{{ t('preferences.install_plugins.currencies_hint') }}</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    <div
+                                        v-for="cu in allCurrencies"
+                                        :key="cu.id"
+                                        class="flex items-center gap-2 rounded-md border p-2"
+                                    >
+                                        <Checkbox
+                                            :id="`fav-currency-${cu.id}`"
+                                            :checked="pluginForm.currencies?.includes(cu.id)"
+                                            @update:checked="(checked) => togglePluginIds('currencies', cu.id, checked)"
+                                        />
+                                        <Label :for="`fav-currency-${cu.id}`" class="font-normal cursor-pointer">
+                                            {{ cu.code || cu.name }}
+                                            <span v-if="cu.is_base_currency === true" class="text-xs text-muted-foreground">
+                                                ({{ t('preferences.install_plugins.base_badge') }})
+                                            </span>
+                                        </Label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <Label class="text-base font-medium">{{ t('preferences.install_plugins.ledgers_title') }}</Label>
+                                <p class="text-sm text-muted-foreground">{{ t('preferences.install_plugins.ledgers_hint') }}</p>
+
+                                <div class="space-y-3">
+                                    <div class="space-y-2">
+                                        <Label class="text-sm font-medium">{{ t('preferences.install_plugins.customers_title') }}</Label>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                            <div
+                                                v-for="l in customerLedgers"
+                                                :key="l.id"
+                                                class="flex items-center gap-2 rounded-md border p-2"
+                                            >
+                                                <Checkbox
+                                                    :id="`fav-ledger-customer-${l.id}`"
+                                                    :checked="pluginForm.ledgers?.includes(l.id)"
+                                                    @update:checked="(checked) => togglePluginIds('ledgers', l.id, checked)"
+                                                />
+                                                <Label :for="`fav-ledger-customer-${l.id}`" class="font-normal cursor-pointer">
+                                                    {{ l.name }}
+                                                </Label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="space-y-2">
+                                        <Label class="text-sm font-medium">{{ t('preferences.install_plugins.suppliers_title') }}</Label>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                            <div
+                                                v-for="l in supplierLedgers"
+                                                :key="l.id"
+                                                class="flex items-center gap-2 rounded-md border p-2"
+                                            >
+                                                <Checkbox
+                                                    :id="`fav-ledger-supplier-${l.id}`"
+                                                    :checked="pluginForm.ledgers?.includes(l.id)"
+                                                    @update:checked="(checked) => togglePluginIds('ledgers', l.id, checked)"
+                                                />
+                                                <Label :for="`fav-ledger-supplier-${l.id}`" class="font-normal cursor-pointer">
+                                                    {{ l.name }}
+                                                </Label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                     <!-- Backup preferences -->
                     <Card v-show="activeTab === 'backup'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.backup') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.backup.description') }}</CardDescription>
@@ -830,7 +1112,7 @@ const receiptPaymentFields = [
                             </Button>
                         </CardHeader>
                         <CardContent class="space-y-6">
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.backup.auto_backup') }}</Label>
                                     <Select v-model="form.backup.auto_backup">
@@ -874,7 +1156,7 @@ const receiptPaymentFields = [
                             </div>
                             <div class="space-y-3">
                                 <Label class="text-base font-medium">{{ t('preferences.backup.export_formats') }}</Label>
-                                <div class="flex gap-6">
+                                <div class="flex flex-col gap-4 sm:flex-row sm:gap-6">
                                     <div class="flex items-center gap-2">
                                         <Checkbox
                                             id="export-pdf"
@@ -906,7 +1188,7 @@ const receiptPaymentFields = [
 
                     <!-- Localization preferences -->
                     <Card v-show="activeTab === 'localization'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.localization') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.localization.description') }}</CardDescription>
@@ -917,7 +1199,7 @@ const receiptPaymentFields = [
                             </Button>
                         </CardHeader>
                         <CardContent class="space-y-6">
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.localization.language') }}</Label>
                                     <Select v-model="form.localization.language">
@@ -945,7 +1227,7 @@ const receiptPaymentFields = [
                                     </Select>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.localization.date_format') }}</Label>
                                     <Select v-model="form.localization.date_format">
@@ -973,7 +1255,7 @@ const receiptPaymentFields = [
                                     </Select>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.localization.number_format') }}</Label>
                                     <Select v-model="form.localization.number_format">
@@ -1005,7 +1287,7 @@ const receiptPaymentFields = [
 
                     <!-- Display preferences -->
                     <Card v-show="activeTab === 'display'" class="animate-in fade-in duration-200">
-                        <CardHeader class="flex flex-row items-center justify-between">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <CardTitle>{{ t('preferences.tabs.display') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.display.description') }}</CardDescription>
@@ -1016,7 +1298,7 @@ const receiptPaymentFields = [
                             </Button>
                         </CardHeader>
                         <CardContent class="space-y-6">
-                            <div class="grid grid-cols-2 gap-6">
+                            <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                                 <div class="space-y-2">
                                     <Label>{{ t('preferences.display.theme') }}</Label>
                                     <Select v-model="form.display.theme">
@@ -1046,7 +1328,7 @@ const receiptPaymentFields = [
                                 </div>
                             </div>
                             <div class="space-y-4">
-                                <div class="flex items-center justify-between py-2 border-b">
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.display.dashboard_charts') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.display.dashboard_charts_desc') }}</p>
@@ -1056,7 +1338,7 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.display.dashboard_charts = v"
                                     />
                                 </div>
-                                <div class="flex items-center justify-between py-2 border-b">
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.display.show_currency_symbol') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.display.show_currency_symbol_desc') }}</p>
@@ -1066,7 +1348,7 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.display.show_currency_symbol = v"
                                     />
                                 </div>
-                                <div class="flex items-center justify-between py-2 border-b">
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.display.compact_view') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.display.compact_view_desc') }}</p>
@@ -1076,7 +1358,7 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.display.compact_view = v"
                                     />
                                 </div>
-                                <div class="flex items-center justify-between py-2">
+                                <div class="flex flex-col gap-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                                     <div>
                                         <Label class="text-base">{{ t('preferences.display.sidebar_collapsed') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.display.sidebar_collapsed_desc') }}</p>

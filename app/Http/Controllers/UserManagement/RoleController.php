@@ -8,6 +8,7 @@ use App\Http\Requests\UserManagement\RoleUpdateRequest;
 use App\Http\Resources\UserManagement\RoleResource;
 use App\Models\Role;
 use App\Models\Permission;
+use App\Support\Inertia\CacheKey;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -20,7 +21,7 @@ class RoleController extends Controller
 
     public function index(Request $request)
     {
-        $perPage = $request->input('perPage', 10);
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'created_at');
         $sortDirection = $request->input('sortDirection', 'desc');
 
@@ -60,11 +61,10 @@ class RoleController extends Controller
         }
 
         if ($request->input('create_and_new')) {
-            return redirect()->route('roles.create')->with('success', 'Role created successfully.');
+            return redirect()->route('roles.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.role')]));
         }
-        Cache::forget('roles');
-        Cache::forget('users');
-        return redirect()->route('roles.index')->with('success', 'Role created successfully.');
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'roles'));
+        return redirect()->route('roles.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.role')]));
     }
 
     public function show(Request $request, Role $role)
@@ -94,35 +94,32 @@ class RoleController extends Controller
             $role->syncPermissions($data['permissions'] ?? []);
         }
 
-        Cache::forget('roles');
-        Cache::forget('users');
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'roles'));
 
-        return redirect()->route('roles.index')->with('success', 'Role updated successfully.');
+        return redirect()->route('roles.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.role')]));
     }
 
     public function destroy(Request $request, Role $role)
     {
         // Prevent deleting roles that have users
         if ($role->users()->count() > 0) {
-            return redirect()->route('roles.index')->with('error', 'Cannot delete role that has users assigned.');
+            return redirect()->route('roles.index')->with('error', __('general.cannot_delete_role_has_users'));
         }
 
         if ($role->slug === 'super-admin' || $role->slug === 'admin' || $role->slug === 'accountant' || $role->slug === 'clerk') {
-            return redirect()->route('roles.index')->with('error', 'Cannot delete super admin, admin, accountant, or clerk roles.');
+            return redirect()->route('roles.index')->with('error', __('general.cannot_delete_protected_role'));
         }
 
         $role->delete();
-        Cache::forget('roles');
-        Cache::forget('users');
-        return redirect()->route('roles.index')->with('success', 'Role deleted successfully.');
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'roles'));
+        return redirect()->route('roles.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.role')]));
     }
 
     public function restore(Request $request, $id)
     {
         $role = Role::withTrashed()->findOrFail($id);
         $role->restore();
-        Cache::forget('roles');
-        Cache::forget('users');
-        return redirect()->route('roles.index')->with('success', 'Role restored successfully.');
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'roles'));
+        return redirect()->route('roles.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.role')]));
     }
 }

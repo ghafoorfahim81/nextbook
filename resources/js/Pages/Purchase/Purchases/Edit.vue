@@ -17,21 +17,27 @@ import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next';
+import { useLazyProps } from '@/composables/useLazyProps'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 
 const { t } = useI18n();
 const { toast } = useToast()
 
 const props = defineProps({
     purchase: {type: Object, required: true},
-    ledgers: {type: Object, required: true},
+    ledgers: {type: Object, required: false, default: () => ({ data: [] })},
     salePurchaseTypes: {type: Object, required: true},
     currencies: {type: Object, required: true},
-    items: {type: Object, required: true},
-    stores: {type: Object, required: true},
+    items: {type: Object, required: false, default: () => ({ data: [] })},
+    warehouses: {type: Object, required: true},
     unitMeasures: {type: Object, required: true},
-    accounts: {type: Object, required: true},
+    accounts: {type: Object, required: false, default: () => ({ data: [] })},
     purchaseNumber: {type: String, required: true},
 })
+
+useLazyProps(props, ['ledgers', 'accounts', 'items'])
+
+const usableMeasures = computed(() => props.unitMeasures?.data ?? [])
 
 const purchase = props.purchase.data;
 console.log('this is purchase',purchase);
@@ -49,8 +55,8 @@ const form = useForm({
     discount: purchase?.discount || '',
     discount_type: purchase?.discount_type || 'percentage',
     description: purchase?.description || '',
-    store_id: purchase?.store_id || '',
-    selected_store: purchase?.store || '',
+    warehouse_id: purchase?.warehouse_id || '',
+    selected_warehouse: purchase?.warehouse || '',
     item_list: purchase?.item_list || [],
     payment: purchase?.payment || {
         method: '',
@@ -67,7 +73,7 @@ const form = useForm({
         batch: item.batch || '',
         expire_date: '',
         unit_price: item.unit_price,
-        selected_measure: props.unitMeasures?.data?.find(u => u.id === item.unit_measure_id) || null,
+        selected_measure: usableMeasures.value?.find(u => u.id === item.unit_measure_id) || null,
         item_discount: item.discount || '',
         free: item.free || '',
         tax: item.tax || '',
@@ -75,6 +81,17 @@ const form = useForm({
         available_measures: [],
     })) || [],
 })
+
+watch(() => props.items?.data, (list) => {
+    if (!Array.isArray(list) || !form.items?.length) return
+    form.items = form.items.map((row) => {
+        if (row.selected_item || !row.item_id) return row
+        return {
+            ...row,
+            selected_item: list.find(i => i.id === row.item_id) || null,
+        }
+    })
+}, { immediate: true })
 
 // Set selected values based on existing data
 onMounted(() => {
@@ -101,10 +118,10 @@ onMounted(() => {
         }
     }
 
-    if (props.purchase?.store_id && props.stores?.data) {
-        const selectedStore = props.stores.data.find(s => s.id === props.purchase.store_id);
-        if (selectedStore) {
-            form.selected_store = selectedStore;
+    if (purchase?.warehouse_id && props.warehouses?.data) {
+        const selectedWarehouse = props.warehouses.data.find(s => s.id === purchase.warehouse_id);
+        if (selectedWarehouse) {
+            form.selected_warehouse = selectedWarehouse;
         }
     }
     for (let i = 0; i < 3; i++) {
@@ -274,7 +291,7 @@ const handleItemChange = async (index, selectedItem) => {
     const selUM = selectedItem?.unitMeasure || {};
     const selectedQuantityId = selUM.quantity_id ?? selUM.quantity?.id;
     const selectedQuantityName = (selUM.quantity?.name || selUM.quantity?.code || '').toString().toLowerCase();
-    row.available_measures = (props.unitMeasures?.data || []).filter(unit => {
+    row.available_measures = usableMeasures.value.filter(unit => {
         const unitQtyId = unit?.quantity_id ?? unit?.quantity?.id;
         const unitQtyName = (unit?.quantity?.name || unit?.quantity?.code || '').toString().toLowerCase();
         return (selectedQuantityId && unitQtyId === selectedQuantityId) || (!!selectedQuantityName && unitQtyName === selectedQuantityName);
@@ -404,6 +421,7 @@ const transactionSummary = computed(() => {
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.edit', { name: t('purchase.purchase') }) }}
                 </div>
+                <ModuleHelpButton module="purchase" />
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextSelect
                         :options="ledgers?.data || ledgers || []"
@@ -451,14 +469,14 @@ const transactionSummary = computed(() => {
                         />
                     </div>
                     <NextSelect
-                        :options="stores?.data || stores || []"
-                        v-model="form.selected_store"
-                        @update:modelValue="(value) => handleSelectChange('store_id', value)"
+                        :options="warehouses?.data || warehouses || []"
+                        v-model="form.selected_warehouse"
+                        @update:modelValue="(value) => handleSelectChange('warehouse_id', value)"
                         label-key="name"
                         value-key="id"
-                        :reduce="store => store.id"
-                        :floating-text="t('admin.store.store')"
-                        :error="form.errors?.store_id"
+                        :reduce="warehouse => warehouse.id"
+                        :floating-text="t('admin.warehouse.warehouse')"
+                        :error="form.errors?.warehouse_id"
                     />
                 </div>
             </div>

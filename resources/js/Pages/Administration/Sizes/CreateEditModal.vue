@@ -4,16 +4,12 @@ import { useForm } from '@inertiajs/vue3';
 import ModalDialog from '@/Components/next/Dialog.vue';
 import NextInput from "@/Components/next/NextInput.vue";
 import { useI18n } from 'vue-i18n';
-
+import { toast } from 'vue-sonner'
 const { t } = useI18n()
 
 const props = defineProps({
     isDialogOpen: Boolean,
     editingItem: Object,
-    branches: {
-        type: Array,
-        required: true,
-    },
     errors: Object,
 });
 
@@ -43,27 +39,32 @@ watch(() => props.editingItem, (item) => {
 
 const closeModal = () => localDialogOpen.value = false;
 
-const handleSubmit = () => {
-    if (isEditing.value) {
-        form.patch(route('sizes.update', props.editingItem.id), {
-            onSuccess: () => {
-                emit('saved');
-                form.reset();
-                closeModal();
-            },
-        });
-    } else {
-        form.post('/sizes', {
-            onSuccess: () => {
-                emit('saved')
-                form.reset();
-                closeModal()
-            },
-            onError: () => {
-                console.log('error', form.errors);
-            },
-        })
-    }
+const handleSubmit = async () => {
+    const isEdit = isEditing.value;
+    const action = isEdit
+        ? () => form.patch(route('sizes.update', props.editingItem.id), submitOptions)
+        : () => form.post('/sizes', submitOptions);
+
+    const submitOptions = {
+        onSuccess: () => {
+            emit('saved');
+            form.reset();
+            closeModal();
+            toast.success(
+                t('general.success'),
+                {
+                    description: t(
+                        isEdit ? 'general.update_success' : 'general.create_success',
+                        { name: t('admin.size.size') }
+                    ),
+                    class: 'bg-green-600',
+                }
+            );
+        },
+        onError: () => console.error('error', form.errors),
+    };
+
+    await action();
 };
 </script>
 
@@ -74,7 +75,7 @@ const handleSubmit = () => {
         :confirmText="isEditing ? t('general.update') : t('general.create')"
         :onConfirm="handleSubmit"
         :onCancel="closeModal"
-        :loading="form.processing"
+        :submitting="form.processing"
     >
         <form @submit.prevent="handleSubmit" class="space-y-4">
             <NextInput

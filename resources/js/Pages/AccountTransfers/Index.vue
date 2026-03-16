@@ -10,6 +10,8 @@ const { t } = useI18n()
 
 const props = defineProps({
   transfers: Object,
+  filters: Object,
+  filterOptions: Object,
 })
 
 const { deleteResource } = useDeleteResource()
@@ -37,7 +39,46 @@ const columns = computed(() => ([
   { key: 'amount', label: t('general.amount'), sortable: true },
   { key: 'currency_code', label: t('admin.currency.currency') },
   { key: 'date', label: t('general.date'), sortable: true },
+  {
+    key: 'created_by.name',
+    label: t('general.created_by'),
+    render: (row) => row.created_by?.name ?? '-',
+  },
+  {
+    key: 'updated_by.name',
+    label: t('general.updated_by'),
+    render: (row) => row.updated_by?.name ?? '-',
+  },
   { key: 'actions', label: t('general.actions') },
+]))
+
+const filterFields = computed(() => ([
+  {
+    key: 'from_account_id',
+    label: t('general.from_account'),
+    type: 'select',
+    options: (props.filterOptions?.accounts || []).map((a) => ({ id: a.id, name: a.name })),
+  },
+  {
+    key: 'to_account_id',
+    label: t('general.to_account'),
+    type: 'select',
+    options: (props.filterOptions?.accounts || []).map((a) => ({ id: a.id, name: a.name })),
+  },
+  {
+    key: 'transaction.currency_id',
+    label: t('admin.currency.currency'),
+    type: 'select',
+    options: (props.filterOptions?.currencies || []).map((c) => ({ id: c.id, name: c.code })),
+  },
+  { key: 'date', label: t('general.date'), type: 'daterange' },
+  { key: 'amount', label: t('general.amount'), type: 'numberrange' },
+  {
+    key: 'created_by',
+    label: t('general.created_by'),
+    type: 'select',
+    options: (props.filterOptions?.users || []).map((u) => ({ id: u.id, name: u.name })),
+  },
 ]))
 </script>
 
@@ -47,6 +88,8 @@ const columns = computed(() => ([
       can="account_transfers"
       :items="transfers"
       :columns="columns"
+      :filters="filters"
+      :filterFields="filterFields"
       :title="t('general.account_transfers')"
       :url="`account-transfers.index`"
       :showAddButton="true"

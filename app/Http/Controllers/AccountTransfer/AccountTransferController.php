@@ -8,11 +8,14 @@ use App\Http\Requests\AccountTransfer\AccountTransferUpdateRequest;
 use App\Http\Resources\AccountTransfer\AccountTransferResource;
 use App\Models\Account\Account;
 use App\Models\AccountTransfer\AccountTransfer;
+use App\Models\Administration\Currency;
 use App\Models\Ledger\Ledger;
 use App\Models\Transaction\Transaction;
+use App\Models\Transaction\TransactionLine;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\User;
 
 class AccountTransferController extends Controller
 {
@@ -22,34 +25,48 @@ class AccountTransferController extends Controller
     }
 
     public function index(Request $request)
-    { 
-        $perPage = $request->input('perPage', 10);
+    {
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'date');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
         $transfers = AccountTransfer::with([
-                'fromTransaction.account',
-                'fromTransaction.currency',
-                'toTransaction.account',
-                'toTransaction.currency',
+                'transaction.lines.account',
+                'transaction.currency',
+                'createdBy',
+                'updatedBy',
             ])
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
 
         return inertia('AccountTransfers/Index', [
             'transfers' => AccountTransferResource::collection($transfers),
+            'filterOptions' => [
+                'accounts' => Account::orderBy('name')->get(['id', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 
     public function create(Request $request)
-    { 
+    {
         return inertia('AccountTransfers/Create');
     }
 
 
     public function store(AccountTransferStoreRequest $request, TransactionService $transactionService)
-    { 
+    {
         // dd((string) \Symfony\Component\Uid\Ulid::generate());
         DB::transaction(function () use ($request, $transactionService) {
             $dateConversionService = app(\App\Services\DateConversionService::class);
@@ -69,54 +86,57 @@ class AccountTransferController extends Controller
                 abort(422, 'No ledger found to associate the transfer transactions.');
             }
 
+            $fromAccount = Account::findOrFail($fromAccountId);
+            $toAccount = Account::findOrFail($toAccountId);
+            $nature = $fromAccount->accountType->nature ?? 'asset';
+
+            $mappings = [
+                'asset'    => ['debit' => $toAccount->id, 'credit' => $fromAccount->id],
+                'liability'=> ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
+                'equity'   => ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
+                'income'   => ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
+                'expense'  => ['debit' => $toAccount->id, 'credit' => $fromAccount->id],
+            ]; 
+            $map = $mappings[$nature] ?? $mappings['asset'];
+
             $transfer = AccountTransfer::create([
                 'number' => $validated['number'] ?? null,
                 'date' => $validated['date'],
-                'remark' => $validated['remark'] ?? null, 
+                'remark' => $validated['remark'] ?? null,
             ]);
-
-            // CREDIT from the source account
-            $creditTxn = $transactionService->createTransaction([
-                'account_id' => $fromAccountId, 
-                'amount' => $amount,
+            $transaction = $transactionService->post([
                 'currency_id' => $currencyId,
                 'rate' => $rate,
                 'date' => $transfer->date,
-                'type' => 'credit',
-                'remark' => "Transfer #{$transfer->number} - Credit from source account",
-                'reference_type' => 'account_transfer',
-                'reference_id' => $transfer->id,
-            ]);
-
-            // DEBIT to the destination account
-            $debitTxn = $transactionService->createTransaction([
-                'account_id' => $toAccountId,
-                'amount' => $amount,
-                'currency_id' => $currencyId,
-                'rate' => $rate,
-                'date' => $transfer->date,
-                'type' => 'debit',
-                'remark' => "Transfer #{$transfer->number} - Debit to destination account",
-                'reference_type' => 'account_transfer',
-                'reference_id' => $transfer->id,
+                'remark' => "Transfer #{$transfer->number}.from {$fromAccount->name} to {$toAccount->name}",
+            ], [
+                [
+                    'account_id' => $map['debit'],
+                    'debit' => $amount,
+                    'credit' => 0,
+                ],
+                [
+                    'account_id' => $map['credit'],
+                    'debit' => 0,
+                    'credit' => $amount, 
+                ],
             ]);
 
             $transfer->update([
-                'from_transaction_id' => $creditTxn->id,
-                'to_transaction_id' => $debitTxn->id,
+                'transaction_id' => $transaction->id,
             ]);
         });
 
         if ($request->input('create_and_new')) {
-            return redirect()->route('account-transfers.create')->with('success', 'Account Transfer created successfully.');
+            return redirect()->route('account-transfers.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.account_transfer')]));
         }
 
-        return redirect()->route('account-transfers.index')->with('success', 'Account Transfer created successfully.');
+        return redirect()->route('account-transfers.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.account_transfer')]));
     }
 
     public function show(Request $request, AccountTransfer $accountTransfer)
     {
-        $accountTransfer->load(['fromTransaction.account', 'fromTransaction.currency', 'toTransaction.account', 'toTransaction.currency']);
+        $accountTransfer->load(['transaction.lines.account', 'transaction.currency', 'createdBy', 'updatedBy']);
         return response()->json([
             'data' => new AccountTransferResource($accountTransfer),
         ]);
@@ -124,14 +144,15 @@ class AccountTransferController extends Controller
 
     public function edit(Request $request, AccountTransfer $accountTransfer)
     {
-        $accountTransfer->load(['fromTransaction.account', 'fromTransaction.currency', 'toTransaction.account', 'toTransaction.currency']);
+        $accountTransfer->load(['transaction.lines.account', 'transaction.currency', 'createdBy', 'updatedBy']);
         return inertia('AccountTransfers/Edit', [
             'data' => new AccountTransferResource($accountTransfer),
         ]);
     }
 
     public function update(AccountTransferUpdateRequest $request, AccountTransfer $accountTransfer)
-    { 
+    {
+        // dd($request->all());
         DB::transaction(function () use ($request, $accountTransfer) {
             $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
@@ -146,51 +167,75 @@ class AccountTransferController extends Controller
                 'remark' => $validated['remark'] ?? $accountTransfer->remark,
             ]);
 
-            $amount = isset($validated['amount']) ? (float) $validated['amount'] : ($accountTransfer->toTransaction?->amount ?? $accountTransfer->fromTransaction?->amount);
-            $currencyId = $validated['currency_id'] ?? ($accountTransfer->toTransaction?->currency_id ?? $accountTransfer->fromTransaction?->currency_id);
-            $rate = isset($validated['rate']) ? (float) $validated['rate'] : ($accountTransfer->toTransaction?->rate ?? $accountTransfer->fromTransaction?->rate);
+            $amount = isset($validated['amount']) ? (float) $validated['amount'] : ($accountTransfer->transaction?->lines?->first()?->debit ?? $accountTransfer->transaction?->lines?->first()?->credit);
+            $currencyId = $validated['currency_id'] ?? ($accountTransfer->transaction?->currency_id);
+            $rate = isset($validated['rate']) ? (float) $validated['rate'] : ($accountTransfer->transaction?->rate);
             $date = $validated['date'] ?? $accountTransfer->date;
-            $fromAccountId = $validated['from_account_id'] ?? $accountTransfer->fromTransaction?->account_id;
-            $toAccountId = $validated['to_account_id'] ?? $accountTransfer->toTransaction?->account_id;
+            $fromAccountId = $validated['from_account_id'];
+            $toAccountId = $validated['to_account_id'];
+            $transactionService = app(TransactionService::class);
+            TransactionLine::where('transaction_id', $accountTransfer->transaction_id)->forceDelete();
+            Transaction::where('id', $accountTransfer->transaction_id)->forceDelete();
+            $fromAccount = Account::findOrFail($fromAccountId);
+            $toAccount = Account::findOrFail($toAccountId);
+            $nature = $fromAccount->accountType->nature ?? 'asset';
 
-            if ($accountTransfer->from_transaction_id) {
-                Transaction::where('id', $accountTransfer->from_transaction_id)->update([
-                    'account_id' => $fromAccountId,
-                    'amount' => $amount,
-                    'currency_id' => $currencyId,
-                    'rate' => $rate,
-                    'date' => $date,
-                    'type' => 'credit',
-                    'remark' => "Transfer #{$accountTransfer->number} - Credit from source account",
-                ]);
-            }
-
-            if ($accountTransfer->to_transaction_id) {
-                Transaction::where('id', $accountTransfer->to_transaction_id)->update([
-                    'account_id' => $toAccountId,
-                    'amount' => $amount,
-                    'currency_id' => $currencyId,
-                    'rate' => $rate,
-                    'date' => $date,
-                    'type' => 'debit',
-                    'remark' => "Transfer #{$accountTransfer->number} - Debit to destination account",
-                ]);
-            }
+            $mappings = [
+                'asset'    => ['debit' => $toAccount->id, 'credit' => $fromAccount->id],
+                'liability'=> ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
+                'equity'   => ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
+                'income'   => ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
+                'expense'  => ['debit' => $toAccount->id, 'credit' => $fromAccount->id],
+            ]; 
+            $map = $mappings[$nature] ?? $mappings['asset'];
+            $transaction = $transactionService->post(
+                header: [
+                'currency_id' => $currencyId,
+                'rate' => $rate,
+                'date' => $date,
+                'remark' => "Transfer #{$accountTransfer->number}",
+            ], 
+            lines: [ 
+                [
+                    'account_id' => $map['debit'],
+                    'debit' => $amount,
+                    'credit' => 0,
+                ],
+                [
+                    'account_id' => $map['credit'],
+                    'debit' => 0,
+                    'credit' => $amount,
+                ],
+            ]);
+            $accountTransfer->update([
+                'transaction_id' => $transaction->id,
+            ]);
         });
 
-        return redirect()->route('account-transfers.index')->with('success', 'Account Transfer updated successfully.');
+        return redirect()->route('account-transfers.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.account_transfer')]));
     }
 
     public function destroy(AccountTransfer $accountTransfer)
-    { 
-        $accountTransfer->delete();
-        return back()->with('success', 'Account Transfer deleted.');
+    {
+        DB::transaction(function () use ($accountTransfer) {
+            $accountTransfer->delete();
+            $accountTransfer->transaction->lines()->delete();
+            $accountTransfer->transaction->delete();
+        });
+        return back()->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.account_transfer')]));
     }
 
     public function restore(AccountTransfer $accountTransfer)
-    { 
-        $accountTransfer->restore();
-        return back()->with('success', 'Account Transfer restored.');
+    {
+        DB::transaction(function () use ($accountTransfer) {
+            $accountTransfer->restore();
+            $transaction = $accountTransfer->transaction()->withTrashed()->first();
+            if ($transaction) {
+                $transaction->restore();
+                $transaction->lines()->withTrashed()->restore();
+            }
+        });
+        return back()->with('success', __('general.restored_successfully', ['resource' => __('general.resource.account_transfer')]));
     }
 }
 

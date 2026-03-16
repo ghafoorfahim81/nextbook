@@ -20,7 +20,7 @@ class LedgerController extends Controller
 
     public function index(Request $request): Response
     {
-        $perPage = $request->input('perPage', 10);
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
@@ -66,6 +66,6 @@ class LedgerController extends Controller
     public function restore(Request $request, Ledger $ledger)
     {
         $ledger->restore();
-        return redirect()->route('ledgers.index')->with('success', 'Ledger restored successfully.');
+        return redirect()->route('ledgers.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.ledger')]));
     }
 }

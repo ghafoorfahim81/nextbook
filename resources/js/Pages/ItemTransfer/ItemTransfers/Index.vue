@@ -13,6 +13,8 @@ const { toast } = useToast()
 
 const props = defineProps({
   transfers: Object,
+  filters: Object,
+  filterOptions: Object,
 })
 
 const showDialog = ref(false)
@@ -37,7 +39,7 @@ const deleteItem = (id) => {
     if(transfer.status === 'completed') {
         toast({
         title: t('general.error'),
-        description: t('item_transfer.cannot_edit_completed_or_cancelled_transfer'),
+        description: t('item_transfer.cannot_delete_completed_transfer'),
         variant: 'error',
         class: 'bg-red-600 text-white',
         })
@@ -55,11 +57,49 @@ const showItem = (id) => {
 
 const columns = computed(() => ([
   { key: 'date', label: t('general.date'), sortable: true },
-  { key: 'from_store.name', label: t('item_transfer.from_store') },
-  { key: 'to_store.name', label: t('item_transfer.to_store') },
+  { key: 'from_warehouse.name', label: t('item_transfer.from_warehouse') },
+  { key: 'to_warehouse.name', label: t('item_transfer.to_warehouse') },
   { key: 'status_label', label: t('general.status') },
   { key: 'transfer_cost', label: t('item_transfer.transfer_cost'), sortable: true },
+  {
+    key: 'created_by.name',
+    label: t('general.created_by'),
+    render: (row) => row.created_by?.name ?? '-',
+  },
+  {
+    key: 'updated_by.name',
+    label: t('general.updated_by'),
+    render: (row) => row.updated_by?.name ?? '-',
+  },
   { key: 'actions', label: t('general.actions') },
+]))
+
+const filterFields = computed(() => ([
+  {
+    key: 'from_warehouse_id',
+    label: t('item_transfer.from_warehouse'),
+    type: 'select',
+    options: (props.filterOptions?.warehouses || []).map((w) => ({ id: w.id, name: w.name })),
+  },
+  {
+    key: 'to_warehouse_id',
+    label: t('item_transfer.to_warehouse'),
+    type: 'select',
+    options: (props.filterOptions?.warehouses || []).map((w) => ({ id: w.id, name: w.name })),
+  },
+  {
+    key: 'items.item_id',
+    label: t('item.item'),
+    type: 'select',
+    options: (props.filterOptions?.items || []).map((i) => ({ id: i.id, name: i.name })),
+  },
+  { key: 'date', label: t('general.date'), type: 'daterange' },
+  {
+    key: 'created_by',
+    label: t('general.created_by'),
+    type: 'select',
+    options: (props.filterOptions?.users || []).map((u) => ({ id: u.id, name: u.name })),
+  },
 ]))
 </script>
 
@@ -69,6 +109,8 @@ const columns = computed(() => ([
       can="item_transfers"
       :items="transfers"
       :columns="columns"
+      :filters="filters"
+      :filterFields="filterFields"
       :title="t('item_transfer.item_transfers')"
       :url="`item-transfers.index`"
       :showAddButton="true"

@@ -25,8 +25,8 @@ class ItemTransferStoreRequest extends FormRequest
     {
         return [
             'date' => ['required', 'date'],
-            'from_store_id' => ['required', 'string', 'exists:stores,id'],
-            'to_store_id' => ['required', 'string', 'exists:stores,id', 'different:from_store_id'],
+            'from_warehouse_id' => ['required', 'string', 'exists:warehouses,id'],
+            'to_warehouse_id' => ['required', 'string', 'exists:warehouses,id', 'different:from_warehouse_id'],
             'status' => ['nullable', 'string', Rule::in(TransferStatus::values())],
             'transfer_cost' => ['nullable', 'numeric', 'min:0'],
             'remarks' => ['nullable', 'string'],

@@ -4,14 +4,16 @@ import { useForm } from '@inertiajs/vue3'
 import { Button } from '@/Components/ui/button'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
-import { useToast } from '@/Components/ui/toast/use-toast'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
+import { toast } from 'vue-sonner';
+
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n()
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
 
 const props = defineProps({
-    stores: { type: [Array, Object], required: true },
+    warehouses: { type: [Array, Object], required: true },
     unitMeasures: { type: [Array, Object], required: true },
     brands: { type: [Array, Object], required: true },
     maxCode: { type: Number, required: true },
@@ -39,8 +41,7 @@ onUnmounted(() => {
 
 
 
-const { toast } = useToast()
-const stores        = computed(() => props.stores?.data ?? props.stores ?? [])
+const warehouses        = computed(() => props.warehouses?.data ?? props.warehouses ?? [])
 const unitMeasures  = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 
 // Track the latest max code on the client so we can keep incrementing
@@ -67,7 +68,7 @@ const blankRow = (code = currentMaxCode.value) => ({
     batch: '',
     expire_date: '',
     quantity: '',
-    store_id: null,
+    warehouse_id: null,
 })
 
 const addRow = () => {
@@ -113,7 +114,7 @@ const isEmptyRow = (row) => {
         'quantity',
         'batch',
         'expire_date',
-        'store_id',
+        'warehouse_id',
         'purchase_price',
         'sale_price',
     ]
@@ -135,7 +136,7 @@ const normalize = () => {
             category_id: r.category_id ?? null,
             measure_id: r.measure_id ?? null,
             company_id: r.company_id ?? null,
-            store_id: r.store_id ?? null,
+            warehouse_id: r.warehouse_id ?? null,
             expire_date: r.expire_date || null,
         }))
         // drop rows that are effectively empty (ignore auto code)
@@ -159,10 +160,10 @@ const handleSubmit = () => {
 
     // If everything is empty, there is nothing to submit
     if (!normalizedItems.length) {
-        toast({
+        toast.error(t('item.no_data_to_save'),{
+            class: 'bg-red-600',
+            description: t('item.no_data_to_save'),
             title: t('general.error'),
-            variant: 'error',
-            description: t('general.no_data_to_save') ?? 'Nothing to save. Please fill at least one row.',
         })
         return
     }
@@ -173,7 +174,7 @@ const handleSubmit = () => {
     }))
 
     const itemCount = normalizedItems.length;
-    form.post(route('item.fast.store'), {
+        form.post(route('item.fast.store'), {
         preserveScroll: true,
         // preserveState: true, // optional
         onSuccess: () => {
@@ -186,11 +187,11 @@ const handleSubmit = () => {
             currentMaxCode.value = highestCode + 1
 
             notifySound('success');
-            toast({
-                title: t('general.success'),
-                variant: 'success',
+            toast.success(itemCount + ' ' + t('item.items') + ' ' + t('general.created_successfully'),{
+                class: 'bg-green-600',
                 description: itemCount + ' ' + t('item.items') + ' ' + t('general.created_successfully'),
-            });
+                title: t('general.success'),
+            })
 
             // Rebuild the items array so new rows start after the latest saved code
             form.items = Array.from({ length: 6 }, (_, idx) => blankRow(currentMaxCode.value + idx))
@@ -198,11 +199,11 @@ const handleSubmit = () => {
         },
         onError: () => {
             notifySound('error');
-            toast({
-                title: t('general.error'),
-                variant: 'error',
+            toast.error(t('general.create_error_message'),{
+                class: 'bg-red-600',
                 description: t('general.create_error_message'),
-            });
+                title: t('general.error'),
+            })
         }
 
     })
@@ -213,24 +214,27 @@ const handleSubmit = () => {
 <template>
     <AppLayout :title="t('item.fast_entry')" :sidebar-collapsed="true">
         <form @submit.prevent="handleSubmit" class="space-y-4">
-            <div class="rounded-2xl border bg-card text-card-foreground shadow-sm p-1">
-                <div class="p-4 border-b">
-                    <h2 class="text-lg font-semibold">{{ t('item.fast_entry') }}</h2>
-                    <p class="text-sm text-muted-foreground">{{ t('item.add_multiple_items_quickly') }}</p>
+            <div class="rounded-2xl border bg-card text-card-foreground shadow-sm p-1 border-primary">
+                <div class="p-4 border-b flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-semibold">{{ t('item.fast_entry') }}</h2>
+                        <p class="text-sm text-muted-foreground">{{ t('item.add_multiple_items_quickly') }}</p>
                     </div>
+                    <ModuleHelpButton module="fast_entry" positionClass="" class="shrink-0" />
+                </div>
 
-                <div class="rounded-xl border bg-card shadow-sm overflow-x-auto p-3 mt-1 mb-1">
-                    <table class="w-full table-fixed min-w-[1000px] entry-table border-separate border-spacing-y-2">
+                <div class="rounded-xl border border-violet-400 bg-card shadow-sm overflow-x-auto p-3 mt-1 mb-1">
+                    <table class="w-full table-fixed min-w-[1000px]">
                         <thead class="sticky top-0 bg-muted/40">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-white bg-primary">
                             <th class="px-1 py-1 w-5 min-w-5">#</th>
                             <th class="px-1 py-1 w-36">{{ t('general.name') }}</th>
                             <th class="px-1 py-1 w-20">{{ t('item.code') }}</th>
                             <th class="px-1 py-1 w-28">{{ t('admin.unit_measure.unit_measure') }}</th>
-                            <th class="px-1 py-1 w-20">{{ t('item.quantity') }}</th>
+                            <th class="px-1 py-1 w-20">{{ t('item.opening_amount') }}</th>
                             <th class="px-1 py-1 w-20">{{ t('item.batch') }}</th>
                             <th class="px-1 py-1 w-36">{{ t('item.expire_date') }}</th>
-                            <th class="px-1 py-1 w-32">{{ t('admin.store.store') }}</th>
+                            <th class="px-1 py-1 w-32">{{ t('admin.warehouse.warehouse') }}</th>
                             <th class="px-1 py-1 w-28">{{ t('item.purchase_price') }}</th>
                             <th class="px-1 py-1 w-20">{{ t('item.sale_price') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.actions') }}</th>
@@ -283,14 +287,15 @@ const handleSubmit = () => {
                             <td class="px-1 py-2 align-top">
                                 <NextDate
                                     v-model="item.expire_date"
+                                    popover="top-left"
                                     :error="fieldError(index, 'expire_date')"
                                     :placeholder="t('general.enter', { text: t('item.expire_date') })"
                                 />
                             </td>
                             <td class="px-1 py-2 align-top">
                                 <NextSelect
-                                    v-model="item.store_id"
-                                    :options="stores"
+                                    v-model="item.warehouse_id"
+                                    :options="warehouses"
                                     label-key="name"
                                     value-key="id"
                                     :show-arrow="false"

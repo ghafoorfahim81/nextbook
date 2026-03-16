@@ -4,11 +4,25 @@ namespace App\Http\Controllers\Preferences;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Preferences\UpdatePreferencesRequest;
+use App\Http\Resources\Administration\CategoryResource;
+use App\Http\Resources\Administration\CurrencyResource;
+use App\Http\Resources\Administration\SizeResource;
+use App\Http\Resources\Administration\WarehouseResource;
 use App\Models\Account\Account;
+use App\Models\Administration\Category;
+use App\Models\Administration\Currency;
+use App\Models\Administration\Size;
+use App\Models\Administration\Warehouse;
+use App\Models\Administration\UnitMeasure;
+use App\Models\Ledger\Ledger;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Cache;
+use App\Support\Inertia\CacheKey;
+use Illuminate\Support\Facades\DB;
+use App\Http\Resources\Administration\UnitMeasureResource;
+use App\Http\Resources\Ledger\LedgerResource;
 class PreferencesController extends Controller
 {
     public function index(Request $request)
@@ -22,12 +36,38 @@ class PreferencesController extends Controller
             ->orderBy('name')
             ->get();
 
+        $unitMeasures = UnitMeasureResource::collection(
+            UnitMeasure::query()
+                ->orderBy('name')
+                ->get()
+        );
+
+        $categories = CategoryResource::collection(Category::query()->orderBy('name')->where('is_active', false)->get());
+        $warehouses = WarehouseResource::collection(Warehouse::query()->orderBy('name')->where('is_active', false)->get());
+        $sizes = SizeResource::collection(Size::query()->orderBy('name')->where('is_active', false)->get());
+        $currencies = CurrencyResource::collection(Currency::query()->orderBy('name')->where('is_active', false)->get());
+
+        $ledgers = LedgerResource::collection(
+            Ledger::query()
+                ->whereIn('type', ['customer', 'supplier'])
+                ->orderBy('name')
+                ->where('is_active', false)
+                ->limit(500)
+                ->get()
+        );
+
         return Inertia::render('Preferences/Index', [
             'preferences' => $preferences,
             'defaultPreferences' => User::DEFAULT_PREFERENCES,
             'cashAccounts' => $cashAccounts,
             'sidebarMenus' => $this->getSidebarMenuOptions(),
             'timezones' => $this->getTimezones(),
+            'unitMeasures' => $unitMeasures,
+            'categories' => $categories,
+            'warehouses' => $warehouses,
+            'sizes' => $sizes,
+            'currencies' => $currencies,
+            'ledgers' => $ledgers,
         ]);
     }
 
@@ -41,16 +81,72 @@ class PreferencesController extends Controller
         $newPreferences = array_replace_recursive($currentPreferences, $validated);
 
         $user->update(['preferences' => $newPreferences]);
-        Cache::forget('user_preferences');
-        return redirect()->back()->with('success', __('preferences.preferences_saved'));
+        Cache::forget(CacheKey::forUser($request, 'preferences'));
+        Cache::forget(CacheKey::forUser($request, 'recordsPerPage'));
+        Cache::put('recordsPerPage', $newPreferences['appearance']['records_per_page']);
+        Cache::forget('balance_nature_format');
+        Cache::put('balance_nature_format', $newPreferences['appearance']['balance_nature_format']);
+        return redirect()->back()->with('success', value: __('preferences.preferences_saved'));
     }
 
     public function resetPreferences(Request $request, ?string $category = null)
     {
         $user = $request->user();
         $user->resetPreferences($category)->save();
-        Cache::forget('user_preferences');
+        Cache::forget(CacheKey::forUser($request, 'preferences'));
         return redirect()->back()->with('success', __('preferences.preferences_reset'));
+    }
+
+    public function updateInstallPlugins(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'unit_measures' => ['array'],
+            'unit_measures.*' => ['string', 'exists:unit_measures,id'],
+            'categories' => ['array'],
+            'categories.*' => ['string', 'exists:categories,id'],
+            'warehouses' => ['array'],
+            'warehouses.*' => ['string', 'exists:warehouses,id'],
+            'sizes' => ['array'],
+            'sizes.*' => ['string', 'exists:sizes,id'],
+            'currencies' => ['array'],
+            'currencies.*' => ['string', 'exists:currencies,id'],
+            'ledgers' => ['array'],
+            'ledgers.*' => ['string', 'exists:ledgers,id'],
+        ]);
+
+        $unitMeasureIds = collect($validated['unit_measures'] ?? [])->filter()->unique()->values();
+        $categoryIds = collect($validated['categories'] ?? [])->filter()->unique()->values();
+        $warehouseIds = collect($validated['warehouses'] ?? [])->filter()->unique()->values();
+        $sizeIds = collect($validated['sizes'] ?? [])->filter()->unique()->values();
+        $currencyIds = collect($validated['currencies'] ?? [])->filter()->unique()->values();
+        $ledgerIds = collect($validated['ledgers'] ?? [])->filter()->unique()->values();
+
+        DB::transaction(function () use ($unitMeasureIds, $categoryIds, $warehouseIds, $sizeIds, $currencyIds, $ledgerIds) {
+            UnitMeasure::query()->update(['is_active' => false]);
+            Category::query()->update(['is_active' => false]);
+            Warehouse::query()->update(['is_active' => false]);
+            Size::query()->update(['is_active' => false]);
+            Currency::query()->update(['is_active' => false]);
+            Ledger::query()->whereIn('type', ['customer', 'supplier'])->update(['is_active' => false]);
+
+            if ($unitMeasureIds->isNotEmpty()) UnitMeasure::query()->whereIn('id', $unitMeasureIds)->update(['is_active' => true]);
+            if ($categoryIds->isNotEmpty()) Category::query()->whereIn('id', $categoryIds)->update(['is_active' => true]);
+            if ($warehouseIds->isNotEmpty()) Warehouse::query()->whereIn('id', $warehouseIds)->update(['is_active' => true]);
+            if ($sizeIds->isNotEmpty()) Size::query()->whereIn('id', $sizeIds)->update(['is_active' => true]);
+            if ($currencyIds->isNotEmpty()) Currency::query()->whereIn('id', $currencyIds)->update(['is_active' => true]);
+            if ($ledgerIds->isNotEmpty()) Ledger::query()->whereIn('id', $ledgerIds)->update(['is_active' => true]);
+        });
+
+        Cache::forget(CacheKey::forUser($request, 'preferences'));
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'categories'));
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'warehouses'));
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'sizes'));
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'currencies'));
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'unit_measures'));
+
+        return redirect()->back()->with('success', __('preferences.preferences_saved'));
     }
 
     public function exportPreferences(Request $request)

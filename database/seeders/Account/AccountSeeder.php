@@ -25,6 +25,7 @@ class AccountSeeder extends Seeder
             Account::create([
                 'id' => (string) new Ulid(),
                 'name' => $account['name'],
+                'local_name' => $account['local_name'],
                 'number' => $account['number'],
                 'account_type_id' => $account['account_type_id'],
                 'slug' => $account['slug'],

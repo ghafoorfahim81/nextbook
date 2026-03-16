@@ -7,6 +7,7 @@ use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +18,7 @@ use App\Traits\HasCache;
 use App\Traits\BranchSpecific;
 class UnitMeasure extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasCache, HasSearch, HasSorting, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
@@ -40,6 +41,7 @@ class UnitMeasure extends Model
         'unit',
         'symbol',
         'description',
+        'is_active',
         'branch_id',
         'quantity_id',
         'is_main',
@@ -58,6 +60,7 @@ class UnitMeasure extends Model
         'id' => 'string',
         'branch_id' => 'string',
         'quantity_id' => 'string',
+        'is_active' => 'boolean',
         'is_main' => 'boolean',
         'value' => 'double',
         'created_by' => 'string',
@@ -82,134 +85,150 @@ class UnitMeasure extends Model
         return [
             // count
             [
-                'name'        => 'pcs',
+                'name'        => 'دانه',
                 'unit'        => 1,
                 'symbol'      => "ea",
-                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Count')->first()->id,
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'count')->first()->id,
                 'quantity_slug' => 'count',
                 'is_main'   => true,
             ],
             [
-                'name'        => 'Pair',
+                'name'        => 'جوره',
                 'unit'        => 2,
                 'symbol'      => "pr",
-                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Count')->first()->id,
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'count')->first()->id,
                 'quantity_slug' => 'count',
                 'is_main'   => true,
             ],
             [
-                'name'        => 'Dozen',
+                'name'        => 'درجن',
                 'unit'        => 12,
                 'symbol'      => "dz",
-                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Count')->first()->id,
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'count')->first()->id,
                 'quantity_slug' => 'count',
                 'is_main'   => true,
+            ],
+            [
+                'name'        => 'باکس',
+                'unit'        => 6,
+                'symbol'      => "box",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'count')->first()->id,
+                'quantity_slug' => 'count',
+                'is_main'     => true,
+            ],
+            [
+                'name'        => 'بوتل',
+                'unit'        => 1,
+                'symbol'      => "btl",
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'count')->first()->id,
+                'quantity_slug' => 'count',
+                'is_main'     => true,
             ],
             // length
             [
-                'name'        => 'Centimetre',
+                'name'        => 'سانتی متر',
                 'unit'        => 1,
                 'symbol'      => "cm",
-                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Length')->first()->id,
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'length')->first()->id,
                 'quantity_slug' => 'length',
                 'is_main'   => true,
             ],
             [
-                'name'        => 'Meter',
+                'name'        => 'متر',
                 'unit'        => 100,
                 'symbol'      => "m",
-                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Length')->first()->id,
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'length')->first()->id,
                 'quantity_slug' => 'length',
                 'is_main'   => true,
             ],
             [
-                'name'        => 'Inch',
+                'name'        => 'اینچ',
                 'unit'        => 2.5,
                 'symbol'      => "in",
-                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Length')->first()->id,
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'length')->first()->id,
                 'quantity_slug' => 'length',
                 'is_main'   => true,
             ],
             // area
             [
-                'name'        => 'SquareCentimetre',
+                'name'        => 'سانتی متر مربع',
                 'unit'        => 1,
                 'symbol'      => "cm2",
-                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Area')->first()->id,
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'area')->first()->id,
                 'quantity_slug' => 'area',
                 'is_main'   => true,
             ],
             [
-                'name'        => 'SquareDecimeter',
+                'name'        => 'دسی متر مربع',
                 'unit'        => 0.01,
                 'symbol'      => "dm2",
-                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Area')->first()->id,
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'area')->first()->id,
                 'quantity_slug' => 'area',
                 'is_main'   => true,
             ],
             [
-                'name'        => 'SquareMeter',
+                'name'        => 'متر مربع',
                 'unit'        => 0.0001,
                 'symbol'      => "m2",
-                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Area')->first()->id,
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'area')->first()->id,
                 'quantity_slug' => 'area',
                 'is_main'   => true,
             ],
             // weight
             [
-                'name'        => 'Gram',
+                'name'        => 'گرم',
                 'unit'        => 1,
                 'symbol'      => "g",
-                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Weight')->first()->id,
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'weight')->first()->id,
                 'quantity_slug' => 'weight',
                 'is_main'   => true,
             ],
             [
-                'name'        => 'Kilogram',
+                'name'        => 'کیلوگرم',
                 'unit'        => 1000,
                 'symbol'      => "kg",
-                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Weight')->first()->id,
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'weight')->first()->id,
                 'quantity_slug' => 'weight',
                 'is_main'   => true,
             ],
             [
-                'name'        => 'Ton',
+                'name'        => 'تن',
                 'unit'        => 1000000,
                 'symbol'      => "ton",
-                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Weight')->first()->id,
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'weight')->first()->id,
                 'quantity_slug' => 'weight',
                 'is_main'   => true,
             ],
             // volume
             [
-                'name'        => 'Millilitre',
+                'name'        => 'میلی لیتر',
                 'unit'        => 1,
                 'symbol'      => "ml",
-                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Volume')->first()->id,
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'volume')->first()->id,
                 'quantity_slug' => 'volume',
                 'is_main'   => true,
             ],
             [
-                'name'        => 'Litre',
+                'name'        => 'لیتر',
                 'unit'        => 1000,
                 'symbol'      => "L",
-                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Volume')->first()->id,
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'volume')->first()->id,
                 'quantity_slug' => 'volume',
                 'is_main'   => true,
             ],
             [
-                'name'        => 'Gallon',
+                        'name'        => 'گالون',
                 'unit'        => 3785.41, // US Gallon to ml
                 'symbol'      => "gal",
-                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Volume')->first()->id,
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'volume')->first()->id,
                 'quantity_slug' => 'volume',
                 'is_main'   => true,
             ],
             [
-                'name'        => 'Barrel',
+                'name'        => 'باریل',
                 'unit'        => 158987.294928, // نفت خام به ml
                 'symbol'      => "bbl",
-                'quantity_id' => Quantity::withoutGlobalScopes()->where('quantity', 'Volume')->first()->id,
+                'quantity_id' => Quantity::withoutGlobalScopes()->where('slug', 'volume')->first()->id,
                 'quantity_slug' => 'volume',
                 'is_main'   => true,
             ],

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Administration;
 
+use App\Http\Resources\UserManagement\UserSimpleResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -32,8 +33,8 @@ class CompanyResource extends JsonResource
             'email' => $this->email,
             'website' => $this->website,
             'invoice_description' => $this->invoice_description,
-            'created_by' => $this->created_by,
-            'updated_by' => $this->updated_by,
+            'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
+            'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
         ];
     }
 }

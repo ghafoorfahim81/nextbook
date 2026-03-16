@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('symbol');
             $table->string('slug');
             $table->boolean(column: 'is_main')->default(false);
+            $table->boolean(column: 'is_active')->default(true);
             $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();

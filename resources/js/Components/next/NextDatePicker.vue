@@ -39,13 +39,16 @@
 <script setup>
 import { computed, onMounted, watch, ref } from 'vue'
 import VuePersianDatetimePicker from 'vue3-persian-datetime-picker'
+import { usePage } from '@inertiajs/vue3'
+
+const user = computed(() => usePage().props.auth?.user || null)
 
 const props = defineProps({
     modelValue: [String, Number, Date],
     format: { type: String, default: '' },
     displayFormat: { type: String, default: '' },
     placeholder: { type: String, default: '' },
-    inputClass: { type: String, default: 'form-control z-5000' },
+    inputClass: { type: String, default: '' },
     editable: { type: Boolean, default: false },
     currentDate: { type: Boolean, default: false },
     autoSubmit: { type: Boolean, default: true },
@@ -61,7 +64,7 @@ const props = defineProps({
     color: { type: String, default: '#8b5cf6' }, // violet-500
     disabled: { type: Boolean, default: false },
 })
-
+const calendarType = computed(() => user.value?.calendar_type || 'gregorian')
 const emit = defineEmits(['update:modelValue', 'change'])
 const initialized = ref(false)
 onMounted(() => {
@@ -105,17 +108,15 @@ const normalizedModel = computed({
     set: (v) => (model.value = v),
 })
 
-// Determine locale from prop or localStorage (fallback to 'fa')
+const page = usePage()
+
+// Determine picker calendar mode from Inertia locale (fallback to 'fa' / Jalali).
 const effectiveLocale = computed(() => {
-    if (props.locale) {
-        console.log('Using locale from props:', props.locale)
-        return props.locale
+    if (calendarType.value === 'jalali') {
+        return 'fa'
     }
 
-    const stored = typeof localStorage !== 'undefined' ? (localStorage.getItem('calendar_type') || '') : ''
-
-    if (stored === 'en') return 'en'
-    return 'fa' // Default to Persian (fa) for VuePersianDatetimePicker
+    return 'en'
 })
 
 const isJalali = computed(() => effectiveLocale.value === 'fa')
@@ -123,12 +124,12 @@ const isJalali = computed(() => effectiveLocale.value === 'fa')
 // Resolve formats based on calendar type so output is consistent
 const resolvedFormat = computed(() => {
     if (props.format && props.format !== 'date') return props.format
-    return isJalali.value ? 'jYYYY-jMM-jDD' : 'YYYY-MM-DD'
+    return calendarType.value === 'jalali' ? 'jYYYY-jMM-jDD' : 'YYYY-MM-DD'
 })
 
 const resolvedDisplayFormat = computed(() => {
     if (props.displayFormat) return props.displayFormat
-    return isJalali.value ? 'jYYYY-jMM-jDD' : 'YYYY-MM-DD'
+    return calendarType.value === 'jalali' ? 'jYYYY-jMM-jDD' : 'YYYY-MM-DD'
 })
 
 const afghanMonths = [
@@ -161,19 +162,58 @@ function safeYear(m) {
 </script>
 
 <style scoped>
-/* Ensure the date input fits exactly inside its container (e.g., table cell) */
+/* -----------------------------
+   Input parity with NextInput / NextSelect
+   - height: 40px (h-10 / 2.5rem)
+   - border: 2px using theme --border
+   - radius: theme --radius
+   ----------------------------- */
+
+/* Ensure the date input fits exactly inside its container */
 :deep(.vpd-input-group) {
     width: 100%;
     max-width: 100%;
     display: flex;
-    align-items: center;
+    align-items: stretch;
     box-sizing: border-box;
+    height: 2.5rem;
+    min-height: 2.5rem;
+    background-color: hsl(var(--background)) !important; /* ← match shadcn */
+    border: 1px solid hsl(var(--border)) !important;
+    border-radius: calc(var(--radius) - 2px);
+    overflow: hidden;
+}
+/* Focus parity (same as NextInput/NextSelect) */
+:deep(.vpd-input-group:focus-within) {
+    border-color: rgb(99 102 241) !important;
+    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.25);
+}
+
+:deep(.vpd-day) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 33px;
+    width: 36px; /* Set a fixed width for consistency */
+    border-radius: 50%;
+}
+
+:deep(.vpd-day.selected) {
+    background-color: #8b5cf6; /* Color for the selected day */
+    color: white;
+}
+
+
+
+:deep(.vpd-weekday) {
+    color: #8b5cf6 !important; /* violet-500 */
+    font-weight: 600;
 }
 
 /* Compact the calendar icon addon so it doesn't expand the cell */
 :deep(.vpd-input-group .vpd-addon) {
     margin: 0;
-    height: 36px;
+    height: 100%;
     display: flex;
     align-items: center;
     padding: 0 8px;
@@ -183,7 +223,7 @@ function safeYear(m) {
 /* v3 picker uses .vpd-icon-btn instead of .vpd-addon; style it similarly */
 :deep(.vpd-input-group .vpd-icon-btn) {
     margin: 0;
-    height: 36px;
+    height: 100%;
     display: flex;
     align-items: center;
     padding: 0 8px;
@@ -204,10 +244,16 @@ function safeYear(m) {
 :deep(.vpd-input-group input) {
     width: 100%;
     max-width: 100%;
-    height: 36px;
-    line-height: 36px;
-    padding: 0 8px;
+    height: 100%;
+    line-height: normal;
+    padding: 0 0.75rem; /* matches shadcn input px-3 */
     box-sizing: border-box;
+    border: 0 !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+    color: hsl(var(--foreground));
+    font-size: 0.875rem; /* text-sm */
 }
 
 /* Prevent internal container from forcing a fixed width */
@@ -216,57 +262,9 @@ function safeYear(m) {
     max-width: 100%;
 }
 
-/* Remove any red borders or error styling (no-error-style class is always applied) */
-:deep(.no-error-style .vpd-input-group) {
-    border: none !important;
-    outline: none !important;
-    box-shadow: none !important;
-}
-
-/* Remove red border from the input field (no-error-style class is always applied) */
-:deep(.no-error-style .vpd-input-group .vpd-input),
-:deep(.no-error-style .vpd-input-group input) {
-    border: 1px solid #d1d5db !important; /* Default gray border */
-    outline: none !important;
-    box-shadow: none !important;
-}
-
-/* Remove red border from the icon button (no-error-style class is always applied) */
-:deep(.no-error-style .vpd-input-group .vpd-icon-btn) {
-    border: none !important;
-    outline: none !important;
-    box-shadow: none !important;
-}
-
-/* Override any error state styling (no-error-style class is always applied) */
-:deep(.no-error-style .vpd-input-group.error),
-:deep(.no-error-style .vpd-input-group:has(.error)),
-:deep(.no-error-style .vpd-input-group:has([class*="error"])) {
-    border: 1px solid #d1d5db !important; /* Default gray border */
-    outline: none !important;
-    box-shadow: none !important;
-}
-
-/* More aggressive override for any red borders */
-:deep(.vpd-input-group) {
-    border-color: #d1d5db !important;
-}
-
-:deep(.vpd-input-group .vpd-input),
-:deep(.vpd-input-group input) {
-    border-color: #d1d5db !important;
-}
-
-:deep(.vpd-input-group .vpd-icon-btn) {
-    border-color: #d1d5db !important;
-}
-
-/* Override any Tailwind CSS error classes */
-:deep(.vpd-input-group:has([class*="ring-red"])),
-:deep(.vpd-input-group:has([class*="border-red"])),
-:deep(.vpd-input-group:has([class*="text-red"])) {
-    border-color: #d1d5db !important;
-    box-shadow: none !important;
+/* If the picker marks the group as error, keep our theme border (errors are shown outside anyway) */
+:deep(.no-error-style .vpd-input-group.error) {
+    border-color: hsl(var(--border)) !important;
 }
 
 /* Position clear icon at the end of the input */

@@ -13,10 +13,9 @@ return new class extends Migration
     {
         Schema::create('item_opening_transactions', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulid('item_id')->index(); 
-            $table->ulid('inventory_transaction_id')->index();
-            $table->ulid('opening_balance_transaction_id')->index();
-            $table->ulid('branch_id')->index(); 
+            $table->ulid('item_id')->index();
+            $table->ulid('transaction_id')->index();
+            $table->ulid('branch_id')->index();
             $table->ulid('created_by')->index();
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
@@ -26,8 +25,7 @@ return new class extends Migration
 
         Schema::table('item_opening_transactions', function (Blueprint $table) {
             $table->foreign('item_id')->references('id')->on('items');
-            $table->foreign('inventory_transaction_id')->references('id')->on('transactions');
-            $table->foreign('opening_balance_transaction_id')->references('id')->on('transactions');
+            $table->foreign('transaction_id')->references('id')->on('transactions');
             $table->foreign('branch_id')->references('id')->on('branches');
             $table->foreign('created_by')->references('id')->on('users');
             $table->foreign('updated_by')->references('id')->on('users');

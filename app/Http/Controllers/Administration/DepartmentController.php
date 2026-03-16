@@ -20,11 +20,11 @@ class DepartmentController extends Controller
 
     public function index(Request $request)
     {
-        $perPage = $request->input('perPage', 10);
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'asc');
 
-        $departments = Department::with('parent')
+        $departments = Department::with(['parent', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -43,6 +43,7 @@ class DepartmentController extends Controller
 
     public function show(Request $request, Department $department): DepartmentResource
     {
+        $department->load(['parent', 'createdBy', 'updatedBy']);
         return new DepartmentResource($department);
     }
 
@@ -65,7 +66,7 @@ class DepartmentController extends Controller
 
         $department->delete();
 
-        return redirect()->route('departments.index')->with('success', 'Department deleted successfully.');
+        return redirect()->route('departments.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.department')]));
     }
 
     public function getParents()

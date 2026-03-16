@@ -24,6 +24,16 @@ const columns = computed(() => ([
     { key: 'location', label: t('admin.branch.location') },
     { key: 'sub_domain', label: t('admin.branch.sub_domain') },
     { key: 'remark', label: t('admin.shared.remark') },
+    {
+        key: 'created_by.name',
+        label: t('general.created_by'),
+        render: (row) => row.created_by?.name ?? '-',
+    },
+    {
+        key: 'updated_by.name',
+        label: t('general.updated_by'),
+        render: (row) => row.updated_by?.name ?? '-',
+    },
     { key: 'actions', label: t('general.action') },
 ]));
 

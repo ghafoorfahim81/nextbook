@@ -21,6 +21,7 @@ const props = defineProps({
     calendarTypes: Object,
     workingStyles: Object,
     errors: Object,
+    costingMethods: Object,
 });
 
 const isEditing = ref(false);
@@ -45,6 +46,8 @@ const form = useForm({
     selected_calendar_type: '',
     currency_id: '',
     selected_currency: null,
+    costing_method: '',
+    selected_costing_method: '',
     working_style: '',
     selected_working_style: '',
     business_type: '',
@@ -75,6 +78,8 @@ watch(() => props.company, (company) => {
         form.selected_currency = company.currency || null;
         form.selected_working_style = props.workingStyles.find(style => style.id === company.working_style) || '';
         form.working_style = company.working_style || '';
+        form.selected_costing_method = props.costingMethods.find(method => method.id === company.costing_method) || '';
+        form.costing_method = company.costing_method || '';
         form.selected_business_type = props.businessTypes.find(type => type.id === company.business_type)  || '';
         form.business_type = company.business_type || '';
         form.selected_locale = company.locale || '';
@@ -100,13 +105,14 @@ watch(() => props.company, (company) => {
             logo: company.logo || null,
             selected_calendar_type: company.calendar_type || '',
             calendar_type: company.calendar_type || '',
+            selected_costing_method: company.costing_method || '',
+            costing_method: company.costing_method || '',
             selected_working_style: company.working_style || '',
             working_style: company.working_style || '',
             selected_business_type: company.business_type || '',
             business_type: company.business_type || '',
             selected_locale: company.locale || '',
             locale: company.locale || '',
-            selected_business_type: company.business_type || '',
             selected_locale: company.locale || '',
             currency_id: company.currency_id || '',
             email: company.email || '',
@@ -236,6 +242,10 @@ const getDisplayValue = (field) => {
     }
     if (field === 'currency_id') {
         const option = props.currencies.data.find(currency => currency.id === value);
+        return props.company.currency?.name || value;
+    }
+    if (field === 'costing_method') {
+        const option = props.costingMethods.find(method => method.id === value);
         return option?.name || value;
     }
 
@@ -610,6 +620,27 @@ const setCalendarLocaleStorage = (selected) => {
                                         </label>
                                         <div class="py-2 px-3 bg-muted text-foreground rounded-md">
                                             {{ getDisplayValue('currency_id') }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <NextSelect
+                                        v-if="isEditing"
+                                        :options="costingMethods"
+                                        v-model="form.selected_costing_method"
+                                        label-key="name"
+                                        value-key="id"
+                                        @update:modelValue="(value) => handleSelectChange('costing_method', value)"
+                                        :reduce="type => type.id"
+                                        :floating-text="t('company.costing_method')"
+                                        :error="form.errors?.costing_method"
+                                    />
+                                    <div v-else>
+                                        <label class="block text-sm font-medium text-muted-foreground mb-1">
+                                            {{ t('company.costing_method') }}
+                                        </label>
+                                        <div class="py-2 px-3 bg-muted text-foreground rounded-md">
+                                            {{ getDisplayValue('costing_method') }}
                                         </div>
                                     </div>
                                 </div>

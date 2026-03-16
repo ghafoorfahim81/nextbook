@@ -1,4 +1,5 @@
 ﻿{
     "payment": "Payment",
-    "payments": "Payments" 
+    "payments": "Payments",
+    "pay_from_account": "Pay from account"
 }

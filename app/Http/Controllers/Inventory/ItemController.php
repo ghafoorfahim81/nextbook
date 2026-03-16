@@ -11,6 +11,7 @@ use App\Models\Inventory\Stock;
 use App\Models\Inventory\StockOpening;
 use App\Models\Inventory\StockOut;
 use App\Models\Transaction\Transaction;
+use App\Models\Transaction\TransactionLine;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,18 @@ use App\Http\Resources\Inventory\StockResource;
 use App\Http\Resources\Inventory\StockOutResource;
 use App\Models\Account\Account;
 use App\Models\Inventory\ItemOpeningTransaction;
+use App\Enums\ItemType;
+use App\Models\Administration\UnitMeasure;
+use App\Models\Administration\Category;
+use App\Models\Administration\Brand;
+use App\Models\Administration\Size;
+use App\Models\User;
+use App\Enums\StockSourceType;
+use App\Enums\StockMovementType;
+use App\Enums\StockStatus;
+use App\Http\Resources\Inventory\StockMovementResource;
+use App\Models\Inventory\StockMovement;
+use App\Models\Inventory\StockBalance;
 class ItemController extends Controller
 {
     public function __construct()
@@ -29,18 +42,37 @@ class ItemController extends Controller
     }
 
     public function index(Request $request)
-    { 
-        $perPage = $request->input('perPage', 10);
+    {
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
-        $items = Item::with('category', 'unitMeasure', 'size')
-            ->search($request->query('search'))
+        $items = Item::search($request->query('search'))
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
         return inertia('Inventories/Items/Index', [
             'items' => ItemResource::collection($items),
+            'filterOptions' => [
+                'itemTypes' => collect(ItemType::cases())->map(fn ($c) => [
+                    'id' => $c->value,
+                    'name' => $c->getLabel(),
+                ])->values(),
+                'unitMeasures' => UnitMeasure::orderBy('name')->get(['id', 'name']),
+                'categories' => Category::orderBy('name')->get(['id', 'name']),
+                'sizes' => Size::orderBy('name')->get(['id', 'name']),
+                'brands' => Brand::orderBy('name')->get(['id', 'name']),
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 
@@ -50,21 +82,22 @@ class ItemController extends Controller
         $maxCode = Item::query()->selectRaw('MAX(CAST(code AS INTEGER)) as max_code')
         ->value('max_code');
         $maxCode = $maxCode ? intval($maxCode) + 1 : 1;
+        $accountModel = new Account();
+        $otherCurrentAssetsAccounts = $accountModel->getAccountsByAccountTypeSlug('other-current-asset');
+        $incomeAccounts = $accountModel->getAccountsByAccountTypeSlug('income');
+        $costAccounts = $accountModel->getAccountsByAccountTypeSlug('cost-of-goods-sold');
 
         return inertia('Inventories/Items/Create', [
             'maxCode' => $maxCode,
+            'otherCurrentAssetsAccounts' => $otherCurrentAssetsAccounts,
+            'incomeAccounts' => $incomeAccounts,
+            'costAccounts' => $costAccounts,
         ]);
     }
     public function store(ItemStoreRequest $request)
     {
-
-        $validated = $request->validated();
-        // If you're uploading a photo here, handle it first (optional)
-        // if ($request->hasFile('photo')) {
-        //     $path = $request->file('photo')->store('items', 'public');
-        //     $validated['photo'] = $path;
-        // }
-
+        $validated = $request->validated(); 
+        $validated['item_type'] = $validated['item_type']??ItemType::INVENTORY_MATERIALS->value;
         DB::transaction(function () use ($validated, $request) {
             // 1) Create item
             $item = Item::create($validated);
@@ -73,100 +106,96 @@ class ItemController extends Controller
             $dateConversionService = app(\App\Services\DateConversionService::class);
             $transactionService = app(\App\Services\TransactionService::class);
             $date = $dateConversionService->toGregorian(Carbon::now()->toDateString());
-
             $openings
                 ->filter(function ($o) {
-                    return !empty($o['store_id']) && (float)($o['quantity'] ?? 0) > 0;
+                    return !empty($o['warehouse_id']) && $o['quantity'] > 0;
                 })
                 ->each(function ($o) use ($item, $validated, $dateConversionService, $transactionService, $date) {
-                    // pick cost source (fallback to purchase_price or cost on item form)
-                    $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
                     $expire_date = $o['expire_date'] ? $dateConversionService->toGregorian($o['expire_date']) : null;
                     // create stock
                     $stockService = app(\App\Services\StockService::class);
-                    $stock = $stockService->addStock([
-                        'item_id' => $item->id,
-                        'store_id' => $o['store_id'],
+                    $stock = $stockService->post([
+                        'item_id'         => $item->id,
+                        'movement_type'   => StockMovementType::IN->value,
                         'unit_measure_id' => $validated['unit_measure_id'], // from item form
                         'quantity'        => (float) $o['quantity'],
-                        'unit_price'      => $cost,
-                        'free'            => isset($o['free']) ? (float) $o['free'] : null,
+                        'source'          => StockSourceType::OPENING->value,
+                        'unit_cost'       => (float) $o['unit_price'],
+                        'status'          => StockStatus::DRAFT->value,
                         'batch'           => $o['batch'] ?? null,
                         'date'            => $date,
                         'expire_date'     => $expire_date,
                         'size_id'         => $validated['size_id'] ?? null,
-                    ], $o['store_id'], 'opening', $item->id);
-
-                    // mark it as an opening
-                    StockOpening::create([
-                        'id'      => (string) Str::ulid(),
-                        'item_id' => $item->id,
-                        'stock_id' => $stock->id,
-                    ]);
-
+                        'warehouse_id'    => $o['warehouse_id'],
+                        'branch_id'       => auth()->user()->company->branch_id, 
+                    ]); 
                 });
                 // Create opening transactions
-                if ($openings->count() > 0) {
+                if ($openings->filter(function ($o) {
+                    return !empty($o['warehouse_id']) && $o['quantity'] > 0;
+                })->count() > 0) {
                     $glAccounts      = Cache::get('gl_accounts');
                     $homeCurrency = Cache::get('home_currency');
-                    $amount = $openings->sum(function ($o) {
-                        return (float)($o['quantity'] ?? 0);
-                    });
-                    $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
-                    $inventoryTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['inventory'],
-                        'amount' => $cost*$amount,
-                        'currency_id' => $homeCurrency->id,
-                        'rate' => 1,
-                        'date' => $date,
-                        'type' => 'debit',
-                        'remark' => 'Opening balance for item ' . $item->name,
-                        'reference_type' => Item::class,
-                        'reference_id' => $item->id,
-                    ]);
-                    $openingBalanceTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['opening-balance-equity'],
-                        'amount' => $cost*$amount,
-                        'currency_id' => $homeCurrency->id,
-                        'rate' => 1,
-                        'date' => $date,
-                        'type' => 'credit',
-                        'remark' => 'Opening balance for item ' . $item->name,
-                        'reference_type' => Item::class,
-                        'reference_id' => $item->id,
-                    ]);
-                    ItemOpeningTransaction::create([
-                        'id' => (string) Str::ulid(),
-                        'item_id' => $item->id,
-                        'inventory_transaction_id' => $inventoryTransaction->id,
-                        'opening_balance_transaction_id' => $openingBalanceTransaction->id,
-                        'created_by' => auth()->id(),
-                    ]);
+                    $openingBalanceAccount = $glAccounts['opening-balance-equity'];
+                    $itemType = $validated['item_type'];
+                    if ($itemType == ItemType::INVENTORY_MATERIALS->value) {
+                        $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['inventory-stock'];
+                    }
+                    elseif ($itemType == ItemType::NON_INVENTORY_MATERIALS->value) {
+                        $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['non-inventory-items'];
+                    }
+                    elseif ($itemType == ItemType::RAW_MATERIALS->value) {
+                        $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['raw-materials'];
+                    }
+                    elseif ($itemType == ItemType::FINISHED_GOOD_ITEMS->value) {
+                        $inventoryAccount = $validated['asset_account_id'] ?? $glAccounts['finished-goods'];
+                    }
+                    $openingBalanceTransaction = $transactionService->post(
+                        header: [
+                          'currency_id' => $homeCurrency->id,
+                          'rate' => 1,
+                          'date' => $date,
+                          'reference_type' => Item::class,
+                          'reference_id' => $item->id,
+                          'remark' => 'Opening balance for item ' . $item->name,
+                        ],
+                        lines: [
+                          ['account_id' => $inventoryAccount,   'debit' => $openings->sum(function ($o) {
+                            return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
+                        }), 'credit' => 0],
+                          ['account_id' => $openingBalanceAccount, 'debit' => 0,    'credit' => $openings->sum(function ($o) {
+                            return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
+                        })],
+                        ]
+                      );
                 }
 
         });
         if ((bool) $request->input('stay') || (bool) $request->input('create_and_new')) {
-            return redirect()->route('items.create')->with('success', 'Item created successfully.');
+            return redirect()->route('items.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.item')]));
         }
-        return redirect()->route('items.index')->with('success', 'Items created successfully.');
+        return redirect()->route('items.index')->with('success', __('general.items_created_successfully'));
     }
 
     public function show(Request $request, Item $item)
     {
         // $item->load(['stock_count', 'stock_out_count']);
-        return inertia('Inventories/Items/Show', [
-            'item' => new ItemResource($item),
+        $item->load('assetAccount', 'incomeAccount', 'costAccount', 'createdBy', 'updatedBy', 'brand', 'size');
+        return response()->json([
+            'data' => ItemResource::make($item),
         ]);
+        
     }
     public function inRecords(Request $request, Item $item)
     {
-        $stocks = Stock::with(['store', 'unitMeasure', 'source.supplier'])
+        $stocks = StockMovement::with(['warehouse', 'unitMeasure', 'source'])
             ->where('item_id', $item->id)
+            ->where('movement_type', StockMovementType::IN->value)
             ->orderBy('date', 'desc')
             ->paginate($request->input('per_page', 10));
 
         return response()->json([
-            'data' => StockResource::collection($stocks),
+            'data' => StockMovementResource::collection($stocks),
             'meta' => [
                 'current_page' => $stocks->currentPage(),
                 'last_page' => $stocks->lastPage(),
@@ -178,13 +207,14 @@ class ItemController extends Controller
 
     public function outRecords(Request $request, Item $item)
     {
-        $stockOuts = StockOut::with(['store', 'unitMeasure', 'source.customer'])
+        $stockOuts = StockMovement::with(['warehouse', 'unitMeasure', 'source'])
             ->where('item_id', $item->id)
+            ->where('movement_type', StockMovementType::OUT->value)
             ->orderBy('date', 'desc')
             ->paginate($request->input('per_page', 10));
 
         return response()->json([
-            'data' => StockOutResource::collection($stockOuts),
+            'data' => StockMovementResource::collection($stockOuts),
             'meta' => [
                 'current_page' => $stockOuts->currentPage(),
                 'last_page' => $stockOuts->lastPage(),
@@ -196,15 +226,22 @@ class ItemController extends Controller
 
     public function edit(Request $request, Item $item)
     {
-        $item = Item::with('unitMeasure', 'brand', 'category', 'size')->find($item->id);
+        $item = Item::with('unitMeasure', 'brand', 'category', 'size', 'assetAccount', 'incomeAccount', 'costAccount', 'openings.warehouse')->find($item->id);
+        $accountModel = new Account();
+        $otherCurrentAssetsAccounts = $accountModel->getAccountsByAccountTypeSlug('other-current-asset');
+        $incomeAccounts = $accountModel->getAccountsByAccountTypeSlug('income');
+        $costAccounts = $accountModel->getAccountsByAccountTypeSlug('cost-of-goods-sold'); 
         return inertia('Inventories/Items/Edit', [
-            'item' => new ItemResource($item)
+            'item' => new ItemResource($item),
+            'otherCurrentAssetsAccounts' => $otherCurrentAssetsAccounts,
+            'incomeAccounts' => $incomeAccounts,
+            'costAccounts' => $costAccounts,
         ]);
     }
 
     public function update(ItemUpdateRequest $request, Item $item)
     {
-        $validated = $request->validated();
+        $validated = $request->validated(); 
         // Handle photo update
         // dd($request->all());
         if ($request->hasFile('photo')) {
@@ -216,127 +253,105 @@ class ItemController extends Controller
             $item->update($validated);
 
             // 2) Handle openings
-            $openings = collect($validated['openings'] ?? []);
+            $openings = collect($validated['openings'] ?? []); 
             $dateConversionService = app(\App\Services\DateConversionService::class);
             $date =   $dateConversionService->toGregorian(Carbon::now()->toDateString());
             $transactionService = app(\App\Services\TransactionService::class);
             // Remove old openings (optional: you may also soft-delete instead)
-            $item->openings->each(function ($opening) {
+            $itemOpening = StockMovement::where('item_id', $item->id)
+                ->where('source', StockSourceType::OPENING->value)
+                ->where('status', StockStatus::DRAFT->value)
+                ->get(); 
+            $itemOpening->each(function ($opening) {
                 $opening->forceDelete();
-                $opening->stock()->forceDelete();
             });
+ 
             $openings
-                ->filter(fn($o) => !empty($o['store_id']) && (float)($o['quantity'] ?? 0) > 0)
+                ->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0 && $o['status'] == StockStatus::DRAFT->value)
                 ->each(function ($o) use ($item, $validated, $dateConversionService, $date) {
-
-                    $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
-                    $expire_date = $o['expire_date'] ? $dateConversionService->toGregorian($o['expire_date']) : null;
                     $stockService = app(\App\Services\StockService::class);
-                    $stock = $stockService->addStock([
-                        'item_id' => $item->id,
-                        'store_id' => $o['store_id'],
+                    $expire_date = $o['expire_date'] ? $dateConversionService->toGregorian($o['expire_date']) : null;
+
+                    StockBalance::where('item_id', $item->id)
+                    ->where('status', StockStatus::DRAFT->value)
+                    ->when(isset($o['batch']), function($query) use ($o) {
+                        return $query->where('batch', $o['batch']);
+                    })
+                    ->when(isset($o['expire_date']), function($query) use ($o) {
+                        return $query->where('expire_date', $o['expire_date']);
+                    })
+                    ->forceDelete();
+                    $stock = $stockService->post([
+                        'item_id'         => $item->id,
+                        'movement_type'   => StockMovementType::IN->value,
                         'unit_measure_id' => $validated['unit_measure_id'], // from item form
                         'quantity'        => (float) $o['quantity'],
-                        'unit_price'      => $cost,
-                        'free'            => isset($o['free']) ? (float) $o['free'] : null,
+                        'source'          => StockSourceType::OPENING->value,
+                        'unit_cost'       => (float) $o['unit_price'],
+                        'status'          => StockStatus::DRAFT->value,
                         'batch'           => $o['batch'] ?? null,
                         'date'            => $date,
                         'expire_date'     => $expire_date,
                         'size_id'         => $validated['size_id'] ?? null,
-                    ], $o['store_id'], 'opening', $item->id);
-
-                    StockOpening::create([
-                        'id'      => (string) Str::ulid(),
-                        'item_id' => $item->id,
-                        'stock_id' => $stock->id,
+                        'warehouse_id'    => $o['warehouse_id'],
+                        'branch_id'       => auth()->user()->company->branch_id, 
                     ]);
+                     
                 });
 
                 // Delete opening stocks
-                $filteredOpenings = $openings->filter(fn($o) => !empty($o['store_id']) && (float)($o['quantity'] ?? 0) > 0);
-                if ($filteredOpenings->count() == 0 && $item->openings()->count() > 0) {
-                    $item->openings()->each(function ($opening) {
-                        $opening->forceDelete();
-                        $opening->stock->forceDelete();
-                    });
+                $filteredOpenings = $openings->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0); 
 
-                    // Delete opening transactions
-                    $item->openingTransactions()->each(function ($openingTransaction) {
-                        $inventoryTransactionId = $openingTransaction->inventory_transaction_id;
-                        $openingBalanceTransactionId = $openingTransaction->opening_balance_transaction_id;
-
-                        // Delete the opening transaction first to remove foreign key constraints
-                        $openingTransaction->forceDelete();
-
+                $openingTransaction = $item->openingTransaction()->first();
+                    if ($openingTransaction) {
                         // Then safely delete the related transactions
-                        if ($inventoryTransactionId) {
-                            Transaction::where('id', $inventoryTransactionId)->forceDelete();
+                        if ($openingTransaction->id) {
+                            TransactionLine::where('transaction_id', $openingTransaction->id)->forceDelete();
+                            Transaction::where('id', $openingTransaction->id)->forceDelete();
                         }
-                        if ($openingBalanceTransactionId) {
-                            Transaction::where('id', $openingBalanceTransactionId)->forceDelete();
-                        }
-                    });
-                }
-
-                $item->openingTransactions()->each(function ($openingTransaction) {
-                    // Store transaction IDs before deleting the opening transaction
-                    $inventoryTransactionId = $openingTransaction->inventory_transaction_id;
-                    $openingBalanceTransactionId = $openingTransaction->opening_balance_transaction_id;
-
-                    // Delete the opening transaction first to remove foreign key constraints
-                    $openingTransaction->forceDelete();
-
-                    // Then safely delete the related transactions
-                    if ($inventoryTransactionId) {
-                        Transaction::where('id', $inventoryTransactionId)->forceDelete();
                     }
-                    if ($openingBalanceTransactionId) {
-                        Transaction::where('id', $openingBalanceTransactionId)->forceDelete();
-                    }
-                });
 
                 // Create opening transactions
-                if ($filteredOpenings->count() > 0) {
+                if ($filteredOpenings->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0)->count() > 0) {
                     $glAccounts = Cache::get('gl_accounts');
                     $homeCurrency = Cache::get('home_currency');
-                    $amount = $filteredOpenings->sum(function ($o) {
-                        return (float)($o['quantity'] ?? 0);
-                    });
-                    $cost = (float)($validated['cost'] ?? $validated['purchase_price'] ?? 0);
-                    $inventoryTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['inventory'],
-                        'amount' => $cost*$amount,
-                        'currency_id' => $homeCurrency->id,
-                        'rate' => 1,
-                        'date' => $date,
-                        'type' => 'debit',
-                        'remark' => 'Opening balance for item ' . $item->name,
-                        'reference_type' => Item::class,
-                        'reference_id' => $item->id,
-                    ]);
-                    $openingBalanceTransaction = $transactionService->createTransaction([
-                        'account_id' => $glAccounts['opening-balance-equity'],
-                        'amount' => $cost*$amount,
-                        'currency_id' => $homeCurrency->id,
-                        'rate' => 1,
-                        'date' => $date,
-                        'type' => 'credit',
-                        'remark' => 'Opening balance for item ' . $item->name,
-                        'reference_type' => Item::class,
-                        'reference_id' => $item->id,
-                    ]);
-                    ItemOpeningTransaction::create([
-                        'id' => (string) Str::ulid(),
-                        'item_id' => $item->id,
-                        'inventory_transaction_id' => $inventoryTransaction->id,
-                        'opening_balance_transaction_id' => $openingBalanceTransaction->id,
-                            'created_by' => auth()->id(),
-                        ]);
+                    $itemType = $validated['item_type'];
+                    $openingBalanceAccount = $glAccounts['opening-balance-equity'];
+                    if ($itemType == ItemType::INVENTORY_MATERIALS->value) {
+                        $inventoryAccount = $glAccounts['inventory-stock'];
+                    }
+                    elseif ($itemType == ItemType::NON_INVENTORY_MATERIALS->value) {
+                        $inventoryAccount = $glAccounts['non-inventory-items'];
+                    }
+                    elseif ($itemType == ItemType::RAW_MATERIALS->value) {
+                        $inventoryAccount = $glAccounts['raw-materials'];
+                    }
+                    elseif ($itemType == ItemType::FINISHED_GOOD_ITEMS->value) {
+                        $inventoryAccount = $glAccounts['finished-goods'];
+                    }
+                    $transaction = $transactionService->post(
+                        header: [
+                          'currency_id' => $homeCurrency->id,
+                          'rate' => 1,
+                          'date' => $date,
+                          'reference_type' => Item::class,
+                          'reference_id' => $item->id,
+                          'remark' => 'Opening balance for item ' . $item->name,
+                        ],
+                        lines: [
+                          ['account_id' => $inventoryAccount,   'debit' => $filteredOpenings->sum(function ($o) {
+                            return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
+                        }), 'credit' => 0],
+                          ['account_id' => $openingBalanceAccount, 'debit' => 0,    'credit' => $filteredOpenings->sum(function ($o) {
+                            return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
+                        })],
+                        ]
+                      );
                 }
 
         });
 
-        return redirect()->route('items.index')->with('success', 'Item updated successfully.');
+        return redirect()->route('items.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.item')]));
     }
 
 
@@ -353,29 +368,50 @@ class ItemController extends Controller
 
             DB::transaction(function () use ($item) {
                 // Delete openings with their stocks (with existence checks)
-                $item->openings()->with('stock')->each(function ($opening) {
-                    if ($opening->stock) {
-                        $opening->stock->delete();
+
+                $stockMovement = StockMovement::where('item_id', $item->id) 
+                ->where('status', StockStatus::POSTED->value)
+                ->get();
+                if($stockMovement->count() > 0) {
+                    return redirect()->back()->with([
+                        'error' => __('general.cannot_delete_item_with_posted_stock_movements'),
+                        'title' => __('general.posted_stock_movements_found'),
+                    ]);
+                }
+                else{
+                    $stockMovement = StockMovement::where('item_id', $item->id) 
+                    ->where('status', StockStatus::DRAFT->value)
+                    ->get();
+                    if($stockMovement->count() > 0) {
+                        $stockMovement->each(function ($movement) {
+                            $movement->delete();
+                        });
                     }
-                    $opening->delete();
-                });
+                    $stockBalance = StockBalance::where('item_id', $item->id) 
+                    ->where('status', StockStatus::DRAFT->value)
+                    ->get();
+                    if($stockBalance->count() > 0) {
+                        $stockBalance->each(function ($balance) {
+                            $balance->delete();
+                        });
+                    }
+                } 
 
                 // Delete opening transactions with their related models
-                $item->openingTransactions()->with(['inventoryTransaction', 'openingBalanceTransaction'])->each(function ($openingTransaction) {
-                    if ($openingTransaction->inventoryTransaction) {
-                        $openingTransaction->inventoryTransaction->delete();
+                $openingTransaction = $item->openingTransaction()->first();
+                    if ($openingTransaction) {
+                        // Then safely delete the related transactions
+                        if ($openingTransaction->id) {
+                            TransactionLine::where('transaction_id', $openingTransaction->id)->delete();
+                            Transaction::where('id', $openingTransaction->id)->delete();
+                        }
                     }
-                    if ($openingTransaction->openingBalanceTransaction) {
-                        $openingTransaction->openingBalanceTransaction->delete();
-                    }
-                    $openingTransaction->delete();
-                });
 
                 // Finally delete the main item
                 $item->delete();
             });
 
-            return redirect()->route('items.index')->with('success', 'Item deleted successfully.');
+            return redirect()->route('items.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.item')]));
 
         } catch (\Exception $e) {
             // Log the error for debugging
@@ -384,7 +420,7 @@ class ItemController extends Controller
                 'exception' => $e
             ]);
 
-            return redirect()->back()->with('error', 'Failed to delete item. Please try again.');
+            return redirect()->back()->with('error', __('general.failed_to_delete_try_again', ['resource' => __('general.resource.item')]));
         }
     }
     public function restore(Request $request, Item $item)
@@ -393,37 +429,21 @@ class ItemController extends Controller
             DB::transaction(function () use ($item) {
                 // Restore the main item first
                 $item->restore();
-
-                // Restore openings with their stocks (only trashed records)
-                $item->openings()->with(['stock' => function ($query) {
-                    $query->withTrashed();
-                }])->withTrashed()->each(function ($opening) {
-                    if ($opening->stock) {
-                        $opening->stock->restore();
-                    }
-                    $opening->restore();
-                });
+                $item->stocks()->withTrashed()->restore();
+                $item->stockBalances()->withTrashed()->restore(); 
 
                 // Restore opening transactions with their related models
-                $item->openingTransactions()->with([
-                    'inventoryTransaction' => function ($query) {
-                        $query->withTrashed();
-                    },
-                    'openingBalanceTransaction' => function ($query) {
-                        $query->withTrashed();
+                $openingTransaction = $item->openingTransaction()->withTrashed()->first();
+                    if ($openingTransaction) {
+                        // Then safely delete the related transactions
+                        if ($openingTransaction->id) {
+                            $openingTransaction->lines()->withTrashed()->restore();
+                            $openingTransaction->restore();
+                        }
                     }
-                ])->withTrashed()->each(function ($openingTransaction) {
-                    if ($openingTransaction->inventoryTransaction) {
-                        $openingTransaction->inventoryTransaction->restore();
-                    }
-                    if ($openingTransaction->openingBalanceTransaction) {
-                        $openingTransaction->openingBalanceTransaction->restore();
-                    }
-                    $openingTransaction->restore();
-                });
             });
 
-            return redirect()->route('items.index')->with('success', 'Item restored successfully.');
+            return redirect()->route('items.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.item')]));
 
         } catch (\Exception $e) {
             // Log the error for debugging
@@ -432,7 +452,7 @@ class ItemController extends Controller
                 'exception' => $e
             ]);
 
-            return redirect()->back()->with('error', 'Failed to restore item. Please try again.');
+            return redirect()->back()->with('error', __('general.failed_to_restore_try_again', ['resource' => __('general.resource.item')]));
         }
     }
 
@@ -450,21 +470,20 @@ class ItemController extends Controller
                 });
 
                 // Force delete opening transactions with their related models
-                $item->openingTransactions()->with(['inventoryTransaction', 'openingBalanceTransaction'])->each(function ($openingTransaction) {
-                    if ($openingTransaction->inventoryTransaction) {
-                        $openingTransaction->inventoryTransaction->forceDelete();
-                    }
-                    if ($openingTransaction->openingBalanceTransaction) {
-                        $openingTransaction->openingBalanceTransaction->forceDelete();
-                    }
-                    $openingTransaction->forceDelete();
-                });
+                $openingTransaction = $item->openingTransaction()->first();
+                    if ($openingTransaction) {
+                        // Then safely delete the related transactions
+                        if ($openingTransaction->id) {
+                            TransactionLine::where('transaction_id', $openingTransaction->id)->forceDelete();
+                            Transaction::where('id', $openingTransaction->id)->forceDelete();
+                        }
 
                 // Finally force delete the main item
                 $item->forceDelete();
+                }
             });
 
-            return redirect()->route('items.index')->with('success', 'Item permanently deleted successfully.');
+            return redirect()->route('items.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.item')]));
 
         } catch (\Exception $e) {
             // Log the error for debugging
@@ -473,7 +492,7 @@ class ItemController extends Controller
                 'exception' => $e
             ]);
 
-            return redirect()->back()->with('error', 'Failed to permanently delete item. Please try again.');
+            return redirect()->back()->with('error', __('general.failed_to_permanently_delete_try_again', ['resource' => __('general.resource.item')]));
         }
     }
 }

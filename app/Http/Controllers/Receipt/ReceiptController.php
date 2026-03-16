@@ -10,11 +10,14 @@ use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
 use App\Models\Receipt\Receipt;
 use App\Models\Transaction\Transaction;
+use App\Models\Transaction\TransactionLine;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-
+use App\Support\Inertia\CacheKey;
+use App\Models\Administration\Currency;
+use App\Models\User;
 class ReceiptController extends Controller
 {
     public function __construct()
@@ -24,18 +27,35 @@ class ReceiptController extends Controller
 
     public function index(Request $request)
     {
-        $perPage = $request->input('perPage', 10);
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'date');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
-        $receipts = Receipt::with(['ledger'])
+        $receipts = Receipt::with(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
 
         return inertia('Receipts/Index', [
             'receipts' => ReceiptResource::collection($receipts),
+            'filterOptions' => [
+                'customers' => Ledger::query()->where('type', 'customer')->orderBy('name')->get(['id', 'name']),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'bankAccounts' => Account::whereHas('accountType', fn ($q) => $q->whereIn('slug', ['cash-or-bank']))
+                    ->orderBy('name')
+                    ->get(['id', 'name']),
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 
@@ -47,8 +67,6 @@ class ReceiptController extends Controller
             'latestNumber' => $latest,
         ]);
     }
-
-
 
     public function store(ReceiptStoreRequest $request, TransactionService $transactionService)
     {
@@ -72,56 +90,46 @@ class ReceiptController extends Controller
             ]);
             $glAccounts = Cache::get('gl_accounts');
             // Credit Accounts Receivable for selected ledger
-            $arAccountId = $glAccounts['accounts-receivable'];
+            $arAccountId = $glAccounts['account-receivable'];
 
             $creditRemark = "Receipt #{$receipt->number} from {$ledger->name}";
-            $creditTxn = $transactionService->createTransaction([
-                'account_id' => $arAccountId,
-                'amount' => $amount,
-                'currency_id' => $currencyId,
-                'rate' => $rate,
-                'date' => $receipt->date,
-                'type' => 'credit',
-                'remark' => $creditRemark,
-                'reference_type' => 'receipt',
-                'reference_id' => $receipt->id,
-            ]);
 
-
-            // Debit selected bank account
-            $debitRemark = "Bank receive for receipt #{$receipt->number}";
-            $debitTxn = $transactionService->createTransaction([
-                'account_id' => $bankAccountId,
-                'amount' => $amount,
-                'currency_id' => $currencyId,
-                'rate' => $rate,
-                'date' => $receipt->date,
-                'type' => 'debit',
-                'remark' => $debitRemark,
-                'reference_type' => 'receipt',
-                'reference_id' => $receipt->id,
-            ]);
-
-            $ledger->ledgerTransactions()->create([
-                'transaction_id' => $creditTxn->id,
-            ]);
-
-            $receipt->update([
-                'receive_transaction_id' => $creditTxn->id,
-                'bank_transaction_id' => $creditTxn->id,
-            ]);
+            $transaction = $transactionService->post(
+                header: [
+                    'currency_id' => $currencyId,
+                    'rate' => $rate,
+                    'date' => $receipt->date,
+                    'reference_type' => Receipt::class,
+                    'reference_id' => $receipt->id,
+                    'remark' => $creditRemark,
+                ],
+                lines: [
+                    [
+                        'account_id' => $bankAccountId,
+                        'debit' => $amount,
+                        'credit' => 0,
+                    ],
+                    [
+                        'account_id' => $arAccountId,
+                        'debit' => 0,
+                        'ledger_id' => $ledger->id,
+                        'credit' => $amount,
+                    ],
+                ],
+            ); 
         });
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
         if ($request->input('create_and_new')) {
-            return redirect()->route('receipts.create')->with('success', 'Receipt created successfully.');
+            return redirect()->route('receipts.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.receipt')]));
         }
 
-        return redirect()->route('receipts.index')->with('success', 'Receipt created successfully.');
+        return redirect()->route('receipts.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.receipt')]));
     }
 
     public function show(Request $request, Receipt $receipt)
     {
-        $receipt->load(['ledger', 'receiveTransaction.currency', 'bankTransaction.currency']);
+        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy']);
         return response()->json([
             'data' => new ReceiptResource($receipt),
         ]);
@@ -130,7 +138,7 @@ class ReceiptController extends Controller
 
     public function edit(Request $request, Receipt $receipt)
     {
-        $receipt->load(['ledger', 'receiveTransaction.currency', 'bankTransaction.currency']);
+        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy']);
         return inertia('Receipts/Edit', [
             'data' => new ReceiptResource($receipt),
         ]);
@@ -160,64 +168,72 @@ class ReceiptController extends Controller
             $currencyId = $validated['currency_id'] ?? $receipt->currency_id;
             $rate = isset($validated['rate']) ? (float) $validated['rate'] : $receipt->rate;
             $date = $validated['date'] ?? $receipt->date;
-            $bankAccountId = $validated['bank_account_id'] ?? $receipt->bankTransaction?->account_id;
+            $bankAccountId = $validated['bank_account_id'] ?? $receipt->transaction?->lines[0]->account_id;
             $glAccounts = Cache::get('gl_accounts');
-            $arAccountId = $glAccounts['accounts-receivable'];
-
-            if ($receipt->receive_transaction_id) {
-                Transaction::where  ('id', $receipt->receive_transaction_id)->update([
-                    'account_id' => $arAccountId,
-                    'amount' => $amount,
+            $arAccountId = $glAccounts['account-receivable'];
+            TransactionLine::where('transaction_id', $receipt->transaction->id)->forceDelete();
+             Transaction::where('id', $receipt->transaction->id)->forceDelete();
+             $transactionService = app(TransactionService::class);
+             $transaction = $transactionService->post(
+                header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
                     'date' => $date,
-                    'type' => 'credit',
-                    'remark' => "Receipt #{$receipt->number} from {$ledger->name}",
-                ]);
-            }
-            if ($receipt->bank_transaction_id) {
-                Transaction::where('id', $receipt->bank_transaction_id)->update([
-                    'account_id' => $bankAccountId,
-                    'amount' => $amount,
-                    'currency_id' => $currencyId,
-                    'rate' => $rate,
-                    'date' => $date,
-                    'type' => 'debit',
-                    'remark' => "Bank receive for receipt #{$receipt->number}",
-                ]);
-            }
+                    'reference_type' => Receipt::class,
+                    'reference_id' => $receipt->id,
+                ],
+                lines: [
+                    [
+                        'account_id' => $bankAccountId,
+                        'debit' => $amount,
+                        'credit' => 0,
+                    ],
+                    [
+                        'account_id' => $arAccountId,
+                        'debit' => 0,
+                        'ledger_id' => $ledger->id,
+                        'credit' => $amount,
+                    ],
+                ],
+            );
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         });
 
-        return redirect()->route('receipts.index')->with('success', 'Receipt updated successfully.');
+        return redirect()->route('receipts.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.receipt')]));
     }
 
     public function destroy(Request $request, Receipt $receipt)
     {
         DB::transaction(function () use ($receipt) {
             // Soft delete linked transactions then the receipt
-            if ($receipt->receive_transaction_id) {
-                Transaction::where('id', $receipt->receive_transaction_id)->delete();
-                $receipt->ledger->ledgerTransactions()->where('transaction_id', $receipt->receive_transaction_id)->delete();
-            }
-            if ($receipt->bank_transaction_id) {
-                Transaction::where('id', $receipt->bank_transaction_id)->delete();
-            }
-            $receipt->delete();
-        });
+                $transaction = $receipt->transaction()->first();
 
-        return redirect()->route('receipts.index')->with('success', 'Receipt deleted successfully.');
+                if ($transaction) {
+                    $transaction->lines()->delete();
+                    $transaction->delete();
+                }
+
+                $receipt->delete();
+        });
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
+        return redirect()->route('receipts.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.receipt')]));
     }
     public function restore(Request $request, Receipt $receipt)
     {
-        $receipt->restore();
-        if ($receipt->receive_transaction_id) {
-            Transaction::where('id', $receipt->receive_transaction_id)->restore();
-            $receipt->ledger->ledgerTransactions()->where('transaction_id', $receipt->receive_transaction_id)->restore();
-        }
-        if ($receipt->bank_transaction_id) {
-            Transaction::where('id', $receipt->bank_transaction_id)->restore();
-        }
-        return redirect()->route('receipts.index')->with('success', 'Receipt restored successfully.');
+        DB::transaction(function () use ($receipt) {
+            $transaction = $receipt->transaction()->withTrashed()->first();
+
+            if ($transaction) {
+                $transaction->restore();
+                $transaction->lines()->withTrashed()->restore();
+            }
+
+            $receipt->restore();
+        });
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
+        return redirect()->route('receipts.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.receipt')]));
     }
 
 }

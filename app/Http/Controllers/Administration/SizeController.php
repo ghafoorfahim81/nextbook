@@ -18,11 +18,13 @@ class SizeController extends Controller
 
     public function index(Request $request)
     {
-        $perPage = $request->input('perPage', 10);
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $sizes = Size::search($request->query('search'))
+        $sizes = Size::with(['createdBy', 'updatedBy'])
+            ->search($request->query('search'))
+            ->where('is_active', true)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
@@ -35,11 +37,12 @@ class SizeController extends Controller
     public function store(SizeStoreRequest $request)
     {
         Size::create($request->validated());
-        return redirect()->route('sizes.index')->with('success', 'Size created successfully.');
+        return redirect()->route('sizes.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.size')]));
     }
 
     public function show(Request $request, Size $size)
     {
+        $size->load(['createdBy', 'updatedBy']);
         return new SizeResource($size);
     }
 
@@ -61,12 +64,12 @@ class SizeController extends Controller
         }
 
         $size->delete();
-        return redirect()->route('sizes.index')->with('success', 'Size deleted successfully.');
+        return redirect()->route('sizes.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.size')]));
     }
 
     public function restore(Request $request, Size $size)
     {
         $size->restore();
-        return redirect()->route('sizes.index')->with('success', 'Size restored successfully.');
+        return redirect()->route('sizes.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.size')]));
     }
 }

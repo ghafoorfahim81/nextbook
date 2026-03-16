@@ -27,12 +27,12 @@ return new class extends Migration
             $table->double('maximum_stock')->nullable();
             $table->json('colors')->nullable()->default('[]');
             $table->ulid('size_id')->nullable()->index();
-            $table->double('purchase_price')->nullable();
-            $table->double('cost')->nullable();
-            $table->double('sale_price');
-            $table->double('rate_a')->nullable();
-            $table->double('rate_b')->nullable();
-            $table->double('rate_c')->nullable();
+            $table->decimal('purchase_price', 18, 4)->nullable();
+            $table->decimal('cost', 18, 4)->nullable();
+            $table->decimal('sale_price', 18, 4)->nullable();
+            $table->decimal('rate_a', 18, 4)->nullable();
+            $table->decimal('rate_b', 18, 4)->nullable();
+            $table->decimal('rate_c', 18, 4)->nullable();
             $table->string('rack_no')->nullable();
             $table->string('fast_search')->nullable()->index();
             $table->ulid('branch_id')->index();
@@ -40,7 +40,8 @@ return new class extends Migration
             $table->ulid('updated_by')->nullable();
             $table->ulid('deleted_by')->nullable();
             $table->unique(['branch_id', 'name', 'deleted_at']);
-            $table->unique(['branch_id', 'code', 'deleted_at']);
+    $table->unique(['branch_id', 'code', 'deleted_at']);
+            $table->unique(['branch_id', 'barcode', 'deleted_at']);
             $table->timestamps();
             $table->softDeletes();
         });

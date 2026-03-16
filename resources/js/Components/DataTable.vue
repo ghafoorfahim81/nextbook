@@ -1,41 +1,67 @@
 <template>
     <div class="space-y-4">
         <!-- Search and Per Page -->
-        <div class="flex items-center justify-between">
-            <div class="flex relative w-full max-w-sm">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
                 <div class="flex justify-items-start">
-                    <h1 :class="isRTL ? 'text-lg font-semibold ml-2 text-nowrap mt-1' : 'text-lg font-semibold mr-2 text-nowrap mt-1'">{{ props.title }}</h1>
+                    <h1 :class="isRTL ? 'text-lg font-semibold ml-2 text-nowrap mt-1 text-primary' : 'text-lg font-semibold mr-2 text-nowrap mt-1 text-primary'">{{ props.title }}</h1>
                 </div>
-                <div class="flex relative gap-4">
+                <div class="relative w-full max-w-full sm:max-w-md">
                     <Input
                         id="search"
                         v-model="search"
                         @input="debouncedSearch"
                         type="text"
                         :placeholder="`${t('datatable.search')} ${props.title ? props.title : ''}`"
-                        :class="isRTL ? 'pl-8 w-72 pr-10' : 'pl-8 w-72 pr-20'"
+                        :class="isRTL ? 'pl-8 w-full pr-10 border-1 text-primary' : 'pl-8 w-full pr-20 text-primary focus:text-primary/80'"
                     />
                     <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
-                        <Search class="size-4 text-muted-foreground" />
+                        <Search class="size-4 text-primary hover:text-primary/80" />
                     </span>
-                    <button
-                        v-if="search"
-                        class="absolute end-0 inset-y-0 flex items-center justify-center px-2 rtl:px-8 text-muted-foreground hover:text-foreground"
-                        @click="clearSearch"
-                    >
-                        <CircleX class="size-4 mr-9" />
-                    </button>
-                    <button
-                        class="absolute end-0 inset-y-0 flex items-center justify-center px-2 text-muted-foreground hover:text-foreground"
-                        @click="clearSearch"
-                    >
-                        <SlidersHorizontal class="size-4 mr-2" />
-                    </button>
+                    <div class="absolute end-0 inset-y-0 flex items-center gap-1 pr-2 rtl:pl-2">
+                        <button
+                            v-if="search"
+                            type="button"
+                            class="flex items-center justify-center text-primary"
+                            @click="clearSearch"
+                        >
+                            <CircleX class="size-4" />
+                        </button>
+
+                        <Popover v-if="hasAdvancedFilters" v-model:open="filtersOpen">
+                            <PopoverTrigger as-child>
+                                <button
+                                    type="button"
+                                    class="flex items-center justify-center text-primary"
+                                    @click="openFilters"
+                                >
+                                    <SlidersHorizontal
+                                        class="size-4"
+                                        :class="isAdvancedFiltering ? 'text-primary' : 'text-primary/70 hover:text-primary'"
+                                    />
+                                </button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                                :align="isRTL ? 'start' : 'start'"
+                                side="bottom"
+                                :sideOffset="8"
+                                class="w-[calc(100vw-2rem)] max-w-[720px] p-5 bg-background shadow-lg"
+                            >
+                                <DataTableFilterPanel
+                                    v-model="advancedFilters"
+                                    :title="`${t('general.search')} ${props.title ? props.title : ''}`"
+                                    :fields="props.filterFields"
+                                    @apply="() => { applyAdvancedFilters(); filtersOpen.value = false }"
+                                    @clear="() => { clearAdvancedFilters(); filtersOpen.value = false }"
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
                 </div>
             </div>
 
             <!-- Right actions (Add New) -->
-            <div class="ml-4 flex items-center gap-2" v-if="can(`${props.can}.create`)">
+            <div class="flex items-center gap-2 lg:ml-4" v-if="can(`${props.can}.create`)">
                 <AddNewButton
                     :title="addTitle"
                     :action="addAction"
@@ -50,8 +76,8 @@
         </div>
 
         <!-- Table -->
-        <div class="border rounded-md">
-            <Table>
+        <div class="overflow-x-auto rounded-md border border-primary">
+            <Table class="min-w-[720px]">
                 <TableHeader class="bg-violet-500">
                     <TableRow class="bg-primary hover:bg-purple-500 h-8 text-white">
                         <TableHead v-for="column in derivedColumns" :key="column.key" class="h-8 py-1 px-3">
@@ -86,7 +112,7 @@
                         </TableCell>
                     </TableRow>
                     <!-- Data Rows -->
-                    <TableRow v-else v-for="(item, rowIndex) in items.data" :key="item.id" class="h-14 hover:bg-muted/50">
+                    <TableRow v-else v-for="(item, rowIndex) in items.data" :key="item.id" class="h-11 hover:bg-muted/50">
                         <TableCell
                             v-for="column in derivedColumns"
                             :key="column.key"
@@ -118,6 +144,11 @@
                             <template v-else-if="column.render">
                                 {{ column.render(item) }}
                             </template>
+                            <template v-else-if="isBalanceColumn(column.key)">
+                                <span dir="ltr" class="inline-block text-left tabular-nums">
+                                    {{ getNestedValue(item, column.key) }}
+                                </span>
+                            </template>
                             <template v-else>
                                 {{ getNestedValue(item, column.key) }}
                             </template>
@@ -128,7 +159,7 @@
         </div>
 
         <!-- Pagination -->
-        <div class="border-t pt-2 flex items-center justify-between">
+        <div class="flex flex-col gap-2 border-t pt-2 sm:flex-row sm:items-center sm:justify-between">
             <!-- Left: Showing X - Y of Z [title] -->
             <div class="text-xs text-muted-foreground">
                 {{ t('datatable.showing', { from: items.meta.from, to: items.meta.to, total: items.total }) }}
@@ -136,7 +167,7 @@
             </div>
 
             <!-- Right: Rows per page | First Prev  Page X of Y  Next Last -->
-            <div :class="isRTL ? 'flex items-center space-x-reverse space-x-2' : 'flex items-center space-x-2'">
+            <div :class="isRTL ? 'flex flex-wrap items-center gap-2 sm:space-x-reverse sm:space-x-2' : 'flex flex-wrap items-center gap-2 sm:space-x-2'">
                 <div class="flex items-center gap-1 text-xs text-muted-foreground">
                     <span>{{ t('datatable.per_page') }}:</span>
                     <Select v-model="perPage" @update:modelValue="updatePerPage">
@@ -205,6 +236,8 @@
                 </Button>
             </div>
         </div>
+
+        <!-- Filter popover is anchored to the filter icon -->
     </div>
 </template>
 
@@ -214,6 +247,8 @@ import { router } from '@inertiajs/vue3'
 import { debounce } from 'lodash'
 import { useI18n } from 'vue-i18n'
 import AddNewButton from '@/Components/next/AddNewButton.vue'
+import DataTableFilterPanel from '@/Components/DataTableFilterPanel.vue'
+import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover'
 
 // UI Components
 import {
@@ -242,6 +277,7 @@ const props = defineProps({
     url: String,
     title: String,
     filters: Object,
+    filterFields: { type: Array, default: () => [] },
     // Controls for AddNewButton in header
     showAddButton: { type: Boolean, default: false },
     addTitle: { type: String, default: null },
@@ -260,13 +296,20 @@ const props = defineProps({
 const { t, locale } = useI18n()
 const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
 // Declare emits for clarity
-defineEmits(['edit', 'delete', 'add', 'print'])
+defineEmits(['edit', 'delete', 'add', 'print', 'show'])
 
 const pageOptions = [10, 20, 50, 100]
 const search = ref(props.filters?.search || '')
 const perPage = ref(props.filters?.perPage || 10)
 const sortField = ref(props.filters?.sortField || 'id')
 const sortDirection = ref(props.filters?.sortDirection || 'asc')
+const advancedFilters = ref(props.filters?.filters || {})
+const filtersOpen = ref(false)
+const hasAdvancedFilters = computed(() => Array.isArray(props.filterFields) && props.filterFields.length > 0)
+const isAdvancedFiltering = computed(() => {
+    const f = advancedFilters.value || {}
+    return Object.keys(f).some((k) => f[k] !== null && f[k] !== undefined && f[k] !== '')
+})
 const currentPage = computed(() => props.items?.meta?.current_page ?? 1)
 const lastPage = computed(() => props.items?.meta?.last_page ?? 1)
 
@@ -295,6 +338,11 @@ const getNestedValue = (obj, path) => {
     return path.split('.').reduce((acc, part) => acc?.[part], obj)
 }
 
+const isBalanceColumn = (key) => {
+    if (!key) return false
+    return key === 'balance' || key.endsWith('_balance') || key.includes('.balance') || key.includes('amount')
+}
+
 // Search handling
 const debouncedSearch = debounce(() => updateFilters(), 300)
 
@@ -306,6 +354,7 @@ const updateFilters = () => {
             perPage: perPage.value,
             sortField: sortField.value,
             sortDirection: sortDirection.value,
+            filters: advancedFilters.value,
         },
         { preserveState: true, preserveScroll: true }
     )
@@ -335,6 +384,7 @@ const changePage = (page) => {
             perPage: perPage.value,
             sortField: sortField.value,
             sortDirection: sortDirection.value,
+            filters: advancedFilters.value,
         },
         { preserveState: true, preserveScroll: true }
     )
@@ -345,10 +395,36 @@ const clearSearch = () => {
     updateFilters()
 }
 
+const openFilters = () => {
+    filtersOpen.value = true
+}
+
+const applyAdvancedFilters = () => {
+    // Reset to first page when applying filters
+    router.get(
+        route(props.url),
+        {
+            page: 1,
+            search: search.value,
+            perPage: perPage.value,
+            sortField: sortField.value,
+            sortDirection: sortDirection.value,
+            filters: advancedFilters.value,
+        },
+        { preserveState: true, preserveScroll: true }
+    )
+}
+
+const clearAdvancedFilters = () => {
+    advancedFilters.value = {}
+    applyAdvancedFilters()
+}
+
 // Row number: starts at 1 and increments across pages
 const getRowNumber = (rowIndex) => {
     const current = props.items?.meta?.current_page ?? 1
     const per = props.items?.meta?.per_page ?? (perPage.value || 10)
     return (current - 1) * per + rowIndex + 1
 }
+ 
 </script>

@@ -26,6 +26,16 @@ const columns = computed(() => ([
     { key: 'type', label: t('general.type') },
     { key: 'city', label: t('general.city') },
     { key: 'country', label: t('general.country') },
+    {
+        key: 'created_by.name',
+        label: t('general.created_by'),
+        render: (row) => row.created_by?.name ?? '-',
+    },
+    {
+        key: 'updated_by.name',
+        label: t('general.updated_by'),
+        render: (row) => row.updated_by?.name ?? '-',
+    },
     { key: 'actions', label: t('general.action') },
 ]));
 

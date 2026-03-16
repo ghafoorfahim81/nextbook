@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Purchase;
 
 use Illuminate\Foundation\Http\FormRequest;
-
+use App\Enums\TransactionStatus;
 class PurchaseStoreRequest extends FormRequest
 {
     /**
@@ -26,7 +26,8 @@ class PurchaseStoreRequest extends FormRequest
             'transaction_total' => ['required', 'numeric'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric'],
-            'sale_purchase_type_id' => ['nullable', 'string'],
+            'bank_account_id' => ['nullable', 'string', 'exists:accounts,id'],
+            'purchase_type' => ['nullable', 'string'],
             'payment' => ['nullable', 'array'],
             'payment.method' => ['nullable', 'string'],
             'payment.amount' => ['nullable', 'numeric'],
@@ -34,7 +35,7 @@ class PurchaseStoreRequest extends FormRequest
             'payment.note' => ['nullable', 'string'],
             'discount' => ['nullable', 'numeric'],
             'discount_type' => ['nullable', 'string'],
-            'store_id' => ['required', 'string', 'exists:stores,id'],
+            'warehouse_id' => ['required', 'string', 'exists:warehouses,id'],
             'description' => ['nullable', 'string'],
             'status' => ['nullable', 'string'],
             'item_list' => ['required', 'array'],

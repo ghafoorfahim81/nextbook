@@ -1,1 +1,152 @@
-﻿{}
+{
+  "no_tips_available": "د دې سکرین لپاره لا تر اوسه لارښوونې نشته.",
+  "modules": {
+    "chart_of_accounts": {
+      "title": "د حسابونو چارت — لارښوونې",
+      "description": "د GL جوړښت او (یوازې د وړ حسابونو لپاره) افتتاحیه دلته تنظیم کړئ.",
+      "items": [
+        "لومړی د حساب ډول سم وټاکئ. په دې سیستم کې یوازې د Cash/Bank حسابونه د Opening برخه ښيي.",
+        "Opening د لومړي ځل لپاره (migration) لپاره دی؛ وروسته له go-live څخه د Journal Entry له لارې اصلاحات وکړئ.",
+        "په څو-ارزي کې Currency او Rate ښه وګورئ؛ د base currency نرخ عموماً lock وي.",
+        "منظم نمبرنګ (لکه 1xxx Assets, 2xxx Liabilities, 3xxx Equity, 4xxx Income, 5xxx Expenses) راپورونه اسانه کوي."
+      ]
+    },
+    "account_transfer": {
+      "title": "د حساب انتقال — لارښوونې",
+      "description": "پیسې له یو حساب څخه بل ته انتقال کړئ (بې له دې چې income/expense جوړ کړي).",
+      "items": [
+        "From او To حسابونه یو شان نه شي کېدای.",
+        "د انتقال نېټې لپاره Currency او Rate سم وټاکئ (base currency rate ثابت وي).",
+        "په Remark کې واضح حواله/دلیل ولیکئ."
+      ]
+    },
+    "journal_entry": {
+      "title": "Journal Entry — لارښوونې",
+      "description": "د تعدیلاتو، اصلاحاتو او ځینې افتتاحیو لپاره وکاروئ.",
+      "items": [
+        "Total Debit باید د Total Credit سره برابر وي.",
+        "که Sales/Purchase ماډیولونه کاروئ، د Cash/Bank لپاره بې دلیله مستقیم Journal مه کاروئ.",
+        "Ledger او Bill Number د party او حوالې لپاره وکاروئ.",
+        "که Attachment لرئ، یو واضح سند (invoice/receipt) اپلوډ کړئ."
+      ]
+    },
+    "inventory_item": {
+      "title": "Inventory Item — لارښوونې",
+      "description": "آیتمونه د سم ډول، کوډ، حسابونو او افتتاحي موجودي سره جوړ کړئ.",
+      "items": [
+        "Item Type مهم دی: inventory items په on-hand اثر کوي؛ non-inventory د خدماتو/چارجونو لپاره دي.",
+        "SKU: یو ځانګړی SKU وکاروئ ترڅو تکرار کم شي او چټک search/barcode ممکن شي.",
+        "Accounts: Asset د stock value لپاره، Income د sales لپاره، Cost د COGS لپاره.",
+        "Min/Max stock د reorder او planning لپاره مرسته کوي.",
+        "Opening stock یوازې د پیل لپاره وکاروئ؛ د store او batch/expiry معلومات سم ولیکئ."
+      ]
+    },
+    "fast_entry": {
+      "title": "Fast Entry (Items) — لارښوونې",
+      "description": "په چټک ډول ډېر آیتمونه جوړ کړئ.",
+      "items": [
+        "Codes اتومات جوړېږي؛ Name او Measure لومړی ډک کړئ.",
+        "تش قطارونه نه خوندي کېږي؛ یوازې ډک شوي قطارونه save کېږي.",
+        "د opening لپاره Store + Quantity + Batch/Expiry هم ډک کړئ (که اړتیا وي)."
+      ]
+    },
+    "fast_opening": {
+      "title": "Fast Opening (Items) — لارښوونې",
+      "description": "د څو آیتمونو افتتاحي موجودي په چټک ډول ثبت کړئ.",
+      "items": [
+        "دا یوازې د لومړي ځل opening/migration لپاره دی؛ وروسته purchases/transfers/adjustments وکاروئ.",
+        "Opening د store پر بنسټ دی؛ store سم وټاکئ.",
+        "د batch/expiry آیتمونو لپاره معلومات منظم ولیکئ ترڅو duplicate lines جوړ نه شي."
+      ]
+    },
+    "transfer": {
+      "title": "Transfer (Inventory) — لارښوونې",
+      "description": "موجودي له یو store څخه بل ته انتقال کړئ.",
+      "items": [
+        "From Store او To Store سم وټاکئ؛ دواړو کې on-hand بدلېږي.",
+        "د batch/expiry آیتمونو لپاره هماغه batch/expiry وساتئ.",
+        "Remark کې حواله/دلیل ولیکئ."
+      ]
+    },
+    "ledgers": {
+      "title": "Ledgers (Customers/Suppliers) — لارښوونې",
+      "description": "Ledgers هغه parties دي چې تاسې ورسره خرید/فروش کوئ.",
+      "items": [
+        "نومونه unique وساتئ ترڅو تکرار جوړ نه شي.",
+        "د migration پر وخت opening/old balance په سمه توګه (debit/credit) تنظیم کړئ.",
+        "Phone/Address د invoice چاپ او follow-up لپاره ګټور دي."
+      ]
+    },
+    "owner": {
+      "title": "Owner — لارښوونې",
+      "description": "د شریکانو/مالکینو لپاره د equity تعقیب.",
+      "items": [
+        "هر شریک لپاره جلا owner جوړ کړئ.",
+        "Remark کې د capital/drawing حواله واضح کړئ."
+      ]
+    },
+    "expense": {
+      "title": "Expense — لارښوونې",
+      "description": "مصارف د سم accounts او (اختیاري) ledgers سره ثبت کړئ.",
+      "items": [
+        "که څو lines لرئ، ډاډ ترلاسه کړئ چې د debit/credit منطق سم دی.",
+        "کله چې مصرف د یو party پورې تړلی وي، Ledger وکاروئ.",
+        "Supporting document attach کړئ."
+      ]
+    },
+    "purchase": {
+      "title": "Purchase — لارښوونې",
+      "description": "خرید چې inventory او supplier balance بدلوي.",
+      "items": [
+        "Supplier ledger سم وټاکئ.",
+        "Store سم وټاکئ؛ stock هماغه ځای ته اضافه کېږي.",
+        "Measure او price سم کړئ ترڅو راپورونه خراب نه شي."
+      ]
+    },
+    "sales": {
+      "title": "Sales — لارښوونې",
+      "description": "فروش چې inventory او customer balance بدلوي.",
+      "items": [
+        "Customer ledger سم وټاکئ.",
+        "Quantity/Price سم کړئ؛ inventory items stock کموي.",
+        "Discount/Tax په consistent ډول وکاروئ."
+      ]
+    },
+    "receipt": {
+      "title": "Receipt — لارښوونې",
+      "description": "ترلاسه شوې پیسې ثبت کړئ.",
+      "items": [
+        "Cash/Bank account سم وټاکئ.",
+        "Cheque/reference معلومات ولیکئ که غیر نقد وي.",
+        "Old balance د ledger تاثیر چک کولو لپاره مرسته کوي."
+      ]
+    },
+    "payments": {
+      "title": "Payments — لارښوونې",
+      "description": "ورکړل شوې پیسې ثبت کړئ.",
+      "items": [
+        "Cash/Bank account سم وټاکئ.",
+        "Cheque/reference معلومات ولیکئ.",
+        "Currency/Rate بیا وګورئ."
+      ]
+    },
+    "user_management": {
+      "title": "User Management — لارښوونې",
+      "description": "Users/Roles/Permissions مدیریت کړئ.",
+      "items": [
+        "Permissions د roles له لارې تنظیم کړئ.",
+        "Least privilege تعقیب کړئ.",
+        "د مالي بدلونونو لپاره approval/locking په Preferences کې تنظیم کړئ."
+      ]
+    },
+    "preferences": {
+      "title": "Preferences — لارښوونې",
+      "description": "دا تنظیمات د ټول سیستم په چلند اغېز کوي.",
+      "items": [
+        "په Item Management کې غیر ضروري fields پټ کړئ.",
+        "په Sales/Purchase کې numbering او visible columns مخکې تنظیم کړئ.",
+        "Backup/Export ژر تنظیم کړئ."
+      ]
+    }
+  }
+}
