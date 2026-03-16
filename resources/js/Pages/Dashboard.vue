@@ -122,26 +122,27 @@ const generatedAt = computed(() => {
   <AppLayout>
     <Head :title="t('dashboard.dashboard')" />
 
-    <div class="space-y-6 text-foreground">
-      <section class="overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 text-white shadow-lg">
-        <div class="grid gap-6 px-6 py-8 lg:grid-cols-[1.8fr_0.8fr] lg:px-8">
-          <div class="space-y-3">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-300">{{ t('dashboard.operational_overview') }}</p>
-            <h1 class="text-3xl font-semibold tracking-tight sm:text-4xl">{{ t('dashboard.branch_dashboard') }}</h1>
-            <p class="max-w-2xl text-sm text-slate-300 sm:text-base">
+    <div class="space-y-5 text-foreground">
+      <section class="relative overflow-hidden rounded-[32px] border border-border bg-gradient-to-br from-violet-500 to-violet-400 via-secondary/35 to-primary/10 shadow-sm dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 dark:text-white dark:shadow-lg">
+        <div class="absolute inset-y-0 start-0 hidden w-56 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.14),transparent_72%)] lg:block dark:bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.18),transparent_70%)]" />
+        <div class="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+        <div class="flex flex-col gap-4 px-6 py-7 lg:flex-row lg:items-center lg:justify-between lg:px-10">
+          <div class="space-y-3 lg:max-w-3xl">
+            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-primary dark:text-cyan-300">{{ t('dashboard.operational_overview') }}</p>
+            <h1 class="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl dark:text-white">{{ t('dashboard.branch_dashboard') }}</h1>
+            <p class="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base dark:text-slate-300">
               {{ t('dashboard.hero_description') }}
             </p>
           </div>
-
-          <div class="rounded-2xl border border-white/10 bg-white/10 p-5 backdrop-blur">
-            <div class="text-sm text-slate-300">{{ t('dashboard.generated') }}</div>
-            <div class="mt-1 text-lg font-semibold text-white">{{ generatedAt }}</div>
-            <div class="mt-4 text-sm text-slate-300">{{ t('dashboard.today') }}</div>
-            <div class="mt-1 text-lg font-semibold text-white">{{ state.meta?.today }}</div>
+          <div class="max-w-xs rounded-2xl border border-white/60 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/10 lg:shrink-0">
+            <div class="text-sm text-muted-foreground dark:text-slate-300">{{ t('dashboard.generated') }}</div>
+            <div class="mt-1 text-lg font-semibold text-foreground dark:text-white">{{ generatedAt }}</div>
+            <div class="mt-4 text-sm text-muted-foreground dark:text-slate-300">{{ t('dashboard.today') }}</div>
+            <div class="mt-1 text-lg font-semibold text-foreground dark:text-white">{{ state.meta?.today }}</div>
             <div class="mt-5 flex items-center gap-3">
               <Button
                 variant="secondary"
-                class="gap-2 border-0 bg-white text-slate-900 hover:bg-slate-100"
+                class="gap-2 border border-border bg-background/90 text-foreground hover:bg-background dark:border-0 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
                 :disabled="refreshing"
                 @click="refreshDashboard"
               >
@@ -149,7 +150,7 @@ const generatedAt = computed(() => {
                 {{ t('dashboard.refresh_data') }}
               </Button>
             </div>
-            <p v-if="refreshError" class="mt-3 text-sm text-rose-300">
+            <p v-if="refreshError" class="mt-3 text-sm text-destructive dark:text-rose-300">
               {{ refreshError }}
             </p>
           </div>
@@ -167,7 +168,7 @@ const generatedAt = computed(() => {
       </section>
 
       <section class="grid gap-4 xl:grid-cols-[1.7fr_1fr]">
-        <Card class="border-border bg-card shadow-sm">
+        <Card class="border-border bg-gradient-to-b from-card via-card to-muted/20 shadow-sm">
           <CardHeader>
             <CardTitle class="text-card-foreground">{{ t('dashboard.sales_vs_purchases') }}</CardTitle>
             <CardDescription class="text-muted-foreground">{{ t('dashboard.daily_posted_last_30_days') }}</CardDescription>
@@ -177,7 +178,7 @@ const generatedAt = computed(() => {
           </CardContent>
         </Card>
 
-        <Card class="border-border bg-card shadow-sm">
+        <Card class="border-border bg-gradient-to-b from-card via-card to-muted/20 shadow-sm">
           <CardHeader>
             <CardTitle class="text-card-foreground">{{ t('dashboard.inventory_overview') }}</CardTitle>
             <CardDescription class="text-muted-foreground">{{ t('dashboard.inventory_overview_description') }}</CardDescription>
