@@ -1,1 +1,161 @@
-﻿{}
+﻿{
+  "title": "Reports",
+  "subtitle": "Operational, inventory, and financial reports for posted transactions.",
+  "catalog_label": "Report catalog",
+  "active_report": "Selected report",
+  "back_to_reports": "Back to reports",
+  "export_excel": "Export Excel",
+  "snapshot_note": "This report is based on the current stock snapshot.",
+  "groups": {
+    "financial": "Financial Reports",
+    "financial_description": "Core accounting reports and statements.",
+    "cash_flow": "Cash Flow Reports",
+    "cash_flow_description": "Cash and bank inflow and outflow reports.",
+    "party": "Party Statements",
+    "party_description": "Customer and supplier balance movement reports.",
+    "operations": "Sales and Purchase Reports",
+    "operations_description": "Operational sales and purchase line reports.",
+    "inventory": "Inventory Reports",
+    "inventory_description": "Current stock, valuation, and movement reports."
+  },
+  "filters": {
+    "title": "Filters",
+    "report": "Report",
+    "branch": "Branch",
+    "date_from": "Date from",
+    "date_to": "Date to",
+    "ledger": "Ledger",
+    "customer": "Customer",
+    "supplier": "Supplier",
+    "item": "Item",
+    "account": "Cash / Bank account",
+    "per_page": "Rows",
+    "apply": "Apply filters",
+    "reset": "Reset"
+  },
+  "table": {
+    "results": "Results",
+    "showing": "Showing {from}-{to} of {total}",
+    "no_data": "No report data found for the selected filters.",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "messages": {
+    "ledger_required": "Select a ledger to view this report.",
+    "customer_required": "Select a customer to view this statement.",
+    "supplier_required": "Select a supplier to view this statement.",
+    "account_required": "Select a cash or bank account to view this report."
+  },
+  "summary": {
+    "total_debit": "Total debit",
+    "total_credit": "Total credit",
+    "balance": "Balance",
+    "balance_label": "Balance",
+    "total_amount": "Total amount",
+    "total_quantity": "Total quantity",
+    "total_value": "Total value",
+    "total_items": "Items",
+    "total_assets": "Total assets",
+    "total_liabilities": "Total liabilities",
+    "total_equity": "Total equity",
+    "equation_total": "Liabilities + equity",
+    "total_revenue": "Total revenue",
+    "total_cost_of_goods_sold": "Total cost of goods sold",
+    "gross_profit": "Gross profit",
+    "total_expenses": "Total expenses",
+    "net_profit": "Net profit"
+  },
+  "columns": {
+    "ledger_name": "Ledger",
+    "total_debit": "Debit",
+    "total_credit": "Credit",
+    "balance": "Balance",
+    "transaction_number": "Transaction #",
+    "reference_type": "Reference type",
+    "description": "Description",
+    "debit": "Debit",
+    "credit": "Credit",
+    "running_balance": "Running balance",
+    "reference": "Reference",
+    "amount_received": "Amount received",
+    "amount_paid": "Amount paid",
+    "date": "Date",
+    "sale_number": "Sale #",
+    "purchase_number": "Purchase #",
+    "customer": "Customer",
+    "supplier": "Supplier",
+    "item": "Item",
+    "quantity": "Quantity",
+    "unit_price": "Unit price",
+    "total_amount": "Total amount",
+    "warehouse": "Warehouse",
+    "average_cost": "Average cost",
+    "total_value": "Total value",
+    "movement_type": "Movement",
+    "source_type": "Source",
+    "reference_id": "Reference ID",
+    "reorder_level": "Reorder level"
+  },
+  "reports": {
+    "trial_balance": {
+      "label": "Trial balance",
+      "description": "Posted debit, credit, and net balance by ledger."
+    },
+    "balance_sheet": {
+      "label": "Balance sheet",
+      "description": "Financial position up to the selected date."
+    },
+    "income_statement": {
+      "label": "Profit and loss",
+      "description": "Revenue, cost of goods sold, expenses, and net profit for the selected period."
+    },
+    "general_ledger": {
+      "label": "General ledger",
+      "description": "Ledger transactions with running balance."
+    },
+    "customer_statement": {
+      "label": "Customer statement",
+      "description": "Posted customer movements and balances."
+    },
+    "supplier_statement": {
+      "label": "Supplier statement",
+      "description": "Posted supplier movements and balances."
+    },
+    "receipt_report": {
+      "label": "Receipt report",
+      "description": "Cash and bank inflows where the cash account is debited."
+    },
+    "payment_report": {
+      "label": "Payment report",
+      "description": "Cash and bank outflows where the cash account is credited."
+    },
+    "cash_book": {
+      "label": "Cash book",
+      "description": "Running balance for a selected cash or bank account."
+    },
+    "sales_report": {
+      "label": "Sales report",
+      "description": "Posted sales lines by customer and item."
+    },
+    "purchase_report": {
+      "label": "Purchase report",
+      "description": "Posted purchase lines by supplier and item."
+    },
+    "inventory_stock": {
+      "label": "Inventory stock",
+      "description": "Current stock quantity and value by item and warehouse."
+    },
+    "stock_movement": {
+      "label": "Stock movement",
+      "description": "Detailed stock movement history by item and warehouse."
+    },
+    "low_stock": {
+      "label": "Low stock",
+      "description": "Items at or below their reorder level."
+    },
+    "inventory_valuation": {
+      "label": "Inventory valuation",
+      "description": "Current inventory value grouped by item."
+    }
+  }
+}
