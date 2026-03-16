@@ -1,15 +1,17 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import { useForm, usePage } from '@inertiajs/vue3'
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { Trash2 } from 'lucide-vue-next'
 import { useSidebar } from '@/Components/ui/sidebar/utils'
+import { useLazyProps } from '@/composables/useLazyProps'
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -19,9 +21,11 @@ const props = defineProps({
 })
 
 const page = usePage()
-const stores = computed(() => page.props.stores?.data || page.props.stores || [])
+const warehouses = computed(() => page.props.warehouses?.data || page.props.warehouses || [])
 const items = computed(() => page.props.items?.data || page.props.items || [])
 const unitMeasures = computed(() => page.props.unitMeasures?.data || page.props.unitMeasures || [])
+
+useLazyProps(page.props, ['items'])
 
 const transfer = props.transfer.data
 
@@ -40,10 +44,10 @@ const createEmptyRow = () => ({
 
 const form = useForm({
   date: transfer.date || '',
-  from_store_id: transfer.from_store_id || '',
-  to_store_id: transfer.to_store_id || '',
-  selected_from_store: null,
-  selected_to_store: null,
+  from_warehouse_id: transfer.from_warehouse_id || '',
+  to_warehouse_id: transfer.to_warehouse_id || '',
+  selected_from_warehouse: null,
+  selected_to_warehouse: null,
   transfer_cost: transfer.transfer_cost || '',
   remarks: transfer.remarks || '',
   items: (transfer.items || []).map(item => ({
@@ -60,8 +64,19 @@ const form = useForm({
   })),
 })
 
-const sameStoreError = computed(() => {
-  return form.from_store_id && form.to_store_id && form.from_store_id === form.to_store_id
+watch(items, (list) => {
+  if (!Array.isArray(list) || !form.items?.length) return
+  form.items = form.items.map((row) => {
+    if (row.selected_item || !row.item_id) return row
+    return {
+      ...row,
+      selected_item: list.find(i => i.id === row.item_id) || null,
+    }
+  })
+}, { immediate: true })
+
+const sameWarehouseError = computed(() => {
+  return form.from_warehouse_id && form.to_warehouse_id && form.from_warehouse_id === form.to_warehouse_id
 })
 
 const handleSelectChange = (field, value) => {
@@ -109,7 +124,7 @@ const handleItemChange = (index, selectedItem) => {
 }
 
 const isRowEnabled = (index) => {
-  if (!form.selected_from_store || !form.selected_to_store) return false
+  if (!form.selected_from_warehouse || !form.selected_to_warehouse) return false
   for (let i = 0; i < index; i++) {
     if (!form.items[i]?.selected_item) return false
   }
@@ -141,10 +156,10 @@ const totalQuantity = computed(() => form.items.reduce((acc, item) => acc + toNu
 const totalAmount = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.quantity, 0) * toNum(item.unit_price, 0)), 0))
 
 function handleSubmit() {
-  if (sameStoreError.value) {
+  if (sameWarehouseError.value) {
     toast({
       title: t('general.error'),
-      description: t('item_transfer.stores_cannot_be_same'),
+      description: t('item_transfer.warehouses_cannot_be_same'),
       variant: 'destructive',
       class: 'bg-pink-600 text-white',
     })
@@ -174,8 +189,8 @@ function handleSubmit() {
 
   form.transform(() => ({
     date: form.date,
-    from_store_id: form.from_store_id,
-    to_store_id: form.to_store_id,
+      from_warehouse_id: form.from_warehouse_id,
+    to_warehouse_id: form.to_warehouse_id,
     transfer_cost: form.transfer_cost,
     remarks: form.remarks,
     items: payloadItems,
@@ -205,8 +220,8 @@ onMounted(() => {
     sidebar.setOpen(false)
   }
 
-  form.selected_from_store = stores.value.find(store => store.id === form.from_store_id) || null
-  form.selected_to_store = stores.value.find(store => store.id === form.to_store_id) || null
+  form.selected_from_warehouse = warehouses.value.find(warehouse => warehouse.id === form.from_warehouse_id) || null
+  form.selected_to_warehouse = warehouses.value.find(warehouse => warehouse.id === form.to_warehouse_id) || null
 
   form.items.forEach((row) => {
     row.selected_item = items.value.find(i => i.id === row.item_id) || null
@@ -234,28 +249,29 @@ onUnmounted(() => {
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.edit', { name: t('item_transfer.item_transfer') }) }}
         </div>
+        <ModuleHelpButton module="transfer" />
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextDate v-model="form.date" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
           <NextSelect
-            :options="stores"
-            v-model="form.selected_from_store"
-            @update:modelValue="(value) => handleSelectChange('from_store_id', value.id)"
+            :options="warehouses"
+            v-model="form.selected_from_warehouse"
+            @update:modelValue="(value) => handleSelectChange('from_warehouse_id', value.id)"
             label-key="name"
             value-key="id"
-            :reduce="store => store"
-            :floating-text="t('item_transfer.from_store')"
-            :error="form.errors?.from_store_id"
+            :reduce="warehouse => warehouse"
+              :floating-text="t('item_transfer.from_warehouse')"
+            :error="form.errors?.from_warehouse_id"
             :searchable="true"
           />
           <NextSelect
-            :options="stores"
-            v-model="form.selected_to_store"
-            @update:modelValue="(value) => handleSelectChange('to_store_id', value.id)"
+            :options="warehouses"
+            v-model="form.selected_to_warehouse"
+              @update:modelValue="(value) => handleSelectChange('to_warehouse_id', value.id)"
             label-key="name"
             value-key="id"
-            :reduce="store => store"
-            :floating-text="t('item_transfer.to_store')"
-            :error="form.errors?.to_store_id"
+            :reduce="warehouse => warehouse"
+            :floating-text="t('item_transfer.to_warehouse')"
+            :error="form.errors?.to_warehouse_id"
             :searchable="true"
           />
           <NextInput

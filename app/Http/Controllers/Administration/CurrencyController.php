@@ -8,7 +8,6 @@ use App\Http\Requests\Administration\CurrencyUpdateRequest;
 use App\Http\Resources\Administration\CurrencyResource;
 use App\Models\Administration\Currency;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class CurrencyController extends Controller
 {
@@ -19,11 +18,13 @@ class CurrencyController extends Controller
 
     public function index(Request $request)
     {
-        $perPage = $request->input('perPage', 10);
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $currencies = Currency::search($request->query('search'))
+        $currencies = Currency::with(['createdBy', 'updatedBy'])
+            ->search($request->query('search'))
+            ->where('is_active', true)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
@@ -35,12 +36,13 @@ class CurrencyController extends Controller
     public function store(CurrencyStoreRequest $request)
     {
         $currency = Currency::create($request->validated());
-        return redirect()->route('currencies.index')->with('success', 'Currency created successfully.');
+        return redirect()->route('currencies.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.currency')]));
 
     }
 
-    public function show(Request $request, Currency $currency): Response
+    public function show(Request $request, Currency $currency): CurrencyResource
     {
+        $currency->load(['createdBy', 'updatedBy']);
         return new CurrencyResource($currency);
     }
 
@@ -48,7 +50,7 @@ class CurrencyController extends Controller
     {
         $currency->update($request->validated());
 
-        return redirect()->route('currencies.index')->with('success', 'Currency updated successfully.');
+        return redirect()->route('currencies.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.currency')]));
 
     }
 
@@ -60,6 +62,6 @@ class CurrencyController extends Controller
     public function restore(Request $request, Currency $currency)
     {
         $currency->restore();
-        return redirect()->route('currencies.index')->with('success', 'Currency restored successfully.');
+        return redirect()->route('currencies.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.currency')]));
     }
 }

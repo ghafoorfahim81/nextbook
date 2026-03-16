@@ -39,13 +39,13 @@ class RolePermissionSeeder extends Seeder
             'sizes',
             'companies',
             'brands',
-            'stores',
+            'warehouses',
             'branches',
 
             'accounts',
             'account_transfers',
             'account_types',
-            'journals',
+            'journal_entries',
             'pos_transactions',
 
             'dashboard',

@@ -9,6 +9,8 @@ import { router } from '@inertiajs/vue3';
 
 const props = defineProps({
     expenses: Object,
+    filters: Object,
+    filterOptions: Object,
 });
 
 const { t } = useI18n();
@@ -70,6 +72,34 @@ const deleteItem = (id) => {
 const addExpense = () => {
     router.visit(route('expenses.create'));
 };
+
+const filterFields = computed(() => ([
+    {
+        key: 'category_id',
+        label: t('expense.category'),
+        type: 'select',
+        options: (props.filterOptions?.categories || []).map((c) => ({ id: c.id, name: c.name })),
+    },
+    {
+        key: 'bankTransaction.lines.account_id',
+        label: t('expense.bank_account'),
+        type: 'select',
+        options: (props.filterOptions?.bankAccounts || []).map((a) => ({ id: a.id, name: a.name })),
+    },
+    {
+        key: 'expenseTransaction.lines.account_id',
+        label: t('expense.expense_account'),
+        type: 'select',
+        options: (props.filterOptions?.expenseAccounts || []).map((a) => ({ id: a.id, name: a.name })),
+    },
+    { key: 'date', label: t('general.date'), type: 'daterange' },
+    {
+        key: 'created_by',
+        label: t('general.created_by'),
+        type: 'select',
+        options: (props.filterOptions?.users || []).map((u) => ({ id: u.id, name: u.name })),
+    },
+]));
 </script>
 
 <template>
@@ -83,6 +113,8 @@ const addExpense = () => {
             can="expenses"
             :items="expenses"
             :columns="columns"
+            :filters="filters"
+            :filterFields="filterFields"
             @show="viewItem"
             @edit="editItem"
             @delete="deleteItem"

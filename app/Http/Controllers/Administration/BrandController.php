@@ -18,11 +18,12 @@ class BrandController extends Controller
 
     public function index(Request $request)
     {
-        $perPage = $request->input('perPage', 10);
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $brands = Brand::search($request->query('search'))
+        $brands = Brand::with(['createdBy', 'updatedBy'])
+            ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
@@ -35,11 +36,12 @@ class BrandController extends Controller
     public function store(BrandStoreRequest $request)
     {
         Brand::create($request->validated());
-        return redirect()->route('brands.index')->with('success', 'Brand created successfully.');
+        return redirect()->route('brands.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.brand')]));
     }
 
     public function show(Request $request, Brand $brand)
     {
+        $brand->load(['createdBy', 'updatedBy']);
         return new BrandResource($brand);
     }
 
@@ -61,11 +63,11 @@ class BrandController extends Controller
         }
 
         $brand->delete();
-        return redirect()->route('brands.index')->with('success', 'Brand deleted successfully.');
+        return redirect()->route('brands.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.brand')]));
     }
     public function restore(Request $request, Brand $brand)
     {
         $brand->restore();
-        return redirect()->route('brands.index')->with('success', 'Brand restored successfully.');
+        return redirect()->route('brands.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.brand')]));
     }
 }

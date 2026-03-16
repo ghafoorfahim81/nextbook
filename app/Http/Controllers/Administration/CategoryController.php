@@ -9,7 +9,6 @@ use App\Http\Resources\Administration\CategoryCollection;
 use App\Http\Resources\Administration\CategoryResource;
 use App\Models\Administration\Category;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 class CategoryController extends Controller
 {
@@ -20,11 +19,11 @@ class CategoryController extends Controller
 
     public function index(Request $request)
     {
-        $perPage = $request->input('perPage', 10);
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
 
-        $categories = Category::with('parent')
+        $categories = Category::with(['parent', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -38,12 +37,12 @@ class CategoryController extends Controller
     public function store(CategoryStoreRequest $request)
     {
         $category = Category::create($request->validated());
-        return redirect()->route('categories.index')->with('success', 'Category created successfully.');
+        return redirect()->route('categories.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.category')]));
     }
 
-    public function show(Request $request, Category $category): Response
+    public function show(Request $request, Category $category): CategoryResource
     {
-        $category->load('parent');
+        $category->load(['parent', 'createdBy', 'updatedBy']);
         return new CategoryResource($category);
     }
 
@@ -65,12 +64,12 @@ class CategoryController extends Controller
         }
 
         $category->delete();
-        return redirect()->route('categories.index')->with('success', 'Category deleted successfully.');
+        return redirect()->route('categories.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.category')]));
     }
 
     public function restore(Request $request, Category $category)
     {
         $category->restore();
-        return back()->with('success', 'Category restored successfully.');
+        return back()->with('success', __('general.restored_successfully', ['resource' => __('general.resource.category')]));
     }
 }

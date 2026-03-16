@@ -33,7 +33,7 @@ class FastEntryRequest extends FormRequest
             'items.*.batch'               => ['nullable','string','max:100'],
             'items.*.expire_date'         => ['nullable','date'],
             'items.*.quantity'            => ['nullable','numeric','min:0'],
-            'items.*.store_id'            => ['nullable','exists:stores,id'],
+            'items.*.warehouse_id'        => ['nullable','exists:warehouses,id'],
         ];
     }
 

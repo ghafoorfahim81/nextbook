@@ -4,7 +4,7 @@ namespace App\Http\Requests\Account;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-
+use App\Enums\TransactionType;
 class AccountUpdateRequest extends FormRequest
 {
     /**
@@ -29,6 +29,11 @@ class AccountUpdateRequest extends FormRequest
                 'string',
                 Rule::unique('accounts', 'name')->ignore($chartOfAccount),
             ],
+            'local_name' => [
+                'nullable',
+                'string',
+                Rule::unique('accounts', 'local_name')->ignore($chartOfAccount),
+            ],
             'number' => [
                 'required',
                 'string',
@@ -43,11 +48,11 @@ class AccountUpdateRequest extends FormRequest
             'remark' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
             'is_main' => ['nullable', 'boolean'],
-            'openings' => ['nullable', 'array'],
-            'openings.*.currency_id' => ['nullable', 'string', 'exists:currencies,id'],
-            'openings.*.amount' => ['nullable', 'numeric'],
-            'openings.*.rate' => ['required', 'numeric'],
-            'openings.*.type' => ['nullable', 'string', 'in:debit,credit'],
+            'parent_id' => ['nullable', 'string', 'exists:accounts,id'],
+            'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
+            'rate' => ['nullable', 'numeric','required_with:currency_id'],
+            'amount' => ['nullable', 'numeric','required_with:transaction_type'],
+            'transaction_type' => ['nullable', 'string', Rule::in(TransactionType::values())],
         ];
     }
 }

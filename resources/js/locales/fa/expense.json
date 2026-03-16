@@ -14,6 +14,8 @@
   "create_error": "خطا در ایجاد مصرف",
   "update_error": "خطا در به‌روزرسانی مصرف",
   "error": "خطا",
-  "at_least_one_detail": "حداقل یک جزئیات مصرف لازم است"
+  "at_least_one_detail": "حداقل یک جزئیات مصرف لازم است",
+  "description_remark_placeholder": "توضیحات مصرف مثال: غذا، اجاره، و غیره",
+  "expnese_general_description": "توضحیات مصرف ماننده مصارف کرایه ماه حمل"
 }
 

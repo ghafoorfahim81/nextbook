@@ -17,7 +17,7 @@
         default: () => ({
           method: '',
           amount: '',
-          account_id: '', 
+          account_id: '',
           note: '',
         })
       },
@@ -35,18 +35,18 @@
         default: () => []
       },
     });
-    
-    const emit = defineEmits(["update:open", "confirm", "cancel", "update:payment"]);   
-    
+
+    const emit = defineEmits(["update:open", "confirm", "cancel", "update:payment"]);
+
     // Local form state
     const localPayment = ref({ ...props.payment });
     const bankAccounts = ref([]);
-    
+
     // Watch for accounts prop changes and update bankAccounts
     watch(() => props.accounts, (accounts) => {
       bankAccounts.value = accounts || [];
     }, { immediate: true });
-    
+
     // Payment method options
     const paymentMethods = [
       { id: 'cash', name: 'Cash' },
@@ -54,19 +54,19 @@
       { id: 'check', name: 'Check' },
       { id: 'card', name: 'Card' },
     ];
-    
+
     // Form validation
     const isFormValid = computed(() => {
       return  localPayment.value.amount &&
              localPayment.value.method &&
              localPayment.value.account_id;
     });
-    
+
     // Watch for prop changes and sync local state
     watch(() => props.payment, (newPayment) => {
       localPayment.value = { ...newPayment };
     }, { deep: true });
-    
+
     // No need to fetch accounts since they're passed as props
 
 
@@ -75,13 +75,13 @@
 }
 
     // Handle form submission
-    const handleSubmit = () => {  
-      if (!isFormValid.value) return; 
+    const handleSubmit = () => {
+      if (!isFormValid.value) return;
       emit('update:payment', { ...localPayment.value });
       emit('confirm');
       closeModal();
     }
-    
+
     // Handle dialog cancel
     const handleCancel = () => {
       // Reset local form to original values
@@ -89,24 +89,24 @@
       emit('cancel');
       emit('update:open', false);
     };
-    
+
     // Update local payment when props change
     const updatePayment = (field, value) => {
       localPayment.value[field] = value;
       emit('update:payment', { ...localPayment.value });
     };
-    
+
     // Reset form when dialog opens
     const resetForm = () => {
       localPayment.value = {
         method: '',
         amount: '',
-        account_id: '', 
+        account_id: '',
         note: '',
       };
-    }; 
+    };
     </script>
-    
+
     <template>
           <ModalDialog
             :open="open"
@@ -114,13 +114,13 @@
             :confirmText="t('general.save')"
             @update:open="open = $event; emit('update:open', $event)"
             :closeable="true"
-            width="w-[600px] max-w-[600px]"
+            width="w-[95vw] max-w-[95vw] sm:w-[600px] sm:max-w-[600px]"
             @confirm="handleSubmit"
             @cancel="handleCancel"
             :cancel-text="t('general.cancel')"
         >
-    
-          <div class="space-y-4 mt-3"> 
+
+          <div class="space-y-4 mt-3">
                 <NextInput
                   v-model="localPayment.amount"
                   :label="t('general.payment_amount')"
@@ -130,8 +130,8 @@
                   :error="errors.amount"
                   :isRequired="true"
                   @update:modelValue="(value) => updatePayment('amount', value)"
-                />  
-    
+                />
+
             <!-- Payment Method Field -->
             <NextSelect
               v-model="localPayment.method"
@@ -144,7 +144,7 @@
               :isRequired="true"
               @update:modelValue="(value) => updatePayment('method', value)"
             />
-    
+
             <!-- Bank Account Field -->
             <NextSelect
               v-model="localPayment.account_id"
@@ -163,26 +163,41 @@
                   :label="t('general.add_any_additional_notes')"
                   type="text"
                   step="0.01"
-                  :placeholder="t('general.enter', { text: t('general.any_notes') })" 
+                  :placeholder="t('general.enter', { text: t('general.any_notes') })"
                   @update:modelValue="(value) => updatePayment('note', value)"
-                />  
-            
-            <div class="grid grid-cols-4 gap-4 text-nowrap border rounded-md pt-2 mt-2 divide-x divide-gray-200 p-2"> 
-              <div class="col-span-1 text-sm text-gray-700 mt-2">
-                  <span class="font-bold">{{ t('general.bill_amount') }}:</span> {{ (props.billTotal) }}
-                </div>
-                <div class="col-span-1 text-sm text-gray-700 mt-2">
-                  <span class="font-bold">{{ t('general.paid_amount') }}:</span> {{ (localPayment.amount) }}
-                </div>
-                <div class="col-span-1 text-sm text-gray-700 mt-2">
-                  <span class="font-bold">{{ t('general.remaining_balance') }}:</span> {{ (props.billTotal - localPayment.amount) }}
-                </div>
+                />
+
+            <div class="grid grid-cols-3 gap-4 bg-muted/50 border rounded-lg py-3 px-4 mt-4">
+              <div class="flex flex-col items-start">
+                <span class="font-bold text-violet-600 text-xs">
+                  {{ t('general.bill_amount') }}
+                </span>
+                <span class="text-base tabular-nums">
+                  {{ Number(props.billTotal ?? 0).toLocaleString() }}
+                </span>
+              </div>
+              <div class="flex flex-col items-start">
+                <span class="font-bold text-violet-600 text-xs">
+                  {{ t('general.paid_amount') }}
+                </span>
+                <span class="text-base tabular-nums  ">
+                  {{ Number(localPayment.amount ?? 0).toLocaleString() }}
+                </span>
+              </div>
+              <div class="flex flex-col items-start">
+                <span class="font-bold text-violet-600 text-xs">
+                  {{ t('general.remaining_balance') }}
+                </span>
+                <span class="text-base tabular-nums text-gray-900"
+                      :class="{'text-rose-600': (props.billTotal - localPayment.amount) > 0}">
+                  {{ Number(props.billTotal - localPayment.amount || 0).toLocaleString() }}
+                </span>
+              </div>
             </div>
-          </div> 
+          </div>
         </ModalDialog>
     </template>
-    
+
     <style scoped>
     /* Additional styles if needed */
     </style>
-    

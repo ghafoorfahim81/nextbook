@@ -8,6 +8,8 @@ import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3'
 const props = defineProps({
     suppliers: Object,
+    filters: Object,
+    filterOptions: Object,
 });
 
 const { t } = useI18n();
@@ -19,6 +21,11 @@ const columns = computed(() => ([
     { key: 'contact_person', label: t('ledger.contact_person') },
     { key: 'phone_no', label: t('general.phone') },
     { key: 'email', label: t('general.email') },
+    {
+        key: 'is_active',
+        label: t('general.status'),
+        render: (row) => row.is_active ? t('general.active') : t('general.inactive'),
+    },
     { key: 'actions', label: t('general.actions') },
 ]));
 
@@ -41,6 +48,23 @@ const deleteItem = (id) => {
         successMessage: t('general.delete_success', { name: t('ledger.supplier.supplier') }),
     });
 };
+
+const filterFields = computed(() => ([
+    { key: 'name', label: t('general.name'), type: 'text' },
+    { key: 'code', label: t('admin.currency.code'), type: 'text' },
+    {
+        key: 'currency_id',
+        label: t('admin.currency.currency'),
+        type: 'select',
+        options: (props.filterOptions?.currencies || []).map((c) => ({ id: c.id, name: c.code })),
+    },
+    {
+        key: 'created_by',
+        label: t('general.created_by'),
+        type: 'select',
+        options: (props.filterOptions?.users || []).map((u) => ({ id: u.id, name: u.name })),
+    },
+]));
 </script>
 
 <template>
@@ -49,6 +73,8 @@ const deleteItem = (id) => {
             can="suppliers"
             :items="suppliers"
             :columns="columns"
+            :filters="filters"
+            :filterFields="filterFields"
             @delete="deleteItem"
             @edit="editItem"
             @show="showItem"

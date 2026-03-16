@@ -9,6 +9,8 @@ use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasUserTracking;
+use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,14 +19,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ItemTransfer extends Model
 {
-    use HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     protected $table = 'item_transfers';
 
     protected $fillable = [
         'date',
-        'from_store_id',
-        'to_store_id',
+        'from_warehouse_id',
+        'to_warehouse_id',
         'status',
         'transfer_cost',
         'branch_id',
@@ -37,8 +39,8 @@ class ItemTransfer extends Model
     {
         return [
             'date' => 'date',
-            'from_store_id' => 'string',
-            'to_store_id' => 'string',
+            'from_warehouse_id' => 'string',
+            'to_warehouse_id' => 'string',
             'status' => TransferStatus::class,
             'transfer_cost' => 'decimal:4',
             'branch_id' => 'string',
@@ -53,19 +55,27 @@ class ItemTransfer extends Model
             'date',
             'status',
             'remarks',
-            'fromStore.name',
-            'toStore.name',
+            'fromWarehouse.name',
+            'toWarehouse.name',
         ];
     }
 
-    public function fromStore(): BelongsTo
+    protected array $allowedFilters = [
+        'from_warehouse_id',
+        'to_warehouse_id',
+        'items.item_id',
+        'date',
+        'created_by',
+    ];
+
+    public function fromWarehouse(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Administration\Store::class, 'from_store_id');
+        return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'from_warehouse_id');
     }
 
-    public function toStore(): BelongsTo
+    public function toWarehouse(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Administration\Store::class, 'to_store_id');
+        return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'to_warehouse_id');
     }
 
     public function branch(): BelongsTo
@@ -78,20 +88,7 @@ class ItemTransfer extends Model
         return $this->hasMany(ItemTransferItem::class);
     }
 
-    public function createdBy(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class, 'created_by');
-    }
 
-    public function updatedBy(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class, 'updated_by');
-    }
-
-    public function deletedBy(): BelongsTo
-    {
-        return $this->belongsTo(\App\Models\User::class, 'deleted_by');
-    }
 
     public function getDependencyMessage(): string
     {

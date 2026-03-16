@@ -6,31 +6,33 @@ import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import NextDate from '@/Components/next/NextDatePicker.vue';
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { Trash2, Plus, Upload } from 'lucide-vue-next';
 import { Button } from '@/Components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { Spinner } from '@/Components/ui/spinner';
 
 const { t } = useI18n();
 const { toast } = useToast();
 
 const props = defineProps({
-    expense: { type: Object, required: true },
-    categories: { type: Object, required: true },
+    expense: { type: Array, required: true },
+    categories: { type: Array, required: true },
     expenseAccounts: { type: Array, required: true },
     bankAccounts: { type: Array, required: true },
     currencies: { type: Array, required: true },
 });
+
 const expense = props.expense.data;
 const form = useForm({
     date: expense.date || '',
     category_id: expense.category_id || '',
     expense_account_id: expense.expense_account_id || '',
     bank_account_id: expense.bank_account_id || '',
-    currency_id: expense.bank_transaction.currency_id || '',
-    rate: expense.bank_transaction.rate || 1,
+    currency_id: expense.currency_id || '',
+    rate: expense.rate || 1,
     remarks: expense.remarks || '',
     attachment: null,
     details: expense.details?.length
@@ -42,9 +44,9 @@ const form = useForm({
     // For UI state
     _method: 'put',
     selected_category: expense.category,
-    selected_expense_account: expense.expense_transaction.account,
-    selected_bank_account: expense.bank_transaction.account,
-    selected_currency: expense.bank_transaction.currency,
+    selected_expense_account: expense.expense_account,
+    selected_bank_account: expense.bank_account,
+    selected_currency: expense.currency,
 });
 
 const fileInput = ref(null);
@@ -203,6 +205,7 @@ onUnmounted(() => {
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">
                     {{ t('general.general_info') }}
                 </div>
+                <ModuleHelpButton module="expense" />
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextDate
                         v-model="form.date"
@@ -219,6 +222,8 @@ onUnmounted(() => {
                         :floating-text="t('expense.category')"
                         :error="form.errors?.category_id"
                         :searchable="true"
+                        resource-type="expense_categories"
+                        :search-fields="['name', 'slug']"
                     />
                     <NextSelect
                         :options="expenseAccounts"
@@ -260,6 +265,7 @@ onUnmounted(() => {
                             step="any"
                             :label="t('general.rate')"
                             :error="form.errors?.rate"
+                            :disabled="form.selected_currency.is_base_currency === true"
                         />
                     </div>
                     <NextTextarea
@@ -267,6 +273,7 @@ onUnmounted(() => {
                         :label="t('general.remarks')"
                         :error="form.errors?.remarks"
                         rows="2"
+                        :placeholder="t('expense.expnese_general_description')"
                     />
                 </div>
 
@@ -334,31 +341,33 @@ onUnmounted(() => {
                     <thead class="bg-muted/50">
                         <tr class="text-sm text-muted-foreground">
                             <th class="px-4 py-2 w-12">#</th>
-                            <th class="px-4 py-2 text-left">{{ t('expense.title') }} *</th>
-                            <th class="px-4 py-2 w-40 text-right">{{ t('general.amount') }} *</th>
+                            <th class="px-4 py-2 text-center">{{ t('general.description') }} *</th>
+                            <th class="px-4 py-2 w-40 text-center">{{ t('general.amount') }} *</th>
                             <th class="px-4 py-2 w-12"></th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-for="(detail, index) in form.details" :key="index" class="border-t hover:bg-muted/30">
                             <td class="px-4 py-2 text-center text-muted-foreground">{{ index + 1 }}</td>
-                            <td class="px-4 py-2">
+                            <td class="px-4 py-2 w-64">
                                 <NextInput
                                     v-model="detail.title"
-                                    :placeholder="t('expense.enter_title')"
+                                    :placeholder="t('expense.description_remark_placeholder')"
                                     :error="form.errors?.[`details.${index}.title`]"
+                                    class="w-full"
                                 />
                             </td>
-                            <td class="px-4 py-2">
+                            <td class="px-4 py-2 w-64">
                                 <NextInput
                                     v-model="detail.amount"
                                     type="number"
                                     step="any"
                                     :placeholder="t('general.amount')"
                                     :error="form.errors?.[`details.${index}.amount`]"
-                                    class="text-right"
+                                    class="text-right w-full"
                                 />
                             </td>
+
                             <td class="px-4 py-2 text-center">
                                 <button
                                     type="button"

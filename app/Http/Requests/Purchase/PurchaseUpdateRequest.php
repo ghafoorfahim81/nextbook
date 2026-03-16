@@ -23,7 +23,7 @@ class PurchaseUpdateRequest extends FormRequest
             'number' => ['required', 'integer', 'min:1'],
             'supplier_id' => ['required', 'string', 'exists:ledgers,id'],
             'date' => ['required', 'date'],
-            'store_id' => ['required', 'string', 'exists:stores,id'],
+            'warehouse_id' => ['required', 'string', 'exists:warehouses,id'],
             'discount' => ['nullable', 'numeric'],
             'discount_type' => ['nullable', 'string'],
             'description' => ['nullable', 'string'],

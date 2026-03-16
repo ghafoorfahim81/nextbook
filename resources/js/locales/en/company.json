@@ -27,6 +27,7 @@
     "selected_business_type": "Selected Business Type",
     "upload_logo": "Upload Logo",
     "upload_logo_description": "PNG, JPG, GIF up to 2MB",
-    "logo_can_be_updated_in_edit_mode": "Logo can be updated in edit mode"
+    "logo_can_be_updated_in_edit_mode": "Logo can be updated in edit mode",
+    "costing_method": "Costing Method"
 
 }

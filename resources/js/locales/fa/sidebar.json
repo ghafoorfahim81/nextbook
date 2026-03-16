@@ -30,7 +30,7 @@
     "size": "اندازه",
     "branch": "شعبه",
     "brand": "برند",
-    "store": "گدام/انبار",
+    "warehouse": "گدام/انبار",
     "company": "شرکت"
   },
   "inventory": {
@@ -42,6 +42,12 @@
   "account": {
     "chart_of_account": "چارت حساب",
     "account_type": "نوع حساب"
+  },
+  "journal_entry": {
+      "journal_entry": "ژورنال",
+    "journal_entries": "ژورنال ها",
+    "journal_class": "کلاس ژورنال",
+    "journal_classes": "کلاس های ژورنال"
   },
   "purchase": {
     "purchase": "خرید",

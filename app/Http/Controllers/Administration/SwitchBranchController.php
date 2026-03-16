@@ -26,7 +26,7 @@ class SwitchBranchController extends Controller
         $branchId = $validated['branch_id'];
 
         cache()->forget('auth.user');
-        cache()->forget('stores');
+        cache()->forget('warehouses');
         cache()->forget('branches');
         cache()->forget('categories');
         cache()->forget('accounts');

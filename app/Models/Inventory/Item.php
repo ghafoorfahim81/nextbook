@@ -10,20 +10,26 @@ use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasCache;
 use App\Traits\BranchSpecific;
+use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-
+use App\Enums\ItemType;
+use App\Models\Inventory\StockBalance;
+use App\Traits\HasUserTracking;
+use App\Models\Transaction\Transaction;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Enums\StockSourceType;
 class Item extends Model
 {
-    use HasFactory, HasUserAuditable, HasUlids, HasCache, HasSearch, HasSorting, HasBranch, BranchSpecific, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasBranch, BranchSpecific, HasDependencyCheck, SoftDeletes;
 
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
 
-    /**
+    /** 
      * The attributes that are mass assignable.
      *
      * @var array
@@ -31,12 +37,20 @@ class Item extends Model
     protected $fillable = [
         'name',
         'code',
+        'item_type',
+        'sku',
         'generic_name',
         'packing',
         'barcode',
+        'margin_percentage',
         'unit_measure_id',
+        'is_batch_tracked',
+        'is_expiry_tracked',
         'brand_id',
         'category_id',
+        'cost_account_id',
+        'income_account_id',
+        'asset_account_id',
         'minimum_stock',
         'maximum_stock',
         'colors',
@@ -67,18 +81,22 @@ class Item extends Model
             'brand_id' => 'string',
             'category_id' => 'string',
             'size_id' => 'string',
-            'minimum_stock' => 'double',
-            'maximum_stock' => 'double',
-            'purchase_price' => 'double',
-            'cost' => 'double',
-            'sale_price' => 'double',
-            'rate_a' => 'double',
-            'rate_b' => 'double',
-            'rate_c' => 'double',
+            'margin_percentage' => 'decimal:4',
+            'item_type' => ItemType::class,
+            'minimum_stock' => 'decimal:2',
+            'maximum_stock' => 'decimal:2',
+            'purchase_price' => 'decimal:2',
+            'cost' => 'decimal:2',
+            'sale_price' => 'decimal:2',
+            'rate_a' => 'decimal:2',
+            'rate_b' => 'decimal:2',
+            'rate_c' => 'decimal:2',
             'branch_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
             'colors' => 'array',
+            'is_batch_tracked' => 'boolean',
+            'is_expiry_tracked' => 'boolean',
         ];
     }
 
@@ -109,6 +127,18 @@ class Item extends Model
         ];
     }
 
+    protected array $allowedFilters = [
+        'code',
+        'item_type',
+        'unit_measure_id',
+        'category_id',
+        'size_id',
+        'brand_id',
+        'purchase_price',
+        'sale_price',
+        'created_by',
+    ];
+
     public function unitMeasure(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Administration\UnitMeasure::class);
@@ -127,7 +157,7 @@ class Item extends Model
     public function size(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Administration\Size::class);
-    }
+     }
 
     public function branch(): BelongsTo
     {
@@ -136,38 +166,57 @@ class Item extends Model
 
     public function stocks()
     {
-        return $this->hasMany(Stock::class);
+        return $this->hasMany(StockMovement::class);
     }
 
     public function openings()
     {
-        return $this->hasMany(StockOpening::class, 'item_id', 'id');
+        return $this->hasMany(StockMovement::class, 'item_id', 'id')->where('source', StockSourceType::OPENING->value);
     }
 
     public function stockOut()
     {
         return $this->hasMany(StockOut::class);
     }
-    public function openingTransactions()
+    public function openingTransaction(): HasOne
     {
-        return $this->hasMany(ItemOpeningTransaction::class, 'item_id', 'id');
+        return $this->hasOne(Transaction::class, 'reference_id');
     }
 
-    public function onHand()
+    public function assetAccount(): BelongsTo
     {
-        $stocks = $this->stocks()->with('unitMeasure')->get();
-        $stockOuts = $this->stockOut()->with('unitMeasure')->get();
+        return $this->belongsTo(\App\Models\Account\Account::class, 'asset_account_id');
+    }
 
-        $stockSum = $stocks->sum(function($stock) {
-            return $stock->quantity * ($stock->unitMeasure->unit ?? 1);
-        });
+    public function incomeAccount(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Account\Account::class, 'income_account_id');
+    }
 
-        $stockOutSum = $stockOuts->sum(function($stockOut) {
-            return $stockOut->quantity * ($stockOut->unitMeasure->unit ?? 1);
-        });
+    public function costAccount(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Account\Account::class, 'cost_account_id');
+    }
 
-        $onHand = $stockSum - $stockOutSum;
-        return $onHand; 
+    public function stockBalances()
+    {
+        return $this->hasMany(StockBalance::class);
+    }
+
+    public function onHand(): string
+    {
+        return $this->stockBalances()->sum('quantity');
+    }
+    public function onHandByStore(string $storeId): string
+    {
+      return (string) $this->stockBalances()
+        ->where('store_id', $storeId)
+        ->sum('quantity');
+    }
+
+    public function avgCost()
+    {
+        return  $this->stockBalances()->avg('average_cost');
     }
     // public function inRecords()
     // {
@@ -184,10 +233,14 @@ class Item extends Model
     protected function getRelationships(): array
     {
         return [
-            'stockOut' => [
-                'model' => 'stock out records',
-                'message' => 'This item has stock out records'
-            ]
+            'stock_movements' => [
+                'model' => 'stock_movements',
+                'message' => 'This item has stock movements'
+            ],
+            'stock_balances' => [
+                'model' => 'stock_balances',
+                'message' => 'This item has stock balances'
+            ] 
         ];
     }
 }

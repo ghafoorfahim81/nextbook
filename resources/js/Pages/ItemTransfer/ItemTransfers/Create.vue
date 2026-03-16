@@ -10,6 +10,7 @@ import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { Trash2 } from 'lucide-vue-next'
 import { useSidebar } from '@/Components/ui/sidebar/utils'
 
@@ -17,10 +18,9 @@ const { t } = useI18n()
 const { toast } = useToast()
 
 const page = usePage()
-const stores = computed(() => page.props.stores?.data || page.props.stores || [])
-const itemOptions = ref([])
+const warehouses = computed(() => page.props.warehouses?.data || page.props.warehouses || [])
 const unitMeasures = computed(() => page.props.unitMeasures?.data || page.props.unitMeasures || [])
-
+const itemOptions = ref([])
 const createEmptyRow = () => ({
   item_id: '',
   selected_item: null,
@@ -37,13 +37,13 @@ const createEmptyRow = () => ({
 
 const form = useForm({
   date: '',
-  from_store_id: '',
-  to_store_id: '',
-  selected_from_store: null,
-  selected_to_store: null,
+  from_warehouse_id: '',
+  to_warehouse_id: '',
+  selected_from_warehouse: null,
+  selected_to_warehouse: null,
   transfer_cost: '',
   remarks: '',
-  items: [createEmptyRow(), createEmptyRow(), createEmptyRow()],
+  items: [createEmptyRow(), createEmptyRow(), createEmptyRow(), createEmptyRow()],
 })
 
 const submitAction = ref(null)
@@ -57,21 +57,21 @@ const handleSubmitAction = (createAndNew = false) => {
 
 const itemSearchOptions = computed(() => {
   const additionalParams = {}
-  if (form.from_store_id) {
-    additionalParams.store_id = form.from_store_id
+  if (form.from_warehouse_id) {
+    additionalParams.warehouse_id = form.from_warehouse_id
   }
   return { additionalParams, limit: 200 }
 })
 
-const loadItemOptions = async (storeId = form.store_id) => {
-    if (!storeId) {
+const loadItemOptions = async (warehouseId = form.warehouse_id) => {
+    if (!warehouseId) {
         itemOptions.value = []
         return
     }
     try {
-        const response = await axios.get(route('search.items-for-sale'), {
+        const response = await axios.get(route('search.items-list'), {
             params: {
-                store_id: storeId,
+                warehouse_id: warehouseId,
                 limit: 50,
             }
         })
@@ -83,28 +83,27 @@ const loadItemOptions = async (storeId = form.store_id) => {
 }
 
 watch(
-  stores,
-  (availableStores = []) => {
-    if (availableStores.length && !form.from_store_id) {
-      const preferredStore = availableStores.find(str => str.is_main) || availableStores[0]
-      form.selected_from_store = preferredStore || null
-      form.from_store_id = preferredStore?.id || ''
+  warehouses,
+  (availableWarehouses = []) => {
+    if (availableWarehouses.length && !form.from_warehouse_id) {
+      const preferredWarehouse = availableWarehouses.find(str => str.is_main) || availableWarehouses[0]
+      form.selected_from_warehouse = preferredWarehouse || null
+      form.from_warehouse_id = preferredWarehouse?.id || ''
     }
   },
   { immediate: true }
 )
 
-
-watch(() => form.from_store_id, (storeId) => {
-    if (!storeId) {
-        itemOptions.value = []
-        return
-    }
-    loadItemOptions(storeId)
+watch(() => form.from_warehouse_id, (warehouseId) => {
+  if (!warehouseId) {
+    itemOptions.value = []
+    return
+  }
+  loadItemOptions(warehouseId)
 }, { immediate: true });
 
-const sameStoreError = computed(() => {
-  return form.from_store_id && form.to_store_id && form.from_store_id === form.to_store_id
+const sameWarehouseError = computed(() => {
+  return form.from_warehouse_id && form.to_warehouse_id && form.from_warehouse_id === form.to_warehouse_id
 })
 
 const handleSelectChange = (field, value) => {
@@ -133,34 +132,43 @@ const handleItemChange = (index, selectedItem) => {
     row.batch = ''
     row.expire_date = ''
     row.unit_price = ''
-    row.base_unit_price = ''
     return
   }
-
   row.available_measures = buildAvailableMeasures(selectedItem)
   row.selected_measure = selectedItem.unitMeasure || null
   row.item_id = selectedItem.id
-  row.base_unit_price = selectedItem.purchase_price ?? selectedItem.unit_price ?? 0
-
-  
+  row.base_unit_price = selectedItem.avg_cost ?? selectedItem.purchase_price ?? selectedItem.unit_price ?? 0
   const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1
   const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
   row.unit_price = (row.base_unit_price / baseUnit) * selectedUnit
 
-  if (index === form.items.length - 1) {
-    addRow()
-  }
+    row.selected_batch = null
+    row.batch = ''
+    row.expire_date = ''
 }
 
-const handleBatchChange = (index, batch) => {
+function handleBatchChange(index, batch){
     const row = form.items[index]
     row.batch = batch?.batch
+    row.on_hand = onhand(row)
     row.expire_date = batch?.expire_date
 }
 
+function onhand(index) {
+  const item = form.items[index]
+  if (!item || !item.selected_item) return ''
+  const selected_item = item.selected_item
+  const onHand = item?.selected_batch?.on_hand ?? item.selected_item.on_hand
+  const baseUnit = Number(selected_item?.unitMeasure?.unit) || 1
+  const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
+  const converted = (onHand * baseUnit) / selectedUnit
+  const free = Number(item.free) || 0
+  const qty = Number(item.quantity) || 0
+  return converted - free - qty
+}
 
 const isRowEnabled = (index) => {
-  if (!form.selected_from_store || !form.selected_to_store) return false
+  if (!form.selected_from_warehouse || !form.selected_to_warehouse) return false
   for (let i = 0; i < index; i++) {
     if (!form.items[i]?.selected_item) return false
   }
@@ -191,24 +199,11 @@ const totalRows = computed(() => form.items.length)
 const totalQuantity = computed(() => form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0))
 const totalAmount = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.quantity, 0) * toNum(item.unit_price, 0)), 0))
 
-
-const onhand = (index) => {
-    const item = form.items[index]
-    if (!item || !item.selected_item) return ''
-    const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1
-    const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
-    const onHand = item.selected_batch ? Number(item.selected_batch.on_hand) : Number(item.on_hand) || 0
-    const converted = (onHand * baseUnit) / selectedUnit
-    const free = Number(item.free) || 0
-    const qty = Number(item.quantity) || 0
-    return converted - free - qty;
-}
-
 function handleSubmit(createAndNew = false) {
-  if (sameStoreError.value) {
+  if (sameWarehouseError.value) {
     toast({
       title: t('general.error'),
-      description: t('item_transfer.stores_cannot_be_same'),
+      description: t('item_transfer.warehouses_cannot_be_same'),
       variant: 'destructive',
       class: 'bg-pink-600 text-white',
     })
@@ -238,8 +233,8 @@ function handleSubmit(createAndNew = false) {
 
   form.transform(() => ({
     date: form.date,
-    from_store_id: form.from_store_id,
-    to_store_id: form.to_store_id,
+    from_warehouse_id: form.from_warehouse_id,
+    to_warehouse_id: form.to_warehouse_id,
     transfer_cost: form.transfer_cost,
     remarks: form.remarks,
     items: payloadItems,
@@ -289,29 +284,33 @@ onUnmounted(() => {
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: t('item_transfer.item_transfer') }) }}
         </div>
+        <ModuleHelpButton module="transfer" />
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
           <NextSelect
-            :options="stores"
-            v-model="form.selected_from_store"
-            @update:modelValue="(value) => handleSelectChange('from_store_id', value.id)"
+            :options="warehouses"
+            v-model="form.selected_from_warehouse"
+            @update:modelValue="(value) => handleSelectChange('from_warehouse_id', value.id)"
             label-key="name"
             value-key="id"
-            :reduce="store => store"
-            :floating-text="t('item_transfer.from_store')"
-            :error="form.errors?.from_store_id"
+            :reduce="warehouse => warehouse"
+            :floating-text="t('item_transfer.from_warehouse')"
+            :error="form.errors?.from_warehouse_id"
             :searchable="true"
           />
           <NextSelect
-            :options="stores"
-            v-model="form.selected_to_store"
-            @update:modelValue="(value) => handleSelectChange('to_store_id', value.id)"
+            :options="warehouses"
+            v-model="form.selected_to_warehouse"
+            @update:modelValue="(value) => handleSelectChange('to_warehouse_id', value.id)"
             label-key="name"
             value-key="id"
-            :reduce="store => store"
-            :floating-text="t('item_transfer.to_store')"
-            :error="form.errors?.to_store_id"
+            :reduce="warehouse => warehouse"
+            :floating-text="t('item_transfer.to_warehouse')"
+            :error="form.errors?.to_warehouse_id"
             :searchable="true"
+            resource-type="warehouses"
+            :search-fields="['name','code']"
+
           />
           <NextInput
             v-model="form.transfer_cost"
@@ -357,10 +356,10 @@ onUnmounted(() => {
                   label-key="name"
                   :placeholder="t('general.search_or_select')"
                   id="item_id"
-                  :error="form.errors?.[`items.${index}.item_id`]"
+                  :error="form.errors?.[`items.${index}.item_id`]"`
                   :show-arrow="false"
                   :searchable="true"
-                  resource-type="items-for-sale"
+                  resource-type="items-list"
                   :search-fields="['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search']"
                   value-key="id"
                   :reduce="itemValue => itemValue"
@@ -375,7 +374,7 @@ onUnmounted(() => {
                     label-key="batch"
                     :placeholder="t('general.search_or_select')"
                     id="batch_id"
-                    :error="form.errors?.[`items.${index}.batch`]"
+                    :error="form.errors?.[`items.${index}.batch`]"`
                     :show-arrow="false"
                     value-key="batch"
                     :reduce="batch => batch"
@@ -394,18 +393,18 @@ onUnmounted(() => {
                   type="number"
                   step="any"
                   inputmode="decimal"
-                  :error="form.errors?.[`items.${index}.quantity`]"
+                  :error="form.errors?.[`items.${index}.quantity`]"`
                 />
               </td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                <span :title="String(onhand(index))">{{ Number(onhand(index)).toFixed(1) }}</span>
+                <span :title="String(onhand(index))">{{ Number(onhand(index)).toFixed(2) }}</span>
               </td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                 <NextSelect
                   :options="item.available_measures || []"
                   v-model="item.selected_measure"
                   label-key="name"
-                  :error="form.errors?.[`items.${index}.measure_id`]"
+                  :error="form.errors?.[`items.${index}.measure_id`]"`
                   value-key="id"
                   :show-arrow="false"
                   :reduce="unit => unit"
@@ -425,7 +424,7 @@ onUnmounted(() => {
                   type="number"
                   step="any"
                   inputmode="decimal"
-                  :error="form.errors?.[`items.${index}.unit_price`]"
+                  :error="form.errors?.[`items.${index}.unit_price`]"`
                 />
               </td>
               <td class="text-center">
@@ -479,4 +478,3 @@ onUnmounted(() => {
   overflow: hidden;
 }
 </style>
-

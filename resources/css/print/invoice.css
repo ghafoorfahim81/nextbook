@@ -1,0 +1,298 @@
+.invoice {
+    direction: rtl;
+    font-family: Tahoma, Arial, sans-serif;
+    font-size: 12px;
+    color: #000;
+    box-sizing: border-box;
+  }
+
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  /* HEADER */
+  .invoice-header {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+  }
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-direction: row; /* logo at far right, title beside it */
+  }
+
+  .logo {
+    height: 70px;
+  }
+
+  .company-name {
+    font-size: 20px;
+    font-weight: bold;
+    color: #1c87c9;
+  }
+
+  /* COLOR BAR */
+  .color-bar {
+    display: flex;
+    height: 6px;
+    margin: 8px 0;
+  }
+  .color-bar .red {
+    flex: 1;
+    background: #e63946;
+  }
+  .color-bar .blue {
+    flex: 1;
+    background: #1c87c9;
+  }
+
+  /* META */
+  .invoice-meta {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: start;
+    margin: 12px 0;
+  }
+  .invoice-meta .meta-right {
+    text-align: right;
+    font-weight: bold;
+  }
+  .invoice-meta .meta-center {
+    text-align: center;
+    font-weight: bold;
+  }
+  .invoice-meta .meta-left {
+    text-align: left;
+    line-height: 1.6;
+  }
+
+  /* CUSTOMER */
+  .customer-info {
+    border: 1px solid #aaa;
+    margin-bottom: 10px;
+  }
+  .section-title {
+    background: #ccc;
+    padding: 6px;
+    font-weight: bold;
+    text-align: center;
+  }
+  .info-row {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 10px;
+    align-items: center;
+    padding: 6px;
+    border-top: 1px solid #aaa;
+  }
+  .info-label {
+    white-space: nowrap;
+    font-weight: bold;
+  }
+  .info-value {
+    text-align: right;
+  }
+
+  .invoice-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  /* TABLE */
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .items-table th,
+  .items-table td {
+    border: 1px solid #555;
+    padding: 4px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .items-table thead {
+    background: #cfcfcf;
+  }
+  .items-table .text-right {
+    text-align: right;
+    padding-right: 6px;
+  }
+
+  .col-row { width: 7%; }
+  .col-item { width: 29%; }
+  .col-store { width: 16%; }
+  .col-qty { width: 10%; }
+  .col-unit { width: 10%; }
+  .col-amount { width: 10%; }
+  .col-discount { width: 8%; }
+  .col-total { width: 10%; }
+
+  .filler-row td {
+    height: 7mm; /* keep table visually tall like the sample */
+  }
+
+  .items-total-row td {
+    background: #cfcfcf;
+    font-weight: bold;
+  }
+  .items-total-label {
+    text-align: center;
+  }
+  .items-total-value {
+    text-align: center;
+  }
+
+  /* SETTLEMENT */
+  .settlement {
+    margin-top: 6px;
+  }
+  .settlement-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .settlement-table td {
+    border: 1px solid #555;
+    padding: 6px;
+    font-weight: bold;
+    background: #f2f2f2;
+  }
+  .settlement-entry td {
+    background: #fff;
+    font-weight: normal;
+  }
+  .settlement-rowno { width: 6%; text-align: center; }
+  .settlement-date { width: 17%; text-align: center; }
+  .settlement-paytype { width: 14%; text-align: center; }
+  .settlement-desc { width: 43%; text-align: center; font-weight: bold; }
+  .settlement-amount { width: 20%; text-align: center; font-weight: bold; }
+
+  .settlement-sum td {
+    background: #cfcfcf;
+    font-weight: bold;
+  }
+  .settlement-sum-label { text-align: center; }
+  .settlement-sum-amount { text-align: center; }
+
+  /* NOTES */
+  .notes {
+    margin-top: 10px;
+  }
+  .notes-title {
+    font-weight: bold;
+    text-align: right;
+    margin-bottom: 6px;
+  }
+  .notes-box {
+    border: 1px solid #555;
+    height: 22mm;
+  }
+
+  /* SIGNATURES */
+  .signatures {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 42px; /* more space from description */
+    font-weight: bold;
+  }
+  .signature {
+    width: 33.33%;
+    text-align: center;
+    padding-top: 8px;
+  }
+  .signature.center {
+    color: #333;
+  }
+
+  /* FOOTER */
+  .invoice-footer {
+    margin-top: auto;
+    text-align: center;
+    font-size: 11px;
+  }
+  .footer-rule {
+    border-top: 1px solid #aaa;
+    margin: 10px 0 6px;
+  }
+  .footer-bar {
+    display: flex;
+    height: 6px;
+    margin: 8px 0 6px;
+  }
+  .footer-bar .red {
+    flex: 1;
+    background: #e63946;
+  }
+  .footer-bar .blue {
+    flex: 1;
+    background: #1c87c9;
+  }
+
+  .address {
+    color: #1c87c9; /* blue like sample */
+    font-weight: bold;
+  }
+
+  .contact {
+    margin-top: 4px;
+    font-weight: bold;
+  }
+  .contact-website,
+  .contact-phone {
+    color: #1c87c9;
+  }
+  .contact-email {
+    color: #000;
+  }
+  .contact-sep {
+    color: #777;
+    padding: 0 6px;
+  }
+
+  /* PRINT */
+  @media print {
+    html, body {
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Ensure colors/backgrounds print (bars + shaded rows) */
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* Critical: don't force A4 height + padding (it creates a blank extra page). */
+    .invoice {
+      width: 100%;
+      min-height: 0;
+      min-height: 277mm; /* A4 (297mm) - top/bottom @page margins (10mm + 10mm) */
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .color-bar,
+    .footer-bar {
+      display: flex !important;
+    }
+    .color-bar .red,
+    .footer-bar .red {
+      background: #e63946 !important;
+    }
+    .color-bar .blue,
+    .footer-bar .blue {
+      background: #1c87c9 !important;
+    }
+
+    /* Allow tables to layout naturally without forcing a page jump */
+    table { page-break-inside: auto; }
+    thead { display: table-header-group; }
+    tfoot { display: table-footer-group; }
+    tr { page-break-inside: avoid; page-break-after: auto; }
+  }

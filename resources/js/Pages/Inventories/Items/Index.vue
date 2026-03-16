@@ -10,6 +10,8 @@ const { t } = useI18n()
 
 const props = defineProps({
   items: Object,
+  filters: Object,
+  filterOptions: Object,
 })
 
 const columns = computed(() => ([
@@ -18,7 +20,7 @@ const columns = computed(() => ([
   { key: 'category', label: t('admin.category.category') },
   { key: 'measure', label: t('admin.unit_measure.unit_measure') },
   { key: 'brand_name', label: t('admin.brand.brand') },
-  { key: 'cost', label: t('item.cost') },
+  { key: 'avg_cost', label: t('item.cost') },
   { key: 'on_hand', label: t('general.on_hand') },
   { key: 'sale_price', label: t('item.sale_price') },
   { key: 'actions', label: t('general.actions') },
@@ -26,7 +28,7 @@ const columns = computed(() => ([
 
 const { deleteResource } = useDeleteResource()
 const showInventory = ref(false)
-const selectedItem = ref(null)
+const itemId = ref(null)
 
 const editItem = (item) => {
   router.visit(route('items.edit', item.id));
@@ -41,11 +43,51 @@ const deleteItem = (id) => {
 }
 
 const openInventory = (id) => {
-  const item = props.items?.data?.find((row) => row.id === id)
-  if (!item) return
-  selectedItem.value = item
+  itemId.value = id
   showInventory.value = true
 }
+
+const filterFields = computed(() => ([
+  { key: 'code', label: t('admin.currency.code'), type: 'text' },
+  {
+    key: 'item_type',
+    label: t('item.item_type'),
+    type: 'select',
+    options: (props.filterOptions?.itemTypes || []).map((o) => ({ id: o.id, name: o.name })),
+  },
+  {
+    key: 'unit_measure_id',
+    label: t('admin.unit_measure.unit_measure'),
+    type: 'select',
+    options: (props.filterOptions?.unitMeasures || []).map((o) => ({ id: o.id, name: o.name })),
+  },
+  {
+    key: 'category_id',
+    label: t('admin.category.category'),
+    type: 'select',
+    options: (props.filterOptions?.categories || []).map((o) => ({ id: o.id, name: o.name })),
+  },
+  {
+    key: 'size_id',
+    label: t('admin.size.size'),
+    type: 'select',
+    options: (props.filterOptions?.sizes || []).map((o) => ({ id: o.id, name: o.name })),
+  },
+  {
+    key: 'brand_id',
+    label: t('admin.brand.brand'),
+    type: 'select',
+    options: (props.filterOptions?.brands || []).map((o) => ({ id: o.id, name: o.name })),
+  },
+  { key: 'purchase_price', label: t('item.purchase_price'), type: 'numberrange' },
+  { key: 'sale_price', label: t('item.sale_price'), type: 'numberrange' },
+  {
+    key: 'created_by',
+    label: t('general.created_by'),
+    type: 'select',
+    options: (props.filterOptions?.users || []).map((u) => ({ id: u.id, name: u.name })),
+  },
+]))
 </script>
 
 <template>
@@ -54,6 +96,8 @@ const openInventory = (id) => {
       can="items"
       :items="items"
       :columns="columns"
+      :filters="filters"
+      :filterFields="filterFields"
       @delete="deleteItem"
       @edit="editItem"
       @show="openInventory"
@@ -67,9 +111,9 @@ const openInventory = (id) => {
     />
 
     <ItemInventoryModal
-      v-if="selectedItem"
+      v-if="itemId"
       v-model="showInventory"
-      :item="selectedItem"
+      :item_id="itemId"
     />
   </AppLayout>
 </template>

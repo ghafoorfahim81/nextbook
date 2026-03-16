@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Purchase;
 
+use App\Enums\SalePurchaseType;
 use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -22,18 +23,21 @@ class PurchaseResource extends JsonResource
             'supplier' => $this->whenLoaded('supplier'),
             'supplier_name' => $this->supplier?->name,
             'date' => $dateConversionService->toDisplay($this->date),
-            'transaction_id' => $this->transaction_id,
-            'amount' => $this->transaction?->amount,
+            'amount' => $this->transaction->lines->sum('credit'),
             'discount' => $this->discount,
             'discount_type' => $this->discount_type,
-            'type' => $this->type,
-            'sale_purchase_type_id' => $this->type,
+            'type' => ($this->type instanceof SalePurchaseType)
+                ? $this->type->getLabel()
+                : (SalePurchaseType::tryFrom((string) $this->type)?->getLabel() ?? $this->type),
+            'sale_purchase_type_id' => ($this->type instanceof SalePurchaseType)
+                ? $this->type->value
+                : $this->type,
             'description' => $this->description,
             'status' => $this->status,
             'transaction_total' => $this->transaction?->amount,
             'transaction' => new TransactionResource($this->whenLoaded('transaction', $this->transaction)),
-            'store' => $this->stocks[0]?->store,
-            'store_id' => $this->stocks[0]?->store?->id,
+            'warehouse' => $this->warehouse(),
+            'warehouse_id' => $this->warehouse()?->id,
             'currency_id' => $this->transaction?->currency_id,
             'rate' => $this->transaction?->rate,
             'items' => $this->whenLoaded('items', PurchaseItemResource::collection($this->items)),
@@ -45,8 +49,8 @@ class PurchaseResource extends JsonResource
                     'expire_date' => $item->expire_date ? $dateConversionService->toDisplay($item->expire_date) : null,
                     'free' => $item->free,
                     'batch' => $item->batch,
-                    'store_id' => $item->store?->id,
-                    'store' => $item->store,
+                    'warehouse_id' => $item->warehouse_id,
+                    'warehouse' => $item->warehouse,
                     'item_discount' => $item->discount,
                     'tax' => $item->tax,
                     'unit_measure_id' => $item->unit_measure_id,

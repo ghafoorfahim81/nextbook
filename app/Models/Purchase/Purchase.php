@@ -2,6 +2,7 @@
 
 namespace App\Models\Purchase;
 
+use App\Enums\SalePurchaseType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,11 +12,14 @@ use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\BranchSpecific;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Models\Transaction\Transaction;
 class Purchase extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -26,11 +30,10 @@ class Purchase extends Model
         'number',
         'supplier_id',
         'date',
-        'transaction_id',
         'discount',
         'discount_type',
+        'bank_account_id',
         'type',
-        'store_id',
         'description',
         'status',
         'created_by',
@@ -47,8 +50,9 @@ class Purchase extends Model
         return [
             'supplier_id' => 'string',
             'date' => 'date',
-            'transaction_id' => 'string',
             'discount' => 'float',
+            'bank_account_id' => 'string',
+            'type' => SalePurchaseType::class,
             'created_by' => 'string',
             'updated_by' => 'string',
         ];
@@ -67,14 +71,23 @@ class Purchase extends Model
         ];
     }
 
+    protected array $allowedFilters = [
+        'supplier_id',
+        'transaction.currency_id',
+        'type',
+        'warehouse_id',
+        'date',
+        'created_by',
+    ];
+
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Ledger\Ledger::class);
     }
 
-    public function transaction(): BelongsTo
+    public function transaction(): HasOne
     {
-        return $this->belongsTo(\App\Models\Transaction\Transaction::class);
+        return $this->hasOne(Transaction::class, 'reference_id');
     }
 
     public function items()
@@ -89,7 +102,17 @@ class Purchase extends Model
 
     public function stocks()
     {
-        return $this->hasMany(\App\Models\Inventory\Stock::class, 'source_id', 'id');
+        return $this->hasMany(\App\Models\Inventory\StockMovement::class, 'reference_id', 'id');
+    }
+
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Account\Account::class);
+    }
+
+    public function warehouse()
+    {
+        return $this->items?->first()?->warehouse;
     }
 
 }

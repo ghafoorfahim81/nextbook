@@ -3,10 +3,12 @@ import AppLayout from '@/Layouts/Layout.vue'
 import { useForm, usePage } from '@inertiajs/vue3'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
-import NextTextarea from '@/Components/next/NextTextarea.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n'
 import { watch, computed, ref } from 'vue'
+import { useLazyProps } from '@/composables/useLazyProps'
+import { toast } from 'vue-sonner'
 const { t } = useI18n()
 
 const page = usePage()
@@ -14,12 +16,22 @@ const page = usePage()
 const allAccounts = computed(() => page.props.accounts?.data ?? page.props.accounts ?? [])
 const currencies = computed(() => page.props.currencies?.data ?? page.props.currencies ?? [])
 
+useLazyProps(page.props, ['accounts', 'capitalAccounts', 'drawingAccounts'])
+
 // Derive lists for selects
 const capitalAccounts = computed(() => {
+  const shared = page.props.capitalAccounts?.data ?? page.props.capitalAccounts
+  if (Array.isArray(shared) && shared.length) {
+    return shared
+  }
   const list = Array.isArray(allAccounts.value) ? allAccounts.value : []
   return list.filter(a => a?.slug === 'owners-capital' || (a?.name || '').toLowerCase().includes('capital'))
 })
 const drawingAccounts = computed(() => {
+  const shared = page.props.drawingAccounts?.data ?? page.props.drawingAccounts
+  if (Array.isArray(shared) && shared.length) {
+    return shared
+  }
   const list = Array.isArray(allAccounts.value) ? allAccounts.value : []
   return list.filter(a => a?.slug === 'owners-drawing' || (a?.name || '').toLowerCase().includes('drawing'))
 })
@@ -49,11 +61,6 @@ const submitAction = ref(null)
 const createLoading = computed(() => form.processing && submitAction.value === 'create')
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new')
 
-const submitActionHandler = (createAndNew = false) => {
-  submitAction.value = createAndNew ? 'create_and_new' : 'create'
-  submit(createAndNew)
-}
-
 watch(currencies, (list) => {
     if (Array.isArray(list) && !form.currency_id) {
         const baseCurrency = list.find(c => c.is_base_currency);
@@ -73,20 +80,43 @@ function handleSelectChange(field, value) {
     if (chosen) form.rate = chosen.exchange_rate
   }
 }
+const handleSubmitAction = (createAndNew = false) => {
+    const isCreateAndNew = createAndNew === true;
+    submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
 
-function submit(createAndNew = false) {
-  const payload = createAndNew ? { create_and_new: true } : {}
-  form.transform(data => ({ ...data, ...payload })).post('/owners')
-}
+    // Always show toast on success, regardless of which button is used
+    const postOptions = {
+        onSuccess: () => {
+            toast.success(t('general.success'), {
+                description: t('general.create_success', { name: t('owner.owner') }),
+                class: 'bg-green-600',
+            });
+            if (isCreateAndNew) {
+                form.reset(); 
+                form.transform((d) => d); // Reset transform to identity
+            }
+        },
+        // Any shared callbacks like onError can go here
+    };
+
+    const transformFn = isCreateAndNew
+        ? (data) => ({ ...data, create_and_new: true, stay: true })
+        : (data) => data;
+
+    form
+        .transform(transformFn)
+        .post(route('owners.store'), postOptions);
+};
 </script>
 
 <template>
     <AppLayout :title="t('general.create', { name: t('owner.owner') })">
-    <form @submit.prevent="submitActionHandler">
-      <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
+    <form @submit.prevent="handleSubmitAction(false)">
+      <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: t('owner.owner') }) }}
         </div>
+        <ModuleHelpButton module="owner" />
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name" />
           <NextInput :label="t('owner.father_name')" v-model="form.father_name" :error="form.errors?.father_name" />
@@ -149,7 +179,7 @@ function submit(createAndNew = false) {
                 resource-type="currencies"
                 :search-fields="['name', 'code', 'symbol']"
               />
-              <NextInput :label="t('general.rate')" v-model="form.rate" type="number" :error="form.errors?.rate"/>
+              <NextInput :label="t('general.rate')" :disabled="form.selected_currency.is_base_currency == true" v-model="form.rate" type="number" :error="form.errors?.rate"/>
             </div>
           <div class="col-span-1 flex items-center gap-2">
             <label class="text-sm font-medium text-gray-700">{{ t('general.status') }}</label>
@@ -164,7 +194,7 @@ function submit(createAndNew = false) {
         :creating-label="t('general.creating', { name: t('owner.owner') })"
         :create-loading="createLoading"
         :create-and-new-loading="createAndNewLoading"
-        @create-and-new="submitActionHandler(true)"
+        @create-and-new="handleSubmitAction(true)"
         @cancel="() => $inertia.visit('/owners')"
       />
     </form>

@@ -103,13 +103,14 @@ const getStatusColor = (status) => {
 
                 <!-- Items Table -->
                 <div>
-                    <h4 class="font-semibold mb-3">{{ t('inventory.items') }}</h4>
+                    <h4 class="font-semibold mb-3">{{ t('item.items') }}</h4>
                     <div class="border rounded-lg overflow-hidden">
                         <table class="w-full">
-                            <thead class="bg-gray-50">
+                            <thead class="">
                                 <tr>
-                                    <th class="px-4 py-2 text-left">{{ t('inventory.item.item') }}</th>
+                                    <th class="px-4 py-2 text-left">{{ t('item.item') }}</th>
                                     <th class="px-4 py-2 text-left">{{ t('general.batch') }}</th>
+                                    <th class="px-4 py-2 text-left">{{ t('general.expire_date') }}</th>
                                     <th class="px-4 py-2 text-left">{{ t('general.quantity') }}</th>
                                     <th class="px-4 py-2 text-left">{{ t('general.unit_price') }}</th>
                                     <th class="px-4 py-2 text-left">{{ t('general.total') }}</th>
@@ -119,6 +120,7 @@ const getStatusColor = (status) => {
                                 <tr v-for="item in sale.items" :key="item.id" class="border-t">
                                     <td class="px-4 py-2">{{ item.item_name }}</td>
                                     <td class="px-4 py-2">{{ item.batch || '-' }}</td>
+                                    <td class="px-4 py-2">{{ item.expire_date || '-' }}</td>
                                     <td class="px-4 py-2">{{ item.quantity }}</td>
                                     <td class="px-4 py-2">{{ item.unit_price }}</td>
                                     <td class="px-4 py-2">{{ (item.quantity * item.unit_price).toFixed(2) }}</td>

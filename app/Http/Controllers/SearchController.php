@@ -11,11 +11,11 @@ use App\Models\Administration\Branch;
 use App\Models\Administration\Company;
 use App\Models\Administration\Brand;
 use App\Models\Administration\Category;
-use App\Models\Administration\Store;
+use App\Models\Administration\Warehouse;
 use App\Models\Expense\ExpenseCategory;
 use App\Models\Inventory\Item;
-use App\Models\Inventory\Stock;
-use App\Models\Inventory\StockOut;
+use App\Models\Inventory\StockBalance;
+use App\Models\Inventory\StockMovement;
 use App\Models\Ledger\Ledger;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
@@ -132,8 +132,8 @@ class SearchController extends Controller
             case 'categories':
                 return $this->searchCategories($searchTerm, $fields, $limit, $additionalParams);
 
-            case 'stores':
-                return $this->searchStores($searchTerm, $fields, $limit, $additionalParams);
+            case 'warehouses':
+                return $this->searchWarehouses($searchTerm, $fields, $limit, $additionalParams);
 
             case 'expense_categories':
                 return $this->searchExpenseCategories($searchTerm, $fields, $limit, $additionalParams);
@@ -154,6 +154,7 @@ class SearchController extends Controller
     {
         $query = Ledger::query()
             ->select('id', 'name', 'type', 'email', 'phone_no', 'address')
+            ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'email', 'phone_no', 'address'])) {
@@ -203,11 +204,11 @@ class SearchController extends Controller
             $query->where('branch_id', $additionalParams['branch_id']);
         }
 
-        // For sales, filter items that have available stock in the specified store
-        if (isset($additionalParams['store_id'])) {
-            $storeId = $additionalParams['store_id'];
-            $query->whereHas('stocks', function ($q) use ($storeId) {
-                $q->where('store_id', $storeId)
+        // For sales, filter items that have available stock in the specified warehouse
+        if (isset($additionalParams['warehouse_id'])) {
+            $warehouseId = $additionalParams['warehouse_id'];
+            $query->whereHas('stocks', function ($q) use ($warehouseId) {
+                $q->where('warehouse_id', $warehouseId)
                   ->where('quantity', '>', 0);
             });
         }
@@ -218,10 +219,10 @@ class SearchController extends Controller
     /**
      * Search items for sales with store filtering and batch information
      */
-    public function searchItemsForSale(Request $request)
+    public function searchItemsList(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'store_id' => 'nullable|string|exists:stores,id',
+            'warehouse_id' => 'nullable|string|exists:warehouses,id',
             'search' => 'nullable|string|max:255',
             'search_query' => 'nullable|string|max:255',
             'limit' => 'nullable|integer|min:1|max:250',
@@ -237,26 +238,24 @@ class SearchController extends Controller
 
         $searchTerm = trim($request->input('search_query') ?? $request->input('search', ''));
         $limit = $this->resolveItemLimit($request->input('limit'), $searchTerm);
-        $requestedStoreId = trim((string) ($request->input('store_id') ?? ''));
-        $storeId = $requestedStoreId ?: Store::main()?->id;
-        if (!$storeId || !Store::query()->where('id', $storeId)->first()) {
+        $inStockOnly = $request->boolean('in_stock_only', true);
+        $requestedWarehouseId = trim((string) ($request->input('warehouse_id') ?? ''));
+        $warehouseId = $requestedWarehouseId ?: Warehouse::main()?->id;
+        if (!$warehouseId || !Warehouse::query()->where('id', $warehouseId)->first()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Store not found',
+                'message' => 'Warehouse not found',
             ], 404);
         }
 
         try {
-            $cacheKey = $this->makeItemCacheKey($storeId, $searchTerm, $limit);
-            $items = Cache::remember($cacheKey, now()->addMinutes(1), function () use ($storeId, $searchTerm, $limit) {
-                return $this->gatherItemsForStore($storeId, $searchTerm, $limit);
-            });
+            $items = $this->gatherItemsFromWarehouse($warehouseId, $searchTerm, $limit, $inStockOnly);
 
             return response()->json([
                 'success' => true,
                 'data' => $items,
                 'meta' => [
-                    'store_id' => $storeId,
+                    'warehouse_id' => $warehouseId,
                     'search_query' => $searchTerm,
                     'limit' => $limit,
                     'total' => count($items),
@@ -271,50 +270,17 @@ class SearchController extends Controller
         }
     }
 
-    private function resolveItemLimit(?int $limit, string $searchTerm): int
-    {
-        $default = $searchTerm ? 200 : 50;
-        $limit = $limit ?: $default;
-        return max(1, min(250, $limit));
-    }
-
-    private function makeItemCacheKey(string $storeId, string $searchTerm, int $limit): string
-    {
-        $hash = $searchTerm ? md5($searchTerm) : 'all';
-        return "items_with_batches:store:{$storeId}:search:{$hash}:limit:{$limit}";
-    }
-
-    private function gatherItemsForStore(string $storeId, string $searchTerm, int $limit): array
+    private function gatherItemsFromWarehouse(string $warehouseId, string $searchTerm, int $limit, bool $inStockOnly = true): array
     {
         $searchableFields = ['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search'];
 
         $query = Item::query()
             ->select([
-                'id',
-                'name',
-                'code',
-                'generic_name',
-                'packing',
-                'barcode',
-                'unit_measure_id',
-                'brand_id',
-                'category_id',
-                'colors',
-                'size_id',
-                'purchase_price',
-                'sale_price',
-                'rate_a',
-                'rate_b',
-                'rate_c',
-                'rack_no',
-                'fast_search',
+                'id', 'name', 'code', 'generic_name', 'packing', 'barcode',
+                'unit_measure_id', 'brand_id', 'category_id', 'colors', 'size_id',
+                'purchase_price', 'sale_price', 'margin_percentage', 'rate_a', 'rate_b', 'rate_c', 'rack_no', 'fast_search',
             ])
-            ->with([
-                'unitMeasure:id,name,unit,quantity_id',
-                'brand:id,name',
-                'category:id,name',
-                'size:id,name',
-            ])
+            ->with(['unitMeasure', 'brand', 'category', 'size'])
             ->when($searchTerm, function ($query) use ($searchTerm, $searchableFields) {
                 $term = '%' . strtolower($searchTerm) . '%';
                 $query->where(function ($builder) use ($searchableFields, $term) {
@@ -326,94 +292,292 @@ class SearchController extends Controller
             ->orderBy('name')
             ->limit($limit);
 
+        if ($inStockOnly) {
+            // For sales/transfer, only return items present in BOTH stock tables for selected warehouse.
+            $stockBalanceItemIds = StockBalance::query()
+                ->where('warehouse_id', $warehouseId)
+                ->where('quantity', '>', 0)
+                ->distinct()
+                ->pluck('item_id');
+
+            $stockMovementItemIds = StockMovement::query()
+                ->where('warehouse_id', $warehouseId)
+                ->distinct()
+                ->pluck('item_id');
+
+            $eligibleItemIds = $stockBalanceItemIds
+                ->intersect($stockMovementItemIds)
+                ->values()
+                ->all();
+
+            if (empty($eligibleItemIds)) {
+                return [];
+            }
+
+            $query->whereIn('id', $eligibleItemIds);
+        }
+
         $items = $query->get();
+
         if ($items->isEmpty()) {
             return [];
         }
 
         $itemIds = $items->pluck('id')->all();
 
-        $stocks = Stock::query()
-            ->select(['id', 'item_id', 'batch', 'expire_date', 'quantity'])
-            ->where('store_id', $storeId)
+        $stockBalances = StockBalance::query()
+            ->select(['item_id', 'warehouse_id', 'batch', 'expire_date', 'quantity', 'average_cost'])
+            ->where('warehouse_id', $warehouseId)
             ->whereIn('item_id', $itemIds)
             ->get();
 
-        $stockOuts = StockOut::query()
-            ->select(['stock_id', 'item_id', 'quantity'])
-            ->where('store_id', $storeId)
-            ->whereIn('item_id', $itemIds)
-            ->get()
-            ->groupBy('stock_id')
-            ->map(fn ($group) => (float) $group->sum('quantity'));
+        return $items->map(function (Item $item) use ($stockBalances, $warehouseId, $inStockOnly) {
+        $itemStockBalances = $stockBalances->where('item_id', $item->id)
+        ->where('warehouse_id', $warehouseId);
 
-        $stocksByItem = $stocks->groupBy('item_id');
+        $batchSummaries = [];
+        $expirySummaries = [];
+        $nonBatchOnHand = 0;
+        $hasBatch = false;
+        $hasExpiry = false;
 
-        return $items->map(function (Item $item) use ($stocksByItem, $stockOuts) {
-            $itemStocks = $stocksByItem->get($item->id, collect());
-            $batchSummaries = [];
-            $nonBatchOnHand = 0;
-
-            foreach ($itemStocks as $stock) {
-                $available = max(0, (float) $stock->quantity - ($stockOuts[$stock->id] ?? 0));
-                if ($available <= 0) {
-                    continue;
-                }
-
-                $batchKey = trim((string) ($stock->batch ?? ''));
-                if ($batchKey !== '') {
-                    if (!isset($batchSummaries[$batchKey])) {
-                        $batchSummaries[$batchKey] = [
-                            'batch' => $batchKey,
-                            'expire_date' => $stock->expire_date,
-                            'on_hand' => 0,
-                        ];
-                    }
-                    $batchSummaries[$batchKey]['expire_date'] = $batchSummaries[$batchKey]['expire_date'] ?? $stock->expire_date;
-                    $batchSummaries[$batchKey]['on_hand'] += $available;
-                } else {
-                    $nonBatchOnHand += $available;
-                }
+        foreach ($itemStockBalances as $balance) {
+            $available = max(0, (float) $balance->quantity);
+            if ($available <= 0) {
+                continue;
             }
 
-            $batches = array_values(array_map(function ($batch) {
-                return [
-                    'batch' => $batch['batch'],
-                    'expire_date' => $batch['expire_date'],
-                    'on_hand' => round($batch['on_hand'] ?? 0, 2),
+            $batchKey = trim((string) ($balance->batch ?? ''));
+            if ($batchKey !== '') {
+                $hasBatch = true;
+                $batchSummaries[$batchKey] = [
+                    'batch' => $batchKey,
+                    'expire_date' => $balance->expire_date,
+                    'on_hand' => ($batchSummaries[$batchKey]['on_hand'] ?? 0) + $available,
+                    'average_cost' => $balance->average_cost,
                 ];
-            }, $batchSummaries));
+            } elseif ($balance->expire_date) {
+                $hasExpiry = true;
+                $expiryKey = (string) $balance->expire_date;
+                $expirySummaries[$expiryKey] = [
+                    'expire_date' => $balance->expire_date,
+                    'on_hand' => ($expirySummaries[$expiryKey]['on_hand'] ?? 0) + $available,
+                    'average_cost' => $balance->average_cost,
+                ];
+            } else {
+                $nonBatchOnHand += $available;
+            }
+        }
 
-            $batchOnHand = array_reduce($batches, fn ($carry, $batch) => $carry + ($batch['on_hand'] ?? 0), 0);
-            $totalOnHand = round($batchOnHand + $nonBatchOnHand, 2);
-            $hasBatches = count($batches) > 0;
-
+        $batches = array_map(function ($batch) {
             return [
-                'id' => $item->id,
-                'name' => $item->name,
-                'code' => $item->code,
-                'generic_name' => $item->generic_name,
-                'packing' => $item->packing,
-                'barcode' => $item->barcode,
-                'unit_measure_id' => $item->unit_measure_id,
-                'unitMeasure' => $item->unitMeasure,
-                'brand' => $item->brand,
-                'category' => $item->category,
-                'colors' => $item->colors,
-                'size' => $item->size,
-                'purchase_price' => $item->purchase_price,
-                'sale_price' => $item->sale_price,
-                'rate_a' => $item->rate_a,
-                'rate_b' => $item->rate_b,
-                'rate_c' => $item->rate_c,
-                'rack_no' => $item->rack_no,
-                'fast_search' => $item->fast_search,
-                'batches' => $batches,
-                'has_batches' => $hasBatches,
-                'on_hand' => $totalOnHand,
+                'batch' => $batch['batch'],
+                'expire_date' => $batch['expire_date'],
+                'on_hand' => round($batch['on_hand'] ?? 0, 2),
+                'average_cost' => $batch['average_cost'],
             ];
-        })->values()->all();
+        }, $batchSummaries);
+
+        $expiryBatches = array_map(function ($expiry) {
+            return [
+                'expire_date' => $expiry['expire_date'],
+                'on_hand' => round($expiry['on_hand'] ?? 0, 2),
+                'average_cost' => $expiry['average_cost'],
+            ];
+        }, $expirySummaries);
+
+        $totalOnHand = round(
+            array_sum(array_column($batches, 'on_hand'))
+            + array_sum(array_column($expiryBatches, 'on_hand'))
+            + $nonBatchOnHand,
+            2
+        );
+
+        if ($inStockOnly && $totalOnHand <= 0) {
+            return null;
+        }
+
+        return [
+            'id' => $item->id,
+            'name' => $item->name,
+            'code' => $item->code,
+            'warehouse_id' => $warehouseId,
+            'generic_name' => $item->generic_name,
+            'packing' => $item->packing,
+            'barcode' => $item->barcode,
+            'unit_measure_id' => $item->unit_measure_id,
+            'unitMeasure' => $item->unitMeasure,
+            'brand' => $item->brand,
+            'category' => $item->category,
+            'colors' => $item->colors,
+            'size' => $item->size,
+            'purchase_price' => $item->purchase_price,
+            'sale_price' => $item->sale_price,
+            'margin_percentage' => $item->margin_percentage,
+            'rate_a' => $item->rate_a,
+            'selected_batch' => null,
+            'rate_b' => $item->rate_b,
+            'rate_c' => $item->rate_c,
+            'rack_no' => $item->rack_no, 
+            'fast_search' => $item->fast_search,
+            'batches' => array_values($batches ?? []),
+            'expiry_batches' => array_values($expiryBatches ?? []),
+            'on_hand' => $totalOnHand,
+            'avg_cost' => $item->avgCost(),
+            'has_batch' => $hasBatch,
+            'has_expiry' => $hasExpiry,
+        ];
+        })->filter()->values()->all();
     }
+
+    private function resolveItemLimit(?int $limit, string $searchTerm): int
+    {
+        $default = $searchTerm ? 200 : 50;
+        $limit = $limit ?: $default;
+        return max(1, min(250, $limit));
+    }
+
+    private function makeItemCacheKey(string $warehouseId, string $searchTerm, int $limit): string
+    {
+        $hash = $searchTerm ? md5($searchTerm) : 'all';
+        return "items_with_batches:warehouse:{$warehouseId}:search:{$hash}:limit:{$limit}";
+    }
+
+
+    // private function gatherItemsForWarehouse(string $warehouseId, string $searchTerm, int $limit): array
+    // {
+    //     $searchableFields = ['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search'];
+
+    //     $query = Item::query()
+    //         ->select([
+    //             'id',
+    //             'name',
+    //             'code',
+    //             'generic_name',
+    //             'packing',
+    //             'barcode',
+    //             'unit_measure_id',
+    //             'brand_id',
+    //             'category_id',
+    //             'colors',
+    //             'size_id',
+    //             'purchase_price',
+    //             'sale_price',
+    //             'rate_a',
+    //             'rate_b',
+    //             'rate_c',
+    //             'rack_no',
+    //             'fast_search',
+    //         ])
+    //         ->with([
+    //             'unitMeasure:id,name,unit,quantity_id',
+    //             'brand:id,name',
+    //             'category:id,name',
+    //             'size:id,name',
+    //         ])
+    //         ->when($searchTerm, function ($query) use ($searchTerm, $searchableFields) {
+    //             $term = '%' . strtolower($searchTerm) . '%';
+    //             $query->where(function ($builder) use ($searchableFields, $term) {
+    //                 foreach ($searchableFields as $field) {
+    //                     $builder->orWhereRaw("LOWER({$field}) iLike ?", [$term]);
+    //                 }
+    //             });
+    //         })
+    //         ->orderBy('name')
+    //         ->limit($limit);
+
+    //     $items = $query->get();
+    //     if ($items->isEmpty()) {
+    //         return [];
+    //     }
+
+    //     $itemIds = $items->pluck('id')->all();
+
+    //     $stocks = Stock::query()
+    //         ->select(['id', 'item_id', 'batch', 'expire_date', 'quantity', 'unit_price'])
+    //         ->where('warehouse_id', $warehouseId)
+    //         ->whereIn('item_id', $itemIds)
+    //         ->get();
+
+    //     $stockOuts = StockOut::query()
+    //         ->select(['stock_id', 'item_id', 'quantity'])
+    //         ->where('warehouse_id', $warehouseId)
+    //         ->whereIn('item_id', $itemIds)
+    //         ->get()
+    //         ->groupBy('stock_id')
+    //         ->map(fn ($group) => (float) $group->sum('quantity'));
+
+    //     $stocksByItem = $stocks->groupBy('item_id');
+
+    //     return $items->map(function (Item $item) use ($stocksByItem, $stockOuts) {
+    //         $itemStocks = $stocksByItem->get($item->id, collect());
+    //         $batchSummaries = [];
+    //         $nonBatchOnHand = 0;
+
+    //         foreach ($itemStocks as $stock) {
+    //             $available = max(0, (float) $stock->quantity - ($stockOuts[$stock->id] ?? 0));
+    //             if ($available <= 0) {
+    //                 continue;
+    //             }
+
+    //             $batchKey = trim((string) ($stock->batch ?? ''));
+    //             if ($batchKey !== '') {
+    //                 if (!isset($batchSummaries[$batchKey])) {
+    //                     $batchSummaries[$batchKey] = [
+    //                         'batch' => $batchKey,
+    //                         'expire_date' => $stock->expire_date,
+    //                         'on_hand' => 0,
+    //                         'unit_price' => $stock->unit_price,
+    //                     ];
+    //                 }
+    //                 $batchSummaries[$batchKey]['expire_date'] = $batchSummaries[$batchKey]['expire_date'] ?? $stock->expire_date;
+    //                 $batchSummaries[$batchKey]['on_hand'] += $available;
+    //             } else {
+    //                 $nonBatchOnHand += $available;
+    //             }
+    //         }
+
+    //         $batches = array_values(array_map(function ($batch) {
+    //             return [
+    //                 'batch' => $batch['batch'],
+    //                 'expire_date' => $batch['expire_date'],
+    //                 'on_hand' => round($batch['on_hand'] ?? 0, 2),
+    //                 'unit_price' => $batch['unit_price'],
+    //             ];
+    //         }, $batchSummaries));
+
+    //         $batchOnHand = array_reduce($batches, fn ($carry, $batch) => $carry + ($batch['on_hand'] ?? 0), 0);
+    //         $totalOnHand = round($batchOnHand + $nonBatchOnHand, 2);
+    //         $hasBatches = count($batches) > 0;
+
+    //         return [
+    //             'id' => $item->id,
+    //             'name' => $item->name,
+    //             'code' => $item->code,
+    //             'generic_name' => $item->generic_name,
+    //             'packing' => $item->packing,
+    //             'barcode' => $item->barcode,
+    //             'unit_measure_id' => $item->unit_measure_id,
+    //             'unitMeasure' => $item->unitMeasure,
+    //             'brand' => $item->brand,
+    //             'category' => $item->category,
+    //             'colors' => $item->colors,
+    //             'size' => $item->size,
+    //             'purchase_price' => $item->purchase_price,
+    //             'sale_price' => $item->sale_price,
+    //             'rate_a' => $item->rate_a,
+    //             'rate_b' => $item->rate_b,
+    //             'rate_c' => $item->rate_c,
+    //             'rack_no' => $item->rack_no,
+    //             'fast_search' => $item->fast_search,
+    //             'batches' => $batches,
+    //             'has_batches' => $hasBatches,
+    //             'selected_batch' => null,
+    //             'on_hand' => $totalOnHand,
+    //             'avg_cost' => $item->avgCost(),
+    //         ];
+    //     })->values()->all();
+    // }
     /**
      * Search currencies
      */
@@ -421,6 +585,7 @@ class SearchController extends Controller
     {
         $query = Currency::query()
             ->select('id', 'name', 'code', 'symbol', 'exchange_rate')
+            ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'code', 'symbol'])) {
@@ -502,6 +667,7 @@ class SearchController extends Controller
     {
         $query = UnitMeasure::query()
             ->select('id', 'name', 'unit', 'symbol')
+            ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'unit', 'symbol'])) {
@@ -535,6 +701,7 @@ class SearchController extends Controller
     {
         $query = Category::query()
             ->select('id', 'name', 'description')
+            ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'description'])) {
@@ -542,15 +709,17 @@ class SearchController extends Controller
                     }
                 }
             });
+
         return $query->limit($limit)->get()->toArray();
     }
     /**
-     * Search stores
+     * Search warehouses
      */
-    private function searchStores(string $searchTerm, array $fields, int $limit, array $additionalParams): array
+    private function searchWarehouses(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
-        $query = Store::query()
+        $query = Warehouse::query()
             ->select('id', 'name', 'address')
+            ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'address'])) {
@@ -558,6 +727,7 @@ class SearchController extends Controller
                     }
                 }
             });
+
         return $query->limit($limit)->get()->toArray();
     }
 
@@ -617,6 +787,7 @@ class SearchController extends Controller
     {
         $query = Size::query()
             ->select('id', 'name', 'code')
+            ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
                     if (in_array($field, ['name', 'code'])) {
@@ -624,6 +795,7 @@ class SearchController extends Controller
                     }
                 }
             });
+
         return $query->limit($limit)->get()->toArray();
     }
 
@@ -642,7 +814,7 @@ class SearchController extends Controller
             'unit_measures' => 'Unit measures',
             'brands' => 'Brands',
             'categories' => 'Categories',
-            'stores' => 'Stores',
+            'warehouses' => 'Warehouses',
             'expense_categories' => 'Expense categories',
             'accounts' => 'Chart of accounts',
         ];

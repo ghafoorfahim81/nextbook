@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Response;
 use App\Models\Transaction\Transaction;
+use App\Models\User;
 class OwnerController extends Controller
 {
     public function __construct()
@@ -26,12 +27,14 @@ class OwnerController extends Controller
 
     public function index(Request $request)
     {
-        $perPage = $request->input('perPage', 10);
+        $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
         $owners = Owner::query()
             ->search($request->query('search'))
+            ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
@@ -39,6 +42,16 @@ class OwnerController extends Controller
         return inertia('Owners/Owners/Index', [
             'owners' => OwnerResource::collection($owners),
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
+            'filterOptions' => [
+                'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 
@@ -104,9 +117,9 @@ class OwnerController extends Controller
         });
 
         if ($request->boolean('create_and_new')) {
-            return redirect()->route('owners.create')->with('success', 'Owner created successfully.');
+            return redirect()->route('owners.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.owner')]));
         }
-        return redirect()->route('owners.index')->with('success', 'Owner created successfully.');
+        return redirect()->route('owners.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.owner')]));
     }
 
     public function show(Request $request, Owner $owner)
@@ -175,7 +188,7 @@ class OwnerController extends Controller
                 ]);
             }
         });
-        return redirect()->route('owners.index')->with('success', 'Owner updated successfully.');
+        return redirect()->route('owners.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.owner')]));
     }
 
     public function destroy(Request $request, Owner $owner)
@@ -184,7 +197,7 @@ class OwnerController extends Controller
         $owner->capitalTransaction->delete();
         $owner->accountTransaction->delete();
         $owner->delete();
-        return redirect()->route('owners.index')->with('success', 'Owner deleted successfully.');
+        return redirect()->route('owners.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.owner')]));
     }
 
     public function restore(Request $request, Owner $owner)
@@ -196,7 +209,7 @@ class OwnerController extends Controller
         if ($owner->account_transaction_id) {
             Transaction::where('id', $owner->account_transaction_id)->restore();
         }
-        return redirect()->route('owners.index')->with('success', 'Owner restored successfully.');
+        return redirect()->route('owners.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.owner')]));
     }
 }
 

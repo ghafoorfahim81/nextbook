@@ -1,6 +1,6 @@
 <script setup>
-import Sheet from '@/components/ui/sheet/Sheet.vue';
-import SheetContent from '@/components/ui/sheet/SheetContent.vue';
+import Sheet from '@/Components/ui/sheet/Sheet.vue';
+import SheetContent from '@/Components/ui/sheet/SheetContent.vue';
 import { cn } from '@/lib/utils';
 import { SIDEBAR_WIDTH_MOBILE, useSidebar } from './utils';
 
@@ -39,6 +39,7 @@ const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
     @update:open="setOpenMobile"
   >
     <SheetContent
+      :side="side"
       data-sidebar="sidebar"
       data-mobile="true"
       class="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"

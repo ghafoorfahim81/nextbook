@@ -11,6 +11,7 @@ use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -21,10 +22,12 @@ use App\Traits\HasCache;
 use App\Models\Purchase\Purchase;
 use App\Models\Payment\Payment;
 use App\Enums\LedgerType;
+use App\Models\Transaction\TransactionLine;
 use App\Traits\BranchSpecific;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 class Ledger extends Model
 {
-    use HasFactory, HasUlids, HasCache, HasSearch,   HasSorting, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     // ... your existing code ...
 
@@ -35,36 +38,54 @@ class Ledger extends Model
     {
         return Attribute::make(
             get: function () {
-                // Use the new ledger_transactions pivot table to get all related transactions
-                // Assume you have a 'transactions' relationship through the pivot table (LedgerTransaction model)
-                $transactions = $this->ledgerTransactions()->get();
-                if(count($transactions)>0)
-                {
-                // Calculate totals
-                $totals = $transactions->reduce(function ($carry, $transaction) {
-                    $amount = $transaction->transaction?->amount * $transaction->transaction?->rate;
-                    if ($transaction->transaction && !is_null($transaction->transaction->type)) {
-                        $carry[$transaction->transaction->type] += $amount;
-                    }
-                    return $carry;
-                }, ['debit' => 0, 'credit' => 0]);
 
-                $netBalance = $totals['debit'] - $totals['credit'];
+                $totals = TransactionLine::whereHas('transaction', function ($query) {
+                        $query->where('ledger_id', $this->id);
+                              //->where('status', 'posted');
+                    })
+                    ->selectRaw('
+                        SUM(debit) as total_debit,
+                        SUM(credit) as total_credit
+                    ')
+                    ->first();
+
+                $totalDebit  = (float) ($totals->total_debit ?? 0);
+                $totalCredit = (float) ($totals->total_credit ?? 0);
+
+                $netBalance = $totalDebit - $totalCredit;
+
                 $balanceAmount = abs($netBalance);
                 $balanceNature = $netBalance >= 0 ? 'dr' : 'cr';
-                $isSupplier = $this->type === 'supplier';
 
+                $natureFormat = balanceNatureFormat();
+
+                $isSupplier = $this->type === 'supplier';
+                // Format balance based on user preference
+                if ($natureFormat === 'with_nature') {
+                    $balance = $balanceAmount . ' ' . $balanceNature;
+                } else {
+                    if($isSupplier) {
+                        $balance = $balanceNature === 'cr'
+                            ? __('general.owe_to') . ' ' . $balanceAmount
+                            : __('general.owe_you') . ' ' . $balanceAmount;
+                    } else {
+                        $balance = $netBalance >= 0
+                            ? __('general.owe_you') . ' ' . $balanceAmount
+                            : __('general.owe_to') . ' ' . $balanceAmount;
+                    }
+                }
+
+                $normalNature = $this->type === 'supplier' ? 'cr' : 'dr';
                 return [
-                    'balance' => $balanceAmount,
+                    'balance' => $balanceAmount>0 ? $balance : 0,
+                    'balance_amount' => $balanceAmount,
                     'balance_nature' => $balanceNature,
-                    'normal_balance_nature' => $isSupplier ? 'cr' : 'dr',
-                    'is_normal_balance' => $balanceNature === ($isSupplier ? 'cr' : 'dr'),
-                    'total_debit' => $totals['debit'],
-                    'total_credit' => $totals['credit'],
+                    'normal_balance_nature' => $normalNature,
+                    'is_normal_balance' => $balanceNature === $normalNature,
+
+                    'total_debit' => $totalDebit,
+                    'total_credit' => $totalCredit,
                     'net_balance' => $netBalance,
-                    'account_type' => $this->type,
-                    'payable_amount' => $balanceNature === 'cr' ? $balanceAmount : 0,
-                    'receivable_amount' => $balanceNature === 'dr' ? $balanceAmount : 0,
                     'meaning' => $isSupplier
                         ? ($balanceNature === 'cr'
                             ? "You owe {$balanceAmount} to this supplier"
@@ -72,21 +93,15 @@ class Ledger extends Model
                         : ($balanceNature === 'dr'
                             ? "Customer owes you {$balanceAmount}"
                             : "You owe {$balanceAmount} to this customer"),
+                    'account_type' => $this->type,
+
+                    'payable_amount' => $balanceNature === 'cr' ? $balanceAmount : 0,
+                    'receivable_amount' => $balanceNature === 'dr' ? $balanceAmount : 0,
                 ];
-                } else {
-                    return [
-                        'balance' => 0,
-                        'balance_nature' => null,
-                        'normal_balance_nature' => null,
-                        'is_normal_balance' => true,
-                        'total_debit' => 0,
-                        'total_credit' => 0,
-                        'net_balance' => 0,
-                    ];
-                }
             }
         );
     }
+
 
     /**
      * The attributes that are mass assignable.
@@ -102,7 +117,9 @@ class Ledger extends Model
         'branch_id',
         'email',
         'currency_id',
+        'is_main',
         'type',
+        'is_active',
         'created_by',
         'updated_by',
     ];
@@ -119,8 +136,22 @@ class Ledger extends Model
             'created_by' => 'string',
             'updated_by' => 'string',
             'branch_id' => 'string',
+            'is_active' => 'boolean',
+            'is_main' => 'boolean',
             'type' => LedgerType::class,
         ];
+    }
+
+    protected array $allowedFilters = [
+        'name',
+        'code',
+        'currency_id',
+        'created_by',
+    ];
+
+    protected static function searchableColumns(): array
+    {
+        return ['name', 'code', 'contact_person', 'phone_no', 'email'];
     }
 
     public function currency(): BelongsTo
@@ -133,9 +164,9 @@ class Ledger extends Model
         return $this->belongsTo(Branch::class);
     }
 
-    public function openings()
+    public function opening()
     {
-        return $this->morphMany(LedgerOpening::class, 'ledgerable');
+        return $this->morphOne(LedgerOpening::class, 'ledgerable');
     }
 
     public function sales()
@@ -158,9 +189,13 @@ class Ledger extends Model
         return $this->hasMany(Payment::class, 'ledger_id', 'id');
     }
 
-    public function ledgerTransactions()
+    // public function ledgerTransactions()
+    // {
+    //     return $this->hasMany(LedgerTransaction::class);
+    // }
+    public function transactionLines(): HasMany
     {
-        return $this->hasMany(LedgerTransaction::class);
+        return $this->hasMany(TransactionLine::class, 'ledger_id', 'id');
     }
     /**
      * Get relationships configuration for dependency checking
