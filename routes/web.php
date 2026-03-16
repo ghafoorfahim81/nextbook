@@ -3,6 +3,7 @@
 use App\Http\Controllers\NextController;
 
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Inventory\ItemFastEntryController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\App;
@@ -39,9 +40,8 @@ Route::middleware([
     'verified',
     CheckCompany::class,
 ])->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/data', [DashboardController::class, 'data'])->name('dashboard.data');
 
     Route::resource('designations', DesignationController::class);
     Route::resource('/departments', DepartmentController::class);
