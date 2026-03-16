@@ -51,17 +51,17 @@ const ticks = computed(() => {
 <template>
   <div class="space-y-4">
     <div class="flex flex-wrap items-center justify-end gap-4 text-sm text-muted-foreground">
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 rounded-full bg-muted/60 px-3 py-1">
         <span class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.45)]" />
         {{ t('dashboard.chart.sales') }}
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 rounded-full bg-muted/60 px-3 py-1">
         <span class="inline-block h-2.5 w-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.45)]" />
         {{ t('dashboard.chart.purchases') }}
       </div>
     </div>
 
-    <div v-if="series.length" class="overflow-x-auto rounded-2xl border border-border bg-background p-4">
+    <div v-if="series.length" class="overflow-x-auto rounded-2xl border border-border bg-gradient-to-b from-background to-muted/35 p-4 shadow-inner">
       <svg :viewBox="`0 0 ${width} ${height}`" class="min-w-[680px]">
         <rect
           :x="padding"
@@ -69,7 +69,7 @@ const ticks = computed(() => {
           :width="width - padding * 2"
           :height="height - padding * 2"
           rx="16"
-          class="fill-muted/40"
+          class="fill-muted/35"
         />
 
         <line
@@ -104,7 +104,7 @@ const ticks = computed(() => {
       <div
         v-for="point in series.slice(-10)"
         :key="point.date"
-        class="rounded-xl border border-border bg-card px-2 py-2 text-center text-muted-foreground"
+        class="rounded-xl border border-border bg-muted/25 px-2 py-2 text-center text-muted-foreground"
       >
         <div class="font-medium text-foreground">{{ point.label }}</div>
         <div>{{ t('dashboard.chart.sales_short') }} {{ Number(point.sales || 0).toLocaleString() }}</div>
