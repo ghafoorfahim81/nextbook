@@ -1,6 +1,84 @@
-﻿{
-    "dashboard": "Dashboard",
-    "total_revenue": "Total Revenue",
-    "total_subscriptions": "Total Subscriptions",
-    "total_sales": "Total Sales"
+{
+  "dashboard": "Dashboard",
+  "operational_overview": "Operational Overview",
+  "branch_dashboard": "Branch dashboard",
+  "hero_description": "Posted financials, stock positions, ranked ledgers, and the latest branch activity in one place.",
+  "generated": "Generated",
+  "today": "Today",
+  "refresh_data": "Refresh data",
+  "refresh_failed": "Unable to refresh dashboard data.",
+  "sales_vs_purchases": "Sales vs purchases",
+  "daily_posted_last_30_days": "Daily posted totals for the last 30 days.",
+  "inventory_overview": "Inventory overview",
+  "inventory_overview_description": "Built from the live stock_balances table.",
+  "alerts_title": "Alerts",
+  "alerts_description": "Low stock, near-expiry stock, negative balances, and transactions that are still not posted.",
+  "no_data_available": "No data available.",
+  "no_active_alerts": "No active alerts.",
+  "records": "records",
+  "kpis": {
+    "cash_bank_balance": "Cash / Bank Balance",
+    "cash_bank_balance_help": "Posted balance across cash and bank accounts.",
+    "accounts_receivable": "Accounts Receivable",
+    "accounts_receivable_help": "Customers with debit balances only.",
+    "accounts_payable": "Accounts Payable",
+    "accounts_payable_help": "Suppliers with credit balances only.",
+    "todays_sales": "Today's Sales",
+    "todays_sales_help": "Posted sales for the active branch today.",
+    "todays_purchases": "Today's Purchases",
+    "todays_purchases_help": "Posted purchases for the active branch today.",
+    "todays_cash_received": "Today's Cash Received",
+    "todays_cash_received_help": "External cash inflow only; internal transfers excluded.",
+    "todays_cash_paid": "Today's Cash Paid",
+    "todays_cash_paid_help": "External cash outflow only; internal transfers excluded."
+  },
+  "inventory": {
+    "total_inventory_quantity": "Total Inventory Quantity",
+    "total_inventory_value": "Total Inventory Value",
+    "low_stock_items": "Low Stock Items",
+    "out_of_stock_items": "Out Of Stock Items",
+    "expiring_batches": "Expiring Batches"
+  },
+  "top_lists": {
+    "top_customers_title": "Top 5 customers by sales",
+    "top_customers_description": "Posted sales totals grouped by customer.",
+    "top_suppliers_title": "Top 5 suppliers by purchases",
+    "top_suppliers_description": "Posted purchase totals grouped by supplier.",
+    "receivables_title": "Top 10 receivable balances",
+    "receivables_description": "Customers with the highest debit balances.",
+    "payables_title": "Top 10 payable balances",
+    "payables_description": "Suppliers with the highest credit balances."
+  },
+  "recent_activity": {
+    "sales_title": "Recent sales",
+    "sales_description": "Latest 10 sales for this branch.",
+    "purchases_title": "Recent purchases",
+    "purchases_description": "Latest 10 purchases for this branch.",
+    "stock_movements_title": "Recent stock movements",
+    "stock_movements_description": "Latest 10 inventory movements across warehouses."
+  },
+  "alerts": {
+    "low_stock": "Items below reorder level",
+    "expiring_soon": "Items expiring within 30 days",
+    "negative_stock": "Negative stock balances",
+    "unposted_transactions": "Transactions not posted"
+  },
+  "chart": {
+    "sales": "Sales",
+    "purchases": "Purchases",
+    "sales_short": "S",
+    "purchases_short": "P"
+  },
+  "table": {
+    "item": "Item",
+    "reference": "Reference",
+    "location": "Location",
+    "party": "Party",
+    "movement": "Movement",
+    "status": "Status",
+    "date": "Date",
+    "quantity": "Quantity",
+    "amount": "Amount",
+    "no_records": "No records found."
+  }
 }
