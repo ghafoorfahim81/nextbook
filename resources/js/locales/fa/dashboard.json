@@ -1,6 +1,84 @@
-﻿{
-    "dashboard": "داشبورد",
-    "total_revenue": "درآمد کل",
-    "total_subscriptions": "ثبت نام ها",
-    "total_sales": "فروش ها"
+{
+  "dashboard": "داشبورد",
+  "operational_overview": "نمای کلی عملیاتی",
+  "branch_dashboard": "داشبورد شعبه",
+  "hero_description": "داشبورد مدیریتی پیشرفته برای حسابداری، بازرگانی و عملیات گردش کار چندشرکتی و چندکاربره. هر آنچه برای مدیریت کسب‌وکار نیاز دارید، یکجا.",
+  "generated": "بروزرسانی شده در",
+  "today": "امروز",
+  "refresh_data": "بروزرسانی داده‌ها",
+  "refresh_failed": "بروزرسانی داده‌ها با شکست مواجه شد.",
+  "sales_vs_purchases": "فروش در مقابل خرید",
+  "daily_posted_last_30_days": "تراکنش‌های ثبت شده ۳۰ روز اخیر",
+  "inventory_overview": "نمای کلی موجودی",
+  "inventory_overview_description": "تصویری از تراز موجودی‌ها بر اساس stock_balances و آخرین قیمت.",
+  "alerts_title": "هشدارها",
+  "alerts_description": "هشدارهای مهم برای کالاها، اسناد، سررسیدها و موجودی کم در این بخش نمایش داده می‌شود.",
+  "no_data_available": "داده‌ای در دسترس نیست.",
+  "no_active_alerts": "هشداری وجود ندارد.",
+  "records": "سوابق",
+  "kpis": {
+    "cash_bank_balance": "موجودی نقد و بانک",
+    "cash_bank_balance_help": "مانده فعلی صندوق و حساب‌های بانکی شما.",
+    "accounts_receivable": "حساب‌های دریافتنی",
+    "accounts_receivable_help": "مطالبات شما از مشتریان.",
+    "accounts_payable": "حساب‌های پرداختنی",
+    "accounts_payable_help": "بدهی‌های شما به تأمین‌کنندگان.",
+    "todays_sales": "فروش امروز",
+    "todays_sales_help": "مجموع فروش ثبت شده امروز.",
+    "todays_purchases": "خرید امروز",
+    "todays_purchases_help": "مجموع خرید انجام شده امروز.",
+    "todays_cash_received": "دریافتی نقد امروز",
+    "todays_cash_received_help": "تمام دریافت نقدی ثبت شده امروز از مشتریان و سایرین.",
+    "todays_cash_paid": "پرداخت نقد امروز",
+    "todays_cash_paid_help": "تمام پرداخت نقدی ثبت شده امروز به تأمین‌کنندگان و سایرین."
+  },
+  "inventory": {
+    "total_inventory_quantity": "موجودی کل",
+    "total_inventory_value": "ارزش کل موجودی",
+    "low_stock_items": "اقلام کم‌موجودی",
+    "out_of_stock_items": "اقلام بدون موجودی",
+    "expiring_batches": "بچ‌های نزدیک به تاریخ انقضا"
+  },
+  "top_lists": {
+    "top_customers_title": "۵ مشتری برتر اخیر",
+    "top_customers_description": "مشتریانی که بیشترین خرید را داشته‌اند.",
+    "top_suppliers_title": "۵ تأمین‌کننده برتر اخیر",
+    "top_suppliers_description": "تأمین‌کنندگانی که بیشترین خرید از آن‌ها انجام شده است.",
+    "receivables_title": "بزرگترین حساب‌های دریافتنی",
+    "receivables_description": "بزرگترین میزان مطالبات از مشتریان.",
+    "payables_title": "بزرگترین حساب‌های پرداختنی",
+    "payables_description": "بزرگترین بدهی به تأمین‌کنندگان."
+  },
+  "recent_activity": {
+    "sales_title": "فروش‌های جدید",
+    "sales_description": "آخرین فاکتورهای فروش ثبت شده.",
+    "purchases_title": "خریدهای جدید",
+    "purchases_description": "آخرین فاکتورهای خرید ثبت شده.",
+    "stock_movements_title": "جابه‌جایی‌های انبار",
+    "stock_movements_description": "آخرین جابه‌جایی‌ها و انتقال‌های موجودی."
+  },
+  "alerts": {
+    "low_stock": "موجودی برخی کالاها رو به اتمام است",
+    "expiring_soon": "بعضی بچ‌ها به‌زودی منقضی خواهند شد",
+    "negative_stock": "موجودی منفی",
+    "unposted_transactions": "تراکنش‌های ثبت‌نشده"
+  },
+  "chart": {
+    "sales": "فروش",
+    "purchases": "خرید",
+    "sales_short": "ف",
+    "purchases_short": "خ"
+  },
+  "table": {
+    "item": "کالا",
+    "reference": "مرجع",
+    "location": "مکان",
+    "party": "طرف حساب",
+    "movement": "حرکت",
+    "status": "وضعیت",
+    "date": "تاریخ",
+    "quantity": "تعداد",
+    "amount": "مبلغ",
+    "no_records": "هیچ سابقه‌ای وجود ندارد."
+  }
 }
