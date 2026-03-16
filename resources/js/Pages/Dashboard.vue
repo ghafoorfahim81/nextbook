@@ -134,7 +134,7 @@ const generatedAt = computed(() => {
               {{ t('dashboard.hero_description') }}
             </p>
           </div>
-          <div class="max-w-xs rounded-2xl border border-white/60 bg-white/80 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/10 lg:shrink-0">
+          <div class="max-w-xs rounded-2xl border border-white/60 bg-primary/10 dark:bg-gray-800 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/10 lg:shrink-0">
             <div class="text-sm text-muted-foreground dark:text-slate-300">{{ t('dashboard.generated') }}</div>
             <div class="mt-1 text-lg font-semibold text-foreground dark:text-white">{{ generatedAt }}</div>
             <div class="mt-4 text-sm text-muted-foreground dark:text-slate-300">{{ t('dashboard.today') }}</div>

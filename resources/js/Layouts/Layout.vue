@@ -410,6 +410,11 @@ const navMain = computed(() => [
         url: '/preferences',
         icon: Cog,
     },
+    {
+        title: t('sidebar.main.reports'),
+        url: '/reports',
+        icon: Cog,
+    },
 ])
 
 const filteredNavMain = computed(() => {
