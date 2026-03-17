@@ -33,6 +33,7 @@ class Sale extends Model
         'discount',
         'discount_type',
         'type',
+        'due_date',
         'description',
         'status',
         'created_by',
@@ -52,6 +53,7 @@ class Sale extends Model
             'discount' => 'float',
             'created_by' => 'string',
             'updated_by' => 'string',
+            'due_date' => 'date',
         ];
     }
 
@@ -63,6 +65,7 @@ class Sale extends Model
             'discount',
             'discount_type',
             'type',
+            'due_date',
             'description',
             'status',
         ];
@@ -73,6 +76,7 @@ class Sale extends Model
         'transaction.currency_id',
         'type',
         'date',
+        'due_date',
         'created_by',
     ];
 

@@ -34,6 +34,7 @@ class Purchase extends Model
         'discount_type',
         'bank_account_id',
         'type',
+        'due_date',
         'description',
         'status',
         'created_by',
@@ -55,6 +56,7 @@ class Purchase extends Model
             'type' => SalePurchaseType::class,
             'created_by' => 'string',
             'updated_by' => 'string',
+            'due_date' => 'date',
         ];
     }
 
@@ -66,6 +68,7 @@ class Purchase extends Model
             'discount',
             'discount_type',
             'type',
+            'due_date',
             'description',
             'status',
         ];
@@ -77,6 +80,7 @@ class Purchase extends Model
         'type',
         'warehouse_id',
         'date',
+        'due_date',
         'created_by',
     ];
 

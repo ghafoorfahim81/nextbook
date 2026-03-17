@@ -29,6 +29,7 @@ class SaleUpdateRequest extends FormRequest
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric'],
             'sale_type' => ['nullable', 'string', Rule::in(SalePurchaseType::values())],
+            'due_date' => ['nullable', 'date'],
             'bank_account_id' => ['nullable', 'string', 'exists:accounts,id'],
             'payment' => ['nullable', 'array'],
             'payment.method' => ['nullable', 'string'],
