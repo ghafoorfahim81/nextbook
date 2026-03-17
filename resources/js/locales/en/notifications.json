@@ -1,0 +1,13 @@
+{
+    "title": "Notifications",
+    "subtitle": "Track alerts, reminders, and system-generated updates.",
+    "latest": "Latest Notifications",
+    "all": "All",
+    "unread": "Unread",
+    "read": "Read",
+    "empty": "No notifications found.",
+    "view_all": "View all notifications",
+    "mark_as_read": "Mark as read",
+    "mark_all_as_read": "Mark all as read",
+    "unread_count": "unread"
+}
