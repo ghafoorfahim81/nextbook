@@ -23,6 +23,7 @@ class SaleResource extends JsonResource
             'customer' => $this->whenLoaded('customer'),
             'customer_name' => $this->customer?->name,
             'date' => $dateConversionService->toDisplay($this->date),
+            'due_date' => $dateConversionService->toDisplay($this->due_date),
             'transaction_id' => $this->transaction_id, 
             'amount' => $this->items->sum(function ($item) {
                 return $item->quantity * $item->unit_price;

@@ -32,6 +32,7 @@ class PurchaseUpdateRequest extends FormRequest
             'transaction_total' => ['required', 'numeric'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric'],
+            'due_date' => ['nullable', 'date'],
             'item_list' => ['nullable', 'array'],
             'item_list.*.item_id' => ['required', 'string', 'exists:items,id'],
             'item_list.*.quantity' => ['required', 'numeric', 'min:0.0000001'],
