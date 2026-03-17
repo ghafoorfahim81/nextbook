@@ -190,8 +190,20 @@
         "email_notifications_desc": "دریافت به‌روزرسانی‌های مهم از طریق ایمیل",
         "low_balance_alert": "هشدار موجودی کم",
         "low_balance_alert_desc": "اطلاع‌رسانی در صورت کم شدن موجودی حساب",
+        "low_item_balance_alert": "هشدار موجودی کالا کم",
+        "low_item_balance_alert_desc": "اطلاع‌رسانی در صورت کم شدن موجودی کالا",
+        "nearest_expiry_alert": "هشدار انقضای نزدیک",
+        "nearest_expiry_alert_desc": "اطلاع‌رسانی در صورت نزدیک شدن انقضای کالا",
+        "overdue_purchase_alert": "هشدار خرید معوق",
+        "overdue_purchase_alert_desc": "اطلاع‌رسانی درباره خریدهای معوق",
+        "overdue_sale_alert": "هشدار فروش معوق",
+        "overdue_sale_alert_desc": "اطلاع‌رسانی درباره فروشهای معوق",
         "overdue_invoice_alert": "هشدار فاکتور معوق",
         "overdue_invoice_alert_desc": "اطلاع‌رسانی درباره فاکتورهای معوق",
+        "sale_paid_alert": "هشدار پرداخت فروش",
+        "sale_paid_alert_desc": "هنگام تسویه کامل فروش اطلاع بده",
+        "purchase_paid_alert": "هشدار پرداخت خرید",
+        "purchase_paid_alert_desc": "هنگام تسویه کامل خرید اطلاع بده",
         "new_transaction_alert": "هشدار تراکنش جدید",
         "new_transaction_alert_desc": "اطلاع‌رسانی برای تراکنش‌های جدید",
         "daily_summary_report": "گزارش خلاصه روزانه",
@@ -252,4 +264,3 @@
         "sidebar_collapsed_desc": "به خاطر سپردن وضعیت جمع شده سایدبار"
     }
 }
-

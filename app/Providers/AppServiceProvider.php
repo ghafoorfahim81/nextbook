@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Transaction\Transaction;
+use App\Observers\TransactionObserver;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Eloquent\Relations\Relation;
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +21,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Transaction::observe(TransactionObserver::class);
+
         Relation::enforceMorphMap([
             'user' => 'App\Models\User',
             'role' => 'App\Models\Role',

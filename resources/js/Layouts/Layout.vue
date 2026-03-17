@@ -92,6 +92,8 @@ import Toaster from '@/Components/ui/toast/Toaster.vue'
 // @ts-ignore - Vue SFC default export shim
 import Sonner from '@/Components/ui/sonner/Sonner.vue'
 import { HousePlug, ShoppingCart, Receipt as ReceiptIcon } from 'lucide-vue-next'
+// @ts-ignore - Vue SFC default export shim
+import NotificationDropdown from '@/Components/notifications/NotificationDropdown.vue'
 import QuickLinks from '@/Components/next/QuickLinks.vue'
 const { t } = useI18n()
 const { locale } = useI18n()
@@ -828,9 +830,11 @@ function logout() {
                                         <CreditCard class="text-violet-500 hover:text-white" />
                                         {{ t('layout.billing') }}
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <Bell class="text-violet-500 hover:text-white" />
-                                        {{ t('layout.notifications') }}
+                                    <DropdownMenuItem as-child>
+                                        <Link href="/notifications" class="flex w-full items-center">
+                                            <Bell class="text-violet-500 hover:text-white" />
+                                            {{ t('layout.notifications') }}
+                                        </Link>
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
@@ -879,6 +883,7 @@ function logout() {
                     <div v-else class="hidden text-xs text-muted-foreground sm:block">
                         {{ activeBranchName || '—' }}
                     </div>
+                    <NotificationDropdown />
                     <LanguageSwitcher />
                     <button
                         @click="mode = mode === 'dark' ? 'light' : 'dark'"

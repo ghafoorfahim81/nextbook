@@ -300,7 +300,13 @@ class User extends Authenticatable
         'notifications' => [
             'email_notifications' => true,
             'low_balance_alert' => true,
+            'low_item_balance_alert' => true,
+            'nearest_expiry_alert' => true,
+            'overdue_purchase_alert' => true,
+            'overdue_sale_alert' => true,
             'overdue_invoice_alert' => true,
+            'sale_paid_alert' => true,
+            'purchase_paid_alert' => true,
             'new_transaction_alert' => false,
             'daily_summary_report' => false,
             'weekly_financial_summary' => false,
@@ -347,6 +353,11 @@ class User extends Authenticatable
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
     }
 
     /**
