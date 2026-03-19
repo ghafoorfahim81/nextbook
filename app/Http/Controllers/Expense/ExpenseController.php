@@ -79,8 +79,6 @@ class ExpenseController extends Controller
     {
         $expense = DB::transaction(function () use ($request, $transactionService) {
             $validated = $request->validated();
-            $dateService = app(\App\Services\DateConversionService::class);
-            $validated['date'] = $dateService->toGregorian($validated['date']);
 
             // Handle file upload
             // if ($request->hasFile('attachment')) {
@@ -174,11 +172,6 @@ class ExpenseController extends Controller
 
         DB::transaction(function () use ($request, $expense, $transactionService) {
             $validated = $request->validated();
-            $dateService = app(abstract: \App\Services\DateConversionService::class);
-
-            // Convert date if needed
-            $validated['date'] = $dateService->toGregorian($validated['date']);
-
             // Handle file upload
             // if ($request->hasFile('attachment')) {
             //     // Delete old attachment
@@ -213,7 +206,7 @@ class ExpenseController extends Controller
                 header: [
                     'currency_id' => $validated['currency_id'],
                     'rate' => $validated['rate'] ?? 1,
-                    'date' => $expense->date,
+                    'date' => $validated['date'],
                     'reference_type' => Expense::class,
                     'reference_id' => $expense->id,
                     'remark' => 'Expense: ' . $expense->category->name . ' - ' . $expense->remarks,

@@ -72,21 +72,15 @@ class ItemTransferController extends Controller
      */
     public function store(ItemTransferStoreRequest $request)
     {
-        $dateConversionService = app(DateConversionService::class);
         $validated = $request->validated();
-        // Convert date properly
-        $validated['date'] = $dateConversionService->toGregorian($validated['date']);
 
         // Convert item expire dates
         if (isset($validated['items'])) {
-            $validated['items'] = array_map(function ($item) use ($dateConversionService) {
-                if (isset($item['expire_date']) && $item['expire_date']) {
-                    $item['expire_date'] = $dateConversionService->toGregorian($item['expire_date']);
-                }
+            $validated['items'] = array_map(function ($item) {
                 return $item;
             }, $validated['items']);
-        } 
-        $transfer = $this->transferService->createTransfer($validated); 
+        }
+        $transfer = $this->transferService->createTransfer($validated);
         if ((bool) $request->create_and_new) {
             return redirect()->back()->with('success', __('general.created_successfully', ['resource' => __('general.resource.item_transfer')]));
         }
@@ -126,20 +120,11 @@ class ItemTransferController extends Controller
      */
     public function update(ItemTransferUpdateRequest $request, ItemTransfer $itemTransfer)
     {
-        $dateConversionService = app(DateConversionService::class);
         $validated = $request->validated();
-
-        // Convert date properly if provided
-        if (isset($validated['date'])) {
-            $validated['date'] = $dateConversionService->toGregorian($validated['date']);
-        }
 
         // Convert item expire dates if items are being updated
         if (isset($validated['items'])) {
-            $validated['items'] = array_map(function ($item) use ($dateConversionService) {
-                if (isset($item['expire_date']) && $item['expire_date']) {
-                    $item['expire_date'] = $dateConversionService->toGregorian($item['expire_date']);
-                }
+            $validated['items'] = array_map(function ($item) {
                 return $item;
             }, $validated['items']);
         }

@@ -62,7 +62,7 @@ function formatValue(column, row) {
             <TableHead
               v-for="column in columns"
               :key="column.key"
-              class="text-muted-foreground"
+              class="text-muted-foreground rtl:text-right"
               :class="column.align === 'right' ? 'text-right' : ''"
             >
               {{ column.label }}

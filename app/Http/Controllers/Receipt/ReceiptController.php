@@ -71,9 +71,7 @@ class ReceiptController extends Controller
     public function store(ReceiptStoreRequest $request, TransactionService $transactionService)
     {
         DB::transaction(function () use ($request, $transactionService) {
-            $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
-            $validated['date'] = $dateConversionService->toGregorian($validated['date']);
 
             $ledger = Ledger::findOrFail($validated['ledger_id']);
             $amount = (float) $validated['amount'];
@@ -116,7 +114,7 @@ class ReceiptController extends Controller
                         'credit' => $amount,
                     ],
                 ],
-            ); 
+            );
         });
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
@@ -147,13 +145,7 @@ class ReceiptController extends Controller
     public function update(ReceiptUpdateRequest $request, Receipt $receipt)
     {
         DB::transaction(function () use ($request, $receipt) {
-            $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
-
-            if (isset($validated['date'])) {
-                $validated['date'] = $dateConversionService->toGregorian($validated['date']);
-            }
-
             $receipt->update([
                 'number' => $validated['number'],
                 'date' => $validated['date'],
