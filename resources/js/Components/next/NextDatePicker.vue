@@ -37,7 +37,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, watch, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import VuePersianDatetimePicker from 'vue3-persian-datetime-picker'
 import { usePage } from '@inertiajs/vue3'
 
@@ -67,6 +67,59 @@ const props = defineProps({
 const calendarType = computed(() => user.value?.calendar_type || 'gregorian')
 const emit = defineEmits(['update:modelValue', 'change'])
 const initialized = ref(false)
+
+function normalizeDigits(value) {
+    return String(value)
+        .replace(/[\u06F0-\u06F9]/g, digit => String(digit.charCodeAt(0) - 0x06F0))
+        .replace(/[\u0660-\u0669]/g, digit => String(digit.charCodeAt(0) - 0x0660))
+}
+
+function formatGregorianDate(date) {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+}
+
+function formatJalaliDate(date) {
+    try {
+        const parts = new Intl.DateTimeFormat('en-u-ca-persian', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).formatToParts(date)
+
+        const year = parts.find(part => part.type === 'year')?.value
+        const month = parts.find(part => part.type === 'month')?.value
+        const day = parts.find(part => part.type === 'day')?.value
+
+        if (year && month && day) {
+            return `${year}-${month}-${day}`
+        }
+    } catch (e) {
+        // Fall back to Gregorian formatting when Intl Persian calendar is unavailable.
+    }
+
+    return formatGregorianDate(date)
+}
+
+function normalizeDateValue(value) {
+    if (props.type !== 'date' || value === null || value === undefined || value === '') {
+        return value
+    }
+
+    if (value instanceof Date) {
+        return calendarType.value === 'jalali' ? formatJalaliDate(value) : formatGregorianDate(value)
+    }
+
+    if (typeof value === 'string') {
+        return normalizeDigits(value).trim().replace(/\//g, '-')
+    }
+
+    return value
+}
+
 onMounted(() => {
     if (
         props.currentDate &&
@@ -74,15 +127,8 @@ onMounted(() => {
         (props.modelValue === null || props.modelValue === '' || props.modelValue === undefined)
     ) {
         const today = new Date()
-
-        // Emit ISO date for Gregorian
-        if (effectiveLocale.value === 'en') {
-            emit('update:modelValue', today.toISOString().slice(0, 10))
-        }
-        // Emit Date object for Jalali picker
-        else {
-            emit('update:modelValue', today)
-        }
+        const todayValue = calendarType.value === 'jalali' ? formatJalaliDate(today) : formatGregorianDate(today)
+        emit('update:modelValue', todayValue)
 
         initialized.value = true
     }
@@ -97,18 +143,20 @@ const shouldShowCurrentDate = computed(() => {
 const model = computed({
     get: () => props.modelValue,
     set: (value) => {
-        emit('update:modelValue', value)
-        emit('change', value)
+        const normalized = normalizeDateValue(value)
+        emit('update:modelValue', normalized)
+        emit('change', normalized)
     },
 })
 
 // Avoid passing empty strings; the picker expects null/undefined when empty
 const normalizedModel = computed({
-    get: () => (model.value === '' ? null : model.value),
+    get: () => {
+        const normalized = normalizeDateValue(model.value)
+        return normalized === '' ? null : normalized
+    },
     set: (v) => (model.value = v),
 })
-
-const page = usePage()
 
 // Determine picker calendar mode from Inertia locale (fallback to 'fa' / Jalali).
 const effectiveLocale = computed(() => {
