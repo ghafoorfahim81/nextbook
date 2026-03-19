@@ -69,9 +69,7 @@ class AccountTransferController extends Controller
     {
         // dd((string) \Symfony\Component\Uid\Ulid::generate());
         DB::transaction(function () use ($request, $transactionService) {
-            $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
-            $validated['date'] = $dateConversionService->toGregorian($validated['date']);
 
             $fromAccountId = $validated['from_account_id'];
             $toAccountId = $validated['to_account_id'];
@@ -96,7 +94,7 @@ class AccountTransferController extends Controller
                 'equity'   => ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
                 'income'   => ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
                 'expense'  => ['debit' => $toAccount->id, 'credit' => $fromAccount->id],
-            ]; 
+            ];
             $map = $mappings[$nature] ?? $mappings['asset'];
 
             $transfer = AccountTransfer::create([
@@ -118,7 +116,7 @@ class AccountTransferController extends Controller
                 [
                     'account_id' => $map['credit'],
                     'debit' => 0,
-                    'credit' => $amount, 
+                    'credit' => $amount,
                 ],
             ]);
 
@@ -154,12 +152,7 @@ class AccountTransferController extends Controller
     {
         // dd($request->all());
         DB::transaction(function () use ($request, $accountTransfer) {
-            $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
-
-            if (isset($validated['date'])) {
-                $validated['date'] = $dateConversionService->toGregorian($validated['date']);
-            }
 
             $accountTransfer->update([
                 'number' => $validated['number'] ?? $accountTransfer->number,
@@ -186,7 +179,7 @@ class AccountTransferController extends Controller
                 'equity'   => ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
                 'income'   => ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
                 'expense'  => ['debit' => $toAccount->id, 'credit' => $fromAccount->id],
-            ]; 
+            ];
             $map = $mappings[$nature] ?? $mappings['asset'];
             $transaction = $transactionService->post(
                 header: [
@@ -194,8 +187,8 @@ class AccountTransferController extends Controller
                 'rate' => $rate,
                 'date' => $date,
                 'remark' => "Transfer #{$accountTransfer->number}",
-            ], 
-            lines: [ 
+            ],
+            lines: [
                 [
                     'account_id' => $map['debit'],
                     'debit' => $amount,

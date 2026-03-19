@@ -11,6 +11,7 @@ use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Warehouse;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
@@ -83,28 +84,23 @@ class SaleController extends Controller
         $validated = $request->validated();
         $sale = DB::transaction(function () use ($request, $transactionService, $stockService, $validated) {
             // Create purchase
-            $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
 
             $validated['type']  = $validated['sale_type'] ?? 'cash';
             $validated['status'] = TransactionStatus::POSTED->value;
 
-            // Convert date properly
-            $validated['date'] = $dateConversionService->toGregorian($validated['date']);
-
             $sale = Sale::create($validated);
-            $validated['item_list'] = array_map(function ($item) use ($dateConversionService, $validated) {
-                $item['expire_date'] = $item['expire_date'] ? $dateConversionService->toGregorian($item['expire_date']) : null;
+            $validated['item_list'] = array_map(function ($item) use ($validated) {
                 $item['discount'] = $item['item_discount'] ? $item['item_discount'] : 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
                 return $item;
             }, $validated['item_list']);
             $sale->items()->createMany($validated['item_list']);
-            
+
             $lines = [];
             foreach ($validated['item_list'] as $item) {
-                $total = (float) $item['quantity'] * (float) $item['unit_price']; 
-                $itemModel = \App\Models\Inventory\Item::find($item['item_id']); 
+                $total = (float) $item['quantity'] * (float) $item['unit_price'];
+                $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
                 $unitCost = $itemModel->avgCost();
                 $totalCost = $unitCost * $item['quantity'];
                 $stock = $stockService->post([
@@ -242,13 +238,7 @@ class SaleController extends Controller
     public function update(SaleUpdateRequest $request, Sale $sale, TransactionService $transactionService, StockService $stockService)
     {
         $sale = DB::transaction(function () use ($request, $sale, $transactionService, $stockService) {
-            $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
-
-            // Convert date properly
-            if (isset($validated['date'])) {
-                $validated['date'] = $dateConversionService->toGregorian($validated['date']);
-            }
 
             $validated['type'] = $validated['sale_purchase_type_id'] ?? $sale->type;
 
@@ -259,8 +249,7 @@ class SaleController extends Controller
             if (isset($validated['item_list'])) {
                 // Remove old stock out entries
                 $sale->items()->forceDelete();
-                $validated['item_list'] = array_map(function ($item) use ($dateConversionService, $validated) {
-                    $item['expire_date'] = $item['expire_date'] ? $dateConversionService->toGregorian($item['expire_date']) : null;
+                $validated['item_list'] = array_map(function ($item) use ($validated) {
                     $item['discount'] = $item['discount'] ? $item['discount'] : 0;
                     $item['warehouse_id'] = $validated['warehouse_id'];
                     return $item;

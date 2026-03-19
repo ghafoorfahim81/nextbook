@@ -18,7 +18,7 @@ const journalEntry = computed(() => page.props.journalEntry?.data || {})
 const accounts = computed(() => page.props.accounts?.data || [])
 const ledgers = computed(() => page.props.ledgers?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
-const journalClasses = computed(() => page.props.journalClasses?.data || [])   
+const journalClasses = computed(() => page.props.journalClasses?.data || [])
 useLazyProps(page.props, ['accounts', 'ledgers', 'currencies'])
 
 const form = useForm({
@@ -70,7 +70,7 @@ onMounted(() => {
     credit: Number(line.credit) || 0,
     selected_account: accounts.value.find(acc => acc.id === line.account_id) || null,
     remark: getLineRemark(line),
-    ledger: line.ledger ?? '', 
+    ledger: line.ledger ?? '',
     selected_ledger: ledgers.value.find(ledger => ledger.id === line.ledger_id) || null,
     journal_class_id: line.journal_class_id ?? '',
     selected_journal_class: line.journal_class || null,
@@ -119,7 +119,7 @@ function addLine() {
     debit: 0,
     credit: 0,
     remark: '',
-    ledger: '', 
+    ledger: '',
     journal_class_id: '',
   })
 }

@@ -96,22 +96,19 @@ class ItemController extends Controller
     }
     public function store(ItemStoreRequest $request)
     {
-        $validated = $request->validated(); 
+        $validated = $request->validated();
         $validated['item_type'] = $validated['item_type']??ItemType::INVENTORY_MATERIALS->value;
         DB::transaction(function () use ($validated, $request) {
             // 1) Create item
             $item = Item::create($validated);
             // 2) Create opening stocks (if any)
             $openings = collect($validated['openings'] ?? []);
-            $dateConversionService = app(\App\Services\DateConversionService::class);
             $transactionService = app(\App\Services\TransactionService::class);
-            $date = $dateConversionService->toGregorian(Carbon::now()->toDateString());
             $openings
                 ->filter(function ($o) {
                     return !empty($o['warehouse_id']) && $o['quantity'] > 0;
                 })
-                ->each(function ($o) use ($item, $validated, $dateConversionService, $transactionService, $date) {
-                    $expire_date = $o['expire_date'] ? $dateConversionService->toGregorian($o['expire_date']) : null;
+                ->each(function ($o) use ($item, $validated, $transactionService) {
                     // create stock
                     $stockService = app(\App\Services\StockService::class);
                     $stock = $stockService->post([
@@ -123,12 +120,12 @@ class ItemController extends Controller
                         'unit_cost'       => (float) $o['unit_price'],
                         'status'          => StockStatus::DRAFT->value,
                         'batch'           => $o['batch'] ?? null,
-                        'date'            => $date,
-                        'expire_date'     => $expire_date,
+                        'date'            => Carbon::now()->toDateString(),
+                        'expire_date'     => $o['expire_date'] ?? null,
                         'size_id'         => $validated['size_id'] ?? null,
                         'warehouse_id'    => $o['warehouse_id'],
-                        'branch_id'       => auth()->user()->company->branch_id, 
-                    ]); 
+                        'branch_id'       => auth()->user()->company->branch_id,
+                    ]);
                 });
                 // Create opening transactions
                 if ($openings->filter(function ($o) {
@@ -154,7 +151,7 @@ class ItemController extends Controller
                         header: [
                           'currency_id' => $homeCurrency->id,
                           'rate' => 1,
-                          'date' => $date,
+                          'date' => Carbon::now()->toDateString(),
                           'reference_type' => Item::class,
                           'reference_id' => $item->id,
                           'remark' => 'Opening balance for item ' . $item->name,
@@ -184,7 +181,7 @@ class ItemController extends Controller
         return response()->json([
             'data' => ItemResource::make($item),
         ]);
-        
+
     }
     public function inRecords(Request $request, Item $item)
     {
@@ -230,7 +227,7 @@ class ItemController extends Controller
         $accountModel = new Account();
         $otherCurrentAssetsAccounts = $accountModel->getAccountsByAccountTypeSlug('other-current-asset');
         $incomeAccounts = $accountModel->getAccountsByAccountTypeSlug('income');
-        $costAccounts = $accountModel->getAccountsByAccountTypeSlug('cost-of-goods-sold'); 
+        $costAccounts = $accountModel->getAccountsByAccountTypeSlug('cost-of-goods-sold');
         return inertia('Inventories/Items/Edit', [
             'item' => new ItemResource($item),
             'otherCurrentAssetsAccounts' => $otherCurrentAssetsAccounts,
@@ -241,7 +238,7 @@ class ItemController extends Controller
 
     public function update(ItemUpdateRequest $request, Item $item)
     {
-        $validated = $request->validated(); 
+        $validated = $request->validated();
         // Handle photo update
         // dd($request->all());
         if ($request->hasFile('photo')) {
@@ -253,24 +250,21 @@ class ItemController extends Controller
             $item->update($validated);
 
             // 2) Handle openings
-            $openings = collect($validated['openings'] ?? []); 
-            $dateConversionService = app(\App\Services\DateConversionService::class);
-            $date =   $dateConversionService->toGregorian(Carbon::now()->toDateString());
+            $openings = collect($validated['openings'] ?? []);
             $transactionService = app(\App\Services\TransactionService::class);
             // Remove old openings (optional: you may also soft-delete instead)
             $itemOpening = StockMovement::where('item_id', $item->id)
                 ->where('source', StockSourceType::OPENING->value)
                 ->where('status', StockStatus::DRAFT->value)
-                ->get(); 
+                ->get();
             $itemOpening->each(function ($opening) {
                 $opening->forceDelete();
             });
- 
+
             $openings
                 ->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0 && $o['status'] == StockStatus::DRAFT->value)
-                ->each(function ($o) use ($item, $validated, $dateConversionService, $date) {
+                ->each(function ($o) use ($item, $validated) {
                     $stockService = app(\App\Services\StockService::class);
-                    $expire_date = $o['expire_date'] ? $dateConversionService->toGregorian($o['expire_date']) : null;
 
                     StockBalance::where('item_id', $item->id)
                     ->where('status', StockStatus::DRAFT->value)
@@ -290,17 +284,17 @@ class ItemController extends Controller
                         'unit_cost'       => (float) $o['unit_price'],
                         'status'          => StockStatus::DRAFT->value,
                         'batch'           => $o['batch'] ?? null,
-                        'date'            => $date,
-                        'expire_date'     => $expire_date,
+                        'date'            => Carbon::now()->toDateString(),
+                        'expire_date'     => $o['expire_date'] ?? null,
                         'size_id'         => $validated['size_id'] ?? null,
                         'warehouse_id'    => $o['warehouse_id'],
-                        'branch_id'       => auth()->user()->company->branch_id, 
+                        'branch_id'       => auth()->user()->company->branch_id,
                     ]);
-                     
+
                 });
 
                 // Delete opening stocks
-                $filteredOpenings = $openings->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0); 
+                $filteredOpenings = $openings->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0);
 
                 $openingTransaction = $item->openingTransaction()->first();
                     if ($openingTransaction) {
@@ -333,7 +327,7 @@ class ItemController extends Controller
                         header: [
                           'currency_id' => $homeCurrency->id,
                           'rate' => 1,
-                          'date' => $date,
+                          'date' => Carbon::now()->toDateString(),
                           'reference_type' => Item::class,
                           'reference_id' => $item->id,
                           'remark' => 'Opening balance for item ' . $item->name,
@@ -369,7 +363,7 @@ class ItemController extends Controller
             DB::transaction(function () use ($item) {
                 // Delete openings with their stocks (with existence checks)
 
-                $stockMovement = StockMovement::where('item_id', $item->id) 
+                $stockMovement = StockMovement::where('item_id', $item->id)
                 ->where('status', StockStatus::POSTED->value)
                 ->get();
                 if($stockMovement->count() > 0) {
@@ -379,7 +373,7 @@ class ItemController extends Controller
                     ]);
                 }
                 else{
-                    $stockMovement = StockMovement::where('item_id', $item->id) 
+                    $stockMovement = StockMovement::where('item_id', $item->id)
                     ->where('status', StockStatus::DRAFT->value)
                     ->get();
                     if($stockMovement->count() > 0) {
@@ -387,7 +381,7 @@ class ItemController extends Controller
                             $movement->delete();
                         });
                     }
-                    $stockBalance = StockBalance::where('item_id', $item->id) 
+                    $stockBalance = StockBalance::where('item_id', $item->id)
                     ->where('status', StockStatus::DRAFT->value)
                     ->get();
                     if($stockBalance->count() > 0) {
@@ -395,7 +389,7 @@ class ItemController extends Controller
                             $balance->delete();
                         });
                     }
-                } 
+                }
 
                 // Delete opening transactions with their related models
                 $openingTransaction = $item->openingTransaction()->first();
@@ -430,7 +424,7 @@ class ItemController extends Controller
                 // Restore the main item first
                 $item->restore();
                 $item->stocks()->withTrashed()->restore();
-                $item->stockBalances()->withTrashed()->restore(); 
+                $item->stockBalances()->withTrashed()->restore();
 
                 // Restore opening transactions with their related models
                 $openingTransaction = $item->openingTransaction()->withTrashed()->first();
