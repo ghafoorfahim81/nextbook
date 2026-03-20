@@ -1,34 +1,27 @@
 <?php
 
-namespace Database\Factories\Purchase;
+namespace Database\Factories\Sale;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Warehouse;
-use App\Models\Purchase\Purchase;
-use App\Models\Inventory\Item;
 use App\Models\Administration\UnitMeasure;
+use App\Models\Inventory\Item;
+use App\Models\Sale\Sale;
+use App\Models\Sale\SaleItem;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
-class PurchaseItemFactory extends Factory
+class SaleItemFactory extends Factory
 {
-    /**
-     * The name of the factory's corresponding model.
-     *
-     * @var string
-     */
-    protected $model = \App\Models\Purchase\PurchaseItem::class;
+    protected $model = SaleItem::class;
 
-    /**
-     * Define the model's default state.
-     */
     public function definition(): array
     {
         return [
-            'purchase_id' => Purchase::factory(),
+            'sale_id' => Sale::factory(),
             'item_id' => Item::factory(),
             'batch' => fake()->optional()->bothify('BATCH-###'),
-            'expire_date' => fake()->dateTimeBetween('+1 month', '+2 years')->format('Y-m-d'),
-            'quantity' => fake()->randomFloat(2, 1, 100),
+            'expire_date' => null,
+            'quantity' => fake()->randomFloat(2, 1, 50),
             'unit_measure_id' => UnitMeasure::factory(),
             'warehouse_id' => Warehouse::factory(),
             'size_id' => null,
