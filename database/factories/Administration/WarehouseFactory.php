@@ -5,7 +5,6 @@ namespace Database\Factories\Administration;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Warehouse;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
 class WarehouseFactory extends Factory
 {
@@ -14,12 +13,11 @@ class WarehouseFactory extends Factory
     public function definition(): array
     {
         return [
-            'id' => Str::ulid(),
-            'name' => fake()->name(),
-            'address' => fake()->word(),
-            'is_main' => fake()->boolean(),
+            'name' => fake()->unique()->company().' Warehouse',
+            'address' => fake()->optional()->address(),
+            'is_main' => false,
             'branch_id' => Branch::factory(),
+            'is_active' => true,
         ];
     }
 }
-

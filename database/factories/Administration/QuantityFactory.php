@@ -3,10 +3,8 @@
 namespace Database\Factories\Administration;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Quantity;
-use App\Models\User;
 
 class QuantityFactory extends Factory
 {
@@ -22,11 +20,16 @@ class QuantityFactory extends Factory
      */
     public function definition(): array
     {
+        $slug = fake()->unique()->slug(2);
+
         return [
             'quantity' => fake()->word(),
-            'unit' => fake()->word(),
-            'symbol' => fake()->word(),
+            'unit' => fake()->randomElement(['piece', 'kg', 'liter']),
+            'symbol' => strtoupper(fake()->lexify('??')),
+            'slug' => $slug,
             'branch_id' => Branch::factory(),
+            'is_main' => false,
+            'is_active' => true,
         ];
     }
 }

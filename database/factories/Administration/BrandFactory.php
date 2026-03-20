@@ -3,10 +3,8 @@
 namespace Database\Factories\Administration;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Brand;
-use App\Models\User;
 
 class BrandFactory extends Factory
 {
@@ -23,21 +21,19 @@ class BrandFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'legal_name' => fake()->word(),
-            'registration_number' => fake()->word(),
-            'logo' => fake()->word(),
-            'email' => fake()->safeEmail(),
-            'phone' => fake()->phoneNumber(),
-            'website' => fake()->word(),
-            'industry' => fake()->word(),
-            'type' => fake()->word(),
-            'address' => fake()->word(),
+            'name' => fake()->unique()->company(),
+            'legal_name' => fake()->optional()->company(),
+            'registration_number' => fake()->optional()->bothify('REG-#####'),
+            'logo' => null,
+            'email' => fake()->optional()->safeEmail(),
+            'phone' => fake()->optional()->phoneNumber(),
+            'website' => fake()->optional()->url(),
+            'industry' => fake()->optional()->word(),
+            'type' => fake()->optional()->word(),
+            'address' => fake()->optional()->address(),
             'city' => fake()->city(),
             'country' => fake()->country(),
             'branch_id' => Branch::factory(),
-            'created_by' => User::factory(),
-            'updated_by' => User::factory(),
         ];
     }
 }
