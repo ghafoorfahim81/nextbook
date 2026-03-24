@@ -78,15 +78,13 @@ class PaymentController extends Controller
     public function store(PaymentStoreRequest $request, TransactionService $transactionService)
     {
         DB::transaction(function () use ($request, $transactionService) {
-            $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
-            $validated['date'] = $dateConversionService->toGregorian($validated['date']);
 
             $ledger = Ledger::findOrFail($validated['ledger_id']);
             $amount = (float) $validated['amount'];
             $currencyId = $validated['currency_id'];
             $rate = (float) $validated['rate'];
-            $bankAccountId = $validated['bank_account_id']; 
+            $bankAccountId = $validated['bank_account_id'];
             $payment = Payment::create([
                 'number' => $validated['number'],
                 'date' => $validated['date'],
@@ -124,7 +122,7 @@ class PaymentController extends Controller
 
                 ],
             );
- 
+
         });
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
@@ -155,12 +153,7 @@ class PaymentController extends Controller
     public function update(PaymentUpdateRequest $request, Payment $payment)
     {
         DB::transaction(function () use ($request, $payment) {
-            $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
-
-            if (isset($validated['date'])) {
-                $validated['date'] = $dateConversionService->toGregorian($validated['date']);
-            }
 
             $payment->update([
                 'number' => $validated['number'] ?? $payment->number,
@@ -174,7 +167,6 @@ class PaymentController extends Controller
             $amount = isset($validated['amount']) ? (float) $validated['amount'] : ($payment->transaction?->lines[0]->debit ?? 0);
             $currencyId = $validated['currency_id'] ?? $payment->transaction?->currency_id;
             $rate = isset($validated['rate']) ? (float) $validated['rate'] : ($payment->transaction?->rate ?? 0);
-            $date = $validated['date'] ?? $payment->date;
             $bankAccountId = $validated['bank_account_id'] ?? $payment->transaction?->lines[0]->account_id;
             $glAccounts = Cache::get('gl_accounts');
             $apAccountId = $glAccounts['account-payable'];
@@ -186,7 +178,7 @@ class PaymentController extends Controller
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
-                    'date' => $date,
+                    'date' => $payment->date,
                     'reference_type' => Payment::class,
                     'reference_id' => $payment->id,
                 ],

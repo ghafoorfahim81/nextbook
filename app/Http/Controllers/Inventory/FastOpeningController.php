@@ -44,9 +44,6 @@ class FastOpeningController extends Controller
         DB::transaction(function () use ($itemsWithQuantity) {
             foreach ($itemsWithQuantity as $itemData) {
                 // Create new stock + opening
-            $dateConversionService = app(abstract: \App\Services\DateConversionService::class);
-
-                $expire_date = $itemData['expire_date'] ? $dateConversionService->toGregorian($itemData['expire_date']) : null;
                 $stockService = app(\App\Services\StockService::class);
                     $stock = $stockService->post([
                         'item_id'         => $itemData['item_id'],
@@ -58,11 +55,11 @@ class FastOpeningController extends Controller
                         'status'          => StockStatus::DRAFT->value,
                         'batch'           => $itemData['batch'] ?? null,
                         'date'            => Carbon::now()->toDateString(),
-                        'expire_date'     => $expire_date,
+                        'expire_date'     => $itemData['expire_date'] ?? null,
                         'size_id'         => $itemData['size_id'] ?? null,
                         'warehouse_id'    => $itemData['warehouse_id'],
                         'branch_id'       => auth()->user()->company->branch_id,
-                    ]); 
+                    ]);
 
                     $homeCurrency = Cache::get('home_currency');
                     $date = Carbon::now()->toDateString();

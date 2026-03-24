@@ -81,18 +81,13 @@ class PurchaseController extends Controller
         $validated = $request->validated();
         $purchase = DB::transaction(function () use ($request, $transactionService, $stockService) {
             // Create purchase
-            $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
 
             $validated['type']  = $validated['purchase_type'] ?? 'cash';
             $validated['status'] = TransactionStatus::POSTED->value;
 
-            // Convert date properly
-            $validated['date'] = $dateConversionService->toGregorian($validated['date']);
-
             $purchase = Purchase::create($validated);
-            $validated['item_list'] = array_map(function ($item) use ($dateConversionService, $validated) {
-                $item['expire_date'] = $item['expire_date'] ? $dateConversionService->toGregorian($item['expire_date']) : null;
+            $validated['item_list'] = array_map(function ($item) use ($validated) {
                 $item['discount'] = $item['item_discount'] ? $item['item_discount'] : 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
                 return $item;
@@ -226,14 +221,8 @@ class PurchaseController extends Controller
     {
 
         $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $stockService) {
-            $dateConversionService = app(\App\Services\DateConversionService::class);
             $validated = $request->validated();
             $stockService = new StockService();
-            // Convert date properly
-            if (isset($validated['date'])) {
-                $validated['date'] = $dateConversionService->toGregorian($validated['date']);
-            }
-
             $validated['type'] = $validated['sale_purchase_type_id'] ?? $purchase->type;
 
             // Update main purchase record
@@ -244,8 +233,7 @@ class PurchaseController extends Controller
                 // Remove old stock entries
                 // Delete old items and create new ones
                 $purchase->items()->forceDelete();
-                $validated['item_list'] = array_map(function ($item) use ($dateConversionService, $validated) {
-                    $item['expire_date'] = $item['expire_date'] ? $dateConversionService->toGregorian($item['expire_date']) : null;
+                $validated['item_list'] = array_map(function ($item) use ($validated) {
                     $item['discount'] = $item['discount'] ? $item['discount'] : 0;
                     $item['warehouse_id'] = $validated['warehouse_id'];
                     return $item;
