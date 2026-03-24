@@ -89,7 +89,7 @@ function setReport(report) {
         </label>
       </div>
 
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div class="grid gap-4 md:grid-cols-3 xl:grid-cols-4">
         <label class="space-y-2">
           <span class="text-sm font-medium text-foreground">{{ t('report.filters.date_from') }}</span>
           <input :value="filters.date_from" type="date" :class="baseInputClass" @input="setFilter('date_from', $event.target.value)" />

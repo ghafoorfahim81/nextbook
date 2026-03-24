@@ -3,13 +3,12 @@
 namespace App\Services;
 use App\Enums\StockMovementType;
 use App\Enums\StockStatus;
+use App\Models\Administration\UnitMeasure;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
-use App\Models\Inventory\StockMovement;
-use App\Models\Inventory\InventorySetting;
+use App\Models\Inventory\StockMovement; 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException; 
 class StockService
 {
     /**
@@ -18,8 +17,14 @@ class StockService
     public function post(array $data): void
     {
         DB::transaction(function () use ($data) {
-
             $item = Item::lockForUpdate()->findOrFail($data['item_id']);
+
+            if ($item->unit_measure_id != $data['unit_measure_id']) {
+                $selected_um = UnitMeasure::find($data['unit_measure_id'])->unit;
+                $current_um  = UnitMeasure::find($item->unit_measure_id)->unit;
+                $data['unit_cost']    = (($current_um * $data['unit_cost']) / $selected_um);
+                $data['quantity'] = ($selected_um * $data['quantity']) / $current_um;
+            }
             if ($data['movement_type'] === StockMovementType::IN->value) {
                 $this->handleIn($item, $data);
             } else {

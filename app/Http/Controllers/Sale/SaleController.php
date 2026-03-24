@@ -11,6 +11,7 @@ use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Warehouse;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
@@ -90,7 +91,7 @@ class SaleController extends Controller
             $validated['status'] = TransactionStatus::POSTED->value;
 
             // Convert date properly
-            $validated['date'] = $dateConversionService->toGregorian($validated['date']);
+            $validated['date'] = $validated['date']? $dateConversionService->toGregorian($validated['date']):$dateConversionService->toGregorian(Carbon::now());
 
             $sale = Sale::create($validated);
             $validated['item_list'] = array_map(function ($item) use ($dateConversionService, $validated) {
