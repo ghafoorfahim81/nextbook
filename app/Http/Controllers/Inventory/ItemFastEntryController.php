@@ -59,9 +59,6 @@ class ItemFastEntryController extends Controller
                 $qty = (float) ($r['quantity'] ?? 0);
                 if (!empty($r['warehouse_id']) && $qty > 0) {
                     $cost = (float) ($r['purchase_price'] ?? 0);
-                    $dateConversionService = app(\App\Services\DateConversionService::class);
-                    $expire_date = $r['expire_date']?$dateConversionService->toGregorian($r['expire_date']):null;
-                    $date = $dateConversionService->toGregorian(Carbon::now()->toDateString());
                     $transactionService = app(\App\Services\TransactionService::class);
                     $stockService = app(\App\Services\StockService::class);
 
@@ -75,8 +72,8 @@ class ItemFastEntryController extends Controller
                         'unit_cost'       => (float) $r['purchase_price'],
                         'status'          => StockStatus::DRAFT->value,
                         'batch'           => $r['batch'] ?? null,
-                        'date'            => $date,
-                        'expire_date'     => $expire_date,
+                        'date'            => Carbon::now()->toDateString(),
+                        'expire_date'     => $r['expire_date'] ?? null,
                         'size_id'         => $r['size_id'] ?? null,
                         'warehouse_id'    => $r['warehouse_id'],
                         'branch_id'       => auth()->user()->company->branch_id,
@@ -90,7 +87,7 @@ class ItemFastEntryController extends Controller
                         header: [
                             'currency_id' => $homeCurrency->id,
                             'rate' => 1,
-                            'date' => $date,
+                            'date' => Carbon::now()->toDateString(),
                             'reference_type' => Item::class,
                             'reference_id' => $item->id,
                             'remark' => 'Opening balance for item ' . $item->name,
