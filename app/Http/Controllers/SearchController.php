@@ -289,7 +289,7 @@ class SearchController extends Controller
                     }
                 });
             })
-            ->orderBy('name')
+            ->orderBy('created_at','desc')
             ->limit($limit);
 
         if ($inStockOnly) {

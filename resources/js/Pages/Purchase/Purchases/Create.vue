@@ -490,7 +490,7 @@ const notifyIfDuplicate = (index) => {
     }
 }
 
-const onhand = (index) => {
+const onhand1 = (index) => {
     const item = form.items[index]
     if (!item || !item.selected_item) return ''
     const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1
@@ -501,6 +501,22 @@ const onhand = (index) => {
     const qty = Number(item.quantity) || 0
     return converted + free + qty;
 }
+
+const onhand = (index) => {
+    const item = form.items[index]
+    if (!item || !item.selected_item) return ''
+    const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1
+    const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
+    console.log('this is selected measure',selectedUnit, 'and this is based unit', baseUnit)
+    const qty = Number(item.quantity) || 0
+    const onHand = Number(item.on_hand) ||0
+    const converted = onHand>0?Number((onHand * baseUnit) /selectedUnit):Number((onHand * selectedUnit) /baseUnit)
+    console.log('this is converted',onHand)
+
+    const free = Number(item.free) || 0
+    return converted + free +qty;
+}
+
 
 const toNum = (v, d = 0) => {
     const n = Number(v)
@@ -745,7 +761,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                                 />
                             </td>
                             <td class="text-center" v-if="item_columns.on_hand">
-                                 <span :title="String(onhand(index))" >{{ Number(onhand(index)).toFixed(1) }}</span>
+                                 <span :title="String(onhand(index))" >{{ Number(onhand(index)) }}</span>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect

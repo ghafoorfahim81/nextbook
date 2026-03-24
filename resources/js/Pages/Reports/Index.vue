@@ -449,10 +449,10 @@ function exportReport() {
 
 <template>
   <AppLayout>
-    <Head :title="t('report.title')" />
+    <Head :title="t('report.title')" /> 
 
     <div class="space-y-6 text-foreground">
-      <section class="overflow-hidden rounded-[30px] border border-emerald-800/30 bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-950 p-6 text-white shadow-[0_20px_50px_rgba(6,78,59,0.35)]">
+      <section class="overflow-hidden rounded-[30px] border border-emerald-800/30 bg-gradient-to-br from-violet-500 via-violet-900 to-violet-950 p-6 text-white shadow-[0_20px_50px_rgba(6,78,59,0.35)]">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div class="space-y-2">
             <h1 class="text-3xl font-semibold tracking-tight">{{ t('report.title') }}</h1>

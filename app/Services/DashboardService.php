@@ -20,6 +20,9 @@ class DashboardService
 
     public function getDashboardData(?Authenticatable $user = null): array
     {
+        $dateConversionService = app(\App\Services\DateConversionService::class);
+        // 'date' => $dateConversionService->toDisplay($this->date),
+
         $branchId = $this->resolveBranchId($user);
         $today = Carbon::today();
         $startDate = $today->copy()->subDays(29);
@@ -28,8 +31,8 @@ class DashboardService
         return [
             'meta' => [
                 'branch_id' => $branchId,
-                'generated_at' => now()->toIso8601String(),
-                'today' => $today->toDateString(),
+                'generated_at' => $dateConversionService->toDisplay(now()->toIso8601String()),
+                'today' =>$dateConversionService->toDisplay($today->toDateString()),
             ],
             'kpis' => $this->getKpis($branchId, $today),
             'sales_purchase_chart' => $this->getSalesPurchaseChart($branchId, $startDate, $endDate),
@@ -75,16 +78,18 @@ class DashboardService
 
         $series = [];
         $cursor = $startDate->copy();
+        $dateConversionService = app(\App\Services\DateConversionService::class);
+
         while ($cursor->lte($endDate)) {
             $date = $cursor->toDateString();
             $series[] = [
                 'date' => $date,
-                'label' => $this->dateConversionService->toDisplay($date),
+                'label' => $dateConversionService->toDisplay($date),
                 'sales' => $this->moneyValue($sales[$date] ?? 0),
                 'purchases' => $this->moneyValue($purchases[$date] ?? 0),
             ];
             $cursor->addDay();
-        }
+        } 
 
         return [
             'period' => [
