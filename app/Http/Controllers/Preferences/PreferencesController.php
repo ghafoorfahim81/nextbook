@@ -23,6 +23,8 @@ use App\Support\Inertia\CacheKey;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Http\Resources\Ledger\LedgerResource;
+use App\Support\Preferences\InvoiceThemeOptions;
+
 class PreferencesController extends Controller
 {
     public function index(Request $request)
@@ -68,6 +70,7 @@ class PreferencesController extends Controller
             'sizes' => $sizes,
             'currencies' => $currencies,
             'ledgers' => $ledgers,
+            'invoiceThemes' => InvoiceThemeOptions::all(),
         ]);
     }
 
@@ -212,4 +215,3 @@ class PreferencesController extends Controller
         ];
     }
 }
-

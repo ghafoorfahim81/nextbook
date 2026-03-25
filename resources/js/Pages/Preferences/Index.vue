@@ -12,12 +12,13 @@ import { Switch } from '@/Components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
 import { Textarea } from '@/Components/ui/textarea'
 import { Checkbox } from '@/Components/ui/checkbox'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/Components/ui/dialog'
 import { toast } from 'vue-sonner';
 
 import {
     Palette, Package, ShoppingCart, ShoppingBag, CreditCard, Calculator,
     Bell, Shield, Database, Globe, Monitor, RotateCcw, Download, Upload,
-    Save, Plug, SlidersHorizontal as preferencesIcon
+    Save, Plug, Eye, SlidersHorizontal as preferencesIcon
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -32,9 +33,14 @@ const props = defineProps({
     sizes: { type: [Array, Object], required: true },
     currencies: { type: [Array, Object], required: true },
     ledgers: { type: [Array, Object], required: true },
+    invoiceThemes: { type: Array, required: true },
 })
 
 const { t } = useI18n()
+const tOr = (key, fallback, params = {}) => {
+    const translated = t(key, params)
+    return translated === key ? fallback : translated
+}
 
 const activeTab = ref('appearance')
 
@@ -61,6 +67,7 @@ const allWarehouses = computed(() => props.warehouses?.data ?? props.warehouses 
 const allSizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
 const allCurrencies = computed(() => props.currencies?.data ?? props.currencies ?? [])
 const allLedgers = computed(() => props.ledgers?.data ?? props.ledgers ?? [])
+const invoiceThemes = computed(() => props.invoiceThemes ?? [])
 
 const customerLedgers = computed(() => allLedgers.value.filter(l => l.type === 'customer'))
 const supplierLedgers = computed(() => allLedgers.value.filter(l => l.type === 'supplier'))
@@ -155,6 +162,22 @@ const saleTransactionTypes = ['sale', 'sale_order', 'sale_return', 'sale_quotati
 const purchaseTransactionTypes = ['purchase', 'purchase_order', 'purchase_return', 'purchase_quotation']
 const activeSaleType = ref('sale')
 const activePurchaseType = ref('purchase')
+const previewInvoiceTheme = ref(null)
+const invoiceThemePreviewOpen = ref(false)
+
+const selectedInvoiceTheme = computed(() => {
+    return invoiceThemes.value.find(theme => theme.id === form.sale?.invoice_theme) ?? invoiceThemes.value[0] ?? null
+})
+
+const selectInvoiceTheme = (themeId) => {
+    if (!form.sale) form.sale = {}
+    form.sale.invoice_theme = themeId
+}
+
+const openInvoiceThemePreview = (theme) => {
+    previewInvoiceTheme.value = theme
+    invoiceThemePreviewOpen.value = true
+}
 
 const generalFields = [
     { key: 'number', label: 'preferences.fields.number' },
@@ -508,6 +531,80 @@ const receiptPaymentFields = [
                             </template>
 
                             <template v-if="activeSaleType === 'sale'">
+                                <div class="space-y-4">
+                                    <div class="space-y-1">
+                                        <Label class="text-base font-medium">{{ tOr('preferences.sale.invoice_theme', 'Invoice Theme') }}</Label>
+                                        <p class="text-sm text-muted-foreground">
+                                            {{ tOr('preferences.sale.invoice_theme_description', 'Preview the available invoice formats and choose the one you want to use by default.') }}
+                                        </p>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                        <div
+                                            v-for="theme in invoiceThemes"
+                                            :key="theme.id"
+                                            class="overflow-hidden rounded-xl border bg-background shadow-sm transition-all"
+                                            :class="form.sale.invoice_theme === theme.id ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/40'"
+                                        >
+                                            <button
+                                                type="button"
+                                                class="block w-full bg-muted/40"
+                                                @click="openInvoiceThemePreview(theme)"
+                                            >
+                                                <img
+                                                    :src="theme.preview_url"
+                                                    :alt="theme.name"
+                                                    class="aspect-[4/5] h-full w-full object-cover object-top transition-transform duration-200 hover:scale-[1.01]"
+                                                >
+                                            </button>
+
+                                            <div class="space-y-3 p-4">
+                                                <div class="flex items-start justify-between gap-3">
+                                                    <div>
+                                                        <p class="font-medium text-foreground">{{ theme.name }}</p>
+                                                        <p class="text-sm text-muted-foreground">
+                                                            {{ form.sale.invoice_theme === theme.id
+                                                                ? tOr('preferences.sale.selected_theme', 'Selected as your default invoice theme')
+                                                                : tOr('preferences.sale.preview_hint', 'Open preview or select this format')
+                                                            }}
+                                                        </p>
+                                                    </div>
+                                                    <span
+                                                        v-if="form.sale.invoice_theme === theme.id"
+                                                        class="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+                                                    >
+                                                        {{ tOr('preferences.sale.selected', 'Selected') }}
+                                                    </span>
+                                                </div>
+
+                                                <div class="flex gap-2">
+                                                    <Button type="button" variant="outline" size="sm" class="flex-1" @click="openInvoiceThemePreview(theme)">
+                                                        <Eye class="mr-2 h-4 w-4" />
+                                                        {{ tOr('preferences.sale.preview', 'Preview') }}
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        class="flex-1"
+                                                        :variant="form.sale.invoice_theme === theme.id ? 'default' : 'secondary'"
+                                                        @click="selectInvoiceTheme(theme.id)"
+                                                    >
+                                                        {{ form.sale.invoice_theme === theme.id
+                                                            ? tOr('preferences.sale.selected', 'Selected')
+                                                            : tOr('preferences.sale.select_theme', 'Select')
+                                                        }}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div v-if="selectedInvoiceTheme" class="rounded-lg border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+                                        <span class="font-medium text-foreground">{{ tOr('preferences.sale.current_theme', 'Current theme') }}:</span>
+                                        {{ selectedInvoiceTheme.name }}
+                                    </div>
+                                </div>
+
                                 <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                                     <div class="flex items-center gap-3">
                                         <Switch
@@ -1374,6 +1471,24 @@ const receiptPaymentFields = [
                 </div>
             </div>
         </div>
+
+        <Dialog :open="invoiceThemePreviewOpen" @update:open="invoiceThemePreviewOpen = $event">
+            <DialogContent class="max-w-5xl">
+                <DialogHeader>
+                    <DialogTitle>{{ previewInvoiceTheme?.name ?? tOr('preferences.sale.invoice_theme', 'Invoice Theme') }}</DialogTitle>
+                    <DialogDescription>
+                        {{ tOr('preferences.sale.preview_dialog_description', 'Preview the invoice format before making it your default theme.') }}
+                    </DialogDescription>
+                </DialogHeader>
+
+                <div v-if="previewInvoiceTheme" class="overflow-hidden rounded-xl border bg-muted/30">
+                    <img
+                        :src="previewInvoiceTheme.preview_url"
+                        :alt="previewInvoiceTheme.name"
+                        class="max-h-[75vh] w-full object-contain object-top"
+                    >
+                </div>
+            </DialogContent>
+        </Dialog>
     </AppLayout>
 </template>
-

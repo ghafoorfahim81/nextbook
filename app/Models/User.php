@@ -109,6 +109,7 @@ class User extends Authenticatable
                 'total_price' => true,
             ],
             'invoice_prefix' => 'INV-',
+            'invoice_theme' => 'format1',
             'start_number' => 1,
             'terms' => '',
             'due_days' => 30,
