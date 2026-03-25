@@ -412,7 +412,7 @@ const paidLabel = computed(() => isPayment.value ? t('voucher.paid_short') : t('
 }
 
 .voucher-footer {
-  margin-top: 34px;
+  margin-top: 80px;
   padding: 0 32px 24px;
   display: flex;
   justify-content: center;
