@@ -76,8 +76,7 @@ class PurchaseController extends Controller
     }
 
     public function store(PurchaseStoreRequest $request, TransactionService $transactionService, StockService $stockService)
-    {
-        //dd($request->all());
+    { 
         $validated = $request->validated();
         $purchase = DB::transaction(function () use ($request, $transactionService, $stockService) {
             // Create purchase
@@ -92,15 +91,17 @@ class PurchaseController extends Controller
                 $item['warehouse_id'] = $validated['warehouse_id'];
                 return $item;
             }, $validated['item_list']);
-            $purchase->items()->createMany($validated['item_list']);
-
+            $purchase->items()->createMany($validated['item_list']); 
             $lines = [];
             foreach ($validated['item_list'] as $item) {
+                $quantity = (float) $item['quantity'];
+                $unitPrice = (float) $item['unit_price'];
+                $itemDiscount = isset($item['discount']) ? (float) $item['discount'] : 0;
                 $stock = $stockService->post([
                     'item_id'         => $item['item_id'],
                     'movement_type'   => StockMovementType::IN->value,
                     'unit_measure_id' => $item['unit_measure_id'], // from item form
-                    'quantity'        => (float) $item['quantity'],
+                    'quantity'        => $quantity,
                     'source'          => StockSourceType::PURCHASE->value,
                     'unit_cost'       => (float) $item['unit_price'],
                     'status'          => StockStatus::DRAFT->value,
@@ -118,12 +119,23 @@ class PurchaseController extends Controller
                 $lines[] = [
                     'account_id' => $accountId,
                     'ledger_id'  => null,
-                    'debit'      => (float)$item['quantity'] * (float)$item['unit_price'],
+                    'debit'      => $quantity * $unitPrice,
                     'credit'     => 0,
                     'remark'     => 'Purchase item: '.$itemModel->name,
                 ];
 
                 // $stockService->addStock($item, $validated['warehouse_id'], Purchase::class, $purchase->id, $validated['date']);
+            }
+            $glAccounts = Cache::get('gl_accounts');
+            $discountTotal = $request->input('discount_total', 0);
+            if($discountTotal > 0) {
+                $lines[] = [
+                    'account_id' => $glAccounts['discount-from-supplier'],
+                    'ledger_id' => null,
+                    'debit' => 0,
+                    'credit' => $discountTotal,
+                    'remark' => 'Discount for purchase #' . $purchase->number,
+                ];
             }
             if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
 
@@ -135,7 +147,6 @@ class PurchaseController extends Controller
                     'remark'     => 'Payment for purchase #' . $purchase->number,
                 ];
             }
-            $glAccounts = Cache::get('gl_accounts');
             if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
                 $lines[] = [
                     'account_id' => $glAccounts['account-payable'], // cash/bank
@@ -145,6 +156,7 @@ class PurchaseController extends Controller
                     'remark'     => 'Payment for purchase #' . $purchase->number,
                 ];
             }
+
             if($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
                 if($validated['payment']['amount'] > 0) {
                     $amount = (float) $validated['payment']['amount'];

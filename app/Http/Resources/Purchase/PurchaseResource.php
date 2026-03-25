@@ -24,7 +24,18 @@ class PurchaseResource extends JsonResource
             'supplier_name' => $this->supplier?->name,
             'date' => $dateConversionService->toDisplay($this->date),
             'due_date' => $dateConversionService->toDisplay($this->due_date),
-            'amount' => $this->transaction->lines->sum('credit'),
+            'amount' => $this->items->sum(function ($item) {
+                $row_total = floatval($item->quantity) * floatval($item->unit_price);
+                $item_discount = floatval($item->discount ?? 0);
+
+                if ($this->discount_type === 'percentage') {
+                    $sale_discount = $row_total * (floatval($this->discount) / 100);
+                } else {
+                    $sale_discount = floatval($this->discount ?? 0);
+                }
+
+                return $row_total - $item_discount - $sale_discount;
+            }),
             'discount' => $this->discount,
             'discount_type' => $this->discount_type,
             'type' => ($this->type instanceof SalePurchaseType)
