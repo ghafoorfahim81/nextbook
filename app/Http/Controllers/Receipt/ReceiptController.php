@@ -133,6 +133,26 @@ class ReceiptController extends Controller
         ]);
     }
 
+    public function print(Request $request, Receipt $receipt)
+    {
+        $this->authorize('view', $receipt);
+
+        $receipt->load([
+            'ledger',
+            'transaction.currency',
+            'transaction.lines.account',
+            'transaction.lines.ledger',
+            'createdBy',
+            'updatedBy',
+        ]);
+
+        return inertia('Vouchers/Print', [
+            'voucher' => new ReceiptResource($receipt),
+            'company' => auth()->user()?->company,
+            'voucherType' => 'receipt',
+        ]);
+    }
+
 
     public function edit(Request $request, Receipt $receipt)
     {
@@ -229,5 +249,4 @@ class ReceiptController extends Controller
     }
 
 }
-
 

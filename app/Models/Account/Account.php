@@ -106,7 +106,7 @@ class Account extends Model
                 $totalCredit = (float) ($totals->total_credit ?? 0);
 
                 // ALWAYS calculate net this way
-                $netBalance = $totalDebit - $totalCredit;
+                $netBalance = $totalDebit>0 ? $totalDebit - $totalCredit : $totalCredit;
 
                 // Determine real balance nature from math
                 if ($netBalance > 0) {

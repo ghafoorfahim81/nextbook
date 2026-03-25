@@ -32,7 +32,7 @@ const form = useForm({
   selected_currency: null,
   rate: '',
   cheque_no: '',
-  description: '',
+  narration: '',
 })
 
 function parseIdFromUrl() {
@@ -55,7 +55,7 @@ onMounted(async () => {
   form.currency_id = r.currency_id
   form.rate = r.rate
   form.cheque_no = r.cheque_no
-  form.description = r.description
+  form.narration = r.narration
   form.selected_ledger = ledgers.value.find(l => l.id === r.ledger_id) || r.ledger || null
   form.selected_currency = currencies.value.find(c => c.id === r.currency_id) || null
   const bankId = r?.transaction?.lines[0]?.account_id || r.transaction_id
@@ -169,5 +169,4 @@ function submit() {
     </form>
   </AppLayout>
 </template>
-
 

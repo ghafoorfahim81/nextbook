@@ -90,7 +90,7 @@ class PaymentController extends Controller
                 'date' => $validated['date'],
                 'ledger_id' => $ledger->id,
                 'cheque_no' => $validated['cheque_no'] ?? null,
-                'description' => $validated['description'] ?? null,
+                'narration' => $validated['narration'] ?? null,
             ]);
 
             // Debit Accounts Payable for selected ledger (reduce liability)
@@ -142,6 +142,26 @@ class PaymentController extends Controller
         ]);
     }
 
+    public function print(Request $request, Payment $payment)
+    {
+        $this->authorize('view', $payment);
+
+        $payment->load([
+            'ledger',
+            'transaction.currency',
+            'transaction.lines.account',
+            'transaction.lines.ledger',
+            'createdBy',
+            'updatedBy',
+        ]);
+
+        return inertia('Vouchers/Print', [
+            'voucher' => new PaymentResource($payment),
+            'company' => auth()->user()?->company,
+            'voucherType' => 'payment',
+        ]);
+    }
+
     public function edit(Request $request, Payment $payment)
     {
         $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy']);
@@ -160,7 +180,7 @@ class PaymentController extends Controller
                 'date' => $validated['date'] ?? $payment->date,
                 'ledger_id' => $validated['ledger_id'] ?? $payment->ledger_id,
                 'cheque_no' => $validated['cheque_no'] ?? $payment->cheque_no,
-                'description' => $validated['description'] ?? $payment->description,
+                'narration' => $validated['narration'] ?? $payment->narration,
             ]);
 
             $ledger = Ledger::findOrFail($payment->ledger_id);
@@ -240,5 +260,4 @@ class PaymentController extends Controller
         return redirect()->route('payments.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.payment')]));
     }
 }
-
 

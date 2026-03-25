@@ -29,6 +29,7 @@ class PaymentResource extends JsonResource
             'bank_account' => new AccountResource($this->transaction?->lines[0]->account),
             'cheque_no' => $this->cheque_no,
             'narration' => $this->narration,
+            'description' => $this->narration,
             'transaction_id' => $this->transaction_id,
             'transaction' => new TransactionResource($this->transaction),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
@@ -36,5 +37,4 @@ class PaymentResource extends JsonResource
         ];
     }
 }
-
 

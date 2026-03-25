@@ -5,6 +5,10 @@
   print-color-adjust: exact;
 }
 
+.voucher-print-root .print-surface {
+  padding: 0;
+}
+
 .print-surface {
   box-sizing: border-box;
   display: flex;
@@ -98,5 +102,9 @@
     max-width: none;
     padding: 0;
     box-shadow: none;
+  }
+
+  .voucher-print-root .print-surface {
+    padding: 0;
   }
 }

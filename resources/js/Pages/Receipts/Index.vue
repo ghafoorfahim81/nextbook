@@ -31,6 +31,10 @@ const showItem = (id) => {
     showDialog.value = true
 }
 
+const printItem = (id) => {
+    window.open(route('receipts.print', id), '_blank')
+}
+
 
 const columns = computed(() => ([
     { key: 'number', label: t('general.number'), sortable: true },
@@ -92,9 +96,11 @@ const filterFields = computed(() => ([
             :url="`receipts.index`"
             :showAddButton="true"
             :hasShow="true"
+            :hasPrint="true"
             @edit="editItem"
             @delete="deleteItem"
             @show="showItem"
+            @print="printItem"
             :addTitle="t('receipt.receipt')"
             :addAction="'redirect'"
             :addRoute="'receipts.create'"
