@@ -23,8 +23,10 @@ use App\Enums\TransactionStatus;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
+use App\Support\Preferences\InvoiceThemeOptions;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Inventory\Item;
+
 class SaleController extends Controller
 {
     public function __construct()
@@ -311,12 +313,15 @@ class SaleController extends Controller
         $company = auth()->user()?->company;
         $sale = $sale->load([
             'customer',
-            'items',
+            'items.item',
+            'items.unitMeasure',
+            'items.warehouse',
+            'transaction.currency',
         ]);
         return inertia('Sale/Sales/Print', [
             'invoice' => new SaleResource($sale),
-        'company' => $company,
-        'sale_preference' => user_preference('sale.preference'),
+            'company' => $company,
+            'invoiceTheme' => user_preference('sale.invoice_theme', InvoiceThemeOptions::DEFAULT),
         ]);
 
         // dd('hiiii');
