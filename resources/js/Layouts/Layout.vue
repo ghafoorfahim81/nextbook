@@ -79,6 +79,7 @@ import {
     FileText,
     Search,
     X,
+    FileChartLine
 } from 'lucide-vue-next'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -413,7 +414,7 @@ const navMain = computed(() => [
     {
         title: t('sidebar.main.reports'),
         url: '/reports',
-        icon: Cog,
+        icon: FileChartLine,
     },
 ])
 
