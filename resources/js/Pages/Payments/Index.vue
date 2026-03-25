@@ -32,6 +32,10 @@ const showItem = (id) => {
     showDialog.value = true
 }
 
+const printItem = (id) => {
+    window.open(route('payments.print', id), '_blank')
+}
+
 const columns = computed(() => ([
     { key: 'number', label: t('general.number'), sortable: true },
     { key: 'ledger_name', label: t('ledger.supplier.supplier') },
@@ -92,9 +96,11 @@ const filterFields = computed(() => ([
             :url="`payments.index`"
             :showAddButton="true"
             :hasShow="true"
+            :hasPrint="true"
             @edit="editItem"
             @delete="deleteItem"
             @show="showItem"
+            @print="printItem"
             :addTitle="t('payment.payment')"
             :addAction="'redirect'"
             :addRoute="'payments.create'"
@@ -106,5 +112,4 @@ const filterFields = computed(() => ([
         />
     </AppLayout>
 </template>
-
 

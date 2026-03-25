@@ -26,7 +26,16 @@ class SaleResource extends JsonResource
             'due_date' => $dateConversionService->toDisplay($this->due_date),
             'transaction_id' => $this->transaction_id,
             'amount' => $this->items->sum(function ($item) {
-                return $item->quantity * $item->unit_price;
+                $row_total = floatval($item->quantity) * floatval($item->unit_price);
+                $item_discount = floatval($item->discount ?? 0);
+
+                if ($this->discount_type === 'percentage') {
+                    $sale_discount = $row_total * (floatval($this->discount) / 100);
+                } else {
+                    $sale_discount = floatval($this->discount ?? 0);
+                }
+
+                return $row_total - $item_discount - $sale_discount;
             }),
             'discount' => $this->discount,
             'discount_type' => $this->discount_type,

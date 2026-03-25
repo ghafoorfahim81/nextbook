@@ -124,6 +124,9 @@ final class LookupShared
                 'raw-materials',
                 'finished-goods',
                 'other-expenses',
+                'discount-to-customer',
+                'discount-from-supplier'
+
             ])->pluck('id', 'slug')
         );
         Cache::put('gl_accounts', $glAccounts);
