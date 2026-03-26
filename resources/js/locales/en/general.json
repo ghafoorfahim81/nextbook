@@ -84,6 +84,7 @@
   "save": "Save",
   "branch": "Branch",
   "save_and_new": "Save and new",
+  "save_and_print": "Save and Print",
   "from": "From",
   "to": "To",
   "create": "Create {name}",
@@ -201,5 +202,4 @@
   "payable": "Payable",
   "receivable": "Receivable"
 }
-
 

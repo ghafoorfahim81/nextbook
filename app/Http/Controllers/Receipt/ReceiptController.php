@@ -70,7 +70,7 @@ class ReceiptController extends Controller
 
     public function store(ReceiptStoreRequest $request, TransactionService $transactionService)
     {
-        DB::transaction(function () use ($request, $transactionService) {
+        $receipt = DB::transaction(function () use ($request, $transactionService) {
             $validated = $request->validated();
 
             $ledger = Ledger::findOrFail($validated['ledger_id']);
@@ -92,7 +92,7 @@ class ReceiptController extends Controller
 
             $creditRemark = "Receipt #{$receipt->number} from {$ledger->name}";
 
-            $transaction = $transactionService->post(
+            $transactionService->post(
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -115,6 +115,8 @@ class ReceiptController extends Controller
                     ],
                 ],
             );
+            
+            return $receipt;
         });
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
@@ -122,7 +124,13 @@ class ReceiptController extends Controller
             return redirect()->route('receipts.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.receipt')]));
         }
 
-        return redirect()->route('receipts.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.receipt')]));
+        $redirect = redirect()->route('receipts.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.receipt')]));
+
+        if ($request->boolean('create_and_print')) {
+            $redirect->with('print_url', route('receipts.print', $receipt));
+        }
+
+        return $redirect;
     }
 
     public function show(Request $request, Receipt $receipt)
@@ -211,7 +219,13 @@ class ReceiptController extends Controller
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         });
 
-        return redirect()->route('receipts.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.receipt')]));
+        $redirect = redirect()->route('receipts.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.receipt')]));
+
+        if ($request->boolean('save_and_print')) {
+            $redirect->with('print_url', route('receipts.print', $receipt));
+        }
+
+        return $redirect;
     }
 
     public function destroy(Request $request, Receipt $receipt)
@@ -249,4 +263,3 @@ class ReceiptController extends Controller
     }
 
 }
-

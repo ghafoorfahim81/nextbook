@@ -38,11 +38,20 @@ const form = useForm({
 const submitAction = ref(null)
 const createLoading = computed(() => form.processing && submitAction.value === 'create')
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new')
+const saveAndPrintLoading = computed(() => form.processing && submitAction.value === 'create_and_print')
+const pendingPrintWindow = ref(null)
 
-const submitActionHandler = (createAndNew = false) => {
-  const isCreateAndNew = createAndNew === true
-  submitAction.value = isCreateAndNew ? 'create_and_new' : 'create'
-  submit(isCreateAndNew)
+const submitActionHandler = (action = 'create') => {
+  submitAction.value = action
+
+  if (action === 'create_and_print') {
+    pendingPrintWindow.value = window.open('about:blank', '_blank')
+  }
+
+  submit({
+    createAndNew: action === 'create_and_new',
+    createAndPrint: action === 'create_and_print',
+  })
 }
 
 watch(currencies, (list) => {
@@ -72,19 +81,57 @@ function oldBalanceText() {
     : `${s.balance}`
 }
 
-function submit(createAndNew = false) {
-  const payload = createAndNew ? { create_and_new: true } : {}
+function finalizePrint(page) {
+  const printUrl = page?.props?.flash?.print_url
+
+  if (!printUrl) {
+    if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
+      pendingPrintWindow.value.close()
+    }
+    pendingPrintWindow.value = null
+    return
+  }
+
+  if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
+    pendingPrintWindow.value.location = printUrl
+    pendingPrintWindow.value.focus?.()
+  } else {
+    window.open(printUrl, '_blank')
+  }
+
+  pendingPrintWindow.value = null
+}
+
+function cleanupPrintWindow() {
+  if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
+    pendingPrintWindow.value.close()
+  }
+
+  pendingPrintWindow.value = null
+}
+
+function submit({ createAndNew = false, createAndPrint = false } = {}) {
+  const payload = {
+    create_and_new: createAndNew,
+    create_and_print: createAndPrint,
+  }
   form.transform(data => ({ ...data, ...payload })).post('/payments', {
-    onSuccess: () => {
+    onSuccess: (page) => {
       const latest = Number(form.number || 0)
       if (createAndNew) {
         form.reset('date', 'amount', 'cheque_no', 'narration')
         form.number = String((isNaN(latest) ? 0 : latest) + 1)
       }
+      if (createAndPrint) {
+        finalizePrint(page)
+      }
       toast.success(t('general.success'), {
         description: t('general.create_success', { name: 'Payment' }),
         class: 'bg-green-600 text-white',
       })
+    },
+    onError: () => {
+      cleanupPrintWindow()
     }
   })
 }
@@ -92,7 +139,7 @@ function submit(createAndNew = false) {
 
 <template>
   <AppLayout :title="t('general.create', { name: t('payment.payment') })">
-    <form @submit.prevent="submitActionHandler(false)">
+    <form @submit.prevent="submitActionHandler('create')">
       <div class="mb-5 rounded-xl border border-primary p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: t('payment.payment') }) }}
@@ -161,15 +208,17 @@ function submit(createAndNew = false) {
       <SubmitButtons
         :create-label="t('general.create')"
         :create-and-new-label="t('general.create_and_new')"
+        :save-and-print-label="t('general.save_and_print')"
         :cancel-label="t('general.cancel')"
         :creating-label="t('general.creating', { name: t('payment.payment') })"
         :create-loading="createLoading"
         :create-and-new-loading="createAndNewLoading"
-        @create-and-new="submitActionHandler(true)"
+        :save-and-print-loading="saveAndPrintLoading"
+        :show-save-and-print="true"
+        @create-and-new="submitActionHandler('create_and_new')"
+        @save-and-print="submitActionHandler('create_and_print')"
         @cancel="() => $inertia.visit('/payments')"
       />
     </form>
   </AppLayout>
 </template>
-
-

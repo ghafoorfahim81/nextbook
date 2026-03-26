@@ -5,21 +5,25 @@ import { Spinner } from '@/Components/ui/spinner'
 const props = defineProps({
     createLabel: { type: String, required: true },
     createAndNewLabel: { type: String, required: true },
+    saveAndPrintLabel: { type: String, default: '' },
     cancelLabel: { type: String, required: true },
     creatingLabel: { type: String, required: true },
     createLoading: { type: Boolean, default: false },
     createAndNewLoading: { type: Boolean, default: false },
+    saveAndPrintLoading: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
     showCreateAndNew: { type: Boolean, default: true },
+    showSaveAndPrint: { type: Boolean, default: false },
     showCancel: { type: Boolean, default: true },
 })
 
-defineEmits(['create-and-new', 'cancel'])
+defineEmits(['create-and-new', 'save-and-print', 'cancel'])
 
-const isBusy = computed(() => props.createLoading || props.createAndNewLoading)
+const isBusy = computed(() => props.createLoading || props.createAndNewLoading || props.saveAndPrintLoading)
 const isDisabled = computed(() => props.disabled || isBusy.value)
 const createText = computed(() => (props.createLoading ? props.creatingLabel : props.createLabel))
 const createAndNewText = computed(() => (props.createAndNewLoading ? props.creatingLabel : props.createAndNewLabel))
+const saveAndPrintText = computed(() => (props.saveAndPrintLoading ? props.creatingLabel : props.saveAndPrintLabel))
 </script>
 
 <template>
@@ -42,6 +46,16 @@ const createAndNewText = computed(() => (props.createAndNewLoading ? props.creat
         >
             {{ createAndNewText }}
             <Spinner v-if="createAndNewLoading" class="ml-2 h-4 w-4" />
+        </button>
+        <button
+            v-if="showSaveAndPrint"
+            type="button"
+            class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white disabled:bg-gray-300"
+            :disabled="isDisabled"
+            @click="$emit('save-and-print')"
+        >
+            {{ saveAndPrintText }}
+            <Spinner v-if="saveAndPrintLoading" class="ml-2 h-4 w-4" />
         </button>
         <button
             v-if="showCancel"
