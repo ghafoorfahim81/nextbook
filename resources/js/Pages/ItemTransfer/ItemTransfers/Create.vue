@@ -141,7 +141,6 @@ const handleItemChange = (index, selectedItem) => {
   const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1
   const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
   row.unit_price = (row.base_unit_price / baseUnit) * selectedUnit
-
     row.selected_batch = null
     row.batch = ''
     row.expire_date = ''
