@@ -1238,12 +1238,17 @@ class ReportService
 
     protected function userActivityRoleLabelsSubquery(): Builder
     {
+        $userModelTypes = array_values(array_unique([
+            (new User())->getMorphClass(),
+            User::class,
+        ]));
+
         return DB::table('model_has_roles as mhr')
             ->join('roles as r', function ($join) {
                 $join->on('r.id', '=', 'mhr.role_id')
                     ->whereNull('r.deleted_at');
             })
-            ->where('mhr.model_type', User::class)
+            ->whereIn('mhr.model_type', $userModelTypes)
             ->groupBy('mhr.model_id')
             ->selectRaw('mhr.model_id as user_id')
             ->selectRaw("STRING_AGG(DISTINCT r.name, ', ' ORDER BY r.name) as role_label");
