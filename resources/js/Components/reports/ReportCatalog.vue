@@ -20,7 +20,7 @@ const emit = defineEmits(['select'])
           v-for="report in section.reports"
           :key="report.key"
           type="button"
-          class="group rounded-2xl border px-5 py-5 text-left shadow-sm transition-all duration-200"
+          class="group rounded-2xl border px-5 py-5 text-left shadow-sm transition-all duration-200 rtl:text-right"
           :class="report.key === activeReport
             ? 'border-emerald-500/50 bg-violet-950 text-white shadow-[0_14px_40px_rgba(6,78,59,0.35)] dark:border-violet-400/30 dark:bg-violet-950'
             : 'border-border bg-card hover:-translate-y-0.5 hover:border-violet-500/30 hover:shadow-md'"

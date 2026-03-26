@@ -182,6 +182,108 @@
 
     }
 
+    :root[data-theme='cyan'] {
+      --background: 185 40% 98%;
+      --foreground: 196 64% 14%;
+
+      --card: 0 0% 100%;
+      --card-foreground: 196 64% 14%;
+
+      --popover: 0 0% 100%;
+      --popover-foreground: 196 64% 14%;
+
+      --primary: 190 95% 39%;
+      --primary-foreground: 0 0% 100%;
+
+      --secondary: 186 43% 93%;
+      --secondary-foreground: 196 64% 14%;
+
+      --muted: 187 27% 95%;
+      --muted-foreground: 195 18% 38%;
+
+      --accent: 188 88% 58%;
+      --accent-foreground: 196 64% 14%;
+
+      --border: 187 30% 85%;
+      --input: 187 36% 95%;
+      --ring: 190 95% 39%;
+
+      --chart-1: 190 95% 39%;
+      --chart-2: 188 88% 45%;
+      --chart-3: 197 88% 45%;
+      --chart-4: 173 80% 38%;
+      --chart-5: 201 90% 36%;
+
+      --sidebar-background: 186 45% 97%;
+      --sidebar-foreground: 196 64% 14%;
+      --sidebar-primary: 190 95% 39%;
+      --sidebar-primary-foreground: 0 0% 100%;
+      --sidebar-accent: 186 44% 92%;
+      --sidebar-accent-foreground: 196 64% 14%;
+      --sidebar-border: 187 30% 85%;
+      --sidebar-ring: 190 95% 39%;
+
+      --theme-50: 185 95% 96%;
+      --theme-100: 186 94% 90%;
+      --theme-300: 188 92% 59%;
+      --theme-400: 189 94% 49%;
+      --theme-500: 190 95% 39%;
+      --theme-600: 192 91% 36%;
+      --theme-900: 201 90% 27%;
+      --theme-950: 202 81% 16%;
+    }
+
+    .dark[data-theme='cyan'] {
+      --background: 202 48% 8%;
+      --foreground: 185 30% 92%;
+
+      --card: 202 41% 11%;
+      --card-foreground: 185 30% 92%;
+
+      --popover: 202 41% 11%;
+      --popover-foreground: 185 30% 92%;
+
+      --primary: 188 93% 48%;
+      --primary-foreground: 202 48% 10%;
+
+      --secondary: 196 34% 18%;
+      --secondary-foreground: 185 30% 92%;
+
+      --muted: 200 28% 18%;
+      --muted-foreground: 190 12% 72%;
+
+      --accent: 186 84% 40%;
+      --accent-foreground: 185 30% 96%;
+
+      --border: 198 30% 24%;
+      --input: 199 30% 18%;
+      --ring: 188 93% 48%;
+
+      --chart-1: 188 93% 48%;
+      --chart-2: 191 89% 57%;
+      --chart-3: 199 90% 57%;
+      --chart-4: 173 76% 42%;
+      --chart-5: 184 80% 62%;
+
+      --sidebar-background: 202 42% 12%;
+      --sidebar-foreground: 185 30% 94%;
+      --sidebar-primary: 188 93% 48%;
+      --sidebar-primary-foreground: 202 48% 10%;
+      --sidebar-accent: 198 28% 18%;
+      --sidebar-accent-foreground: 185 30% 94%;
+      --sidebar-border: 198 30% 24%;
+      --sidebar-ring: 188 93% 48%;
+
+      --theme-50: 187 44% 18%;
+      --theme-100: 189 50% 24%;
+      --theme-300: 188 85% 63%;
+      --theme-400: 189 88% 55%;
+      --theme-500: 188 93% 48%;
+      --theme-600: 189 94% 42%;
+      --theme-900: 202 67% 24%;
+      --theme-950: 203 63% 15%;
+    }
+
     /* =========================
    VUE PERSIAN DATE PICKER – DARK MODE
    ========================= */
@@ -189,7 +291,7 @@
     .dark .vpd-container,
     .dark .vpd-calendar,
     .dark .vpd-content {
-        background-color: #32264e !important; /* slate-900 */
+        background-color: hsl(var(--card)) !important;
         color: #e5e7eb !important;
     }
 
@@ -201,7 +303,7 @@
 
     /* Weekdays */
     .dark .vpd-weekday {
-        color: #8b5cf6 !important;
+        color: hsl(var(--primary)) !important;
     }
 
     /* Days */
@@ -217,20 +319,20 @@
     .dark .vpd-day.selected,
     .dark .vpd-date.selected,
     .dark .vpd-day.is-selected {
-        background-color: #8b5cf6 !important;
+        background-color: hsl(var(--primary)) !important;
         color: #ffffff !important;
     }
 
     /* Today */
     .dark .vpd-day.today,
     .dark .vpd-date.today {
-        border: 1px solid #8b5cf6 !important;
+        border: 1px solid hsl(var(--primary)) !important;
     }
 
     /* Disabled */
     .dark .vpd-day.disabled,
     .dark .vpd-date.disabled {
-        color: #8b5cf6 !important;
+        color: hsl(var(--primary)) !important;
     }
 
     /* Navigation arrows */
@@ -248,18 +350,18 @@
 
     .dark .vpd-month-item:hover,
     .dark .vpd-year-item:hover {
-        background-color: #334155 !important;
+        background-color: hsl(var(--secondary)) !important;
     }
 
     .dark .vpd-month-item.active,
     .dark .vpd-year-item.active {
-        background-color: #8b5cf6 !important;
+        background-color: hsl(var(--primary)) !important;
         color: #ffffff !important;
     }
 
     /* Clear icon */
     .dark .vpd-clear-btn {
-        color: #c084fc !important;
+        color: hsl(var(--primary)) !important;
     }
     /* =========================
    DATE PICKER INPUT – DARK MODE
@@ -267,15 +369,15 @@
 
     /* Input wrapper */
     .dark .vpd-input-group {
-        background-color: #1e1b2e !important;
-        border: 2px solid #3a2679 !important;
+        background-color: hsl(var(--input)) !important;
+        border: 2px solid hsl(var(--border)) !important;
         border-radius: 6px;
     }
 
     /* Actual input */
     .dark .vpd-input-group input,
     .dark .vpd-input-group .vpd-input {
-        background-color: #1e1b2e !important;
+        background-color: hsl(var(--input)) !important;
         color: #e5e7eb !important;
         border: none !important;
     }
@@ -287,19 +389,19 @@
 
     /* Calendar icon button */
     .dark .vpd-input-group .vpd-icon-btn {
-        background-color: #8b5cf6 !important; /* violet */
+        background-color: hsl(var(--primary)) !important;
         color: #ffffff !important;
         border: none !important;
     }
 
     /* Clear (X) button */
     .dark .vpd-input-group .vpd-clear-btn {
-        color: #c084fc !important;
+        color: hsl(var(--primary)) !important;
     }
 
     /* Hover & focus */
     .dark .vpd-input-group:hover {
-        border-color: #8b5cf6 !important;
+        border-color: hsl(var(--primary)) !important;
     }
 
     .dark .vpd-input-group input:focus {
@@ -309,8 +411,8 @@
 
     /* Disabled state */
     .dark .vpd-input-group input:disabled {
-        background-color: #2a2540 !important;
-        color: #9ca3af !important;
+        background-color: hsl(var(--muted)) !important;
+        color: hsl(var(--muted-foreground)) !important;
     }
 
 
@@ -350,4 +452,90 @@
   }
   [dir="ltr"] body {
     font-family: 'PlusJakartaSans-Medium', sans-serif !important;
+  }
+
+  html[data-theme='cyan'] .vs__dropdown-option:hover,
+  html[data-theme='cyan'] .vs__dropdown-option--highlight {
+    background: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+  }
+
+  html[data-theme='cyan'] .text-violet-500,
+  html[data-theme='cyan'] .text-violet-600,
+  html[data-theme='cyan'] .text-purple-500,
+  html[data-theme='cyan'] .text-indigo-700,
+  html[data-theme='cyan'] .text-indigo-600,
+  html[data-theme='cyan'] .text-indigo-500,
+  html.dark[data-theme='cyan'] .dark\:text-violet-300,
+  html.dark[data-theme='cyan'] .dark\:text-indigo-300 {
+    color: hsl(var(--theme-500)) !important;
+  }
+
+  html[data-theme='cyan'] .bg-violet-500,
+  html[data-theme='cyan'] .bg-violet-600,
+  html[data-theme='cyan'] .bg-purple-500,
+  html[data-theme='cyan'] .bg-indigo-500,
+  html[data-theme='cyan'] .bg-indigo-600,
+  html[data-theme='cyan'] .hover\:bg-violet-500:hover,
+  html[data-theme='cyan'] .hover\:bg-violet-600:hover,
+  html[data-theme='cyan'] .hover\:bg-purple-500:hover,
+  html[data-theme='cyan'] .hover\:bg-indigo-600:hover,
+  html[data-theme='cyan'] .focus\:bg-indigo-600:focus {
+    background-color: hsl(var(--theme-500)) !important;
+  }
+
+  html[data-theme='cyan'] .bg-violet-100,
+  html[data-theme='cyan'] .bg-indigo-50 {
+    background-color: hsl(var(--theme-100)) !important;
+  }
+
+  html[data-theme='cyan'] .bg-violet-500\/10,
+  html[data-theme='cyan'] .bg-violet-500\/12,
+  html[data-theme='cyan'] .bg-violet-500\/30 {
+    background-color: hsl(var(--theme-500) / 0.12) !important;
+  }
+
+  html[data-theme='cyan'] .border-violet-500,
+  html[data-theme='cyan'] .border-violet-400,
+  html[data-theme='cyan'] .border-indigo-400,
+  html[data-theme='cyan'] .focus\:border-indigo-500:focus,
+  html.dark[data-theme='cyan'] .dark\:focus\:border-indigo-600:focus {
+    border-color: hsl(var(--theme-500)) !important;
+  }
+
+  html[data-theme='cyan'] .focus\:ring-violet-500:focus,
+  html[data-theme='cyan'] .focus\:ring-indigo-500:focus,
+  html.dark[data-theme='cyan'] .dark\:focus\:ring-indigo-600:focus {
+    --tw-ring-color: hsl(var(--ring)) !important;
+  }
+
+  html[data-theme='cyan'] .hover\:text-violet-500:hover,
+  html[data-theme='cyan'] .hover\:text-indigo-500:hover,
+  html[data-theme='cyan'] .focus\:text-violet-500:focus {
+    color: hsl(var(--theme-500)) !important;
+  }
+
+  html[data-theme='cyan'] .from-violet-500 {
+    --tw-gradient-from: hsl(var(--theme-500)) var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: hsl(var(--theme-500) / 0) var(--tw-gradient-to-position) !important;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+  }
+
+  html[data-theme='cyan'] .from-violet-400 {
+    --tw-gradient-from: hsl(var(--theme-400)) var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: hsl(var(--theme-400) / 0) var(--tw-gradient-to-position) !important;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+  }
+
+  html[data-theme='cyan'] .via-violet-900 {
+    --tw-gradient-to: hsl(var(--theme-900) / 0) var(--tw-gradient-to-position) !important;
+    --tw-gradient-stops: var(--tw-gradient-from), hsl(var(--theme-900)) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+  }
+
+  html[data-theme='cyan'] .to-violet-400 {
+    --tw-gradient-to: hsl(var(--theme-400)) var(--tw-gradient-to-position) !important;
+  }
+
+  html[data-theme='cyan'] .to-violet-950 {
+    --tw-gradient-to: hsl(var(--theme-950)) var(--tw-gradient-to-position) !important;
   }

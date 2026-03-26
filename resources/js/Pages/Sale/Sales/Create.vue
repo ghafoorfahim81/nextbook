@@ -48,7 +48,7 @@ const item_columns = computed(() => user_preferences.value?.sale.item_columns ??
 const sale_preferences = computed(() => user_preferences.value?.sale ?? user_preferences.value.sale ?? []).value
 const item_management = computed(() => user_preferences.value?.item_management ?? user_preferences.value.item_management ?? []).value
 const spec_text = computed(() => item_management?.spec_text ?? item_management?.spec_text ?? 'batch').value
-const decimalPlaces = computed(() => user_preferences.value?.appearance?.decimal_places ?? user_preferences.value.appearance.decimal_places ?? 2).value 
+const decimalPlaces = computed(() => user_preferences.value?.appearance?.decimal_places ?? user_preferences.value.appearance.decimal_places ?? 2).value
 
 useLazyProps(props, ['ledgers', 'accounts'])
 
@@ -85,8 +85,12 @@ const form = useForm({
         quantity: '',
         unit_measure_id: '',
         batch: '',
+        selected_batch: null,
         expire_date: '',
         unit_price: '',
+        base_unit_price: '',
+        on_hand: '',
+        available_measures: [],
         selected_measure: '',
         item_discount: '',
         free: '',
@@ -110,7 +114,7 @@ const loadItemOptions = async (warehouseId = form.warehouse_id) => {
         return
     }
     // console.log('warehouseId', warehouseId);
-    try { 
+    try {
         const response = await axios.get(route('search.items-list'), {
             params: {
                 warehouse_id: warehouseId,
@@ -206,15 +210,24 @@ watch(() => form.selected_sale_type, (newType) => {
 
 let disabled = (false);
 const submitAction = ref(null);
-
-const handleSubmitAction = (createAndNew = false) => {
-    const isCreateAndNew = createAndNew === true;
-    submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
-    handleSubmit(isCreateAndNew);
-};
+const pendingPrintWindow = ref(null)
 
 const createLoading = computed(() => form.processing && submitAction.value === 'create');
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new');
+const saveAndPrintLoading = computed(() => form.processing && submitAction.value === 'create_and_print');
+
+const handleSubmitAction = (action = 'create') => {
+    submitAction.value = action;
+
+    if (action === 'create_and_print') {
+        pendingPrintWindow.value = window.open('about:blank', '_blank');
+    }
+
+    handleSubmit({
+        createAndNew: action === 'create_and_new',
+        createAndPrint: action === 'create_and_print',
+    });
+};
 
 const handleResetPayment = () => {
     form.payment = {
@@ -232,7 +245,10 @@ const handleSelectChange = (field, value) => {
             item.available_measures = [];
             item.selected_measure = '';
             item.unit_price = '';
+            item.base_unit_price = '';
             item.quantity = '';
+            item.on_hand = '';
+            item.selected_batch = null;
             item.batch = '';
             item.expire_date = '';
             item.discount = '';
@@ -255,8 +271,38 @@ const handleSelectChange = (field, value) => {
 };
 
 
-function handleSubmit(createAndNew = false) {
+function finalizePrint(page) {
+    const printUrl = page?.props?.flash?.print_url
+
+    if (!printUrl) {
+        if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
+            pendingPrintWindow.value.close()
+        }
+        pendingPrintWindow.value = null
+        return
+    }
+
+    if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
+        pendingPrintWindow.value.location = printUrl
+        pendingPrintWindow.value.focus?.()
+    } else {
+        window.open(printUrl, '_blank')
+    }
+
+    pendingPrintWindow.value = null
+}
+
+function cleanupPrintWindow() {
+    if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
+        pendingPrintWindow.value.close()
+    }
+
+    pendingPrintWindow.value = null
+}
+
+function handleSubmit({ createAndNew = false, createAndPrint = false } = {}) {
     if(form.items[0]?.selected_item === '' || form.items[0]?.selected_item === null) {
+        cleanupPrintWindow();
         notifySound('error');
         toast({
             title: 'Please add items',
@@ -276,8 +322,14 @@ function handleSubmit(createAndNew = false) {
             item.unit_measure_id = item.selected_measure.id;
         });
     }
+
+    const payload = {
+        create_and_new: createAndNew,
+        create_and_print: createAndPrint,
+    }
+
     if (createAndNew) {
-        form.transform((data) => ({ ...data, create_and_new: true })).post(route('sales.store'), {
+        form.transform((data) => ({ ...data, ...payload })).post(route('sales.store'), {
             onSuccess: () => {
                 form.reset();
                 notifySound('success');
@@ -317,6 +369,7 @@ function handleSubmit(createAndNew = false) {
                 })
             },
             onError: () => {
+                cleanupPrintWindow();
                 notifySound('error');
                 toast({
                     title: 'Error creating sale',
@@ -327,9 +380,13 @@ function handleSubmit(createAndNew = false) {
             }
         })
         } else {
-            form.post(route('sales.store'), {
-            onSuccess: () => {
+            form.transform((data) => ({ ...data, ...payload })).post(route('sales.store'), {
+            onSuccess: (page) => {
                 notifySound('success');
+
+                if (createAndPrint) {
+                    finalizePrint(page);
+                }
 
                 toast({
                     title: 'Sale created successfully',
@@ -339,6 +396,7 @@ function handleSubmit(createAndNew = false) {
                 })
             },
             onError: () => {
+                cleanupPrintWindow();
                 notifySound('error');
                 toast({
                     title: 'Error creating sale',
@@ -421,7 +479,10 @@ const handleItemChange = async (index, selected_item) => {
         row.available_measures = []
         row.selected_measure = ''
         row.unit_price = ''
+        row.base_unit_price = ''
         row.quantity = ''
+        row.on_hand = ''
+        row.selected_batch = null
         row.batch = ''
         row.expire_date = ''
         row.discount = ''
@@ -441,7 +502,10 @@ const handleItemChange = async (index, selected_item) => {
     })
     row.selected_measure = selected_item.unitMeasure
     row.item_id = selected_item.id
-    row.on_hand = selected_item.on_hand 
+    row.on_hand = selected_item.on_hand
+    row.selected_batch = null
+    row.batch = ''
+    row.expire_date = ''
     const marginPercentage = toNum(selected_item.margin_percentage, 0).toFixed(decimalPlaces);
     // Set the base unit price - this is the price per base unit
     row.base_unit_price = selected_item.sale_price ?? selected_item.avg_cost*(1+marginPercentage/100) ?? 0
@@ -497,11 +561,13 @@ const resetRow = (index) => {
     r.item_id = ''
     r.selected_measure = ''
     r.available_measures = []
+    r.selected_batch = null
     r.batch = ''
     r.expire_date = ''
     r.quantity = ''
     r.unit_price = ''
     r.base_unit_price = ''
+    r.on_hand = ''
     disabled =false;
 }
 
@@ -522,12 +588,19 @@ const notifyIfDuplicate = (index) => {
     }
 }
 
+function handleBatchChange(index, batch){
+    const row = form.items[index]
+    row.selected_batch = batch ?? null
+    row.batch = batch?.batch
+    row.expire_date = batch?.expire_date
+    notifyIfDuplicate(index)
+}
 const onhand = (index) => {
     const item = form.items[index]
     if (!item || !item.selected_item) return ''
     const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(item.selected_measure?.unit) || baseUnit
-    const onHand = Number(item.on_hand) || 0
+    const onHand = Number(item.selected_batch?.on_hand ?? item.selected_item?.on_hand ?? item.on_hand) || 0
     const converted = (onHand * baseUnit) / selectedUnit
     const free = Number(item.free) || 0
     const qty = Number(item.quantity) || 0
@@ -579,7 +652,7 @@ const totalDiscount = computed(() => Number((billDiscountCurrency.value + totalI
 const totalRowTotal = computed(() => Number(form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0) - toNum(item.item_discount, 0) + toNum(item.tax, 0)), 0).toFixed(decimalPlaces)))
 const totalQuantity = computed(() => Number(form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0).toFixed(decimalPlaces)))
 const totalFree = computed(() => Number(form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0).toFixed(decimalPlaces)))
-const totalSalePrice = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0)), 0))      
+const totalSalePrice = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0)), 0))
 
 // Transaction summary for card (spec-compliant)
 const transactionSummary = computed(() => {
@@ -613,9 +686,12 @@ const addRow = () => {
         quantity: '',
         unit_measure_id: '',
         batch: '',
+        selected_batch: null,
         expire_date: '',
         unit_price: '',
         base_unit_price: '',
+        on_hand: '',
+        available_measures: [],
         selected_measure: '',
         item_discount: '',
         free: '',
@@ -627,7 +703,7 @@ const addRow = () => {
 
 <template>
     <AppLayout :title="t('general.create', { name: t('sale.sale') })" :sidebar-collapsed="true">
-        <form @submit.prevent="handleSubmitAction(false)">
+        <form @submit.prevent="handleSubmitAction('create')">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative ">
             <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('sale.sale') }) }}</div>
             <ModuleHelpButton module="sales" />
@@ -749,16 +825,23 @@ const addRow = () => {
                                     />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.batch">
-                                <NextInput
-                                    v-model="item.batch"
-                                    :disabled="!item?.selected_item"
-                                    :error="form.errors?.[`item_list.${index}.batch`]"
-                                    @input="notifyIfDuplicate(index)"
+                                 <NextSelect
+                                    :options="item.selected_item?.batches"
+                                    v-model="item.selected_batch"
+                                    label-key="batch"
+                                    :placeholder="t('general.search_or_select')"
+                                    id="batch_id"
+                                    :error="form.errors?.[`items.${index}.batch`]"`
+                                    :show-arrow="false"
+                                    value-key="batch"
+                                    :reduce="batch => batch"
+                                    @update:modelValue=" value => { handleBatchChange(index, value); }"
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none relative relative wq': !isRowEnabled(index) }" v-if="item_columns.expiry">
                                 <NextDate   v-model="item.expire_date"
                                 popover="top-left"
+                                 disabled='true'
                                 :error="form.errors?.[`item_list.${index}.expire_date`]"   />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
@@ -884,12 +967,16 @@ const addRow = () => {
             <SubmitButtons
                 :create-label="t('general.create')"
                 :create-and-new-label="t('general.create_and_new')"
+                :save-and-print-label="t('general.save_and_print')"
                 :cancel-label="t('general.cancel')"
                 :creating-label="t('general.creating', { name: t('sale.sale') })"
                 :create-loading="createLoading"
                 :create-and-new-loading="createAndNewLoading"
+                :save-and-print-loading="saveAndPrintLoading"
+                :show-save-and-print="true"
                 :disabled="disabled"
-                @create-and-new="handleSubmitAction(true)"
+                @create-and-new="handleSubmitAction('create_and_new')"
+                @save-and-print="handleSubmitAction('create_and_print')"
                 @cancel="() => $inertia.visit(route('sales.index'))"
             />
 

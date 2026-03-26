@@ -57,6 +57,7 @@
         "light": "روښانه",
         "dark": "تیاره",
         "system": "سیستم",
+        "cyan": "Cyan",
         "decimal_places": "لسیزې ځایونه",
         "sidebar_menus": "سایډبار مینوګانې"
     },
@@ -233,4 +234,3 @@
         "sidebar_collapsed_desc": "د سایډبار ټول شوی حالت په یاد ولرئ"
     }
 }
-

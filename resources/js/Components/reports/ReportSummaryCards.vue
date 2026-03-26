@@ -33,7 +33,7 @@ function formatValue(card) {
     <div
       v-for="card in cards"
       :key="card.key"
-      class="rounded-2xl border border-border bg-card px-4 py-4 shadow-sm"
+      class="rounded-2xl border border-border bg-card px-4 py-4 text-left shadow-sm rtl:text-right"
     >
       <div class="text-sm text-muted-foreground">{{ card.label }}</div>
       <div class="mt-2 text-2xl font-semibold tracking-tight text-card-foreground">

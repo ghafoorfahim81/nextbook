@@ -16,7 +16,9 @@
     "operations": "Sales and Purchase Reports",
     "operations_description": "Operational sales and purchase line reports.",
     "inventory": "Inventory Reports",
-    "inventory_description": "Current stock, valuation, and movement reports."
+    "inventory_description": "Current stock, valuation, and movement reports.",
+    "management": "Management Reports",
+    "management_description": "User activity and operational oversight reports."
   },
   "filters": {
     "title": "Filters",
@@ -156,6 +158,65 @@
     "inventory_valuation": {
       "label": "Inventory valuation",
       "description": "Current inventory value grouped by item."
+    },
+    "user_activity": {
+      "label": "User activity",
+      "description": "Logins and create, update, and delete activity by user."
+    }
+  },
+  "user_activity": {
+    "cards": {
+      "total_users": "Total users",
+      "active_users": "Active users",
+      "active_suffix": "active",
+      "total_activities": "Total activities",
+      "total_logins": "Total logins"
+    },
+    "sections": {
+      "role_distribution": "Role distribution",
+      "top_users": "Most active users",
+      "activity_summary": "Activity summary",
+      "user_details": "User details"
+    },
+    "actions": {
+      "login": "Logins",
+      "create": "Creates",
+      "update": "Updates",
+      "delete": "Deletes"
+    },
+    "columns": {
+      "user": "User",
+      "role": "Role",
+      "total_activities": "Activities",
+      "logins": "Logins",
+      "creates": "Creates",
+      "updates": "Updates",
+      "deletes": "Deletes",
+      "last_login": "Last login",
+      "top_sources": "Top modules"
+    },
+    "sources": {
+      "users": "Users",
+      "accounts": "Accounts",
+      "account_types": "Account types",
+      "brands": "Brands",
+      "categories": "Categories",
+      "currencies": "Currencies",
+      "expense_categories": "Expense categories",
+      "expenses": "Expenses",
+      "item_transfers": "Item transfers",
+      "items": "Items",
+      "journal_classes": "Journal classes",
+      "journal_entries": "Journal entries",
+      "ledgers": "Ledgers",
+      "owners": "Owners",
+      "payments": "Payments",
+      "purchases": "Purchases",
+      "receipts": "Receipts",
+      "sales": "Sales",
+      "sizes": "Sizes",
+      "unit_measures": "Unit measures",
+      "warehouses": "Warehouses"
     }
   }
 }
