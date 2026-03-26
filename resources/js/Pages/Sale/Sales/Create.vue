@@ -206,15 +206,24 @@ watch(() => form.selected_sale_type, (newType) => {
 
 let disabled = (false);
 const submitAction = ref(null);
-
-const handleSubmitAction = (createAndNew = false) => {
-    const isCreateAndNew = createAndNew === true;
-    submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
-    handleSubmit(isCreateAndNew);
-};
+const pendingPrintWindow = ref(null)
 
 const createLoading = computed(() => form.processing && submitAction.value === 'create');
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new');
+const saveAndPrintLoading = computed(() => form.processing && submitAction.value === 'create_and_print');
+
+const handleSubmitAction = (action = 'create') => {
+    submitAction.value = action;
+
+    if (action === 'create_and_print') {
+        pendingPrintWindow.value = window.open('about:blank', '_blank');
+    }
+
+    handleSubmit({
+        createAndNew: action === 'create_and_new',
+        createAndPrint: action === 'create_and_print',
+    });
+};
 
 const handleResetPayment = () => {
     form.payment = {
@@ -255,8 +264,38 @@ const handleSelectChange = (field, value) => {
 };
 
 
-function handleSubmit(createAndNew = false) {
+function finalizePrint(page) {
+    const printUrl = page?.props?.flash?.print_url
+
+    if (!printUrl) {
+        if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
+            pendingPrintWindow.value.close()
+        }
+        pendingPrintWindow.value = null
+        return
+    }
+
+    if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
+        pendingPrintWindow.value.location = printUrl
+        pendingPrintWindow.value.focus?.()
+    } else {
+        window.open(printUrl, '_blank')
+    }
+
+    pendingPrintWindow.value = null
+}
+
+function cleanupPrintWindow() {
+    if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
+        pendingPrintWindow.value.close()
+    }
+
+    pendingPrintWindow.value = null
+}
+
+function handleSubmit({ createAndNew = false, createAndPrint = false } = {}) {
     if(form.items[0]?.selected_item === '' || form.items[0]?.selected_item === null) {
+        cleanupPrintWindow();
         notifySound('error');
         toast({
             title: 'Please add items',
@@ -276,8 +315,14 @@ function handleSubmit(createAndNew = false) {
             item.unit_measure_id = item.selected_measure.id;
         });
     }
+
+    const payload = {
+        create_and_new: createAndNew,
+        create_and_print: createAndPrint,
+    }
+
     if (createAndNew) {
-        form.transform((data) => ({ ...data, create_and_new: true })).post(route('sales.store'), {
+        form.transform((data) => ({ ...data, ...payload })).post(route('sales.store'), {
             onSuccess: () => {
                 form.reset();
                 notifySound('success');
@@ -317,6 +362,7 @@ function handleSubmit(createAndNew = false) {
                 })
             },
             onError: () => {
+                cleanupPrintWindow();
                 notifySound('error');
                 toast({
                     title: 'Error creating sale',
@@ -327,9 +373,13 @@ function handleSubmit(createAndNew = false) {
             }
         })
         } else {
-            form.post(route('sales.store'), {
-            onSuccess: () => {
+            form.transform((data) => ({ ...data, ...payload })).post(route('sales.store'), {
+            onSuccess: (page) => {
                 notifySound('success');
+
+                if (createAndPrint) {
+                    finalizePrint(page);
+                }
 
                 toast({
                     title: 'Sale created successfully',
@@ -339,6 +389,7 @@ function handleSubmit(createAndNew = false) {
                 })
             },
             onError: () => {
+                cleanupPrintWindow();
                 notifySound('error');
                 toast({
                     title: 'Error creating sale',
@@ -627,7 +678,7 @@ const addRow = () => {
 
 <template>
     <AppLayout :title="t('general.create', { name: t('sale.sale') })" :sidebar-collapsed="true">
-        <form @submit.prevent="handleSubmitAction(false)">
+        <form @submit.prevent="handleSubmitAction('create')">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative ">
             <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('sale.sale') }) }}</div>
             <ModuleHelpButton module="sales" />
@@ -884,12 +935,16 @@ const addRow = () => {
             <SubmitButtons
                 :create-label="t('general.create')"
                 :create-and-new-label="t('general.create_and_new')"
+                :save-and-print-label="t('general.save_and_print')"
                 :cancel-label="t('general.cancel')"
                 :creating-label="t('general.creating', { name: t('sale.sale') })"
                 :create-loading="createLoading"
                 :create-and-new-loading="createAndNewLoading"
+                :save-and-print-loading="saveAndPrintLoading"
+                :show-save-and-print="true"
                 :disabled="disabled"
-                @create-and-new="handleSubmitAction(true)"
+                @create-and-new="handleSubmitAction('create_and_new')"
+                @save-and-print="handleSubmitAction('create_and_print')"
                 @cancel="() => $inertia.visit(route('sales.index'))"
             />
 

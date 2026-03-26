@@ -254,11 +254,17 @@ class SaleController extends Controller
             );
         }
 
-        return redirect()->route('sales.index')->with(
+        $redirect = redirect()->route('sales.index')->with(
             'success',
             __('general.created_successfully', ['resource' => __('general.resource.sale')])
         );
-}
+
+        if ((bool) $request->create_and_print) {
+            $redirect->with('print_url', route('sales.print', $sale));
+        }
+
+        return $redirect;
+    }
     // public function store(SaleStoreRequest $request, TransactionService $transactionService, StockService $stockService)
     // {
     //     $validated = $request->validated();
@@ -457,7 +463,13 @@ class SaleController extends Controller
             return $sale;
         });
 
-        return redirect()->route('sales.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.sale')]));
+        $redirect = redirect()->route('sales.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.sale')]));
+
+        if ($request->boolean('save_and_print')) {
+            $redirect->with('print_url', route('sales.print', $sale));
+        }
+
+        return $redirect;
     }
 
     public function destroy(Request $request, Sale $sale)

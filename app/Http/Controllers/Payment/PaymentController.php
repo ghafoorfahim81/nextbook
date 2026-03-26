@@ -77,7 +77,7 @@ class PaymentController extends Controller
 
     public function store(PaymentStoreRequest $request, TransactionService $transactionService)
     {
-        DB::transaction(function () use ($request, $transactionService) {
+        $payment = DB::transaction(function () use ($request, $transactionService) {
             $validated = $request->validated();
 
             $ledger = Ledger::findOrFail($validated['ledger_id']);
@@ -98,7 +98,7 @@ class PaymentController extends Controller
             $apAccountId = $glAccounts['account-payable'];
             $debitRemark = "Payment #{$payment->number} to {$ledger->name}";
 
-            $transaction = $transactionService->post(
+            $transactionService->post(
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -123,6 +123,8 @@ class PaymentController extends Controller
                 ],
             );
 
+            return $payment;
+
         });
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
@@ -131,7 +133,13 @@ class PaymentController extends Controller
             return redirect()->route('payments.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.payment')]));
         }
 
-        return redirect()->route('payments.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.payment')]));
+        $redirect = redirect()->route('payments.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.payment')]));
+
+        if ($request->boolean('create_and_print')) {
+            $redirect->with('print_url', route('payments.print', $payment));
+        }
+
+        return $redirect;
     }
 
     public function show(Request $request, Payment $payment)
@@ -220,7 +228,13 @@ class PaymentController extends Controller
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
-        return redirect()->route('payments.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.payment')]));
+        $redirect = redirect()->route('payments.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.payment')]));
+
+        if ($request->boolean('save_and_print')) {
+            $redirect->with('print_url', route('payments.print', $payment));
+        }
+
+        return $redirect;
     }
 
     public function destroy(Request $request, Payment $payment)
@@ -260,4 +274,3 @@ class PaymentController extends Controller
         return redirect()->route('payments.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.payment')]));
     }
 }
-

@@ -9,6 +9,7 @@ import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
+import { Spinner } from '@/Components/ui/spinner'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@/Components/ui/toast/use-toast'
 const { t } = useI18n()
@@ -35,6 +36,8 @@ const form = useForm({
   cheque_no: '',
   narration: '',
 })
+const submitAction = ref('update')
+const pendingPrintWindow = ref(null)
 
 function parseIdFromUrl() {
   const path = page.url.split('?')[0]
@@ -90,9 +93,50 @@ function oldBalanceText() {
     : `${s.balance}`
 }
 
-function submit() {
-  form.put(`/receipts/${form.id}`, {
-    onSuccess: () => {
+function finalizePrint(page) {
+  const printUrl = page?.props?.flash?.print_url
+
+  if (!printUrl) {
+    if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
+      pendingPrintWindow.value.close()
+    }
+    pendingPrintWindow.value = null
+    return
+  }
+
+  if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
+    pendingPrintWindow.value.location = printUrl
+    pendingPrintWindow.value.focus?.()
+  } else {
+    window.open(printUrl, '_blank')
+  }
+
+  pendingPrintWindow.value = null
+}
+
+function cleanupPrintWindow() {
+  if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
+    pendingPrintWindow.value.close()
+  }
+
+  pendingPrintWindow.value = null
+}
+
+function submit(action = 'update') {
+  submitAction.value = action
+
+  if (action === 'save_and_print') {
+    pendingPrintWindow.value = window.open('about:blank', '_blank')
+  }
+
+  form.transform((data) => ({
+    ...data,
+    save_and_print: action === 'save_and_print',
+  })).put(`/receipts/${form.id}`, {
+    onSuccess: (page) => {
+      if (action === 'save_and_print') {
+        finalizePrint(page)
+      }
       // done
       toast({
         title: t('general.success'),
@@ -101,13 +145,16 @@ function submit() {
         class:'bg-green-600 text-white',
       })
     },
+    onError: () => {
+      cleanupPrintWindow()
+    },
   })
 }
 </script>
 
 <template>
   <AppLayout :title="t('general.edit', { name: t('receipt.receipt') })">
-    <form @submit.prevent="submit()">
+    <form @submit.prevent="submit('update')">
       <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.edit', { name: t('receipt.receipt') }) }}
@@ -174,11 +221,17 @@ function submit() {
       </div>
 
       <div class="mt-4 flex gap-2">
-        <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white">{{ t('general.update') }}</button>
+        <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white" :disabled="form.processing">
+          <Spinner v-if="form.processing && submitAction === 'update'" class="mr-2 h-4 w-4" />
+          {{ t('general.update') }}
+        </button>
+        <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white" :disabled="form.processing" @click="submit('save_and_print')">
+          <Spinner v-if="form.processing && submitAction === 'save_and_print'" class="mr-2 h-4 w-4" />
+          {{ t('general.save_and_print') }}
+        </button>
         <button type="button" class="btn px-4 py-2 rounded-md border" @click="() => $inertia.visit('/receipts')">{{ t('general.cancel') }}</button>
       </div>
     </form>
   </AppLayout>
 </template>
-
 

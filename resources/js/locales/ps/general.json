@@ -81,6 +81,7 @@
   "format": "فورمټ",
   "save": "ساتل",
   "save_and_new": "ساتل او نوی",
+  "save_and_print": "ساتل او پرنټ",
   "from": "له",
   "to": "تر",
   "create": "جوړول {name}",
@@ -152,5 +153,4 @@
   "code": "کد",
   "description": "توضیحات"
 }
-
 
