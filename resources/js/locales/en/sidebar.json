@@ -38,6 +38,7 @@
     "item": "Item",
     "fast_entry": "Fast Entry",
     "fast_opening": "Fast Opening",
+    "barcode_print": "Barcode Print",
     "item_transfer": "Item Transfer"
   },
   "account": {
@@ -80,5 +81,4 @@
     "report": "Report"
   }
 }
-
 
