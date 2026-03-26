@@ -8,11 +8,14 @@ use App\Enums\TransactionStatus;
 use App\Models\Administration\Branch;
 use App\Models\Purchase\Purchase;
 use App\Models\Sale\Sale;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class ReportService
 {
@@ -32,6 +35,7 @@ class ReportService
         'stock_movement',
         'low_stock',
         'inventory_valuation',
+        'user_activity',
     ];
 
     public function __construct(
@@ -93,6 +97,7 @@ class ReportService
             'stock_movement' => $this->getStockMovements($filters),
             'low_stock' => $this->getLowStock($filters),
             'inventory_valuation' => $this->getInventoryValuation($filters),
+            'user_activity' => $this->getUserActivity($filters),
             default => $this->getTrialBalance($filters),
         };
     }
@@ -1068,6 +1073,360 @@ class ReportService
         ];
     }
 
+    protected function getUserActivity(array $filters): array
+    {
+        $totalUsers = $this->userActivityUsersBaseQuery($filters)->count('u.id');
+        $userRoles = $this->userActivityUserRoles($filters);
+        $roleDistribution = collect($userRoles)
+            ->groupBy(fn ($row) => $row->role_label)
+            ->map(fn ($rows, $role) => [
+                'role' => $role,
+                'count' => $rows->count(),
+                'percent' => $totalUsers > 0 ? round(($rows->count() / $totalUsers) * 100, 1) : 0,
+            ])
+            ->sortByDesc('count')
+            ->values()
+            ->all();
+
+        $loginEvents = $this->userActivityLoginEventsQuery($filters);
+        $auditEvents = $this->userActivityAuditEventsQuery($filters);
+        $allEvents = $this->userActivityEventsQuery($filters);
+        $perUserActivity = $this->userActivityPerUserSubquery($filters);
+        $lastLogin = $this->userActivityLastLoginSubquery($filters);
+
+        $summaryRow = $allEvents
+            ? (clone $allEvents)
+                ->selectRaw('COUNT(*) as total_activities')
+                ->selectRaw("SUM(CASE WHEN action_type = 'login' THEN 1 ELSE 0 END) as total_logins")
+                ->selectRaw("SUM(CASE WHEN action_type = 'create' THEN 1 ELSE 0 END) as total_creates")
+                ->selectRaw("SUM(CASE WHEN action_type = 'update' THEN 1 ELSE 0 END) as total_updates")
+                ->selectRaw("SUM(CASE WHEN action_type = 'delete' THEN 1 ELSE 0 END) as total_deletes")
+                ->first()
+            : null;
+
+        $activeUsers = $perUserActivity
+            ? DB::query()->fromSub($perUserActivity, 'ua_users')->count()
+            : 0;
+
+        $topSourcesByUser = $auditEvents
+            ? (clone $auditEvents)
+                ->selectRaw('user_id')
+                ->selectRaw('source_key')
+                ->selectRaw('COUNT(*) as total')
+                ->groupBy('user_id', 'source_key')
+                ->orderBy('user_id')
+                ->orderByDesc('total')
+                ->get()
+                ->groupBy('user_id')
+                ->map(fn ($rows) => $rows
+                    ->take(3)
+                    ->map(fn ($row) => [
+                        'key' => $row->source_key,
+                        'count' => (int) $row->total,
+                    ])
+                    ->values()
+                    ->all())
+                ->all()
+            : [];
+
+        $topSourcesSummary = collect($topSourcesByUser)
+            ->map(fn ($items) => collect($items)
+                ->map(fn ($item) => Str::of($item['key'])->replace('_', ' ')->headline()->append(" ({$item['count']})")->toString())
+                ->implode(', '))
+            ->all();
+
+        $topUsers = DB::query()
+            ->fromSub($this->userActivityUsersBaseQuery($filters), 'u')
+            ->leftJoinSub($perUserActivity, 'ua', fn ($join) => $join->on('ua.user_id', '=', 'u.id'))
+            ->leftJoinSub($lastLogin, 'ul', fn ($join) => $join->on('ul.user_id', '=', 'u.id'))
+            ->leftJoinSub($this->userActivityRoleLabelsSubquery(), 'ur', fn ($join) => $join->on('ur.user_id', '=', 'u.id'))
+            ->selectRaw('u.id as user_id')
+            ->selectRaw('u.name as user_name')
+            ->selectRaw('u.email')
+            ->selectRaw("COALESCE(ur.role_label, 'No role') as role")
+            ->selectRaw('COALESCE(ua.total_activities, 0) as total_activities')
+            ->selectRaw('COALESCE(ua.logins, 0) as total_logins')
+            ->selectRaw('ul.last_login_at')
+            ->orderByDesc(DB::raw('COALESCE(ua.total_activities, 0)'))
+            ->orderBy('u.name')
+            ->limit(5)
+            ->get()
+            ->filter(fn ($row) => (int) $row->total_activities > 0)
+            ->map(fn ($row) => [
+                'user_id' => $row->user_id,
+                'user_name' => $row->user_name,
+                'email' => $row->email,
+                'role' => $row->role,
+                'total_activities' => (int) $row->total_activities,
+                'total_logins' => (int) $row->total_logins,
+                'last_login' => $this->displayDateTime($row->last_login_at),
+            ])
+            ->values()
+            ->all();
+
+        $query = DB::query()
+            ->fromSub($this->userActivityUsersBaseQuery($filters), 'u')
+            ->leftJoinSub($this->userActivityRoleLabelsSubquery(), 'ur', fn ($join) => $join->on('ur.user_id', '=', 'u.id'))
+            ->leftJoinSub($perUserActivity, 'ua', fn ($join) => $join->on('ua.user_id', '=', 'u.id'))
+            ->leftJoinSub($lastLogin, 'ul', fn ($join) => $join->on('ul.user_id', '=', 'u.id'))
+            ->selectRaw('u.id as user_id')
+            ->selectRaw('u.name as user_name')
+            ->selectRaw('u.email')
+            ->selectRaw("COALESCE(ur.role_label, 'No role') as role")
+            ->selectRaw('COALESCE(ua.total_activities, 0) as total_activities')
+            ->selectRaw('COALESCE(ua.logins, 0) as logins')
+            ->selectRaw('COALESCE(ua.creates, 0) as creates')
+            ->selectRaw('COALESCE(ua.updates, 0) as updates')
+            ->selectRaw('COALESCE(ua.deletes, 0) as deletes')
+            ->selectRaw('ul.last_login_at')
+            ->orderByDesc(DB::raw('COALESCE(ua.total_activities, 0)'))
+            ->orderBy('u.name');
+
+        $activeRate = $totalUsers > 0 ? round(($activeUsers / $totalUsers) * 100, 1) : 0;
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            function ($row) use ($topSourcesSummary) {
+                return [
+                    'user_id' => $row->user_id,
+                    'user_name' => $row->user_name,
+                    'email' => $row->email,
+                    'role' => $row->role,
+                    'total_activities' => (int) $row->total_activities,
+                    'logins' => (int) $row->logins,
+                    'creates' => (int) $row->creates,
+                    'updates' => (int) $row->updates,
+                    'deletes' => (int) $row->deletes,
+                    'last_login' => $this->displayDateTime($row->last_login_at),
+                    'top_sources' => $topSourcesSummary[$row->user_id] ?? '-',
+                ];
+            },
+            [
+                'total_users' => (int) $totalUsers,
+                'active_users' => (int) $activeUsers,
+                'active_rate' => $activeRate,
+                'total_activities' => (int) ($summaryRow?->total_activities ?? 0),
+                'total_logins' => (int) ($summaryRow?->total_logins ?? 0),
+            ],
+            [
+                'layout' => 'user_activity',
+                'activity_breakdown' => [
+                    'login' => (int) ($summaryRow?->total_logins ?? 0),
+                    'create' => (int) ($summaryRow?->total_creates ?? 0),
+                    'update' => (int) ($summaryRow?->total_updates ?? 0),
+                    'delete' => (int) ($summaryRow?->total_deletes ?? 0),
+                ],
+                'role_distribution' => $roleDistribution,
+                'top_users' => $topUsers,
+                'top_sources_by_user' => $topSourcesByUser,
+                'range_label' => sprintf(
+                    '%s - %s',
+                    $this->displayDate($filters['date_from']) ?? $filters['date_from'],
+                    $this->displayDate($filters['date_to']) ?? $filters['date_to'],
+                ),
+            ],
+        );
+    }
+
+    protected function userActivityUsersBaseQuery(array $filters): Builder
+    {
+        return DB::table('users as u')
+            ->where('u.branch_id', $filters['branch_id'])
+            ->whereNull('u.deleted_at');
+    }
+
+    protected function userActivityRoleLabelsSubquery(): Builder
+    {
+        return DB::table('model_has_roles as mhr')
+            ->join('roles as r', function ($join) {
+                $join->on('r.id', '=', 'mhr.role_id')
+                    ->whereNull('r.deleted_at');
+            })
+            ->where('mhr.model_type', User::class)
+            ->groupBy('mhr.model_id')
+            ->selectRaw('mhr.model_id as user_id')
+            ->selectRaw("STRING_AGG(DISTINCT r.name, ', ' ORDER BY r.name) as role_label");
+    }
+
+    protected function userActivityUserRoles(array $filters)
+    {
+        return DB::query()
+            ->fromSub($this->userActivityUsersBaseQuery($filters), 'u')
+            ->leftJoinSub($this->userActivityRoleLabelsSubquery(), 'ur', fn ($join) => $join->on('ur.user_id', '=', 'u.id'))
+            ->selectRaw("COALESCE(ur.role_label, 'No role') as role_label")
+            ->get();
+    }
+
+    protected function userActivityLoginEventsQuery(array $filters): Builder
+    {
+        $fromTimestamp = Carbon::parse($filters['date_from'])->startOfDay()->timestamp;
+        $toTimestamp = Carbon::parse($filters['date_to'])->endOfDay()->timestamp;
+
+        return DB::table('sessions as s')
+            ->join('users as u', function ($join) use ($filters) {
+                $join->on('u.id', '=', 's.user_id')
+                    ->where('u.branch_id', '=', $filters['branch_id'])
+                    ->whereNull('u.deleted_at');
+            })
+            ->whereNotNull('s.user_id')
+            ->whereBetween('s.last_activity', [$fromTimestamp, $toTimestamp])
+            ->selectRaw('s.user_id')
+            ->selectRaw("'login' as action_type")
+            ->selectRaw("'sessions' as source_key")
+            ->selectRaw('COALESCE(s.login_time, to_timestamp(s.last_activity)) as action_at');
+    }
+
+    protected function userActivityAuditEventsQuery(array $filters): ?Builder
+    {
+        $queries = collect($this->userActivityAuditedSources())
+            ->flatMap(function (array $source) use ($filters) {
+                $table = $source['table'];
+                $sourceKey = $source['key'];
+
+                if (! Schema::hasTable($table) || ! Schema::hasColumn($table, 'branch_id')) {
+                    return [];
+                }
+
+                $events = [];
+
+                if (Schema::hasColumn($table, 'created_by') && Schema::hasColumn($table, 'created_at')) {
+                    $events[] = $this->userActivityAuditEventSelect($table, $sourceKey, 'create', 'created_by', 'created_at', $filters);
+                }
+
+                if (Schema::hasColumn($table, 'updated_by') && Schema::hasColumn($table, 'updated_at')) {
+                    $events[] = $this->userActivityAuditEventSelect($table, $sourceKey, 'update', 'updated_by', 'updated_at', $filters);
+                }
+
+                if (Schema::hasColumn($table, 'deleted_by') && Schema::hasColumn($table, 'deleted_at')) {
+                    $events[] = $this->userActivityAuditEventSelect($table, $sourceKey, 'delete', 'deleted_by', 'deleted_at', $filters);
+                }
+
+                return $events;
+            })
+            ->values()
+            ->all();
+
+        return $this->unionSubqueries($queries, 'audit_events');
+    }
+
+    protected function userActivityAuditEventSelect(
+        string $table,
+        string $sourceKey,
+        string $actionType,
+        string $userColumn,
+        string $timestampColumn,
+        array $filters,
+    ): Builder {
+        $from = Carbon::parse($filters['date_from'])->startOfDay()->toDateTimeString();
+        $to = Carbon::parse($filters['date_to'])->endOfDay()->toDateTimeString();
+
+        return DB::table($table)
+            ->where('branch_id', $filters['branch_id'])
+            ->whereNotNull($userColumn)
+            ->whereNotNull($timestampColumn)
+            ->whereBetween($timestampColumn, [$from, $to])
+            ->selectRaw("{$userColumn} as user_id")
+            ->selectRaw("'{$actionType}' as action_type")
+            ->selectRaw("'{$sourceKey}' as source_key")
+            ->selectRaw("{$timestampColumn} as action_at");
+    }
+
+    protected function userActivityEventsQuery(array $filters): ?Builder
+    {
+        return $this->unionSubqueries(
+            array_filter([
+                $this->userActivityLoginEventsQuery($filters),
+                $this->userActivityAuditEventsQuery($filters),
+            ]),
+            'user_activity_events',
+        );
+    }
+
+    protected function userActivityPerUserSubquery(array $filters): ?Builder
+    {
+        $events = $this->userActivityEventsQuery($filters);
+
+        if (! $events) {
+            return null;
+        }
+
+        return DB::query()
+            ->fromSub($events, 'ua')
+            ->selectRaw('user_id')
+            ->selectRaw('COUNT(*) as total_activities')
+            ->selectRaw("SUM(CASE WHEN action_type = 'login' THEN 1 ELSE 0 END) as logins")
+            ->selectRaw("SUM(CASE WHEN action_type = 'create' THEN 1 ELSE 0 END) as creates")
+            ->selectRaw("SUM(CASE WHEN action_type = 'update' THEN 1 ELSE 0 END) as updates")
+            ->selectRaw("SUM(CASE WHEN action_type = 'delete' THEN 1 ELSE 0 END) as deletes")
+            ->groupBy('user_id');
+    }
+
+    protected function userActivityLastLoginSubquery(array $filters): Builder
+    {
+        return DB::query()
+            ->fromSub($this->userActivityLoginEventsQuery($filters), 'ul')
+            ->selectRaw('user_id')
+            ->selectRaw('MAX(action_at) as last_login_at')
+            ->groupBy('user_id');
+    }
+
+    protected function unionSubqueries(array $queries, string $alias): ?Builder
+    {
+        $queries = array_values(array_filter($queries));
+
+        if ($queries === []) {
+            return null;
+        }
+
+        $base = array_shift($queries);
+
+        foreach ($queries as $query) {
+            $base->unionAll($query);
+        }
+
+        return DB::query()->fromSub($base, $alias);
+    }
+
+    protected function userActivityAuditedSources(): array
+    {
+        return [
+            ['table' => 'users', 'key' => 'users'],
+            ['table' => 'accounts', 'key' => 'accounts'],
+            ['table' => 'account_types', 'key' => 'account_types'],
+            ['table' => 'brands', 'key' => 'brands'],
+            ['table' => 'categories', 'key' => 'categories'],
+            ['table' => 'currencies', 'key' => 'currencies'],
+            ['table' => 'expense_categories', 'key' => 'expense_categories'],
+            ['table' => 'expenses', 'key' => 'expenses'],
+            ['table' => 'item_transfers', 'key' => 'item_transfers'],
+            ['table' => 'items', 'key' => 'items'],
+            ['table' => 'journal_classes', 'key' => 'journal_classes'],
+            ['table' => 'journal_entries', 'key' => 'journal_entries'],
+            ['table' => 'ledgers', 'key' => 'ledgers'],
+            ['table' => 'owners', 'key' => 'owners'],
+            ['table' => 'payments', 'key' => 'payments'],
+            ['table' => 'purchases', 'key' => 'purchases'],
+            ['table' => 'receipts', 'key' => 'receipts'],
+            ['table' => 'sales', 'key' => 'sales'],
+            ['table' => 'sizes', 'key' => 'sizes'],
+            ['table' => 'unit_measures', 'key' => 'unit_measures'],
+            ['table' => 'warehouses', 'key' => 'warehouses'],
+        ];
+    }
+
+    protected function displayDateTime(mixed $value): string
+    {
+        if (! $value) {
+            return '-';
+        }
+
+        $dateTime = Carbon::parse($value);
+        $displayDate = $this->dateConversionService->toDisplay($dateTime->toDateString()) ?? $dateTime->toDateString();
+
+        return $displayDate.' '.$dateTime->format('H:i');
+    }
+
     protected function defaultExportHeadings(string $reportKey): array
     {
         return match ($reportKey) {
@@ -1083,6 +1442,7 @@ class ReportService
             'stock_movement' => ['date', 'item', 'warehouse', 'movement_type', 'quantity', 'unit_price', 'source_type', 'reference_type', 'reference_id'],
             'low_stock' => ['item', 'warehouse', 'quantity', 'reorder_level'],
             'inventory_valuation' => ['item', 'quantity', 'average_cost', 'total_value'],
+            'user_activity' => ['user_name', 'email', 'role', 'total_activities', 'logins', 'creates', 'updates', 'deletes', 'last_login', 'top_sources'],
             default => ['value'],
         };
     }
@@ -1293,4 +1653,3 @@ class ReportService
         return filled($value) ? (string) $value : null;
     }
 }
-

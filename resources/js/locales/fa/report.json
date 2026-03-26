@@ -16,7 +16,9 @@
     "operations": "گزارشات فروش و خرید",
     "operations_description": "گزارشات عملیاتی فروش و خرید بر اساس اقلام.",
     "inventory": "گزارشات موجودی",
-    "inventory_description": "گزارش موجودی فعلی، ارزش‌گذاری و گردش کالا."
+    "inventory_description": "گزارش موجودی فعلی، ارزش‌گذاری و گردش کالا.",
+    "management": "گزارشات مدیریتی",
+    "management_description": "گزارشات نظارتی و فعالیت کاربران."
   },
   "filters": {
     "title": "فیلترها",
@@ -156,6 +158,65 @@
     "inventory_valuation": {
       "label": "ارزش‌گذاری موجودی",
       "description": "ارزش فعلی موجودی به تفکیک کالا."
+    },
+    "user_activity": {
+      "label": "فعالیت کاربران",
+      "description": "ورودها و فعالیت‌های ایجاد، ویرایش و حذف به تفکیک کاربر."
+    }
+  },
+  "user_activity": {
+    "cards": {
+      "total_users": "کل کاربران",
+      "active_users": "کاربران فعال",
+      "active_suffix": "فعال",
+      "total_activities": "کل فعالیت‌ها",
+      "total_logins": "کل ورودها"
+    },
+    "sections": {
+      "role_distribution": "توزیع نقش‌ها",
+      "top_users": "پرفعالیت‌ترین کاربران",
+      "activity_summary": "خلاصه فعالیت‌ها",
+      "user_details": "جزئیات کاربران"
+    },
+    "actions": {
+      "login": "ورود",
+      "create": "ایجاد",
+      "update": "ویرایش",
+      "delete": "حذف"
+    },
+    "columns": {
+      "user": "کاربر",
+      "role": "نقش",
+      "total_activities": "فعالیت",
+      "logins": "ورود",
+      "creates": "ایجاد",
+      "updates": "ویرایش",
+      "deletes": "حذف",
+      "last_login": "آخرین ورود",
+      "top_sources": "بیشترین فعالیت"
+    },
+    "sources": {
+      "users": "کاربران",
+      "accounts": "حساب‌ها",
+      "account_types": "نوع حساب‌ها",
+      "brands": "برندها",
+      "categories": "دسته‌بندی‌ها",
+      "currencies": "ارزها",
+      "expense_categories": "دسته‌بندی مصارف",
+      "expenses": "مصارف",
+      "item_transfers": "انتقالات کالا",
+      "items": "کالاها",
+      "journal_classes": "کلاس‌های ژورنال",
+      "journal_entries": "اسناد ژورنال",
+      "ledgers": "دفاتر حساب",
+      "owners": "مالکان",
+      "payments": "پرداخت‌ها",
+      "purchases": "خریدها",
+      "receipts": "رسیدها",
+      "sales": "فروش‌ها",
+      "sizes": "سایزها",
+      "unit_measures": "واحدهای اندازه‌گیری",
+      "warehouses": "انبارها"
     }
   }
 }
