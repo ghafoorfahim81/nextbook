@@ -16,7 +16,9 @@
     "operations": "د خرڅلاو او پېرود راپورونه",
     "operations_description": "د خرڅلاو او پېرود عملياتي راپورونه د توکو پر بنسټ.",
     "inventory": "د ګدام راپورونه",
-    "inventory_description": "اوسنی سټاک، ارزښت او د توکو حرکت."
+    "inventory_description": "اوسنی سټاک، ارزښت او د توکو حرکت.",
+    "management": "مديريتي راپورونه",
+    "management_description": "د کاروونکو د فعالیت او څارنې راپورونه."
   },
   "filters": {
     "title": "فلټرونه",
@@ -156,6 +158,65 @@
     "inventory_valuation": {
       "label": "د سټاک ارزښت",
       "description": "د اوسني ګدام ارزښت د توکي له مخې."
+    },
+    "user_activity": {
+      "label": "د کاروونکو فعالیت",
+      "description": "د هر کاروونکي له مخې د ننوتلو او جوړولو، سمولو او حذف فعالیتونه."
+    }
+  },
+  "user_activity": {
+    "cards": {
+      "total_users": "ټول کاروونکي",
+      "active_users": "فعال کاروونکي",
+      "active_suffix": "فعال",
+      "total_activities": "ټول فعالیتونه",
+      "total_logins": "ټول ننوتل"
+    },
+    "sections": {
+      "role_distribution": "د رول وېش",
+      "top_users": "تر ټولو فعال کاروونکي",
+      "activity_summary": "د فعالیت لنډیز",
+      "user_details": "د کاروونکو جزئیات"
+    },
+    "actions": {
+      "login": "ننوتل",
+      "create": "ایجاد",
+      "update": "سمون",
+      "delete": "حذف"
+    },
+    "columns": {
+      "user": "کاروونکی",
+      "role": "رول",
+      "total_activities": "فعالیت",
+      "logins": "ننوتل",
+      "creates": "ایجاد",
+      "updates": "سمون",
+      "deletes": "حذف",
+      "last_login": "وروستی ننوتل",
+      "top_sources": "تر ټولو فعال ماډلونه"
+    },
+    "sources": {
+      "users": "کاروونکي",
+      "accounts": "حسابونه",
+      "account_types": "د حساب ډولونه",
+      "brands": "برنډونه",
+      "categories": "کټګورۍ",
+      "currencies": "اسعار",
+      "expense_categories": "د لګښت کټګورۍ",
+      "expenses": "لګښتونه",
+      "item_transfers": "د توکو انتقالونه",
+      "items": "توکي",
+      "journal_classes": "د ژورنال ټولګي",
+      "journal_entries": "د ژورنال ثبتونه",
+      "ledgers": "لېجرونه",
+      "owners": "مالکان",
+      "payments": "تادیات",
+      "purchases": "پېرودونه",
+      "receipts": "رسیدونه",
+      "sales": "خرڅلاو",
+      "sizes": "سایزونه",
+      "unit_measures": "د اندازې واحدونه",
+      "warehouses": "ګودامونه"
     }
   }
 }
