@@ -1,1 +1,161 @@
-﻿{}
+{
+  "title": "راپورونه",
+  "subtitle": "د ثبت شويو راکړو ورکړو لپاره عملياتي، ګدامي او مالي راپورونه.",
+  "catalog_label": "د راپورونو لړلیک",
+  "active_report": "ټاکل شوی راپور",
+  "back_to_reports": "راپورونو ته بېرته",
+  "export_excel": "اکسل ته صادرول",
+  "snapshot_note": "دا راپور د موجوده سټاک د انځور پر بنسټ جوړ شوی دی.",
+  "groups": {
+    "financial": "مالي راپورونه",
+    "financial_description": "د حسابدارۍ اصلي راپورونه او صورتونه.",
+    "cash_flow": "د نغدو بهیر راپورونه",
+    "cash_flow_description": "د نغدو او بانک د داخلېدو او وتلو راپورونه.",
+    "party": "د طرف حساب صورتونه",
+    "party_description": "د پېرېدونکو او عرضه کوونکو د حرکت او بیلانس راپورونه.",
+    "operations": "د خرڅلاو او پېرود راپورونه",
+    "operations_description": "د خرڅلاو او پېرود عملياتي راپورونه د توکو پر بنسټ.",
+    "inventory": "د ګدام راپورونه",
+    "inventory_description": "اوسنی سټاک، ارزښت او د توکو حرکت."
+  },
+  "filters": {
+    "title": "فلټرونه",
+    "report": "راپور",
+    "branch": "څانګه",
+    "date_from": "له نېټې",
+    "date_to": "تر نېټې",
+    "ledger": "لېجر",
+    "customer": "پېرېدونکی",
+    "supplier": "عرضه کوونکی",
+    "item": "توکی",
+    "account": "نغدي / بانک حساب",
+    "per_page": "قطارونه",
+    "apply": "فلټرونه پلي کړئ",
+    "reset": "بیا تنظیم"
+  },
+  "table": {
+    "results": "پایلې",
+    "showing": "ښودل {from}-{to} له {total} څخه",
+    "no_data": "د ټاکل شويو فلټرونو لپاره د راپور معلومات ونه موندل شول.",
+    "previous": "مخکینی",
+    "next": "بل"
+  },
+  "messages": {
+    "ledger_required": "د دې راپور د لیدو لپاره یو لېجر وټاکئ.",
+    "customer_required": "د دې صورت د لیدو لپاره یو پېرېدونکی وټاکئ.",
+    "supplier_required": "د دې صورت د لیدو لپاره یو عرضه کوونکی وټاکئ.",
+    "account_required": "د دې راپور د لیدو لپاره یو نغدي یا بانک حساب وټاکئ."
+  },
+  "summary": {
+    "total_debit": "ټول ډیبیټ",
+    "total_credit": "ټول کریډیټ",
+    "balance": "بیلانس",
+    "balance_label": "بیلانس",
+    "total_amount": "ټول مبلغ",
+    "total_quantity": "ټول مقدار",
+    "total_value": "ټول ارزښت",
+    "total_items": "توکي",
+    "total_assets": "ټولې شتمنۍ",
+    "total_liabilities": "ټولې پورونه",
+    "total_equity": "ټول حقوق",
+    "equation_total": "پورونه + حقوق",
+    "total_revenue": "ټول عاید",
+    "total_cost_of_goods_sold": "د خرڅ شويو توکو ټول لګښت",
+    "gross_profit": "ناخالصه ګټه",
+    "total_expenses": "ټول لګښتونه",
+    "net_profit": "خالصه ګټه"
+  },
+  "columns": {
+    "ledger_name": "لېجر",
+    "total_debit": "ډیبیټ",
+    "total_credit": "کریډیټ",
+    "balance": "بیلانس",
+    "transaction_number": "د راکړې ورکړې شمېره",
+    "reference_type": "د مرجع ډول",
+    "description": "تشریح",
+    "debit": "ډیبیټ",
+    "credit": "کریډیټ",
+    "running_balance": "روان بیلانس",
+    "reference": "مرجع",
+    "amount_received": "ترلاسه شوې اندازه",
+    "amount_paid": "ورکړل شوې اندازه",
+    "date": "نېټه",
+    "sale_number": "د خرڅلاو شمېره",
+    "purchase_number": "د پېرود شمېره",
+    "customer": "پېرېدونکی",
+    "supplier": "عرضه کوونکی",
+    "item": "توکی",
+    "quantity": "مقدار",
+    "unit_price": "واحد قیمت",
+    "total_amount": "ټول مبلغ",
+    "warehouse": "ګودام",
+    "average_cost": "اوسط لګښت",
+    "total_value": "ټول ارزښت",
+    "movement_type": "د حرکت ډول",
+    "source_type": "د سرچینې ډول",
+    "reference_id": "د مرجع پېژند",
+    "reorder_level": "د بیا فرمایش کچه"
+  },
+  "reports": {
+    "trial_balance": {
+      "label": "آزمایښتي بیلانس",
+      "description": "ثبت شوي ډیبیټ، کریډیټ او خالص بیلانس د لېجر له مخې."
+    },
+    "balance_sheet": {
+      "label": "بیلانس شیټ",
+      "description": "تر ټاکلې نېټې پورې مالي وضعیت."
+    },
+    "income_statement": {
+      "label": "د ګټې او زیان راپور",
+      "description": "عاید، د خرڅ شويو توکو لګښت، لګښتونه او خالصه ګټه د ټاکلې مودې لپاره."
+    },
+    "general_ledger": {
+      "label": "عمومي لېجر",
+      "description": "د لېجر راکړې ورکړې له روان بیلانس سره."
+    },
+    "customer_statement": {
+      "label": "د پېرېدونکي صورت",
+      "description": "د پېرېدونکي ثبت شوي حرکتونه او بیلانسونه."
+    },
+    "supplier_statement": {
+      "label": "د عرضه کوونکي صورت",
+      "description": "د عرضه کوونکي ثبت شوي حرکتونه او بیلانسونه."
+    },
+    "receipt_report": {
+      "label": "د رسید راپور",
+      "description": "د نغدو او بانک داخلېدنې چې پکې نغدي حساب ډیبیټ کېږي."
+    },
+    "payment_report": {
+      "label": "د تادیې راپور",
+      "description": "د نغدو او بانک وتنې چې پکې نغدي حساب کریډیټ کېږي."
+    },
+    "cash_book": {
+      "label": "نغدي کتاب",
+      "description": "د ټاکل شوي نغدي یا بانک حساب روان بیلانس."
+    },
+    "sales_report": {
+      "label": "د خرڅلاو راپور",
+      "description": "د ثبت شويو خرڅلاو کرښې د پېرېدونکي او توکي له مخې."
+    },
+    "purchase_report": {
+      "label": "د پېرود راپور",
+      "description": "د ثبت شويو پېرودونو کرښې د عرضه کوونکي او توکي له مخې."
+    },
+    "inventory_stock": {
+      "label": "د ګدام سټاک",
+      "description": "د اوسني سټاک مقدار او ارزښت د توکي او ګودام له مخې."
+    },
+    "stock_movement": {
+      "label": "د سټاک حرکت",
+      "description": "د توکي او ګودام له مخې د سټاک تفصیلي تاریخچه."
+    },
+    "low_stock": {
+      "label": "کم سټاک",
+      "description": "هغه توکي چې د بیا فرمایش له کچې سره برابر یا تر هغې کم وي."
+    },
+    "inventory_valuation": {
+      "label": "د سټاک ارزښت",
+      "description": "د اوسني ګدام ارزښت د توکي له مخې."
+    }
+  }
+}

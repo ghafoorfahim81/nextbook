@@ -1,1 +1,161 @@
-﻿{}
+{
+  "title": "گزارشات",
+  "subtitle": "گزارشات عملیاتی، موجودی و مالی برای تراکنش‌های ثبت‌شده.",
+  "catalog_label": "فهرست گزارشات",
+  "active_report": "گزارش انتخاب‌شده",
+  "back_to_reports": "بازگشت به گزارشات",
+  "export_excel": "خروجی اکسل",
+  "snapshot_note": "این گزارش بر اساس وضعیت فعلی موجودی تهیه شده است.",
+  "groups": {
+    "financial": "گزارشات مالی",
+    "financial_description": "گزارشات و صورت‌های اصلی حسابداری.",
+    "cash_flow": "گزارشات جریان نقدی",
+    "cash_flow_description": "گزارش ورود و خروج وجه نقد و بانک.",
+    "party": "صورت‌حساب طرف حساب‌ها",
+    "party_description": "گزارش گردش و مانده مشتریان و تأمین‌کنندگان.",
+    "operations": "گزارشات فروش و خرید",
+    "operations_description": "گزارشات عملیاتی فروش و خرید بر اساس اقلام.",
+    "inventory": "گزارشات موجودی",
+    "inventory_description": "گزارش موجودی فعلی، ارزش‌گذاری و گردش کالا."
+  },
+  "filters": {
+    "title": "فیلترها",
+    "report": "گزارش",
+    "branch": "شعبه",
+    "date_from": "از تاریخ",
+    "date_to": "تا تاریخ",
+    "ledger": "دفتر حساب",
+    "customer": "مشتری",
+    "supplier": "تأمین‌کننده",
+    "item": "کالا",
+    "account": "حساب نقد / بانک",
+    "per_page": "تعداد سطر",
+    "apply": "اعمال فیلترها",
+    "reset": "بازنشانی"
+  },
+  "table": {
+    "results": "نتایج",
+    "showing": "نمایش {from}-{to} از {total}",
+    "no_data": "برای فیلترهای انتخاب‌شده داده‌ای یافت نشد.",
+    "previous": "قبلی",
+    "next": "بعدی"
+  },
+  "messages": {
+    "ledger_required": "برای مشاهده این گزارش، یک دفتر حساب انتخاب کنید.",
+    "customer_required": "برای مشاهده این صورت‌حساب، یک مشتری انتخاب کنید.",
+    "supplier_required": "برای مشاهده این صورت‌حساب، یک تأمین‌کننده انتخاب کنید.",
+    "account_required": "برای مشاهده این گزارش، یک حساب نقد یا بانک انتخاب کنید."
+  },
+  "summary": {
+    "total_debit": "مجموع بدهکار",
+    "total_credit": "مجموع بستانکار",
+    "balance": "مانده",
+    "balance_label": "مانده",
+    "total_amount": "مجموع مبلغ",
+    "total_quantity": "مجموع مقدار",
+    "total_value": "مجموع ارزش",
+    "total_items": "تعداد اقلام",
+    "total_assets": "جمع دارایی‌ها",
+    "total_liabilities": "جمع بدهی‌ها",
+    "total_equity": "جمع حقوق صاحبان سهام",
+    "equation_total": "بدهی‌ها + حقوق صاحبان سهام",
+    "total_revenue": "جمع درآمد",
+    "total_cost_of_goods_sold": "جمع بهای تمام‌شده کالای فروش‌رفته",
+    "gross_profit": "سود ناخالص",
+    "total_expenses": "جمع مصارف",
+    "net_profit": "سود خالص"
+  },
+  "columns": {
+    "ledger_name": "دفتر حساب",
+    "total_debit": "بدهکار",
+    "total_credit": "بستانکار",
+    "balance": "مانده",
+    "transaction_number": "شماره تراکنش",
+    "reference_type": "نوع مرجع",
+    "description": "شرح",
+    "debit": "بدهکار",
+    "credit": "بستانکار",
+    "running_balance": "مانده جاری",
+    "reference": "مرجع",
+    "amount_received": "مبلغ دریافت‌شده",
+    "amount_paid": "مبلغ پرداخت‌شده",
+    "date": "تاریخ",
+    "sale_number": "شماره فروش",
+    "purchase_number": "شماره خرید",
+    "customer": "مشتری",
+    "supplier": "تأمین‌کننده",
+    "item": "کالا",
+    "quantity": "مقدار",
+    "unit_price": "قیمت واحد",
+    "total_amount": "مبلغ کل",
+    "warehouse": "انبار",
+    "average_cost": "میانگین قیمت تمام‌شده",
+    "total_value": "ارزش کل",
+    "movement_type": "نوع گردش",
+    "source_type": "نوع منبع",
+    "reference_id": "شناسه مرجع",
+    "reorder_level": "حد سفارش"
+  },
+  "reports": {
+    "trial_balance": {
+      "label": "تراز آزمایشی",
+      "description": "بدهکار، بستانکار و مانده خالص حساب‌ها بر اساس اسناد ثبت‌شده."
+    },
+    "balance_sheet": {
+      "label": "بیلانس شیت",
+      "description": "وضعیت مالی تا تاریخ انتخاب‌شده."
+    },
+    "income_statement": {
+      "label": "سود و زیان",
+      "description": "درآمد، بهای تمام‌شده کالای فروش‌رفته، مصارف و سود خالص برای دوره انتخاب‌شده."
+    },
+    "general_ledger": {
+      "label": "دفتر کل",
+      "description": "تراکنش‌های دفتر حساب همراه با مانده جاری."
+    },
+    "customer_statement": {
+      "label": "صورت‌حساب مشتری",
+      "description": "گردش‌ها و مانده‌های ثبت‌شده مشتری."
+    },
+    "supplier_statement": {
+      "label": "صورت‌حساب تأمین‌کننده",
+      "description": "گردش‌ها و مانده‌های ثبت‌شده تأمین‌کننده."
+    },
+    "receipt_report": {
+      "label": "گزارش رسید",
+      "description": "ورودی‌های نقد و بانک که در آن حساب نقد بدهکار می‌شود."
+    },
+    "payment_report": {
+      "label": "گزارش پرداخت",
+      "description": "خروجی‌های نقد و بانک که در آن حساب نقد بستانکار می‌شود."
+    },
+    "cash_book": {
+      "label": "کتاب نقدی",
+      "description": "مانده جاری برای حساب نقد یا بانک انتخاب‌شده."
+    },
+    "sales_report": {
+      "label": "گزارش فروش",
+      "description": "جزئیات فروش‌های ثبت‌شده بر اساس مشتری و کالا."
+    },
+    "purchase_report": {
+      "label": "گزارش خرید",
+      "description": "جزئیات خریدهای ثبت‌شده بر اساس تأمین‌کننده و کالا."
+    },
+    "inventory_stock": {
+      "label": "موجودی کالا",
+      "description": "مقدار و ارزش موجودی فعلی بر اساس کالا و انبار."
+    },
+    "stock_movement": {
+      "label": "گردش موجودی",
+      "description": "تاریخچه تفصیلی گردش موجودی بر اساس کالا و انبار."
+    },
+    "low_stock": {
+      "label": "موجودی کم",
+      "description": "اقلامی که در حد سفارش یا پایین‌تر از آن قرار دارند."
+    },
+    "inventory_valuation": {
+      "label": "ارزش‌گذاری موجودی",
+      "description": "ارزش فعلی موجودی به تفکیک کالا."
+    }
+  }
+}
