@@ -165,6 +165,17 @@ const activePurchaseType = ref('purchase')
 const previewInvoiceTheme = ref(null)
 const invoiceThemePreviewOpen = ref(false)
 
+watch(
+    () => form.appearance?.theme,
+    (theme) => {
+        if (['light', 'dark', 'system'].includes(theme)) {
+            if (!form.display) form.display = {}
+            form.display.theme = theme
+        }
+    },
+    { immediate: true },
+)
+
 const selectedInvoiceTheme = computed(() => {
     return invoiceThemes.value.find(theme => theme.id === form.sale?.invoice_theme) ?? invoiceThemes.value[0] ?? null
 })
@@ -318,6 +329,7 @@ const receiptPaymentFields = [
                                             <SelectItem value="light">{{ t('preferences.appearance.light') }}</SelectItem>
                                                 <SelectItem value="dark">{{ t('preferences.appearance.dark') }}</SelectItem>
                                             <SelectItem value="system">{{ t('preferences.appearance.system') }}</SelectItem>
+                                            <SelectItem value="cyan">{{ t('preferences.appearance.cyan') }}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

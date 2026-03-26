@@ -61,7 +61,7 @@ const props = defineProps({
     showIcon: { type: Boolean, default: true },
     showLabel: { type: Boolean, default: false },
     popover: { type: String, default: 'bottom-left' },
-    color: { type: String, default: '#8b5cf6' }, // violet-500
+    color: { type: String, default: 'hsl(var(--primary))' },
     disabled: { type: Boolean, default: false },
 })
 const calendarType = computed(() => user.value?.calendar_type || 'gregorian')
@@ -233,8 +233,8 @@ function safeYear(m) {
 }
 /* Focus parity (same as NextInput/NextSelect) */
 :deep(.vpd-input-group:focus-within) {
-    border-color: rgb(99 102 241) !important;
-    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.25);
+    border-color: hsl(var(--ring)) !important;
+    box-shadow: 0 0 0 1px hsl(var(--ring) / 0.25);
 }
 
 :deep(.vpd-day) {
@@ -247,14 +247,14 @@ function safeYear(m) {
 }
 
 :deep(.vpd-day.selected) {
-    background-color: #8b5cf6; /* Color for the selected day */
+    background-color: hsl(var(--primary));
     color: white;
 }
 
 
 
 :deep(.vpd-weekday) {
-    color: #8b5cf6 !important; /* violet-500 */
+    color: hsl(var(--primary)) !important;
     font-weight: 600;
 }
 
@@ -265,7 +265,7 @@ function safeYear(m) {
     display: flex;
     align-items: center;
     padding: 0 8px;
-    background-color: #8b5cf6 !important; /* violet-500 */
+    background-color: hsl(var(--primary)) !important;
 }
 
 /* v3 picker uses .vpd-icon-btn instead of .vpd-addon; style it similarly */
@@ -275,7 +275,7 @@ function safeYear(m) {
     display: flex;
     align-items: center;
     padding: 0 8px;
-    background-color: #8b5cf6 !important; /* violet-500 */
+    background-color: hsl(var(--primary)) !important;
 }
 
 /* Hide addon when showIcon is false by class added to root */
@@ -318,7 +318,7 @@ function safeYear(m) {
 /* Position clear icon at the end of the input */
 :deep(.vpd-input-group .vpd-clear-btn) {
     position: absolute !important;
-    color: #c026d3 !important; /* fuchsia-600 */
+    color: hsl(var(--primary)) !important;
 }
 
 

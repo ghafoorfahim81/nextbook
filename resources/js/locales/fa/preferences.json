@@ -57,6 +57,7 @@
         "light": "روشن",
         "dark": "تاریک",
         "system": "سیستم",
+        "cyan": "Cyan",
         "decimal_places": "تعداد اعشار",
         "sidebar_menus": "منوهای سایدبار",
         "sidebar_font_size": "اندازه فونت سایدبار",
@@ -252,4 +253,3 @@
         "sidebar_collapsed_desc": "به خاطر سپردن وضعیت جمع شده سایدبار"
     }
 }
-
