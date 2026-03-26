@@ -30,6 +30,7 @@
     "item": "ایټم",
     "fast_entry": "چټک ثبت",
     "fast_opening": "چټک افتتاح",
+    "barcode_print": "بارکوډ چاپ",
     "item_transfer": "جنس لېږد"
   },
   "account": {
@@ -62,5 +63,4 @@
     "role": "نقش"
   }
 }
-
 

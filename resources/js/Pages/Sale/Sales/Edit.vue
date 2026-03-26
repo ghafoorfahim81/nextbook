@@ -35,6 +35,8 @@ const props = defineProps({
 
 const page = usePage()
 useLazyProps(page.props, ['ledgers', 'accounts'])
+const submitAction = ref('update')
+const pendingPrintWindow = ref(null)
 
 // dropdown options are already filtered by backend `is_active`
 // Form setup for editing sales
@@ -227,11 +229,52 @@ watch(() => form.items, () => {
 }, { deep: true });
 
 // Submit form
-const submit = () => {
+const finalizePrint = (page) => {
+    const printUrl = page?.props?.flash?.print_url
+
+    if (!printUrl) {
+        if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
+            pendingPrintWindow.value.close()
+        }
+        pendingPrintWindow.value = null
+        return
+    }
+
+    if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
+        pendingPrintWindow.value.location = printUrl
+        pendingPrintWindow.value.focus?.()
+    } else {
+        window.open(printUrl, '_blank')
+    }
+
+    pendingPrintWindow.value = null
+}
+
+const cleanupPrintWindow = () => {
+    if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
+        pendingPrintWindow.value.close()
+    }
+
+    pendingPrintWindow.value = null
+}
+
+const submit = (action = 'update') => {
+    submitAction.value = action
+
+    if (action === 'save_and_print') {
+        pendingPrintWindow.value = window.open('about:blank', '_blank')
+    }
+
     form.item_list = form.items.filter(item => item.item_id && item.quantity);
 
-    form.put(`/sales/${props.sale.id}`, {
-        onSuccess: () => {
+    form.transform((data) => ({
+        ...data,
+        save_and_print: action === 'save_and_print',
+    })).put(`/sales/${props.sale.id}`, {
+        onSuccess: (page) => {
+            if (action === 'save_and_print') {
+                finalizePrint(page)
+            }
             toast({
                 title: t('general.success'),
                 description: t('sale.sale_updated_successfully'),
@@ -243,6 +286,7 @@ const submit = () => {
                 description: Object.values(errors).flat().join(', '),
                 variant: 'destructive',
             });
+            cleanupPrintWindow();
         }
     });
 };
@@ -299,14 +343,18 @@ const transactionSummary = computed(() => {
                     <Button variant="outline" @click="$inertia.visit('/sales')">
                         {{ t('general.cancel') }}
                     </Button>
-                    <Button @click="submit" :disabled="form.processing">
-                        <Spinner v-if="form.processing" class="mr-2 h-4 w-4" />
+                    <Button variant="outline" @click="submit('save_and_print')" :disabled="form.processing">
+                        <Spinner v-if="form.processing && submitAction === 'save_and_print'" class="mr-2 h-4 w-4" />
+                        {{ t('general.save_and_print') }}
+                    </Button>
+                    <Button @click="submit('update')" :disabled="form.processing">
+                        <Spinner v-if="form.processing && submitAction === 'update'" class="mr-2 h-4 w-4" />
                         {{ t('general.update') }}
                     </Button>
                 </div>
             </div>
 
-            <form @submit.prevent="submit" class="space-y-6">
+            <form @submit.prevent="submit('update')" class="space-y-6">
                 <!-- Basic Information -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <NextInput

@@ -27,6 +27,7 @@ import ReportFilters from '@/Components/reports/ReportFilters.vue'
 import ReportSummaryCards from '@/Components/reports/ReportSummaryCards.vue'
 import ReportDataTable from '@/Components/reports/ReportDataTable.vue'
 import ReportStatement from '@/Components/reports/ReportStatement.vue'
+import ReportUserActivity from '@/Components/reports/ReportUserActivity.vue'
 
 const props = defineProps({
   filters: { type: Object, required: true },
@@ -341,6 +342,14 @@ const reportDefinitions = computed(() => ({
       { key: 'total_value', label: t('report.columns.total_value'), type: 'money', align: 'right' },
     ],
   },
+  user_activity: {
+    label: t('report.reports.user_activity.label'),
+    description: t('report.reports.user_activity.description'),
+    filters: [],
+    group: 'management',
+    icon: Users,
+    summary: [],
+  },
 }))
 
 const catalogBlueprint = computed(() => ([
@@ -349,6 +358,7 @@ const catalogBlueprint = computed(() => ([
   { key: 'party', label: t('report.groups.party'), description: t('report.groups.party_description') },
   { key: 'operations', label: t('report.groups.operations'), description: t('report.groups.operations_description') },
   { key: 'inventory', label: t('report.groups.inventory'), description: t('report.groups.inventory_description') },
+  { key: 'management', label: t('report.groups.management'), description: t('report.groups.management_description') },
 ]))
 
 const activeDefinition = computed(() => reportDefinitions.value[localFilters.value.report] || reportDefinitions.value.trial_balance)
@@ -376,6 +386,7 @@ const emptyMessage = computed(() => {
 })
 
 const isStatementLayout = computed(() => props.result.meta?.layout === 'statement')
+const isUserActivityLayout = computed(() => props.result.meta?.layout === 'user_activity')
 
 function compactFilters(filters) {
   return Object.fromEntries(
@@ -498,7 +509,7 @@ function exportReport() {
           @reset="resetFilters"
         />
 
-        <ReportSummaryCards :cards="summaryCards" />
+        <ReportSummaryCards v-if="!isUserActivityLayout" :cards="summaryCards" />
 
         <section class="space-y-3">
           <div>
@@ -506,8 +517,18 @@ function exportReport() {
             <p class="text-sm text-muted-foreground">{{ activeDefinition.description }}</p>
           </div>
 
+          <ReportUserActivity
+            v-if="isUserActivityLayout"
+            :summary="result.summary || {}"
+            :rows="result.rows || []"
+            :pagination="result.pagination"
+            :meta="result.meta || {}"
+            :empty-message="emptyMessage"
+            @page-change="submit"
+          />
+
           <ReportStatement
-            v-if="isStatementLayout"
+            v-else-if="isStatementLayout"
             :sections="result.meta?.sections || []"
             :empty-message="emptyMessage"
           />

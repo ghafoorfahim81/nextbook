@@ -174,6 +174,7 @@ function shouldExpandParent(items: any[] | undefined): boolean {
 import { useColorMode, useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useAuth } from '@/composables/useAuth'
+import { applyAppearanceTheme, resolveDisplayColorMode } from '@/lib/theme'
 
 const mode = useColorMode({
     emitAuto: true,
@@ -185,7 +186,7 @@ const mode = useColorMode({
 
 // vue-sonner has its own theme system; keep it in sync with Tailwind dark mode.
 const sonnerTheme = computed(() =>
-    String(mode.value || '').includes('dark') ? 'dark' : 'light',
+    isDarkModeActive.value ? 'dark' : 'light',
 )
 
 const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
@@ -201,8 +202,10 @@ const { can, isSuperAdmin } = useAuth()
 // (We can't read sidebar context here because SidebarProvider is a child component.)
 const sidebarOpen = ref(!props.sidebarCollapsed)
 const isMobileViewport = useMediaQuery('(max-width: 767px)')
+const prefersDarkScheme = useMediaQuery('(prefers-color-scheme: dark)')
 const isSidebarCollapsed = computed(() => !sidebarOpen.value && !isMobileViewport.value)
 const flyoutSide = computed(() => sidebarSide.value === 'right' ? 'left' : 'right')
+const isDarkModeActive = computed(() => mode.value === 'dark' || (mode.value === 'auto' && prefersDarkScheme.value))
 
 // Collapsed sidebar flyout submenu state (hover or click).
 const flyoutOpenKey = ref<string | null>(null)
@@ -235,6 +238,10 @@ function scheduleCloseFlyout(key: string) {
 function closeFlyout() {
     clearFlyoutCloseTimer()
     flyoutOpenKey.value = null
+}
+
+function toggleColorMode() {
+    mode.value = isDarkModeActive.value ? 'light' : 'dark'
 }
 
 function setFlyoutOpen(key: string, open: boolean) {
@@ -335,6 +342,7 @@ const navMain = computed(() => [
             { title: t('sidebar.inventory.item'), url: '/items', permission: 'items.view_any' },
             { title: t('sidebar.inventory.fast_entry'), url: '/item-fast-entry', permission: ['items.view_any', 'items.create'] },
             { title: t('sidebar.inventory.fast_opening'), url: '/item-fast-opening', permission: ['items.view_any', 'items.create'] },
+            { title: t('sidebar.inventory.barcode_print'), url: '/item-barcode-print', permission: 'items.view_any' },
             { title: t('sidebar.inventory.item_transfer'), url: '/item-transfers', permission: 'item_transfers.view_any' },
         ],
     },
@@ -530,6 +538,19 @@ watch(
     },
 )
 
+watch(
+    () => page.props.user_preferences,
+    (preferences) => {
+        applyAppearanceTheme(preferences)
+
+        const preferredMode = resolveDisplayColorMode(preferences)
+        if (mode.value !== preferredMode) {
+            mode.value = preferredMode
+        }
+    },
+    { immediate: true },
+)
+
 // assign to data after computed is available
 data.navMain = navMain.value
 
@@ -616,7 +637,7 @@ function logout() {
                                     type="text"
                                     autocomplete="off"
                                     :placeholder="t('layout.search_menu') || 'Search menu...'"
-                                    class="h-9 w-full rounded-md border border-input border-primary bg-background text-sm outline-none focus:ring-2 focus:ring-violet-500"
+                                    class="h-9 w-full rounded-md border border-input border-primary bg-background text-sm outline-none focus:ring-2 focus:ring-ring"
                                     :class="isRTL ? 'pr-8 pl-8' : 'pl-8 pr-8'"
                                 />
                                 <button
@@ -705,7 +726,7 @@ function logout() {
                                             >
                                                 <component :is="item.icon" />
                                                 <span
-                                                    class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500"
+                                                    class="hover:text-primary focus:text-primary focus:outline-none focus:ring-ring"
                                                 >
                                                     {{ item.title }}
                                                 </span>
@@ -724,7 +745,7 @@ function logout() {
                                                     <SidebarMenuSubButton
                                                         :isActive="isMenuItemActive(subItem.url)"
                                                         as-child
-                                                        class="hover:text-violet-500 focus:text-violet-500 focus:outline-none focus:ring-violet-500 data-[active=true]:bg-transparent data-[active=true]:text-violet-500"
+                                                        class="hover:text-primary focus:text-primary focus:outline-none focus:ring-ring data-[active=true]:bg-transparent data-[active=true]:text-primary"
                                                     >
                                                         <Link :href="subItem.url" prefetch cache-for="1m">
                                                             <span>{{ subItem.title }}</span>
@@ -789,7 +810,7 @@ function logout() {
                                     size="lg"
                                     class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                                 >
-                                    <Avatar class="h-8 w-8 rounded-lg bg-purple-500 text-white">
+                                    <Avatar class="h-8 w-8 rounded-lg bg-primary text-primary-foreground">
                                         <AvatarImage :src="data.user.avatar" :alt="data.user.name" />
                                         <AvatarFallback class="rounded-lg">
                                             {{ user?.name?.charAt(0) || 'NB' }}
@@ -805,7 +826,7 @@ function logout() {
                             <DropdownMenuContent class="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg" side="bottom" align="end" :side-offset="4">
                                 <DropdownMenuLabel class="p-0 font-normal">
                                     <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                                        <Avatar class="h-8 w-8 rounded-lg bg-purple-500 text-white">
+                                        <Avatar class="h-8 w-8 rounded-lg bg-primary text-primary-foreground">
                                             <AvatarImage :src="data.user.avatar" :alt="data.user.name" />
                                             <AvatarFallback class="rounded-lg">
                                                 {{ user?.name?.charAt(0) || 'NB' }}
@@ -820,28 +841,28 @@ function logout() {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem>
-                                        <Sparkles class="text-violet-500 hover:text-white" />
+                                        <Sparkles class="text-primary hover:text-white" />
                                         {{ t('layout.upgrade_to_pro') }}
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
                                     <DropdownMenuItem>
-                                        <BadgeCheck class="text-violet-500 hover:text-white" />
+                                        <BadgeCheck class="text-primary hover:text-white" />
                                         {{ t('layout.account') }}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem>
-                                        <CreditCard class="text-violet-500 hover:text-white" />
+                                        <CreditCard class="text-primary hover:text-white" />
                                         {{ t('layout.billing') }}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem>
-                                        <Bell class="text-violet-500 hover:text-white" />
+                                        <Bell class="text-primary hover:text-white" />
                                         {{ t('layout.notifications') }}
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem @click="logout" class="cursor-pointer">
-                                    <LogOut class="text-violet-500 hover:text-white" />
+                                    <LogOut class="text-primary hover:text-white" />
                                     {{ t('layout.logout') }}
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -875,7 +896,7 @@ function logout() {
                                     v-for="branch in branches"
                                     :key="branch.id"
                                     :value="branch.id"
-                                    class="text-xs data-[state=checked]:bg-primary px-5 py-2 data-[state=checked]:text-white data-[highlighted]:bg-purple-500 data-[highlighted]:text-white rtl:pe-10 rtl:ps-3 rtl:bg-left rtl:pr-8"
+                                    class="px-5 py-2 text-xs data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[highlighted]:bg-primary data-[highlighted]:text-primary-foreground rtl:pe-10 rtl:ps-3 rtl:bg-left rtl:pr-8"
                                 >
                                     {{ branch.name }}
                                 </SelectItem>
@@ -887,10 +908,10 @@ function logout() {
                     </div>
                     <LanguageSwitcher />
                     <button
-                        @click="mode = mode === 'dark' ? 'light' : 'dark'"
+                        @click="toggleColorMode"
                         class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                     >
-                        <Moon v-if="mode === 'dark'" class="size-5 text-gray-800 dark:text-gray-200" />
+                        <Moon v-if="isDarkModeActive" class="size-5 text-gray-800 dark:text-gray-200" />
                         <Sun v-else class="size-5 text-gray-800 dark:text-gray-200" />
                     </button>
                 </div>

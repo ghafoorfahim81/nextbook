@@ -5,6 +5,7 @@ use App\Http\Controllers\NextController;
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\Inventory\BarcodePrintController;
 use App\Http\Controllers\Inventory\ItemFastEntryController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\App;
@@ -85,6 +86,8 @@ Route::middleware([
         ->name('item.fast.opening');
     Route::post('/item-fast-opening', [\App\Http\Controllers\Inventory\FastOpeningController::class, 'store'])
         ->name('fast-opening.store');
+    Route::get('/item-barcode-print', BarcodePrintController::class)
+        ->name('item.barcode.print');
 
     Route::resource('/purchases', \App\Http\Controllers\Purchase\PurchaseController::class);
     Route::patch('/update-purchase-status/{purchase}/status', [\App\Http\Controllers\Purchase\PurchaseController::class, 'updatePurchaseStatus'])->name('purchases.update-purchase-status');
