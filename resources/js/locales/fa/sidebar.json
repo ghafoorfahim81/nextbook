@@ -38,6 +38,7 @@
     "item": "جنس/کالا",
     "fast_entry": "ثبت سریع",
     "fast_opening": "افتتاحیه سریع",
+    "barcode_print": "چاپ بارکد",
     "item_transfer": "انتقال جنس"
   },
   "account": {
@@ -80,5 +81,4 @@
     "report": "گزارش"
   }
 }
-
 
