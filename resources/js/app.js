@@ -10,6 +10,7 @@ import vSelect from 'vue-select'; // ✅ Import v-select
 import Toaster from '@/Components/ui/toast/Toaster.vue'
 import { createI18nInstance } from './lib/i18n'
 import NextDate from '@/Components/next/NextDatePicker.vue'
+import { applyAppearanceTheme } from './lib/theme'
 
 const appName = import.meta.env.VITE_APP_NAME || 'Nextbook';
 
@@ -30,6 +31,7 @@ createInertiaApp({
 
         const i18n = createI18nInstance(initialLocale)
         applyDocumentLocale(initialLocale, initialDirection)
+        applyAppearanceTheme(initialPage?.props?.user_preferences)
 
         const applyFromPage = (page) => {
             const nextLocale = page?.props?.locale
@@ -37,6 +39,7 @@ createInertiaApp({
             if (!nextLocale) return
             i18n.global.locale.value = nextLocale
             applyDocumentLocale(nextLocale, nextDirection)
+            applyAppearanceTheme(page?.props?.user_preferences)
         }
 
         // "navigate" is mainly for GET visits; language switching is a POST + redirect.

@@ -123,8 +123,8 @@ const generatedAt = computed(() => {
     <Head :title="t('dashboard.dashboard')" />
 
     <div class="space-y-5 text-foreground">
-      <section class="relative overflow-hidden rounded-[32px] border border-border bg-gradient-to-br from-violet-500 to-violet-400 via-secondary/35 to-primary/10 shadow-sm dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 dark:text-white dark:shadow-lg">
-        <div class="absolute inset-y-0 start-0 hidden w-56 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.14),transparent_72%)] lg:block dark:bg-[radial-gradient(circle_at_center,rgba(56,189,248,0.18),transparent_70%)]" />
+      <section class="relative overflow-hidden rounded-[32px] border border-border bg-gradient-to-br from-primary to-primary/70 via-secondary/35 to-primary/10 shadow-sm dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 dark:text-white dark:shadow-lg">
+        <div class="absolute inset-y-0 start-0 hidden w-56 bg-[radial-gradient(circle_at_center,hsl(var(--primary)/0.18),transparent_72%)] lg:block dark:bg-[radial-gradient(circle_at_center,hsl(var(--primary)/0.22),transparent_70%)]" />
         <div class="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
         <div class="flex flex-col gap-4 px-6 py-7 lg:flex-row lg:items-center lg:justify-between lg:px-10">
           <div class="space-y-3 lg:max-w-3xl">

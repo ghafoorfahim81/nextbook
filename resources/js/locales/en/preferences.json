@@ -57,6 +57,7 @@
         "light": "Light",
         "dark": "Dark",
         "system": "System",
+        "cyan": "Cyan",
         "decimal_places": "Decimal Places",
         "sidebar_menus": "Sidebar Menus",
         "sidebar_font_size": "Sidebar Font Size",
@@ -256,4 +257,3 @@
         "sidebar_collapsed_desc": "Remember collapsed state of sidebar"
     }
 }
-
