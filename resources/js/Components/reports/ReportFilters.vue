@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/Components/ui/button'
+import NextDatePicker from '@/Components/next/NextDatePicker.vue'
 
 const props = defineProps({
   filters: { type: Object, required: true },
@@ -15,7 +16,6 @@ const emit = defineEmits(['update:filters', 'submit', 'reset'])
 const { t } = useI18n()
 
 const baseSelectClass = 'h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20'
-const baseInputClass = `${baseSelectClass} [color-scheme:light] dark:[color-scheme:dark]`
 
 const showLedger = computed(() => props.activeDefinition.filters.includes('ledger_id'))
 const showCustomer = computed(() => props.activeDefinition.filters.includes('customer_id'))
@@ -59,8 +59,8 @@ function setReport(report) {
     </div>
 
     <div class="space-y-4 p-5">
-      <div class="grid gap-4 lg:grid-cols-4">
-        <label v-if="showReportSelect" class="space-y-2 lg:col-span-2">
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <label v-if="showReportSelect" class="space-y-2 md:col-span-2 xl:col-span-2">
           <span class="text-sm font-medium text-foreground">{{ t('report.filters.report') }}</span>
           <select :value="filters.report" :class="baseSelectClass" @change="setReport($event.target.value)">
             <option v-for="report in reportList" :key="report.key" :value="report.key">
@@ -87,17 +87,20 @@ function setReport(report) {
             <option :value="100">100</option>
           </select>
         </label>
-      </div>
-
-      <div class="grid gap-4 md:grid-cols-3 xl:grid-cols-4">
         <label class="space-y-2">
           <span class="text-sm font-medium text-foreground">{{ t('report.filters.date_from') }}</span>
-          <input :value="filters.date_from" type="date" :class="baseInputClass" @input="setFilter('date_from', $event.target.value)" />
+          <NextDatePicker
+            :model-value="filters.date_from"
+            @update:modelValue="setFilter('date_from', $event)"
+          />
         </label>
 
         <label class="space-y-2">
           <span class="text-sm font-medium text-foreground">{{ t('report.filters.date_to') }}</span>
-          <input :value="filters.date_to" type="date" :class="baseInputClass" @input="setFilter('date_to', $event.target.value)" />
+          <NextDatePicker
+            :model-value="filters.date_to"
+            @update:modelValue="setFilter('date_to', $event)"
+          />
         </label>
 
         <label v-if="showLedger" class="space-y-2">
