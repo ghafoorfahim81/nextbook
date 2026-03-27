@@ -483,16 +483,16 @@ function exportReport() {
       />
 
       <section v-if="isDetailView" class="space-y-5 rounded-[28px] border border-border bg-gradient-to-b from-card via-card to-background p-5 shadow-sm">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:grid-rows-[auto_auto] lg:items-start">
+          <p class="text-xs font-semibold uppercase tracking-[0.28em] text-primary lg:self-center">{{ t('report.active_report') }}</p>
+          <Button variant="outline" class="w-fit shrink-0 lg:justify-self-end" @click="goBackToCatalog">
+            {{ t('report.back_to_reports') }}
+          </Button>
           <div class="space-y-3">
-            <Button variant="outline" class="w-fit" @click="goBackToCatalog">
-              {{ t('report.back_to_reports') }}
-            </Button>
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-primary">{{ t('report.active_report') }}</p>
             <h2 class="text-2xl font-semibold tracking-tight text-foreground">{{ activeDefinition.label }}</h2>
             <p class="max-w-3xl text-sm leading-7 text-muted-foreground">{{ activeDefinition.description }}</p>
           </div>
-          <Button class="gap-2" @click="exportReport">
+          <Button class="gap-2 lg:self-end lg:justify-self-end" @click="exportReport">
             <Download class="h-4 w-4" />
             {{ t('report.export_excel') }}
           </Button>
