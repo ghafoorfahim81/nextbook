@@ -3,17 +3,12 @@ import AppLayout from '@/Layouts/Layout.vue'
 import { Link, router } from '@inertiajs/vue3'
 import { computed, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
+import NextDatePicker from '@/Components/next/NextDatePicker.vue'
+import NextInput from '@/Components/next/NextInput.vue'
+import NextSelect from '@/Components/next/NextSelect.vue'
 import { Button } from '@/Components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card'
-import { Input } from '@/Components/ui/input'
 import { Label } from '@/Components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/Components/ui/select'
 import {
   Table,
   TableBody,
@@ -47,6 +42,27 @@ const form = reactive({
 
 const rows = computed(() => props.logs?.data ?? [])
 const meta = computed(() => props.logs?.meta ?? {})
+const moduleOptions = computed(() => ([
+  { id: 'all', name: t('general.all') },
+  ...(props.filterOptions?.modules || []).map(module => ({
+    id: module,
+    name: module,
+  })),
+]))
+const eventTypeOptions = computed(() => ([
+  { id: 'all', name: t('general.all') },
+  ...(props.filterOptions?.event_types || []).map(eventType => ({
+    id: eventType,
+    name: eventType,
+  })),
+]))
+const userOptions = computed(() => ([
+  { id: 'all', name: t('general.all') },
+  ...(props.filterOptions?.users || []).map(user => ({
+    id: user.id,
+    name: user.name,
+  })),
+]))
 const paginationLinks = computed(() => {
   const candidates = Array.isArray(props.logs?.meta?.links)
     ? props.logs.meta.links
@@ -118,75 +134,77 @@ function eventVariant(eventType) {
         </CardHeader>
         <CardContent class="space-y-4">
           <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <NextInput
+              v-model="form.search"
+              :label="t('general.search')"
+              :placeholder="t('general.search_placeholder', { name: t('activity_log.activity_logs') })"
+            />
+
+            <NextSelect
+              v-model="form.module"
+              :options="moduleOptions"
+              label-key="name"
+              value-key="id"
+              :reduce="option => option.id"
+              :searchable="false"
+              :show-arrow="true"
+              :has-add-button="false"
+              :floating-text="t('activity_log.module')"
+            />
+
+            <NextSelect
+              v-model="form.event_type"
+              :options="eventTypeOptions"
+              label-key="name"
+              value-key="id"
+              :reduce="option => option.id"
+              :searchable="false"
+              :show-arrow="true"
+              :has-add-button="false"
+              :floating-text="t('activity_log.event_type')"
+            />
+
+            <NextSelect
+              v-model="form.user_id"
+              :options="userOptions"
+              label-key="name"
+              value-key="id"
+              :reduce="option => option.id"
+              :searchable="true"
+              :show-arrow="true"
+              :has-add-button="false"
+              :floating-text="t('general.created_by')"
+            />
+
             <div class="space-y-2">
-              <Label for="log-search">{{ t('general.search') }}</Label>
-              <Input id="log-search" v-model="form.search" :placeholder="t('general.search_placeholder', { name: t('activity_log.activity_logs') })" />
+              <NextDatePicker
+                v-model="form.from"
+                :placeholder="t('general.from')"
+                :show-label="false"
+                :show-icon="true"
+              />
             </div>
 
             <div class="space-y-2">
-              <Label for="log-module">{{ t('activity_log.module') }}</Label>
-              <Select v-model="form.module">
-                <SelectTrigger id="log-module">
-                  <SelectValue :placeholder="t('general.select')" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{{ t('general.all') }}</SelectItem>
-                  <SelectItem v-for="module in filterOptions?.modules || []" :key="module" :value="module">
-                    {{ module }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <NextDatePicker
+                v-model="form.to"
+                :placeholder="t('general.to')"
+                :show-label="false"
+                :show-icon="true"
+              />
             </div>
 
-            <div class="space-y-2">
-              <Label for="log-event">{{ t('activity_log.event_type') }}</Label>
-              <Select v-model="form.event_type">
-                <SelectTrigger id="log-event">
-                  <SelectValue :placeholder="t('general.select')" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{{ t('general.all') }}</SelectItem>
-                  <SelectItem v-for="eventType in filterOptions?.event_types || []" :key="eventType" :value="eventType">
-                    {{ eventType }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <NextInput
+              v-model="form.reference_type"
+              :label="t('activity_log.reference_type')"
+              placeholder="sale"
+            />
 
-            <div class="space-y-2">
-              <Label for="log-user">{{ t('general.created_by') }}</Label>
-              <Select v-model="form.user_id">
-                <SelectTrigger id="log-user">
-                  <SelectValue :placeholder="t('general.select')" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{{ t('general.all') }}</SelectItem>
-                  <SelectItem v-for="user in filterOptions?.users || []" :key="user.id" :value="user.id">
-                    {{ user.name }}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div class="space-y-2">
-              <Label for="log-from">{{ t('general.from') }}</Label>
-              <Input id="log-from" v-model="form.from" type="date" />
-            </div>
-
-            <div class="space-y-2">
-              <Label for="log-to">{{ t('general.to') }}</Label>
-              <Input id="log-to" v-model="form.to" type="date" />
-            </div>
-
-            <div class="space-y-2">
-              <Label for="log-reference-type">{{ t('activity_log.reference_type') }}</Label>
-              <Input id="log-reference-type" v-model="form.reference_type" placeholder="sale" />
-            </div>
-
-            <div class="space-y-2">
-              <Label for="log-reference-id">{{ t('activity_log.reference_id') }}</Label>
-              <Input id="log-reference-id" v-model="form.reference_id" placeholder="01H..." />
-            </div>
+            <NextInput
+              v-model="form.reference_id"
+              :label="t('activity_log.reference_id')"
+              placeholder="01H..."
+            />
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
