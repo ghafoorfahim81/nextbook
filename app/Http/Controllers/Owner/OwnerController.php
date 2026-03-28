@@ -18,6 +18,7 @@ use Illuminate\Support\Str;
 use Inertia\Response;
 use App\Models\Transaction\Transaction;
 use App\Models\User;
+use App\Services\ActivityLogService;
 class OwnerController extends Controller
 {
     public function __construct()
@@ -60,10 +61,14 @@ class OwnerController extends Controller
         return inertia('Owners/Owners/Create');
     }
 
-    public function store(OwnerStoreRequest $request, TransactionService $transactionService)
+    public function store(
+        OwnerStoreRequest $request,
+        TransactionService $transactionService,
+        ActivityLogService $activityLogService
+    )
     {
         $validated = $request->validated();
-        DB::transaction(function () use ($validated, $transactionService) {
+        DB::transaction(function () use ($validated, $transactionService, $activityLogService) {
             $owner = Owner::create([
                 'name' => $validated['name'],
                 'father_name' => $validated['father_name'],
@@ -114,6 +119,27 @@ class OwnerController extends Controller
                 'capital_transaction_id' => $capitalTx->id,
                 'account_transaction_id' => $accountTx->id,
             ]);
+
+            $activityLogService->logCreate(
+                reference: $owner,
+                module: 'owner',
+                description: "Owner {$owner->name} created.",
+                newValues: [
+                    'name' => $owner->name,
+                    'phone_number' => $owner->phone_number,
+                    'ownership_percentage' => $owner->ownership_percentage,
+                    'capital_account_id' => $owner->capital_account_id,
+                    'drawing_account_id' => $owner->drawing_account_id,
+                    'amount' => $amount,
+                    'currency_id' => $currencyId,
+                    'rate' => $rate,
+                ],
+                metadata: [
+                    'action' => 'owner_store',
+                    'capital_transaction_id' => $capitalTx->id,
+                    'account_transaction_id' => $accountTx->id,
+                ],
+            );
         });
 
         if ($request->boolean('create_and_new')) {
@@ -145,13 +171,20 @@ class OwnerController extends Controller
         ]);
     }
 
-    public function update(OwnerUpdateRequest $request, Owner $owner)
+    public function update(OwnerUpdateRequest $request, Owner $owner, ActivityLogService $activityLogService)
     {
         // Use similar logic as the store method, but for updating
 
         $validated = $request->validated();
+        $beforeState = [
+            'name' => $owner->name,
+            'phone_number' => $owner->phone_number,
+            'ownership_percentage' => $owner->ownership_percentage,
+            'capital_account_id' => $owner->capital_account_id,
+            'drawing_account_id' => $owner->drawing_account_id,
+        ];
 
-        DB::transaction(function () use ($owner, $validated) {
+        DB::transaction(function () use ($owner, $validated, $activityLogService, $beforeState) {
             $amount = $validated['amount'] ?? 0;
             $currencyId = $validated['currency_id'];
             $rate = $validated['rate'];
@@ -187,20 +220,59 @@ class OwnerController extends Controller
                     'reference_id' => $owner->id,
                 ]);
             }
+
+            $activityLogService->logUpdate(
+                reference: $owner,
+                before: $beforeState,
+                after: [
+                    'name' => $owner->name,
+                    'phone_number' => $owner->phone_number,
+                    'ownership_percentage' => $owner->ownership_percentage,
+                    'capital_account_id' => $owner->capital_account_id,
+                    'drawing_account_id' => $owner->drawing_account_id,
+                    'amount' => $amount,
+                    'currency_id' => $currencyId,
+                    'rate' => $rate,
+                ],
+                module: 'owner',
+                description: "Owner {$owner->name} updated.",
+                metadata: [
+                    'action' => 'owner_update',
+                    'capital_transaction_id' => $owner->capital_transaction_id,
+                    'account_transaction_id' => $owner->account_transaction_id,
+                ],
+            );
         });
         return redirect()->route('owners.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.owner')]));
     }
 
-    public function destroy(Request $request, Owner $owner)
+    public function destroy(Request $request, Owner $owner, ActivityLogService $activityLogService)
     {
+        $oldValues = [
+            'name' => $owner->name,
+            'phone_number' => $owner->phone_number,
+            'ownership_percentage' => $owner->ownership_percentage,
+            'capital_account_id' => $owner->capital_account_id,
+            'drawing_account_id' => $owner->drawing_account_id,
+        ];
         $owner->load(['capitalTransaction', 'accountTransaction']);
         $owner->capitalTransaction->delete();
         $owner->accountTransaction->delete();
         $owner->delete();
+
+        $activityLogService->logDelete(
+            reference: $owner,
+            module: 'owner',
+            description: "Owner {$owner->name} deleted.",
+            oldValues: $oldValues,
+            metadata: [
+                'action' => 'owner_delete',
+            ],
+        );
         return redirect()->route('owners.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.owner')]));
     }
 
-    public function restore(Request $request, Owner $owner)
+    public function restore(Request $request, Owner $owner, ActivityLogService $activityLogService)
     {
         $owner->restore();
         if ($owner->capital_transaction_id) {
@@ -209,8 +281,20 @@ class OwnerController extends Controller
         if ($owner->account_transaction_id) {
             Transaction::where('id', $owner->account_transaction_id)->restore();
         }
+
+        $activityLogService->logAction(
+            eventType: 'restored',
+            reference: $owner,
+            module: 'owner',
+            description: "Owner {$owner->name} restored.",
+            newValues: [
+                'name' => $owner->name,
+            ],
+            metadata: [
+                'action' => 'owner_restore',
+            ],
+        );
         return redirect()->route('owners.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.owner')]));
     }
 }
-
 

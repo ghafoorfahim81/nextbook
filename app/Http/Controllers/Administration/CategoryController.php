@@ -8,6 +8,7 @@ use App\Http\Requests\Administration\CategoryUpdateRequest;
 use App\Http\Resources\Administration\CategoryCollection;
 use App\Http\Resources\Administration\CategoryResource;
 use App\Models\Administration\Category;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
@@ -34,9 +35,24 @@ class CategoryController extends Controller
         ]);
     }
 
-    public function store(CategoryStoreRequest $request)
+    public function store(CategoryStoreRequest $request, ActivityLogService $activityLogService)
     {
         $category = Category::create($request->validated());
+
+        $activityLogService->logCreate(
+            reference: $category,
+            module: 'category',
+            description: "Category {$category->name} created.",
+            newValues: [
+                'name' => $category->name,
+                'parent_id' => $category->parent_id,
+                'remark' => $category->remark,
+                'is_active' => $category->is_active,
+                'branch_id' => $category->branch_id,
+            ],
+            branchId: $category->branch_id,
+        );
+
         return redirect()->route('categories.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.category')]));
     }
 
@@ -47,13 +63,37 @@ class CategoryController extends Controller
     }
 
 
-    public function update(CategoryUpdateRequest $request, Category $category)
+    public function update(CategoryUpdateRequest $request, Category $category, ActivityLogService $activityLogService)
     {
+        $beforeState = [
+            'name' => $category->name,
+            'parent_id' => $category->parent_id,
+            'remark' => $category->remark,
+            'is_active' => $category->is_active,
+            'branch_id' => $category->branch_id,
+        ];
+
         $category->update($request->validated());
+
+        $activityLogService->logUpdate(
+            reference: $category,
+            before: $beforeState,
+            after: [
+                'name' => $category->name,
+                'parent_id' => $category->parent_id,
+                'remark' => $category->remark,
+                'is_active' => $category->is_active,
+                'branch_id' => $category->branch_id,
+            ],
+            module: 'category',
+            description: "Category {$category->name} updated.",
+            branchId: $category->branch_id,
+        );
+
         return redirect()->back();
     }
 
-    public function destroy(Request $request, Category $category)
+    public function destroy(Request $request, Category $category, ActivityLogService $activityLogService)
     {
         // Check for dependencies before deletion
         if (!$category->canBeDeleted()) {
@@ -63,13 +103,43 @@ class CategoryController extends Controller
             ]);
         }
 
+        $oldValues = [
+            'name' => $category->name,
+            'parent_id' => $category->parent_id,
+            'remark' => $category->remark,
+            'is_active' => $category->is_active,
+            'branch_id' => $category->branch_id,
+        ];
+
         $category->delete();
+
+        $activityLogService->logDelete(
+            reference: $category,
+            module: 'category',
+            description: "Category {$category->name} deleted.",
+            oldValues: $oldValues,
+            branchId: $category->branch_id,
+        );
+
         return redirect()->route('categories.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.category')]));
     }
 
-    public function restore(Request $request, Category $category)
+    public function restore(Request $request, Category $category, ActivityLogService $activityLogService)
     {
         $category->restore();
+
+        $activityLogService->logAction(
+            eventType: 'restored',
+            reference: $category,
+            module: 'category',
+            description: "Category {$category->name} restored.",
+            newValues: [
+                'name' => $category->name,
+                'is_active' => $category->is_active,
+            ],
+            branchId: $category->branch_id,
+        );
+
         return back()->with('success', __('general.restored_successfully', ['resource' => __('general.resource.category')]));
     }
 }

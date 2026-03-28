@@ -18,6 +18,7 @@ use App\Http\Middleware\CheckCompany;
 use App\Http\Controllers\Administration\SwitchBranchController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\QuickCreateController;
+use App\Http\Controllers\ActivityLogController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -46,6 +47,8 @@ Route::middleware([
     Route::get('/dashboard/data', [DashboardController::class, 'data'])->name('dashboard.data');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+    Route::get('/activity-logs/{activityLog}', [ActivityLogController::class, 'show'])->name('activity-logs.show');
 
     Route::resource('designations', DesignationController::class);
     Route::resource('/departments', DepartmentController::class);
