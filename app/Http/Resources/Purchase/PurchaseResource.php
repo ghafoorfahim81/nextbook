@@ -44,6 +44,7 @@ class PurchaseResource extends JsonResource
             'sale_purchase_type_id' => ($this->type instanceof SalePurchaseType)
                 ? $this->type->value
                 : $this->type,
+            'bank_account_id' => $this->bank_account_id,
             'description' => $this->description,
             'status' => $this->status,
             'transaction_total' => $this->transaction?->amount,
