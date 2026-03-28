@@ -25,6 +25,7 @@ use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
 use Illuminate\Support\Facades\Cache;
+use App\Services\ActivityLogService;
 class PurchaseController extends Controller
 {
     public function __construct()
@@ -78,10 +79,15 @@ class PurchaseController extends Controller
         ]);
     }
 
-    public function store(PurchaseStoreRequest $request, TransactionService $transactionService, StockService $stockService)
+    public function store(
+        PurchaseStoreRequest $request,
+        TransactionService $transactionService,
+        StockService $stockService,
+        ActivityLogService $activityLogService
+    )
     { 
         $validated = $request->validated();
-        $purchase = DB::transaction(function () use ($request, $transactionService, $stockService) {
+        $purchase = DB::transaction(function () use ($request, $transactionService, $stockService, $activityLogService) {
             // Create purchase
             $validated = $request->validated();
 
@@ -187,7 +193,7 @@ class PurchaseController extends Controller
                 }
             }
 
-            $transactionService->post(
+            $transaction = $transactionService->post(
                 header: [
                     'currency_id'   => $validated['currency_id'],
                     'rate'          => $validated['rate'],
@@ -198,6 +204,28 @@ class PurchaseController extends Controller
                     'reference_id'  => $purchase->id,
                 ],
                 lines: $lines
+            );
+
+            $activityLogService->logCreate(
+                reference: $purchase,
+                module: 'purchase',
+                description: "Purchase #{$purchase->number} created.",
+                newValues: [
+                    'number' => $purchase->number,
+                    'supplier_id' => $purchase->supplier_id,
+                    'date' => $purchase->date?->toDateString(),
+                    'status' => $purchase->status,
+                    'branch_id' => $purchase->branch_id,
+                    'warehouse_id' => $validated['warehouse_id'],
+                    'currency_id' => $validated['currency_id'],
+                    'item_count' => count($validated['item_list']),
+                    'transaction_total' => (float) $validated['transaction_total'],
+                ],
+                metadata: [
+                    'action' => 'purchase_store',
+                    'purchase_type' => $validated['type'],
+                    'transaction_id' => $transaction->id,
+                ],
             );
 
 
@@ -243,9 +271,28 @@ class PurchaseController extends Controller
         ]);
     }
 
-    public function update(PurchaseUpdateRequest $request, Purchase $purchase, TransactionService $transactionService, StockService $stockService)
+    public function update(
+        PurchaseUpdateRequest $request,
+        Purchase $purchase,
+        TransactionService $transactionService,
+        StockService $stockService,
+        ActivityLogService $activityLogService
+    )
     {
-        $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $stockService) {
+        $beforeState = [
+            'number' => $purchase->number,
+            'supplier_id' => $purchase->supplier_id,
+            'date' => $purchase->date?->toDateString(),
+            'status' => $purchase->status,
+            'branch_id' => $purchase->branch_id,
+            'warehouse_id' => $purchase->warehouse_id,
+            'currency_id' => $purchase->transaction?->currency_id,
+            'rate' => $purchase->transaction?->rate,
+            'item_count' => $purchase->items()->count(),
+            'transaction_total' => (float) ($purchase->transaction_total ?? 0),
+        ];
+
+        $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $stockService, $activityLogService, $beforeState) {
             $validated = $request->validated();
             $validated['type'] = $validated['purchase_type'] ?? $purchase->type ?? 'cash';
             $validated['status'] = TransactionStatus::POSTED->value;
@@ -395,7 +442,7 @@ class PurchaseController extends Controller
                 }
             }
 
-            $transactionService->post(
+            $transaction = $transactionService->post(
                 header: [
                     'currency_id'    => $validated['currency_id'],
                     'rate'           => $validated['rate'],
@@ -406,6 +453,32 @@ class PurchaseController extends Controller
                     'reference_id'   => $purchase->id,
                 ],
                 lines: $lines
+            );
+
+            $afterState = [
+                'number' => $purchase->number,
+                'supplier_id' => $purchase->supplier_id,
+                'date' => $purchase->date?->toDateString(),
+                'status' => $purchase->status,
+                'branch_id' => $purchase->branch_id,
+                'warehouse_id' => $validated['warehouse_id'],
+                'currency_id' => $validated['currency_id'],
+                'rate' => (float) $validated['rate'],
+                'item_count' => count($validated['item_list']),
+                'transaction_total' => (float) $validated['transaction_total'],
+            ];
+
+            $activityLogService->logUpdate(
+                reference: $purchase,
+                before: $beforeState,
+                after: $afterState,
+                module: 'purchase',
+                description: "Purchase #{$purchase->number} updated.",
+                metadata: [
+                    'action' => 'purchase_update',
+                    'purchase_type' => $validated['type'],
+                    'transaction_id' => $transaction->id,
+                ],
             );
 
             return $purchase;
@@ -523,29 +596,83 @@ class PurchaseController extends Controller
         }
     }
 
-    public function destroy(Request $request, Purchase $purchase)
+    public function destroy(Request $request, Purchase $purchase, ActivityLogService $activityLogService)
     {
+        $oldValues = [
+            'number' => $purchase->number,
+            'supplier_id' => $purchase->supplier_id,
+            'date' => $purchase->date?->toDateString(),
+            'status' => $purchase->status,
+            'branch_id' => $purchase->branch_id,
+            'warehouse_id' => $purchase->warehouse_id,
+            'currency_id' => $purchase->transaction?->currency_id,
+            'rate' => $purchase->transaction?->rate,
+            'item_count' => $purchase->items()->count(),
+            'transaction_total' => (float) ($purchase->transaction_total ?? 0),
+        ];
 
         $purchase->items()->delete();
         $purchase->stocks()->delete();
         $purchase->transaction()->delete();
         $purchase->delete();
+
+        $activityLogService->logDelete(
+            reference: $purchase,
+            module: 'purchase',
+            description: "Purchase #{$purchase->number} deleted.",
+            oldValues: $oldValues,
+            metadata: [
+                'action' => 'purchase_delete',
+            ],
+        );
+
         return redirect()->route('purchases.index')->with('success', __('general.purchase_deleted_successfully'));
 
     }
-    public function restore(Request $request, Purchase $purchase)
+    public function restore(Request $request, Purchase $purchase, ActivityLogService $activityLogService)
     {
 
         $purchase->restore();
         $purchase->items()->restore();
         $purchase->stocks()->restore();
         $purchase->transaction()->restore();
+
+        $activityLogService->logAction(
+            eventType: 'restored',
+            reference: $purchase,
+            module: 'purchase',
+            description: "Purchase #{$purchase->number} restored.",
+            newValues: [
+                'number' => $purchase->number,
+                'status' => $purchase->status,
+            ],
+            metadata: [
+                'action' => 'purchase_restore',
+            ],
+        );
+
         return redirect()->route('purchases.index')->with('success', __('general.purchase_restored_successfully'));
     }
 
-    public function updatePurchaseStatus(Request $request, Purchase $purchase)
+    public function updatePurchaseStatus(Request $request, Purchase $purchase, ActivityLogService $activityLogService)
     {
+        $oldStatus = $purchase->status;
         $purchase->update(['status' => $request->status]);
+
+        $activityLogService->logAction(
+            eventType: in_array($request->status, ['posted', 'unposted', 'approved', 'rejected', 'cancelled', 'completed'], true)
+                ? $request->status
+                : 'status_changed',
+            reference: $purchase,
+            module: 'purchase',
+            description: "Purchase #{$purchase->number} status changed from {$oldStatus} to {$request->status}.",
+            oldValues: ['status' => $oldStatus],
+            newValues: ['status' => $purchase->status],
+            metadata: [
+                'action' => 'purchase_status_update',
+            ],
+        );
+
         return back()->with('success', __('general.purchase_status_updated_successfully'));
     }
 }

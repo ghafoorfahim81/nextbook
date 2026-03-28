@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use App\Support\Inertia\CacheKey;
 use App\Models\Administration\Currency;
 use App\Models\User;
+use App\Services\ActivityLogService;
 class ReceiptController extends Controller
 {
     public function __construct()
@@ -68,9 +69,13 @@ class ReceiptController extends Controller
         ]);
     }
 
-    public function store(ReceiptStoreRequest $request, TransactionService $transactionService)
+    public function store(
+        ReceiptStoreRequest $request,
+        TransactionService $transactionService,
+        ActivityLogService $activityLogService
+    )
     {
-        $receipt = DB::transaction(function () use ($request, $transactionService) {
+        $receipt = DB::transaction(function () use ($request, $transactionService, $activityLogService) {
             $validated = $request->validated();
 
             $ledger = Ledger::findOrFail($validated['ledger_id']);
@@ -92,7 +97,7 @@ class ReceiptController extends Controller
 
             $creditRemark = "Receipt #{$receipt->number} from {$ledger->name}";
 
-            $transactionService->post(
+            $transaction = $transactionService->post(
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -113,6 +118,24 @@ class ReceiptController extends Controller
                         'ledger_id' => $ledger->id,
                         'credit' => $amount,
                     ],
+                ],
+            );
+
+            $activityLogService->logCreate(
+                reference: $receipt,
+                module: 'receipt',
+                description: "Receipt #{$receipt->number} created.",
+                newValues: [
+                    'number' => $receipt->number,
+                    'date' => $receipt->date?->toDateString(),
+                    'ledger_id' => $receipt->ledger_id,
+                    'amount' => $amount,
+                    'currency_id' => $currencyId,
+                    'rate' => $rate,
+                ],
+                metadata: [
+                    'action' => 'receipt_store',
+                    'transaction_id' => $transaction->id,
                 ],
             );
             
@@ -141,7 +164,7 @@ class ReceiptController extends Controller
         ]);
     }
 
-    public function print(Request $request, Receipt $receipt)
+    public function print(Request $request, Receipt $receipt, ActivityLogService $activityLogService)
     {
         $this->authorize('view', $receipt);
 
@@ -153,6 +176,16 @@ class ReceiptController extends Controller
             'createdBy',
             'updatedBy',
         ]);
+
+        $activityLogService->logAction(
+            eventType: 'print',
+            reference: $receipt,
+            module: 'receipt',
+            description: "Receipt #{$receipt->number} printed.",
+            metadata: [
+                'action' => 'receipt_print',
+            ],
+        );
 
         return inertia('Vouchers/Print', [
             'voucher' => new ReceiptResource($receipt),
@@ -170,9 +203,18 @@ class ReceiptController extends Controller
         ]);
     }
 
-    public function update(ReceiptUpdateRequest $request, Receipt $receipt)
+    public function update(ReceiptUpdateRequest $request, Receipt $receipt, ActivityLogService $activityLogService)
     {
-        DB::transaction(function () use ($request, $receipt) {
+        $beforeState = [
+            'number' => $receipt->number,
+            'date' => $receipt->date?->toDateString(),
+            'ledger_id' => $receipt->ledger_id,
+            'amount' => (float) ($receipt->transaction?->lines()->max('credit') ?? 0),
+            'currency_id' => $receipt->transaction?->currency_id,
+            'rate' => $receipt->transaction?->rate,
+        ];
+
+        DB::transaction(function () use ($request, $receipt, $activityLogService, $beforeState) {
             $validated = $request->validated();
             $receipt->update([
                 'number' => $validated['number'],
@@ -216,6 +258,25 @@ class ReceiptController extends Controller
                     ],
                 ],
             );
+
+            $activityLogService->logUpdate(
+                reference: $receipt,
+                before: $beforeState,
+                after: [
+                    'number' => $receipt->number,
+                    'date' => $receipt->date?->toDateString(),
+                    'ledger_id' => $receipt->ledger_id,
+                    'amount' => $amount,
+                    'currency_id' => $currencyId,
+                    'rate' => $rate,
+                ],
+                module: 'receipt',
+                description: "Receipt #{$receipt->number} updated.",
+                metadata: [
+                    'action' => 'receipt_update',
+                    'transaction_id' => $transaction->id,
+                ],
+            );
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         });
 
@@ -228,8 +289,17 @@ class ReceiptController extends Controller
         return $redirect;
     }
 
-    public function destroy(Request $request, Receipt $receipt)
+    public function destroy(Request $request, Receipt $receipt, ActivityLogService $activityLogService)
     {
+        $oldValues = [
+            'number' => $receipt->number,
+            'date' => $receipt->date?->toDateString(),
+            'ledger_id' => $receipt->ledger_id,
+            'amount' => (float) ($receipt->transaction?->lines()->max('credit') ?? 0),
+            'currency_id' => $receipt->transaction?->currency_id,
+            'rate' => $receipt->transaction?->rate,
+        ];
+
         DB::transaction(function () use ($receipt) {
             // Soft delete linked transactions then the receipt
                 $transaction = $receipt->transaction()->first();
@@ -241,11 +311,21 @@ class ReceiptController extends Controller
 
                 $receipt->delete();
         });
+
+        $activityLogService->logDelete(
+            reference: $receipt,
+            module: 'receipt',
+            description: "Receipt #{$receipt->number} deleted.",
+            oldValues: $oldValues,
+            metadata: [
+                'action' => 'receipt_delete',
+            ],
+        );
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
         return redirect()->route('receipts.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.receipt')]));
     }
-    public function restore(Request $request, Receipt $receipt)
+    public function restore(Request $request, Receipt $receipt, ActivityLogService $activityLogService)
     {
         DB::transaction(function () use ($receipt) {
             $transaction = $receipt->transaction()->withTrashed()->first();
@@ -257,6 +337,19 @@ class ReceiptController extends Controller
 
             $receipt->restore();
         });
+
+        $activityLogService->logAction(
+            eventType: 'restored',
+            reference: $receipt,
+            module: 'receipt',
+            description: "Receipt #{$receipt->number} restored.",
+            newValues: [
+                'number' => $receipt->number,
+            ],
+            metadata: [
+                'action' => 'receipt_restore',
+            ],
+        );
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
         return redirect()->route('receipts.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.receipt')]));

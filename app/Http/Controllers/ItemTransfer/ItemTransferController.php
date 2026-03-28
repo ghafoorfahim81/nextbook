@@ -13,6 +13,7 @@ use App\Models\Inventory\Item;
 use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ItemTransferService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
@@ -137,15 +138,34 @@ class ItemTransferController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request, ItemTransfer $itemTransfer)
+    public function destroy(Request $request, ItemTransfer $itemTransfer, ActivityLogService $activityLogService)
     {
         // Only allow deletion of pending transfers
         if ($itemTransfer->status === TransferStatus::COMPLETED) {
             return redirect()->back()->withErrors(['error' => __('general.cannot_delete_completed_transfer')]);
         }
 
+        $oldValues = [
+            'date' => $itemTransfer->date?->toDateString(),
+            'status' => $itemTransfer->status?->value ?? $itemTransfer->status,
+            'from_warehouse_id' => $itemTransfer->from_warehouse_id,
+            'to_warehouse_id' => $itemTransfer->to_warehouse_id,
+            'transfer_cost' => (float) ($itemTransfer->transfer_cost ?? 0),
+            'item_count' => $itemTransfer->items()->count(),
+        ];
+
         $itemTransfer->items()->delete();
         $itemTransfer->delete();
+
+        $activityLogService->logDelete(
+            reference: $itemTransfer,
+            module: 'item_transfer',
+            description: "Item transfer #{$itemTransfer->id} deleted.",
+            oldValues: $oldValues,
+            metadata: [
+                'action' => 'item_transfer_delete',
+            ],
+        );
 
         return redirect()->route('item-transfers.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.item_transfer')]));
     }
@@ -153,10 +173,23 @@ class ItemTransferController extends Controller
     /**
      * Restore a soft-deleted transfer.
      */
-    public function restore(Request $request, ItemTransfer $itemTransfer)
+    public function restore(Request $request, ItemTransfer $itemTransfer, ActivityLogService $activityLogService)
     {
         $itemTransfer->restore();
         $itemTransfer->items()->restore();
+
+        $activityLogService->logAction(
+            eventType: 'restored',
+            reference: $itemTransfer,
+            module: 'item_transfer',
+            description: "Item transfer #{$itemTransfer->id} restored.",
+            newValues: [
+                'status' => $itemTransfer->status?->value ?? $itemTransfer->status,
+            ],
+            metadata: [
+                'action' => 'item_transfer_restore',
+            ],
+        );
 
         return redirect()->route('item-transfers.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.item_transfer')]));
     }

@@ -79,7 +79,8 @@ import {
     FileText,
     Search,
     X,
-    FileChartLine
+    FileChartLine,
+    History
 } from 'lucide-vue-next'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -421,8 +422,12 @@ const navMain = computed(() => [
     },
     {
         title: t('sidebar.main.reports'),
-        url: '/reports',
+        url: '#',
         icon: FileChartLine,
+        items: [
+            { title: t('sidebar.reports.report'), url: '/reports' },
+            { title: t('sidebar.reports.activity_logs'), url: '/activity-logs', icon: History },
+        ],
     },
 ])
 

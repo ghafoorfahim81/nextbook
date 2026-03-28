@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
+use App\Services\ActivityLogService;
 
 class SaleController extends Controller
 {
@@ -83,11 +84,16 @@ class SaleController extends Controller
         ]);
     }
 
-    public function store(SaleStoreRequest $request, TransactionService $transactionService, StockService $stockService)
+    public function store(
+        SaleStoreRequest $request,
+        TransactionService $transactionService,
+        StockService $stockService,
+        ActivityLogService $activityLogService
+    )
     {
         $validated = $request->validated();
 
-        $sale = DB::transaction(function () use ($request, $transactionService, $stockService, $validated) {
+        $sale = DB::transaction(function () use ($request, $transactionService, $stockService, $validated, $activityLogService) {
             $validated = $request->validated();
 
             $validated['type'] = $validated['sale_type'] ?? 'cash';
@@ -233,7 +239,7 @@ class SaleController extends Controller
                 }
             }
 
-            $transactionService->post(
+            $transaction = $transactionService->post(
                 header: [
                     'currency_id'    => $validated['currency_id'],
                     'rate'           => $validated['rate'],
@@ -244,6 +250,28 @@ class SaleController extends Controller
                     'reference_id'   => $sale->id,
                 ],
                 lines: $lines
+            );
+
+            $activityLogService->logCreate(
+                reference: $sale,
+                module: 'sale',
+                description: "Sale #{$sale->number} created and posted.",
+                newValues: [
+                    'number' => $sale->number,
+                    'customer_id' => $sale->customer_id,
+                    'date' => $sale->date?->toDateString(),
+                    'status' => $sale->status,
+                    'branch_id' => $sale->branch_id,
+                    'warehouse_id' => $validated['warehouse_id'],
+                    'currency_id' => $validated['currency_id'],
+                    'item_count' => count($validated['item_list']),
+                    'transaction_total' => (float) $validated['transaction_total'],
+                ],
+                metadata: [
+                    'action' => 'sale_store',
+                    'sale_type' => $validated['type'],
+                    'transaction_id' => $transaction->id,
+                ],
             );
 
             return $sale;
@@ -434,9 +462,28 @@ class SaleController extends Controller
         ]);
     }
 
-    public function update(SaleUpdateRequest $request, Sale $sale, TransactionService $transactionService, StockService $stockService)
+    public function update(
+        SaleUpdateRequest $request,
+        Sale $sale,
+        TransactionService $transactionService,
+        StockService $stockService,
+        ActivityLogService $activityLogService
+    )
     {
-        $sale = DB::transaction(function () use ($request, $sale, $transactionService, $stockService) {
+        $beforeState = [
+            'number' => $sale->number,
+            'customer_id' => $sale->customer_id,
+            'date' => $sale->date?->toDateString(),
+            'status' => $sale->status,
+            'branch_id' => $sale->branch_id,
+            'warehouse_id' => $sale->warehouse_id,
+            'currency_id' => $sale->transaction?->currency_id,
+            'rate' => $sale->transaction?->rate,
+            'item_count' => $sale->items()->count(),
+            'transaction_total' => (float) ($sale->transaction_total ?? 0),
+        ];
+
+        $sale = DB::transaction(function () use ($request, $sale, $transactionService, $stockService, $activityLogService, $beforeState) {
             $validated = $request->validated();
             $validated['type'] = $validated['sale_type'] ?? $sale->type ?? 'cash';
             $validated['status'] = TransactionStatus::POSTED->value;
@@ -606,7 +653,7 @@ class SaleController extends Controller
                 }
             }
 
-            $transactionService->post(
+            $transaction = $transactionService->post(
                 header: [
                     'currency_id'    => $validated['currency_id'],
                     'rate'           => $validated['rate'],
@@ -617,6 +664,32 @@ class SaleController extends Controller
                     'reference_id'   => $sale->id,
                 ],
                 lines: $lines
+            );
+
+            $afterState = [
+                'number' => $sale->number,
+                'customer_id' => $sale->customer_id,
+                'date' => $sale->date?->toDateString(),
+                'status' => $sale->status,
+                'branch_id' => $sale->branch_id,
+                'warehouse_id' => $validated['warehouse_id'],
+                'currency_id' => $validated['currency_id'],
+                'rate' => (float) $validated['rate'],
+                'item_count' => count($validated['item_list']),
+                'transaction_total' => (float) $validated['transaction_total'],
+            ];
+
+            $activityLogService->logUpdate(
+                reference: $sale,
+                before: $beforeState,
+                after: $afterState,
+                module: 'sale',
+                description: "Sale #{$sale->number} updated.",
+                metadata: [
+                    'action' => 'sale_update',
+                    'sale_type' => $validated['type'],
+                    'transaction_id' => $transaction->id,
+                ],
             );
 
             return $sale;
@@ -773,34 +846,88 @@ class SaleController extends Controller
         }
     }
 
-    public function destroy(Request $request, Sale $sale)
+    public function destroy(Request $request, Sale $sale, ActivityLogService $activityLogService)
     {
+        $oldValues = [
+            'number' => $sale->number,
+            'customer_id' => $sale->customer_id,
+            'date' => $sale->date?->toDateString(),
+            'status' => $sale->status,
+            'branch_id' => $sale->branch_id,
+            'warehouse_id' => $sale->warehouse_id,
+            'currency_id' => $sale->transaction?->currency_id,
+            'rate' => $sale->transaction?->rate,
+            'item_count' => $sale->items()->count(),
+            'transaction_total' => (float) ($sale->transaction_total ?? 0),
+        ];
+
         $sale->items()->delete();
         $sale->stockOuts()->delete();
         Transaction::where('reference_type', 'sale')->where('reference_id', $sale->id)->delete();
         $sale->transaction()->delete();
         $sale->delete();
+
+        $activityLogService->logDelete(
+            reference: $sale,
+            module: 'sale',
+            description: "Sale #{$sale->number} deleted.",
+            oldValues: $oldValues,
+            metadata: [
+                'action' => 'sale_delete',
+            ],
+        );
+
         return redirect()->route('sales.index')->with('success', __('general.sale_deleted_successfully'));
     }
 
-    public function restore(Request $request, Sale $sale)
+    public function restore(Request $request, Sale $sale, ActivityLogService $activityLogService)
     {
         $sale->restore();
         $sale->items()->restore();
         $sale->stockOuts()->restore();
         $sale->transaction()->restore();
+
+        $activityLogService->logAction(
+            eventType: 'restored',
+            reference: $sale,
+            module: 'sale',
+            description: "Sale #{$sale->number} restored.",
+            newValues: [
+                'number' => $sale->number,
+                'status' => $sale->status,
+            ],
+            metadata: [
+                'action' => 'sale_restore',
+            ],
+        );
+
         return redirect()->route('sales.index')->with('success', __('general.sale_restored_successfully'));
     }
 
-    public function updateSaleStatus(Request $request, Sale $sale)
+    public function updateSaleStatus(Request $request, Sale $sale, ActivityLogService $activityLogService)
     {
+        $oldStatus = $sale->status;
         $sale->update(['status' => $request->status]);
+
+        $activityLogService->logAction(
+            eventType: in_array($request->status, ['posted', 'unposted', 'approved', 'rejected', 'cancelled', 'completed'], true)
+                ? $request->status
+                : 'status_changed',
+            reference: $sale,
+            module: 'sale',
+            description: "Sale #{$sale->number} status changed from {$oldStatus} to {$request->status}.",
+            oldValues: ['status' => $oldStatus],
+            newValues: ['status' => $sale->status],
+            metadata: [
+                'action' => 'sale_status_update',
+            ],
+        );
+
         return back()->with('success', __('general.sale_status_updated_successfully'));
     }
 
-    public function print(Request $request, Sale $sale)
+    public function print(Request $request, Sale $sale, ActivityLogService $activityLogService)
     {
-
         $company = auth()->user()?->company;
         $sale = $sale->load([
             'customer',
@@ -809,6 +936,17 @@ class SaleController extends Controller
             'items.warehouse',
             'transaction.currency',
         ]);
+
+        $activityLogService->logAction(
+            eventType: 'print',
+            reference: $sale,
+            module: 'sale',
+            description: "Sale #{$sale->number} printed.",
+            metadata: [
+                'action' => 'sale_print',
+            ],
+        );
+
         return inertia('Sale/Sales/Print', [
             'invoice' => new SaleResource($sale),
             'company' => $company,

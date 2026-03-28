@@ -1,0 +1,21 @@
+{
+  "activity_log": "لاگ فعالیت",
+  "activity_logs": "لاگ‌های فعالیت",
+  "event_type": "نوع رویداد",
+  "module": "ماژول",
+  "reference_type": "نوع مرجع",
+  "reference_id": "شناسه مرجع",
+  "old_values": "مقادیر قبلی",
+  "new_values": "مقادیر جدید",
+  "metadata": "فراداده",
+  "request_context": "اطلاعات درخواست",
+  "ip_address": "آی‌پی",
+  "user_agent": "مرورگر / دستگاه",
+  "view_log": "نمایش لاگ",
+  "view_details": "نمایش جزئیات",
+  "no_old_values": "مقدار قبلی ثبت نشده است.",
+  "no_new_values": "مقدار جدید ثبت نشده است.",
+  "no_metadata": "فراداده‌ای ثبت نشده است.",
+  "empty_state": "برای فیلترهای انتخاب‌شده لاگی پیدا نشد.",
+  "filters": "فیلترها"
+}
