@@ -26,6 +26,8 @@ use App\Enums\StockStatus;
 use App\Support\Preferences\InvoiceThemeOptions;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Inventory\Item;
+use App\Models\Inventory\StockBalance;
+use App\Models\Inventory\StockMovement;
 
 class SaleController extends Controller
 {
@@ -416,8 +418,19 @@ class SaleController extends Controller
 
     public function edit(Request $request, Sale $sale)
     {
+        $bankAccounts = (new Account())->getAccountsByAccountTypeSlug('cash-or-bank');
+
         return inertia('Sale/Sales/Edit', [
-            'sale' => new SaleResource($sale->load(['items', 'customer', 'transaction', 'stockOuts'])),
+            'sale' => new SaleResource($sale->load([
+                'items.item.unitMeasure',
+                'items.unitMeasure',
+                'items.warehouse',
+                'customer',
+                'transaction.currency',
+                'transaction.lines.account',
+                'transaction.lines.ledger',
+            ])),
+            'bankAccounts' => $bankAccounts,
         ]);
     }
 
@@ -425,39 +438,185 @@ class SaleController extends Controller
     {
         $sale = DB::transaction(function () use ($request, $sale, $transactionService, $stockService) {
             $validated = $request->validated();
+            $validated['type'] = $validated['sale_type'] ?? $sale->type ?? 'cash';
+            $validated['status'] = TransactionStatus::POSTED->value;
 
-            $validated['type'] = $validated['sale_purchase_type_id'] ?? $sale->type;
+            $affectedCombos = $sale->items()
+                ->get(['item_id', 'warehouse_id', 'branch_id'])
+                ->map(fn ($item) => [
+                    'item_id' => $item->item_id,
+                    'warehouse_id' => $item->warehouse_id,
+                    'branch_id' => $item->branch_id ?? $sale->branch_id,
+                ])
+                ->all();
 
-            // Update main sale record
+            $validated['item_list'] = array_map(function ($item) use ($validated, $sale, &$affectedCombos) {
+                $item['discount'] = $item['item_discount'] ?? 0;
+                $item['warehouse_id'] = $validated['warehouse_id'];
+
+                $affectedCombos[] = [
+                    'item_id' => $item['item_id'],
+                    'warehouse_id' => $validated['warehouse_id'],
+                    'branch_id' => $sale->branch_id,
+                ];
+
+                return $item;
+            }, $validated['item_list']);
+
             $sale->update($validated);
 
-            // Handle items if they are being updated
-            if (isset($validated['item_list'])) {
-                // Remove old stock out entries
-                $sale->items()->forceDelete();
-                $validated['item_list'] = array_map(function ($item) use ($validated) {
-                    $item['discount'] = $item['discount'] ? $item['discount'] : 0;
-                    $item['warehouse_id'] = $validated['warehouse_id'];
-                    return $item;
-                }, $validated['item_list']);
-                $sale->items()->createMany($validated['item_list']);
-                $sale->stockOuts()->forceDelete();
-                // Add new stock out entries
-                foreach ($validated['item_list'] as $item) {
-                    $stockService->removeStock($item, $validated['warehouse_id'], 'sale', $sale->id);
+            $sale->items()->forceDelete();
+
+            StockMovement::query()
+                ->where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->forceDelete();
+
+            $this->rebuildStockStateForCombos($affectedCombos);
+
+            $sale->items()->createMany($validated['item_list']);
+
+            $transaction = Transaction::query()
+                ->where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->first();
+
+            if ($transaction) {
+                $transaction->lines()->forceDelete();
+                $transaction->forceDelete();
+            }
+
+            $lines = [];
+            $totalDiscount = (float) $request->input('discount_total', 0);
+            $glAccounts = Cache::get('gl_accounts');
+
+            foreach ($validated['item_list'] as $item) {
+                $quantity = (float) $item['quantity'];
+                $unitPrice = (float) $item['unit_price'];
+                $lineGrossTotal = $quantity * $unitPrice;
+
+                $itemModel = Item::findOrFail($item['item_id']);
+                $unitCost = (float) ($itemModel->avgCost() ?? 0);
+                $totalCost = $unitCost * $quantity;
+
+                $stockService->post([
+                    'item_id'         => $item['item_id'],
+                    'movement_type'   => StockMovementType::OUT->value,
+                    'unit_measure_id' => $item['unit_measure_id'],
+                    'quantity'        => $quantity,
+                    'source'          => StockSourceType::SALE->value,
+                    'unit_cost'       => $unitCost,
+                    'status'          => StockStatus::POSTED->value,
+                    'batch'           => $item['batch'] ?? null,
+                    'date'            => $validated['date'],
+                    'expire_date'     => $item['expire_date'] ?? null,
+                    'size_id'         => $validated['size_id'] ?? null,
+                    'warehouse_id'    => $validated['warehouse_id'],
+                    'branch_id'       => $sale->branch_id,
+                    'reference_type'  => Sale::class,
+                    'reference_id'    => $sale->id,
+                ]);
+
+                $lines[] = [
+                    'account_id' => $itemModel->income_account_id,
+                    'ledger_id'  => null,
+                    'debit'      => 0,
+                    'credit'     => $lineGrossTotal,
+                    'remark'     => 'Sale item: ' . $itemModel->name,
+                ];
+
+                $lines[] = [
+                    'account_id' => $itemModel->cost_account_id,
+                    'ledger_id'  => null,
+                    'debit'      => $totalCost,
+                    'credit'     => 0,
+                    'remark'     => 'COGS for sale item: ' . $itemModel->name,
+                ];
+
+                $lines[] = [
+                    'account_id' => $itemModel->asset_account_id,
+                    'ledger_id'  => null,
+                    'debit'      => 0,
+                    'credit'     => $totalCost,
+                    'remark'     => 'Inventory out for sale item: ' . $itemModel->name,
+                ];
+            }
+
+            if ($totalDiscount > 0) {
+                $lines[] = [
+                    'account_id' => $glAccounts['discount-to-customer'],
+                    'ledger_id'  => null,
+                    'debit'      => $totalDiscount,
+                    'credit'     => 0,
+                    'remark'     => 'Sales discount for sale #' . $sale->number,
+                ];
+            }
+
+            if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
+                $lines[] = [
+                    'account_id' => $validated['bank_account_id'],
+                    'ledger_id'  => null,
+                    'debit'      => $validated['transaction_total'],
+                    'credit'     => 0,
+                    'remark'     => 'Cash received for sale #' . $sale->number,
+                ];
+            }
+
+            if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
+                $lines[] = [
+                    'account_id' => $glAccounts['account-receivable'],
+                    'ledger_id'  => $validated['customer_id'],
+                    'debit'      => $validated['transaction_total'],
+                    'credit'     => 0,
+                    'remark'     => 'Receivable for sale #' . $sale->number,
+                ];
+            }
+
+            if ($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
+                $paidAmount = (float) ($validated['payment']['amount'] ?? 0);
+
+                if ($paidAmount > 0) {
+                    $lines[] = [
+                        'account_id' => $validated['payment']['account_id'],
+                        'ledger_id'  => null,
+                        'debit'      => $paidAmount,
+                        'credit'     => 0,
+                        'remark'     => 'Partial payment for sale #' . $sale->number,
+                    ];
+
+                    $remaining = $validated['transaction_total'] - $paidAmount;
+
+                    if ($remaining > 0) {
+                        $lines[] = [
+                            'account_id' => $glAccounts['account-receivable'],
+                            'ledger_id'  => $validated['customer_id'],
+                            'debit'      => $remaining,
+                            'credit'     => 0,
+                            'remark'     => 'Remaining receivable for sale #' . $sale->number,
+                        ];
+                    }
+                } else {
+                    $lines[] = [
+                        'account_id' => $glAccounts['account-receivable'],
+                        'ledger_id'  => $validated['customer_id'],
+                        'debit'      => $validated['transaction_total'],
+                        'credit'     => 0,
+                        'remark'     => 'Receivable for sale #' . $sale->number,
+                    ];
                 }
             }
 
-            $sale->transaction()->forceDelete();
-            // Update transactions if payment details changed
-            $transactions = $transactionService->createSaleTransactions(
-                $sale,
-                \App\Models\Ledger\Ledger::find($validated['customer_id']),
-                $validated['transaction_total'],
-                $validated['sale_purchase_type_id'] ?? 'cash',
-                $validated['payment'] ?? [],
-                $validated['currency_id'] ?? null,
-                $validated['rate'] ?? null,
+            $transactionService->post(
+                header: [
+                    'currency_id'    => $validated['currency_id'],
+                    'rate'           => $validated['rate'],
+                    'date'           => $validated['date'],
+                    'remark'         => 'Sale #' . $sale->number,
+                    'status'         => TransactionStatus::POSTED->value,
+                    'reference_type' => Sale::class,
+                    'reference_id'   => $sale->id,
+                ],
+                lines: $lines
             );
 
             return $sale;
@@ -470,6 +629,148 @@ class SaleController extends Controller
         }
 
         return $redirect;
+    }
+
+    private function rebuildStockStateForCombos(array $combos): void
+    {
+        $uniqueCombos = collect($combos)
+            ->filter(fn ($combo) => !empty($combo['item_id']) && !empty($combo['warehouse_id']) && !empty($combo['branch_id']))
+            ->unique(fn ($combo) => implode('|', [
+                $combo['branch_id'],
+                $combo['warehouse_id'],
+                $combo['item_id'],
+            ]))
+            ->values();
+
+        foreach ($uniqueCombos as $combo) {
+            $this->rebuildStockStateForItemWarehouse(
+                branchId: $combo['branch_id'],
+                warehouseId: $combo['warehouse_id'],
+                itemId: $combo['item_id'],
+            );
+        }
+    }
+
+    private function rebuildStockStateForItemWarehouse(string $branchId, string $warehouseId, string $itemId): void
+    {
+        $item = Item::find($itemId);
+
+        if (!$item) {
+            return;
+        }
+
+        $movements = StockMovement::query()
+            ->where('branch_id', $branchId)
+            ->where('warehouse_id', $warehouseId)
+            ->where('item_id', $itemId)
+            ->orderBy('date')
+            ->orderBy('id')
+            ->get();
+
+        StockBalance::query()
+            ->where('branch_id', $branchId)
+            ->where('warehouse_id', $warehouseId)
+            ->where('item_id', $itemId)
+            ->forceDelete();
+
+        if ($movements->isEmpty()) {
+            return;
+        }
+
+        $balanceBuckets = [];
+
+        foreach ($movements as $movement) {
+            $status = $movement->status?->value ?? $movement->status;
+            $expireDate = $movement->expire_date?->toDateString();
+            $bucketKey = implode('|', [
+                $status,
+                $movement->batch ?? '',
+                $expireDate ?? '',
+            ]);
+
+            if (!isset($balanceBuckets[$bucketKey])) {
+                $balanceBuckets[$bucketKey] = [
+                    'branch_id' => $branchId,
+                    'item_id' => $itemId,
+                    'warehouse_id' => $warehouseId,
+                    'batch' => $movement->batch,
+                    'expire_date' => $expireDate,
+                    'status' => $status,
+                    'quantity' => 0,
+                    'in_quantity' => 0,
+                    'in_value' => 0,
+                ];
+            }
+
+            if ($movement->movement_type === StockMovementType::IN) {
+                $balanceBuckets[$bucketKey]['quantity'] += (float) $movement->quantity;
+                $balanceBuckets[$bucketKey]['in_quantity'] += (float) $movement->quantity;
+                $balanceBuckets[$bucketKey]['in_value'] += (float) $movement->quantity * (float) $movement->unit_cost;
+            } else {
+                $balanceBuckets[$bucketKey]['quantity'] -= (float) $movement->quantity;
+            }
+        }
+
+        foreach ($balanceBuckets as $bucket) {
+            if ($bucket['quantity'] <= 0) {
+                continue;
+            }
+
+            StockBalance::create([
+                'branch_id' => $bucket['branch_id'],
+                'item_id' => $bucket['item_id'],
+                'warehouse_id' => $bucket['warehouse_id'],
+                'batch' => $bucket['batch'],
+                'expire_date' => $bucket['expire_date'],
+                'status' => $bucket['status'],
+                'quantity' => $bucket['quantity'],
+                'average_cost' => $bucket['in_quantity'] > 0
+                    ? $bucket['in_value'] / $bucket['in_quantity']
+                    : 0,
+            ]);
+        }
+
+        $inMovements = $movements
+            ->filter(fn ($movement) => $movement->movement_type === StockMovementType::IN)
+            ->values();
+
+        foreach ($inMovements as $movement) {
+            $movement->qty_remaining = (float) $movement->quantity;
+            $movement->save();
+        }
+
+        $outMovements = $movements
+            ->filter(fn ($movement) => $movement->movement_type === StockMovementType::OUT)
+            ->values();
+
+        foreach ($outMovements as $outMovement) {
+            $remaining = (float) $outMovement->quantity;
+
+            foreach ($inMovements as $inMovement) {
+                if ($remaining <= 0) {
+                    break;
+                }
+
+                if ($item->is_batch_tracked && ($inMovement->batch ?? null) !== ($outMovement->batch ?? null)) {
+                    continue;
+                }
+
+                if ($outMovement->expire_date && $inMovement->expire_date?->toDateString() !== $outMovement->expire_date?->toDateString()) {
+                    continue;
+                }
+
+                $available = (float) ($inMovement->qty_remaining ?? 0);
+
+                if ($available <= 0) {
+                    continue;
+                }
+
+                $deduct = min($available, $remaining);
+                $inMovement->qty_remaining = $available - $deduct;
+                $inMovement->save();
+                $remaining -= $deduct;
+            }
+        }
     }
 
     public function destroy(Request $request, Sale $sale)
