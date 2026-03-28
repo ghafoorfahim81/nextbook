@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\NextController;
 
-
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ReportController;
+use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\Administration\BranchController;
 use App\Http\Controllers\Inventory\BarcodePrintController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\Inventory\ItemFastEntryController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\App;
@@ -46,6 +48,16 @@ Route::middleware([
     Route::get('/dashboard/data', [DashboardController::class, 'data'])->name('dashboard.data');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/data', [DashboardController::class, 'data'])->name('dashboard.data');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/feed', [NotificationController::class, 'feed'])->name('notifications.feed');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+
 
     Route::resource('designations', DesignationController::class);
     Route::resource('/departments', DepartmentController::class);

@@ -929,12 +929,74 @@ const receiptPaymentFields = [
                                 </div>
                                 <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
                                     <div>
+                                        <Label class="text-base">{{ t('preferences.notifications.low_item_balance_alert') }}</Label>
+                                        <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.low_item_balance_alert_desc') }}</p>
+                                    </div>
+                                    <Switch
+                                        :model-value="form.notifications.low_item_balance_alert"
+                                        @update:model-value="(v) => form.notifications.low_item_balance_alert = v"
+                                    />
+                                </div>
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <Label class="text-base">{{ t('preferences.notifications.nearest_expiry_alert') }}</Label>
+                                        <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.nearest_expiry_alert_desc') }}</p>
+                                    </div>
+                                    <Switch
+                                        :model-value="form.notifications.nearest_expiry_alert"
+                                        @update:model-value="(v) => form.notifications.nearest_expiry_alert = v"
+                                    />
+                                </div>
+
+
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <Label class="text-base">{{ t('preferences.notifications.overdue_purchase_alert') }}</Label>
+                                        <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.overdue_purchase_alert_desc') }}</p>
+                                    </div>
+                                    <Switch
+                                        :model-value="form.notifications.overdue_purchase_alert"
+                                        @update:model-value="(v) => form.notifications.overdue_purchase_alert = v"
+                                    />
+                                </div>
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <Label class="text-base">{{ t('preferences.notifications.overdue_sale_alert') }}</Label>
+                                        <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.overdue_sale_alert_desc') }}</p>
+                                    </div>
+                                    <Switch
+                                        :model-value="form.notifications.overdue_sale_alert"
+                                        @update:model-value="(v) => form.notifications.overdue_sale_alert = v"
+                                    />
+                                </div>
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
                                         <Label class="text-base">{{ t('preferences.notifications.overdue_invoice_alert') }}</Label>
                                         <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.overdue_invoice_alert_desc') }}</p>
                                     </div>
                                     <Switch
                                         :model-value="form.notifications.overdue_invoice_alert"
                                         @update:model-value="(v) => form.notifications.overdue_invoice_alert = v"
+                                    />
+                                </div>
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <Label class="text-base">{{ t('preferences.notifications.sale_paid_alert') }}</Label>
+                                        <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.sale_paid_alert_desc') }}</p>
+                                    </div>
+                                    <Switch
+                                        :model-value="form.notifications.sale_paid_alert"
+                                        @update:model-value="(v) => form.notifications.sale_paid_alert = v"
+                                    />
+                                </div>
+                                <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <Label class="text-base">{{ t('preferences.notifications.purchase_paid_alert') }}</Label>
+                                        <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.purchase_paid_alert_desc') }}</p>
+                                    </div>
+                                    <Switch
+                                        :model-value="form.notifications.purchase_paid_alert"
+                                        @update:model-value="(v) => form.notifications.purchase_paid_alert = v"
                                     />
                                 </div>
                                 <div class="flex flex-col gap-3 py-2 border-b sm:flex-row sm:items-center sm:justify-between">

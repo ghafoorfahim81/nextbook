@@ -3,6 +3,7 @@
 namespace App\Support\Inertia;
 
 use App\Models\Administration\Branch;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -84,6 +85,9 @@ final class CoreShared
                 'print_url' => fn() => $request->session()->get('print_url'),
             ],
             'user_preferences' => $userPreferences,
+            'notification_center' => $user
+                ? app(NotificationService::class)->getNotificationCenter($user)
+                : ['unread_count' => 0, 'items' => []],
             'activeBranchId' => $activeBranchId,
             'activeBranchName' => $activeBranchName,
             'balanceNatureFormat' => balanceNatureFormat(),
