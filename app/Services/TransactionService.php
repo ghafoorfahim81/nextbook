@@ -9,6 +9,13 @@ use Exception;
 
 class TransactionService
 {
+    private $dateConversionService;
+
+    public function __construct(DateConversionService $dateConversionService)
+    {
+        $this->dateConversionService = $dateConversionService;
+    }
+
     /**
      * Core posting method
      *
@@ -32,7 +39,7 @@ class TransactionService
             $transaction = Transaction::create([
                 'currency_id'    => $header['currency_id'],
                 'rate'           => $header['rate'],
-                'date'           => $header['date'],
+                'date'           => $this->dateConversionService->toGregorian($header['date']),
                 'voucher_number' => $header['voucher_number'] ?? null,
                 'reference_type' => $header['reference_type'] ?? null,
                 'reference_id'   => $header['reference_id'] ?? null,

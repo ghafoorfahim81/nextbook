@@ -16,12 +16,14 @@ use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
-
+use App\Services\DateConversionService;
 class AccountTransferController extends Controller
 {
-    public function __construct()
+    private $dateConversionService;
+    public function __construct(DateConversionService $dateConversionService)
     {
         $this->authorizeResource(AccountTransfer::class, 'account_transfer');
+        $this->dateConversionService = $dateConversionService;
     }
 
     public function index(Request $request)
@@ -99,7 +101,7 @@ class AccountTransferController extends Controller
 
             $transfer = AccountTransfer::create([
                 'number' => $validated['number'] ?? null,
-                'date' => $validated['date'],
+                'date' => $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null,
                 'remark' => $validated['remark'] ?? null,
             ]);
             $transaction = $transactionService->post([
@@ -163,7 +165,7 @@ class AccountTransferController extends Controller
             $amount = isset($validated['amount']) ? (float) $validated['amount'] : ($accountTransfer->transaction?->lines?->first()?->debit ?? $accountTransfer->transaction?->lines?->first()?->credit);
             $currencyId = $validated['currency_id'] ?? ($accountTransfer->transaction?->currency_id);
             $rate = isset($validated['rate']) ? (float) $validated['rate'] : ($accountTransfer->transaction?->rate);
-            $date = $validated['date'] ?? $accountTransfer->date;
+            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $accountTransfer->date;
             $fromAccountId = $validated['from_account_id'];
             $toAccountId = $validated['to_account_id'];
             $transactionService = app(TransactionService::class);

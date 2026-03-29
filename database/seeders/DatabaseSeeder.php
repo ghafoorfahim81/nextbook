@@ -37,6 +37,7 @@ class DatabaseSeeder extends Seeder
 
 
         if(app()->environment('local')){
+            $this->call(UserSeeder::class);
             $this->call(BranchSeeder::class);
             $this->call(UserSeeder::class);
             // $this->call(CategorySeeder::class);
@@ -53,6 +54,7 @@ class DatabaseSeeder extends Seeder
             // $this->call(ItemSeeder::class);
         }
         if(app()->environment('production')){
+            $this->call(UserSeeder::class);
             $this->call(BranchSeeder::class);
             $this->call(UserSeeder::class);
             $this->call(WarehouseSeeder::class);

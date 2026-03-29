@@ -16,12 +16,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Models\User;
-
+use App\Services\DateConversionService;
 class ExpenseController extends Controller
 {
-    public function __construct()
+    private $dateConversionService;
+    public function __construct(DateConversionService $dateConversionService)
     {
         $this->authorizeResource(Expense::class, 'expense');
+        $this->dateConversionService = $dateConversionService;
     }
 
     public function index(Request $request)
@@ -85,17 +87,17 @@ class ExpenseController extends Controller
             //     $validated['attachment'] = $request->file('attachment')
             //         ->store('expenses', 'public');
             // }
+            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
 
             // Create expense record
             $expense = Expense::create([
-                'date' => $validated['date'],
+                'date' => $date,
                 'remarks' => $validated['remarks'] ?? null,
                 'category_id' => $validated['category_id'],
             ]);
 
             // Create expense details
             $expense->details()->createMany($validated['details']);
-
             // Calculate total
             $total = collect($validated['details'])->sum('amount');
 
@@ -104,7 +106,7 @@ class ExpenseController extends Controller
                 header: [
                     'currency_id' => $validated['currency_id'],
                     'rate' => $validated['rate'] ?? 1,
-                    'date' => $expense->date,
+                    'date' => $date,
                     'reference_type' => Expense::class,
                     'reference_id' => $expense->id,
                     'remark' => 'Expense: ' . $expense->category->name . ' - ' . $expense->remarks,
@@ -182,9 +184,10 @@ class ExpenseController extends Controller
             //         ->store('expenses', 'public');
             // }
 
+            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $expense->date;
             // Update expense record
             $expense->update([
-                'date' => $validated['date'],
+                'date' => $date,
                 'remarks' => $validated['remarks'] ?? null,
                 'category_id' => $validated['category_id'],
             ]);
@@ -206,7 +209,7 @@ class ExpenseController extends Controller
                 header: [
                     'currency_id' => $validated['currency_id'],
                     'rate' => $validated['rate'] ?? 1,
-                    'date' => $validated['date'],
+                    'date' => $date,
                     'reference_type' => Expense::class,
                     'reference_id' => $expense->id,
                     'remark' => 'Expense: ' . $expense->category->name . ' - ' . $expense->remarks,

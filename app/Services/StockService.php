@@ -6,11 +6,18 @@ use App\Enums\StockStatus;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
-use App\Models\Inventory\StockMovement; 
+use App\Models\Inventory\StockMovement;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException; 
+use Illuminate\Validation\ValidationException;
 class StockService
 {
+    private $dateConversionService;
+
+    public function __construct(DateConversionService $dateConversionService)
+    {
+        $this->dateConversionService = $dateConversionService;
+    }
+
     /**
      * Entry point
      */
@@ -98,6 +105,8 @@ class StockService
             StockMovement::create([
                 ...$data,
                 'quantity' => $deductQty,
+                'date' => $this->dateConversionService->toGregorian($data['date']),
+                'expire_date' => $data['expire_date'] ? $this->dateConversionService->toGregorian($data['expire_date']) : null,
                 'unit_cost' => $movement->unit_cost,
                 'qty_remaining' => null,
             ]);
@@ -126,6 +135,8 @@ class StockService
 
         StockMovement::create([
             ...$data,
+            'date' => $this->dateConversionService->toGregorian($data['date']),
+            'expire_date' => $data['expire_date'] ? $this->dateConversionService->toGregorian($data['expire_date']) : null,
             'unit_cost' => $balance->average_cost,
             'qty_remaining' => null,
         ]);
@@ -142,7 +153,7 @@ class StockService
                 'item_id' => $data['item_id'],
                 'warehouse_id' => $data['warehouse_id'],
                 'batch' => $data['batch'] ?? null,
-                'expire_date' => $data['expire_date'] ?? null,
+                'expire_date' => $data['expire_date'] ? $this->dateConversionService->toGregorian($data['expire_date']) : null,
                 'status' => $data['status'] ?? StockStatus::DRAFT->value,
             ],
             [
@@ -167,11 +178,11 @@ class StockService
 
         // // Check if item is batch-tracked (you should have this flag in your item model)
         // $isBatchTracked = $item->is_batch_tracked;  // Assuming 'is_batch_tracked' is a boolean column
-    
+
         // // Build the query based on whether the item is batch-tracked
         // $query = StockBalance::where('item_id', $item->id)
         //     ->where('warehouse_id', $data['warehouse_id']);
-    
+
         // if ($isBatchTracked) {
         //     // For batch-tracked items, use both batch and expire_date
         //     $query->where('batch', $data['batch'])
@@ -180,10 +191,10 @@ class StockService
         //     // For non-batch items, only use expire_date
         //     $query->where('expire_date', $data['expire_date']);
         // }
-    
+
         // // Fetch the existing balance record, if it exists
         // $currentBalance = $query->first();
-    
+
         // if (!$currentBalance) {
         //     // If no balance exists, create a new record
         //     $currentBalance = StockBalance::create([
@@ -205,7 +216,7 @@ class StockService
         //         $data['quantity'],
         //         $data['unit_cost']
         //     );
-    
+
         //     $currentBalance->update([
         //         'quantity' => $newQty,
         //         'average_cost' => $newAvg,

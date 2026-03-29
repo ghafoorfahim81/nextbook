@@ -12,11 +12,15 @@ use App\Models\Transaction\Transaction;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
+use App\Services\DateConversionService;
 class ItemTransferService
 {
+    private $dateConversionService;
     public function __construct(
-        private StockService $stockService
-    ) {}
+        private StockService $stockService,
+    ) {
+        $this->dateConversionService = app(DateConversionService::class);
+    }
 
     /**
      * Create a new item transfer
@@ -29,7 +33,7 @@ class ItemTransferService
 
             // Create transfer record
             $transfer = ItemTransfer::create([
-                'date' => $data['date'],
+                'date' => $this->dateConversionService->toGregorian($data['date']),
                 'from_warehouse_id' => $data['from_warehouse_id'],
                 'to_warehouse_id' => $data['to_warehouse_id'],
                 'status' => TransferStatus::PENDING,
@@ -74,7 +78,7 @@ class ItemTransferService
 
             // Update transfer record
             $transfer->update([
-                'date' => $data['date'] ?? $transfer->date,
+                'date' => $this->dateConversionService->toGregorian($data['date']) ?? $transfer->date,
                 'from_warehouse_id' => $data['from_warehouse_id'] ?? $transfer->from_warehouse_id,
                 'to_warehouse_id' => $data['to_warehouse_id'] ?? $transfer->to_warehouse_id,
                 'status' => $data['status'] ?? $transfer->status,
@@ -132,7 +136,7 @@ class ItemTransferService
                         header: [
                             'currency_id' => $homeCurrency->id,
                             'rate' => 1,
-                            'date' => $transfer->date,
+                            'date' => $this->dateConversionService->toGregorian($transfer->date),
                             'remark' => 'Transfer cost for item transfer ' . $transfer->id,
                             'reference_type' => ItemTransfer::class,
                             'reference_id' => $transfer->id,
@@ -166,14 +170,14 @@ class ItemTransferService
                     'unit_cost'       => (float) $item->unit_price,
                     'status'          => StockStatus::DRAFT->value,
                     'batch'           => $item->batch ?? null,
-                    'date'            => $transfer->date,
+                    'date'            => $this->dateConversionService->toGregorian($transfer->date),
                     'expire_date'     => $item->expire_date ?? null,
                     'size_id'         => $item->size_id ?? null,
                     'warehouse_id'    => $transfer->from_warehouse_id,
-                    'branch_id'       => $transfer->branch_id, 
+                    'branch_id'       => $transfer->branch_id,
                     'reference_type'  => ItemTransfer::class,
                     'reference_id'    => $transfer->id,
-                ]); 
+                ]);
 
                 $stock = $this->stockService->post([
                     'item_id'         => $item->item_id,
@@ -188,10 +192,10 @@ class ItemTransferService
                     'expire_date'     => $item->expire_date ?? null,
                     'size_id'         => $item->size_id ?? null,
                     'warehouse_id'    => $transfer->to_warehouse_id,
-                    'branch_id'       => $transfer->branch_id, 
+                    'branch_id'       => $transfer->branch_id,
                     'reference_type'  => ItemTransfer::class,
                     'reference_id'    => $transfer->id,
-                ]);  
+                ]);
             }
 
             // Update transfer status

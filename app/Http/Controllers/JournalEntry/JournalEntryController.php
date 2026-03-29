@@ -21,14 +21,17 @@ use App\Support\Inertia\CacheKey;
 use App\Models\User;
 use App\Models\JournalEntry\JournalClass;
 use App\Http\Resources\JournalEntry\JournalClassResource;
+use App\Services\DateConversionService;
 class JournalEntryController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function __construct()
+    private $dateConversionService;
+    public function __construct(DateConversionService $dateConversionService)
     {
         $this->authorizeResource(JournalEntry::class, 'journalEntry');
+        $this->dateConversionService = $dateConversionService;
     }
     public function index( Request $request )
     {
@@ -76,18 +79,19 @@ class JournalEntryController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(JournalEntryStoreRequest $request)
-    { 
+    {
         DB::transaction(function () use ($request) {
         $validated = $request->validated();
+        $date =  $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
         $journalEntry = JournalEntry::create([
             'number' => $validated['number'],
-            'date' => $validated['date'],
+            'date' => $date,
             'status' => 'posted',
             'currency_id' => $validated['currency_id'],
             'rate' => $validated['rate'],
             'remarks' => $validated['remarks'],
         ]);
-        $transactionService = new TransactionService();
+        $transactionService = app(TransactionService::class);
         $lines = collect($validated['lines'])
         ->map(fn ($line) => [
             'account_id'  => $line['account_id'],
@@ -97,12 +101,12 @@ class JournalEntryController extends Controller
             'remark'      => $line['remark'] ?? null,
             'journal_class_id' => $line['journal_class_id'] ?? null,
         ])
-        ->toArray(); 
+        ->toArray();
         $transactionService->post(
             header: [
                 'currency_id' => $validated['currency_id'],
                 'rate' => $validated['rate'],
-                'date' => $validated['date'],
+                'date' => $date,
                 'remark' => $validated['remarks'],
                 'reference_type' => JournalEntry::class,
                 'reference_id' => $journalEntry->id,
@@ -154,12 +158,12 @@ class JournalEntryController extends Controller
     public function update(JournalEntryUpdateRequest $request, JournalEntry $journalEntry)
     {
         $validated = $request->validated();
-
-        DB::transaction(function () use ($validated, $journalEntry) {
+        $date =  $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+        DB::transaction(function () use ($validated, $journalEntry, $date) {
             // Update journal entry details
             $journalEntry->update([
                 'number' => $validated['number'],
-                'date' => $validated['date'],
+                'date' => $date,
                 'status' => 'posted',
                 'currency_id' => $validated['currency_id'],
                 'rate' => $validated['rate'],
@@ -176,7 +180,7 @@ class JournalEntryController extends Controller
 
 
             // Post/Update transaction (same posting logic as store after lines created)
-            $transactionService = new TransactionService();
+            $transactionService = app(TransactionService::class);
             $lines = collect($validated['lines'])
             ->map(fn ($line) => [
                 'account_id'  => $line['account_id'],
@@ -191,7 +195,7 @@ class JournalEntryController extends Controller
                 header: [
                     'currency_id' => $validated['currency_id'],
                     'rate' => $validated['rate'],
-                    'date' => $validated['date'],
+                    'date' => $date,
                     'remark' => $validated['remarks'],
                     'reference_type' => JournalEntry::class,
                     'reference_id' => $journalEntry->id,

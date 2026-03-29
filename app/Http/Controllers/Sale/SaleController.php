@@ -28,12 +28,14 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
-
+use App\Services\DateConversionService;
 class SaleController extends Controller
 {
-    public function __construct()
+    private $dateConversionService;
+    public function __construct(DateConversionService $dateConversionService)
     {
         $this->authorizeResource(Sale::class, 'sale');
+        $this->dateConversionService = $dateConversionService;
     }
 
     public function index(Request $request)
@@ -90,6 +92,7 @@ class SaleController extends Controller
         $sale = DB::transaction(function () use ($request, $transactionService, $stockService, $validated) {
             $validated = $request->validated();
 
+            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $validated['type'] = $validated['sale_type'] ?? 'cash';
             $validated['status'] = TransactionStatus::POSTED->value;
 
@@ -102,7 +105,7 @@ class SaleController extends Controller
 
             $sale->items()->createMany($validated['item_list']);
 
-            $lines = []; 
+            $lines = [];
             $totalCostOfGoodsSold = 0;
 
             $glAccounts = Cache::get('gl_accounts');
@@ -131,7 +134,7 @@ class SaleController extends Controller
                     'unit_cost'       => $unitCost,
                     'status'          => StockStatus::POSTED->value,
                     'batch'           => $item['batch'] ?? null,
-                    'date'            => $validated['date'],
+                    'date'            => $date,
                     'expire_date'     => $item['expire_date'] ?? null,
                     'size_id'         => $validated['size_id'] ?? null,
                     'warehouse_id'    => $validated['warehouse_id'],
@@ -237,7 +240,7 @@ class SaleController extends Controller
                 header: [
                     'currency_id'    => $validated['currency_id'],
                     'rate'           => $validated['rate'],
-                    'date'           => $validated['date'],
+                    'date'           => $date,
                     'remark'         => 'Sale #' . $sale->number,
                     'status'         => TransactionStatus::POSTED->value,
                     'reference_type' => Sale::class,
@@ -441,6 +444,7 @@ class SaleController extends Controller
             $validated['type'] = $validated['sale_type'] ?? $sale->type ?? 'cash';
             $validated['status'] = TransactionStatus::POSTED->value;
 
+            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $sale->date;
             $affectedCombos = $sale->items()
                 ->get(['item_id', 'warehouse_id', 'branch_id'])
                 ->map(fn ($item) => [
@@ -508,7 +512,7 @@ class SaleController extends Controller
                     'unit_cost'       => $unitCost,
                     'status'          => StockStatus::POSTED->value,
                     'batch'           => $item['batch'] ?? null,
-                    'date'            => $validated['date'],
+                    'date'            => $date,
                     'expire_date'     => $item['expire_date'] ?? null,
                     'size_id'         => $validated['size_id'] ?? null,
                     'warehouse_id'    => $validated['warehouse_id'],
@@ -610,7 +614,7 @@ class SaleController extends Controller
                 header: [
                     'currency_id'    => $validated['currency_id'],
                     'rate'           => $validated['rate'],
-                    'date'           => $validated['date'],
+                    'date'           => $date,
                     'remark'         => 'Sale #' . $sale->number,
                     'status'         => TransactionStatus::POSTED->value,
                     'reference_type' => Sale::class,

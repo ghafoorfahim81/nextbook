@@ -18,11 +18,14 @@ use Illuminate\Support\Facades\Cache;
 use App\Support\Inertia\CacheKey;
 use App\Models\Administration\Currency;
 use App\Models\User;
+use App\Services\DateConversionService;
 class PaymentController extends Controller
 {
-    public function __construct()
+    private $dateConversionService;
+    public function __construct(DateConversionService $dateConversionService)
     {
         $this->authorizeResource(Payment::class, 'payment');
+        $this->dateConversionService = $dateConversionService;
     }
 
     public function index(Request $request)
@@ -84,10 +87,11 @@ class PaymentController extends Controller
             $amount = (float) $validated['amount'];
             $currencyId = $validated['currency_id'];
             $rate = (float) $validated['rate'];
+            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $bankAccountId = $validated['bank_account_id'];
             $payment = Payment::create([
                 'number' => $validated['number'],
-                'date' => $validated['date'],
+                'date' => $date,
                 'ledger_id' => $ledger->id,
                 'cheque_no' => $validated['cheque_no'] ?? null,
                 'narration' => $validated['narration'] ?? null,
@@ -102,7 +106,7 @@ class PaymentController extends Controller
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
-                    'date' => $payment->date,
+                    'date' => $date,
                     'reference_type' => Payment::class,
                     'reference_id' => $payment->id,
                     'remark' => $debitRemark,
@@ -183,9 +187,10 @@ class PaymentController extends Controller
         DB::transaction(function () use ($request, $payment) {
             $validated = $request->validated();
 
+            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $payment->date;
             $payment->update([
                 'number' => $validated['number'] ?? $payment->number,
-                'date' => $validated['date'] ?? $payment->date,
+                'date' => $date,
                 'ledger_id' => $validated['ledger_id'] ?? $payment->ledger_id,
                 'cheque_no' => $validated['cheque_no'] ?? $payment->cheque_no,
                 'narration' => $validated['narration'] ?? $payment->narration,
@@ -206,7 +211,7 @@ class PaymentController extends Controller
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
-                    'date' => $payment->date,
+                    'date' => $date,
                     'reference_type' => Payment::class,
                     'reference_id' => $payment->id,
                 ],
