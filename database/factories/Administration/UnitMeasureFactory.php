@@ -3,11 +3,9 @@
 namespace Database\Factories\Administration;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Quantity;
 use App\Models\Administration\UnitMeasure;
-use App\Models\User;
 
 class UnitMeasureFactory extends Factory
 {
@@ -24,14 +22,14 @@ class UnitMeasureFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'unit' => fake()->word(),
-            'symbol' => fake()->word(),
+            'name' => fake()->unique()->word(),
+            'unit' => fake()->randomElement(['1', '10', '100']),
+            'symbol' => fake()->unique()->lexify('U??'),
             'branch_id' => Branch::factory(),
             'quantity_id' => Quantity::factory(),
-            'value' => fake()->randomFloat(0, 0, 9999.),
-            'created_by' => User::factory(),
-            'updated_by' => User::factory(),
+            'value' => fake()->randomFloat(2, 1, 1000),
+            'is_main' => false,
+            'is_active' => true,
         ];
     }
 }

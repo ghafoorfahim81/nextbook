@@ -3,11 +3,13 @@
 namespace Database\Factories\Purchase;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
+use App\Enums\DiscountType;
+use App\Enums\SalePurchaseType;
+use App\Enums\TransactionStatus;
+use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
 use App\Models\Purchase\Purchase;
-use App\Models\Transaction\Transaction;
-use App\Models\User;
+use App\Models\Administration\Branch;
 
 class PurchaseFactory extends Factory
 {
@@ -24,16 +26,16 @@ class PurchaseFactory extends Factory
     public function definition(): array
     {
         return [
-            'number' => fake()->word() . '-' . fake()->unique()->numberBetween(0, 9999),
+            'number' => fake()->unique()->numberBetween(1, 999999),
             'supplier_id' => Ledger::factory(),
             'date' => fake()->date(),
-            'discount' => fake()->randomFloat(2, 0, 1000),
-            'discount_type' => fake()->randomElement(['currency', 'percentage']),
-            'type' => fake()->randomElement(['cash', 'credit']),
-            'description' => fake()->text(),
-            'status' => fake()->randomElement(['pending', 'approved', 'rejected']),
-            'created_by' => User::factory(),
-            'updated_by' => User::factory(),
+            'discount' => fake()->randomFloat(2, 0, 30),
+            'discount_type' => DiscountType::PERCENTAGE->value,
+            'type' => SalePurchaseType::Cash->value,
+            'bank_account_id' => Account::factory(),
+            'description' => fake()->optional()->sentence(),
+            'status' => TransactionStatus::POSTED->value,
+            'branch_id' => Branch::factory(),
         ];
     }
 }

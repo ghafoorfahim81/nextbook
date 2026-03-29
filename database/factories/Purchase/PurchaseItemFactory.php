@@ -3,10 +3,11 @@
 namespace Database\Factories\Purchase;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\Administration\Branch;
+use App\Models\Administration\Warehouse;
 use App\Models\Purchase\Purchase;
 use App\Models\Inventory\Item;
 use App\Models\Administration\UnitMeasure;
-use App\Models\User;
 
 class PurchaseItemFactory extends Factory
 {
@@ -25,16 +26,18 @@ class PurchaseItemFactory extends Factory
         return [
             'purchase_id' => Purchase::factory(),
             'item_id' => Item::factory(),
-            'batch' => fake()->word(),
+            'batch' => fake()->optional()->bothify('BATCH-###'),
             'expire_date' => fake()->dateTimeBetween('+1 month', '+2 years')->format('Y-m-d'),
-            'quantity' => fake()->randomFloat(2, 1, 1000),
+            'quantity' => fake()->randomFloat(2, 1, 100),
             'unit_measure_id' => UnitMeasure::factory(),
-            'price' => fake()->randomFloat(2, 10, 1000),
-            'discount' => fake()->randomFloat(2, 0, 100),
-            'free' => fake()->randomFloat(2, 0, 50),
-            'tax' => fake()->randomFloat(2, 0, 50),
-            'created_by' => User::factory(),
-            'updated_by' => User::factory(),
+            'warehouse_id' => Warehouse::factory(),
+            'size_id' => null,
+            'unit_price' => fake()->randomFloat(4, 10, 500),
+            'net_unit_cost' => null,
+            'discount' => fake()->randomFloat(2, 0, 10),
+            'free' => fake()->randomFloat(2, 0, 5),
+            'tax' => fake()->randomFloat(2, 0, 5),
+            'branch_id' => Branch::factory(),
         ];
     }
 }

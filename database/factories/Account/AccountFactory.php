@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Account\Account;
 use App\Models\Account\AccountType;
 use App\Models\Administration\Branch;
-use App\Models\User;
 
 class AccountFactory extends Factory
 {
@@ -23,14 +22,15 @@ class AccountFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->unique()->company(),
-            'number' => fake()->unique()->randomNumber(),
+            'name' => fake()->unique()->company().' Account',
+            'local_name' => null,
+            'number' => (string) fake()->unique()->numberBetween(1000, 99999),
             'account_type_id' => AccountType::factory(),
-            'is_active' => $this->faker->boolean(),
+            'slug' => null,
+            'is_active' => true,
+            'is_main' => false,
             'branch_id' => Branch::factory(),
-            'remark' => $this->faker->text(),
-            'created_by' => User::factory(),
-            'updated_by' => User::factory(),
+            'remark' => fake()->optional()->sentence(),
         ];
     }
 }

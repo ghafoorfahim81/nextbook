@@ -3,10 +3,8 @@
 namespace Database\Factories\Administration;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Currency;
-use App\Models\User;
 
 class CurrencyFactory extends Factory
 {
@@ -23,17 +21,16 @@ class CurrencyFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->name(),
-            'code' => $this->faker->word(),
-            'symbol' => $this->faker->word(),
-            'format' => $this->faker->word(),
-            'exchange_rate' => $this->faker->randomFloat(0, 0, 999.),
-            'is_active' => $this->faker->boolean(),
+            'name' => fake()->currencyCode().' Currency',
+            'code' => fake()->unique()->currencyCode(),
+            'symbol' => fake()->randomElement(['$', 'Af', 'Rs', 'EUR']),
+            'format' => '1,0.00',
+            'exchange_rate' => fake()->randomFloat(4, 0.1, 500),
+            'is_active' => true,
             'is_base_currency' => false,
-            'flag' => $this->faker->word(),
+            'flag' => fake()->optional()->lexify('??').'.png',
             'branch_id' => Branch::factory(),
-            'created_by' => User::factory(),
-            'updated_by' => User::factory(),
+            'is_main' => false,
         ];
     }
 }
