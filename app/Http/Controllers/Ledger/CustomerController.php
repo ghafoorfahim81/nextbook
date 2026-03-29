@@ -12,7 +12,6 @@ use App\Http\Resources\Sale\SaleResource;
 use App\Http\Resources\Receipt\ReceiptResource;
 use App\Http\Resources\Payment\PaymentResource;
 use App\Models\Ledger\Ledger;
-use App\Models\Ledger\LedgerTransaction;
 use App\Models\Transaction\Transaction;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Branch;
@@ -23,7 +22,7 @@ use App\Models\Transaction\TransactionLine;
 use Illuminate\Support\Facades\DB;
 use App\Support\Inertia\CacheKey;
 use App\Models\User;
-
+use Carbon\Carbon;
 class CustomerController extends Controller
 {
     public function __construct()
@@ -99,7 +98,7 @@ class CustomerController extends Controller
                 header: [
                     'currency_id' => $validated['opening_currency_id'],
                     'rate' => (float) $validated['rate'],
-                    'date' => now(),
+                    'date' => Carbon::now()->toDateString(),
                     'reference_type' => Ledger::class,
                     'reference_id' => $ledger->id,
                     'remark' => 'Opening balance for customer ' . $ledger->name,
@@ -199,7 +198,7 @@ class CustomerController extends Controller
                 header: [
                     'currency_id' => $validated['opening_currency_id'],
                     'rate' => (float) $validated['rate'],
-                    'date' => now(),
+                    'date' => Carbon::now()->toDateString(),
                     'reference_type' => Ledger::class,
                     'reference_id' => $customer->id,
                     'remark' => 'Opening balance for customer ' . $customer->name,

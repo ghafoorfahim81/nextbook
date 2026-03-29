@@ -18,11 +18,14 @@ use Illuminate\Support\Facades\DB;
 use App\Support\Inertia\CacheKey;
 use App\Models\Administration\Currency;
 use App\Models\User;
+use App\Services\DateConversionService;
 class ReceiptController extends Controller
 {
-    public function __construct()
+    private $dateConversionService;
+    public function __construct(DateConversionService $dateConversionService)
     {
         $this->authorizeResource(Receipt::class, 'receipt');
+        $this->dateConversionService = $dateConversionService;
     }
 
     public function index(Request $request)
@@ -78,10 +81,10 @@ class ReceiptController extends Controller
             $currencyId = $validated['currency_id'];
             $rate = (float) $validated['rate'];
             $bankAccountId = $validated['bank_account_id'];
-
+            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $receipt = Receipt::create([
                 'number' => $validated['number'],
-                'date' => $validated['date'],
+                'date' => $date,
                 'ledger_id' => $ledger->id,
                 'cheque_no' => $validated['cheque_no'] ?? null,
                 'narration' => $validated['narration'] ?? null,
@@ -96,7 +99,7 @@ class ReceiptController extends Controller
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
-                    'date' => $receipt->date,
+                    'date' => $date,
                     'reference_type' => Receipt::class,
                     'reference_id' => $receipt->id,
                     'remark' => $creditRemark,
@@ -115,7 +118,7 @@ class ReceiptController extends Controller
                     ],
                 ],
             );
-            
+
             return $receipt;
         });
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
@@ -174,9 +177,10 @@ class ReceiptController extends Controller
     {
         DB::transaction(function () use ($request, $receipt) {
             $validated = $request->validated();
+            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $receipt->date;
             $receipt->update([
                 'number' => $validated['number'],
-                'date' => $validated['date'],
+                'date' => $date,
                 'ledger_id' => $validated['ledger_id'],
                 'cheque_no' => $validated['cheque_no'] ?? null,
                 'narration' => $validated['narration'] ?? null,
@@ -187,7 +191,6 @@ class ReceiptController extends Controller
             $amount = isset($validated['amount']) ? (float) $validated['amount'] : $receipt->amount;
             $currencyId = $validated['currency_id'] ?? $receipt->currency_id;
             $rate = isset($validated['rate']) ? (float) $validated['rate'] : $receipt->rate;
-            $date = $validated['date'] ?? $receipt->date;
             $bankAccountId = $validated['bank_account_id'] ?? $receipt->transaction?->lines[0]->account_id;
             $glAccounts = Cache::get('gl_accounts');
             $arAccountId = $glAccounts['account-receivable'];

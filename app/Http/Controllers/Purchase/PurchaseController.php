@@ -25,11 +25,14 @@ use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
 use Illuminate\Support\Facades\Cache;
+use App\Services\DateConversionService;
 class PurchaseController extends Controller
 {
-    public function __construct()
+    private $dateConversionService;
+    public function __construct(DateConversionService $dateConversionService)
     {
         $this->authorizeResource(Purchase::class, 'purchase');
+        $this->dateConversionService = $dateConversionService;
     }
 
     public function index(Request $request)
@@ -79,7 +82,7 @@ class PurchaseController extends Controller
     }
 
     public function store(PurchaseStoreRequest $request, TransactionService $transactionService, StockService $stockService)
-    { 
+    {
         $validated = $request->validated();
         $purchase = DB::transaction(function () use ($request, $transactionService, $stockService) {
             // Create purchase
@@ -88,13 +91,14 @@ class PurchaseController extends Controller
             $validated['type']  = $validated['purchase_type'] ?? 'cash';
             $validated['status'] = TransactionStatus::POSTED->value;
 
+            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $purchase = Purchase::create($validated);
             $validated['item_list'] = array_map(function ($item) use ($validated) {
                 $item['discount'] = $item['item_discount'] ? $item['item_discount'] : 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
                 return $item;
             }, $validated['item_list']);
-            $purchase->items()->createMany($validated['item_list']); 
+            $purchase->items()->createMany($validated['item_list']);
             $lines = [];
             foreach ($validated['item_list'] as $item) {
                 $quantity = (float) $item['quantity'];
@@ -109,7 +113,7 @@ class PurchaseController extends Controller
                     'unit_cost'       => (float) $item['unit_price'],
                     'status'          => StockStatus::DRAFT->value,
                     'batch'           => $item['batch'] ?? null,
-                    'date'            => $validated['date'],
+                    'date'            => $date,
                     'expire_date'     => $item['expire_date'],
                     'size_id'         => $validated['size_id'] ?? null,
                     'warehouse_id'    => $validated['warehouse_id'],
@@ -191,7 +195,7 @@ class PurchaseController extends Controller
                 header: [
                     'currency_id'   => $validated['currency_id'],
                     'rate'          => $validated['rate'],
-                    'date'          => $validated['date'],
+                    'date'          => $date,
                     'remark'        => 'Purchase #' . $purchase->number,
                     'status'        => TransactionStatus::POSTED->value,
                     'reference_type'=> Purchase::class,
@@ -250,6 +254,7 @@ class PurchaseController extends Controller
             $validated['type'] = $validated['purchase_type'] ?? $purchase->type ?? 'cash';
             $validated['status'] = TransactionStatus::POSTED->value;
 
+            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $purchase->date;
             $affectedCombos = $purchase->items()
                 ->get(['item_id', 'warehouse_id', 'branch_id'])
                 ->map(fn ($item) => [
@@ -313,7 +318,7 @@ class PurchaseController extends Controller
                     'unit_cost'       => $unitPrice,
                     'status'          => StockStatus::DRAFT->value,
                     'batch'           => $item['batch'] ?? null,
-                    'date'            => $validated['date'],
+                    'date'            => $date,
                     'expire_date'     => $item['expire_date'] ?? null,
                     'size_id'         => $validated['size_id'] ?? null,
                     'warehouse_id'    => $validated['warehouse_id'],
@@ -399,7 +404,7 @@ class PurchaseController extends Controller
                 header: [
                     'currency_id'    => $validated['currency_id'],
                     'rate'           => $validated['rate'],
-                    'date'           => $validated['date'],
+                    'date'           => $date,
                     'remark'         => 'Purchase #' . $purchase->number,
                     'status'         => TransactionStatus::POSTED->value,
                     'reference_type' => Purchase::class,
