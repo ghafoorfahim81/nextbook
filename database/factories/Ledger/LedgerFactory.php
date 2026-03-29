@@ -4,10 +4,8 @@ namespace Database\Factories\Ledger;
 
 use App\Models\Administration\Branch;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 use App\Models\Administration\Currency;
 use App\Models\Ledger\Ledger;
-use App\Models\User;
 use App\Enums\LedgerType;
 class LedgerFactory extends Factory
 {
@@ -23,19 +21,18 @@ class LedgerFactory extends Factory
      */
     public function definition(): array
     {
-        $currency_id = Currency::first()->id;
         return [
-            'name' => fake()->name(),
-            'code' => fake()->word(),
-            'address' => fake()->word(),
-            'contact_person' => fake()->name(),
-            'phone_no' => fake()->phoneNumber(),
-            'email' => fake()->safeEmail(),
-            'currency_id' => $currency_id,
+            'name' => fake()->unique()->name(),
+            'code' => strtoupper(fake()->unique()->bothify('L##??')),
+            'address' => fake()->optional()->address(),
+            'contact_person' => fake()->optional()->name(),
+            'phone_no' => fake()->optional()->phoneNumber(),
+            'email' => fake()->optional()->safeEmail(),
+            'currency_id' => Currency::factory(),
             'branch_id' => Branch::factory(),
-            'type' => fake()->randomElement(LedgerType::cases()),
-            'created_by' => User::factory(),
-            'updated_by' => User::factory(),
+            'type' => fake()->randomElement(LedgerType::values()),
+            'is_main' => false,
+            'is_active' => true,
         ];
     }
 }

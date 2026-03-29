@@ -2,10 +2,14 @@
 
 namespace Database\Factories\Administration;
 
+use App\Enums\BusinessType;
+use App\Enums\CalendarType;
+use App\Enums\CostingMethod;
+use App\Enums\Locale;
+use App\Enums\WorkingStyle;
+use App\Models\Administration\Currency;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 use App\Models\Administration\Company;
-use App\Models\User;
 
 class CompanyFactory extends Factory
 {
@@ -22,25 +26,24 @@ class CompanyFactory extends Factory
     public function definition(): array
     {
         return [
-            'name_en' => fake()->word(),
+            'name_en' => fake()->company(),
             'name_fa' => fake()->word(),
             'name_pa' => fake()->word(),
-            'abbreviation' => fake()->word(),
-            'address' => fake()->word(),
-            'phone' => fake()->phoneNumber(),
+            'abbreviation' => strtoupper(fake()->lexify('???')),
+            'address' => fake()->optional()->address(),
+            'phone' => fake()->optional()->phoneNumber(),
             'country' => fake()->country(),
             'city' => fake()->city(),
-            'logo' => fake()->word(),
-            'calendar_type' => fake()->word(),
-            'working_style' => fake()->word(),
-            'business_type' => fake()->word(),
-            'locale' => fake()->word(),
-            'currency' => fake()->word(),
-            'email' => fake()->safeEmail(),
-            'website' => fake()->word(),
-            'invoice_description' => fake()->text(),
-            'created_by' => User::factory(),
-            'updated_by' => User::factory(),
+            'logo' => null,
+            'calendar_type' => CalendarType::JALALI->value,
+            'working_style' => WorkingStyle::NORMAL->value,
+            'business_type' => BusinessType::PHARMACY_SHOP->value,
+            'locale' => Locale::EN->value,
+            'currency_id' => Currency::factory(),
+            'costing_method' => CostingMethod::FIFO->value,
+            'email' => fake()->optional()->safeEmail(),
+            'website' => fake()->optional()->url(),
+            'invoice_description' => fake()->optional()->sentence(),
         ];
     }
 }

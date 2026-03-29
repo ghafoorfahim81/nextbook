@@ -2,10 +2,9 @@
 
 namespace Database\Factories\Account;
 
+use App\Models\Administration\Branch;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 use App\Models\Account\AccountType;
-use App\Models\User;
 
 class AccountTypeFactory extends Factory
 {
@@ -21,11 +20,15 @@ class AccountTypeFactory extends Factory
      */
     public function definition(): array
     {
+        $name = fake()->unique()->words(2, true);
+
         return [
-            'name' => $this->faker->unique()->company(),
-            'remark' => $this->faker->text(),
-            'created_by' => User::factory(),
-            'updated_by' => User::factory(),
+            'name' => ucfirst($name),
+            'slug' => fake()->unique()->slug(2),
+            'nature' => fake()->randomElement(['asset', 'liability', 'equity', 'income', 'expense', 'non-posting']),
+            'remark' => fake()->optional()->sentence(),
+            'branch_id' => Branch::factory(),
+            'is_main' => false,
         ];
     }
 }

@@ -2,9 +2,8 @@
 
 namespace Database\Factories\Administration;
 
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
+use App\Models\Administration\Branch;
 use App\Models\Administration\Category;
 
 class CategoryFactory extends Factory
@@ -22,10 +21,11 @@ class CategoryFactory extends Factory
     public function definition(): array
     {
         return [
-            'id' => Str::ulid(), // Generate a UUID for the department ID
-            'name' => fake()->name(),
-            'remark' => fake()->sentence(),
+            'name' => fake()->unique()->word(),
+            'remark' => fake()->optional()->sentence(),
             'parent_id' => null,
+            'branch_id' => Branch::factory(),
+            'is_active' => true,
         ];
     }
 }

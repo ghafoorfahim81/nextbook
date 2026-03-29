@@ -3,9 +3,7 @@
 namespace Database\Factories\Administration;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 use App\Models\Administration\Branch;
-use App\Models\User;
 
 class BranchFactory extends Factory
 {
@@ -22,14 +20,12 @@ class BranchFactory extends Factory
     public function definition(): array
     {
         return [
-            'id' => Str::ulid(), // Generate a UUID for the department ID
-            'name' => fake()->name(),
-            'is_main' => $this->faker->boolean(),
-            'sub_domain' => fake()->domainName(),
-            'remark' => fake()->sentence(),
-            'location' => fake()->sentence(),
+            'name' => fake()->unique()->company(),
+            'is_main' => false,
+            'sub_domain' => fake()->optional()->domainWord(),
+            'remark' => fake()->optional()->sentence(),
+            'location' => fake()->optional()->city(),
             'parent_id' => null,
-
         ];
     }
 }

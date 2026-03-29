@@ -9,7 +9,15 @@
             <directory>tests/Unit</directory>
         </testsuite>
         <testsuite name="Feature">
-            <directory>tests/Feature</directory>
+            <directory>tests/Feature/Accounting</directory>
+            <directory>tests/Feature/Inventory</directory>
+            <directory>tests/Feature/Purchase</directory>
+            <directory>tests/Feature/Sales</directory>
+            <directory>tests/Feature/Reports</directory>
+            <directory>tests/Feature/Notifications</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
         </testsuite>
     </testsuites>
     <source>
