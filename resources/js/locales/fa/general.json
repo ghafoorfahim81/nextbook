@@ -78,7 +78,7 @@
   "order_by": "ترتیب بر اساس",
   "rate": "نرخ",
   "price": "قیمت",
-  "total": "جمع",
+  "total": "جمله",
   "phone": "تلفن",
   "format": "قالب",
   "save": "ذخیره",
@@ -200,6 +200,9 @@
   "description": "توضیحات",
   "sale_type": "نوع فروش",
   "payable": "پرداختی",
-  "receivable": "دریافتی"
+  "receivable": "دریافتی",
+  "paid_total": "مبلغ پرداخت شده",
+  "payable_amount": "مبلغ قابل پرداخت",
+  "receivable_amount": "مبلغ قابل دریافت"
 }
-    
+

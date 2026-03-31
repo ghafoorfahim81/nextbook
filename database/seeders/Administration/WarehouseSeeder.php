@@ -11,8 +11,8 @@ class WarehouseSeeder extends Seeder
     public function run(): void
     {
         Warehouse::create([
-            'name' => 'Main Warehouse',
-            'address' => 'Main warehouse',
+            'name' => 'گدام مرکزی',
+            'address' => 'گدام مرکزی',
             'is_main' => true,
             'is_active' => false,
             'branch_id' => Branch::first()->id,

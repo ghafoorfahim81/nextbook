@@ -29,7 +29,7 @@ class Item extends Model
     protected $keyType = 'string'; // Set key type to string
     public $incrementing = false; // Disable auto-incrementing
 
-    /** 
+    /**
      * The attributes that are mass assignable.
      *
      * @var array
@@ -240,7 +240,7 @@ class Item extends Model
             'stock_balances' => [
                 'model' => 'stock_balances',
                 'message' => 'This item has stock balances'
-            ] 
+            ]
         ];
     }
 }

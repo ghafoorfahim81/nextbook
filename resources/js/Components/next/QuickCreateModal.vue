@@ -34,7 +34,7 @@ const categoryOptions = computed(() => page.props?.categories?.data || page.prop
 const brandOptions = computed(() => page.props?.brands?.data || page.props?.brands || [])
 const sizeOptions = computed(() => page.props?.sizes?.data || page.props?.sizes || [])
 const unitMeasureOptions = computed(() => page.props?.unitMeasures?.data || page.props?.unitMeasures || [])
-const accountTypeOptions = computed(() => page.props?.accountTypes?.data || page.props?.accountTypes || [])
+const accountTypeOptions = computed(() => page.props?.accountTypes?.data || page.props?.accountTypes || []) 
 const transactionTypeOptions = computed(() => page.props?.transactionTypes?.data || page.props?.transactionTypes || [
   { id: 'debit', name: 'Debit' },
   { id: 'credit', name: 'Credit' },

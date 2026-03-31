@@ -16,10 +16,10 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use App\Traits\BranchSpecific;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Models\Transaction\Transaction;
-
+use App\Traits\HasUserTracking;
 class Sale extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.

@@ -842,7 +842,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                             <!-- Unit blank -->
                             <td v-if="item_columns.measure"></td>
                             <!-- Value of goods (qty*price) total centered -->
-                            <td class="text-center">{{ goodsTotal || 0 }}</td>
+                            <td class="text-center">{{ totalPurchasePrice || 0 }}</td>
                             <!-- Discount total centered -->
                             <td class="text-center" v-if="item_columns.discount">{{ totalItemDiscount || 0 }}</td>
                             <!-- Free total centered -->
