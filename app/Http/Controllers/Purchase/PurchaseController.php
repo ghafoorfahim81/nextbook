@@ -530,21 +530,88 @@ class PurchaseController extends Controller
 
     public function destroy(Request $request, Purchase $purchase)
     {
+        DB::transaction(function () use ($purchase) {
+            $affectedCombos = $purchase->items()
+                ->get(['item_id', 'warehouse_id', 'branch_id'])
+                ->map(fn ($item) => [
+                    'item_id' => $item->item_id,
+                    'warehouse_id' => $item->warehouse_id,
+                    'branch_id' => $item->branch_id ?? $purchase->branch_id,
+                ])
+                ->all();
 
-        $purchase->items()->delete();
-        $purchase->stocks()->delete();
-        $purchase->transaction()->delete();
-        $purchase->delete();
+            $stockMovementCombos = StockMovement::query()
+                ->where('reference_type', Purchase::class)
+                ->where('reference_id', $purchase->id)
+                ->get(['item_id', 'warehouse_id', 'branch_id'])
+                ->map(fn ($movement) => [
+                    'item_id' => $movement->item_id,
+                    'warehouse_id' => $movement->warehouse_id,
+                    'branch_id' => $movement->branch_id,
+                ])
+                ->all();
+
+            $transaction = Transaction::query()
+                ->where('reference_type', Purchase::class)
+                ->where('reference_id', $purchase->id)
+                ->first();
+
+            if ($transaction) {
+                $transaction->lines()->delete();
+                $transaction->delete();
+            }
+
+            StockMovement::query()
+                ->where('reference_type', Purchase::class)
+                ->where('reference_id', $purchase->id)
+                ->delete();
+
+            $purchase->items()->delete();
+            $purchase->delete();
+
+            $this->rebuildStockStateForCombos([
+                ...$affectedCombos,
+                ...$stockMovementCombos,
+            ]);
+        });
+
         return redirect()->route('purchases.index')->with('success', __('general.purchase_deleted_successfully'));
-
     }
+
     public function restore(Request $request, Purchase $purchase)
     {
+        DB::transaction(function () use ($purchase) {
+            $purchase->restore();
+            $purchase->items()->withTrashed()->restore();
 
-        $purchase->restore();
-        $purchase->items()->restore();
-        $purchase->stocks()->restore();
-        $purchase->transaction()->restore();
+            StockMovement::withTrashed()
+                ->where('reference_type', Purchase::class)
+                ->where('reference_id', $purchase->id)
+                ->restore();
+
+            $transaction = Transaction::withTrashed()
+                ->where('reference_type', Purchase::class)
+                ->where('reference_id', $purchase->id)
+                ->first();
+
+            if ($transaction) {
+                $transaction->restore();
+                $transaction->lines()->withTrashed()->restore();
+            }
+
+            $affectedCombos = $purchase->items()
+                ->withTrashed()
+                ->get(['item_id', 'warehouse_id', 'branch_id'])
+                ->map(fn ($item) => [
+                    'item_id' => $item->item_id,
+                    'warehouse_id' => $item->warehouse_id,
+                    'branch_id' => $item->branch_id ?? $purchase->branch_id,
+                ])
+                ->all();
+
+            $this->rebuildStockStateForCombos($affectedCombos);
+        });
+
         return redirect()->route('purchases.index')->with('success', __('general.purchase_restored_successfully'));
     }
 

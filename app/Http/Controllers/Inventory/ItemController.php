@@ -34,6 +34,9 @@ use App\Enums\StockStatus;
 use App\Http\Resources\Inventory\StockMovementResource;
 use App\Models\Inventory\StockMovement;
 use App\Models\Inventory\StockBalance;
+use App\Models\Purchase\Purchase;
+use App\Models\Sale\Sale;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 class ItemController extends Controller
 {
     public function __construct()
@@ -185,7 +188,16 @@ class ItemController extends Controller
     }
     public function inRecords(Request $request, Item $item)
     {
-        $stocks = StockMovement::with(['warehouse', 'unitMeasure', 'source'])
+        $stocks = StockMovement::with([
+                'warehouse',
+                'unitMeasure',
+                'reference' => function (MorphTo $morphTo) {
+                    $morphTo->morphWith([
+                        Purchase::class => ['supplier'],
+                        Sale::class => ['customer'],
+                    ]);
+                },
+            ])
             ->where('item_id', $item->id)
             ->where('movement_type', StockMovementType::IN->value)
             ->orderBy('date', 'desc')
@@ -204,7 +216,16 @@ class ItemController extends Controller
 
     public function outRecords(Request $request, Item $item)
     {
-        $stockOuts = StockMovement::with(['warehouse', 'unitMeasure', 'source'])
+        $stockOuts = StockMovement::with([
+                'warehouse',
+                'unitMeasure',
+                'reference' => function (MorphTo $morphTo) {
+                    $morphTo->morphWith([
+                        Purchase::class => ['supplier'],
+                        Sale::class => ['customer'],
+                    ]);
+                },
+            ])
             ->where('item_id', $item->id)
             ->where('movement_type', StockMovementType::OUT->value)
             ->orderBy('date', 'desc')
