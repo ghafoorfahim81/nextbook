@@ -78,6 +78,8 @@ Route::middleware([
     Route::resource('chart-of-accounts', \App\Http\Controllers\Account\AccountController::class);
     Route::resource('/currencies', \App\Http\Controllers\Administration\CurrencyController::class);
     Route::patch('/currencies/{currency}/restore', [\App\Http\Controllers\Administration\CurrencyController::class, 'restore'])->name('currencies.restore')->withTrashed();
+    Route::get('/currency-rate-updates', [\App\Http\Controllers\Administration\CurrencyRateUpdateController::class, 'index'])->name('currency-rate-updates.index');
+    Route::post('/currency-rate-updates', [\App\Http\Controllers\Administration\CurrencyRateUpdateController::class, 'store'])->name('currency-rate-updates.store');
     Route::resource('/unit-measures', \App\Http\Controllers\Administration\UnitMeasureController::class);
     Route::patch('/unit-measures/{unitMeasure}/restore', [\App\Http\Controllers\Administration\UnitMeasureController::class, 'restore'])->name('unit-measures.restore')->withTrashed();
     Route::resource('/sizes', \App\Http\Controllers\Administration\SizeController::class);

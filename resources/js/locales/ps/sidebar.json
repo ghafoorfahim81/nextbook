@@ -19,6 +19,7 @@
   "administration": {
     "category": "کټګوري",
     "currency": "اسعار",
+    "currency_rate_update": "د اسعارو نرخ تازه کول",
     "unit_measure": "یونټ اندازه",
     "size": "اندازه",
     "branch": "څانګه",
@@ -63,4 +64,3 @@
     "role": "نقش"
   }
 }
-

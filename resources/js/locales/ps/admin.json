@@ -16,12 +16,22 @@
     "currency": {
         "currency": "ارز",
         "currencies": "ارز ها",
+        "rate_updates": "د اسعارو نرخ تازه کول",
+        "rate_updates_description": "د کور اسعارو پرته د ټولو فعالو اسعارو لپاره تازه تبادلې نرخونه ثبت کړئ.",
+        "rate_updates_history": "د اسعارو نرخ تازه کولو تاریخچه",
+        "rate_updates_history_description": "پخواني تبادلې نرخونه او د ثبت نېټه یې وګورئ.",
         "exchange_rate": "نرخ تبدیل",
         "code": "کد",
         "format": "فرمت",
         "flag": "پرچم",
         "is_active": "فعال",
-        "is_base_currency": "ارز اصلی"
+        "is_base_currency": "ارز اصلی",
+        "home_currency": "کور اسعار",
+        "based_on_home_currency": "لاندې ټول تبادلې نرخونه د یو {code} پر اساس حسابیږي.",
+        "update_all": "نرخونه تازه کړه",
+        "effective_date": "نېټه",
+        "no_currencies_to_update": "د تازه کولو لپاره هېڅ فعاله غیر اصلي ارز نشته.",
+        "home_currency_cannot_be_updated": "د کور اسعارو تبادلې نرخ له دې پاڼې نه شي تازه کېدلی."
     },
     "brand": {
         "brand": "برند",
