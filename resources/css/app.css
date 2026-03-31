@@ -284,6 +284,108 @@
       --theme-950: 203 63% 15%;
     }
 
+    :root[data-theme='violet-900'] {
+      --background: 260 60% 98%;
+      --foreground: 264 44% 18%;
+
+      --card: 0 0% 100%;
+      --card-foreground: 264 44% 18%;
+
+      --popover: 0 0% 100%;
+      --popover-foreground: 264 44% 18%;
+
+      --primary: 262 84% 28%;
+      --primary-foreground: 0 0% 100%;
+
+      --secondary: 258 60% 95%;
+      --secondary-foreground: 264 44% 18%;
+
+      --muted: 258 38% 96%;
+      --muted-foreground: 264 16% 40%;
+
+      --accent: 263 70% 50%;
+      --accent-foreground: 0 0% 100%;
+
+      --border: 258 32% 88%;
+      --input: 258 36% 96%;
+      --ring: 262 84% 28%;
+
+      --chart-1: 262 84% 28%;
+      --chart-2: 263 70% 50%;
+      --chart-3: 258 90% 66%;
+      --chart-4: 233 84% 60%;
+      --chart-5: 292 76% 52%;
+
+      --sidebar-background: 260 60% 97%;
+      --sidebar-foreground: 264 44% 18%;
+      --sidebar-primary: 262 84% 28%;
+      --sidebar-primary-foreground: 0 0% 100%;
+      --sidebar-accent: 258 48% 93%;
+      --sidebar-accent-foreground: 264 44% 18%;
+      --sidebar-border: 258 32% 88%;
+      --sidebar-ring: 262 84% 28%;
+
+      --theme-50: 252 100% 97%;
+      --theme-100: 251 91% 95%;
+      --theme-300: 252 95% 85%;
+      --theme-400: 258 90% 76%;
+      --theme-500: 262 83% 58%;
+      --theme-600: 263 70% 50%;
+      --theme-900: 262 84% 28%;
+      --theme-950: 263 84% 20%;
+    }
+
+    .dark[data-theme='violet-900'] {
+      --background: 264 35% 10%;
+      --foreground: 258 55% 94%;
+
+      --card: 264 34% 13%;
+      --card-foreground: 258 55% 94%;
+
+      --popover: 264 34% 13%;
+      --popover-foreground: 258 55% 94%;
+
+      --primary: 258 90% 76%;
+      --primary-foreground: 264 56% 12%;
+
+      --secondary: 263 28% 19%;
+      --secondary-foreground: 258 55% 94%;
+
+      --muted: 263 24% 18%;
+      --muted-foreground: 258 20% 72%;
+
+      --accent: 263 70% 58%;
+      --accent-foreground: 0 0% 100%;
+
+      --border: 263 25% 24%;
+      --input: 263 24% 18%;
+      --ring: 258 90% 76%;
+
+      --chart-1: 258 90% 76%;
+      --chart-2: 263 80% 70%;
+      --chart-3: 252 96% 78%;
+      --chart-4: 233 84% 68%;
+      --chart-5: 292 74% 66%;
+
+      --sidebar-background: 264 34% 12%;
+      --sidebar-foreground: 258 55% 96%;
+      --sidebar-primary: 258 90% 76%;
+      --sidebar-primary-foreground: 264 56% 12%;
+      --sidebar-accent: 263 24% 18%;
+      --sidebar-accent-foreground: 258 55% 96%;
+      --sidebar-border: 263 25% 24%;
+      --sidebar-ring: 258 90% 76%;
+
+      --theme-50: 265 25% 20%;
+      --theme-100: 264 28% 25%;
+      --theme-300: 259 82% 80%;
+      --theme-400: 258 88% 74%;
+      --theme-500: 258 90% 76%;
+      --theme-600: 259 88% 68%;
+      --theme-900: 264 67% 34%;
+      --theme-950: 264 69% 20%;
+    }
+
     /* =========================
    VUE PERSIAN DATE PICKER – DARK MODE
    ========================= */
@@ -537,5 +639,91 @@
   }
 
   html[data-theme='cyan'] .to-violet-950 {
+    --tw-gradient-to: hsl(var(--theme-950)) var(--tw-gradient-to-position) !important;
+  }
+
+  html[data-theme='violet-900'] .vs__dropdown-option:hover,
+  html[data-theme='violet-900'] .vs__dropdown-option--highlight {
+    background: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+  }
+
+  html[data-theme='violet-900'] .text-violet-500,
+  html[data-theme='violet-900'] .text-violet-600,
+  html[data-theme='violet-900'] .text-purple-500,
+  html[data-theme='violet-900'] .text-indigo-700,
+  html[data-theme='violet-900'] .text-indigo-600,
+  html[data-theme='violet-900'] .text-indigo-500,
+  html.dark[data-theme='violet-900'] .dark\:text-violet-300,
+  html.dark[data-theme='violet-900'] .dark\:text-indigo-300 {
+    color: hsl(var(--theme-500)) !important;
+  }
+
+  html[data-theme='violet-900'] .bg-violet-500,
+  html[data-theme='violet-900'] .bg-violet-600,
+  html[data-theme='violet-900'] .bg-purple-500,
+  html[data-theme='violet-900'] .bg-indigo-500,
+  html[data-theme='violet-900'] .bg-indigo-600,
+  html[data-theme='violet-900'] .hover\:bg-violet-500:hover,
+  html[data-theme='violet-900'] .hover\:bg-violet-600:hover,
+  html[data-theme='violet-900'] .hover\:bg-purple-500:hover,
+  html[data-theme='violet-900'] .hover\:bg-indigo-600:hover,
+  html[data-theme='violet-900'] .focus\:bg-indigo-600:focus {
+    background-color: hsl(var(--theme-500)) !important;
+  }
+
+  html[data-theme='violet-900'] .bg-violet-100,
+  html[data-theme='violet-900'] .bg-indigo-50 {
+    background-color: hsl(var(--theme-100)) !important;
+  }
+
+  html[data-theme='violet-900'] .bg-violet-500\/10,
+  html[data-theme='violet-900'] .bg-violet-500\/12,
+  html[data-theme='violet-900'] .bg-violet-500\/30 {
+    background-color: hsl(var(--theme-500) / 0.12) !important;
+  }
+
+  html[data-theme='violet-900'] .border-violet-500,
+  html[data-theme='violet-900'] .border-violet-400,
+  html[data-theme='violet-900'] .border-indigo-400,
+  html[data-theme='violet-900'] .focus\:border-indigo-500:focus,
+  html.dark[data-theme='violet-900'] .dark\:focus\:border-indigo-600:focus {
+    border-color: hsl(var(--theme-500)) !important;
+  }
+
+  html[data-theme='violet-900'] .focus\:ring-violet-500:focus,
+  html[data-theme='violet-900'] .focus\:ring-indigo-500:focus,
+  html.dark[data-theme='violet-900'] .dark\:focus\:ring-indigo-600:focus {
+    --tw-ring-color: hsl(var(--ring)) !important;
+  }
+
+  html[data-theme='violet-900'] .hover\:text-violet-500:hover,
+  html[data-theme='violet-900'] .hover\:text-indigo-500:hover,
+  html[data-theme='violet-900'] .focus\:text-violet-500:focus {
+    color: hsl(var(--theme-500)) !important;
+  }
+
+  html[data-theme='violet-900'] .from-violet-500 {
+    --tw-gradient-from: hsl(var(--theme-500)) var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: hsl(var(--theme-500) / 0) var(--tw-gradient-to-position) !important;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+  }
+
+  html[data-theme='violet-900'] .from-violet-400 {
+    --tw-gradient-from: hsl(var(--theme-400)) var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: hsl(var(--theme-400) / 0) var(--tw-gradient-to-position) !important;
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+  }
+
+  html[data-theme='violet-900'] .via-violet-900 {
+    --tw-gradient-to: hsl(var(--theme-900) / 0) var(--tw-gradient-to-position) !important;
+    --tw-gradient-stops: var(--tw-gradient-from), hsl(var(--theme-900)) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+  }
+
+  html[data-theme='violet-900'] .to-violet-400 {
+    --tw-gradient-to: hsl(var(--theme-400)) var(--tw-gradient-to-position) !important;
+  }
+
+  html[data-theme='violet-900'] .to-violet-950 {
     --tw-gradient-to: hsl(var(--theme-950)) var(--tw-gradient-to-position) !important;
   }

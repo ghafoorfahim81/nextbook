@@ -4,8 +4,12 @@ const DISPLAY_THEME_MAP = {
     system: 'auto',
 }
 
+const CUSTOM_APPEARANCE_THEMES = ['cyan', 'violet-900']
+
 export function resolveAppearanceTheme(preferences) {
-    return preferences?.appearance?.theme === 'cyan' ? 'cyan' : 'default'
+    const appearanceTheme = preferences?.appearance?.theme
+
+    return CUSTOM_APPEARANCE_THEMES.includes(appearanceTheme) ? appearanceTheme : 'default'
 }
 
 export function resolveDisplayColorMode(preferences) {

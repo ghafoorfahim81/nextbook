@@ -19,7 +19,7 @@ use Illuminate\Validation\Rule;
             // Appearance
             'appearance' => 'sometimes|array',
             'appearance.font_size' => 'sometimes|integer|min:10|max:24',
-            'appearance.theme' => 'sometimes|in:dark,light,system,cyan',
+            'appearance.theme' => 'sometimes|in:dark,light,system,cyan,violet-900',
             'appearance.decimal_places' => 'sometimes|integer|in:0,2,3',
             'appearance.records_per_page' => 'sometimes|integer|min:1|max:100',
             'appearance.sidebar_font_size' => 'sometimes|integer|min:10|max:24',

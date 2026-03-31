@@ -30,7 +30,7 @@ class CurrencyRateUpdateController extends Controller
             ->firstOrFail();
 
         $currencies = Currency::query()
-            ->where('is_active', true)
+            // ->where('is_active', true)
             ->whereKeyNot($homeCurrency->id)
             ->orderBy('name')
             ->get();
