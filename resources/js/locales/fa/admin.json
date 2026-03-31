@@ -16,12 +16,22 @@
     "currency": {
         "currency": "ارز",
         "currencies": "ارز ها",
+        "rate_updates": "به‌روزرسانی نرخ ارز",
+        "rate_updates_description": "آخرین نرخ‌های تبدیل برای تمام ارزهای فعال به جز ارز اصلی را به‌روزرسانی کنید.",
+        "rate_updates_history": "تاریخچه به‌روزرسانی نرخ ارز",
+        "rate_updates_history_description": "تغییرات گذشته نرخ تبدیل و تاریخ ثبت هر نرخ را مشاهده کنید.",
         "exchange_rate": "نرخ تبدیل",
         "code": "کد",
         "format": "فرمت",
         "flag": "پرچم",
         "is_active": "فعال",
-        "is_base_currency": "ارز اصلی"
+        "is_base_currency": "ارز اصلی",
+        "home_currency": "ارز اصلی",
+        "based_on_home_currency": "تمام نرخ‌های زیر بر اساس یک {code} محاسبه می‌شوند.",
+        "update_all": "به‌روزرسانی نرخ‌ها",
+        "effective_date": "تاریخ",
+        "no_currencies_to_update": "هیچ ارز فعال غیر اصلی برای به‌روزرسانی وجود ندارد.",
+        "home_currency_cannot_be_updated": "نرخ ارز اصلی از این صفحه قابل به‌روزرسانی نیست."
     },
         "brand": {
         "brand": "برند",

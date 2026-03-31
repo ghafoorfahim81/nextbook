@@ -61,7 +61,7 @@
             </div>
 
             <!-- Right actions (Add New) -->
-            <div class="flex items-center gap-2 lg:ml-4" v-if="can(`${props.can}.create`)">
+            <div class="flex items-center gap-2 lg:ml-4" v-if="props.showAddButton && can(`${props.can}.create`)">
                 <AddNewButton
                     :title="addTitle"
                     :action="addAction"
