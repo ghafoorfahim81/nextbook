@@ -779,20 +779,88 @@ class SaleController extends Controller
 
     public function destroy(Request $request, Sale $sale)
     {
-        $sale->items()->delete();
-        $sale->stockOuts()->delete();
-        Transaction::where('reference_type', 'sale')->where('reference_id', $sale->id)->delete();
-        $sale->transaction()->delete();
-        $sale->delete();
+        DB::transaction(function () use ($sale) {
+            $affectedCombos = $sale->items()
+                ->get(['item_id', 'warehouse_id', 'branch_id'])
+                ->map(fn ($item) => [
+                    'item_id' => $item->item_id,
+                    'warehouse_id' => $item->warehouse_id,
+                    'branch_id' => $item->branch_id ?? $sale->branch_id,
+                ])
+                ->all();
+
+            $stockMovementCombos = StockMovement::query()
+                ->where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->get(['item_id', 'warehouse_id', 'branch_id'])
+                ->map(fn ($movement) => [
+                    'item_id' => $movement->item_id,
+                    'warehouse_id' => $movement->warehouse_id,
+                    'branch_id' => $movement->branch_id,
+                ])
+                ->all();
+
+            $transaction = Transaction::query()
+                ->where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->first();
+
+            if ($transaction) {
+                $transaction->lines()->delete();
+                $transaction->delete();
+            }
+
+            StockMovement::query()
+                ->where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->delete();
+
+            $sale->items()->delete();
+            $sale->delete();
+
+            $this->rebuildStockStateForCombos([
+                ...$affectedCombos,
+                ...$stockMovementCombos,
+            ]);
+        });
+
         return redirect()->route('sales.index')->with('success', __('general.sale_deleted_successfully'));
     }
 
     public function restore(Request $request, Sale $sale)
     {
-        $sale->restore();
-        $sale->items()->restore();
-        $sale->stockOuts()->restore();
-        $sale->transaction()->restore();
+        DB::transaction(function () use ($sale) {
+            $sale->restore();
+            $sale->items()->withTrashed()->restore();
+
+            StockMovement::withTrashed()
+                ->where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->restore();
+
+            $transaction = Transaction::withTrashed()
+                ->where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->first();
+
+            if ($transaction) {
+                $transaction->restore();
+                $transaction->lines()->withTrashed()->restore();
+            }
+
+            $affectedCombos = $sale->items()
+                ->withTrashed()
+                ->get(['item_id', 'warehouse_id', 'branch_id'])
+                ->map(fn ($item) => [
+                    'item_id' => $item->item_id,
+                    'warehouse_id' => $item->warehouse_id,
+                    'branch_id' => $item->branch_id ?? $sale->branch_id,
+                ])
+                ->all();
+
+            $this->rebuildStockStateForCombos($affectedCombos);
+        });
+
         return redirect()->route('sales.index')->with('success', __('general.sale_restored_successfully'));
     }
 
