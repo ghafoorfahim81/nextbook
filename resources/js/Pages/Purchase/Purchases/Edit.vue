@@ -43,6 +43,7 @@ const general_fields = computed(() => userPreferences.value?.purchase?.general_f
 const item_columns = computed(() => userPreferences.value?.purchase?.item_columns ?? {});
 const itemManagement = computed(() => userPreferences.value?.item_management ?? {});
 const spec_text = computed(() => itemManagement.value?.spec_text ?? 'batch');
+const MIN_PURCHASE_ROWS = 6;
 
 const toNum = (value, fallback = 0) => {
     const number = Number(value);
@@ -50,6 +51,12 @@ const toNum = (value, fallback = 0) => {
 };
 
 const findById = (items, id) => (items || []).find((item) => item?.id === id) || null;
+
+const quantityInBaseUnits = ({ quantity = 0, selectedMeasure = null, selectedItem = null } = {}) => {
+    const baseUnit = Number(selectedItem?.unitMeasure?.unit) || 1;
+    const selectedUnit = Number(selectedMeasure?.unit) || baseUnit;
+    return (toNum(quantity, 0) * selectedUnit) / baseUnit;
+};
 
 const buildEmptyRow = () => ({
     item_id: '',
@@ -66,6 +73,8 @@ const buildEmptyRow = () => ({
     item_discount: '',
     free: '',
     tax: '',
+    persisted_item_id: '',
+    persisted_quantity_base: 0,
 });
 
 const getAvailableMeasures = (selectedItem) => {
@@ -102,6 +111,11 @@ const initialRows = (purchaseRecord?.items || []).map((item) => {
     const baseUnitPrice = selectedUnit
         ? (toNum(item.unit_price, 0) * baseUnit) / (selectedUnit * rate)
         : toNum(item.unit_price, 0);
+    const persistedQuantityBase = quantityInBaseUnits({
+        quantity: item.quantity,
+        selectedMeasure,
+        selectedItem,
+    });
 
     return {
         ...buildEmptyRow(),
@@ -119,6 +133,8 @@ const initialRows = (purchaseRecord?.items || []).map((item) => {
         item_discount: item.discount || '',
         free: item.free || '',
         tax: item.tax || '',
+        persisted_item_id: item.item_id,
+        persisted_quantity_base: persistedQuantityBase,
     };
 });
 
@@ -154,7 +170,7 @@ const form = useForm({
     warehouse_id: purchaseRecord.warehouse_id || '',
     selected_warehouse: findById(props.warehouses?.data, purchaseRecord.warehouse_id) || purchaseRecord.warehouse || '',
     item_list: purchaseRecord.item_list || [],
-    items: initialRows.length ? [...initialRows, buildEmptyRow()] : Array.from({ length: 6 }, buildEmptyRow),
+    items: initialRows.length ? [...initialRows] : Array.from({ length: MIN_PURCHASE_ROWS }, buildEmptyRow),
 });
 
 const hydratedExistingRows = ref(false);
@@ -199,6 +215,17 @@ const ensureTrailingEmptyRow = () => {
     }
 };
 
+const ensureMinimumRows = () => {
+    while (form.items.length < MIN_PURCHASE_ROWS) {
+        form.items.push(buildEmptyRow());
+    }
+};
+
+const normalizeRowLayout = () => {
+    ensureTrailingEmptyRow();
+    ensureMinimumRows();
+};
+
 const hydrateExistingItems = () => {
     form.items.forEach((row) => {
         if (!row.item_id) return;
@@ -226,7 +253,7 @@ const hydrateExistingItems = () => {
         row.base_unit_price = Number.isFinite(baseUnitPrice) ? baseUnitPrice : toNum(row.unit_price, 0);
     });
 
-    ensureTrailingEmptyRow();
+    normalizeRowLayout();
     hydratedExistingRows.value = true;
 };
 
@@ -244,7 +271,7 @@ watch(() => form.warehouse_id, async (warehouseId, previousWarehouseId) => {
     }
 
     if (previousWarehouseId && previousWarehouseId !== warehouseId) {
-        form.items = [buildEmptyRow()];
+        form.items = Array.from({ length: MIN_PURCHASE_ROWS }, buildEmptyRow);
     }
 }, { immediate: true });
 
@@ -406,11 +433,21 @@ const onhand = (index) => {
     const item = form.items[index];
     if (!item || !item.selected_item) return '';
 
+    const onHandBase = toNum(item.on_hand, 0);
     const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1;
     const selectedUnit = Number(item.selected_measure?.unit) || baseUnit;
-    const onHand = Number(item.on_hand) || 0;
-    const converted = onHand > 0 ? Number((onHand * baseUnit) / selectedUnit) : Number((onHand * selectedUnit) / baseUnit);
-    return converted + (Number(item.free) || 0) + (Number(item.quantity) || 0);
+    const persistedQuantityBase = (item.selected_item?.id || item.item_id) === item.persisted_item_id
+        ? toNum(item.persisted_quantity_base, 0)
+        : 0;
+    const currentQuantityBase = quantityInBaseUnits({
+        quantity: item.quantity,
+        selectedMeasure: item.selected_measure,
+        selectedItem: item.selected_item,
+    });
+    const adjustedOnHandBase = onHandBase - persistedQuantityBase + currentQuantityBase;
+    const converted = (adjustedOnHandBase * baseUnit) / selectedUnit;
+
+    return Number.isFinite(converted) ? Number(converted.toFixed(2)) : 0;
 };
 
 const rowTotal = (index) => {
@@ -425,14 +462,16 @@ const deleteRow = (index) => {
     if (!form.items.length) {
         form.items.push(buildEmptyRow());
     }
+    normalizeRowLayout();
 };
 
-const totalRows = computed(() => form.items.filter((item) => item?.selected_item).length);
+const totalRows = computed(() => form.items.length);
 const totalItemDiscount = computed(() => form.items.reduce((acc, item) => acc + toNum(item.item_discount, 0), 0));
 const totalTax = computed(() => form.items.reduce((acc, item) => acc + toNum(item.tax, 0), 0));
 const goodsTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0)), 0));
 const totalQuantity = computed(() => form.items.reduce((acc, item) => acc + toNum(item.quantity, 0), 0));
 const totalFree = computed(() => form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0));
+const totalPurchasePrice = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0)), 0));
 const totalRowTotal = computed(() => form.items.reduce((acc, item) => acc + (toNum(item.unit_price, 0) * toNum(item.quantity, 0) - toNum(item.item_discount, 0) + toNum(item.tax, 0)), 0));
 
 const billDiscountCurrency = computed(() => {
@@ -455,25 +494,28 @@ const billDiscountPercent = computed(() => {
 const totalDiscount = computed(() => billDiscountCurrency.value + totalItemDiscount.value);
 
 const transactionSummary = computed(() => {
-    const paid = toNum(form.payment.amount, 0);
+    const type = form.selected_purchase_type?.id || form.purchase_type;
     const oldBalance = toNum(form?.selected_ledger?.statement?.balance, 0);
     const nature = form?.selected_ledger?.statement?.balance_nature;
     const hasSelectedItem = Array.isArray(form.items) && form.items.some((row) => !!row.selected_item);
     const netAmount = goodsTotal.value - totalDiscount.value + totalTax.value;
-    const grandTotal = netAmount - paid;
-    const balance = hasSelectedItem
-        ? (nature === 'dr' ? (grandTotal + oldBalance) : (grandTotal - oldBalance))
-        : 0;
+    const paid = type === 'cash'
+        ? netAmount
+        : (type === 'credit' ? toNum(form.payment.amount, 0) : 0);
+    const payableDelta = netAmount - paid;
+    const signedOldBalance = nature === 'dr' ? -oldBalance : oldBalance;
+    const signedBalance = hasSelectedItem ? signedOldBalance + payableDelta : signedOldBalance;
+
     return {
         valueOfGoods: goodsTotal.value,
         billDiscountPercent: billDiscountPercent.value,
         billDiscount: billDiscountCurrency.value,
         itemDiscount: totalItemDiscount.value,
         cashReceived: paid,
-        balance,
-        grandTotal,
+        balance: Math.abs(signedBalance),
+        grandTotal: netAmount,
         oldBalance,
-        balanceNature: nature,
+        balanceNature: signedBalance >= 0 ? 'cr' : 'dr',
         currencySymbol: form.selected_currency?.symbol,
     };
 });
@@ -814,7 +856,7 @@ onUnmounted(() => {
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
                             <td v-if="item_columns.on_hand"></td>
                             <td v-if="item_columns.measure"></td>
-                            <td class="text-center">{{ goodsTotal || 0 }}</td>
+                            <td class="text-center">{{ totalPurchasePrice || 0 }}</td>
                             <td class="text-center" v-if="item_columns.discount">{{ totalItemDiscount || 0 }}</td>
                             <td class="text-center" v-if="item_columns.free">{{ totalFree || 0 }}</td>
                             <td class="text-center" v-if="item_columns.tax">{{ totalTax || 0 }}</td>

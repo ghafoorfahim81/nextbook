@@ -44,6 +44,10 @@ class PurchaseResource extends JsonResource
             'sale_purchase_type_id' => ($this->type instanceof SalePurchaseType)
                 ? $this->type->value
                 : $this->type,
+            'payable_amount' => $this->transaction?->lines->sum(function ($line) {
+                return $line->ledger_id !== null ? $line->credit : 0;
+            }),
+            'raw_type' => $this->type,
             'bank_account_id' => $this->bank_account_id,
             'description' => $this->description,
             'status' => $this->status,

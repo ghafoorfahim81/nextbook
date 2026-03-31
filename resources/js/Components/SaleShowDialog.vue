@@ -194,7 +194,7 @@ const closeDialog = () => {
                                         <User class="h-3 w-3" />
                                         {{ t('ledger.customer.customer') }}
                                     </div>
-                                    <div class="text-sm font-medium text-foreground">{{ sale.customer_name || '-' }}</div>
+                                    <div class="text-sm font-medium text-foreground">{{ sale.createdBy || '-' }}</div>
                                 </div>
                                 <div class="space-y-1.5">
                                     <div class="flex items-center gap-2 text-xs text-muted-foreground">
@@ -212,6 +212,26 @@ const closeDialog = () => {
                                         {{ sale.transaction?.currency?.symbol || '' }} {{ formattedGrandTotal }}
                                     </div>
                                 </div>
+                                <div class="space-y-1.5" v-if="sale.raw_type === 'credit'">
+                                    <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <DollarSign class="h-3 w-3" />
+                                        {{ t('general.paid_total') }}
+                                    </div>
+                                    <div class="text-sm font-medium text-foreground">
+                                        {{ sale.transaction?.currency?.symbol || '' }} {{ formattedGrandTotal - sale.receivable_amount }}
+                                    </div>
+
+                                </div>
+                                <div class="space-y-1.5" v-if="sale.raw_type === 'credit'">
+                                    <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <DollarSign class="h-3 w-3" />
+                                        {{ t('general.receivable_amount') }}
+                                    </div>
+                                    <div class="text-sm font-medium text-foreground">
+                                        {{ sale.transaction?.currency?.symbol || '' }} {{ sale.receivable_amount }}
+                                    </div>
+
+                                </div>
                             </div>
                         </div>
 
@@ -219,7 +239,7 @@ const closeDialog = () => {
                             <div class="border-b border-border bg-muted/30 px-4 py-3">
                                 <div class="flex items-center gap-2">
                                     <Package2 class="h-5 w-5 text-violet-500" />
-                                    <h3 class="text-base font-semibold text-foreground">{{ t('item.item') }}s</h3>
+                                    <h3 class="text-base font-semibold text-foreground">{{ t('item.item') }}</h3>
                                 </div>
                             </div>
                             <div class="overflow-x-auto">
