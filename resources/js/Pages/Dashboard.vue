@@ -1,7 +1,7 @@
 <script setup>
 import axios from 'axios'
 import { computed, ref, watch } from 'vue'
-import { Head } from '@inertiajs/vue3'
+import { Head, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/Layouts/Layout.vue'
 import { Button } from '@/Components/ui/button'
@@ -18,10 +18,13 @@ const props = defineProps({
   dashboardDataUrl: { type: String, required: true },
 })
 
-const { t } = useI18n()
+const page = usePage()
+const { t, locale } = useI18n()
 const state = ref(props.dashboard)
 const refreshing = ref(false)
 const refreshError = ref('')
+
+const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
 
 watch(
   () => props.dashboard,
@@ -114,7 +117,24 @@ const generatedAt = computed(() => {
   const value = state.value?.meta?.generated_at
   if (!value) return 'N/A'
 
-  return new Date(value).toLocaleString()
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  const localeWithCalendar = calendarType.value === 'jalali'
+    ? `${locale.value}-u-ca-persian`
+    : `${locale.value}-u-ca-gregory`
+
+  return new Intl.DateTimeFormat(localeWithCalendar, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(date)
 })
 </script>
 
@@ -168,8 +188,9 @@ const generatedAt = computed(() => {
       </section>
 
       <section class="grid gap-4 xl:grid-cols-[1.7fr_1fr]">
-        <Card class="border-border bg-gradient-to-b from-card via-card to-muted/20 shadow-sm">
-          <CardHeader>
+        <Card class="overflow-hidden border-border bg-gradient-to-b from-card via-card to-muted/20 shadow-sm">
+          <CardHeader class="relative border-b border-border/70">
+            <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-primary/80 to-primary/45" />
             <CardTitle class="text-card-foreground">{{ t('dashboard.sales_vs_purchases') }}</CardTitle>
             <CardDescription class="text-muted-foreground">{{ t('dashboard.daily_posted_last_30_days') }}</CardDescription>
           </CardHeader>
@@ -178,8 +199,9 @@ const generatedAt = computed(() => {
           </CardContent>
         </Card>
 
-        <Card class="border-border bg-gradient-to-b from-card via-card to-muted/20 shadow-sm">
-          <CardHeader>
+        <Card class="overflow-hidden border-border bg-gradient-to-b from-card via-card to-muted/20 shadow-sm">
+          <CardHeader class="relative border-b border-border/70">
+            <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-primary/80 to-primary/45" />
             <CardTitle class="text-card-foreground">{{ t('dashboard.inventory_overview') }}</CardTitle>
             <CardDescription class="text-muted-foreground">{{ t('dashboard.inventory_overview_description') }}</CardDescription>
           </CardHeader>
