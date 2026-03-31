@@ -15,6 +15,7 @@ use App\Traits\HasCache;
 use App\Traits\HasUserTracking;
 use Symfony\Component\Uid\Ulid;
 use App\Traits\BranchSpecific;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 class Currency extends Model
 {
     use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, BranchSpecific, HasBranch, SoftDeletes;
@@ -97,7 +98,7 @@ class Currency extends Model
                 'format' => '$1,0.00',
                 'exchange_rate' => 0.00,
                 'flag' => 'us.png',
-                'is_active' => false,
+                'is_active' => true,
                 'is_base_currency' => false,
             ],
             'IRR' => [
@@ -107,7 +108,7 @@ class Currency extends Model
                 'format' => '﷼ 1,0/00',
                 'exchange_rate' => 0.00,
                 'flag'     => 'ir.png',
-                'is_active' => false,
+                'is_active' => true,
                 'is_base_currency' => false,
             ],
             'INR' => [
@@ -117,7 +118,7 @@ class Currency extends Model
                 'format' => '1,0.00₹',
                 'exchange_rate' => 0.00,
                 'flag'     => 'in.png',
-                'is_active' => false,
+                'is_active' => true,
                 'is_base_currency' => false,
             ],
         ];
@@ -126,5 +127,10 @@ class Currency extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function rateUpdates(): HasMany
+    {
+        return $this->hasMany(CurrencyRateUpdate::class);
     }
 }

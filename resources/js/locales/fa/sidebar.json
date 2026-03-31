@@ -27,6 +27,7 @@
   "administration": {
     "category": "دسته بندی",
     "currency": "ارز",
+    "currency_rate_update": "به‌روزرسانی نرخ ارز",
     "unit_measure": "واحد اندازه گیری",
     "size": "اندازه",
     "branch": "شعبه",
@@ -81,4 +82,3 @@
     "report": "گزارش"
   }
 }
-

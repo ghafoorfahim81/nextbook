@@ -328,6 +328,7 @@ const navMain = computed(() => [
         items: [
             { title: t('sidebar.administration.category'), url: '/categories', permission: 'categories.view_any' },
             { title: t('sidebar.administration.currency'), url: '/currencies', permission: 'currencies.view_any' },
+            { title: t('sidebar.administration.currency_rate_update'), url: '/currency-rate-updates', permission: 'currencies.view_any' },
             { title: t('sidebar.administration.unit_measure'), url: '/unit-measures', permission: 'unit_measures.view_any' },
             { title: t('sidebar.administration.size'), url: '/sizes', permission: 'sizes.view_any' },
             { title: t('sidebar.administration.branch'), url: '/branches', permission: 'branches.view_any' },
