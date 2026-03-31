@@ -460,7 +460,7 @@ function exportReport() {
 
 <template>
   <AppLayout>
-    <Head :title="t('report.title')" /> 
+    <Head :title="t('report.title')" />
 
     <div class="space-y-6 text-foreground">
       <section class="overflow-hidden rounded-[30px] border border-emerald-800/30 bg-gradient-to-br from-violet-500 via-violet-900 to-violet-950 p-6 text-white shadow-[0_20px_50px_rgba(6,78,59,0.35)]">

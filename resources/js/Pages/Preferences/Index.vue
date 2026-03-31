@@ -330,6 +330,7 @@ const receiptPaymentFields = [
                                                 <SelectItem value="dark">{{ t('preferences.appearance.dark') }}</SelectItem>
                                             <SelectItem value="system">{{ t('preferences.appearance.system') }}</SelectItem>
                                             <SelectItem value="cyan">{{ t('preferences.appearance.cyan') }}</SelectItem>
+                                            <SelectItem value="violet-900">{{ t('preferences.appearance.violet_900') }}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
