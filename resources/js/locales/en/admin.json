@@ -15,12 +15,22 @@
     "currency": {
         "currency": "Currency",
         "currencies": "Currencies",
+        "rate_updates": "Currency Rate Updates",
+        "rate_updates_description": "Update the latest exchange rates for every active currency except the home currency.",
+        "rate_updates_history": "Currency Rate Update History",
+        "rate_updates_history_description": "Review previous exchange rate changes and the date each rate was recorded.",
         "exchange_rate": "Exchange Rate",
         "code": "Code",
         "format": "Format",
         "flag": "Flag",
         "is_active": "Is Active",
-        "is_base_currency": "Is Base Currency"
+        "is_base_currency": "Is Base Currency",
+        "home_currency": "Home Currency",
+        "based_on_home_currency": "All exchange rates below are calculated against one {code}.",
+        "update_all": "Update Rates",
+        "effective_date": "Date",
+        "no_currencies_to_update": "There are no active foreign currencies available to update.",
+        "home_currency_cannot_be_updated": "The home currency exchange rate cannot be updated from this screen."
     },
     "brand": {
         "brand": "Brand",

@@ -27,6 +27,7 @@
   "administration": {
     "category": "Category",
     "currency": "Currency",
+    "currency_rate_update": "Currency Rate Updates",
     "unit_measure": "Unit Measure",
     "size": "Size",
     "branch": "Branch",
@@ -81,4 +82,3 @@
     "report": "Report"
   }
 }
-
