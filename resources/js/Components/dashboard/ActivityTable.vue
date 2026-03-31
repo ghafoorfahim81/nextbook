@@ -28,8 +28,9 @@ function quantityValue(row) {
 </script>
 
 <template>
-  <div class="rounded-2xl border border-border bg-card shadow-sm">
-    <div class="border-b border-border px-5 py-4">
+  <div class="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <div class="relative border-b border-border px-5 py-4">
+      <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-primary/80 to-primary/45" />
       <div class="text-base font-semibold text-card-foreground">{{ title }}</div>
       <div v-if="description" class="text-sm text-muted-foreground">{{ description }}</div>
     </div>

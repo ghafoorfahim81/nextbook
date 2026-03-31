@@ -31,7 +31,7 @@ class DashboardService
         return [
             'meta' => [
                 'branch_id' => $branchId,
-                'generated_at' => $dateConversionService->toDisplay(now()->toIso8601String()),
+                'generated_at' => now()->toIso8601String(),
                 'today' =>$dateConversionService->toDisplay($today->toDateString()),
             ],
             'kpis' => $this->getKpis($branchId, $today),
