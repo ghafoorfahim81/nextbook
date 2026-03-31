@@ -13,6 +13,8 @@ use App\Traits\HasBranch;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
+use App\Models\Purchase\Purchase;
+use App\Models\Sale\Sale;
 class StockMovement extends Model
 {
     use HasUlids, SoftDeletes, HasUserAuditable, BranchSpecific, HasBranch,BranchSpecific;
@@ -96,18 +98,23 @@ class StockMovement extends Model
         return $this->hasOne(StockOpening::class, 'stock_id'); // StockOpening has stock_id
     }
 
-    public function source()
+    public function reference()
     {
-        return $this->morphTo();
+        return $this->morphTo(__FUNCTION__, 'reference_type', 'reference_id');
     }
 
     public function ledgerName()
     {
-        if($this->source_type == 'App\Models\Purchase\Purchase' && $this->source) {
-            return $this->source->supplier->name ?? 'Unknown';
-        }
-        else{
+        $reference = $this->reference;
+
+        if (!$reference) {
             return 'Unknown';
         }
+
+        return match ($this->reference_type) {
+            Purchase::class => $reference->supplier?->name ?? 'Unknown',
+            Sale::class => $reference->customer?->name ?? 'Unknown',
+            default => 'Unknown',
+        };
     }
 }
