@@ -7,6 +7,7 @@ use App\Http\Requests\Administration\CurrencyStoreRequest;
 use App\Http\Requests\Administration\CurrencyUpdateRequest;
 use App\Http\Resources\Administration\CurrencyResource;
 use App\Models\Administration\Currency;
+use App\Support\Inertia\CacheForget;
 use Illuminate\Http\Request;
 
 class CurrencyController extends Controller
@@ -35,7 +36,9 @@ class CurrencyController extends Controller
 
     public function store(CurrencyStoreRequest $request)
     {
-        $currency = Currency::create($request->validated());
+        Currency::create($request->currencyData());
+        $this->forgetCurrencyLookups($request);
+
         return redirect()->route('currencies.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.currency')]));
 
     }
@@ -49,6 +52,7 @@ class CurrencyController extends Controller
     public function update(CurrencyUpdateRequest $request, Currency $currency)
     {
         $currency->update($request->validated());
+        $this->forgetCurrencyLookups($request);
 
         return redirect()->route('currencies.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.currency')]));
 
@@ -57,11 +61,21 @@ class CurrencyController extends Controller
     public function destroy(Request $request, Currency $currency)
     {
         $currency->delete();
+        $this->forgetCurrencyLookups($request);
+
         return back();
     }
     public function restore(Request $request, Currency $currency)
     {
         $currency->restore();
+        $this->forgetCurrencyLookups($request);
+
         return redirect()->route('currencies.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.currency')]));
+    }
+
+    private function forgetCurrencyLookups(Request $request): void
+    {
+        CacheForget::lookup($request, 'currencies');
+        CacheForget::lookup($request, 'home_currency');
     }
 }

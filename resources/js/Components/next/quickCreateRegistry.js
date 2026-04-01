@@ -21,14 +21,7 @@ export const quickCreateRegistry = {
     titleKey: 'admin.currency.currency',
     endpointType: 'currencies',
     fields: [
-      { key: 'name', labelKey: 'general.name', type: 'text', required: true },
-      { key: 'code', labelKey: 'admin.currency.code', type: 'text', required: true },
-      { key: 'symbol', labelKey: 'admin.shared.symbol', type: 'text', required: true },
-      { key: 'format', labelKey: 'admin.currency.format', type: 'text', required: true },
-      { key: 'exchange_rate', labelKey: 'admin.currency.exchange_rate', type: 'number', required: true },
-      { key: 'flag', labelKey: 'admin.currency.flag', type: 'text' },
-      { key: 'is_active', labelKey: 'general.active', type: 'checkbox' },
-      { key: 'is_base_currency', labelKey: 'admin.currency.base_currency', type: 'checkbox' },
+      { key: 'currency_code', labelKey: 'admin.currency.currency', type: 'select', required: true },
     ],
   },
 
@@ -201,4 +194,3 @@ export const quickCreateRegistry = {
 }
 
 export const isQuickCreatable = (resourceType) => Boolean(quickCreateRegistry?.[resourceType])
-

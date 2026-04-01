@@ -26,6 +26,10 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  bodyClass: {
+    type: String,
+    default: '',
+  },
   confirmText: String,
   cancelText: String,
   showCancel: Boolean,
@@ -39,7 +43,18 @@ const props = defineProps({
 
 const emit = defineEmits(["update:open", "confirm", "cancel"]);
 
+const isVueSelectOverlayTarget = (event: any) => {
+  const target = event?.target || event?.detail?.originalEvent?.target;
+
+  return target instanceof Element
+    && Boolean(target.closest('.vs__dropdown-menu, .vs__dropdown-toggle, .vs__search'));
+};
+
 const preventOutsideDismiss = (event: any) => {
+  if (isVueSelectOverlayTarget(event)) {
+    return;
+  }
+
   event?.preventDefault?.();
 };
 </script>
@@ -50,6 +65,7 @@ const preventOutsideDismiss = (event: any) => {
     <div v-if="open" class="fixed inset-0 z-[1090] bg-white/5" />
 
     <DialogContent
+      :disable-outside-pointer-events="false"
       :class="[
         width, 
         'z-[1100] p-0 flex flex-col overflow-hidden',
@@ -72,7 +88,7 @@ const preventOutsideDismiss = (event: any) => {
 
         <Separator class="sticky top-[64px] sm:top-[72px] z-10" />
 
-        <div class="flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4">
+        <div :class="['flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4', bodyClass]">
           <slot />
         </div>
 
@@ -99,4 +115,3 @@ const preventOutsideDismiss = (event: any) => {
     </DialogContent>
   </Dialog>
 </template>
-

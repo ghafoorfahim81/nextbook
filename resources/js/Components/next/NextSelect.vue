@@ -99,6 +99,7 @@
 
     /* default OFF — can be enabled per-usage if needed */
     appendToBody: { type: Boolean, default: false },
+    appendInDialog: { type: Boolean, default: false },
   })
 
   const emit = defineEmits(['update:modelValue', 'add-new'])
@@ -126,10 +127,26 @@
       }
       el = el.parentElement
     }
+
+    // Dialog auto-focuses the first tabbable control (vue-select's search input).
+    // Focus opens the dropdown; blur after mount so it starts closed.
+    if (isInDialog.value) {
+      const blurSearchIfAutofocused = () => {
+        const search = instance?.proxy?.$el?.querySelector?.('.vs__search')
+        if (search && document.activeElement === search) {
+          search.blur()
+        }
+      }
+      nextTick(blurSearchIfAutofocused)
+      requestAnimationFrame(blurSearchIfAutofocused)
+      setTimeout(blurSearchIfAutofocused, 0)
+    }
+
+    window.addEventListener(QUICK_CREATE_EVENT, onGlobalQuickCreated)
   })
 
   const shouldAppendToBody = computed(() => {
-    return props.appendToBody && !isInDialog.value
+    return props.appendToBody && (!isInDialog.value || props.appendInDialog)
   })
 
   const quickCreateOpen = ref(false)
@@ -304,10 +321,6 @@ const onGlobalQuickCreated = (event) => {
   }
 }
 
-onMounted(() => {
-  window.addEventListener(QUICK_CREATE_EVENT, onGlobalQuickCreated)
-})
-
 onUnmounted(() => {
   window.removeEventListener(QUICK_CREATE_EVENT, onGlobalQuickCreated)
 })
@@ -385,12 +398,44 @@ onUnmounted(() => {
     margin-top: 2px;
     max-height: 150px;
     overflow-y: auto;
-    z-index: 500;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    z-index: 1200;
     background-color: hsl(var(--popover));
     color: hsl(var(--popover-foreground));
     border-color: hsl(var(--border));
     box-shadow: 0 18px 45px rgba(15, 23, 42, 0.45);
     padding-bottom: 0 !important; /* REMOVE bottom padding to eliminate space */
+  }
+
+  :global(.vs__dropdown-menu) {
+    position: absolute;
+    bottom: auto !important;
+    left: 0;
+    width: 100%;
+    margin-top: 2px;
+    max-height: 150px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    z-index: 1200;
+    background-color: hsl(var(--popover));
+    color: hsl(var(--popover-foreground));
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.45);
+    padding-bottom: 0 !important;
+  }
+
+  :global(.vs__dropdown-option) {
+    cursor: pointer;
+    color: hsl(var(--popover-foreground));
+    background-color: transparent;
+  }
+
+  :global(.vs__dropdown-option--highlight),
+  :global(.vs__dropdown-option:hover) {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
   }
 
   /* match app input look (light + dark via CSS vars) */
@@ -463,7 +508,9 @@ onUnmounted(() => {
     margin-top: 2px;
     max-height: 150px;
     overflow-y: auto;
-    z-index: 500;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    z-index: 1200;
     background-color: hsl(var(--popover));
     color: hsl(var(--popover-foreground));
     border-color: hsl(var(--border));
