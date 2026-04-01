@@ -4,6 +4,7 @@ namespace App\Models\Account;
 
 use App\Models\Ledger\LedgerOpening;
 use App\Models\Transaction\Transaction;
+use App\Models\Transaction\TransactionLine;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasDynamicFilters;
@@ -195,6 +196,27 @@ class Account extends Model
         return $this->morphOne(LedgerOpening::class, 'ledgerable');
     }
 
+    protected function getOpeningTransactionId(): ?string
+    {
+        if ($this->relationLoaded('opening')) {
+            return $this->opening?->transaction_id;
+        }
+
+        return $this->opening()->value('transaction_id');
+    }
+
+    public function nonOpeningTransactionLines()
+    {
+        $openingTransactionId = $this->getOpeningTransactionId();
+
+        return TransactionLine::query()
+            ->where('account_id', $this->id)
+            ->when(
+                $openingTransactionId,
+                fn ($query) => $query->where('transaction_id', '!=', $openingTransactionId)
+            );
+    }
+
     public function children()
     {
         return $this->hasMany(Account::class, 'parent_id');
@@ -207,21 +229,43 @@ class Account extends Model
     /**
      * Get relationships configuration for dependency checking
      */
+    public function getDependencies(): array
+    {
+        $dependencies = [];
+
+        $childrenCount = $this->children()->count();
+        if ($childrenCount > 0) {
+            $dependencies[] = [
+                'relation' => 'children',
+                'count' => $childrenCount,
+                'model' => 'accounts',
+                'message' => 'This account has children accounts',
+            ];
+        }
+
+        $transactionCount = $this->nonOpeningTransactionLines()
+            ->distinct('transaction_id')
+            ->count('transaction_id');
+
+        if ($transactionCount > 0) {
+            $dependencies[] = [
+                'relation' => 'transactions',
+                'count' => $transactionCount,
+                'model' => 'transactions',
+                'message' => 'This account is used in transactions',
+            ];
+        }
+
+        return $dependencies;
+    }
+
     protected function getRelationships(): array
     {
         return [
-            'transactions' => [
-                'model' => 'transactions',
-                'message' => 'This account is used in transactions'
-            ],
             'children' => [
                 'model' => 'accounts',
                 'message' => 'This account has children accounts'
             ],
-            'parent' => [
-                'model' => 'accounts',
-                'message' => 'This account has a parent account'
-            ]
         ];
     }
 

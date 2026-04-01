@@ -76,6 +76,7 @@ Route::middleware([
     Route::resource('account-types', \App\Http\Controllers\Account\AccountTypeController::class);
     Route::patch('/account-types/{accountType}/restore', [\App\Http\Controllers\Account\AccountTypeController::class, 'restore'])->name('account-types.restore')->withTrashed();
     Route::resource('chart-of-accounts', \App\Http\Controllers\Account\AccountController::class);
+    Route::patch('/chart-of-accounts/{chart_of_account}/restore', [\App\Http\Controllers\Account\AccountController::class, 'restore'])->name('chart-of-accounts.restore')->withTrashed();
     Route::resource('/currencies', \App\Http\Controllers\Administration\CurrencyController::class);
     Route::patch('/currencies/{currency}/restore', [\App\Http\Controllers\Administration\CurrencyController::class, 'restore'])->name('currencies.restore')->withTrashed();
     Route::get('/currency-rate-updates', [\App\Http\Controllers\Administration\CurrencyRateUpdateController::class, 'index'])->name('currency-rate-updates.index');

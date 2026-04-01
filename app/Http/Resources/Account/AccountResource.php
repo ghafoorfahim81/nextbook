@@ -15,9 +15,11 @@ class AccountResource extends JsonResource
     public function toArray(Request $request): array
     {
         $locale = app()->getLocale();
+        // $route  = route('chart-of-accounts.list');
         return [
             'id' => $this->id,
-            'name' => $locale === 'en' ? $this->name : ($this->local_name ?? $this->name),
+            // 'name' => $locale === 'en' ? $this->name : ($this->local_name ?? $this->name),
+            'name' => $this->name,
             'local_name' => $this->local_name,
             'number' => $this->number,
             'account_type_id' => $this->account_type_id,

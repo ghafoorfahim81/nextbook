@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use App\Models\Transaction\TransactionLine;
 use App\Models\Transaction\Transaction;
 use App\Models\User;
@@ -220,37 +221,45 @@ class AccountController extends Controller
 
     public function destroy(Request $request, Account $chart_of_account)
     {
-        if (!$chart_of_account->canBeDeleted()) {
-            $message = $chart_of_account->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
-            return redirect()->route('chart-of-accounts.index')->with('error', $message);
-        }
         if($chart_of_account->is_main) {
             return redirect()->route('chart-of-accounts.index')->with('error', __('general.cannot_delete_main_account'));
         }
 
-        if($chart_of_account->opening) {
-            DB::transaction(function () use ($chart_of_account) {
-            $transaction = $chart_of_account->opening()->first();
-            if ($transaction) {
-                $transaction->lines()->delete();
-                $transaction->delete();
-            }
-            $chart_of_account->opening()->delete();
-            });
-            $chart_of_account->delete();
-            return redirect()->route('chart-of-accounts.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.account')]));
+        if (!$chart_of_account->canBeDeleted()) {
+            $message = $chart_of_account->getDependencyMessage() ?? 'You cannot delete this record because it has dependencies.';
+            return redirect()->route('chart-of-accounts.index')->with('error', $message);
         }
+
+        $openingTransactionId = $chart_of_account->opening?->transaction_id;
+
+        DB::transaction(function () use ($chart_of_account, $openingTransactionId) {
+            if ($openingTransactionId) {
+                TransactionLine::where('transaction_id', $openingTransactionId)->delete();
+                Transaction::where('id', $openingTransactionId)->delete();
+                $chart_of_account->opening()->delete();
+            }
+
+            $chart_of_account->delete();
+        });
+
+        return redirect()->route('chart-of-accounts.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.account')]));
     }
+
     public function restore(Request $request, Account $chart_of_account)
     {
-        DB::transaction(function () use ($chart_of_account) {
-            $transactions = $chart_of_account->transactions()->whereHas('opening')->get();
-            foreach ($transactions as $transaction) {
-            $transaction->opening()->restore();
-                $transaction->restore();
+        $opening = $chart_of_account->opening()->withTrashed()->first();
+        $openingTransactionId = $opening?->transaction_id;
+
+        DB::transaction(function () use ($chart_of_account, $openingTransactionId) {
+            if ($openingTransactionId) {
+                Transaction::withTrashed()->where('id', $openingTransactionId)->restore();
+                TransactionLine::withTrashed()->where('transaction_id', $openingTransactionId)->restore();
+                $chart_of_account->opening()->withTrashed()->restore();
             }
+
             $chart_of_account->restore();
         });
+
         return redirect()->route('chart-of-accounts.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.account')]));
     }
 }
