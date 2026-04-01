@@ -34,6 +34,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class QuickCreateController extends Controller
 {
@@ -63,6 +64,12 @@ class QuickCreateController extends Controller
                     'message' => "Unsupported resource type: {$resourceType}",
                 ], 422),
             };
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Throwable $e) {
             report($e);
             return response()->json([
@@ -78,17 +85,18 @@ class QuickCreateController extends Controller
         Gate::authorize('create', Currency::class);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'unique:currencies,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'code' => ['required', 'string', 'unique:currencies,code,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'symbol' => ['required', 'string', 'unique:currencies,symbol,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'format' => ['required', 'string', 'unique:currencies,format,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'exchange_rate' => ['required', 'numeric'],
-            'is_active' => ['nullable', 'boolean'],
-            'is_base_currency' => ['nullable', 'boolean'],
-            'flag' => ['nullable', 'string', 'unique:currencies,flag,NULL,id,deleted_at,NULL'],
+            'currency_code' => ['required', 'string', Rule::in(array_keys(Currency::currencyList()))],
         ]);
 
-        $currency = Currency::create($validated);
+        if (Currency::query()->where('code', $validated['currency_code'])->exists()) {
+            throw ValidationException::withMessages([
+                'currency_code' => __('validation.unique', ['attribute' => __('admin.currency.code')]),
+            ]);
+        }
+
+        $currency = Currency::create(
+            Currency::attributesFromListCode($validated['currency_code'])
+        );
         $this->forgetInertiaCache($request, ['currencies', 'home_currency']);
 
         return response()->json([
@@ -407,4 +415,3 @@ class QuickCreateController extends Controller
         }
     }
 }
-

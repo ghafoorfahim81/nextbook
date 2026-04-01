@@ -135,6 +135,7 @@ final class LookupShared
             'categories' => $categories,
             'branches' => $branches,
             'currencies' => $currencies,
+            'currencyDefinitions' => Currency::currencySelectionOptions(),
             'warehouses' => $warehouses,
             'brands' => $brands,
             'unitMeasures' => $unitMeasures,

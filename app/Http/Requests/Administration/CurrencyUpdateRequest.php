@@ -22,8 +22,8 @@ class CurrencyUpdateRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))->whereNull('deleted_at')],
             'code' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))->whereNull('deleted_at')],
-            'symbol' => ['required', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))->whereNull('deleted_at')],
-            'format' => ['nullable', 'string', 'max:256', \Illuminate\Validation\Rule::unique('currencies')->ignore($this->route('currency'))->whereNull('deleted_at')],
+            'symbol' => ['required', 'string', 'max:256'],
+            'format' => ['nullable', 'string', 'max:256'],
             'exchange_rate' => ['nullable', 'numeric'],
             'is_active' => ['nullable', 'boolean'],
             'is_base_currency' => ['nullable', 'boolean'],

@@ -30,6 +30,7 @@ const title = computed(() => {
 })
 
 const currencyOptions = computed(() => page.props?.currencies?.data || page.props?.currencies || [])
+const currencyDefinitionOptions = computed(() => page.props?.currencyDefinitions || [])
 const categoryOptions = computed(() => page.props?.categories?.data || page.props?.categories || [])
 const brandOptions = computed(() => page.props?.brands?.data || page.props?.brands || [])
 const sizeOptions = computed(() => page.props?.sizes?.data || page.props?.sizes || [])
@@ -71,6 +72,7 @@ const close = () => emit('update:open', false)
 
 const resolveFieldOptions = (fieldKey) => {
   // Select options derived from field key
+  if (fieldKey === 'currency_code') return currencyDefinitionOptions.value
   if (fieldKey === 'currency_id') return currencyOptions.value
   if (fieldKey === 'parent_id' || fieldKey === 'category_id') return categoryOptions.value
   if (fieldKey === 'brand_id') return brandOptions.value
@@ -226,4 +228,3 @@ function toPayload(data) {
     </div>
   </ModalDialog>
 </template>
-
