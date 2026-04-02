@@ -8,6 +8,7 @@ use App\Http\Requests\UserManagement\RoleUpdateRequest;
 use App\Http\Resources\UserManagement\RoleResource;
 use App\Models\Role;
 use App\Models\Permission;
+use App\Support\Inertia\CacheForget;
 use App\Support\Inertia\CacheKey;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -69,7 +70,7 @@ class RoleController extends Controller
 
     public function show(Request $request, Role $role)
     {
-        $role->load('permissions');
+        $role->load(['permissions', 'users:id,name,email'])->loadCount(['permissions', 'users']);
         return new RoleResource($role);
     }
 
@@ -95,6 +96,10 @@ class RoleController extends Controller
         }
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'roles'));
+        $role->loadMissing('users:id');
+        foreach ($role->users as $assignedUser) {
+            CacheForget::authForUserId($assignedUser->id);
+        }
 
         return redirect()->route('roles.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.role')]));
     }

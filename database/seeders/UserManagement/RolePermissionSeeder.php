@@ -192,10 +192,12 @@ class RolePermissionSeeder extends Seeder
         // Accountant → transactional + reports (NO delete)
         $accountantPermissions = Permission::whereIn('name', [
             // Reports
+            'reports.view_any',
             'reports.view',
             'reports.export',
 
             // Purchases
+            'purchases.view_any',
             'purchases.view',
             'purchases.create',
             'purchases.update',
@@ -203,6 +205,7 @@ class RolePermissionSeeder extends Seeder
             'purchases.print',
 
             // Sales
+            'sales.view_any',
             'sales.view',
             'sales.create',
             'sales.update',
@@ -210,8 +213,10 @@ class RolePermissionSeeder extends Seeder
             'sales.print',
 
             // Receipts & Payments
+            'receipts.view_any',
             'receipts.view',
             'receipts.create',
+            'payments.view_any',
             'payments.view',
             'payments.create',
         ])->get();
@@ -220,7 +225,10 @@ class RolePermissionSeeder extends Seeder
 
         // Clerk → view-only access
         $clerk->syncPermissions(
-            Permission::where('name', 'like', '%.view')->get()
+            Permission::where(function ($query) {
+                $query->where('name', 'like', '%.view')
+                    ->orWhere('name', 'like', '%.view_any');
+            })->get()
         );
 
         /*

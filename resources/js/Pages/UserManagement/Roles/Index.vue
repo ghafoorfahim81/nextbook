@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { ref, computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
+import ShowDialog from '@/Pages/UserManagement/Roles/ShowDialog.vue';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3'
 const props = defineProps({
@@ -10,6 +11,8 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+const showDialog = ref(false);
+const selectedRoleId = ref(null);
 
 const columns = computed(() => ([
     { key: 'name', label: t('general.name'), sortable: true },
@@ -39,6 +42,11 @@ const deleteItem = (id) => {
 const editItem = (item) => {
     router.visit(route('roles.edit', item.id));
 };
+
+const showItem = (id) => {
+    selectedRoleId.value = id;
+    showDialog.value = true;
+};
 </script>
 
 <template>
@@ -56,7 +64,13 @@ const editItem = (item) => {
             :addAction="'redirect'"
             :addRoute="'roles.create'"
             :hasEdit="true"
+            :hasShow="true"
+            @show="showItem"
+        />
+        <ShowDialog
+            :open="showDialog"
+            :role-id="selectedRoleId"
+            @update:open="showDialog = $event"
         />
     </AppLayout>
 </template>
-

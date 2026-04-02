@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Administration\Branch;
 use App\Models\Administration\Company;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -355,6 +356,11 @@ class User extends Authenticatable
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function notifications()
