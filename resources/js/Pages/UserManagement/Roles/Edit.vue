@@ -37,6 +37,33 @@ const filteredPermissions = computed(() => {
     });
 });
 
+const filteredPermissionIds = computed(() => filteredPermissions.value.map((permission) => permission.id));
+const allFilteredPermissionsSelected = computed(() =>
+    filteredPermissionIds.value.length > 0 &&
+    filteredPermissionIds.value.every((id) => form.permissions.includes(id))
+);
+const someFilteredPermissionsSelected = computed(() =>
+    filteredPermissionIds.value.some((id) => form.permissions.includes(id))
+);
+
+const togglePermission = (permissionId, checked) => {
+    if (checked) {
+        form.permissions = Array.from(new Set([...form.permissions, permissionId]));
+        return;
+    }
+
+    form.permissions = form.permissions.filter((id) => id !== permissionId);
+};
+
+const toggleFilteredPermissions = (checked) => {
+    if (checked) {
+        form.permissions = Array.from(new Set([...form.permissions, ...filteredPermissionIds.value]));
+        return;
+    }
+
+    form.permissions = form.permissions.filter((id) => !filteredPermissionIds.value.includes(id));
+};
+
 const humanizePermission = (name) => {
     if (!name) return '';
     const parts = name.split('.');
@@ -106,15 +133,9 @@ const goBack = () => {
                             <div class="flex items-center space-x-2">
                                 <Checkbox
                                     id="check-all"
-                                    :checked="form.permissions.length === filteredPermissions.length && filteredPermissions.length > 0"
-                                    :indeterminate="form.permissions.length > 0 && form.permissions.length < filteredPermissions.length"
-                                    @change="(e) => {
-                                        if (e.target.checked) {
-                                            form.permissions = filteredPermissions.map(p => p.id);
-                                        } else {
-                                            form.permissions = form.permissions.filter(id => !filteredPermissions.map(p => p.id).includes(id));
-                                        }
-                                    }"
+                                    :checked="allFilteredPermissionsSelected"
+                                    :indeterminate="someFilteredPermissionsSelected && !allFilteredPermissionsSelected"
+                                    @update:checked="(checked) => toggleFilteredPermissions(Boolean(checked))"
                                 />
                                 <label for="check-all" class="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
                                     {{ t('general.select_all') }}
@@ -144,18 +165,7 @@ const goBack = () => {
                                     :name="`permissions[]`"
                                     :value="permission.id"
                                     :checked="form.permissions.includes(permission.id)"
-                                    @change="(e) => {
-                                        if (e.target.checked) {
-                                            if (!form.permissions.includes(permission.id)) {
-                                                form.permissions.push(permission.id);
-                                            }
-                                        } else {
-                                            const index = form.permissions.indexOf(permission.id);
-                                            if (index > -1) {
-                                                form.permissions.splice(index, 1);
-                                            }
-                                        }
-                                    }"
+                                    @update:checked="(checked) => togglePermission(permission.id, Boolean(checked))"
                                 />
                                 <label :for="`permission-${permission.id}`" class="text-sm text-gray-400 dark:text-gray-300 cursor-pointer">
                                     {{ translatePermission(permission.name) }}

@@ -12,12 +12,20 @@ class RoleResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'slug' => $this->slug,
             'guard_name' => $this->guard_name,
             'permissions' => $this->whenLoaded('permissions', function () {
                 return $this->permissions->map(fn($permission) => [
                     'id' => $permission->id,
                     'name' => $permission->name,
-                ]);
+                ])->values();
+            }),
+            'users' => $this->whenLoaded('users', function () {
+                return $this->users->map(fn($user) => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ])->values();
             }),
             'permissions_count' => $this->whenCounted('permissions'),
             'users_count' => $this->whenCounted('users'),
@@ -26,4 +34,3 @@ class RoleResource extends JsonResource
         ];
     }
 }
-

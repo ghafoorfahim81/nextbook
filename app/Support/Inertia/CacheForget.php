@@ -19,6 +19,12 @@ use Illuminate\Http\Request;
  */
 final class CacheForget
 {
+    private const USER_AUTH_KEYS = [
+        'permissions',
+        'roles',
+        'role_slugs',
+    ];
+
     public static function lookup(Request $request, string $name): void
     {
         \Illuminate\Support\Facades\Cache::forget(
@@ -31,5 +37,21 @@ final class CacheForget
         \Illuminate\Support\Facades\Cache::forget(
             CacheKey::forUser($request, $name)
         );
+    }
+
+    public static function userById(string $userId, string $name): void
+    {
+        \Illuminate\Support\Facades\Cache::forget("inertia:user:{$userId}:{$name}");
+    }
+
+    public static function authForUserId(?string $userId): void
+    {
+        if (!$userId) {
+            return;
+        }
+
+        foreach (self::USER_AUTH_KEYS as $name) {
+            self::userById($userId, $name);
+        }
     }
 }

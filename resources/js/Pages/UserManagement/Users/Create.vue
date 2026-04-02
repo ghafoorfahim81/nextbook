@@ -4,7 +4,6 @@ import { ref, computed } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import NextInput from "@/Components/next/NextInput.vue";
 import NextSelect from "@/Components/next/NextSelect.vue";
-import Checkbox from "@/Components/Checkbox.vue";
 import SubmitButtons from "@/Components/SubmitButtons.vue";
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n';
@@ -201,23 +200,13 @@ const goBack = () => {
                                     'bg-gray-100': form.permissions.includes(permission.id)
                                 }"
                             >
-                                <Checkbox
+                                <input
                                     :id="`permission-${permission.id}`"
                                     :name="`permissions[]`"
+                                    v-model="form.permissions"
+                                    type="checkbox"
                                     :value="permission.id"
-                                    :checked="form.permissions.includes(permission.id)"
-                                    @change="(e) => {
-                                        if (e.target.checked) {
-                                            if (!form.permissions.includes(permission.id)) {
-                                                form.permissions.push(permission.id);
-                                            }
-                                        } else {
-                                            const index = form.permissions.indexOf(permission.id);
-                                            if (index > -1) {
-                                                form.permissions.splice(index, 1);
-                                            }
-                                        }
-                                    }"
+                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800"
                                 />
                                 <!-- Human readable name for permission -->
                                 <label

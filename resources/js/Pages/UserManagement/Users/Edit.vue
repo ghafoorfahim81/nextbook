@@ -4,7 +4,6 @@ import { ref, computed } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import NextInput from "@/Components/next/NextInput.vue";
 import NextSelect from "@/Components/next/NextSelect.vue";
-import Checkbox from "@/Components/Checkbox.vue";
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/Components/ui/toast/use-toast';
@@ -70,6 +69,7 @@ const filteredPermissions = computed(() => {
         perm.name.toLowerCase().includes(q)
     );
 });
+
 // For translation keys (from create) for roles/permissions label/desc
 const ROLES_LABEL = computed(() => t('user_mangements.roles'));
 const PERMS_LABEL = computed(() => t('user_mangements.additional_permissions'));
@@ -185,23 +185,13 @@ const goBack = () => {
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                             <div v-for="permission in filteredPermissions" :key="permission.id" class="flex items-center space-x-2">
-                                <Checkbox
+                                <input
                                     :id="`permission-${permission.id}`"
                                     :name="`permissions[]`"
+                                    v-model="form.permissions"
+                                    type="checkbox"
                                     :value="permission.id"
-                                    :checked="form.permissions.includes(permission.id)"
-                                    @change="(e) => {
-                                        if (e.target.checked) {
-                                            if (!form.permissions.includes(permission.id)) {
-                                                form.permissions.push(permission.id);
-                                            }
-                                        } else {
-                                            const index = form.permissions.indexOf(permission.id);
-                                            if (index > -1) {
-                                                form.permissions.splice(index, 1);
-                                            }
-                                        }
-                                    }"
+                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800"
                                 />
                                 <label :for="`permission-${permission.id}`" class="text-sm text-gray-500 group-hover:text-primary-700 dark:hover:text-black cursor-pointer">
                                     {{ humanizePermissionName(permission.name) }}

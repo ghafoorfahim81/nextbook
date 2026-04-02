@@ -6,10 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UserManagement\UserStoreRequest;
 use App\Http\Requests\UserManagement\UserUpdateRequest;
 use App\Http\Resources\UserManagement\UserResource;
+use App\Models\Permission;
 use App\Models\User;
+use App\Support\Inertia\CacheForget;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Permission;
 use App\Enums\UserStatus;
 class UserController extends Controller
 {
@@ -76,6 +77,8 @@ class UserController extends Controller
             $user->syncPermissions($data['permissions']);
         }
 
+        CacheForget::authForUserId($user->id);
+
         if ($request->input('create_and_new')) {
             return redirect()->route('users.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.user')]));
         }
@@ -85,7 +88,7 @@ class UserController extends Controller
 
     public function show(Request $request, User $user)
     {
-        $user->load(['company', 'roles']);
+        $user->load(['branch', 'company', 'roles', 'permissions']);
         return new UserResource($user);
     }
 
@@ -109,6 +112,8 @@ class UserController extends Controller
             $user->syncPermissions($data['permissions'] ?? []);
         }
 
+        CacheForget::authForUserId($user->id);
+
         return redirect()->route('users.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.user')]));
     }
 
@@ -130,4 +135,3 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.user')]));
     }
 }
-
