@@ -59,9 +59,15 @@ const formatCode = (number) => {
     }
 }
 
+const generateBarcode = () => {
+    const random = Math.floor(100000000 + Math.random() * 900000000)
+    return `ITM${random}`
+}
+
 const blankRow = (code = currentMaxCode.value) => ({
     name: '',
     code: formatCode(code),
+    barcode: '',
     measure_id: null,
     purchase_price: '',
     sale_price: '',
@@ -80,6 +86,24 @@ const form = useForm({
     // Initialize 6 rows with auto-incrementing codes based on currentMaxCode
     items: Array.from({ length: 6 }, (_, idx) => blankRow(currentMaxCode.value + idx)),
 })
+
+watch(
+    () => form.items.map((item) => item.name),
+    () => {
+        form.items.forEach((item) => {
+            const hasName = String(item.name ?? '').trim().length > 0
+
+            if (hasName && !item.barcode) {
+                item.barcode = generateBarcode()
+            }
+
+            if (!hasName) {
+                item.barcode = ''
+            }
+        })
+    },
+    { deep: true, immediate: true }
+)
 
 const fieldError = (idx, field) => form.errors?.[`items.${idx}.${field}`]
 
