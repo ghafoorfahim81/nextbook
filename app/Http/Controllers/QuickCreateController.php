@@ -38,6 +38,18 @@ use Illuminate\Validation\ValidationException;
 
 class QuickCreateController extends Controller
 {
+    public function nextItemCode(Request $request): JsonResponse
+    {
+        Gate::authorize('create', Item::class);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'code' => $this->generateNextItemCode(),
+            ],
+        ]);
+    }
+
     public function store(Request $request, string $resourceType): JsonResponse
     {
         // Normalize some alias types used in selects/search
@@ -269,7 +281,7 @@ class QuickCreateController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'unique:items,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'code' => ['required', 'string', 'unique:items,code,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'code' => ['nullable', 'string'],
             'item_type' => ['nullable', 'string'],
             'unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
             'brand_id' => ['nullable', 'string', 'exists:brands,id'],
@@ -287,6 +299,7 @@ class QuickCreateController extends Controller
         $validated['asset_account_id'] = $validated['asset_account_id'] ?? $account->where('slug', 'inventory-stock')->value('id');
         $validated['income_account_id'] = $validated['income_account_id'] ?? $account->where('slug', 'product-income')->value('id');
         $validated['cost_account_id'] = $validated['cost_account_id'] ?? $account->where('slug', 'cost-of-goods-sold')->value('id');
+        $validated['code'] = $this->generateNextItemCode();
 
         $item = Item::create($validated);
         $this->forgetInertiaCache($request, ['items']);
@@ -413,5 +426,27 @@ class QuickCreateController extends Controller
         foreach ($names as $name) {
             Cache::forget(CacheKey::forCompanyBranchLocale($request, $name));
         }
+    }
+
+    private function generateNextItemCode(): string
+    {
+        $maxCode = Item::query()
+            ->selectRaw('MAX(CAST(code AS INTEGER)) as max_code')
+            ->value('max_code');
+
+        return $this->formatItemCode($maxCode ? intval($maxCode) + 1 : 1);
+    }
+
+    private function formatItemCode(int $number): string
+    {
+        if ($number < 10) {
+            return str_pad((string) $number, 3, '0', STR_PAD_LEFT);
+        }
+
+        if ($number < 100) {
+            return str_pad((string) $number, 3, '0', STR_PAD_LEFT);
+        }
+
+        return (string) $number;
     }
 }

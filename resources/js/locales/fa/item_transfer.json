@@ -1,6 +1,8 @@
 {
   "item_transfer": "انتقال کالا",
   "item_transfers": "انتقالات کالا",
+  "from_store": "از گدام",
+  "to_store": "به گدام",
   "from_warehouse": "از گدام",
   "to_warehouse": "به گدام",
   "transfer_cost": "هزینه انتقال",
@@ -13,4 +15,3 @@
   "cancelled_successfully": "انتقال با موفقیت لغو شد",
   "cannot_edit_completed_or_cancelled_transfer": "امکان ویرایش انتقال های تکمیل شده یا لغو شده وجود ندارد"
 }
-

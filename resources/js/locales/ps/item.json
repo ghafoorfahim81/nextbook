@@ -47,8 +47,12 @@
     "no_barcode_items": "یوازې هغه توکي چاپېږي چې خوندي شوی بارکوډ ولري.",
     "no_items_selected": "د بارکوډ د مخکتنې لپاره یو یا څو توکي زیات کړئ.",
     "labels_ready": "{count} لیبلونه چمتو دي",
+    "labels_ready_with_limit": "{count} له {limit} لیبلونو څخه چمتو دي",
     "remove_item": "توکی لرې کړئ",
     "barcode_not_available": "دا توکی خوندي شوی بارکوډ نه لري.",
+    "barcode_total_limit_title": "د بارکوډ چاپ حد: {limit} لیبلونه",
+    "barcode_total_limit_description": "د ټولو ټاکل شوو توکو ګډ شمېر له {limit} څخه زیات نه شي کېدای. پاتې لیبلونه: {remaining}.",
+    "barcode_total_limit_error": "د بارکوډ د لیبلونو ټول شمېر له {limit} څخه زیات نه شي کېدای.",
     "add_multiple_items_quickly": "اضافه کردن چند جنس به صورت سریع. از علامت “+” در آخرین ردیف برای اضافه کردن بیشتر استفاده کنید.",
     "remove_unwanted_items": "اجناس های غیر ضروری را با استفاده از علامت “-” حذف کنید."
 }

@@ -127,6 +127,7 @@ Route::middleware([
     // Search routes
     Route::post('/search/{resourceType}', [\App\Http\Controllers\SearchController::class, 'search']);
     Route::get('/search/resource-types', [\App\Http\Controllers\SearchController::class, 'getResourceTypes']);
+    Route::get('/quick-create/items/next-code', [QuickCreateController::class, 'nextItemCode'])->name('quick-create.items.next-code');
     Route::post('/quick-create/{resourceType}', [QuickCreateController::class, 'store'])->name('quick-create.store');
 
     // Receipts
