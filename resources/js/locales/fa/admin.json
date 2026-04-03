@@ -4,7 +4,7 @@
         "parent": "والد",
         "categories": "دسته بندی ها"
     },
- 
+
     "warehouse": {
         "warehouse": "گدام/انبار",
         "warehouses": "گدام/انبار ها"
@@ -27,7 +27,7 @@
         "is_active": "فعال",
         "is_base_currency": "ارز اصلی",
         "home_currency": "ارز اصلی",
-        "based_on_home_currency": "تمام نرخ‌های زیر بر اساس یک {code} محاسبه می‌شوند.",
+        "based_on_home_currency": "تمام نرخ‌های زیر بر اساس ۱ واحد ارز خارجی به {code} محاسبه می‌شوند.",
         "update_all": "به‌روزرسانی نرخ‌ها",
         "effective_date": "تاریخ",
         "no_currencies_to_update": "هیچ ارز فعال غیر اصلی برای به‌روزرسانی وجود ندارد.",

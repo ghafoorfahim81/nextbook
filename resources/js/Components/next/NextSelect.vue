@@ -202,6 +202,19 @@
   const searchableOptions = ref([...props.options])
   const { searchResources, isLoading } = useSearchResources()
 
+  const resolvedSearchFields = computed(() => {
+    const baseFields = Array.isArray(props.searchFields) ? [...props.searchFields] : ['name']
+    const hasLocalNameInOptions = (props.options || []).some((option) => {
+      return option && typeof option === 'object' && 'local_name' in option
+    })
+
+    if ((props.resourceType === 'accounts' || hasLocalNameInOptions) && !baseFields.includes('local_name')) {
+      baseFields.push('local_name')
+    }
+
+    return baseFields
+  })
+
   // Stable option identity used for de-dupe/cache.
   // Many usages pass `:reduce="o => o"` (model becomes an object), so we must
   // never rely on object reference equality for de-duping quick-created options.
@@ -249,14 +262,14 @@
 
 
   const handleSearch = async (term) => {
-  const results = await searchResources(
+    const results = await searchResources(
     term,
     props.options,
     props.resourceType,
     {
       labelKey: props.labelKey,
       valueKey: props.valueKey,
-      searchFields: props.searchFields,
+      searchFields: resolvedSearchFields.value,
       ...normalizedSearchOptions.value,
     }
   )

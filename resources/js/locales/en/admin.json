@@ -26,7 +26,7 @@
         "is_active": "Is Active",
         "is_base_currency": "Is Base Currency",
         "home_currency": "Home Currency",
-        "based_on_home_currency": "All exchange rates below are calculated against one {code}.",
+        "based_on_home_currency": "All exchange rates below are calculated against one foreign currency against {code}.",
         "update_all": "Update Rates",
         "effective_date": "Date",
         "no_currencies_to_update": "There are no active foreign currencies available to update.",

@@ -755,13 +755,21 @@ class SearchController extends Controller
      */
     private function searchAccounts(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
+        $locale = app()->getLocale();
         $query = Account::query()
             ->join('account_types', 'accounts.account_type_id', '=', 'account_types.id')
-            ->select('accounts.id', 'accounts.name', 'accounts.number', 'account_types.name as type_name', 'account_types.slug as type_slug')
+            ->select(
+                'accounts.id',
+                'accounts.name',
+                'accounts.local_name',
+                'accounts.number',
+                'account_types.name as type_name',
+                'account_types.slug as type_slug'
+            )
             ->where('accounts.is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
-                    if (in_array($field, ['name', 'number'])) {
+                    if (in_array($field, ['name', 'local_name', 'number'])) {
                         $q->orWhereRaw('LOWER(accounts.' . $field . ') iLike ?', [$searchTerm]);
                     }
                 }
@@ -777,7 +785,19 @@ class SearchController extends Controller
             $query->whereIn('account_types.slug', $additionalParams['types']);
         }
 
-        return $query->limit($limit)->get()->toArray();
+        return $query->limit($limit)->get()->map(function ($account) use ($locale) {
+            return [
+                'id' => $account->id,
+                'name' => $locale === 'en'
+                    ? $account->name
+                    : ($account->local_name ?: $account->name),
+                'english_name' => $account->name,
+                'local_name' => $account->local_name,
+                'number' => $account->number,
+                'type_name' => $account->type_name,
+                'type_slug' => $account->type_slug,
+            ];
+        })->toArray();
     }
 
     /**

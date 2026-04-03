@@ -4,7 +4,7 @@
         "parent": "والد",
         "categories": "دسته بندی ها"
     },
- 
+
     "warehouse": {
         "warehouse": "گودام",
         "warehouses": "گودام ها"
@@ -27,7 +27,7 @@
         "is_active": "فعال",
         "is_base_currency": "ارز اصلی",
         "home_currency": "کور اسعار",
-        "based_on_home_currency": "لاندې ټول تبادلې نرخونه د یو {code} پر اساس حسابیږي.",
+        "based_on_home_currency": "لاندې ټول تبادلې نرخونه د یو خارجي ارز پر اساس حسابیږي.",
         "update_all": "نرخونه تازه کړه",
         "effective_date": "نېټه",
         "no_currencies_to_update": "د تازه کولو لپاره هېڅ فعاله غیر اصلي ارز نشته.",
