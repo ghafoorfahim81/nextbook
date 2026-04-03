@@ -24,7 +24,7 @@ export function useDeleteResource() {
                             if (flashedError) {
                                 toast.error(flashedError, {
                                     description: flashedError,
-                                    className: 'bg-pink-600 text-white',
+                                    class: 'bg-pink-600 text-white',
                                     duration: 8000,
                                 })
                                 app.unmount()
@@ -52,7 +52,7 @@ export function useDeleteResource() {
                                     onError: (errors) => {
                                         toast.error(errors?.message || t('general.restore_error_message'), {
                                             description: errors?.message || t('general.restore_error_message'),
-                                            className: 'bg-pink-600 text-white',
+                                            class: 'bg-pink-600 text-white',
                                             duration: 6000,
                                         })
                                         options?.onError?.()
@@ -101,7 +101,7 @@ export function useDeleteResource() {
 
                             toast.error(errorMessage?.title ? errorMessage.title : errorMessage, {
                                 description: errorMessage,
-                                className: 'bg-pink-600 text-white',
+                                class: 'bg-pink-600 text-white',
                                 duration: isDependencyError ? 10000 : 7000,
                                 action: !isDependencyError
                                     ? {

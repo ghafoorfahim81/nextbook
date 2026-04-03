@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/Layout.vue'
 import BarcodeLabel from '@/Components/inventory/BarcodeLabel.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
+import { Alert, AlertDescription, AlertTitle } from '@/Components/ui/alert'
 import { Button } from '@/Components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card'
 import { Checkbox } from '@/Components/ui/checkbox'
@@ -10,13 +11,14 @@ import { Label } from '@/Components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/table'
 import { usePage } from '@inertiajs/vue3'
-import { Barcode, Eye, Printer, Trash2 } from 'lucide-vue-next'
+import { AlertCircle, Barcode, Eye, Printer, Trash2 } from 'lucide-vue-next'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
 const { t } = useI18n()
 const page = usePage()
+const MAX_TOTAL_LABELS = 100
 
 const selectedItem = ref(null)
 const printArea = ref(null)
@@ -84,9 +86,24 @@ const currencySymbol = computed(() =>
   showCurrencySymbol.value ? String(page.props?.homeCurrency?.symbol ?? '') : '',
 )
 
+function sanitizeQuantity(value) {
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue) && numericValue > 0 ? Math.round(numericValue) : 1
+}
+
+function getTotalQuantity(excludedItemId = null) {
+  return selectedItems.value.reduce((total, item) => {
+    if (item.id === excludedItemId) {
+      return total
+    }
+
+    return total + sanitizeQuantity(item.quantity)
+  }, 0)
+}
+
 const labelInstances = computed(() =>
   selectedItems.value.flatMap((item) => {
-    const quantity = Math.max(1, Number(item.quantity || 1))
+    const quantity = sanitizeQuantity(item.quantity)
     return Array.from({ length: quantity }, (_, index) => ({
       key: `${item.id}-${index}`,
       item,
@@ -94,9 +111,9 @@ const labelInstances = computed(() =>
   }),
 )
 
-const totalLabels = computed(() =>
-  selectedItems.value.reduce((total, item) => total + Math.max(1, Number(item.quantity || 1)), 0),
-)
+const totalLabels = computed(() => getTotalQuantity())
+
+const remainingLabels = computed(() => Math.max(0, MAX_TOTAL_LABELS - totalLabels.value))
 
 const previewGridStyle = computed(() => ({
   display: 'grid',
@@ -105,6 +122,26 @@ const previewGridStyle = computed(() => ({
   justifyContent: 'start',
   alignContent: 'start',
 }))
+
+function showLimitError() {
+  toast.error(t('item.barcode_total_limit_error', { limit: MAX_TOTAL_LABELS }))
+}
+
+function getAllowedQuantity(itemId) {
+  return Math.max(1, MAX_TOTAL_LABELS - getTotalQuantity(itemId))
+}
+
+function updateQuantity(item, value, { notify = false } = {}) {
+  const requestedQuantity = sanitizeQuantity(value)
+  const allowedQuantity = getAllowedQuantity(item.id)
+  const nextQuantity = Math.min(requestedQuantity, allowedQuantity)
+
+  item.quantity = nextQuantity
+
+  if (notify && requestedQuantity > allowedQuantity) {
+    showLimitError()
+  }
+}
 
 function addItem(option) {
   if (!option) return
@@ -116,9 +153,15 @@ function addItem(option) {
     return
   }
 
+  if (totalLabels.value >= MAX_TOTAL_LABELS) {
+    showLimitError()
+    selectedItem.value = null
+    return
+  }
+
   const existing = selectedItems.value.find((item) => item.id === option.id)
   if (existing) {
-    existing.quantity = Math.max(1, Number(existing.quantity || 1)) + 1
+    updateQuantity(existing, sanitizeQuantity(existing.quantity) + 1, { notify: true })
   } else {
     selectedItems.value.push({
       id: option.id,
@@ -134,8 +177,7 @@ function addItem(option) {
 }
 
 function normalizeQuantity(item) {
-  const value = Number(item.quantity)
-  item.quantity = Number.isFinite(value) && value > 0 ? Math.round(value) : 1
+  updateQuantity(item, item.quantity, { notify: true })
 }
 
 function removeItem(itemId) {
@@ -145,6 +187,11 @@ function removeItem(itemId) {
 function printLabels() {
   if (!labelInstances.value.length || !printArea.value) {
     toast.error(t('item.no_items_selected'))
+    return
+  }
+
+  if (totalLabels.value > MAX_TOTAL_LABELS) {
+    showLimitError()
     return
   }
 
@@ -245,6 +292,21 @@ function printLabels() {
                 </p>
               </div>
 
+              <Alert
+                :variant="remainingLabels === 0 ? 'destructive' : 'default'"
+                class="flex items-start gap-3 [&>svg]:static [&>svg]:left-auto [&>svg]:top-auto [&>svg~*]:pl-0"
+              >
+                <AlertCircle class="mt-0.5 h-4 w-4 shrink-0" />
+                <div class="space-y-1">
+                  <AlertTitle class="mb-0">
+                    {{ t('item.barcode_total_limit_title', { limit: MAX_TOTAL_LABELS }) }}
+                  </AlertTitle>
+                  <AlertDescription>
+                    {{ t('item.barcode_total_limit_description', { limit: MAX_TOTAL_LABELS, remaining: remainingLabels }) }}
+                  </AlertDescription>
+                </div>
+              </Alert>
+
               <div class="overflow-hidden rounded-xl border">
                 <Table>
                   <TableHeader>
@@ -266,12 +328,13 @@ function printLabels() {
                       <TableCell>{{ item.code }}</TableCell>
                       <TableCell>
                         <Input
-                          v-model="item.quantity"
+                          :model-value="item.quantity"
                           type="number"
                           min="1"
-                          max="500"
+                          :max="getAllowedQuantity(item.id)"
                           step="1"
                           class="h-9 max-w-28"
+                          @update:model-value="(value) => updateQuantity(item, value, { notify: true })"
                           @blur="normalizeQuantity(item)"
                         />
                       </TableCell>
@@ -365,9 +428,9 @@ function printLabels() {
           </div>
           <div class="flex items-center gap-3">
             <span class="text-sm text-muted-foreground">
-              {{ t('item.labels_ready', { count: totalLabels }) }}
+              {{ t('item.labels_ready_with_limit', { count: totalLabels, limit: MAX_TOTAL_LABELS }) }}
             </span>
-            <Button type="button" :disabled="!labelInstances.length" @click="printLabels">
+            <Button type="button" :disabled="!labelInstances.length || totalLabels > MAX_TOTAL_LABELS" @click="printLabels">
               <Printer class="mr-2 size-4" />
               {{ t('general.print') }}
             </Button>

@@ -1,6 +1,8 @@
 {
   "item_transfer": "Item Transfer",
   "item_transfers": "Item Transfers",
+  "from_store": "From Store",
+  "to_store": "To Store",
   "from_warehouse": "From Warehouse",
   "to_warehouse": "To Warehouse",
   "transfer_cost": "Transfer Cost",
@@ -14,4 +16,3 @@
   "cannot_edit_completed_or_cancelled_transfer": "Cannot edit completed or cancelled transfers",
   "cannot_delete_completed_transfer": "Cannot delete completed transfers"
 }
-

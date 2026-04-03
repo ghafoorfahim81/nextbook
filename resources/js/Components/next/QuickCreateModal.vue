@@ -22,6 +22,7 @@ const { t } = useI18n()
 const page = usePage()
 const submitting = ref(false)
 const errors = ref({})
+const autoFillLoading = ref(false)
 
 const config = computed(() => quickCreateRegistry?.[props.resourceType] || null)
 const title = computed(() => {
@@ -61,10 +62,11 @@ const form = ref(makeInitialForm())
 
 watch(
   () => props.open,
-  (isOpen) => {
+  async (isOpen) => {
     if (!isOpen) return
     errors.value = {}
     form.value = makeInitialForm()
+    await hydrateAutoFields()
   }
 )
 
@@ -123,6 +125,25 @@ const submit = async () => {
     }
   } finally {
     submitting.value = false
+  }
+}
+
+const hydrateAutoFields = async () => {
+  if (!config.value || config.value.endpointType !== 'items') return
+
+  autoFillLoading.value = true
+  try {
+    const { data } = await axios.get('/quick-create/items/next-code', {
+      headers: { Accept: 'application/json' },
+    })
+
+    if (data?.data?.code) {
+      setByPath(form.value, 'code', data.data.code)
+    }
+  } catch (e) {
+    console.error('Failed to load next item code for quick create.', e)
+  } finally {
+    autoFillLoading.value = false
   }
 }
 
@@ -222,6 +243,7 @@ function toPayload(data) {
             :model-value="getByPath(form, field.key)"
             @update:modelValue="(v) => setByPath(form, field.key, v)"
             :error="errors?.[field.key]"
+            :disabled="Boolean(field.disabled) || (field.key === 'code' && autoFillLoading)"
           />
         </div>
       </template>

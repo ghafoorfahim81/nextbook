@@ -9,6 +9,7 @@ export const QUICK_CREATE_EVENT = 'nextbook:quick-created'
  * @property {string} label
  * @property {'text'|'number'|'textarea'|'select'|'checkbox'} type
  * @property {boolean=} required
+ * @property {boolean=} disabled
  * @property {Array<{id:any,name:string}>|(()=>Array<{id:any,name:string}>)=} options
  * @property {string=} placeholder
  */
@@ -104,7 +105,7 @@ export const quickCreateRegistry = {
     endpointType: 'items',
     fields: [
       { key: 'name', labelKey: 'general.name', type: 'text', required: true },
-      { key: 'code', labelKey: 'admin.currency.code', type: 'text', required: true },
+      { key: 'code', labelKey: 'admin.currency.code', type: 'text', disabled: true },
       { key: 'unit_measure_id', labelKey: 'admin.unit_measure.unit_measure', type: 'select', required: true },
       { key: 'sale_price', labelKey: 'item.sale_price', type: 'number', required: true },
       { key: 'brand_id', labelKey: 'admin.brand.brand', type: 'select' },
@@ -118,7 +119,7 @@ export const quickCreateRegistry = {
     endpointType: 'items',
     fields: [
       { key: 'name', labelKey: 'general.name', type: 'text', required: true },
-      { key: 'code', labelKey: 'admin.currency.code', type: 'text', required: true },
+      { key: 'code', labelKey: 'admin.currency.code', type: 'text', disabled: true },
       { key: 'unit_measure_id', labelKey: 'admin.unit_measure.unit_measure', type: 'select', required: true },
       { key: 'sale_price', labelKey: 'item.sale_price', type: 'number', required: true },
       { key: 'brand_id', labelKey: 'admin.brand.brand', type: 'select' },

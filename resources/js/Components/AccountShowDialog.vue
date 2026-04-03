@@ -139,7 +139,7 @@ const closeDialog = () => {
             <DialogHeader>
                 <DialogTitle>
                     {{ t('account.account') }}
-                    <span v-if="accountData.name"> - {{ accountData.name }}</span>
+                    <span v-if="accountData.local_name"> - {{ accountData.local_name }}</span>
                 </DialogTitle>
             </DialogHeader>
 
@@ -182,11 +182,11 @@ const closeDialog = () => {
                             <div
                                 class="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-500 to-blue-500 flex items-center justify-center text-white text-xl font-bold"
                             >
-                                {{ (accountData.name || '').charAt(0).toUpperCase() }}
+                                {{ (accountData.local_name || '').charAt(0).toUpperCase() }}
                             </div>
                             <div class="text-center">
                                 <div class="text-base font-semibold text-primary">
-                                    {{ accountData.name }}
+                                    {{ accountData.local_name }}
                                 </div>
                                 <div class="text-xs text-muted-foreground mt-1">
                                     {{ accountData.number }}
@@ -270,8 +270,8 @@ const closeDialog = () => {
                                         {{ accountData.branch?.name || '' }}
                                     </div>
                                 </div>
-                                <div>   
-                                    <div class="text-xs text-muted-foreground"> 
+                                <div>
+                                    <div class="text-xs text-muted-foreground">
                                         {{ t('account.parent') }}
                                     </div>
                                     <div class="font-medium">
