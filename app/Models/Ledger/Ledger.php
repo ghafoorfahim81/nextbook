@@ -39,13 +39,15 @@ class Ledger extends Model
         return Attribute::make(
             get: function () {
 
+                // Calculate total debit and credit, multiplying each by its transaction's rate
                 $totals = TransactionLine::whereHas('transaction', function ($query) {
                         $query->where('ledger_id', $this->id);
-                              //->where('status', 'posted');
+                        //->where('status', 'posted');
                     })
+                    ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
                     ->selectRaw('
-                        SUM(debit) as total_debit,
-                        SUM(credit) as total_credit
+                        SUM(transaction_lines.debit * transactions.rate) as total_debit,
+                        SUM(transaction_lines.credit * transactions.rate) as total_credit
                     ')
                     ->first();
 

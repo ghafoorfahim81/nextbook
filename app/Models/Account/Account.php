@@ -280,6 +280,8 @@ class Account extends Model
                 'number' => $account->number,
                 'slug' => $account->slug,
                 'name' => $locale === 'en' ? $account->name : ($account->local_name ?? $account->name),
+                'english_name' => $account->name,
+                'local_name' => $account->local_name,
             ];
         });
     }
