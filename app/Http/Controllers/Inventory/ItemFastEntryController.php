@@ -47,6 +47,7 @@ class ItemFastEntryController extends Controller
                     'income_account_id' => $glAccounts['product-income'],
                     'cost_account_id' => $glAccounts['cost-of-goods-sold'],
                     'code'           => $r['code'] ?? null,
+                    'barcode'        => $r['barcode'] ?? null,
                     'unit_measure_id'=> $r['measure_id'],     // align with your schema
                     'purchase_price' => $r['purchase_price'] ?? null,
                     'sale_price'     => $r['sale_price'] ?? null,

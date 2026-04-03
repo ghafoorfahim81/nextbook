@@ -25,6 +25,7 @@ class FastEntryRequest extends FormRequest
                         ->where('branch_id', $branchId)
                         ->whereNull('deleted_at')
                     )],
+            'items.*.barcode'             => ['nullable','string','max:100'],
             'items.*.category_id'         => ['nullable','exists:categories,id'],
             'items.*.measure_id'          => ['required','exists:unit_measures,id'],
             'items.*.brand_id'            => ['nullable','exists:brands,id'],
