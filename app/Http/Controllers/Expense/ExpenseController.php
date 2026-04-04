@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use App\Services\DateConversionService;
+use App\Http\Resources\Account\AccountResource;
 class ExpenseController extends Controller
 {
     private $dateConversionService;
@@ -68,12 +69,12 @@ class ExpenseController extends Controller
             'categories' => ExpenseCategoryResource::collection(
                 ExpenseCategory::where('is_active', true)->get()
             ),
-            'expenseAccounts' => Account::whereHas('accountType', fn($q) =>
+            'expenseAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
                 $q->where('slug', 'expense')
-            )->get(),
-            'bankAccounts' => Account::whereHas('accountType', fn($q) =>
+                )->get()),
+            'bankAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
                 $q->whereIn('slug', ['cash-or-bank'])
-            )->get(),
+            )->get()),
         ]);
     }
 
@@ -160,12 +161,12 @@ class ExpenseController extends Controller
             'categories' => ExpenseCategoryResource::collection(
                 ExpenseCategory::where('is_active', true)->get()
             ),
-           'expenseAccounts' => Account::whereHas('accountType', fn($q) =>
+           'expenseAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
                 $q->where('slug', 'expense')
-            )->get(),
-            'bankAccounts' => Account::whereHas('accountType', fn($q) =>
+            )->get()),
+            'bankAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
                 $q->whereIn('slug', ['cash-or-bank'])
-            )->get(),
+            )->get()),
         ]);
     }
 

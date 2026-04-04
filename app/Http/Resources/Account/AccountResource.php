@@ -23,6 +23,7 @@ class AccountResource extends JsonResource
             'id' => $this->id,
             'name' => $displayName,
             'english_name' => $this->name,
+            'english_name' => $this->name,
             'local_name' => $this->local_name,
             'number' => $this->number,
             'account_type_id' => $this->account_type_id,

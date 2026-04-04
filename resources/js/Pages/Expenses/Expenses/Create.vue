@@ -16,11 +16,16 @@ const { t } = useI18n();
 
 const props = defineProps({
     categories: { type: Object, required: true },
-    expenseAccounts: { type: Array, required: true },
-    bankAccounts: { type: Array, required: true },
-    currencies: { type: Array, required: true },
+    expenseAccounts: { type: Object, required: true },
+    bankAccounts: { type: Object, required: true },
+    currencies: { type: Object, required: true },
     homeCurrency: { type: Object, required: true },
 });
+
+const expenseAccounts = computed(() => props.expenseAccounts.data || props.expenseAccounts);
+const bankAccounts = computed(() => props.bankAccounts.data || props.bankAccounts);
+const currencies = computed(() => props.currencies.data || props.currencies);
+const homeCurrency = computed(() => props.homeCurrency || {});
 
 const form = useForm({
     date: '',
