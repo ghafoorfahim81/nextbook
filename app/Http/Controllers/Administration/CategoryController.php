@@ -9,7 +9,9 @@ use App\Http\Resources\Administration\CategoryCollection;
 use App\Http\Resources\Administration\CategoryResource;
 use App\Models\Administration\Category;
 use Illuminate\Http\Request;
-
+use App\Support\Inertia\CacheForget;
+use App\Support\Inertia\CacheKey;
+use Illuminate\Support\Facades\Cache;
 class CategoryController extends Controller
 {
     public function __construct()
@@ -37,6 +39,8 @@ class CategoryController extends Controller
     public function store(CategoryStoreRequest $request)
     {
         $category = Category::create($request->validated());
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'categories'));
+
         return redirect()->route('categories.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.category')]));
     }
 
@@ -50,6 +54,7 @@ class CategoryController extends Controller
     public function update(CategoryUpdateRequest $request, Category $category)
     {
         $category->update($request->validated());
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'categories'));
         return redirect()->back();
     }
 
@@ -64,12 +69,14 @@ class CategoryController extends Controller
         }
 
         $category->delete();
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'categories'));
         return redirect()->route('categories.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.category')]));
     }
 
     public function restore(Request $request, Category $category)
     {
         $category->restore();
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'categories'));
         return back()->with('success', __('general.restored_successfully', ['resource' => __('general.resource.category')]));
     }
 }

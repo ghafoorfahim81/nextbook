@@ -8,7 +8,8 @@ use App\Http\Requests\Administration\SizeUpdateRequest;
 use App\Http\Resources\Administration\SizeResource;
 use App\Models\Administration\Size;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Cache;
+use App\Support\Inertia\CacheKey;
 class SizeController extends Controller
 {
     public function __construct()
@@ -37,6 +38,7 @@ class SizeController extends Controller
     public function store(SizeStoreRequest $request)
     {
         Size::create($request->validated());
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'sizes'));
         return redirect()->route('sizes.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.size')]));
     }
 
@@ -49,6 +51,7 @@ class SizeController extends Controller
     public function update(SizeUpdateRequest $request, Size $size)
     {
         $size->update($request->validated());
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'sizes'));
         return redirect()->back();
     }
 
@@ -64,12 +67,14 @@ class SizeController extends Controller
         }
 
         $size->delete();
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'sizes'));
         return redirect()->route('sizes.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.size')]));
     }
 
     public function restore(Request $request, Size $size)
     {
         $size->restore();
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'sizes'));
         return redirect()->route('sizes.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.size')]));
     }
 }
