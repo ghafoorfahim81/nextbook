@@ -9,7 +9,8 @@ use App\Http\Resources\Administration\CurrencyResource;
 use App\Models\Administration\Currency;
 use App\Support\Inertia\CacheForget;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Cache;
+use App\Support\Inertia\CacheKey;
 class CurrencyController extends Controller
 {
     public function __construct()
@@ -37,7 +38,7 @@ class CurrencyController extends Controller
     public function store(CurrencyStoreRequest $request)
     {
         Currency::create($request->currencyData());
-        $this->forgetCurrencyLookups($request);
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'currencies'));
 
         return redirect()->route('currencies.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.currency')]));
 
@@ -52,7 +53,7 @@ class CurrencyController extends Controller
     public function update(CurrencyUpdateRequest $request, Currency $currency)
     {
         $currency->update($request->validated());
-        $this->forgetCurrencyLookups($request);
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'currencies'));
 
         return redirect()->route('currencies.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.currency')]));
 
@@ -61,14 +62,14 @@ class CurrencyController extends Controller
     public function destroy(Request $request, Currency $currency)
     {
         $currency->delete();
-        $this->forgetCurrencyLookups($request);
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'currencies'));
 
         return back();
     }
     public function restore(Request $request, Currency $currency)
     {
         $currency->restore();
-        $this->forgetCurrencyLookups($request);
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'currencies'));
 
         return redirect()->route('currencies.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.currency')]));
     }
