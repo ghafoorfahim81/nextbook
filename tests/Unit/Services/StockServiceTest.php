@@ -69,6 +69,7 @@ class StockServiceTest extends TestCase
         $outMovements = StockMovement::query()
             ->where('movement_type', StockMovementType::OUT->value)
             ->orderBy('created_at')
+            ->orderBy('id')
             ->get();
 
         $this->assertEquals(2, $outMovements->count());
@@ -152,6 +153,79 @@ class StockServiceTest extends TestCase
             'branch_id' => $this->ctx['branch']->id,
             'reference_type' => 'batch-test',
             'reference_id' => $this->ctx['item']->id,
+        ]);
+    }
+
+    public function test_batch_tracked_fifo_auto_allocates_oldest_batches_when_batch_is_not_selected(): void
+    {
+        $service = app(StockService::class);
+        $this->ctx['item']->update([
+            'is_batch_tracked' => true,
+            'is_expiry_tracked' => true,
+        ]);
+
+        $base = [
+            'item_id' => $this->ctx['item']->id,
+            'unit_measure_id' => $this->ctx['unit_measure']->id,
+            'source' => StockSourceType::PURCHASE->value,
+            'status' => StockStatus::POSTED->value,
+            'size_id' => $this->ctx['size']->id,
+            'warehouse_id' => $this->ctx['warehouse']->id,
+            'branch_id' => $this->ctx['branch']->id,
+            'reference_type' => 'batch-auto-test',
+            'reference_id' => $this->ctx['item']->id,
+        ];
+
+        $service->post(array_merge($base, [
+            'movement_type' => StockMovementType::IN->value,
+            'quantity' => 7,
+            'unit_cost' => 20,
+            'batch' => 'Batch 002',
+            'expire_date' => '2027-02-01',
+            'date' => '2026-03-01',
+        ]));
+
+        $service->post(array_merge($base, [
+            'movement_type' => StockMovementType::IN->value,
+            'quantity' => 10,
+            'unit_cost' => 10,
+            'batch' => 'Batch 001',
+            'expire_date' => '2027-01-01',
+            'date' => '2026-03-02',
+        ]));
+
+        $service->post(array_merge($base, [
+            'movement_type' => StockMovementType::OUT->value,
+            'quantity' => 15,
+            'unit_cost' => 0,
+            'batch' => null,
+            'expire_date' => null,
+            'date' => '2026-03-03',
+        ]));
+
+        $outMovements = StockMovement::query()
+            ->where('movement_type', StockMovementType::OUT->value)
+            ->orderBy('created_at')
+            ->get();
+
+        $this->assertCount(2, $outMovements);
+        $this->assertSame('Batch 001', $outMovements[0]->batch);
+        $this->assertEquals(10.0, (float) $outMovements[0]->quantity);
+        $this->assertSame('Batch 002', $outMovements[1]->batch);
+        $this->assertEquals(5.0, (float) $outMovements[1]->quantity);
+
+        $this->assertDatabaseHas('stock_balances', [
+            'item_id' => $this->ctx['item']->id,
+            'warehouse_id' => $this->ctx['warehouse']->id,
+            'batch' => 'Batch 001',
+            'quantity' => 0.0000,
+        ]);
+
+        $this->assertDatabaseHas('stock_balances', [
+            'item_id' => $this->ctx['item']->id,
+            'warehouse_id' => $this->ctx['warehouse']->id,
+            'batch' => 'Batch 002',
+            'quantity' => 2.0000,
         ]);
     }
 
