@@ -16,7 +16,7 @@ const props = defineProps({
 });
 const { t } = useI18n();
 const columns = computed(() => ([
-    { key: 'name', label: t('general.name') },
+    { key: 'english_name', label: t('general.name') },
     { key: 'local_name', label: t('account.local_name') },
     { key: 'number', label: t('general.number') },
     { key: 'remark', label: t('general.remark') },
