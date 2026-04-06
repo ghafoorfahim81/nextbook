@@ -70,7 +70,11 @@ class RoleController extends Controller
 
     public function show(Request $request, Role $role)
     {
-        $role->load(['permissions', 'users:id,name,email'])->loadCount(['permissions', 'users']);
+        $role->load([
+            'permissions',
+            'users' => fn ($query) => $query->select('users.id', 'users.name', 'users.email'),
+        ])->loadCount(['permissions', 'users']);
+
         return new RoleResource($role);
     }
 
@@ -96,7 +100,10 @@ class RoleController extends Controller
         }
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'roles'));
-        $role->loadMissing('users:id');
+        $role->loadMissing([
+            'users' => fn ($query) => $query->select('users.id'),
+        ]);
+
         foreach ($role->users as $assignedUser) {
             CacheForget::authForUserId($assignedUser->id);
         }

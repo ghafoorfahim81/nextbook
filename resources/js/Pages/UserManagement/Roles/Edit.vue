@@ -16,7 +16,7 @@ const props = defineProps({
     permissions: Array,
 });
 
-const role = props.role?.data;
+const role = props.role?.data ?? props.role ?? {};
 const form = useForm({
     name: role?.name || '',
     permissions: role?.permissions?.map(p => p.id) || [],
