@@ -2,8 +2,6 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/Components/ui/button'
-import ReportFilterDate from '@/Components/reports/ReportFilterDate.vue'
-import ReportFilterSelect from '@/Components/reports/ReportFilterSelect.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 
