@@ -194,7 +194,7 @@ const closeDialog = () => {
                                         <User class="h-3 w-3" />
                                         {{ t('ledger.customer.customer') }}
                                     </div>
-                                    <div class="text-sm font-medium text-foreground">{{ sale.createdBy || '-' }}</div>
+                                    <div class="text-sm font-medium text-foreground">{{ sale.customer_name || '-' }}</div>
                                 </div>
                                 <div class="space-y-1.5">
                                     <div class="flex items-center gap-2 text-xs text-muted-foreground">
