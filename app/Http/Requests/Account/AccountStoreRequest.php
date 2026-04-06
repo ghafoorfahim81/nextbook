@@ -22,9 +22,9 @@ class AccountStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:accounts,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'local_name' => ['nullable', 'string', 'unique:accounts,local_name,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'number' => ['required', 'string', 'unique:accounts,number,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'name' => ['required', 'string', \Illuminate\Validation\Rule::unique('accounts')->ignore($this->route('account'))->whereNull('deleted_at')],
+            'local_name' => ['nullable', 'string', \Illuminate\Validation\Rule::unique('accounts')->ignore($this->route('account'))->whereNull('deleted_at')],
+            'number' => ['required', 'string', \Illuminate\Validation\Rule::unique('accounts')->ignore($this->route('account'))->whereNull('deleted_at')],
             'account_type_id' => ['required', 'string', 'exists:account_types,id'],
             'parent_id' => ['nullable', 'string', 'exists:accounts,id'],
             'is_active' => ['nullable', 'boolean'],
