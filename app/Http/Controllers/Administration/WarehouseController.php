@@ -10,7 +10,7 @@ use App\Models\Administration\Warehouse;
 use App\Support\Inertia\CacheKey;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-
+use App\Models\Inventory\StockMovement;
 class WarehouseController extends Controller
 {
     public function __construct()
@@ -76,6 +76,10 @@ class WarehouseController extends Controller
 
         if ($warehouse->is_main) {
             return redirect()->route('warehouses.index')->with('error', __('general.cannot_delete_main_warehouse'));
+        }
+        $stockMovements = StockMovement::where('warehouse_id', $warehouse->id)->first();
+        if($stockMovements){
+            return redirect()->route('warehouses.index')->with('error', __('general.cannot_delete_warehouse_with_stock_movements', ['resource' => __('general.resource.warehouse')]));
         }
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'warehouses'));

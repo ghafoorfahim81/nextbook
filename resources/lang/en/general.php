@@ -69,5 +69,6 @@ return [
     'posted_stock_movements_found' => 'Posted stock movements found.',
     'owe_to' => 'Owe to',
     'owe_you' => 'Owe you',
+    'cannot_delete_warehouse_with_stock_movements' => 'Cannot delete warehouse with stock movements.',
 ];
 
