@@ -108,8 +108,8 @@ class SupplierController extends Controller
                     'remark' => 'Opening balance for supplier ' . $ledger->name,
                 ],
                 lines: [
-                ['account_id' => $equityId, 'ledger_id' => $ledger->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for customer ' . $ledger->name],
-                ['account_id' => $apId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $ledger->name],
+                ['account_id' => $equityId, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for supplier ' . $ledger->name],
+                ['account_id' => $apId, 'ledger_id' => $ledger->id, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for supplier ' . $ledger->name],
             ]);
             $transaction->opening()->create([
                 'ledgerable_id' => $ledger->id,

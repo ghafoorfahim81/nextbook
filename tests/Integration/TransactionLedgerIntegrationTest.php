@@ -2,6 +2,8 @@
 
 namespace Tests\Integration;
 
+use App\Models\Ledger\Ledger;
+use App\Services\DashboardService;
 use App\Services\ReportService;
 use App\Services\TransactionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -210,5 +212,42 @@ class TransactionLedgerIntegrationTest extends TestCase
         $this->assertEquals(-20.0, $customerStatement['summary']['balance']);
         $this->assertEquals('20.00 Cr', $customerStatement['summary']['balance_label']);
         $this->assertEquals(-150.0, $supplierStatement['summary']['balance']);
+    }
+
+    public function test_dashboard_payables_follow_account_payable_balance_and_recover_legacy_supplier_openings(): void
+    {
+        $transactionService = app(TransactionService::class);
+        $dashboardService = app(DashboardService::class);
+
+        $transactionService->post(
+            header: [
+                'currency_id' => $this->ctx['currency']->id,
+                'rate' => 1,
+                'date' => '2026-03-01',
+                'reference_type' => Ledger::class,
+                'reference_id' => $this->ctx['supplier_ledger']->id,
+                'remark' => 'Legacy opening balance for supplier',
+            ],
+            lines: [
+                [
+                    'account_id' => $this->ctx['accounts']['opening-balance-equity']->id,
+                    'ledger_id' => $this->ctx['supplier_ledger']->id,
+                    'debit' => 4500,
+                    'credit' => 0,
+                ],
+                [
+                    'account_id' => $this->ctx['accounts']['account-payable']->id,
+                    'debit' => 0,
+                    'credit' => 4500,
+                ],
+            ],
+        );
+
+        $dashboard = $dashboardService->getDashboardData($this->ctx['user']);
+
+        $this->assertEquals(4500.0, $dashboard['kpis']['accounts_payable']);
+        $this->assertCount(1, $dashboard['top_lists']['payable_balances']);
+        $this->assertSame($this->ctx['supplier_ledger']->id, $dashboard['top_lists']['payable_balances'][0]['id']);
+        $this->assertEquals(4500.0, $dashboard['top_lists']['payable_balances'][0]['balance']);
     }
 }
