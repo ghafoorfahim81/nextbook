@@ -274,7 +274,7 @@ class UnitMeasure extends Model
      */
     public function stocks()
     {
-        return $this->hasMany(\App\Models\Inventory\Stock::class, 'unit_measure_id');
+        return $this->hasMany(\App\Models\Inventory\StockMovement::class, 'unit_measure_id');
     }
 
 }
