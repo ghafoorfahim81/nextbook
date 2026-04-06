@@ -1,8 +1,11 @@
-﻿<script setup>
+<script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/Components/ui/button'
-import NextDatePicker from '@/Components/next/NextDatePicker.vue'
+import ReportFilterDate from '@/Components/reports/ReportFilterDate.vue'
+import ReportFilterSelect from '@/Components/reports/ReportFilterSelect.vue'
+import NextSelect from '@/Components/next/NextSelect.vue'
+import NextDate from '@/Components/next/NextDatePicker.vue'
 
 const props = defineProps({
   filters: { type: Object, required: true },
@@ -15,13 +18,38 @@ const props = defineProps({
 const emit = defineEmits(['update:filters', 'submit', 'reset'])
 const { t } = useI18n()
 
-const baseSelectClass = 'h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20'
-
 const showLedger = computed(() => props.activeDefinition.filters.includes('ledger_id'))
 const showCustomer = computed(() => props.activeDefinition.filters.includes('customer_id'))
 const showSupplier = computed(() => props.activeDefinition.filters.includes('supplier_id'))
 const showItem = computed(() => props.activeDefinition.filters.includes('item_id'))
 const showAccount = computed(() => props.activeDefinition.filters.includes('account_id'))
+
+const perPageOptions = [
+  { value: 15, label: '15' },
+  { value: 25, label: '25' },
+  { value: 50, label: '50' },
+  { value: 100, label: '100' },
+]
+
+const reportOptions = computed(() => props.reportList.map(report => ({
+  key: report.key,
+  label: report.label,
+})))
+
+const branchOptions = computed(() => props.options.branches || [])
+
+function withPlaceholder(items, label, labelKey = 'name', valueKey = 'id') {
+  return [
+    { [valueKey]: '', [labelKey]: label },
+    ...(items || []),
+  ]
+}
+
+const ledgerOptions = computed(() => withPlaceholder(props.options.ledgers, t('report.filters.ledger')))
+const customerOptions = computed(() => withPlaceholder(props.options.customers, t('report.filters.customer')))
+const supplierOptions = computed(() => withPlaceholder(props.options.suppliers, t('report.filters.supplier')))
+const itemOptions = computed(() => withPlaceholder(props.options.items, t('report.filters.item')))
+const accountOptions = computed(() => withPlaceholder(props.options.cash_accounts, t('report.filters.account')))
 
 function updateFilters(next) {
   emit('update:filters', next)
@@ -59,99 +87,95 @@ function setReport(report) {
     </div>
 
     <div class="space-y-4 p-5">
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <label v-if="showReportSelect" class="space-y-2 md:col-span-2 xl:col-span-2">
-          <span class="text-sm font-medium text-foreground">{{ t('report.filters.report') }}</span>
-          <select :value="filters.report" :class="baseSelectClass" @change="setReport($event.target.value)">
-            <option v-for="report in reportList" :key="report.key" :value="report.key">
-              {{ report.label }}
-            </option>
-          </select>
-        </label>
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4"> 
+        <div v-if="showReportSelect">  
+          <NextSelect
+            :floating-text="t('report.filters.report')"
+            :model-value="filters.report"
+            :options="reportOptions"
+            label-key="label"
+            value-key="key"
+            :clearable="false"
+            @update:modelValue="setReport"
+          /> 
+        </div>
+          <NextSelect
+          :floating-text="t('report.filters.branch')"
+          :model-value="filters.branch_id"
+          :options="branchOptions"
+          :clearable="false"
+          label-key="name"
+          value-key="id"
+          @update:modelValue="setFilter('branch_id', $event)"
+        />   
+          <NextSelect
+            :floating-text="t('report.filters.per_page')"
+            :model-value="filters.per_page"
+            :options="perPageOptions"
+            label-key="label"
+            value-key="value"
+            :clearable="false"
+            :empty-value="15"
+            @update:modelValue="setFilter('per_page', Number($event))"
+          /> 
+          <NextDate v-model="filters.date_from"  :label="t('general.date')" :placeholder="t('general.enter', { text: t('report.filters.date_from') })" />
+       
+          <NextDate v-model="filters.date_to"   :label="t('general.date')" :placeholder="t('general.enter', { text: t('report.filters.date_to') })" />
+       
 
-        <label class="space-y-2">
-          <span class="text-sm font-medium text-foreground">{{ t('report.filters.branch') }}</span>
-          <select :value="filters.branch_id" :class="baseSelectClass" @change="setFilter('branch_id', $event.target.value)">
-            <option v-for="branch in options.branches || []" :key="branch.id" :value="branch.id">
-              {{ branch.name }}
-            </option>
-          </select>
-        </label>
-
-        <label class="space-y-2">
-          <span class="text-sm font-medium text-foreground">{{ t('report.filters.per_page') }}</span>
-          <select :value="filters.per_page" :class="baseSelectClass" @change="setFilter('per_page', Number($event.target.value))">
-            <option :value="15">15</option>
-            <option :value="25">25</option>
-            <option :value="50">50</option>
-            <option :value="100">100</option>
-          </select>
-        </label>
-        <label class="space-y-2">
-          <span class="text-sm font-medium text-foreground">{{ t('report.filters.date_from') }}</span>
-          <NextDatePicker
-            :model-value="filters.date_from"
-            @update:modelValue="setFilter('date_from', $event)"
+        <div v-if="showLedger">
+          <NextSelect
+            :floating-text="t('report.filters.ledger')"
+            :model-value="filters.ledger_id"
+            :options="ledgerOptions"
+            :clearable="false"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('ledger_id', $event)"
           />
-        </label>
-
-        <label class="space-y-2">
-          <span class="text-sm font-medium text-foreground">{{ t('report.filters.date_to') }}</span>
-          <NextDatePicker
-            :model-value="filters.date_to"
-            @update:modelValue="setFilter('date_to', $event)"
+          </div>
+          <div v-if="showCustomer">
+          <NextSelect
+            :floating-text="t('report.filters.customer')"
+            :model-value="filters.customer_id"
+            :options="customerOptions"
+            label-key="name"
+            value-key="id"
+            :clearable="false"
+            @update:modelValue="setFilter('customer_id', $event)"
           />
-        </label>
-
-        <label v-if="showLedger" class="space-y-2">
-          <span class="text-sm font-medium text-foreground">{{ t('report.filters.ledger') }}</span>
-          <select :value="filters.ledger_id" :class="baseSelectClass" @change="setFilter('ledger_id', $event.target.value)">
-            <option value="">{{ t('report.filters.ledger') }}</option>
-            <option v-for="ledger in options.ledgers || []" :key="ledger.id" :value="ledger.id">
-              {{ ledger.name }}
-            </option>
-          </select>
-        </label>
-
-        <label v-if="showCustomer" class="space-y-2">
-          <span class="text-sm font-medium text-foreground">{{ t('report.filters.customer') }}</span>
-          <select :value="filters.customer_id" :class="baseSelectClass" @change="setFilter('customer_id', $event.target.value)">
-            <option value="">{{ t('report.filters.customer') }}</option>
-            <option v-for="customer in options.customers || []" :key="customer.id" :value="customer.id">
-              {{ customer.name }}
-            </option>
-          </select>
-        </label>
-
-        <label v-if="showSupplier" class="space-y-2">
-          <span class="text-sm font-medium text-foreground">{{ t('report.filters.supplier') }}</span>
-          <select :value="filters.supplier_id" :class="baseSelectClass" @change="setFilter('supplier_id', $event.target.value)">
-            <option value="">{{ t('report.filters.supplier') }}</option>
-            <option v-for="supplier in options.suppliers || []" :key="supplier.id" :value="supplier.id">
-              {{ supplier.name }}
-            </option>
-          </select>
-        </label>
-
-        <label v-if="showItem" class="space-y-2">
-          <span class="text-sm font-medium text-foreground">{{ t('report.filters.item') }}</span>
-          <select :value="filters.item_id" :class="baseSelectClass" @change="setFilter('item_id', $event.target.value)">
-            <option value="">{{ t('report.filters.item') }}</option>
-            <option v-for="item in options.items || []" :key="item.id" :value="item.id">
-              {{ item.name }}
-            </option>
-          </select>
-        </label>
-
-        <label v-if="showAccount" class="space-y-2">
-          <span class="text-sm font-medium text-foreground">{{ t('report.filters.account') }}</span>
-          <select :value="filters.account_id" :class="baseSelectClass" @change="setFilter('account_id', $event.target.value)">
-            <option value="">{{ t('report.filters.account') }}</option>
-            <option v-for="account in options.cash_accounts || []" :key="account.id" :value="account.id">
-              {{ account.name }}
-            </option>
-          </select>
-        </label>
+          </div>
+          <div v-if="showSupplier">
+          <NextSelect
+            :floating-text="t('report.filters.supplier')"
+            :model-value="filters.supplier_id"
+            :options="supplierOptions"
+            label-key="name"
+            value-key="id"
+            :clearable="false"
+            @update:modelValue="setFilter('supplier_id', $event)"
+          />
+          </div>
+          <div v-if="showItem">
+          <NextSelect
+            :floating-text="t('report.filters.item')"
+            :model-value="filters.item_id"
+            :options="itemOptions"
+            :clearable="false"
+            @update:modelValue="setFilter('item_id', $event)"
+          /> 
+          </div>
+        <div v-if="showAccount">
+          <NextSelect
+            :floating-text="t('report.filters.account')"
+            :model-value="filters.account_id"
+            :options="accountOptions"
+            label-key="name"
+            value-key="id"
+            :clearable="false"
+            @update:modelValue="setFilter('account_id', $event)"
+          /> 
+        </div>
       </div>
 
       <div class="flex flex-wrap items-center gap-3">
