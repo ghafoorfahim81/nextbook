@@ -25,6 +25,10 @@ const props = defineProps({
     currencies: { type: Array, required: true },
 });
 
+const expenseAccounts = computed(() => props.expenseAccounts.data || props.expenseAccounts);
+const bankAccounts = computed(() => props.bankAccounts.data || props.bankAccounts);
+const currencies = computed(() => props.currencies.data || props.currencies);
+
 const expense = props.expense.data;
 const form = useForm({
     date: expense.date || '',
