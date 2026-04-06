@@ -15,7 +15,7 @@
             :label="showLabel ? undefined : ''"
             :input-attrs="{ placeholder, class: inputClass, style: 'width:100%' }"
             :locale="effectiveLocale"
-            :current="shouldShowCurrentDate"
+            :current="shouldShowCurrentDate" 
         >
             <template v-if="!showLabel" #label>
                 <!-- Empty template to override any default label -->
