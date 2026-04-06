@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\StockStatus;
 use App\Enums\TransactionStatus;
 use App\Models\Administration\Branch;
+use App\Models\Ledger\Ledger;
 use App\Models\Purchase\Purchase;
 use App\Models\Sale\Sale;
 use Carbon\Carbon;
@@ -48,7 +49,7 @@ class DashboardService
         return [
             'cash_bank_balance' => $this->cashBankBalance($branchId),
             'accounts_receivable' => $this->ledgerBalanceTotal($branchId, 'customer', 'dr'),
-            'accounts_payable' => $this->ledgerBalanceTotal($branchId, 'supplier', 'cr'),
+            'accounts_payable' => $this->accountTypeBalanceTotal($branchId, ['account-payable'], true),
             'today_sales_total' => $this->salesOrPurchaseTotalForDate($branchId, Sale::class, 'debit', ['cash-or-bank', 'account-receivable'], $today),
             'today_purchases_total' => $this->salesOrPurchaseTotalForDate($branchId, Purchase::class, 'credit', ['cash-or-bank', 'account-payable'], $today),
             'today_cash_received' => $this->cashMovementForDate($branchId, 'debit', $today),
@@ -146,7 +147,7 @@ class DashboardService
             'customers_by_sales' => $this->topCustomersBySales($branchId),
             'suppliers_by_purchases' => $this->topSuppliersByPurchases($branchId),
             'receivable_balances' => $this->topLedgerBalances($branchId, 'customer', 'dr'),
-            'payable_balances' => $this->topLedgerBalances($branchId, 'supplier', 'cr'),
+            'payable_balances' => $this->topSupplierPayableBalances($branchId),
         ];
     }
 
@@ -454,6 +455,24 @@ class DashboardService
         return $this->moneyValue($row?->value);
     }
 
+    protected function accountTypeBalanceTotal(string $branchId, array $accountTypeSlugs, bool $reverseSign = false): float
+    {
+        $row = $this->postedTransactionLines($branchId)
+            ->join('accounts as a', function ($join) use ($branchId) {
+                $join->on('a.id', '=', 'tl.account_id')
+                    ->where('a.branch_id', '=', $branchId)
+                    ->whereNull('a.deleted_at');
+            })
+            ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
+            ->whereIn('at.slug', $accountTypeSlugs)
+            ->selectRaw('COALESCE(SUM((COALESCE(tl.debit, 0) - COALESCE(tl.credit, 0)) * t.rate), 0) as raw_balance')
+            ->first();
+
+        $balance = (float) ($row?->raw_balance ?? 0);
+
+        return $this->moneyValue($reverseSign ? -1 * $balance : $balance);
+    }
+
     protected function topLedgerBalances(string $branchId, string $ledgerType, string $nature): array
     {
         $rows = $this->postedLedgerBalances($branchId, $ledgerType)
@@ -473,6 +492,32 @@ class DashboardService
             ]);
 
         return $rows->values()->all();
+    }
+
+    protected function topSupplierPayableBalances(string $branchId): array
+    {
+        $rows = DB::query()
+            ->fromSub($this->supplierPayableBalances($branchId), 'supplier_balances')
+            ->join('ledgers as l', function ($join) use ($branchId) {
+                $join->on('l.id', '=', 'supplier_balances.ledger_id')
+                    ->where('l.branch_id', '=', $branchId)
+                    ->where('l.type', '=', 'supplier')
+                    ->whereNull('l.deleted_at');
+            })
+            ->where('supplier_balances.balance', '<', 0)
+            ->orderBy('supplier_balances.balance')
+            ->limit(10)
+            ->get([
+                'l.id as ledger_id',
+                'l.name as ledger_name',
+                DB::raw('ABS(supplier_balances.balance) as balance'),
+            ]);
+
+        return $rows->map(fn ($row) => [
+            'id' => $row->ledger_id,
+            'name' => $row->ledger_name,
+            'balance' => $this->moneyValue($row->balance),
+        ])->values()->all();
     }
 
     protected function topCustomersBySales(string $branchId): array
@@ -659,6 +704,31 @@ class DashboardService
             ->whereNull('tl.deleted_at')
             ->groupBy('l.id', 'l.name')
             ->selectRaw('l.id as ledger_id, l.name as ledger_name')
+            ->selectRaw('COALESCE(SUM((COALESCE(tl.debit, 0) - COALESCE(tl.credit, 0)) * t.rate), 0) as balance');
+    }
+
+    protected function supplierPayableBalances(string $branchId)
+    {
+        $supplierReferenceType = addslashes(Ledger::class);
+        $resolvedLedgerId = "COALESCE(tl.ledger_id, CASE WHEN t.reference_type = '{$supplierReferenceType}' THEN t.reference_id END)";
+
+        return DB::table('transaction_lines as tl')
+            ->join('transactions as t', function ($join) use ($branchId) {
+                $join->on('t.id', '=', 'tl.transaction_id')
+                    ->where('t.branch_id', '=', $branchId)
+                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereNull('t.deleted_at');
+            })
+            ->join('accounts as a', function ($join) use ($branchId) {
+                $join->on('a.id', '=', 'tl.account_id')
+                    ->where('a.branch_id', '=', $branchId)
+                    ->whereNull('a.deleted_at');
+            })
+            ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
+            ->whereNull('tl.deleted_at')
+            ->where('at.slug', '=', 'account-payable')
+            ->groupBy(DB::raw($resolvedLedgerId))
+            ->selectRaw("{$resolvedLedgerId} as ledger_id")
             ->selectRaw('COALESCE(SUM((COALESCE(tl.debit, 0) - COALESCE(tl.credit, 0)) * t.rate), 0) as balance');
     }
 
