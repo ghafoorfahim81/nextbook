@@ -306,6 +306,7 @@ const closeDialog = () => {
                                                 <!-- <th class="py-2 pr-4">{{ t('general.type') }}</th> -->
                                                 <th class="py-2 pr-4">{{ t('general.date') }}</th>
                                                 <th class="py-2 pr-4">{{ t('general.amount') }}</th>
+                                                <th class="py-2 pr-4">{{ t('general.rate') }}</th>
                                                 <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
                                             </tr>
                                         </thead>
@@ -325,6 +326,7 @@ const closeDialog = () => {
                                                 <!-- <td class="py-2 pr-4 capitalize">{{ row.transaction?.type }}</td> -->
                                                 <td class="py-2 pr-4">{{ row.date }}</td>
                                                 <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
+                                                <td class="py-2 pr-4">{{ formatAmount(row.rate) }}</td>
                                                 <td class="py-2 pr-4">
                                                     {{ row.transaction?.currency?.code || row.transaction?.currency?.name || '' }}
                                                 </td>
@@ -341,6 +343,7 @@ const closeDialog = () => {
                                                 <!-- <th class="py-2 pr-4">{{ t('general.type') }}</th> -->
                                                 <th class="py-2 pr-4">{{ t('general.date') }}</th>
                                                 <th class="py-2 pr-4">{{ t('general.amount') }}</th>
+                                                <th class="py-2 pr-4">{{ t('general.rate') }}</th>
                                                 <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
                                             </tr>
                                         </thead>
@@ -360,6 +363,7 @@ const closeDialog = () => {
                                                 <!-- <td class="py-2 pr-4 capitalize">{{ row.transaction?.type }}</td> -->
                                                 <td class="py-2 pr-4">{{ row.date }}</td>
                                                 <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
+                                                <td class="py-2 pr-4">{{ formatAmount(row.rate) }}</td>
                                                 <td class="py-2 pr-4">
                                                     {{ row.transaction?.currency?.code || row.transaction?.currency?.name || '' }}
                                                 </td>
