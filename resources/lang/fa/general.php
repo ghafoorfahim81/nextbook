@@ -66,5 +66,6 @@ return [
     'posted_stock_movements_found' => 'جنسی با حرکات انبار ثبت شده وجود دارد.',
     'owe_to' => 'طلبکار',
     'owe_you' => 'بدهکار',
+    'cannot_delete_warehouse_with_stock_movements' => 'نمی‌توان انباری را حذف کنید که دارای حرکات انبار ثبت شده است.',
 ];
 

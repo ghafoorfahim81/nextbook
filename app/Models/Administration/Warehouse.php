@@ -77,7 +77,7 @@ class Warehouse extends Model
 
     public function stocks()
     {
-        return $this->hasMany(\App\Models\Inventory\Stock::class, 'warehouse_id');
+        return $this->hasMany(\App\Models\Inventory\StockMovement::class, 'warehouse_id');
     }
 
     public function branch(): BelongsTo
