@@ -751,7 +751,7 @@ class ReportService
         $retainedEarnings = $this->yearToDateNetProfit($filters);
         if (abs($retainedEarnings) > 0.0001) {
             $equity[] = [
-                'account_name' => 'Current Period Earnings',
+                'account_name' => 'Current Period Profit / Loss',
                 'balance' => $this->moneyValue($retainedEarnings),
             ];
         }
