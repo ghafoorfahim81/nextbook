@@ -45,14 +45,40 @@ const humanize = (value) => {
         .replace(/\b\w/g, (letter) => letter.toUpperCase());
 };
 
+const translateAction = (action) => {
+    const key = `permission_actions.${action}`;
+    const translated = t(key);
+
+    return translated === key ? humanize(action) : translated;
+};
+
 const translatePermission = (name) => {
     const key = `permissions.${name}`;
     const translated = t(key);
 
-    return translated === key ? humanize(name) : translated;
+    if (translated !== key) {
+        return translated;
+    }
+
+    const [resource = '', action = ''] = String(name || '').split('.');
+
+    if (!resource) {
+        return humanize(name);
+    }
+
+    if (!action) {
+        return resourceLabel(resource);
+    }
+
+    return `${translateAction(action)} ${resourceLabel(resource)}`.trim();
 };
 
-const resourceLabel = (resource) => humanize(resource);
+const resourceLabel = (resource) => {
+    const key = `resources.${resource}`;
+    const translated = t(key);
+
+    return translated === key ? humanize(resource) : translated;
+};
 
 const groupedPermissions = computed(() => {
     const groups = new Map();
@@ -213,7 +239,7 @@ const clearAllPermissions = () => {
                 >
                     <CardHeader class="border-b border-border/60 pb-3">
                         <div class="flex items-center justify-between gap-3">
-                            <CardTitle class="text-base font-semibold">
+                            <CardTitle class="text-base font-semibold text-primary">
                                 {{ resourceLabel(group.resource) }}
                             </CardTitle>
                             <div class="flex items-center gap-2">
@@ -223,7 +249,7 @@ const clearAllPermissions = () => {
                                     :indeterminate="someVisibleSelected(group) && !allVisibleSelected(group)"
                                     @update:checked="(checked) => toggleGroup(group, Boolean(checked))"
                                 />
-                                <label :for="`resource-${group.resource}`" class="text-xs font-medium text-muted-foreground cursor-pointer">
+                                <label :for="`resource-${group.resource}`" class="text-xs font-medium text-primary text-muted-foreground cursor-pointer">
                                     {{ t('general.select_all') }}
                                 </label>
                             </div>
@@ -245,7 +271,7 @@ const clearAllPermissions = () => {
                             />
                             <label
                                 :for="`permission-${permission.id}`"
-                                class="cursor-pointer text-sm leading-5 text-muted-foreground hover:text-foreground"
+                                class="cursor-pointer text-sm leading-5   text-muted-foreground hover:text-foreground"
                                 :title="permission.name"
                             >
                                 {{ permission.label }}
