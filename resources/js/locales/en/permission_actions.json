@@ -1,0 +1,14 @@
+{
+  "view_any": "View Any",
+  "view": "View",
+  "create": "Create",
+  "update": "Update",
+  "edit": "Edit",
+  "delete": "Delete",
+  "import": "Import",
+  "export": "Export",
+  "print": "Print",
+  "approve": "Approve",
+  "reject": "Reject",
+  "email": "Email"
+}
