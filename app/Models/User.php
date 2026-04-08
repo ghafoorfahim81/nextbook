@@ -194,7 +194,7 @@ class User extends Authenticatable
             'start_number' => 1,
         ],
         'purchase' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => true, 'store' => true],
             'item_columns' => [
                 'packing' => false,
                 'colors' => false,

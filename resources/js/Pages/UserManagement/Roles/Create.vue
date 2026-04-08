@@ -2,13 +2,12 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import { useForm } from '@inertiajs/vue3';
 import NextInput from "@/Components/next/NextInput.vue";
-import Checkbox from "@/Components/Checkbox.vue";
 import SubmitButtons from "@/Components/SubmitButtons.vue";
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/Components/ui/toast/use-toast';
-import { Input } from "@/Components/ui/input";
+import PermissionGroups from '@/Pages/UserManagement/Roles/PermissionGroups.vue';
 const { t } = useI18n();
 const { toast } = useToast();
 
@@ -29,69 +28,6 @@ const handleSubmitAction = (createAndNew = false) => {
     submitAction.value = createAndNew ? 'create_and_new' : 'create';
     handleSubmit(createAndNew);
 };
-
-const search = ref('');
-
-// Searchable permissions
-const filteredPermissions = computed(() => {
-    const q = search.value.trim().toLowerCase();
-    if (!q) return props.permissions;
-    return props.permissions.filter(permission => {
-        const translated = translatePermission(permission.name).toLowerCase();
-        return (
-            translated.includes(q) ||
-            permission.name.toLowerCase().includes(q)
-        );
-    });
-});
-
-const filteredPermissionIds = computed(() => filteredPermissions.value.map((permission) => permission.id));
-const allFilteredPermissionsSelected = computed(() =>
-    filteredPermissionIds.value.length > 0 &&
-    filteredPermissionIds.value.every((id) => form.permissions.includes(id))
-);
-const someFilteredPermissionsSelected = computed(() =>
-    filteredPermissionIds.value.some((id) => form.permissions.includes(id))
-);
-
-const togglePermission = (permissionId, checked) => {
-    if (checked) {
-        form.permissions = Array.from(new Set([...form.permissions, permissionId]));
-        return;
-    }
-
-    form.permissions = form.permissions.filter((id) => id !== permissionId);
-};
-
-const toggleFilteredPermissions = (checked) => {
-    if (checked) {
-        form.permissions = Array.from(new Set([...form.permissions, ...filteredPermissionIds.value]));
-        return;
-    }
-
-    form.permissions = form.permissions.filter((id) => !filteredPermissionIds.value.includes(id));
-};
-
-const humanizePermission = (name) => {
-    if (!name) return '';
-    const parts = name.split('.');
-    const resource = (parts[0] || '').replace(/_/g, ' ');
-    const action = (parts[1] || '').replace(/_/g, ' ');
-    const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
-    if (!action) {
-        return cap(resource);
-    }
-    return `${cap(resource)} - ${cap(action)}`;
-};
-
-function translatePermission(name) {
-    const key = `permissions.${name}`;
-    const translated = t(key);
-    if (translated === key) {
-        return humanizePermission(name);
-    }
-    return translated;
-}
 
 const handleSubmit = (createAndNew = false) => {
     const payload = createAndNew ? { create_and_new: true } : {};
@@ -142,50 +78,8 @@ const goBack = () => {
                                     {{ t('user_mangements.permissions_description') }}
                                 </p>
                             </div>
-                            <div class="flex items-center space-x-2">
-                                <Checkbox
-                                    id="check-all"
-                                    :checked="allFilteredPermissionsSelected"
-                                    :indeterminate="someFilteredPermissionsSelected && !allFilteredPermissionsSelected"
-                                    @update:checked="(checked) => toggleFilteredPermissions(Boolean(checked))"
-                                />
-                                <label for="check-all" class="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
-                                    {{ t('general.select_all') }}
-                                </label>
-                            </div>
                         </div>
-
-                        <!-- Search box -->
-                        <div class="mb-3">
-                            <Input
-                                v-model="search"
-                                type="text"
-                                class="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 dark:bg-gray-800 dark:border-gray-700"
-                                :placeholder="t('general.search_placeholder', { name: t('user_mangements.permissions') }).toLowerCase()"
-                                autocomplete="off"
-                                /> 
-                        </div>
-
-                        <div v-if="filteredPermissions.length === 0" class="text-sm text-muted-foreground px-4 py-6 text-center">
-                            {{ t('general.no_results', { name: t('user_mangements.permissions') }) }}
-                        </div>
-                        <div
-                            v-else
-                            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4"
-                        >
-                            <div v-for="permission in filteredPermissions" :key="permission.id" class="flex items-center space-x-2">
-                                <Checkbox
-                                    :id="`permission-${permission.id}`"
-                                    :name="`permissions[]`"
-                                    :value="permission.id"
-                                    :checked="form.permissions.includes(permission.id)"
-                                    @update:checked="(checked) => togglePermission(permission.id, Boolean(checked))"
-                                />
-                                <label :for="`permission-${permission.id}`" class="text-sm text-gray-400 dark:text-gray-300 cursor-pointer">
-                                    {{ translatePermission(permission.name) }}
-                                </label>
-                            </div>
-                        </div>
+                        <PermissionGroups v-model="form.permissions" :permissions="props.permissions" />
                         <div v-if="form.errors?.permissions" class="mt-2 text-sm text-red-600 dark:text-red-400">
                             {{ form.errors.permissions }}
                         </div>

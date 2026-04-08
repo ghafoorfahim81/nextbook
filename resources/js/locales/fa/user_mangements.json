@@ -7,7 +7,7 @@
     "permissions": "مجوزها",
     "permission": "مجوز",
     "confirm_password": "تایید رمز عبور",
-    "permissions_description": "مجوزهای این نقش را انتخاب کنید.",
+    "permissions_description": "مجوزهای این نقش را بر اساس منبع انتخاب کنید.",
     "additional_permissions": "مجوزهای اضافی",
     "additional_permissions_description": "مجوزهای اضافی که این کاربر باید داشته باشد."
 }
