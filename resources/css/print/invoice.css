@@ -5,6 +5,10 @@
   print-color-adjust: exact;
 }
 
+.print-page {
+  padding: 12px 0;
+}
+
 .voucher-print-root .print-surface {
   padding: 0;
 }
@@ -24,11 +28,18 @@
 
 .theme-format5 {
   font-family: "Tahoma", "Arial", sans-serif;
+  min-height: auto;
+}
+
+.theme-format1,
+.theme-format2 {
+  min-height: auto;
 }
 
 .invoice-grid-table {
   width: 100%;
   border-collapse: collapse;
+  break-inside: auto;
 }
 
 .invoice-grid-table th,
@@ -49,10 +60,23 @@
   color: #475569;
 }
 
+.print-surface > * {
+  break-inside: avoid;
+}
+
+.invoice-grid-table tr {
+  break-inside: avoid;
+}
+
 .invoice-peach-table thead th {
   background: #ffd0b0;
   color: #1f2937;
   border-bottom-color: #f2b38f;
+}
+
+.theme-format1-table thead th,
+.theme-format2-table thead th {
+  border-top: 1px solid #dbe2ea;
 }
 
 .invoice-soft-table thead th {
@@ -74,6 +98,16 @@
 
 .invoice-classic-table td {
   border: 1px solid #94a3b8;
+}
+
+.theme-format5 .invoice-grid-table th,
+.theme-format5 .invoice-grid-table td {
+  padding: 7px 8px;
+}
+
+.theme-format2 .invoice-grid-table th,
+.theme-format2 .invoice-grid-table td {
+  padding: 8px 10px;
 }
 
 .filler-row td {
@@ -102,6 +136,14 @@
     max-width: none;
     padding: 0;
     box-shadow: none;
+  }
+
+  .print-page {
+    padding: 0;
+  }
+
+  .theme-format1 {
+    min-height: 277mm;
   }
 
   .voucher-print-root .print-surface {

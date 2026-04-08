@@ -16,6 +16,20 @@ class SaleResource extends JsonResource
     public function toArray(Request $request): array
     {
         $dateConversionService = app(\App\Services\DateConversionService::class);
+        $transaction = $this->relationLoaded('transaction') ? $this->transaction : null;
+        $transactionRate = (float) ($transaction?->rate ?? 1);
+        $transactionLines = $transaction?->relationLoaded('lines')
+            ? $transaction->lines
+            : collect();
+        $customerStatement = $this->relationLoaded('customer') && $this->customer
+            ? $this->customer->statement
+            : null;
+        $ledgerEffect = $transactionLines
+            ->where('ledger_id', $this->customer_id)
+            ->sum(fn ($line) => ((float) $line->debit - (float) $line->credit) * $transactionRate);
+        $remainingAmount = abs((float) $ledgerEffect);
+        $oldNetBalance = (float) data_get($customerStatement, 'net_balance', 0) - (float) $ledgerEffect;
+
         return [
             'id' => $this->id,
             'number' => $this->number,
@@ -46,9 +60,10 @@ class SaleResource extends JsonResource
                 ? $this->type->value
                 : $this->type,
             'raw_type' => $this->type,
-            'receivable_amount' => $this->transaction?->lines->sum(function ($line) {
-                return $line->ledger_id !== null ? $line->debit : 0;
-            }),
+            'receivable_amount' => $remainingAmount,
+            'remaining_amount' => $remainingAmount,
+            'old_balance' => abs($oldNetBalance),
+            'old_balance_nature' => $oldNetBalance >= 0 ? 'dr' : 'cr',
             'description' => $this->description,
             'status' => $this->status,
             'transaction_total' => $this->transaction?->amount,

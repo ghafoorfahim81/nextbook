@@ -880,6 +880,7 @@ class SaleController extends Controller
             'items.unitMeasure',
             'items.warehouse',
             'transaction.currency',
+            'transaction.lines',
         ]);
         return inertia('Sale/Sales/Print', [
             'invoice' => new SaleResource($sale),
