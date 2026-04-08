@@ -6,7 +6,7 @@
     "role": "Role",
     "permissions": "Permissions",
     "permission": "Permission",
-    "permissions_description": "Select the permissions for this role.",
+    "permissions_description": "Select the permissions for this role, grouped by resource.",
     "confirm_password": "Confirm Password",
     "additional_permissions": "Additional Permissions",
     "additional_permissions_description": "Additional permissions that this user should have beyond their assigned roles."

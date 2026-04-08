@@ -175,7 +175,7 @@ const summaryRows = computed(() => [
       </header>
 
       <div class="grid grid-cols-2 gap-4">
-        <div class="rounded-xl border border-slate-300 p-4">
+        <div class="  p-4">
           <p class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">{{ t('invoice.bill_from') }}</p>
           <div class="space-y-1 text-sm text-slate-700">
             <p class="font-semibold text-slate-900">{{ companyName }}</p>
@@ -185,7 +185,7 @@ const summaryRows = computed(() => [
           </div>
         </div>
 
-        <div class="rounded-xl border border-slate-300 p-4">
+        <div class="  p-4">
           <p class="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">{{ t('invoice.bill_to') }}</p>
           <div class="space-y-1 text-sm text-slate-700">
             <p class="font-semibold text-slate-900">{{ customerName }}</p>
