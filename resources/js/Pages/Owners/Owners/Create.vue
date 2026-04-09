@@ -60,8 +60,7 @@ watch(currencies, (list) => {
 
 function handleSelectChange(field, value) {
   form[field] = value
-  if (field === 'opening_currency_id') {
-    console.log('this is the opening currency id', value)
+  if (field === 'opening_currency_id') { 
     const chosen = (currencies.value || []).find(c => c.id === value)
     form.opening_currency_id = value.id
     if (chosen) form.rate = chosen.exchange_rate

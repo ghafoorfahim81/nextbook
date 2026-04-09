@@ -42,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
             'stock_out' => 'App\Models\Inventory\StockOut',
             'item' => 'App\Models\Inventory\Item',
             'owner' => 'App\Models\Owner\Owner',
+            'drawing' => 'App\Models\Owner\Drawing',
             'journal_entry' => 'App\Models\JournalEntry\JournalEntry',
 
         ]);

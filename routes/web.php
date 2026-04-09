@@ -151,6 +151,8 @@ Route::middleware([
     // Owners
     Route::resource('/owners', \App\Http\Controllers\Owner\OwnerController::class);
     Route::patch('/owners/{owner}/restore', [\App\Http\Controllers\Owner\OwnerController::class, 'restore'])->name('owners.restore')->withTrashed();
+    Route::resource('/drawings', \App\Http\Controllers\Owner\DrawingController::class);
+    Route::patch('/drawings/{drawing}/restore', [\App\Http\Controllers\Owner\DrawingController::class, 'restore'])->name('drawings.restore')->withTrashed();
 
     // User Management
     Route::resource('/users', \App\Http\Controllers\UserManagement\UserController::class);
