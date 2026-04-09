@@ -12,9 +12,11 @@ use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
-use App\Traits\BranchSpecific;
+use App\Traits\BranchSpecific; 
+use Illuminate\Database\Eloquent\Relations\HasOne;
 class Owner extends Model
 {
     use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
@@ -29,10 +31,9 @@ class Owner extends Model
         'email',
         'address',
         'phone_number',
-        'ownership_percentage',
+        'share_percentage',
+        'profit_share_percentage',
         'is_active',
-        'capital_transaction_id',
-        'account_transaction_id',
         'capital_account_id',
         'drawing_account_id',
         'created_by',
@@ -43,9 +44,8 @@ class Owner extends Model
     protected $casts = [
         'id' => 'string',
         'is_active' => 'boolean',
-        'ownership_percentage' => 'float',
-        'capital_transaction_id' => 'string',
-        'account_transaction_id' => 'string',
+        'share_percentage' => 'float',
+        'profit_share_percentage' => 'float', 
         'capital_account_id' => 'string',
         'drawing_account_id' => 'string',
         'created_by' => 'string',
@@ -70,15 +70,11 @@ class Owner extends Model
         'created_by',
     ];
 
-    public function capitalTransaction(): BelongsTo
+    public function transaction(): HasOne
     {
-        return $this->belongsTo(Transaction::class, 'capital_transaction_id');
+        return $this->hasOne(Transaction::class, 'reference_id');
     }
 
-    public function accountTransaction(): BelongsTo
-    {
-        return $this->belongsTo(Transaction::class, 'account_transaction_id');
-    }
 
     public function capitalAccount(): BelongsTo
     {
@@ -90,5 +86,4 @@ class Owner extends Model
         return $this->belongsTo(Account::class, 'drawing_account_id');
     }
 }
-
 
