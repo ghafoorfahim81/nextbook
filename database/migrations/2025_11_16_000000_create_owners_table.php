@@ -19,10 +19,9 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->text('address')->nullable();
             $table->string('phone_number')->nullable();
-            $table->decimal('ownership_percentage', 5, 2)->default(100);
-            $table->boolean('is_active')->default(true);
-            $table->ulid('capital_transaction_id')->nullable()->index();
-            $table->ulid('account_transaction_id')->nullable()->index();
+            $table->decimal('share_percentage', 5, 2)->default(100)->nullable();
+            $table->decimal('profit_share_percentage', 5, 2)->default(100)->nullable();
+            $table->boolean('is_active')->default(true); 
             $table->ulid('capital_account_id')->nullable()->index();
             $table->ulid('drawing_account_id')->nullable()->index();
             $table->ulid('branch_id')->index();
@@ -38,10 +37,7 @@ return new class extends Migration
         });
 
         Schema::table('owners', function (Blueprint $table) {
-            // Foreign keys
-            $table->foreign('capital_transaction_id')->references('id')->on('transactions')->onDelete('set null');
-            $table->foreign('account_transaction_id')->references('id')->on('transactions')->onDelete('set null');
-
+            // Foreign keys 
             $table->foreign('capital_account_id')->references('id')->on('accounts')->onDelete('set null');
             $table->foreign('drawing_account_id')->references('id')->on('accounts')->onDelete('set null');
             $table->foreign('branch_id')->references('id')->on('branches');

@@ -20,17 +20,16 @@ class OwnerUpdateRequest extends FormRequest
                 'email' => ['nullable', 'email', 'max:255' , \Illuminate\Validation\Rule::unique('owners')->ignore($this->route('owner'))->whereNull('deleted_at')->where('branch_id', $this->user()->current_branch_id)],
             'address' => ['nullable', 'string'],
             'phone_number' => ['nullable', 'string', 'max:255' , \Illuminate\Validation\Rule::unique('owners')->ignore($this->route('owner'))->whereNull('deleted_at')->where('branch_id', $this->user()->current_branch_id)],
-            'ownership_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'share_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'profit_share_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'is_active' => ['nullable', 'boolean'],
-            'capital_account_id' => ['required', 'string', 'exists:accounts,id'],
-            'drawing_account_id' => ['required', 'string', 'exists:accounts,id'],
-            'account_id' => ['required', 'string', 'exists:accounts,id'],
-            // Special create fields
+            'capital_account_id' => ['nullable', 'string', 'exists:accounts,id'],
+            'drawing_account_id' => ['nullable', 'string', 'exists:accounts,id'],
+            'bank_account_id' => ['nullable', 'string', 'exists:accounts,id'],
+            'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'amount' => ['nullable', 'numeric', 'min:0'],
-            'currency_id' => ['required', 'string', 'exists:currencies,id'],
-            'rate' => ['required', 'numeric', 'min:0'],
+            'rate' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }
-
 
