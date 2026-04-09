@@ -604,13 +604,13 @@ class Account extends Model
                 'is_main' => true,
             ],
             [
-                'name' => 'Owner 1 Draw',
-                'local_name' => 'برداشت مالک اول (۲)',
+                'name' => 'Owner 2 Draw',
+                'local_name' => 'برداشت مالک دوم',
                 'number' => '6022',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'equity')->first()->id,
                 'account_type_slug' => 'equity',
-                'slug' => 'owner-1-draw-2',
-                'remark' => 'Owner 1 draw 2',
+                'slug' => 'owner-2-draw',
+                'remark' => 'Owner 2 draw',
                 'is_main' => true,
             ],
             [

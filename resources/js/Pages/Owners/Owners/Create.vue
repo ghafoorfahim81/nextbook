@@ -15,44 +15,29 @@ const page = usePage()
 // Pull shared data from HandleInertiaRequests middleware
 const allAccounts = computed(() => page.props.accounts?.data ?? page.props.accounts ?? [])
 const currencies = computed(() => page.props.currencies?.data ?? page.props.currencies ?? [])
-
-useLazyProps(page.props, ['accounts', 'capitalAccounts', 'drawingAccounts'])
-
-// Derive lists for selects
-const capitalAccounts = computed(() => {
-  const shared = page.props.capitalAccounts?.data ?? page.props.capitalAccounts
-  if (Array.isArray(shared) && shared.length) {
-    return shared
-  }
-  const list = Array.isArray(allAccounts.value) ? allAccounts.value : []
-  return list.filter(a => a?.slug === 'owners-capital' || (a?.name || '').toLowerCase().includes('capital'))
-})
-const drawingAccounts = computed(() => {
-  const shared = page.props.drawingAccounts?.data ?? page.props.drawingAccounts
-  if (Array.isArray(shared) && shared.length) {
-    return shared
-  }
-  const list = Array.isArray(allAccounts.value) ? allAccounts.value : []
-  return list.filter(a => a?.slug === 'owners-drawing' || (a?.name || '').toLowerCase().includes('drawing'))
-})
+ const capitalAccounts = computed(() => page.props.capitalAccounts?.data ?? page.props.capitalAccounts ?? [])
+ const drawingAccounts = computed(() => page.props.drawingAccounts?.data ?? page.props.drawingAccounts ?? [])
+ const bankAccounts = computed(() => page.props.bankAccounts?.data ?? page.props.bankAccounts ?? [])
+ const homeCurrency = computed(() => page.props.homeCurrency || {}) 
 
 const form = useForm({
-    capital_account_id: '',
+    capital_account_id: null,
     selected_capital_account: null,
-    drawing_account_id: '',
+    drawing_account_id: null,
     selected_drawing_account: null,
-    name: '',
-    account_id: '',
-    selected_account: null,
-    father_name: '',
-    nic: '',
-    email: '',
-    address: '',
-    phone_number: '',
+    opening_currency_id: null,
+    selected_opening_currency: null,
+    name: null,
+    bank_account_id: null,
+    selected_bank_account: null,
+    father_name: null,
+    nic: null,
+    email: null,
+    address: null,
+    phone_number: null,
     ownership_percentage: 100,
     is_active: true,
-    amount: null,
-    currency_id: '',
+    amount: null, 
     selected_currency: null,
     rate: 1,
 })
@@ -62,21 +47,22 @@ const createLoading = computed(() => form.processing && submitAction.value === '
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new')
 
 watch(currencies, (list) => {
-    if (Array.isArray(list) && !form.currency_id) {
-        const baseCurrency = list.find(c => c.is_base_currency);
-        if (baseCurrency) {
-            form.selected_currency = baseCurrency;
-            form.rate = baseCurrency.exchange_rate;
-            form.currency_id = baseCurrency.id;
-        }
+  if (list && list.length && !form.opening_currency_id) {
+    const base = list.find(c => c.is_base_currency)
+    if (base) {
+      form.selected_currency = base
+      form.opening_currency_id = base.id
+      form.rate = base.exchange_rate
     }
-}, { immediate: true });
+  }
+}, { immediate: true })
 
 
 function handleSelectChange(field, value) {
   form[field] = value
-  if (field === 'currency_id') {
+  if (field === 'opening_currency_id') { 
     const chosen = (currencies.value || []).find(c => c.id === value)
+    form.opening_currency_id = value.id
     if (chosen) form.rate = chosen.exchange_rate
   }
 }
@@ -125,7 +111,6 @@ const handleSubmitAction = (createAndNew = false) => {
           <NextInput :label="t('owner.phone_number')" v-model="form.phone_number" type="text" :error="form.errors?.phone_number"/>
           <NextInput :label="t('general.address')" v-model="form.address" type="text" :error="form.errors?.address"/>
           <NextInput :label="t('owner.ownership_percentage')" v-model="form.ownership_percentage" type="number" :error="form.errors?.ownership_percentage"/>
-          <NextInput :label="t('general.amount')" v-model="form.amount" type="number" :error="form.errors?.amount"/>
           <NextSelect
             :options="capitalAccounts"
             label-key="name"
@@ -152,40 +137,52 @@ const handleSubmitAction = (createAndNew = false) => {
             resource-type="accounts"
             :search-fields="['name', 'number', 'slug']"
           />
-          <NextSelect
-            :options="allAccounts"
-            label-key="name"
-            value-key="id"
-            :reduce="account => account"
-            v-model="form.selected_account"
-            @update:modelValue="(value) => handleSelectChange('account_id', value?.id)"
-            :floating-text="t('general.account')"
-            :error="form.errors?.account_id"
-            :searchable="true"
-            resource-type="accounts"
-            :search-fields="['name', 'number', 'slug']"
-          />
-          <div class="flex gap-3">
-                <NextSelect
-                :options="currencies"
-                label-key="code"
-                value-key="id"
-                :reduce="currency => currency"
-                v-model="form.selected_currency"
-                @update:modelValue="(value) => handleSelectChange('currency_id', value.id)"
-                :floating-text="t('admin.currency.currency')"
-                :error="form.errors?.currency_id"
-                :searchable="true"
-                resource-type="currencies"
-                :search-fields="['name', 'code', 'symbol']"
-              />
-              <NextInput :label="t('general.rate')" :disabled="form.selected_currency.is_base_currency == true" v-model="form.rate" type="number" :error="form.errors?.rate"/>
-            </div>
+          
           <div class="col-span-1 flex items-center gap-2">
             <label class="text-sm font-medium text-gray-700">{{ t('general.status') }}</label>
             <input type="checkbox" v-model="form.is_active" />
           </div>
         </div>
+        <div class="md:col-span-3 mt-4">
+          <div class="pt-2">
+              <span class="font-bold">{{ t('owner.capital_contribution') }}</span>
+              <div class="mt-3">
+                  <div class="grid grid-cols-3 gap-2">
+                    <NextSelect
+                    :options="bankAccounts"
+                    label-key="name"
+                    value-key="id"
+                    :reduce="account => account"
+                    v-model="form.selected_bank_account"
+                    @update:modelValue="(value) => handleSelectChange('bank_account_id', value?.id)"
+                    :floating-text="t('general.account')"
+                    :error="form.errors?.bank_account_id"
+                    :searchable="true"
+                    resource-type="accounts"
+                    :search-fields="['name', 'number', 'slug']"
+                  />
+                      <div class="grid grid-cols-2 gap-2">
+                        <NextSelect
+                        :options="currencies"
+                        v-model="form.selected_opening_currency"
+                        label-key="code"
+                        value-key="id"
+                        @update:modelValue="(value) => handleSelectChange('opening_currency_id', value)"
+                        :reduce="currency => currency"
+                        :floating-text="t('admin.currency.currency')"
+                        :error="form.errors?.opening_currency_id"
+                        :searchable="true"
+                        resource-type="currencies"
+                        :search-fields="['name', 'code', 'symbol']"
+                         />
+                        <NextInput placeholder="Rate" :disabled="form.selected_opening_currency?.is_base_currency == true" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+                        
+                      </div>
+                      <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
+                  </div>
+              </div>
+          </div>
+      </div>
       </div>
       <SubmitButtons
         :create-label="t('general.create')"

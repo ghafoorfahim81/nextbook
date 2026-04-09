@@ -19,6 +19,7 @@ use App\Models\Expense\Expense;
 use App\Models\Expense\ExpenseCategory;
 use App\Models\Inventory\Item;
 use App\Models\Ledger\Ledger;
+use App\Models\Owner\Drawing;
 use App\Models\Owner\Owner;
 use App\Models\Payment\Payment;
 use App\Models\Purchase\Purchase;
@@ -39,6 +40,7 @@ use App\Policies\DepartmentPolicy;
 use App\Policies\DesignationPolicy;
 use App\Policies\ExpenseCategoryPolicy;
 use App\Policies\ExpensePolicy;
+use App\Policies\DrawingPolicy;
 use App\Policies\ItemPolicy;
 use App\Policies\OwnerPolicy;
 use App\Policies\PaymentPolicy;
@@ -85,6 +87,7 @@ class AuthServiceProvider extends ServiceProvider
 
         // Owners
         Owner::class => OwnerPolicy::class,
+        Drawing::class => DrawingPolicy::class,
 
         // Purchases & Sales
         Purchase::class => PurchasePolicy::class,
@@ -121,5 +124,4 @@ class AuthServiceProvider extends ServiceProvider
         });
     }
 }
-
 
