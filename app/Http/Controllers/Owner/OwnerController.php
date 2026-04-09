@@ -8,15 +8,14 @@ use App\Http\Requests\Owner\OwnerUpdateRequest;
 use App\Http\Resources\Administration\CurrencyResource;
 use App\Http\Resources\Owner\OwnerResource;
 use App\Models\Account\Account;
-use App\Models\Account\AccountType;
 use App\Models\Administration\Currency;
 use App\Models\Owner\Owner;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Inertia\Response;
 use App\Models\Transaction\Transaction;
+use App\Models\Transaction\TransactionLine;
 use App\Models\User;
 class OwnerController extends Controller
 {
@@ -57,12 +56,20 @@ class OwnerController extends Controller
 
     public function create(Request $request): Response
     {
-        return inertia('Owners/Owners/Create');
+        $accountModel = new Account();
+
+        return inertia('Owners/Owners/Create', [
+            'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
+            'capitalAccounts' => $accountModel->getAccountsByAccountTypeSlug('equity'),
+            'drawingAccounts' => $accountModel->getAccountsByAccountTypeSlug('equity'),
+            'bankAccounts' => $accountModel->getAccountsByAccountTypeSlug('cash-or-bank'),
+        ]);
     }
 
     public function store(OwnerStoreRequest $request, TransactionService $transactionService)
     {
         $validated = $request->validated();
+        // dd($validated);
         DB::transaction(function () use ($validated, $transactionService) {
             $owner = Owner::create([
                 'name' => $validated['name'],
@@ -71,7 +78,8 @@ class OwnerController extends Controller
                 'email' => $validated['email'] ?? null,
                 'address' => $validated['address'] ?? null,
                 'phone_number' => $validated['phone_number'] ?? null,
-                'ownership_percentage' => $validated['ownership_percentage'] ?? 100,
+                'share_percentage' => $validated['share_percentage'] ?? 100,
+                'profit_share_percentage' => $validated['profit_share_percentage'] ?? 100,
                 'is_active' => $validated['is_active'] ?? true,
                 'capital_account_id' => $validated['capital_account_id'],
                 'drawing_account_id' => $validated['drawing_account_id'],
@@ -79,41 +87,34 @@ class OwnerController extends Controller
 
             // Create financial transactions
             $amount = (float) $validated['amount'];
-            $currencyId = $validated['currency_id'];
+            $currencyId = $validated['opening_currency_id'];
             $rate = (float) $validated['rate'];
             $today = now()->toDateString();
 
             // Credit owner's capital account (capital contribution)
-            $capitalTx = $transactionService->createTransaction([
-                'account_id' => $validated['capital_account_id'],
-                'amount' => $amount,
-                'currency_id' => $currencyId,
-                'rate' => $rate,
-                'date' => $today,
-                'type' => 'credit',
-                'remark' => "Capital contribution by {$owner->name}",
-                'reference_type' => Owner::class,
-                'reference_id' => $owner->id,
-            ]);
-
-            // Debit cash-in-hand (money received)
-            $cashAccountId = Account::where('slug', 'cash')->value('id');
-            $accountTx = $transactionService->createTransaction([
-                'account_id' => $validated['account_id'],
-                'amount' => $amount,
-                'currency_id' => $currencyId,
-                'rate' => $rate,
-                'date' => $today,
-                'type' => 'debit',
-                'remark' => "Cash received for {$owner->name} capital",
-                'reference_type' => Owner::class,
-                'reference_id' => $owner->id,
-            ]);
-
-            $owner->update([
-                'capital_transaction_id' => $capitalTx->id,
-                'account_transaction_id' => $accountTx->id,
-            ]);
+            if($amount > 0 && $currencyId && $rate) {
+                $transactionService->post(
+                   header: [
+                       'currency_id' => $currencyId,
+                       'rate' => $rate,
+                       'date' => $today,
+                       'reference_type' => Owner::class,
+                       'reference_id' => $owner->id,
+                   ],
+                   lines: [
+                       [
+                           'account_id' => $validated['bank_account_id'],
+                           'debit' => $amount,
+                           'credit' => 0,
+                       ],
+                       [
+                           'account_id' => $validated['capital_account_id'],
+                           'debit' => 0,
+                           'credit' => $amount,
+                       ],
+                   ],
+               );
+            }
         });
 
         if ($request->boolean('create_and_new')) {
@@ -127,11 +128,10 @@ class OwnerController extends Controller
         $owner->load([
             'capitalAccount',
             'drawingAccount',
-            'capitalTransaction.currency',
-            'capitalTransaction.account',
-            'accountTransaction.currency',
-            'accountTransaction.account'
+            'transaction.currency',
+            'transaction.lines.account',
         ]);
+
         return response()->json([
             'data' => new OwnerResource($owner),
         ]);
@@ -139,53 +139,70 @@ class OwnerController extends Controller
 
     public function edit(Request $request, Owner $owner): Response
     {
-        $owner->load(['accountTransaction.account', 'accountTransaction.currency']);
+        $accountModel = new Account();
+        $owner->load(['transaction.currency', 'transaction.lines.account', 'capitalAccount', 'drawingAccount']);
+
         return inertia('Owners/Owners/Edit', [
             'owner' => new OwnerResource($owner),
+            'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
+            'capitalAccounts' => $accountModel->getAccountsByAccountTypeSlug('equity'),
+            'drawingAccounts' => $accountModel->getAccountsByAccountTypeSlug('equity'),
+            'bankAccounts' => $accountModel->getAccountsByAccountTypeSlug('cash-or-bank'),
         ]);
     }
 
     public function update(OwnerUpdateRequest $request, Owner $owner)
-    {
-        // Use similar logic as the store method, but for updating
-
+    { 
         $validated = $request->validated();
-
+        // dd($validated);
         DB::transaction(function () use ($owner, $validated) {
-            $amount = $validated['amount'] ?? 0;
-            $currencyId = $validated['currency_id'];
-            $rate = $validated['rate'];
+            $amount = (float) ($validated['amount'] ?? 0);
+            $currencyId = $validated['currency_id'] ?? $owner->transaction?->currency_id;
+            $rate = (float) ($validated['rate'] ?? $owner->transaction?->rate ?? 1);
+            $transaction = $owner->transaction()->with('lines')->first();
 
-            // Update owner fields
-            $owner->update($validated);
+            $owner->update([
+                'name' => $validated['name'],
+                'father_name' => $validated['father_name'],
+                'nic' => $validated['nic'] ?? null,
+                'email' => $validated['email'] ?? null,
+                'address' => $validated['address'] ?? null,
+                'phone_number' => $validated['phone_number'] ?? null,
+                'share_percentage' => $validated['share_percentage'] ?? 100,
+                'profit_share_percentage' => $validated['profit_share_percentage'] ?? 100,
+                'is_active' => $validated['is_active'] ?? true,
+                'capital_account_id' => $validated['capital_account_id'] ?? null,
+                'drawing_account_id' => $validated['drawing_account_id'] ?? null,
+            ]);
 
-            // Update capital transaction
-            if ($owner->capital_transaction_id) {
-                Transaction::where('id', $owner->capital_transaction_id)->update([
-                    'account_id' => $validated['capital_account_id'],
-                    'amount' => $amount,
-                    'currency_id' => $currencyId,
-                    'rate' => $rate,
-                    'date' => now(),
-                    'type' => 'credit',
-                    'remark' => "Capital contribution by {$owner->name}",
-                    'reference_type' => Owner::class,
-                    'reference_id' => $owner->id,
-                ]);
+            if ($transaction) {
+                TransactionLine::where('transaction_id', $transaction->id)->forceDelete();
+                $transaction->forceDelete();
             }
-            // Update account transaction (cash etc)
-            if ($owner->account_transaction_id) {
-                Transaction::where('id', $owner->account_transaction_id)->update([
-                    'account_id' => $validated['account_id'],
-                    'amount' => $amount,
-                    'currency_id' => $currencyId,
-                    'rate' => $rate,
-                    'date' => now(),
-                    'type' => 'debit',
-                    'remark' => "Cash received for {$owner->name} capital",
-                    'reference_type' => Owner::class,
-                    'reference_id' => $owner->id,
-                ]);
+
+            if ($amount > 0 && $currencyId && $rate) {
+                app(TransactionService::class)->post(
+                    header: [
+                        'currency_id' => $currencyId,
+                        'rate' => $rate,
+                        'date' => now()->toDateString(),
+                        'reference_type' => Owner::class,
+                        'reference_id' => $owner->id,
+                        'remark' => "Owner contribution for {$owner->name}",
+                    ],
+                    lines: [
+                        [
+                            'account_id' => $validated['bank_account_id'],
+                            'debit' => $amount,
+                            'credit' => 0,
+                        ],
+                        [
+                            'account_id' => $validated['capital_account_id'],
+                            'debit' => 0,
+                            'credit' => $amount,
+                        ],
+                    ],
+                );
             }
         });
         return redirect()->route('owners.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.owner')]));
@@ -193,9 +210,12 @@ class OwnerController extends Controller
 
     public function destroy(Request $request, Owner $owner)
     {
-        $owner->load(['capitalTransaction', 'accountTransaction']);
-        $owner->capitalTransaction->delete();
-        $owner->accountTransaction->delete();
+        $owner->load(['transaction']);
+
+        if ($owner->transaction) {
+            $owner->transaction->lines()->delete();
+            $owner->transaction->delete();
+        }
         $owner->delete();
         return redirect()->route('owners.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.owner')]));
     }
@@ -203,14 +223,11 @@ class OwnerController extends Controller
     public function restore(Request $request, Owner $owner)
     {
         $owner->restore();
-        if ($owner->capital_transaction_id) {
-            Transaction::where('id', $owner->capital_transaction_id)->restore();
-        }
-        if ($owner->account_transaction_id) {
-            Transaction::where('id', $owner->account_transaction_id)->restore();
+        $transaction = $owner->transaction()->withTrashed()->first();
+        if ($transaction) {
+            $transaction->restore();
+            $transaction->lines()->withTrashed()->restore();
         }
         return redirect()->route('owners.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.owner')]));
     }
 }
-
-

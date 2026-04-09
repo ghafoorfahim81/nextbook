@@ -364,7 +364,7 @@ const navMain = computed(() => [
         icon: BookUser,
         items: [
             { title: t('sidebar.owners.owners'), url: '/owners', permission: 'owners.view_any' },
-            { title: t('sidebar.owners.drawing'), url: '/drawing', permission: 'drawing.view_any' },
+            { title: t('sidebar.owners.drawing'), url: '/drawings', permission: 'drawings.view_any' },
         ],
     },
     {
