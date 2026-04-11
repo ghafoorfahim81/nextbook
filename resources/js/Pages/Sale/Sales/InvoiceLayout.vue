@@ -32,9 +32,9 @@ const formatNumber = (value) => new Intl.NumberFormat(numberLocale.value, {
   maximumFractionDigits: decimalPlaces.value,
 }).format(toNumber(value))
 
-const formatBalanceAmount = (amount, nature) => {
-  if (!toNumber(amount)) return formatNumber(0)
-  return `${formatNumber(amount)} ${String(nature || '').toUpperCase()}`
+const formatOldBalanceAmount = (amount) => {
+  const netAmount = Math.max(0, toNumber(amount))
+  return formatNumber(netAmount)
 }
 
 const companyName = computed(() => {
@@ -131,11 +131,10 @@ const totalDiscount = computed(() => itemDiscountTotal.value + billDiscountAmoun
 const invoiceTotal = computed(() => subtotal.value - totalDiscount.value)
 const remainingAmount = computed(() => toNumber(props.invoice?.remaining_amount ?? props.invoice?.receivable_amount))
 const oldBalance = computed(() => toNumber(props.invoice?.old_balance))
-const oldBalanceNature = computed(() => props.invoice?.old_balance_nature || 'dr')
 const summaryRows = computed(() => [
   { label: t('invoice.subtotal'), value: formatNumber(subtotal.value) },
   { label: t('invoice.discount'), value: formatNumber(totalDiscount.value) },
-  { label: t('invoice.old_balance'), value: formatBalanceAmount(oldBalance.value, oldBalanceNature.value) },
+  { label: t('invoice.old_balance'), value: formatOldBalanceAmount(oldBalance.value) },
   { label: t('invoice.remaining_amount'), value: formatNumber(remainingAmount.value) },
   { label: t('invoice.total_due'), value: formatNumber(invoiceTotal.value), strong: true },
 ])
