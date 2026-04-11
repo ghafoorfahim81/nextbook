@@ -48,7 +48,23 @@ const companyEmail = computed(() => props.company?.email || t('invoice.not_avail
 const companyWebsite = computed(() => props.company?.website || t('invoice.not_available'))
 const companyAddress = computed(() => [props.company?.address, props.company?.city, props.company?.country].filter(Boolean).join(', ') || t('invoice.not_available'))
 const companyInitial = computed(() => companyName.value?.trim()?.charAt(0)?.toUpperCase() || 'N')
-const companyLogo = computed(() => props.company?.logo_url || null)
+const companyLogo = computed(() => {
+  const logoUrl = props.company?.logo_url
+  if (logoUrl) return logoUrl
+
+  const logo = props.company?.logo
+  if (!logo) return null
+
+  if (typeof logo === 'string') {
+    if (/^https?:\/\//i.test(logo) || logo.startsWith('data:')) {
+      return logo
+    }
+
+    return `/storage/${String(logo).replace(/^\/+/, '')}`
+  }
+
+  return logo?.url || null
+})
 
 const customerLabel = computed(() => t('invoice.customer'))
 
@@ -66,8 +82,8 @@ const invoicePrefix = computed(() => salePreferences.value?.invoice_prefix || 'I
 const invoiceNumberText = computed(() => `${invoicePrefix.value}${props.invoice?.number ?? ''}`)
 const issueDateText = computed(() => props.invoice?.date || t('invoice.not_available'))
 const dueDateText = computed(() => props.invoice?.due_date || props.invoice?.date || t('invoice.not_available'))
-const notesText = computed(() => props.invoice?.description || t('invoice.notes_placeholder'))
-const termsText = computed(() => salePreferences.value?.terms || props.company?.invoice_description || '')
+const notesText = computed(() => props.invoice?.description )
+const termsText = computed(() => salePreferences.value?.terms  || '')
 
 
 
@@ -134,7 +150,7 @@ const signatureLabel = computed(() => t('invoice.signature'))
         <div class="flex items-start gap-10">
           <div class="min-w-0 flex-1 space-y-7">
             <div class="flex items-center gap-4">
-              <img v-if="companyLogo" :src="companyLogo" :alt="companyName" class="h-14 w-14 rounded-xl border border-slate-200 object-cover" />
+              <img v-if="companyLogo" :src="companyLogo" :alt="companyName" class="max-h-16 w-auto max-w-[220px] rounded-xl   object-contain bg-white px-2 py-1" />
               <div v-else class="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-700 text-xl font-bold text-white">{{ companyInitial }}</div>
               <p class="text-[30px] font-semibold text-slate-900" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">{{ companyName }}</p>
             </div>
@@ -242,7 +258,7 @@ const signatureLabel = computed(() => t('invoice.signature'))
     <section v-else-if="themeId === 'format2'" class="print-surface theme-format2 space-y-6" :class="isRTL ? 'text-right' : 'text-left'">
       <header class="space-y-6 pb-2">
         <div class="flex items-start justify-between gap-8" dir="ltr">
-          <div class="flex h-20 w-72 items-center justify-center border-2 border-slate-500 bg-white">
+          <div class="flex h-20 w-72 items-center justify-center  bg-white">
             <img v-if="companyLogo" :src="companyLogo" :alt="companyName" class="h-full w-full object-contain p-2" />
             <span v-else class="text-2xl font-semibold text-slate-700">Place logo here</span>
           </div>
@@ -335,7 +351,7 @@ const signatureLabel = computed(() => t('invoice.signature'))
     <section v-else-if="themeId === 'format3'" class="print-surface theme-format3 space-y-8" :class="isRTL ? 'text-right' : 'text-left'">
       <header class="flex items-start justify-between gap-6 border-b-4 border-slate-600 pb-5">
         <div class="flex items-start gap-4">
-          <img v-if="companyLogo" :src="companyLogo" :alt="companyName" class="h-16 w-16 rounded-2xl border border-slate-200 object-cover" />
+          <img v-if="companyLogo" :src="companyLogo" :alt="companyName" class="max-h-16 w-auto max-w-[220px] rounded-2xl  object-contain bg-white px-2 py-1" />
           <div v-else class="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-500 text-2xl font-bold text-white">{{ companyInitial }}</div>
           <div class="space-y-1 text-sm text-slate-500">
             <p class="font-semibold text-slate-900">{{ companyName }}</p>
@@ -407,8 +423,8 @@ const signatureLabel = computed(() => t('invoice.signature'))
     <section v-else-if="themeId === 'format4'" class="print-surface theme-format4 space-y-5" :class="isRTL ? 'text-right' : 'text-left'">
       <header class="flex items-start justify-between gap-8" :class="isRTL ? 'flex-row-reverse' : ''" dir="ltr">
         <div class="w-[220px] shrink-0 space-y-4">
-          <div class="flex h-20 w-20 items-center justify-center bg-slate-100 text-3xl font-bold text-slate-400" :class="isRTL ? 'ml-auto' : ''">
-            <img v-if="companyLogo" :src="companyLogo" :alt="companyName" class="h-full w-full object-cover" />
+          <div class="flex min-h-20 max-w-[220px] items-center justify-center text-3xl text-slate-400" :class="isRTL ? 'ml-auto' : ''">
+            <img v-if="companyLogo" :src="companyLogo" :alt="companyName" class="max-h-20 w-auto max-w-[220px] object-contain bg-white px-2 py-1" />
             <span v-else>{{ companyInitial }}</span>
           </div>
 
@@ -509,9 +525,9 @@ const signatureLabel = computed(() => t('invoice.signature'))
         <div class="flex items-start justify-between text-xs text-slate-600">
           <span>{{ issueDateText }}</span>
           <span class="font-semibold">Nextbook</span>
-          <div class="h-14 w-28 overflow-hidden border border-slate-200 bg-white">
-            <img v-if="companyLogo" :src="companyLogo" :alt="companyName" class="h-full w-full object-cover" />
-            <div v-else class="flex h-full w-full items-center justify-center bg-slate-700 text-xl font-bold text-white">{{ companyInitial }}</div>
+          <div class="max-w-[220px] overflow-hidden border border-slate-200 bg-white px-2 py-1">
+            <img v-if="companyLogo" :src="companyLogo" :alt="companyName" class="max-h-14 w-auto object-contain" />
+            <div v-else class="flex h-14 w-28 items-center justify-center bg-slate-700 text-xl font-bold text-white">{{ companyInitial }}</div>
           </div>
         </div>
         <div class="text-center">
