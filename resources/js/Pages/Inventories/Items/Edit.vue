@@ -54,6 +54,7 @@ const form = useForm({
     photo: null,
     openings: props.item.data.openings?.length
         ? props.item.data.openings.map(o => ({
+            id: o.id,
             batch: o.batch,
             expire_date: o.expire_date,
             unit_price: o.unit_price,

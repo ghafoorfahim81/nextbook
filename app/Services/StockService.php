@@ -179,6 +179,30 @@ class StockService
      */
     protected function increaseBalance(Item $item, array $data): void
     {
+        $replaceBalance = (bool) ($data['replace_balance'] ?? false);
+        $balance = null;
+
+        if ($replaceBalance && !empty($data['balance_id'])) {
+            $balance = StockBalance::query()
+                ->lockForUpdate()
+                ->find($data['balance_id']);
+        }
+
+        if ($balance) {
+            $balance->update([
+                'quantity' => $data['quantity'],
+                'average_cost' => $data['unit_cost'],
+                'batch' => $data['batch'] ?? null,
+                'expire_date' => $data['expire_date'] ? $this->dateConversionService->toGregorian($data['expire_date']) : null,
+                'warehouse_id' => $data['warehouse_id'],
+                'branch_id' => $data['branch_id'],
+                'item_id' => $data['item_id'],
+                'status' => $data['status'] ?? StockStatus::DRAFT->value,
+            ]);
+
+            return;
+        }
+
         $balance = StockBalance::firstOrCreate(
             [
                 'branch_id' => $data['branch_id'],
