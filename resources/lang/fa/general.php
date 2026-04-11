@@ -67,5 +67,11 @@ return [
     'owe_to' => 'طلبکار',
     'owe_you' => 'بدهکار',
     'cannot_delete_warehouse_with_stock_movements' => 'نمی‌توان انباری را حذف کنید که دارای حرکات انبار ثبت شده است.',
+    'assets' => 'دارایی ها',
+    'liabilities' => 'بدهی ها',
+    'equity' => 'سرمایه',
+    'revenue' => 'درآمد',
+    'cost_of_goods_sold' => 'هزینه محصولات فروخته شد',
+    'expenses' => 'هزینه ها',
 ];
 

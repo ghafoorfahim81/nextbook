@@ -70,5 +70,16 @@ return [
     'owe_to' => 'Owe to',
     'owe_you' => 'Owe you',
     'cannot_delete_warehouse_with_stock_movements' => 'Cannot delete warehouse with stock movements.',
+    'assets' => 'Assets',
+    'liabilities' => 'Liabilities',
+    'equity' => 'Equity',
+    'revenue' => 'Revenue',
+    'cost_of_goods_sold' => 'Cost of Goods Sold',
+    'expenses' => 'Expenses',
+    'net_profit' => 'Net Profit',
+    'gross_profit' => 'Gross Profit',
+    'total_revenue' => 'Total Revenue',
+    'total_cost_of_goods_sold' => 'Total Cost of Goods Sold',
+    'total_expenses' => 'Total Expenses',
 ];
 

@@ -772,9 +772,9 @@ class ReportService
             'meta' => [
                 'layout' => 'statement',
                 'sections' => [
-                    ['key' => 'assets', 'label' => 'Assets', 'rows' => $assets],
-                    ['key' => 'liabilities', 'label' => 'Liabilities', 'rows' => $liabilities],
-                    ['key' => 'equity', 'label' => 'Equity', 'rows' => $equity],
+                    ['key' => 'assets', 'label' => __('general.assets'), 'rows' => $assets],
+                    ['key' => 'liabilities', 'label' => __('general.liabilities'), 'rows' => $liabilities],
+                    ['key' => 'equity', 'label' => __('general.equity'), 'rows' => $equity],
                 ],
             ],
         ];
@@ -807,9 +807,9 @@ class ReportService
             'meta' => [
                 'layout' => 'statement',
                 'sections' => [
-                    ['key' => 'revenue', 'label' => 'Revenue', 'rows' => $revenue],
-                    ['key' => 'cost_of_goods_sold', 'label' => 'Cost of Goods Sold', 'rows' => $costOfGoodsSold],
-                    ['key' => 'expenses', 'label' => 'Expenses', 'rows' => $expenses],
+                    ['key' => 'revenue', 'label' => __('general.revenue'), 'rows' => $revenue],
+                    ['key' => 'cost_of_goods_sold', 'label' => __('general.cost_of_goods_sold'), 'rows' => $costOfGoodsSold],
+                    ['key' => 'expenses', 'label' => __('general.expenses'), 'rows' => $expenses],
                 ],
             ],
         ];
@@ -1573,10 +1573,14 @@ class ReportService
                 ->where('a.branch_id', $branchId)
                 ->where('at.slug', 'cash-or-bank')
                 ->whereNull('a.deleted_at')
-                ->orderBy('a.name')
-                ->get(['a.id', 'a.name'])
-                ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
+                ->orderBy(app()->getLocale() === 'en' ? 'a.name' : 'a.local_name')
+                ->get(['a.id', 'a.name', 'a.local_name'])
+                ->map(fn ($row) => [
+                    'id' => $row->id,
+                    'name' => app()->getLocale() === 'en' ? $row->name : ($row->local_name ?? $row->name)
+                ])
                 ->all(),
+           
         ];
     }
 
