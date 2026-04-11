@@ -67,7 +67,11 @@
         "unit": "واحد",
         "quantity": "مقدار",
         "metric": "متریک",
-        "base_unit": "واحد اصلی"
+        "base_unit": "واحد اصلی",
+        "select_quantity_type_first": "مهرباني وکړئ لومړی د مقدار ډول وټاکئ",
+        "custom_quantity": "نوی مقدار جوړ کړئ",
+        "custom_measure": "نوی واحد جوړ کړئ",
+        "suggested_measures": "وړاندیز شوي واحدونه"
     },
     "size": {
         "size": "اندازه",

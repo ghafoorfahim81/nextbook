@@ -2,10 +2,9 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { ref, computed } from 'vue';
-import { Button } from '@/Components/ui/button';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import CreateEditModal from '@/Pages/Administration/UnitMeasures/CreateEditModal.vue';
-import { router } from '@inertiajs/vue3';
+import ShowDialog from '@/Pages/Administration/UnitMeasures/ShowDialog.vue';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n()
 const props = defineProps({
@@ -17,6 +16,8 @@ const props = defineProps({
 });
 const isDialogOpen = ref(false)
 const editingMeasure = ref(null)
+const showDialogOpen = ref(false)
+const viewingMeasureId = ref(null)
 
 
 const columns = computed(() => ([
@@ -65,10 +66,20 @@ const deleteItem = (id) => {
 
 };
 
+const editItem = (item) => {
+    editingMeasure.value = item
+    isDialogOpen.value = true
+}
+
+const showItem = (id) => {
+    viewingMeasureId.value = id
+    showDialogOpen.value = true
+}
+
 </script>
 
 <template>
-    <AppLayout title="t('admin.unit_measure.unit_measure')">
+    <AppLayout :title="t('admin.unit_measure.unit_measure')">
         <div class="flex gap-2 items-center mb-4">
             <div class="ml-auto gap-3">
                 <CreateEditModal
@@ -81,19 +92,31 @@ const deleteItem = (id) => {
                     }"
                     @saved="() => { editingMeasure = null }"
                 />
-
             </div>
         </div>
+        <ShowDialog
+            v-model:open="showDialogOpen"
+            :unit-measure-id="viewingMeasureId"
+            @edit="(item) => {
+                showDialogOpen = false
+                viewingMeasureId = null
+                editingMeasure = item
+                isDialogOpen = true
+            }"
+        />
         <DataTable
             can="unit_measures"
             :items="unitMeasures"
             :columns="columns"
+            @edit="editItem"
             @delete="deleteItem"
+            @show="showItem"
             :title="`${t('admin.unit_measure.unit_measure')}`"
             :showAddButton="true"
             :addTitle="t('admin.unit_measure.unit_measure')"
             :addAction="'modal'"
-            :hasEdit="false"
+            :hasEdit="true"
+            :hasShow="true"
             @add="isDialogOpen = true"
             :addRoute="route('unit-measures.create')"
             :url="`unit-measures.index`"
