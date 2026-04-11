@@ -1,6 +1,7 @@
 <template>
     <div class="flex items-center gap-2">
         <input
+            ref="radioRef"
             :id="id"
             type="radio"
             :value="value"
@@ -21,7 +22,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
+import { shouldAutoFocusElement } from '@/lib/autofocus'
 
 const props = defineProps({
     modelValue: [String, Number, Object],
@@ -34,6 +36,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue'])
+const radioRef = ref(null)
 
 const isChecked = computed(() => {
     if (typeof props.modelValue === 'object' && typeof props.value === 'object') {
@@ -47,4 +50,22 @@ const handleChange = (event) => {
         emit('update:modelValue', props.value)
     }
 }
+
+const focusRadio = () => {
+    if (shouldAutoFocusElement(radioRef.value)) {
+        radioRef.value?.focus?.()
+    }
+}
+
+onMounted(() => {
+    nextTick(() => {
+        focusRadio()
+        requestAnimationFrame(focusRadio)
+        setTimeout(focusRadio, 50)
+    })
+})
+
+defineExpose({
+    focus: () => radioRef.value?.focus?.(),
+})
 </script>

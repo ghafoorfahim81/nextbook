@@ -1,6 +1,8 @@
 <script setup>
 import { cn } from '@/lib/utils';
 import { useVModel } from '@vueuse/core';
+import { nextTick, onMounted, ref } from 'vue';
+import { shouldAutoFocusElement } from '@/lib/autofocus';
 
 const props = defineProps({
   defaultValue: { type: [String, Number], required: false },
@@ -14,10 +16,31 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: true,
   defaultValue: props.defaultValue,
 });
+
+const inputRef = ref(null);
+
+const focusInput = () => {
+  if (shouldAutoFocusElement(inputRef.value)) {
+    inputRef.value.focus?.();
+  }
+};
+
+onMounted(() => {
+  nextTick(() => {
+    focusInput();
+    requestAnimationFrame(focusInput);
+    setTimeout(focusInput, 50);
+  });
+});
+
+defineExpose({
+  focus: () => inputRef.value?.focus?.(),
+});
 </script>
 
 <template>
   <input
+    ref="inputRef"
     v-model="modelValue"
     :class="
       cn(

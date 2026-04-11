@@ -24,6 +24,7 @@ import {
 } from '@/Components/ui/alert'
 const barcodeSvg = ref(null)
 const isBarcodePopoverOpen = ref(false)
+const nameInputRef = ref(null)
 const { t } = useI18n()
 // keep props reactive
 const props = defineProps({
@@ -437,6 +438,18 @@ const generateBarcode = () => {
 
 const isMarginPercentagePopoverOpen = ref(false)
 
+const focusNameField = () => {
+    nameInputRef.value?.focus?.()
+}
+
+onMounted(() => {
+    nextTick(() => {
+        focusNameField()
+        requestAnimationFrame(focusNameField)
+        setTimeout(focusNameField, 50)
+    })
+})
+
 </script>
 
 <template>
@@ -448,7 +461,7 @@ const isMarginPercentagePopoverOpen = ref(false)
                 </div>
                 <ModuleHelpButton module="inventory_item" />
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                <NextInput  :label="t('general.name')" v-model="form.name" :error="form.errors?.name"  :placeholder="t('general.enter', { text: t('general.name') })" />
+                <NextInput ref="nameInputRef" autofocus :label="t('general.name')" v-model="form.name" :error="form.errors?.name"  :placeholder="t('general.enter', { text: t('general.name') })" />
                 <NextInput v-show="visibleFields.code" :label="t('admin.currency.code')" disabled="true"  v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
                 <NextInput v-show="visibleFields.generic_name" :label="t('item.generic_name')" v-model="form.generic_name" :error="form.errors?.generic_name" :placeholder="t('general.enter', { text: t('item.generic_name') })" />
                 <NextInput v-show="visibleFields.packing" :label="t('item.packing')" v-model="form.packing" :error="form.errors?.packing" :placeholder="t('general.enter', { text: t('item.packing') })" />

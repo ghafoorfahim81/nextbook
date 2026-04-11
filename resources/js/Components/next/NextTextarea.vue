@@ -9,6 +9,7 @@
         >{{ label }}</label>
 
         <textarea
+            ref="textareaRef"
             id="message"
             rows="4"
             :name="name"
@@ -24,7 +25,9 @@
 </template>
 
 <script setup>
+import { nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n';
+import { shouldAutoFocusElement } from '@/lib/autofocus'
 
 const { t } = useI18n();
 
@@ -37,4 +40,24 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:modelValue']);
+
+const textareaRef = ref(null)
+
+const focusTextarea = () => {
+    if (shouldAutoFocusElement(textareaRef.value)) {
+        textareaRef.value?.focus?.()
+    }
+}
+
+onMounted(() => {
+    nextTick(() => {
+        focusTextarea()
+        requestAnimationFrame(focusTextarea)
+        setTimeout(focusTextarea, 50)
+    })
+})
+
+defineExpose({
+    focus: () => textareaRef.value?.focus?.(),
+})
 </script>
