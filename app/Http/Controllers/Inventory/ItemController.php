@@ -154,7 +154,7 @@ class ItemController extends Controller
                         header: [
                           'currency_id' => $homeCurrency->id,
                           'rate' => 1,
-                          'date' => Carbon::now()->toDateString(),
+                          'date' => Carbon::now(),
                           'reference_type' => Item::class,
                           'reference_id' => $item->id,
                           'remark' => 'Opening balance for item ' . $item->name,
