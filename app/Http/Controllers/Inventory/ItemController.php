@@ -114,6 +114,7 @@ class ItemController extends Controller
                 ->each(function ($o) use ($item, $validated, $transactionService) {
                     // create stock
                     $stockService = app(\App\Services\StockService::class);
+                    $branchId = auth()->user()->branch_id ?? app('active_branch_id');
                     $stock = $stockService->post([
                         'item_id'         => $item->id,
                         'movement_type'   => StockMovementType::IN->value,
@@ -127,7 +128,7 @@ class ItemController extends Controller
                         'expire_date'     => $o['expire_date'] ?? null,
                         'size_id'         => $validated['size_id'] ?? null,
                         'warehouse_id'    => $o['warehouse_id'],
-                        'branch_id'       => auth()->user()->company->branch_id,
+                        'branch_id'       => $branchId,
                     ]);
                 });
                 // Create opening transactions
@@ -267,35 +268,42 @@ class ItemController extends Controller
             $validated['photo'] = $path;
         }
         DB::transaction(function () use ($validated, $item) {
+            $existingDraftOpenings = $item->openings()
+                ->where('status', StockStatus::DRAFT->value)
+                ->orderBy('created_at')
+                ->orderBy('id')
+                ->get()
+                ->keyBy('id');
+
             // 1) Update item
             $item->update($validated);
 
             // 2) Handle openings
             $openings = collect($validated['openings'] ?? []);
             $transactionService = app(\App\Services\TransactionService::class);
-            // Remove old openings (optional: you may also soft-delete instead)
-            $itemOpening = StockMovement::where('item_id', $item->id)
-                ->where('source', StockSourceType::OPENING->value)
-                ->where('status', StockStatus::DRAFT->value)
-                ->get();
-            $itemOpening->each(function ($opening) {
+            $submittedOpeningIds = $openings
+                ->pluck('id')
+                ->filter()
+                ->values();
+
+            $existingDraftOpenings
+                ->reject(fn (StockMovement $opening) => $submittedOpeningIds->contains($opening->id))
+                ->each(function (StockMovement $opening) {
+                    $this->deleteOpeningBalance($opening);
+                });
+
+            $existingDraftOpenings->each(function (StockMovement $opening) {
                 $opening->forceDelete();
             });
 
             $openings
                 ->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0 && $o['status'] == StockStatus::DRAFT->value)
-                ->each(function ($o) use ($item, $validated) {
+                ->each(function ($o) use ($item, $validated, $existingDraftOpenings) {
+                    $existingOpening = !empty($o['id']) ? $existingDraftOpenings->get($o['id']) : null;
+                    $balanceId = $existingOpening ? $this->resolveOpeningBalanceId($existingOpening) : null;
                     $stockService = app(\App\Services\StockService::class);
+                    $branchId = auth()->user()->branch_id ?? app('active_branch_id');
 
-                    StockBalance::where('item_id', $item->id)
-                    ->where('status', StockStatus::DRAFT->value)
-                    ->when(isset($o['batch']), function($query) use ($o) {
-                        return $query->where('batch', $o['batch']);
-                    })
-                    ->when(isset($o['expire_date']), function($query) use ($o) {
-                        return $query->where('expire_date', $o['expire_date']);
-                    })
-                    ->forceDelete();
                     $stock = $stockService->post([
                         'item_id'         => $item->id,
                         'movement_type'   => StockMovementType::IN->value,
@@ -309,7 +317,9 @@ class ItemController extends Controller
                         'expire_date'     => $o['expire_date'] ?? null,
                         'size_id'         => $validated['size_id'] ?? null,
                         'warehouse_id'    => $o['warehouse_id'],
-                        'branch_id'       => auth()->user()->company->branch_id,
+                        'branch_id'       => $branchId,
+                        'balance_id'      => $balanceId,
+                        'replace_balance' => $balanceId !== null,
                     ]);
 
                 });
@@ -508,6 +518,52 @@ class ItemController extends Controller
             ]);
 
             return redirect()->back()->with('error', __('general.failed_to_permanently_delete_try_again', ['resource' => __('general.resource.item')]));
+        }
+    }
+
+    private function resolveOpeningBalanceId(StockMovement $opening): ?string
+    {
+        return StockBalance::query()
+            ->where('item_id', $opening->item_id)
+            ->where('branch_id', $opening->branch_id)
+            ->where('warehouse_id', $opening->warehouse_id)
+            ->where('status', $opening->status?->value ?? $opening->status)
+            ->when($opening->batch !== null, function ($query) use ($opening) {
+                return $query->where('batch', $opening->batch);
+            }, function ($query) {
+                return $query->whereNull('batch');
+            })
+            ->when($opening->expire_date !== null, function ($query) use ($opening) {
+                return $query->whereDate('expire_date', $opening->expire_date->toDateString());
+            }, function ($query) {
+                return $query->whereNull('expire_date');
+            })
+            ->lockForUpdate()
+            ->value('id');
+    }
+
+    private function deleteOpeningBalance(StockMovement $opening): void
+    {
+        $balance = StockBalance::query()
+            ->where('item_id', $opening->item_id)
+            ->where('branch_id', $opening->branch_id)
+            ->where('warehouse_id', $opening->warehouse_id)
+            ->where('status', $opening->status?->value ?? $opening->status)
+            ->when($opening->batch !== null, function ($query) use ($opening) {
+                return $query->where('batch', $opening->batch);
+            }, function ($query) {
+                return $query->whereNull('batch');
+            })
+            ->when($opening->expire_date !== null, function ($query) use ($opening) {
+                return $query->whereDate('expire_date', $opening->expire_date->toDateString());
+            }, function ($query) {
+                return $query->whereNull('expire_date');
+            })
+            ->lockForUpdate()
+            ->first();
+
+        if ($balance) {
+            $balance->forceDelete();
         }
     }
 }

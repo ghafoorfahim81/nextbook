@@ -23,20 +23,20 @@ trait BuildsErpContext
 {
     protected function bootstrapErpContext(string $costingMethod = CostingMethod::FIFO->value): array
     {
-        $branch = Branch::factory()->create([
-            'name' => 'Main Branch '.fake()->unique()->numberBetween(100, 999),
-            'is_main' => true,
-        ]);
-
         $user = User::factory()->create([
             'name' => 'erp-super-admin',
             'email' => 'erp-admin-'.fake()->unique()->numberBetween(1000, 9999).'@example.test',
-            'branch_id' => $branch->id,
             'preferences' => User::DEFAULT_PREFERENCES,
         ]);
 
+        $branch = Branch::factory()->create([
+            'name' => 'Main Branch '.fake()->unique()->numberBetween(100, 999),
+            'is_main' => true,
+            'created_by' => $user->id,
+        ]);
+
         $role = Role::query()->firstOrCreate(
-            ['name' => 'Super Admin', 'guard_name' => 'web'],
+            ['name' => 'super-admin', 'guard_name' => 'web'],
             ['slug' => 'super-admin']
         );
 
@@ -46,6 +46,7 @@ trait BuildsErpContext
         }
 
         $user->assignRole($role);
+        $user->update(['branch_id' => $branch->id]);
         $this->actingAs($user);
         app()->instance('active_branch_id', $branch->id);
 

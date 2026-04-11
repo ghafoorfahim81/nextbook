@@ -51,6 +51,7 @@ class ItemUpdateRequest extends FormRequest
             'rack_no' => ['nullable', 'string'],
             'fast_search' => ['nullable', 'string'],
             'openings' => ['nullable', 'array'],
+            'openings.*.id' => ['nullable', 'string', 'exists:stock_movements,id'],
             'openings.*.batch' => ['nullable', 'string'],
             'openings.*.expire_date' => ['nullable', 'date'],
             'openings.*.quantity' => ['nullable', 'numeric'],
