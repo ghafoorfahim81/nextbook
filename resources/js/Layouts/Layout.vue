@@ -462,11 +462,13 @@ function switchBranch() {
 
 const navMain = computed(() => [
     {
+        key: 'dashboard',
         title: t('sidebar.main.dashboard'),
         url: '/dashboard',
         icon: HousePlug,
     },
     {
+        key: 'account',
         title: t('sidebar.main.account'),
         url: '#',
         icon: ChartColumn,
@@ -479,6 +481,7 @@ const navMain = computed(() => [
         ],
     },
     {
+        key: 'administration',
         title: t('sidebar.main.administration'),
         url: '#',
         icon: Cog,
@@ -495,6 +498,7 @@ const navMain = computed(() => [
         ],
     },
     {
+        key: 'inventory',
         title: t('sidebar.main.inventory'),
         url: '#',
         icon: Database,
@@ -507,6 +511,7 @@ const navMain = computed(() => [
         ],
     },
     {
+        key: 'ledger',
         title: t('sidebar.main.ledger'),
         url: '#',
         icon: UserCog,
@@ -516,6 +521,7 @@ const navMain = computed(() => [
         ],
     },
     {
+        key: 'owners',
         title: t('sidebar.owners.owners'),
         url: '#',
         icon: BookUser,
@@ -525,6 +531,7 @@ const navMain = computed(() => [
         ],
     },
     {
+        key: 'expense',
         title: t('sidebar.main.expense'),
         url: '#',
         icon: Banknote,
@@ -534,6 +541,7 @@ const navMain = computed(() => [
         ],
     },
     {
+        key: 'purchase',
         title: t('sidebar.main.purchase'),
         url: '#',
         icon: ShoppingBasket,
@@ -543,6 +551,7 @@ const navMain = computed(() => [
         ],
     },
     {
+        key: 'sale',
         title: t('sidebar.main.sale'),
         url: '#',
         icon: ShoppingCart,
@@ -553,12 +562,14 @@ const navMain = computed(() => [
     },
 
     {
+        key: 'receipt',
         title: t('sidebar.main.receipt'),
         url: '/receipts',
         icon: ReceiptIcon,
         permission: 'receipts.view_any',
     },
     {
+        key: 'payment',
         title: t('sidebar.main.payment'),
         url: '/payments',
         icon: CreditCard,
@@ -566,6 +577,7 @@ const navMain = computed(() => [
     },
 
     {
+        key: 'user_management',
         title: t('sidebar.main.user_management'),
         url: '#',
         icon: UserRound,
@@ -575,20 +587,37 @@ const navMain = computed(() => [
         ],
     },
     {
+        key: 'preferences',
         title: t('sidebar.main.preferences'),
         url: '/preferences',
         icon: Cog,
     },
     {
+        key: 'reports',
         title: t('sidebar.main.reports'),
         url: '/reports',
         icon: FileChartLine,
     },
 ])
 
+const selectedSidebarMenus = computed<Set<string> | null>(() => {
+    const menus = page.props.user_preferences?.appearance?.sidebar_menus
+    if (!Array.isArray(menus)) {
+        return null
+    }
+
+    return new Set(menus)
+})
+
 const filteredNavMain = computed(() => {
+    const allowedMenus = selectedSidebarMenus.value
+
     return navMain.value
         .map((item) => {
+            if (allowedMenus && item.key && !allowedMenus.has(item.key)) {
+                return null
+            }
+
             // Leaf item
             if (!item.items) {
                 if (!item.permission || can(item.permission)) {
