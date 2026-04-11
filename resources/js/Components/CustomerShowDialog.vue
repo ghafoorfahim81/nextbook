@@ -7,7 +7,7 @@ import {
     DialogContent,
 } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
-import {  UserStar } from 'lucide-vue-next';
+import { Printer, UserStar } from 'lucide-vue-next';
 
 const { t } = useI18n();
 
@@ -39,6 +39,10 @@ const opening = computed(() => customerData.value.opening ?? {});
 const formatAmount = (value) => {
     if (value === null || value === undefined) return '-';
     return Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const printRecord = (routeName, id) => {
+    window.open(route(routeName, id), '_blank');
 };
 
 const loadCustomer = async (id) => { 
@@ -267,34 +271,47 @@ const closeDialog = () => {
                                             <tr class="border-b border-border text-left rtl:text-right text-muted-foreground">
                                                 <th class="py-2 pr-4">#</th>
                                                 <th class="py-2 pr-4">{{ t('general.number') }}</th>
-                                                <th class="py-2 pr-4">{{ t('general.type') }}</th>
-                                                <th class="py-2 pr-4">{{ t('general.date') }}</th>
-                                                <th class="py-2 pr-4">{{ t('general.amount') }}</th>
-                                                <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-if="!sales.length">
-                                                <td colspan="5" class="py-4 text-center text-muted-foreground">
-                                                    {{ t('general.no_data_found') }}
-                                                </td>
-                                            </tr>
+                                        <th class="py-2 pr-4">{{ t('general.type') }}</th>
+                                        <th class="py-2 pr-4">{{ t('general.date') }}</th>
+                                        <th class="py-2 pr-4">{{ t('general.amount') }}</th>
+                                        <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
+                                        <th class="py-2 pr-4 text-right">{{ t('general.action') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-if="!sales.length">
+                                        <td colspan="7" class="py-4 text-center text-muted-foreground">
+                                            {{ t('general.no_data_found') }}
+                                        </td>
+                                    </tr>
                                             <tr
                                                 v-for="(row, index) in sales"
                                                 :key="row.id"
                                                 class="border-b border-border last:border-b-0"
-                                            >
-                                                <td class="py-2 pr-4">{{  index + 1 }}</td>
-                                                <td class="py-2 pr-4">{{ row.number }}</td>
-                                                <td class="py-2 pr-4 capitalize">{{ row.type }}</td>
-                                                <td class="py-2 pr-4">{{ row.date }}</td>
-                                                <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
-                                                <td class="py-2 pr-4">
-                                                    {{ row.transaction?.currency?.code || row.transaction?.currency?.name || '' }}
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                >
+                                    <td class="py-2 pr-4">{{  index + 1 }}</td>
+                                    <td class="py-2 pr-4">{{ row.number || row.reference_id || row.id }}</td>
+                                    <td class="py-2 pr-4 capitalize">{{ row.type }}</td>
+                                    <td class="py-2 pr-4">{{ row.date }}</td>
+                                    <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
+                                    <td class="py-2 pr-4">
+                                        {{ row.transaction?.currency?.code || row.transaction?.currency?.name || '' }}
+                                    </td>
+                                    <td class="py-2 pr-4 text-right">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            class="h-8 w-8 hover:bg-violet-500 hover:text-white"
+                                            :title="t('general.print')"
+                                            @click="printRecord('sales.print', row.id)"
+                                        >
+                                            <Printer class="h-4 w-4" />
+                                            <span class="sr-only">{{ t('general.print') }}</span>
+                                        </Button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                                 </div>
 
                                 <div v-else-if="activeTxnTab === 'receipts'">
@@ -304,18 +321,19 @@ const closeDialog = () => {
                                                 <th class="py-2 pr-4">#</th>
                                                 <th class="py-2 pr-4">{{ t('general.number') }}</th>
                                                 <!-- <th class="py-2 pr-4">{{ t('general.type') }}</th> -->
-                                                <th class="py-2 pr-4">{{ t('general.date') }}</th>
-                                                <th class="py-2 pr-4">{{ t('general.amount') }}</th>
-                                                <th class="py-2 pr-4">{{ t('general.rate') }}</th>
-                                                <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-if="!receipts.length">
-                                                <td colspan="5" class="py-4 text-center text-muted-foreground">
-                                                    {{ t('general.no_data_found') }}
-                                                </td>
-                                            </tr>
+                                        <th class="py-2 pr-4">{{ t('general.date') }}</th>
+                                        <th class="py-2 pr-4">{{ t('general.amount') }}</th>
+                                        <th class="py-2 pr-4">{{ t('general.rate') }}</th>
+                                        <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
+                                        <th class="py-2 pr-4 text-right">{{ t('general.action') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-if="!receipts.length">
+                                        <td colspan="7" class="py-4 text-center text-muted-foreground">
+                                            {{ t('general.no_data_found') }}
+                                        </td>
+                                    </tr>
                                             <tr
                                                 v-for="(row, index) in receipts"
                                                 :key="row.id"
@@ -325,14 +343,26 @@ const closeDialog = () => {
                                                 <td class="py-2 pr-4">{{ row.number }}</td>
                                                 <!-- <td class="py-2 pr-4 capitalize">{{ row.transaction?.type }}</td> -->
                                                 <td class="py-2 pr-4">{{ row.date }}</td>
-                                                <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
-                                                <td class="py-2 pr-4">{{ formatAmount(row.rate) }}</td>
-                                                <td class="py-2 pr-4">
-                                                    {{ row.transaction?.currency?.code || row.transaction?.currency?.name || '' }}
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                        <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
+                                        <td class="py-2 pr-4">{{ formatAmount(row.rate) }}</td>
+                                        <td class="py-2 pr-4">
+                                            {{ row.transaction?.currency?.code || row.transaction?.currency?.name || '' }}
+                                        </td>
+                                        <td class="py-2 pr-4 text-right">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                class="h-8 w-8 hover:bg-violet-500 hover:text-white"
+                                                :title="t('general.print')"
+                                                @click="printRecord('receipts.print', row.id)"
+                                            >
+                                                <Printer class="h-4 w-4" />
+                                                <span class="sr-only">{{ t('general.print') }}</span>
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                                 </div>
                                 <div v-else-if="activeTxnTab === 'payments'">
                                     <table class="min-w-full text-sm">
@@ -341,18 +371,19 @@ const closeDialog = () => {
                                                 <th class="py-2 pr-4">#</th>
                                                 <th class="py-2 pr-4">{{ t('general.number') }}</th>
                                                 <!-- <th class="py-2 pr-4">{{ t('general.type') }}</th> -->
-                                                <th class="py-2 pr-4">{{ t('general.date') }}</th>
-                                                <th class="py-2 pr-4">{{ t('general.amount') }}</th>
-                                                <th class="py-2 pr-4">{{ t('general.rate') }}</th>
-                                                <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-if="!payments.length">
-                                                <td colspan="5" class="py-4 text-center text-muted-foreground">
-                                                    {{ t('general.no_data_found') }}
-                                                </td>
-                                            </tr>
+                                        <th class="py-2 pr-4">{{ t('general.date') }}</th>
+                                        <th class="py-2 pr-4">{{ t('general.amount') }}</th>
+                                        <th class="py-2 pr-4">{{ t('general.rate') }}</th>
+                                        <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
+                                        <th class="py-2 pr-4 text-right">{{ t('general.action') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-if="!payments.length">
+                                        <td colspan="7" class="py-4 text-center text-muted-foreground">
+                                            {{ t('general.no_data_found') }}
+                                        </td>
+                                    </tr>
                                             <tr
                                                 v-for="(row, index) in payments"
                                                 :key="row.id"
@@ -362,14 +393,26 @@ const closeDialog = () => {
                                                 <td class="py-2 pr-4">{{ row.number }}</td>
                                                 <!-- <td class="py-2 pr-4 capitalize">{{ row.transaction?.type }}</td> -->
                                                 <td class="py-2 pr-4">{{ row.date }}</td>
-                                                <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
-                                                <td class="py-2 pr-4">{{ formatAmount(row.rate) }}</td>
-                                                <td class="py-2 pr-4">
-                                                    {{ row.transaction?.currency?.code || row.transaction?.currency?.name || '' }}
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+                                        <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
+                                        <td class="py-2 pr-4">{{ formatAmount(row.rate) }}</td>
+                                        <td class="py-2 pr-4">
+                                            {{ row.transaction?.currency?.code || row.transaction?.currency?.name || '' }}
+                                        </td>
+                                        <td class="py-2 pr-4 text-right">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                class="h-8 w-8 hover:bg-violet-500 hover:text-white"
+                                                :title="t('general.print')"
+                                                @click="printRecord('payments.print', row.id)"
+                                            >
+                                                <Printer class="h-4 w-4" />
+                                                <span class="sr-only">{{ t('general.print') }}</span>
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                                 </div>
                             </div>
                         </div>
@@ -425,4 +468,3 @@ const closeDialog = () => {
         </DialogContent>
     </Dialog>
 </template>
-
