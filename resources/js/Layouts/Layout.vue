@@ -84,7 +84,7 @@ import {
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/Components/ui/select'
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 // @ts-ignore - Vue SFC default export shim
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue'
 import { usePage, Link, router } from '@inertiajs/vue3'
@@ -208,6 +208,163 @@ const prefersDarkScheme = useMediaQuery('(prefers-color-scheme: dark)')
 const isSidebarCollapsed = computed(() => !sidebarOpen.value && !isMobileViewport.value)
 const flyoutSide = computed(() => sidebarSide.value === 'right' ? 'left' : 'right')
 const isDarkModeActive = computed(() => mode.value === 'dark' || (mode.value === 'auto' && prefersDarkScheme.value))
+
+type ConnectionState = 'online' | 'slow' | 'offline'
+const connectionState = ref<ConnectionState>('online')
+const connectionLabel = computed(() => {
+    if (connectionState.value === 'offline') {
+        return 'No connection'
+    }
+
+    if (connectionState.value === 'slow') {
+        return 'Slow connection'
+    }
+
+    return 'Online'
+})
+
+const connectionDotClass = computed(() => {
+    if (connectionState.value === 'offline') {
+        return 'bg-red-500 shadow-[0_0_0_4px_rgba(239,68,68,0.15)]'
+    }
+
+    if (connectionState.value === 'slow') {
+        return 'bg-amber-500 shadow-[0_0_0_4px_rgba(245,158,11,0.15)]'
+    }
+
+    return 'bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.15)]'
+})
+
+function getConnectionState(): ConnectionState {
+    if (typeof navigator === 'undefined') {
+        return 'online'
+    }
+
+    if (!navigator.onLine) {
+        return 'offline'
+    }
+
+    const connection = (navigator as Navigator & {
+        connection?: {
+            effectiveType?: string
+            saveData?: boolean
+            addEventListener?: (type: string, listener: EventListener) => void
+            removeEventListener?: (type: string, listener: EventListener) => void
+        }
+        mozConnection?: {
+            effectiveType?: string
+            saveData?: boolean
+            addEventListener?: (type: string, listener: EventListener) => void
+            removeEventListener?: (type: string, listener: EventListener) => void
+        }
+        webkitConnection?: {
+            effectiveType?: string
+            saveData?: boolean
+            addEventListener?: (type: string, listener: EventListener) => void
+            removeEventListener?: (type: string, listener: EventListener) => void
+        }
+    }).connection
+        || (navigator as Navigator & {
+            mozConnection?: {
+                effectiveType?: string
+                saveData?: boolean
+                addEventListener?: (type: string, listener: EventListener) => void
+                removeEventListener?: (type: string, listener: EventListener) => void
+            }
+        }).mozConnection
+        || (navigator as Navigator & {
+            webkitConnection?: {
+                effectiveType?: string
+                saveData?: boolean
+                addEventListener?: (type: string, listener: EventListener) => void
+                removeEventListener?: (type: string, listener: EventListener) => void
+            }
+        }).webkitConnection
+
+    if (connection?.saveData) {
+        return 'slow'
+    }
+
+    if (['slow-2g', '2g'].includes(connection?.effectiveType || '')) {
+        return 'slow'
+    }
+
+    return 'online'
+}
+
+function syncConnectionState() {
+    connectionState.value = getConnectionState()
+}
+
+const connectionListeners = {
+    online: syncConnectionState,
+    offline: syncConnectionState,
+    change: syncConnectionState,
+}
+
+onMounted(() => {
+    syncConnectionState()
+    window.addEventListener('online', connectionListeners.online)
+    window.addEventListener('offline', connectionListeners.offline)
+
+    const connection = (navigator as Navigator & {
+        connection?: {
+            addEventListener?: (type: string, listener: EventListener) => void
+            removeEventListener?: (type: string, listener: EventListener) => void
+        }
+        mozConnection?: {
+            addEventListener?: (type: string, listener: EventListener) => void
+            removeEventListener?: (type: string, listener: EventListener) => void
+        }
+        webkitConnection?: {
+            addEventListener?: (type: string, listener: EventListener) => void
+            removeEventListener?: (type: string, listener: EventListener) => void
+        }
+    }).connection
+        || (navigator as Navigator & {
+            mozConnection?: {
+                addEventListener?: (type: string, listener: EventListener) => void
+                removeEventListener?: (type: string, listener: EventListener) => void
+            }
+        }).mozConnection
+        || (navigator as Navigator & {
+            webkitConnection?: {
+                addEventListener?: (type: string, listener: EventListener) => void
+                removeEventListener?: (type: string, listener: EventListener) => void
+            }
+        }).webkitConnection
+
+    connection?.addEventListener?.('change', connectionListeners.change)
+})
+
+onBeforeUnmount(() => {
+    window.removeEventListener('online', connectionListeners.online)
+    window.removeEventListener('offline', connectionListeners.offline)
+
+    const connection = (navigator as Navigator & {
+        connection?: {
+            removeEventListener?: (type: string, listener: EventListener) => void
+        }
+        mozConnection?: {
+            removeEventListener?: (type: string, listener: EventListener) => void
+        }
+        webkitConnection?: {
+            removeEventListener?: (type: string, listener: EventListener) => void
+        }
+    }).connection
+        || (navigator as Navigator & {
+            mozConnection?: {
+                removeEventListener?: (type: string, listener: EventListener) => void
+            }
+        }).mozConnection
+        || (navigator as Navigator & {
+            webkitConnection?: {
+                removeEventListener?: (type: string, listener: EventListener) => void
+            }
+        }).webkitConnection
+
+    connection?.removeEventListener?.('change', connectionListeners.change)
+})
 
 // Collapsed sidebar flyout submenu state (hover or click).
 const flyoutOpenKey = ref<string | null>(null)
@@ -877,12 +1034,24 @@ function logout() {
             </SidebarFooter>
             <SidebarRail />
         </Sidebar>
-        <SidebarInset>
-            <header class="flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-background/80 px-3 py-2 transition-[width,height] ease-linear supports-[backdrop-filter]:bg-background/60 sm:h-16 sm:flex-nowrap sm:px-4 sm:py-0 rtl:pr-3 sm:rtl:pr-4 group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+        <SidebarInset class="flex min-h-screen flex-col">
+            <header class="relative flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-background/80 px-3 py-2 transition-[width,height] ease-linear supports-[backdrop-filter]:bg-background/60 sm:h-16 sm:flex-nowrap sm:px-4 sm:py-0 rtl:pr-3 sm:rtl:pr-4 group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
                 <!-- Left side: Sidebar trigger and breadcrumb -->
                 <div class="flex items-center gap-2">
                     <SidebarTrigger class="-ml-1"/>
                     <Separator orientation="vertical" class="mr-2 hidden h-4 sm:block" />
+                </div>
+                <div v-show="connectionLabel !='Online'" class="pointer-events-none absolute inset-x-0 top-1/2 hidden -translate-y-1/2 justify-center md:flex">
+                    <div class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-1.5 text-xs text-muted-foreground shadow-sm backdrop-blur">
+                        <span
+                            class="size-2 rounded-full"
+                            :class="connectionDotClass"
+                            aria-hidden="true"
+                        />
+                        <span class="font-medium text-foreground">
+                            {{ connectionLabel }}
+                        </span>
+                    </div>
                 </div>
                 <div class="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3 sm:pr-4">
 
@@ -923,9 +1092,12 @@ function logout() {
                 </div>
 <!--                </div>-->
             </header>
-            <div class="flex flex-1 flex-col gap-4 p-4 pt-4 min-w-0">
+            <div class="flex flex-1 min-h-0 flex-col gap-4 p-4 pt-4 min-w-0">
                 <slot/>
             </div>
+            <footer class="border-t border-border/60 px-4 py-2 text-center text-[11px] text-muted-foreground/80">
+                {{ t('layout.footer_copyright') || 'Copyright © 2026 App Forest. All rights reserved. Nextbook v1' }}
+            </footer>
         </SidebarInset>
     </SidebarProvider>
 </template>
