@@ -282,6 +282,7 @@ onUnmounted(() => {
                         :label="t('general.date')"
                     />
                     <NextInput
+                        autofocus
                         v-model="form.number"
                         :label="t('general.number')"
                         :error="form.errors?.number"
@@ -498,4 +499,3 @@ onUnmounted(() => {
         </form>
     </AppLayout>
 </template>
-

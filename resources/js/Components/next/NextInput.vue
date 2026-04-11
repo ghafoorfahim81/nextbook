@@ -5,6 +5,7 @@
             ref="inputRef"
             :id="id"
             :type="type"
+            :autofocus="autofocus"
             v-model="model"
             :step="step"
             :disabled="disabled"
@@ -48,6 +49,7 @@ const props = defineProps({
     label: { type: String, required: true },
     id: { type: String, default: () => `fi-${Math.random().toString(36).slice(2, 9)}` },
     type: { type: String, default: 'text' },
+    autofocus: { type: Boolean, default: false },
     disabled: Boolean,
     isRequired: Boolean,
     readonly: { type: Boolean, default: false },
@@ -88,6 +90,10 @@ function handleClick(e) {
     // after select is called
     emit('click', e)
 }
+
+defineExpose({
+    focus: () => inputRef.value?.focus?.(),
+})
 </script>
 
 <style scoped>

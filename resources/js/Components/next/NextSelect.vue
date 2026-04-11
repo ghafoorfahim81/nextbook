@@ -1,6 +1,7 @@
 <template>
     <div class="relative w-full">
-      <v-select
+  <v-select
+        ref="selectRef"
         :id="id"
         :options="searchableOptions"
         :label="labelKey"
@@ -64,12 +65,13 @@
 
 
   <script setup>
-    import { ref, computed, watch, onMounted, onUnmounted, getCurrentInstance, nextTick } from 'vue'
+  import { ref, computed, watch, onMounted, onUnmounted, getCurrentInstance, nextTick } from 'vue'
   import { useI18n } from 'vue-i18n'
   import FloatingLabel from '@/Components/next/FloatingLabel.vue'
   import { useSearchResources } from '@/composables/useSearchResources.js'
   import QuickCreateModal from '@/Components/next/QuickCreateModal.vue'
   import { QUICK_CREATE_EVENT, quickCreateRegistry } from '@/Components/next/quickCreateRegistry'
+  import { shouldAutoFocusElement } from '@/lib/autofocus'
 
   const { t } = useI18n()
 
@@ -85,6 +87,7 @@
     floatingText: { type: String, default: '' },
     error: { type: String, default: '' },
     placeholder: { type: String, default: '' },
+    autofocus: { type: Boolean, default: false },
 
     searchable: { type: Boolean, default: false },
     resourceType: { type: String, default: null },
@@ -113,6 +116,48 @@
 
   const instance = getCurrentInstance()
   const isInDialog = ref(false)
+  const selectRef = ref(null)
+
+  const focusSearchInput = async () => {
+    await nextTick()
+
+    const selectInstance = selectRef.value
+    if (selectInstance) {
+      selectInstance.open = true
+
+      const instanceSearch = selectInstance.searchEl
+      if (instanceSearch && typeof instanceSearch.focus === 'function') {
+        instanceSearch.focus()
+        return
+      }
+    }
+
+    const root = instance?.proxy?.$el
+    const search = root?.querySelector?.('.vs__search')
+
+    if (search && typeof search.focus === 'function') {
+      search.focus()
+      return
+    }
+
+    const selectEl = selectInstance?.$el || selectRef.value
+    const fallback = selectEl?.querySelector?.('.vs__search')
+    if (fallback && typeof fallback.focus === 'function') {
+      fallback.focus()
+    }
+  }
+
+  const autofocusSelect = () => {
+    focusSearchInput()
+    requestAnimationFrame(focusSearchInput)
+    setTimeout(focusSearchInput, 50)
+  }
+
+  const selectSearchElement = () => {
+    const selectInstance = selectRef.value
+    const root = selectInstance?.$el || instance?.proxy?.$el
+    return root?.querySelector?.('.vs__search') || null
+  }
 
   onMounted(() => {
     let el = instance?.proxy?.$el?.parentElement
@@ -128,11 +173,14 @@
       el = el.parentElement
     }
 
+    const searchElement = selectSearchElement()
+    const shouldFocus = props.autofocus || shouldAutoFocusElement(searchElement)
+
     // Dialog auto-focuses the first tabbable control (vue-select's search input).
     // Focus opens the dropdown; blur after mount so it starts closed.
-    if (isInDialog.value) {
+    if (isInDialog.value && !shouldFocus) {
       const blurSearchIfAutofocused = () => {
-        const search = instance?.proxy?.$el?.querySelector?.('.vs__search')
+        const search = searchElement
         if (search && document.activeElement === search) {
           search.blur()
         }
@@ -140,6 +188,10 @@
       nextTick(blurSearchIfAutofocused)
       requestAnimationFrame(blurSearchIfAutofocused)
       setTimeout(blurSearchIfAutofocused, 0)
+    }
+
+    if (shouldFocus) {
+      nextTick(autofocusSelect)
     }
 
     window.addEventListener(QUICK_CREATE_EVENT, onGlobalQuickCreated)
@@ -280,9 +332,9 @@
   searchableOptions.value = results
 }
 
-const onSearchUpdate = (val) => {
-  if (!val || !val.trim()) {
-    searchableOptions.value = []
+  const onSearchUpdate = (val) => {
+    if (!val || !val.trim()) {
+      searchableOptions.value = []
     nextTick(() => {
       searchableOptions.value = [...props.options]
       ensureSelectedOptionInOptions()
@@ -334,9 +386,13 @@ const onGlobalQuickCreated = (event) => {
   }
 }
 
-onUnmounted(() => {
-  window.removeEventListener(QUICK_CREATE_EVENT, onGlobalQuickCreated)
-})
+  onUnmounted(() => {
+    window.removeEventListener(QUICK_CREATE_EVENT, onGlobalQuickCreated)
+  })
+
+  defineExpose({
+    focus: autofocusSelect,
+  })
   /* ---------------- PAGE-ONLY POSITIONING ---------------- */
 
   const calculatePosition = (dropdownEl, component) => {

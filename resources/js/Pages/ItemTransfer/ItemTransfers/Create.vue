@@ -287,6 +287,7 @@ onUnmounted(() => {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
           <NextSelect
+            autofocus
             :options="warehouses"
             v-model="form.selected_from_warehouse"
             @update:modelValue="(value) => handleSelectChange('from_warehouse_id', value.id)"

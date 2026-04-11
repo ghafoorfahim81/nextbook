@@ -231,6 +231,7 @@ onUnmounted(() => {
                         :label="t('general.date')"
                     />
                     <NextSelect
+                        autofocus
                         :options="categories.data || categories"
                         v-model="form.selected_category"
                         @update:modelValue="(val) => { form.category_id = val?.id || '' }"
@@ -424,4 +425,3 @@ onUnmounted(() => {
         </form>
     </AppLayout>
 </template>
-

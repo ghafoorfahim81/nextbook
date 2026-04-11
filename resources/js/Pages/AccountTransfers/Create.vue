@@ -104,7 +104,7 @@ const handleSubmitAction = (createAndNew = false) => {
         </div>
         <ModuleHelpButton module="account_transfer" />
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-          <NextInput placeholder="Number" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
+          <NextInput autofocus placeholder="Number" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
           <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
           <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
 
@@ -172,4 +172,3 @@ const handleSubmitAction = (createAndNew = false) => {
     </form>
   </AppLayout>
 </template>
-

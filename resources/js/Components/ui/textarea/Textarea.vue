@@ -1,6 +1,8 @@
 <script setup>
 import { cn } from '@/lib/utils';
 import { useVModel } from '@vueuse/core';
+import { nextTick, onMounted, ref } from 'vue';
+import { shouldAutoFocusElement } from '@/lib/autofocus';
 
 const props = defineProps({
   class: { type: null, required: false },
@@ -14,10 +16,31 @@ const modelValue = useVModel(props, 'modelValue', emits, {
   passive: true,
   defaultValue: props.defaultValue,
 });
+
+const textareaRef = ref(null);
+
+const focusTextarea = () => {
+  if (shouldAutoFocusElement(textareaRef.value)) {
+    textareaRef.value?.focus?.();
+  }
+};
+
+onMounted(() => {
+  nextTick(() => {
+    focusTextarea();
+    requestAnimationFrame(focusTextarea);
+    setTimeout(focusTextarea, 50);
+  });
+});
+
+defineExpose({
+  focus: () => textareaRef.value?.focus?.(),
+});
 </script>
 
 <template>
   <textarea
+    ref="textareaRef"
     v-model="modelValue"
     :class="
       cn(

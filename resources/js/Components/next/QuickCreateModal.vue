@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import axios from 'axios'
 import ModalDialog from '@/Components/next/Dialog.vue'
@@ -23,6 +23,7 @@ const page = usePage()
 const submitting = ref(false)
 const errors = ref({})
 const autoFillLoading = ref(false)
+const autofocusFieldRef = ref(null)
 
 const config = computed(() => quickCreateRegistry?.[props.resourceType] || null)
 const title = computed(() => {
@@ -47,6 +48,31 @@ const ledgerTypeOptions = computed(() => [
   { id: 'supplier', name: t('ledger.supplier.supplier') },
 ])
 
+const autofocusFieldKey = computed(() => {
+  const fields = config.value?.fields || []
+  const directName = fields.find((field) => field.key === 'name')
+  if (directName) return directName.key
+
+  const nestedName = fields.find((field) => typeof field.key === 'string' && field.key.endsWith('.name'))
+  if (nestedName) return nestedName.key
+
+  const firstFocusable = fields.find((field) => ['text', 'number', 'select'].includes(field.type))
+  return firstFocusable?.key || null
+})
+
+const focusAutofocusField = async () => {
+  await nextTick()
+  autofocusFieldRef.value?.focus?.()
+  requestAnimationFrame(() => {
+    autofocusFieldRef.value?.focus?.()
+    setTimeout(() => autofocusFieldRef.value?.focus?.(), 50)
+  })
+}
+
+const setAutofocusFieldRef = (el) => {
+  autofocusFieldRef.value = el || null
+}
+
 const makeInitialForm = () => {
   const base = {}
   const defaults = config.value?.defaults?.({ additionalParams: props.additionalParams }) || {}
@@ -67,6 +93,7 @@ watch(
     errors.value = {}
     form.value = makeInitialForm()
     await hydrateAutoFields()
+    await focusAutofocusField()
   }
 )
 
@@ -223,6 +250,7 @@ function toPayload(data) {
 
         <div v-else-if="field.type === 'select'">
           <NextSelect
+            :ref="field.key === autofocusFieldKey ? setAutofocusFieldRef : null"
             :options="resolveFieldOptions(field.key)"
             :quick-create="false"
             :clearable="!field.required"
@@ -233,17 +261,20 @@ function toPayload(data) {
             value-key="id"
             :floating-text="field.labelKey ? $t(field.labelKey) : field.label"
             :error="errors?.[field.key]"
+            :autofocus="field.key === autofocusFieldKey"
           />
         </div>
 
         <div v-else>
           <NextInput
+            :ref="field.key === autofocusFieldKey ? setAutofocusFieldRef : null"
             :label="field.labelKey ? $t(field.labelKey) : field.label"
             :type="field.type === 'number' ? 'number' : 'text'"
             :model-value="getByPath(form, field.key)"
             @update:modelValue="(v) => setByPath(form, field.key, v)"
             :error="errors?.[field.key]"
             :disabled="Boolean(field.disabled) || (field.key === 'code' && autoFillLoading)"
+            :autofocus="field.key === autofocusFieldKey"
           />
         </div>
       </template>

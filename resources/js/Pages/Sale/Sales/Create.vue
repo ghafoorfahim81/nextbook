@@ -709,6 +709,7 @@ const addRow = () => {
             <ModuleHelpButton module="sales" />
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <NextSelect
+                    autofocus
                     :options="ledgers?.data || []"
                     v-model="form.selected_ledger"
                     @update:modelValue="(value) => handleSelectChange('customer_id', value)"

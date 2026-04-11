@@ -166,6 +166,7 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
         <ModuleHelpButton module="receipt" />
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextSelect
+            autofocus
             :options="ledgers"
             v-model="form.selected_ledger"
             @update:modelValue="(v) => handleSelectChange('ledger_id', v.id)"

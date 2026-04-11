@@ -151,6 +151,7 @@ function handleSelectChange(field, value) {
 
         <div class="grid grid-cols-1 gap-4 pt-3 md:grid-cols-2 xl:grid-cols-3">
           <NextSelect
+            autofocus
             :options="owners"
             v-model="form.selected_owner"
             @update:modelValue="syncOwner"

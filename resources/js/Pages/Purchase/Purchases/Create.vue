@@ -623,6 +623,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
             <ModuleHelpButton module="purchase" />
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <NextSelect
+                    autofocus
                     :options="ledgers?.data || []"
                     v-model="form.selected_ledger"
                     @update:modelValue="(value) => handleSelectChange('supplier_id', value)"
