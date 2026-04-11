@@ -129,6 +129,22 @@
     },
     "sale": {
         "description": "Configure sale transaction preferences",
+        "invoice_theme": "Invoice Theme",
+        "invoice_theme_description": "Preview the available invoice formats and choose the one you want to use by default.",
+        "selected_theme": "Selected as your default invoice theme",
+        "preview_hint": "Open preview or select this format",
+        "selected": "Selected",
+        "preview": "Preview",
+        "select_theme": "Select",
+        "current_theme": "Current theme",
+        "preview_dialog_description": "Preview the invoice format before making it your default theme.",
+        "invoice_themes": {
+            "format1": "Format 1",
+            "format2": "Format 2",
+            "format3": "Format 3",
+            "format4": "Format 4",
+            "format5": "Format 5"
+        },
         "types": {
             "sale": "Sale",
             "sale_order": "Sale Order",

@@ -86,6 +86,8 @@
         "colors": "رنگ‌ها",
         "size": "سایز",
         "brand": "برند",
+        "minimum_stock": "حداقل موجودی",
+        "maximum_stock": "حداکثر موجودی",
         "file_upload": "آپلود فایل",
         "rate_a": "نرخ الف",
         "rate_b": "نرخ ب",
@@ -125,6 +127,22 @@
     },
     "sale": {
         "description": "پیکربندی تنظیمات تراکنش‌های فروش",
+        "invoice_theme": "قالب فاکتور",
+        "invoice_theme_description": "قالب‌های موجود فاکتور را پیش‌نمایش کنید و قالب پیش‌فرض خود را انتخاب کنید.",
+        "selected_theme": "به‌عنوان قالب پیش‌فرض فاکتور انتخاب شده است",
+        "preview_hint": "پیش‌نمایش را باز کنید یا این قالب را انتخاب کنید",
+        "selected": "انتخاب شده",
+        "preview": "پیش‌نمایش",
+        "select_theme": "انتخاب",
+        "current_theme": "قالب فعلی",
+        "preview_dialog_description": "قالب فاکتور را پیش از پیش‌فرض کردن آن بررسی کنید.",
+        "invoice_themes": {
+            "format1": "قالب ۱",
+            "format2": "قالب ۲",
+            "format3": "قالب ۳",
+            "format4": "قالب ۴",
+            "format5": "قالب ۵"
+        },
         "types": {
             "sale": "فروش",
             "sale_order": "سفارش فروش",

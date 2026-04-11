@@ -184,18 +184,21 @@ class PreferencesController extends Controller
     private function getSidebarMenuOptions(): array
     {
         return [
-            ['value' => 'dashboard', 'label' => 'Dashboard'],
-            ['value' => 'administration', 'label' => 'Administration'],
-            ['value' => 'inventory', 'label' => 'Inventory'],
-            ['value' => 'ledger', 'label' => 'Ledger'],
-            ['value' => 'owners', 'label' => 'Owners'],
-            ['value' => 'account', 'label' => 'Account'],
-            ['value' => 'purchase', 'label' => 'Purchase'],
-            ['value' => 'sale', 'label' => 'Sale'],
-            ['value' => 'receipt', 'label' => 'Receipt'],
-            ['value' => 'payment', 'label' => 'Payment'],
-            ['value' => 'transfer', 'label' => 'Account Transfers'],
-            ['value' => 'user_management', 'label' => 'User Management'],
+            ['value' => 'dashboard', 'label' => 'sidebar.main.dashboard'],
+            ['value' => 'account', 'label' => 'sidebar.main.account'],
+            ['value' => 'administration', 'label' => 'sidebar.main.administration'],
+            ['value' => 'inventory', 'label' => 'sidebar.main.inventory'],
+            ['value' => 'ledger', 'label' => 'sidebar.main.ledger'],
+            ['value' => 'owners', 'label' => 'sidebar.owners.owners'],
+            ['value' => 'expense', 'label' => 'sidebar.main.expense'],
+            ['value' => 'purchase', 'label' => 'sidebar.main.purchase'],
+            ['value' => 'sale', 'label' => 'sidebar.main.sale'],
+            ['value' => 'receipt', 'label' => 'sidebar.main.receipt'],
+            ['value' => 'payment', 'label' => 'sidebar.main.payment'],
+            ['value' => 'transfer', 'label' => 'sidebar.main.transfer'],
+            ['value' => 'user_management', 'label' => 'sidebar.main.user_management'],
+            ['value' => 'reports', 'label' => 'sidebar.main.reports'],
+            ['value' => 'preferences', 'label' => 'sidebar.main.preferences'],
         ];
     }
 
