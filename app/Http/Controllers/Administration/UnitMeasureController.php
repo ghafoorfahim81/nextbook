@@ -135,43 +135,13 @@ class UnitMeasureController extends Controller
     {
         try {
             DB::beginTransaction();
+            $validated = $request->validated();
 
-            $metricType = $request['metric'];
-            $measure = $request['measure'];
-
-            // Transform the nested data to flat structure for validation
-            $request->offsetSet('name', $measure['name'] ?? null);
-            $request->offsetSet('unit', $measure['unit'] ?? null);
-            $request->offsetSet('symbol', $measure['symbol'] ?? null);
-            $request->offsetSet('quantity_id', null); // Will be set after we find/create the quantity
-            $request->offsetSet('branch_id', Auth::user()->branch_id ?? 1); // Get from authenticated user
-            $request->offsetSet('created_by', $unitMeasure->created_by); // Keep original creator
-            $request->offsetSet('updated_by', Auth::id());
-
-            $metric = $this->metric->where('unit', $metricType['unit'])->first();
-
-            if ($metric == null) {
-                $metric = $this->metric->create([
-                    'quantity' => $metricType['name'],
-                    'unit' => $metricType['unit'],
-                    'symbol' => $metricType['symbol'],
-                    'description' => $metricType['description'],
-                    'is_main' => false,
-                    'created_by' => Auth::id()
-                ]);
-            }
-
-            // Set the quantity_id now that we have the metric
-            $request->offsetSet('quantity_id', $metric->id);
-
-            // Update the existing measure (duplicate checking is handled by form request validation)
             $unitMeasure->update([
-                'name' => $measure['name'],
-                'unit' => $measure['unit'],
-                'symbol' => $measure['symbol'],
-                'description' => $measure['description'],
-                'quantity_id' => $metric->id,
-                'is_main' => false,
+                'name' => $validated['name'],
+                'unit' => $validated['unit'],
+                'symbol' => $validated['symbol'],
+                'quantity_id' => $validated['quantity_id'],
                 'updated_by' => Auth::id()
             ]);
 

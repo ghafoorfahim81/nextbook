@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Administration;
 
+use App\Models\Administration\Quantity;
+use App\Models\Administration\UnitMeasure;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UnitMeasureUpdateRequest extends FormRequest
@@ -20,8 +22,10 @@ class UnitMeasureUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'metric' => ['required', 'array'],
-            'measure' => ['required', 'array'],
+            'name' => ['required', 'string', 'max:255'],
+            'unit' => ['required', 'numeric'],
+            'symbol' => ['required', 'string', 'max:50'],
+            'quantity_id' => ['required', 'string', 'exists:quantities,id'],
         ];
     }
 
@@ -31,23 +35,28 @@ class UnitMeasureUpdateRequest extends FormRequest
     public function withValidator($validator)
     {
         $validator->after(function ($validator) {
-            // Custom validation to check for duplicate measures within the same quantity (excluding current record)
-            $metricData = $this['metric'];
-            $measureData = $this['measure'];
-            $currentUnitMeasureId = $this->route('unitMeasure')->id;
+            $currentUnitMeasureId = $this->route('unitMeasure')?->id;
+            $quantityId = $this->input('quantity_id');
+            $name = $this->input('name');
 
-            if ($metricData && $measureData && $currentUnitMeasureId) {
-                $metric = \App\Models\Administration\Quantity::where('unit', $metricData['unit'])->first();
-                if ($metric) {
-                    $existingMeasure = $metric->measures()
-                        ->where('name', $measureData['name'])
-                        ->where('id', '!=', $currentUnitMeasureId)
-                        ->whereNull('deleted_at')
-                        ->first();
-                    if ($existingMeasure) {
-                        $validator->errors()->add('measure', 'A measure with this name already exists for the selected quantity type.');
-                    }
-                }
+            if (!$currentUnitMeasureId || !$quantityId || !$name) {
+                return;
+            }
+
+            $metric = Quantity::find($quantityId);
+            if (! $metric) {
+                return;
+            }
+
+            $existingMeasure = UnitMeasure::query()
+                ->where('quantity_id', $metric->id)
+                ->where('name', $name)
+                ->where('id', '!=', $currentUnitMeasureId)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if ($existingMeasure) {
+                $validator->errors()->add('name', 'A measure with this name already exists for the selected quantity type.');
             }
         });
     }
