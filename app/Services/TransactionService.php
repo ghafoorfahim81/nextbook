@@ -39,7 +39,7 @@ class TransactionService
             $transaction = Transaction::create([
                 'currency_id'    => $header['currency_id'],
                 'rate'           => $header['rate'],
-                'date'           => $this->dateConversionService->toGregorian($header['date']),
+                'date'           => ($header['date']),
                 'voucher_number' => $header['voucher_number'] ?? null,
                 'reference_type' => $header['reference_type'] ?? null,
                 'reference_id'   => $header['reference_id'] ?? null,
