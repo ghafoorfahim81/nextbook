@@ -94,6 +94,7 @@ class PaymentController extends Controller
             $rate = (float) $validated['rate'];
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $bankAccountId = $validated['bank_account_id'];
+            $bankAccount = Account::find($bankAccountId);
             $payment = Payment::create([
                 'number' => $validated['number'],
                 'date' => $date,
@@ -139,7 +140,8 @@ class PaymentController extends Controller
                 newValues: [
                     'number' => $payment->number,
                     'date' => $payment->date?->toDateString(),
-                    'ledger_id' => $payment->ledger_id,
+                    'supplier_name' => $ledger->name,
+                    'payment_method' => $bankAccount?->name,
                     'amount' => $amount,
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -243,6 +245,7 @@ class PaymentController extends Controller
             $currencyId = $validated['currency_id'] ?? $payment->transaction?->currency_id;
             $rate = isset($validated['rate']) ? (float) $validated['rate'] : ($payment->transaction?->rate ?? 0);
             $bankAccountId = $validated['bank_account_id'] ?? $payment->transaction?->lines[0]->account_id;
+            $bankAccount = Account::find($bankAccountId);
             $glAccounts = Cache::get('gl_accounts');
             $apAccountId = $glAccounts['account-payable'];
 
@@ -278,7 +281,8 @@ class PaymentController extends Controller
                 after: [
                     'number' => $payment->number,
                     'date' => $payment->date?->toDateString(),
-                    'ledger_id' => $payment->ledger_id,
+                    'supplier_name' => $ledger->name,
+                    'payment_method' => $bankAccount?->name,
                     'amount' => $amount,
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -308,7 +312,8 @@ class PaymentController extends Controller
         $oldValues = [
             'number' => $payment->number,
             'date' => $payment->date?->toDateString(),
-            'ledger_id' => $payment->ledger_id,
+            'supplier_name' => $payment->ledger?->name,
+            'payment_method' => $payment->transaction?->lines?->first()?->account?->name,
             'amount' => (float) ($payment->transaction?->lines()->max('debit') ?? 0),
             'currency_id' => $payment->transaction?->currency_id,
             'rate' => $payment->transaction?->rate,
@@ -361,6 +366,8 @@ class PaymentController extends Controller
             description: "Payment #{$payment->number} restored.",
             newValues: [
                 'number' => $payment->number,
+                'supplier_name' => $payment->ledger?->name,
+                'payment_method' => $payment->transaction?->lines?->first()?->account?->name,
             ],
             metadata: [
                 'action' => 'payment_restore',

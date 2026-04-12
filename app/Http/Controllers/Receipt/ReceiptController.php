@@ -86,6 +86,7 @@ class ReceiptController extends Controller
             $currencyId = $validated['currency_id'];
             $rate = (float) $validated['rate'];
             $bankAccountId = $validated['bank_account_id'];
+            $bankAccount = Account::find($bankAccountId);
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $receipt = Receipt::create([
                 'number' => $validated['number'],
@@ -131,7 +132,8 @@ class ReceiptController extends Controller
                 newValues: [
                     'number' => $receipt->number,
                     'date' => $receipt->date?->toDateString(),
-                    'ledger_id' => $receipt->ledger_id,
+                    'customer_name' => $ledger->name,
+                    'payment_method' => $bankAccount?->name,
                     'amount' => $amount,
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -234,6 +236,7 @@ class ReceiptController extends Controller
             $currencyId = $validated['currency_id'] ?? $receipt->currency_id;
             $rate = isset($validated['rate']) ? (float) $validated['rate'] : $receipt->rate;
             $bankAccountId = $validated['bank_account_id'] ?? $receipt->transaction?->lines[0]->account_id;
+            $bankAccount = Account::find($bankAccountId);
             $glAccounts = Cache::get('gl_accounts');
             $arAccountId = $glAccounts['account-receivable'];
             TransactionLine::where('transaction_id', $receipt->transaction->id)->forceDelete();
@@ -268,7 +271,8 @@ class ReceiptController extends Controller
                 after: [
                     'number' => $receipt->number,
                     'date' => $receipt->date?->toDateString(),
-                    'ledger_id' => $receipt->ledger_id,
+                    'customer_name' => $ledger->name,
+                    'payment_method' => $bankAccount?->name,
                     'amount' => $amount,
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -297,7 +301,8 @@ class ReceiptController extends Controller
         $oldValues = [
             'number' => $receipt->number,
             'date' => $receipt->date?->toDateString(),
-            'ledger_id' => $receipt->ledger_id,
+            'customer_name' => $receipt->ledger?->name,
+            'payment_method' => $receipt->transaction?->lines?->first()?->account?->name,
             'amount' => (float) ($receipt->transaction?->lines()->max('credit') ?? 0),
             'currency_id' => $receipt->transaction?->currency_id,
             'rate' => $receipt->transaction?->rate,
@@ -348,6 +353,8 @@ class ReceiptController extends Controller
             description: "Receipt #{$receipt->number} restored.",
             newValues: [
                 'number' => $receipt->number,
+                'customer_name' => $receipt->ledger?->name,
+                'payment_method' => $receipt->transaction?->lines?->first()?->account?->name,
             ],
             metadata: [
                 'action' => 'receipt_restore',

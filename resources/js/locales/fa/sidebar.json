@@ -81,6 +81,7 @@
   },
   "reports": {
     "reports": "گزارشات",
-    "report": "گزارش"
+    "report": "گزارش",
+    "activity_logs": "فعالیت کاربران"
   }
 }

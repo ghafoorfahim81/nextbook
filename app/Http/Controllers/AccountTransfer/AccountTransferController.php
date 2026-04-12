@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Services\DateConversionService;
+use App\Services\ActivityLogService;
 class AccountTransferController extends Controller
 {
     private $dateConversionService;
@@ -67,10 +68,10 @@ class AccountTransferController extends Controller
     }
 
 
-    public function store(AccountTransferStoreRequest $request, TransactionService $transactionService)
+    public function store(AccountTransferStoreRequest $request, TransactionService $transactionService, ActivityLogService $activityLogService)
     {
         // dd((string) \Symfony\Component\Uid\Ulid::generate());
-        DB::transaction(function () use ($request, $transactionService) {
+        DB::transaction(function () use ($request, $transactionService, $activityLogService) {
             $validated = $request->validated();
 
             $fromAccountId = $validated['from_account_id'];
@@ -125,6 +126,25 @@ class AccountTransferController extends Controller
             $transfer->update([
                 'transaction_id' => $transaction->id,
             ]);
+
+            $this->logTransferActivity(
+                activityLogService: $activityLogService,
+                eventType: 'created',
+                transfer: $transfer->loadMissing('transaction.lines.account', 'transaction.currency'),
+                values: [
+                    'number' => $transfer->number,
+                    'date' => $transfer->date?->toDateString(),
+                    'from_account_id' => $fromAccount->id,
+                    'to_account_id' => $toAccount->id,
+                    'amount' => $amount,
+                    'currency_id' => $currencyId,
+                    'rate' => $rate,
+                ],
+                metadata: [
+                    'action' => 'account_transfer_store',
+                    'transaction_id' => $transaction->id,
+                ],
+            );
         });
 
         if ($request->input('create_and_new')) {
@@ -150,10 +170,12 @@ class AccountTransferController extends Controller
         ]);
     }
 
-    public function update(AccountTransferUpdateRequest $request, AccountTransfer $accountTransfer)
+    public function update(AccountTransferUpdateRequest $request, AccountTransfer $accountTransfer, ActivityLogService $activityLogService)
     {
         // dd($request->all());
-        DB::transaction(function () use ($request, $accountTransfer) {
+        $before = $this->transferSnapshot($accountTransfer->loadMissing('transaction.lines.account', 'transaction.currency'));
+
+        DB::transaction(function () use ($request, $accountTransfer, $activityLogService, $before) {
             $validated = $request->validated();
 
             $accountTransfer->update([
@@ -205,22 +227,56 @@ class AccountTransferController extends Controller
             $accountTransfer->update([
                 'transaction_id' => $transaction->id,
             ]);
+
+            $after = [
+                'number' => $accountTransfer->number,
+                'date' => $date,
+                'from_account_id' => $fromAccount->id,
+                'to_account_id' => $toAccount->id,
+                'amount' => $amount,
+                'currency_id' => $currencyId,
+                'rate' => $rate,
+            ];
+
+            $activityLogService->logUpdate(
+                reference: $accountTransfer,
+                before: $before,
+                after: $after,
+                module: 'account_transfer',
+                description: "Account transfer #{$accountTransfer->number} updated.",
+                metadata: [
+                    'action' => 'account_transfer_update',
+                    'transaction_id' => $transaction->id,
+                ],
+            );
         });
 
         return redirect()->route('account-transfers.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.account_transfer')]));
     }
 
-    public function destroy(AccountTransfer $accountTransfer)
+    public function destroy(AccountTransfer $accountTransfer, ActivityLogService $activityLogService)
     {
+        $oldValues = $this->transferSnapshot($accountTransfer->loadMissing('transaction.lines.account', 'transaction.currency'));
+
         DB::transaction(function () use ($accountTransfer) {
             $accountTransfer->delete();
             $accountTransfer->transaction->lines()->delete();
             $accountTransfer->transaction->delete();
         });
+
+        $activityLogService->logDelete(
+            reference: $accountTransfer,
+            module: 'account_transfer',
+            description: "Account transfer #{$accountTransfer->number} deleted.",
+            oldValues: $oldValues,
+            metadata: [
+                'action' => 'account_transfer_delete',
+            ],
+        );
         return back()->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.account_transfer')]));
     }
 
-    public function restore(AccountTransfer $accountTransfer)
+    public function restore(AccountTransfer $accountTransfer, ActivityLogService $activityLogService)
     {
         DB::transaction(function () use ($accountTransfer) {
             $accountTransfer->restore();
@@ -230,6 +286,17 @@ class AccountTransferController extends Controller
                 $transaction->lines()->withTrashed()->restore();
             }
         });
+
+        $activityLogService->logAction(
+            eventType: 'restored',
+            reference: $accountTransfer,
+            module: 'account_transfer',
+            description: "Account transfer #{$accountTransfer->number} restored.",
+            newValues: $this->transferSnapshot($accountTransfer->loadMissing('transaction.lines.account', 'transaction.currency')),
+            metadata: [
+                'action' => 'account_transfer_restore',
+            ],
+        );
         return back()->with('success', __('general.restored_successfully', ['resource' => __('general.resource.account_transfer')]));
     }
 
@@ -239,5 +306,48 @@ class AccountTransferController extends Controller
 
         return back()->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.account_transfer')]));
     }
-}
 
+    private function transferSnapshot(AccountTransfer $accountTransfer): array
+    {
+        $accountTransfer->loadMissing('transaction.lines.account.accountType', 'transaction.currency');
+
+        $firstLine = $accountTransfer->transaction?->lines?->first();
+        $lastLine = $accountTransfer->transaction?->lines?->last();
+        $firstNature = $firstLine?->account?->accountType?->nature;
+        $debitFirstNature = in_array($firstNature, ['asset', 'expense'], true);
+
+        $fromAccount = $debitFirstNature ? $lastLine?->account : $firstLine?->account;
+        $toAccount = $debitFirstNature ? $firstLine?->account : $lastLine?->account;
+        $transactionLine = $firstLine;
+        $amount = (float) ($transactionLine?->debit ?: $transactionLine?->credit ?: 0);
+
+        return [
+            'number' => $accountTransfer->number,
+            'date' => $accountTransfer->date?->toDateString(),
+            'from_account_id' => $fromAccount?->id,
+            'to_account_id' => $toAccount?->id,
+            'amount' => $amount,
+            'currency_id' => $accountTransfer->transaction?->currency_id,
+            'rate' => $accountTransfer->transaction?->rate,
+            'remark' => $accountTransfer->remark,
+        ];
+    }
+
+    private function logTransferActivity(
+        ActivityLogService $activityLogService,
+        string $eventType,
+        AccountTransfer $transfer,
+        array $values,
+        array $metadata = [],
+    ): void {
+        $activityLogService->logAction(
+            eventType: $eventType,
+            reference: $transfer,
+            module: 'account_transfer',
+            description: "Account transfer #{$transfer->number} {$eventType}.",
+            newValues: $eventType === 'created' ? $values : null,
+            oldValues: $eventType === 'deleted' ? $values : null,
+            metadata: $metadata,
+        );
+    }
+}

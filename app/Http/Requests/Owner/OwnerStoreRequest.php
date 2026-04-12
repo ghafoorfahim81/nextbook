@@ -20,6 +20,7 @@ class OwnerStoreRequest extends FormRequest
             'email' => ['nullable', 'email', 'max:255' , 'unique:owners,email,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'address' => ['nullable', 'string'],
             'phone_number' => ['nullable', 'string', 'max:255' , 'unique:owners,phone_number,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'ownership_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'share_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'profit_share_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'is_active' => ['nullable', 'boolean'],
@@ -33,4 +34,3 @@ class OwnerStoreRequest extends FormRequest
         ];
     }
 }
-

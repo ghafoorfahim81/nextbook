@@ -2,7 +2,10 @@
 
 namespace App\Observers;
 
+use App\Models\Account\Account;
 use App\Models\ActivityLog;
+use App\Models\Ledger\LedgerOpening;
+use App\Models\Transaction\Transaction;
 use App\Services\ActivityLogService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
@@ -106,6 +109,18 @@ class ModelActivityObserver
     {
         if ($model instanceof ActivityLog) {
             return true;
+        }
+
+        if ($model instanceof Transaction && $model->reference_type === Account::class) {
+            return true;
+        }
+
+        if ($model instanceof LedgerOpening) {
+            $transaction = $model->transaction()->withTrashed()->first();
+
+            if ($transaction?->reference_type === Account::class) {
+                return true;
+            }
         }
 
         if (! $this->observerEnabledFor($model::class)) {

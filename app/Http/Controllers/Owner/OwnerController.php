@@ -72,10 +72,17 @@ class OwnerController extends Controller
     )
     {
         $validated = $request->validated();
+        $sharePercentage = (float) ($validated['share_percentage']
+            ?? $validated['ownership_percentage']
+            ?? 100);
         $owner = null;
         $transaction = null;
 
         DB::transaction(function () use (&$owner, &$transaction, $validated, $transactionService, $activityLogService) {
+            $sharePercentage = (float) ($validated['share_percentage']
+                ?? $validated['ownership_percentage']
+                ?? 100);
+
             $owner = Owner::create([
                 'name' => $validated['name'],
                 'father_name' => $validated['father_name'],
@@ -83,7 +90,7 @@ class OwnerController extends Controller
                 'email' => $validated['email'] ?? null,
                 'address' => $validated['address'] ?? null,
                 'phone_number' => $validated['phone_number'] ?? null,
-                'share_percentage' => $validated['share_percentage'] ?? 100,
+                'share_percentage' => $sharePercentage,
                 'profit_share_percentage' => $validated['profit_share_percentage'] ?? 100,
                 'is_active' => $validated['is_active'] ?? true,
                 'capital_account_id' => $validated['capital_account_id'],
@@ -130,7 +137,7 @@ class OwnerController extends Controller
                     'email' => $owner->email,
                     'address' => $owner->address,
                     'phone_number' => $owner->phone_number,
-                    'share_percentage' => $owner->share_percentage,
+                    'ownership_percentage' => $owner->share_percentage,
                     'profit_share_percentage' => $owner->profit_share_percentage,
                     'is_active' => $owner->is_active,
                     'capital_account_id' => $owner->capital_account_id,
@@ -184,6 +191,10 @@ class OwnerController extends Controller
     public function update(OwnerUpdateRequest $request, Owner $owner, ActivityLogService $activityLogService)
     {
         $validated = $request->validated();
+        $sharePercentage = (float) ($validated['share_percentage']
+            ?? $validated['ownership_percentage']
+            ?? $owner->share_percentage
+            ?? 100);
         $currentTransaction = $owner->transaction()->with('lines', 'currency')->first();
         $amount = (float) ($validated['amount'] ?? 0);
         $currencyId = $validated['currency_id']
@@ -198,7 +209,7 @@ class OwnerController extends Controller
             'email' => $owner->email,
             'address' => $owner->address,
             'phone_number' => $owner->phone_number,
-            'share_percentage' => $owner->share_percentage,
+            'ownership_percentage' => $owner->share_percentage,
             'profit_share_percentage' => $owner->profit_share_percentage,
             'is_active' => $owner->is_active,
             'capital_account_id' => $owner->capital_account_id,
@@ -229,7 +240,7 @@ class OwnerController extends Controller
                 'email' => $validated['email'] ?? null,
                 'address' => $validated['address'] ?? null,
                 'phone_number' => $validated['phone_number'] ?? null,
-                'share_percentage' => $validated['share_percentage'] ?? 100,
+                'share_percentage' => $sharePercentage,
                 'profit_share_percentage' => $validated['profit_share_percentage'] ?? 100,
                 'is_active' => $validated['is_active'] ?? true,
                 'capital_account_id' => $validated['capital_account_id'] ?? null,
@@ -277,14 +288,12 @@ class OwnerController extends Controller
                 'email' => $owner->email,
                 'address' => $owner->address,
                 'phone_number' => $owner->phone_number,
-                'share_percentage' => $owner->share_percentage,
+                'ownership_percentage' => $owner->share_percentage,
                 'profit_share_percentage' => $owner->profit_share_percentage,
                 'is_active' => $owner->is_active,
                 'capital_account_id' => $owner->capital_account_id,
                 'drawing_account_id' => $owner->drawing_account_id,
-                'amount' => $transaction?->lines?->first()?->debit
-                    ?? $transaction?->lines?->first()?->credit
-                    ?? $amount,
+                'amount' =>  $amount,
                 'currency_id' => $transaction?->currency_id ?? $currencyId,
                 'rate' => $transaction?->rate ?? $rate,
                 'bank_account_id' => $transaction?->lines?->first()?->account_id
@@ -312,7 +321,7 @@ class OwnerController extends Controller
             'email' => $owner->email,
             'address' => $owner->address,
             'phone_number' => $owner->phone_number,
-            'share_percentage' => $owner->share_percentage,
+            'ownership_percentage' => $owner->share_percentage,
             'profit_share_percentage' => $owner->profit_share_percentage,
             'is_active' => $owner->is_active,
             'capital_account_id' => $owner->capital_account_id,
@@ -366,13 +375,13 @@ class OwnerController extends Controller
             module: 'owner',
             description: "Owner {$owner->name} restored.",
             newValues: [
-                'name' => $owner->name,
-                'father_name' => $owner->father_name,
-                'phone_number' => $owner->phone_number,
-                'share_percentage' => $owner->share_percentage,
-                'capital_account_id' => $owner->capital_account_id,
-                'drawing_account_id' => $owner->drawing_account_id,
-            ],
+            'name' => $owner->name,
+            'father_name' => $owner->father_name,
+            'phone_number' => $owner->phone_number,
+            'ownership_percentage' => $owner->share_percentage,
+            'capital_account_id' => $owner->capital_account_id,
+            'drawing_account_id' => $owner->drawing_account_id,
+        ],
             metadata: [
                 'action' => 'owner_restore',
                 'transaction_id' => $transaction?->id,
