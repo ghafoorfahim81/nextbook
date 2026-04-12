@@ -21,28 +21,70 @@ const sections = computed(() => ([
     key: 'old_values',
     title: t('activity_log.old_values'),
     empty: t('activity_log.no_old_values'),
-    value: logEntry.value?.old_values,
+    value: logEntry.value?.display_old_values ?? formatEntries(logEntry.value?.old_values),
   },
   {
     key: 'new_values',
     title: t('activity_log.new_values'),
     empty: t('activity_log.no_new_values'),
-    value: logEntry.value?.new_values,
+    value: logEntry.value?.display_new_values ?? formatEntries(logEntry.value?.new_values),
   },
   {
     key: 'metadata',
     title: t('activity_log.metadata'),
     empty: t('activity_log.no_metadata'),
-    value: logEntry.value?.metadata,
+    value: logEntry.value?.display_metadata ?? formatEntries(logEntry.value?.metadata),
   },
 ]))
 
-function pretty(value) {
-  return JSON.stringify(value, null, 2)
+function formatEntries(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return []
+  }
+
+  return Object.entries(value).map(([key, entryValue]) => ({
+    key,
+    label: humanizeKey(key),
+    value: humanizeValue(entryValue),
+  }))
 }
 
-function hasValue(value) {
-  return value && Object.keys(value).length > 0
+function humanizeKey(key) {
+  const specialLabels = {
+    created_by: t('general.created_by'),
+    updated_by: t('general.updated_by'),
+    deleted_by: t('general.deleted_by'),
+    branch_id: t('general.branch'),
+  }
+
+  if (specialLabels[key]) {
+    return specialLabels[key]
+  }
+
+  return String(key)
+    .replace(/_id$/i, '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, char => char.toUpperCase())
+}
+
+function humanizeValue(value) {
+  if (value === null || value === undefined || value === '') {
+    return '-'
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? t('general.yes') : t('general.no')
+  }
+
+  if (Array.isArray(value)) {
+    return value.length ? value.map(humanizeValue).join(', ') : '-'
+  }
+
+  if (typeof value === 'object') {
+    return JSON.stringify(value, null, 2)
+  }
+
+  return String(value)
 }
 </script>
 
@@ -132,10 +174,20 @@ function hasValue(value) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <pre
-              v-if="hasValue(section.value)"
-              class="overflow-x-auto rounded-md bg-muted p-4 text-xs leading-6"
-            ><code>{{ pretty(section.value) }}</code></pre>
+            <div v-if="section.value.length" class="space-y-2">
+              <div
+                v-for="row in section.value"
+                :key="`${section.key}-${row.key}`"
+                class="rounded-md border border-border bg-muted/40 px-3 py-2"
+              >
+                <div class="text-xs uppercase tracking-wide text-muted-foreground">
+                  {{ row.label }}
+                </div>
+                <div class="mt-1 whitespace-pre-wrap break-words text-sm font-medium">
+                  {{ row.value }}
+                </div>
+              </div>
+            </div>
             <div v-else class="text-sm text-muted-foreground">
               {{ section.empty }}
             </div>

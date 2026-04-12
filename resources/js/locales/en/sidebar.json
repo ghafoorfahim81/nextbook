@@ -49,7 +49,7 @@
   },
   "journal_entry": {
     "journal_entry": "Journal Entry",
-    "journal_entries": "Journal Entries", 
+    "journal_entries": "Journal Entries",
     "journal_class": "Journal Class",
     "journal_classes": "Journal Classes"
   },
@@ -80,7 +80,8 @@
   },
   "reports": {
     "reports": "Reports",
-    "report": "Report"
+    "report": "Report",
+    "activity_logs": "User Activity"
   },
   "system": {
     "deleted_records": "Deleted Records",

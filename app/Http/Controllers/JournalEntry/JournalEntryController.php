@@ -28,11 +28,10 @@ class JournalEntryController extends Controller
     /**
      * Display a listing of the resource.
      */
-    private $dateConversionService;
-    public function __construct(DateConversionService $dateConversionService)
+
+    public function __construct()
     {
-        $this->authorizeResource(JournalEntry::class, 'journalEntry');
-        $this->dateConversionService = $dateConversionService;
+        $this->authorizeResource(JournalEntry::class, 'journalEntry'); 
     }
     public function index( Request $request )
     {
@@ -91,7 +90,7 @@ class JournalEntryController extends Controller
                 'rate' => $validated['rate'],
                 'remarks' => $validated['remarks'],
             ]);
-            $transactionService = new TransactionService();
+            $transactionService = app(TransactionService::class);
             $lines = collect($validated['lines'])
                 ->map(fn ($line) => [
                     'account_id'  => $line['account_id'],
@@ -102,6 +101,8 @@ class JournalEntryController extends Controller
                     'journal_class_id' => $line['journal_class_id'] ?? null,
                 ])
                 ->toArray();
+            $totalDebit = collect($lines)->sum('debit');
+            $totalCredit = collect($lines)->sum('credit');
 
             $transaction = $transactionService->post(
                 header: [
@@ -124,11 +125,9 @@ class JournalEntryController extends Controller
                 newValues: [
                     'number' => $journalEntry->number,
                     'date' => $validated['date'],
-                    'status' => 'posted',
-                    'branch_id' => $journalEntry->branch_id,
-                    'currency_id' => $validated['currency_id'],
-                    'rate' => (float) $validated['rate'],
-                    'line_count' => count($validated['lines']),
+                    'narration' => $validated['remarks'],
+                    'total_debit' => (float) $totalDebit,
+                    'total_credit' => (float) $totalCredit,
                 ],
                 metadata: [
                     'action' => 'journal_entry_post',
@@ -196,7 +195,7 @@ class JournalEntryController extends Controller
 
         DB::transaction(function () use ($validated, $journalEntry, $beforeState, $activityLogService) {
             // Update journal entry details
-            $date =  $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+            $date =  $validated['date'] ? app(DateConversionService::class)->toGregorian($validated['date']) : null;
             $journalEntry->update([
                 'number' => $validated['number'],
                 'date' => $date,
@@ -227,6 +226,8 @@ class JournalEntryController extends Controller
                 'journal_class_id' => $line['journal_class_id'] ?? null,
             ])
             ->toArray();
+            $totalDebit = collect($lines)->sum('debit');
+            $totalCredit = collect($lines)->sum('credit');
             $transaction = $transactionService->post(
                 header: [
                     'currency_id' => $validated['currency_id'],
@@ -243,12 +244,9 @@ class JournalEntryController extends Controller
             $afterState = [
                 'number' => $journalEntry->number,
                 'date' => $journalEntry->date?->toDateString(),
-                'status' => $journalEntry->status,
-                'remark' => $validated['remarks'] ?? null,
-                'branch_id' => $journalEntry->branch_id,
-                'currency_id' => $validated['currency_id'],
-                'rate' => (float) $validated['rate'],
-                'line_count' => count($validated['lines']),
+                'narration' => $validated['remarks'] ?? null,
+                'total_debit' => (float) $totalDebit,
+                'total_credit' => (float) $totalCredit,
             ];
 
             $activityLogService->logUpdate(
@@ -276,12 +274,9 @@ class JournalEntryController extends Controller
         $oldValues = [
             'number' => $journalEntry->number,
             'date' => $journalEntry->date?->toDateString(),
-            'status' => $journalEntry->status,
-            'remark' => $journalEntry->remark,
-            'branch_id' => $journalEntry->branch_id,
-            'currency_id' => $journalEntry->transaction?->currency_id,
-            'rate' => $journalEntry->transaction?->rate,
-            'line_count' => $journalEntry->transaction?->lines()->count() ?? 0,
+            'narration' => $journalEntry->remarks,
+            'total_debit' => (float) ($journalEntry->transaction?->lines?->sum('debit') ?? 0),
+            'total_credit' => (float) ($journalEntry->transaction?->lines?->sum('credit') ?? 0),
         ];
 
         DB::transaction(function () use ($journalEntry, $oldValues, $activityLogService) {
@@ -323,7 +318,10 @@ class JournalEntryController extends Controller
             description: "Journal entry #{$journalEntry->number} restored.",
             newValues: [
                 'number' => $journalEntry->number,
-                'status' => $journalEntry->status,
+                'date' => $journalEntry->date?->toDateString(),
+                'narration' => $journalEntry->remarks,
+                'total_debit' => (float) ($journalEntry->transaction?->lines?->sum('debit') ?? 0),
+                'total_credit' => (float) ($journalEntry->transaction?->lines?->sum('credit') ?? 0),
             ],
             metadata: [
                 'action' => 'journal_entry_restore',
