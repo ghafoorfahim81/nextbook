@@ -17,7 +17,9 @@
     "preferences": "تنظیمات",
     "expense": "مصارف",
     "item_transfer": "انتقال جنس",
-    "reports": "گزارشات"
+    "reports": "گزارشات",
+    "system": "سیستم",
+    "deleted_records": "رکوردهای حذف شده"
   },
   "expense": {
     "expense": "مصارف",

@@ -70,4 +70,12 @@ class BrandController extends Controller
         $brand->restore();
         return redirect()->route('brands.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.brand')]));
     }
+
+    public function forceDelete(Request $request, Brand $brand)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('brands', (string) $brand->id);
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'brands'));
+
+        return redirect()->route('brands.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.brand')]));
+    }
 }

@@ -262,4 +262,11 @@ class AccountController extends Controller
 
         return redirect()->route('chart-of-accounts.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.account')]));
     }
+
+    public function forceDelete(Request $request, Account $chart_of_account)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('accounts', (string) $chart_of_account->id);
+
+        return redirect()->route('chart-of-accounts.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.account')]));
+    }
 }

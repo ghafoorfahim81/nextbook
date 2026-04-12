@@ -615,6 +615,13 @@ class PurchaseController extends Controller
         return redirect()->route('purchases.index')->with('success', __('general.purchase_restored_successfully'));
     }
 
+    public function forceDelete(Request $request, Purchase $purchase)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('purchases', (string) $purchase->id);
+
+        return redirect()->route('purchases.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.purchase')]));
+    }
+
     public function updatePurchaseStatus(Request $request, Purchase $purchase)
     {
         $purchase->update(['status' => $request->status]);

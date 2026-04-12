@@ -266,5 +266,12 @@ class ExpenseController extends Controller
 
         return back()->with('success', __('general.restored_successfully', ['resource' => __('general.resource.expense')]));
     }
-}
 
+    public function forceDelete(Request $request, Expense $expense)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('expenses', (string) $expense->id);
+
+        return redirect()->route('expenses.index')
+            ->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.expense')]));
+    }
+}

@@ -134,4 +134,12 @@ class UserController extends Controller
         $user->restore();
         return redirect()->route('users.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.user')]));
     }
+
+    public function forceDelete(Request $request, $id)
+    {
+        $user = User::withTrashed()->findOrFail($id);
+        app(\App\Services\DeletedRecordService::class)->forceDelete('users', (string) $user->id);
+
+        return redirect()->route('users.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.user')]));
+    }
 }

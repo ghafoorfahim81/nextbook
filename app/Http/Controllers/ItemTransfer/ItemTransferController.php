@@ -161,6 +161,13 @@ class ItemTransferController extends Controller
         return redirect()->route('item-transfers.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.item_transfer')]));
     }
 
+    public function forceDelete(Request $request, ItemTransfer $itemTransfer)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('item_transfers', (string) $itemTransfer->id);
+
+        return redirect()->route('item-transfers.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.item_transfer')]));
+    }
+
     /**
      * Complete a transfer (trigger stock updates).
      */

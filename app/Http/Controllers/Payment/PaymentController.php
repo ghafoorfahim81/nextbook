@@ -278,4 +278,13 @@ class PaymentController extends Controller
 
         return redirect()->route('payments.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.payment')]));
     }
+
+    public function forceDelete(Request $request, Payment $payment)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('payments', (string) $payment->id);
+
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
+        return redirect()->route('payments.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.payment')]));
+    }
 }

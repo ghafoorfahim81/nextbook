@@ -8,6 +8,7 @@ use App\Http\Controllers\Administration\BranchController;
 use App\Http\Controllers\Inventory\BarcodePrintController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\DeletedRecordController;
 use App\Http\Controllers\Inventory\ItemFastEntryController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\App;
@@ -57,43 +58,91 @@ Route::middleware([
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/deleted-records', [DeletedRecordController::class, 'index'])->name('deleted-records.index');
+    Route::patch('/deleted-records/{module}/{record}', [DeletedRecordController::class, 'restore'])->name('deleted-records.restore');
+    Route::delete('/deleted-records/{module}/{record}', [DeletedRecordController::class, 'destroy'])->name('deleted-records.destroy');
 
 
     Route::resource('designations', DesignationController::class);
+    Route::delete('/designations/{designation}/force-delete', [DesignationController::class, 'forceDelete'])
+        ->name('designations.force-delete')
+        ->withTrashed();
     Route::resource('/departments', DepartmentController::class);
     Route::patch('/departments/{department}/restore', [\App\Http\Controllers\Administration\DepartmentController::class, 'restore'])->name('departments.restore')->withTrashed();
+    Route::delete('/departments/{department}/force-delete', [\App\Http\Controllers\Administration\DepartmentController::class, 'forceDelete'])
+        ->name('departments.force-delete')
+        ->withTrashed();
     Route::resource('/categories', \App\Http\Controllers\Administration\CategoryController::class);
     Route::patch('/categories/{category}/restore', [\App\Http\Controllers\Administration\CategoryController::class, 'restore'])->name('categories.restore')->withTrashed();
+    Route::delete('/categories/{category}/force-delete', [\App\Http\Controllers\Administration\CategoryController::class, 'forceDelete'])
+        ->name('categories.force-delete')
+        ->withTrashed();
     Route::resource('/warehouses', \App\Http\Controllers\Administration\WarehouseController::class);
     Route::patch('/warehouses/{warehouse}/restore', [\App\Http\Controllers\Administration\WarehouseController::class, 'restore'])->name('warehouses.restore')->withTrashed();
+    Route::delete('/warehouses/{warehouse}/force-delete', [\App\Http\Controllers\Administration\WarehouseController::class, 'forceDelete'])
+        ->name('warehouses.force-delete')
+        ->withTrashed();
     Route::resource('/companies', \App\Http\Controllers\Administration\CompanyController::class);
     Route::patch('/companies/{company}/restore', [\App\Http\Controllers\Administration\CompanyController::class, 'restore'])->name('companies.restore')->withTrashed();
     Route::resource('/brands', \App\Http\Controllers\Administration\BrandController::class);
     Route::patch('/brands/{brand}/restore', [\App\Http\Controllers\Administration\BrandController::class, 'restore'])->name('brands.restore')->withTrashed();
+    Route::delete('/brands/{brand}/force-delete', [\App\Http\Controllers\Administration\BrandController::class, 'forceDelete'])
+        ->name('brands.force-delete')
+        ->withTrashed();
     Route::get('/departments/parents', [DepartmentController::class, 'getParents'])->name('departments.parents');
     Route::resource('/branches', \App\Http\Controllers\Administration\BranchController::class);
     Route::patch('/branches/{branch}/restore', [\App\Http\Controllers\Administration\BranchController::class, 'restore'])->name('branches.restore')->withTrashed();
+    Route::delete('/branches/{branch}/force-delete', [\App\Http\Controllers\Administration\BranchController::class, 'forceDelete'])
+        ->name('branches.force-delete')
+        ->withTrashed();
     Route::resource('account-types', \App\Http\Controllers\Account\AccountTypeController::class);
     Route::patch('/account-types/{accountType}/restore', [\App\Http\Controllers\Account\AccountTypeController::class, 'restore'])->name('account-types.restore')->withTrashed();
+    Route::delete('/account-types/{accountType}/force-delete', [\App\Http\Controllers\Account\AccountTypeController::class, 'forceDelete'])
+        ->name('account-types.force-delete')
+        ->withTrashed();
     Route::resource('chart-of-accounts', \App\Http\Controllers\Account\AccountController::class);
     Route::patch('/chart-of-accounts/{chart_of_account}/restore', [\App\Http\Controllers\Account\AccountController::class, 'restore'])->name('chart-of-accounts.restore')->withTrashed();
+    Route::delete('/chart-of-accounts/{chart_of_account}/force-delete', [\App\Http\Controllers\Account\AccountController::class, 'forceDelete'])
+        ->name('chart-of-accounts.force-delete')
+        ->withTrashed();
     Route::resource('/currencies', \App\Http\Controllers\Administration\CurrencyController::class);
     Route::patch('/currencies/{currency}/restore', [\App\Http\Controllers\Administration\CurrencyController::class, 'restore'])->name('currencies.restore')->withTrashed();
+    Route::delete('/currencies/{currency}/force-delete', [\App\Http\Controllers\Administration\CurrencyController::class, 'forceDelete'])
+        ->name('currencies.force-delete')
+        ->withTrashed();
     Route::get('/currency-rate-updates', [\App\Http\Controllers\Administration\CurrencyRateUpdateController::class, 'index'])->name('currency-rate-updates.index');
     Route::post('/currency-rate-updates', [\App\Http\Controllers\Administration\CurrencyRateUpdateController::class, 'store'])->name('currency-rate-updates.store');
     Route::resource('/unit-measures', \App\Http\Controllers\Administration\UnitMeasureController::class);
     Route::patch('/unit-measures/{unitMeasure}/restore', [\App\Http\Controllers\Administration\UnitMeasureController::class, 'restore'])->name('unit-measures.restore')->withTrashed();
+    Route::delete('/unit-measures/{unitMeasure}/force-delete', [\App\Http\Controllers\Administration\UnitMeasureController::class, 'forceDelete'])
+        ->name('unit-measures.force-delete')
+        ->withTrashed();
     Route::resource('/sizes', \App\Http\Controllers\Administration\SizeController::class);
     Route::patch('/sizes/{size}/restore', [\App\Http\Controllers\Administration\SizeController::class, 'restore'])->name('sizes.restore')->withTrashed();
+    Route::delete('/sizes/{size}/force-delete', [\App\Http\Controllers\Administration\SizeController::class, 'forceDelete'])
+        ->name('sizes.force-delete')
+        ->withTrashed();
 
     Route::resource('/items', \App\Http\Controllers\Inventory\ItemController::class);
     Route::patch('/items/{item}/restore', [\App\Http\Controllers\Inventory\ItemController::class, 'restore'])->name('items.restore')->withTrashed();
+    Route::delete('/items/{item}/force-delete', [\App\Http\Controllers\Inventory\ItemController::class, 'forceDelete'])
+        ->name('items.force-delete')
+        ->withTrashed();
     Route::resource('/ledgers', \App\Http\Controllers\Ledger\LedgerController::class);
     Route::patch('/ledgers/{ledger}/restore', [\App\Http\Controllers\Ledger\LedgerController::class, 'restore'])->name('ledgers.restore')->withTrashed();
+    Route::delete('/ledgers/{ledger}/force-delete', [\App\Http\Controllers\Ledger\LedgerController::class, 'forceDelete'])
+        ->name('ledgers.force-delete')
+        ->withTrashed();
     Route::resource('/suppliers', \App\Http\Controllers\Ledger\SupplierController::class);
     Route::patch('/suppliers/{supplier}/restore', [\App\Http\Controllers\Ledger\SupplierController::class, 'restore'])->name('suppliers.restore')->withTrashed();
+    Route::delete('/suppliers/{supplier}/force-delete', [\App\Http\Controllers\Ledger\SupplierController::class, 'forceDelete'])
+        ->name('suppliers.force-delete')
+        ->withTrashed();
     Route::resource('/customers', \App\Http\Controllers\Ledger\CustomerController::class);
     Route::patch('/customers/{customer}/restore', [\App\Http\Controllers\Ledger\CustomerController::class, 'restore'])->name('customers.restore')->withTrashed();
+    Route::delete('/customers/{customer}/force-delete', [\App\Http\Controllers\Ledger\CustomerController::class, 'forceDelete'])
+        ->name('customers.force-delete')
+        ->withTrashed();
     Route::get('/item-fast-entry', [ItemFastEntryController::class, 'create'])->name('item.fast.entry');
     Route::post('/item-fast-entry', [ItemFastEntryController::class, 'store'])
         ->name('item.fast.store');
@@ -107,12 +156,18 @@ Route::middleware([
     Route::resource('/purchases', \App\Http\Controllers\Purchase\PurchaseController::class);
     Route::patch('/update-purchase-status/{purchase}/status', [\App\Http\Controllers\Purchase\PurchaseController::class, 'updatePurchaseStatus'])->name('purchases.update-purchase-status');
     Route::patch('/purchases/{purchase}/restore', [\App\Http\Controllers\Purchase\PurchaseController::class, 'restore'])->name('purchases.restore')->withTrashed();
+    Route::delete('/purchases/{purchase}/force-delete', [\App\Http\Controllers\Purchase\PurchaseController::class, 'forceDelete'])
+        ->name('purchases.force-delete')
+        ->withTrashed();
     //    Route::post('item_entry/Store', ['as' => 'item_entry.store', 'uses' => 'FastEntry\ItemEntryController@store'])->middleware(['dbconfig','auth:sanctum']);
     Route::get('/purchase-item-change', [NextController::class, 'purchaseItemChange'])->name('purchase.item.change');
 
     Route::resource('/sales', \App\Http\Controllers\Sale\SaleController::class);
     Route::patch('/update-sale-status/{sale}/status', [\App\Http\Controllers\Sale\SaleController::class, 'updateSaleStatus'])->name('sales.update-sale-status');
     Route::patch('/sales/{sale}/restore', [\App\Http\Controllers\Sale\SaleController::class, 'restore'])->name('sales.restore')->withTrashed();
+    Route::delete('/sales/{sale}/force-delete', [\App\Http\Controllers\Sale\SaleController::class, 'forceDelete'])
+        ->name('sales.force-delete')
+        ->withTrashed();
     Route::get('/item-with-batches', [NextController::class, 'getItemWithBatches'])->name('item.with.batches');
     Route::get('/sales/{sale}/print', [\App\Http\Controllers\Sale\SaleController::class, 'print'])->name('sales.print');
 
@@ -133,16 +188,25 @@ Route::middleware([
     // Receipts
     Route::resource('/receipts', \App\Http\Controllers\Receipt\ReceiptController::class);
     Route::patch('/receipts/{receipt}/restore', [\App\Http\Controllers\Receipt\ReceiptController::class, 'restore'])->name('receipts.restore')->withTrashed();
+    Route::delete('/receipts/{receipt}/force-delete', [\App\Http\Controllers\Receipt\ReceiptController::class, 'forceDelete'])
+        ->name('receipts.force-delete')
+        ->withTrashed();
     Route::get('/receipts/{receipt}/print', [\App\Http\Controllers\Receipt\ReceiptController::class, 'print'])->name('receipts.print');
 
     // Payments
     Route::resource('/payments', \App\Http\Controllers\Payment\PaymentController::class);
     Route::patch('/payments/{payment}/restore', [\App\Http\Controllers\Payment\PaymentController::class, 'restore'])->name('payments.restore')->withTrashed();
+    Route::delete('/payments/{payment}/force-delete', [\App\Http\Controllers\Payment\PaymentController::class, 'forceDelete'])
+        ->name('payments.force-delete')
+        ->withTrashed();
     Route::get('/payments/{payment}/print', [\App\Http\Controllers\Payment\PaymentController::class, 'print'])->name('payments.print');
 
     // Account Transfers
     Route::resource('/account-transfers', \App\Http\Controllers\AccountTransfer\AccountTransferController::class);
     Route::patch('/account-transfers/{accountTransfer}/restore', [\App\Http\Controllers\AccountTransfer\AccountTransferController::class, 'restore'])->name('account-transfers.restore')->withTrashed();
+    Route::delete('/account-transfers/{accountTransfer}/force-delete', [\App\Http\Controllers\AccountTransfer\AccountTransferController::class, 'forceDelete'])
+        ->name('account-transfers.force-delete')
+        ->withTrashed();
 
     // Item Inventory Modal
     Route::get('/items/{item}/in-records', [\App\Http\Controllers\Inventory\ItemController::class, 'inRecords'])->name('items.in-records');
@@ -151,12 +215,21 @@ Route::middleware([
     // Owners
     Route::resource('/owners', \App\Http\Controllers\Owner\OwnerController::class);
     Route::patch('/owners/{owner}/restore', [\App\Http\Controllers\Owner\OwnerController::class, 'restore'])->name('owners.restore')->withTrashed();
+    Route::delete('/owners/{owner}/force-delete', [\App\Http\Controllers\Owner\OwnerController::class, 'forceDelete'])
+        ->name('owners.force-delete')
+        ->withTrashed();
     Route::resource('/drawings', \App\Http\Controllers\Owner\DrawingController::class);
     Route::patch('/drawings/{drawing}/restore', [\App\Http\Controllers\Owner\DrawingController::class, 'restore'])->name('drawings.restore')->withTrashed();
+    Route::delete('/drawings/{drawing}/force-delete', [\App\Http\Controllers\Owner\DrawingController::class, 'forceDelete'])
+        ->name('drawings.force-delete')
+        ->withTrashed();
 
     // User Management
     Route::resource('/users', \App\Http\Controllers\UserManagement\UserController::class);
     Route::patch('/users/{user}/restore', [\App\Http\Controllers\UserManagement\UserController::class, 'restore'])->name('users.restore')->withTrashed();
+    Route::delete('/users/{user}/force-delete', [\App\Http\Controllers\UserManagement\UserController::class, 'forceDelete'])
+        ->name('users.force-delete')
+        ->withTrashed();
     Route::resource('/roles', \App\Http\Controllers\UserManagement\RoleController::class);
     Route::patch('/roles/{role}/restore', [\App\Http\Controllers\UserManagement\RoleController::class, 'restore'])->name('roles.restore')->withTrashed();
 
@@ -171,21 +244,36 @@ Route::middleware([
     // Expense Categories
     Route::resource('/expense-categories', \App\Http\Controllers\Expense\ExpenseCategoryController::class);
     Route::patch('/expense-categories/{expenseCategory}/restore', [\App\Http\Controllers\Expense\ExpenseCategoryController::class, 'restore'])->name('expense-categories.restore')->withTrashed();
+    Route::delete('/expense-categories/{expenseCategory}/force-delete', [\App\Http\Controllers\Expense\ExpenseCategoryController::class, 'forceDelete'])
+        ->name('expense-categories.force-delete')
+        ->withTrashed();
 
     // Expenses
     Route::resource('/expenses', \App\Http\Controllers\Expense\ExpenseController::class);
     Route::patch('/expenses/{expense}/restore', [\App\Http\Controllers\Expense\ExpenseController::class, 'restore'])->name('expenses.restore')->withTrashed();
+    Route::delete('/expenses/{expense}/force-delete', [\App\Http\Controllers\Expense\ExpenseController::class, 'forceDelete'])
+        ->name('expenses.force-delete')
+        ->withTrashed();
 
     // Item Transfers
     Route::resource('/item-transfers', \App\Http\Controllers\ItemTransfer\ItemTransferController::class);
     Route::patch('/item-transfers/{itemTransfer}/restore', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'restore'])->name('item-transfers.restore')->withTrashed();
+    Route::delete('/item-transfers/{itemTransfer}/force-delete', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'forceDelete'])
+        ->name('item-transfers.force-delete')
+        ->withTrashed();
     Route::patch('/item-transfers/{itemTransfer}/complete', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'complete'])->name('item-transfers.complete');
     Route::patch('/item-transfers/{itemTransfer}/cancel', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'cancel'])->name('item-transfers.cancel');
     // Journal Entries
     Route::resource('/journal-entries', \App\Http\Controllers\JournalEntry\JournalEntryController::class);
     Route::patch('/journal-entries/{journalEntry}/restore', [\App\Http\Controllers\JournalEntry\JournalEntryController::class, 'restore'])->name('journal-entries.restore')->withTrashed();
+    Route::delete('/journal-entries/{journalEntry}/force-delete', [\App\Http\Controllers\JournalEntry\JournalEntryController::class, 'forceDelete'])
+        ->name('journal-entries.force-delete')
+        ->withTrashed();
     Route::resource('/journal-classes', \App\Http\Controllers\JournalEntry\JournalClassController::class);
     Route::patch('/journal-classes/{journalClass}/restore', [\App\Http\Controllers\JournalEntry\JournalClassController::class, 'restore'])->name('journal-classes.restore')->withTrashed();
+    Route::delete('/journal-classes/{journalClass}/force-delete', [\App\Http\Controllers\JournalEntry\JournalClassController::class, 'forceDelete'])
+        ->name('journal-classes.force-delete')
+        ->withTrashed();
     Route::match(['get', 'post'], '/search/items-list', [SearchController::class, 'searchItemsList'])
         ->name('search.items-list');
     Route::get('/search/{resourceType}', [SearchController::class, 'search']);

@@ -256,6 +256,13 @@ class DrawingController extends Controller
         return redirect()->route('drawings.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.drawing')]));
     }
 
+    public function forceDelete(Request $request, Drawing $drawing)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('drawings', (string) $drawing->id);
+
+        return redirect()->route('drawings.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.drawing')]));
+    }
+
     /**
      * @return array{0:string,1:float}
      */

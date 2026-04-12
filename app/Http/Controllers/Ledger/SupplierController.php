@@ -271,4 +271,13 @@ class SupplierController extends Controller
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         return redirect()->route('suppliers.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.supplier')]));
     }
+
+    public function forceDelete(Request $request, Ledger $supplier)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('suppliers', (string) $supplier->id);
+
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
+        return redirect()->route('suppliers.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.supplier')]));
+    }
 }

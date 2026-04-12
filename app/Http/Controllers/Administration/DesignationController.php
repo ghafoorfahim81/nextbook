@@ -49,4 +49,11 @@ class DesignationController extends Controller
 
         return response()->noContent();
     }
+
+    public function forceDelete(Request $request, Designation $designation): Response
+    {
+        $designation->forceDelete();
+
+        return response()->noContent();
+    }
 }

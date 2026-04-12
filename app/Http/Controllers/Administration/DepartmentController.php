@@ -69,6 +69,13 @@ class DepartmentController extends Controller
         return redirect()->route('departments.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.department')]));
     }
 
+    public function forceDelete(Request $request, Department $department)
+    {
+        $department->forceDelete();
+
+        return redirect()->route('departments.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.department')]));
+    }
+
     public function getParents()
     {
         $parents = Department::whereNull('parent_id')->orWhereNotNull('parent_id')->get(['id', 'name']);

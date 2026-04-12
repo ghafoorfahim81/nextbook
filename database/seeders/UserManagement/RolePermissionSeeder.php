@@ -7,11 +7,14 @@ use App\Models\User;
 use App\Models\Permission;
 use App\Models\Administration\Branch;
 use App\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 use Symfony\Component\Uid\Ulid;
 class RolePermissionSeeder extends Seeder
 {
     public function run(): void
     {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
         /*
         |--------------------------------------------------------------------------
         | 1. Resources (models / domains)
@@ -135,12 +138,12 @@ class RolePermissionSeeder extends Seeder
                 : $baseActions;
 
             foreach ($actions as $action) {
-                Permission::firstOrCreate([
-                    'id' => (string) new Ulid(),
-                    'name' => "{$resource}.{$action}",
-                    'guard_name' => 'web',
-                ]);
+                $this->ensurePermission("{$resource}.{$action}");
             }
+        }
+
+        foreach (['view_any', 'view', 'restore', 'force_delete'] as $action) {
+            $this->ensurePermission("deleted_records.{$action}");
         }
 
         /*
@@ -241,5 +244,30 @@ class RolePermissionSeeder extends Seeder
         if ($superAdminUser) {
             $superAdminUser->syncRoles(['super-admin']);
         }
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+    }
+
+    private function ensurePermission(string $permissionName): Permission
+    {
+        $permission = Permission::query()
+            ->where('name', $permissionName)
+            ->where('guard_name', 'web')
+            ->first();
+
+        if ($permission) {
+            if (!empty($permission->deleted_at)) {
+                $permission->deleted_at = null;
+                $permission->save();
+            }
+
+            return $permission;
+        }
+
+        return Permission::create([
+            'id' => (string) new Ulid(),
+            'name' => $permissionName,
+            'guard_name' => 'web',
+        ]);
     }
 }

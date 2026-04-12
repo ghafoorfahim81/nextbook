@@ -79,4 +79,12 @@ class CategoryController extends Controller
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'categories'));
         return back()->with('success', __('general.restored_successfully', ['resource' => __('general.resource.category')]));
     }
+
+    public function forceDelete(Request $request, Category $category)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('categories', (string) $category->id);
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'categories'));
+
+        return back()->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.category')]));
+    }
 }

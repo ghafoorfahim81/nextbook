@@ -45,4 +45,11 @@ class PurchasePaymentController extends Controller
 
         return response()->noContent();
     }
+
+    public function forceDelete(Request $request, PurchasePayment $purchasePayment): Response
+    {
+        $purchasePayment->forceDelete();
+
+        return response()->noContent();
+    }
 }

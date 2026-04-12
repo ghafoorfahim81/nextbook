@@ -45,4 +45,11 @@ class QuantityController extends Controller
 
         return response()->noContent();
     }
+
+    public function forceDelete(Request $request, Quantity $quantity): Response
+    {
+        $quantity->forceDelete();
+
+        return response()->noContent();
+    }
 }

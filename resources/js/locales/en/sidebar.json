@@ -16,8 +16,9 @@
     "expense": "Expense",
     "user_management": "User Management",
     "preferences": "Preferences",
-    "reports": "Reports"
-
+    "reports": "Reports",
+    "system": "System",
+    "deleted_records": "Deleted Records"
   },
   "expense": {
     "expense": "Expense",
@@ -80,5 +81,8 @@
   "reports": {
     "reports": "Reports",
     "report": "Report"
+  },
+  "system": {
+    "deleted_records": "Deleted Records"
   }
 }
