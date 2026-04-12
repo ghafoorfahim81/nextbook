@@ -197,6 +197,7 @@ class PreferencesController extends Controller
             ['value' => 'payment', 'label' => 'sidebar.main.payment'],
             ['value' => 'transfer', 'label' => 'sidebar.main.transfer'],
             ['value' => 'user_management', 'label' => 'sidebar.main.user_management'],
+            ['value' => 'system', 'label' => 'sidebar.main.system'],
             ['value' => 'reports', 'label' => 'sidebar.main.reports'],
             ['value' => 'preferences', 'label' => 'sidebar.main.preferences'],
         ];

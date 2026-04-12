@@ -237,4 +237,13 @@ class JournalEntryController extends Controller
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         return redirect()->route('journal-entries.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.journal_entry')]));
     }
+
+    public function forceDelete(Request $request, JournalEntry $journalEntry)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('journal_entries', (string) $journalEntry->id);
+
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
+        return redirect()->route('journal-entries.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.journal_entry')]));
+    }
 }

@@ -74,6 +74,14 @@ class CurrencyController extends Controller
         return redirect()->route('currencies.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.currency')]));
     }
 
+    public function forceDelete(Request $request, Currency $currency)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('currencies', (string) $currency->id);
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'currencies'));
+
+        return redirect()->route('currencies.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.currency')]));
+    }
+
     private function forgetCurrencyLookups(Request $request): void
     {
         CacheForget::lookup($request, 'currencies');

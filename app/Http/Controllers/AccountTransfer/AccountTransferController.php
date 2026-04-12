@@ -232,6 +232,12 @@ class AccountTransferController extends Controller
         });
         return back()->with('success', __('general.restored_successfully', ['resource' => __('general.resource.account_transfer')]));
     }
-}
 
+    public function forceDelete(Request $request, AccountTransfer $accountTransfer)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('account_transfers', (string) $accountTransfer->id);
+
+        return back()->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.account_transfer')]));
+    }
+}
 

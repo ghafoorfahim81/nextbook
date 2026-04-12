@@ -279,4 +279,13 @@ class CustomerController extends Controller
 
         return redirect()->route('customers.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.customer')]));
     }
+
+    public function forceDelete(Request $request, Ledger $customer)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('customers', (string) $customer->id);
+
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
+        return redirect()->route('customers.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.customer')]));
+    }
 }

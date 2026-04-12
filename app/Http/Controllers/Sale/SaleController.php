@@ -864,6 +864,13 @@ class SaleController extends Controller
         return redirect()->route('sales.index')->with('success', __('general.sale_restored_successfully'));
     }
 
+    public function forceDelete(Request $request, Sale $sale)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('sales', (string) $sale->id);
+
+        return redirect()->route('sales.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.sale')]));
+    }
+
     public function updateSaleStatus(Request $request, Sale $sale)
     {
         $sale->update(['status' => $request->status]);

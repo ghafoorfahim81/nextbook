@@ -265,4 +265,13 @@ class ReceiptController extends Controller
         return redirect()->route('receipts.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.receipt')]));
     }
 
+    public function forceDelete(Request $request, Receipt $receipt)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('receipts', (string) $receipt->id);
+
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+
+        return redirect()->route('receipts.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.receipt')]));
+    }
+
 }

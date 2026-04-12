@@ -230,4 +230,11 @@ class OwnerController extends Controller
         }
         return redirect()->route('owners.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.owner')]));
     }
+
+    public function forceDelete(Request $request, Owner $owner)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('owners', (string) $owner->id);
+
+        return redirect()->route('owners.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.owner')]));
+    }
 }

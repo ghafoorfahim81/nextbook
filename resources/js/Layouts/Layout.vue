@@ -79,7 +79,8 @@ import {
     FileText,
     Search,
     X,
-    FileChartLine
+    FileChartLine,
+    Trash2
 } from 'lucide-vue-next'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -591,6 +592,15 @@ const navMain = computed(() => [
         title: t('sidebar.main.preferences'),
         url: '/preferences',
         icon: Cog,
+    },
+    {
+        key: 'system',
+        title: t('sidebar.main.system'),
+        url: '#',
+        icon: Trash2,
+        items: [
+            { title: t('sidebar.main.deleted_records'), url: '/deleted-records', permission: 'deleted_records.view_any' },
+        ],
     },
     {
         key: 'reports',
