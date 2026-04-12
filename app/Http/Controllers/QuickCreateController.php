@@ -25,6 +25,7 @@ use App\Models\Expense\ExpenseCategory;
 use App\Models\Inventory\Item;
 use App\Models\JournalEntry\JournalClass;
 use App\Models\Ledger\Ledger;
+use App\Services\ActivityLogService;
 use App\Services\TransactionService;
 use App\Support\Inertia\CacheKey;
 use Illuminate\Http\JsonResponse;
@@ -157,6 +158,20 @@ class QuickCreateController extends Controller
 
         $category = Category::create($validated);
         $this->forgetInertiaCache($request, ['categories']);
+
+        app(ActivityLogService::class)->logCreate(
+            reference: $category,
+            module: 'category',
+            description: "Category {$category->name} created.",
+            newValues: [
+                'name' => $category->name,
+                'parent_id' => $category->parent_id,
+                'remark' => $category->remark,
+                'is_active' => $category->is_active,
+                'branch_id' => $category->branch_id,
+            ],
+            branchId: $category->branch_id,
+        );
 
         return response()->json([
             'success' => true,

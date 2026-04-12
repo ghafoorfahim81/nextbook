@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use App\Services\DateConversionService;
 use App\Http\Resources\Account\AccountResource;
+use App\Services\ActivityLogService;
+
 class ExpenseController extends Controller
 {
     private $dateConversionService;
@@ -78,9 +80,13 @@ class ExpenseController extends Controller
         ]);
     }
 
-    public function store(ExpenseStoreRequest $request, TransactionService $transactionService)
+    public function store(
+        ExpenseStoreRequest $request,
+        TransactionService $transactionService,
+        ActivityLogService $activityLogService
+    )
     {
-        $expense = DB::transaction(function () use ($request, $transactionService) {
+        $expense = DB::transaction(function () use ($request, $transactionService, $activityLogService) {
             $validated = $request->validated();
 
             // Handle file upload
@@ -123,6 +129,25 @@ class ExpenseController extends Controller
                         'debit' => 0,
                         'credit' => $total,
                     ],
+                ],
+            );
+
+            $activityLogService->logCreate(
+                reference: $expense,
+                module: 'expense',
+                description: "Expense #{$expense->id} created.",
+                newValues: [
+                    'date' => $expense->date?->toDateString(),
+                    'category_id' => $expense->category_id,
+                    'remarks' => $expense->remarks,
+                    'detail_count' => count($validated['details']),
+                    'total' => (float) $total,
+                    'currency_id' => $validated['currency_id'],
+                    'rate' => (float) ($validated['rate'] ?? 1),
+                ],
+                metadata: [
+                    'action' => 'expense_store',
+                    'transaction_id' => $transaction->id,
                 ],
             );
 
@@ -170,10 +195,24 @@ class ExpenseController extends Controller
         ]);
     }
 
-    public function update(ExpenseUpdateRequest $request, Expense $expense, TransactionService $transactionService)
+    public function update(
+        ExpenseUpdateRequest $request,
+        Expense $expense,
+        TransactionService $transactionService,
+        ActivityLogService $activityLogService
+    )
     {
+        $beforeState = [
+            'date' => $expense->date?->toDateString(),
+            'category_id' => $expense->category_id,
+            'remarks' => $expense->remarks,
+            'detail_count' => $expense->details()->count(),
+            'total' => (float) $expense->details()->sum('amount'),
+            'currency_id' => $expense->transaction?->currency_id,
+            'rate' => $expense->transaction?->rate,
+        ];
 
-        DB::transaction(function () use ($request, $expense, $transactionService) {
+        DB::transaction(function () use ($request, $expense, $transactionService, $activityLogService, $beforeState) {
             $validated = $request->validated();
             // Handle file upload
             // if ($request->hasFile('attachment')) {
@@ -229,12 +268,42 @@ class ExpenseController extends Controller
                 ],
             );
 
+            $activityLogService->logUpdate(
+                reference: $expense,
+                before: $beforeState,
+                after: [
+                    'date' => $expense->date?->toDateString(),
+                    'category_id' => $expense->category_id,
+                    'remarks' => $expense->remarks,
+                    'detail_count' => count($validated['details']),
+                    'total' => (float) $total,
+                    'currency_id' => $validated['currency_id'],
+                    'rate' => (float) ($validated['rate'] ?? 1),
+                ],
+                module: 'expense',
+                description: "Expense #{$expense->id} updated.",
+                metadata: [
+                    'action' => 'expense_update',
+                    'transaction_id' => $transaction->id,
+                ],
+            );
+
         });
 
         return redirect()->route('expenses.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.expense')]));
     }
-    public function destroy(Request $request, Expense $expense)
+    public function destroy(Request $request, Expense $expense, ActivityLogService $activityLogService)
     {
+        $oldValues = [
+            'date' => $expense->date?->toDateString(),
+            'category_id' => $expense->category_id,
+            'remarks' => $expense->remarks,
+            'detail_count' => $expense->details()->count(),
+            'total' => (float) $expense->details()->sum('amount'),
+            'currency_id' => $expense->transaction?->currency_id,
+            'rate' => $expense->transaction?->rate,
+        ];
+
         DB::transaction(function () use ($expense) {
             // Soft delete related transactions
             if ($expense->transaction) {
@@ -247,11 +316,21 @@ class ExpenseController extends Controller
             $expense->delete();
         });
 
+        $activityLogService->logDelete(
+            reference: $expense,
+            module: 'expense',
+            description: "Expense #{$expense->id} deleted.",
+            oldValues: $oldValues,
+            metadata: [
+                'action' => 'expense_delete',
+            ],
+        );
+
         return redirect()->route('expenses.index')
             ->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.expense')]));
     }
 
-    public function restore(Request $request, Expense $expense)
+    public function restore(Request $request, Expense $expense, ActivityLogService $activityLogService)
     {
         DB::transaction(function () use ($expense) {
             $expense->restore();
@@ -263,6 +342,20 @@ class ExpenseController extends Controller
                 $transaction->lines()->withTrashed()->restore();
             }
         });
+
+        $activityLogService->logAction(
+            eventType: 'restored',
+            reference: $expense,
+            module: 'expense',
+            description: "Expense #{$expense->id} restored.",
+            newValues: [
+                'date' => $expense->date?->toDateString(),
+                'category_id' => $expense->category_id,
+            ],
+            metadata: [
+                'action' => 'expense_restore',
+            ],
+        );
 
         return back()->with('success', __('general.restored_successfully', ['resource' => __('general.resource.expense')]));
     }

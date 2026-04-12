@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Http\Resources\Ledger\LedgerResource;
 use App\Support\Preferences\InvoiceThemeOptions;
+use App\Services\ActivityLogService;
 
 class PreferencesController extends Controller
 {
@@ -84,6 +85,16 @@ class PreferencesController extends Controller
         $newPreferences = array_replace_recursive($currentPreferences, $validated);
 
         $user->update(['preferences' => $newPreferences]);
+        app(ActivityLogService::class)->logUpdate(
+            reference: $user,
+            before: $currentPreferences,
+            after: $newPreferences,
+            module: 'setting',
+            description: "Preferences updated for {$user->name}.",
+            metadata: [
+                'action' => 'preferences_update',
+            ],
+        );
         Cache::forget(CacheKey::forUser($request, 'preferences'));
         Cache::forget(CacheKey::forUser($request, 'recordsPerPage'));
         Cache::put('recordsPerPage', $newPreferences['appearance']['records_per_page']);
@@ -95,7 +106,22 @@ class PreferencesController extends Controller
     public function resetPreferences(Request $request, ?string $category = null)
     {
         $user = $request->user();
+        $beforePreferences = $user->preferences ?? User::DEFAULT_PREFERENCES;
         $user->resetPreferences($category)->save();
+        $afterPreferences = $user->fresh()->preferences ?? User::DEFAULT_PREFERENCES;
+        app(ActivityLogService::class)->logUpdate(
+            reference: $user,
+            before: $beforePreferences,
+            after: $afterPreferences,
+            module: 'setting',
+            description: $category
+                ? "Preference category {$category} reset for {$user->name}."
+                : "All preferences reset for {$user->name}.",
+            metadata: [
+                'action' => 'preferences_reset',
+                'category' => $category,
+            ],
+        );
         Cache::forget(CacheKey::forUser($request, 'preferences'));
         return redirect()->back()->with('success', __('preferences.preferences_reset'));
     }
@@ -103,6 +129,14 @@ class PreferencesController extends Controller
     public function updateInstallPlugins(Request $request)
     {
         $user = $request->user();
+        $beforeState = [
+            'unit_measures' => UnitMeasure::query()->where('is_active', true)->pluck('id')->values()->all(),
+            'categories' => Category::query()->where('is_active', true)->pluck('id')->values()->all(),
+            'warehouses' => Warehouse::query()->where('is_active', true)->pluck('id')->values()->all(),
+            'sizes' => Size::query()->where('is_active', true)->pluck('id')->values()->all(),
+            'currencies' => Currency::query()->where('is_active', true)->pluck('id')->values()->all(),
+            'ledgers' => Ledger::query()->whereIn('type', ['customer', 'supplier'])->where('is_active', true)->pluck('id')->values()->all(),
+        ];
 
         $validated = $request->validate([
             'unit_measures' => ['array'],
@@ -149,6 +183,24 @@ class PreferencesController extends Controller
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'currencies'));
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'unit_measures'));
 
+        app(ActivityLogService::class)->logUpdate(
+            reference: $user,
+            before: $beforeState,
+            after: [
+                'unit_measures' => $unitMeasureIds->all(),
+                'categories' => $categoryIds->all(),
+                'warehouses' => $warehouseIds->all(),
+                'sizes' => $sizeIds->all(),
+                'currencies' => $currencyIds->all(),
+                'ledgers' => $ledgerIds->all(),
+            ],
+            module: 'setting',
+            description: "Active plugin resources updated for {$user->name}.",
+            metadata: [
+                'action' => 'preferences_install_plugins_update',
+            ],
+        );
+
         return redirect()->back()->with('success', __('preferences.preferences_saved'));
     }
 
@@ -156,6 +208,16 @@ class PreferencesController extends Controller
     {
         $user = $request->user();
         $preferences = $user->getAllPreferences();
+
+        app(ActivityLogService::class)->logAction(
+            eventType: 'export',
+            reference: $user,
+            module: 'setting',
+            description: "Preferences exported for {$user->name}.",
+            metadata: [
+                'action' => 'preferences_export',
+            ],
+        );
 
         return response()->json($preferences)
             ->header('Content-Disposition', 'attachment; filename="preferences.json"')
@@ -176,7 +238,19 @@ class PreferencesController extends Controller
         }
 
         $user = $request->user();
+        $beforePreferences = $user->preferences ?? User::DEFAULT_PREFERENCES;
         $user->update(['preferences' => array_replace_recursive(User::DEFAULT_PREFERENCES, $preferences)]);
+
+        app(ActivityLogService::class)->logUpdate(
+            reference: $user,
+            before: $beforePreferences,
+            after: $user->fresh()->preferences ?? User::DEFAULT_PREFERENCES,
+            module: 'setting',
+            description: "Preferences imported for {$user->name}.",
+            metadata: [
+                'action' => 'preferences_import',
+            ],
+        );
 
         return redirect()->back()->with('success', __('settings.settings_imported'));
     }

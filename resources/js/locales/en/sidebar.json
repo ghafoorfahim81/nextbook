@@ -83,6 +83,7 @@
     "report": "Report"
   },
   "system": {
-    "deleted_records": "Deleted Records"
+    "deleted_records": "Deleted Records",
+    "activity_logs": "Activity Logs"
   }
 }

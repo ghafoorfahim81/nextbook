@@ -19,6 +19,7 @@ use App\Support\Inertia\CacheKey;
 use App\Models\Administration\Currency;
 use App\Models\User;
 use App\Services\DateConversionService;
+use App\Services\ActivityLogService;
 class PaymentController extends Controller
 {
     private $dateConversionService;
@@ -78,9 +79,13 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function store(PaymentStoreRequest $request, TransactionService $transactionService)
+    public function store(
+        PaymentStoreRequest $request,
+        TransactionService $transactionService,
+        ActivityLogService $activityLogService
+    )
     {
-        $payment = DB::transaction(function () use ($request, $transactionService) {
+        $payment = DB::transaction(function () use ($request, $transactionService, $activityLogService) {
             $validated = $request->validated();
 
             $ledger = Ledger::findOrFail($validated['ledger_id']);
@@ -102,7 +107,7 @@ class PaymentController extends Controller
             $apAccountId = $glAccounts['account-payable'];
             $debitRemark = "Payment #{$payment->number} to {$ledger->name}";
 
-            $transactionService->post(
+            $transaction = $transactionService->post(
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -124,6 +129,24 @@ class PaymentController extends Controller
                         'credit' => 0,
                     ],
 
+                ],
+            );
+
+            $activityLogService->logCreate(
+                reference: $payment,
+                module: 'payment',
+                description: "Payment #{$payment->number} created.",
+                newValues: [
+                    'number' => $payment->number,
+                    'date' => $payment->date?->toDateString(),
+                    'ledger_id' => $payment->ledger_id,
+                    'amount' => $amount,
+                    'currency_id' => $currencyId,
+                    'rate' => $rate,
+                ],
+                metadata: [
+                    'action' => 'payment_store',
+                    'transaction_id' => $transaction->id,
                 ],
             );
 
@@ -154,7 +177,7 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function print(Request $request, Payment $payment)
+    public function print(Request $request, Payment $payment, ActivityLogService $activityLogService)
     {
         $this->authorize('view', $payment);
 
@@ -166,6 +189,16 @@ class PaymentController extends Controller
             'createdBy',
             'updatedBy',
         ]);
+
+        $activityLogService->logAction(
+            eventType: 'print',
+            reference: $payment,
+            module: 'payment',
+            description: "Payment #{$payment->number} printed.",
+            metadata: [
+                'action' => 'payment_print',
+            ],
+        );
 
         return inertia('Vouchers/Print', [
             'voucher' => new PaymentResource($payment),
@@ -182,9 +215,18 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function update(PaymentUpdateRequest $request, Payment $payment)
+    public function update(PaymentUpdateRequest $request, Payment $payment, ActivityLogService $activityLogService)
     {
-        DB::transaction(function () use ($request, $payment) {
+        $beforeState = [
+            'number' => $payment->number,
+            'date' => $payment->date?->toDateString(),
+            'ledger_id' => $payment->ledger_id,
+            'amount' => (float) ($payment->transaction?->lines()->max('debit') ?? 0),
+            'currency_id' => $payment->transaction?->currency_id,
+            'rate' => $payment->transaction?->rate,
+        ];
+
+        DB::transaction(function () use ($request, $payment, $activityLogService, $beforeState) {
             $validated = $request->validated();
 
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $payment->date;
@@ -229,6 +271,25 @@ class PaymentController extends Controller
                     ],
                 ],
             );
+
+            $activityLogService->logUpdate(
+                reference: $payment,
+                before: $beforeState,
+                after: [
+                    'number' => $payment->number,
+                    'date' => $payment->date?->toDateString(),
+                    'ledger_id' => $payment->ledger_id,
+                    'amount' => $amount,
+                    'currency_id' => $currencyId,
+                    'rate' => $rate,
+                ],
+                module: 'payment',
+                description: "Payment #{$payment->number} updated.",
+                metadata: [
+                    'action' => 'payment_update',
+                    'transaction_id' => $transaction->id,
+                ],
+            );
         });
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
@@ -242,8 +303,17 @@ class PaymentController extends Controller
         return $redirect;
     }
 
-    public function destroy(Request $request, Payment $payment)
+    public function destroy(Request $request, Payment $payment, ActivityLogService $activityLogService)
     {
+        $oldValues = [
+            'number' => $payment->number,
+            'date' => $payment->date?->toDateString(),
+            'ledger_id' => $payment->ledger_id,
+            'amount' => (float) ($payment->transaction?->lines()->max('debit') ?? 0),
+            'currency_id' => $payment->transaction?->currency_id,
+            'rate' => $payment->transaction?->rate,
+        ];
+
         DB::transaction(function () use ($payment) {
 
             $transaction = $payment->transaction()->first();
@@ -256,12 +326,22 @@ class PaymentController extends Controller
             $payment->delete();
         });
 
+        $activityLogService->logDelete(
+            reference: $payment,
+            module: 'payment',
+            description: "Payment #{$payment->number} deleted.",
+            oldValues: $oldValues,
+            metadata: [
+                'action' => 'payment_delete',
+            ],
+        );
+
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
         return redirect()->route('payments.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.payment')]));
     }
 
-    public function restore(Request $request, Payment $payment)
+    public function restore(Request $request, Payment $payment, ActivityLogService $activityLogService)
     {
         DB::transaction(function () use ($payment) {
             $transaction = $payment->transaction()->withTrashed()->first();
@@ -273,6 +353,19 @@ class PaymentController extends Controller
 
             $payment->restore();
         });
+
+        $activityLogService->logAction(
+            eventType: 'restored',
+            reference: $payment,
+            module: 'payment',
+            description: "Payment #{$payment->number} restored.",
+            newValues: [
+                'number' => $payment->number,
+            ],
+            metadata: [
+                'action' => 'payment_restore',
+            ],
+        );
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
