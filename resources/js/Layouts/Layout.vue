@@ -81,7 +81,7 @@ import {
     X,
     FileChartLine,
     Trash2,
-    History
+    History,
 } from 'lucide-vue-next'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
