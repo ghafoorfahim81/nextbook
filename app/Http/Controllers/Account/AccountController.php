@@ -25,6 +25,8 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Transaction\TransactionLine;
 use App\Models\Transaction\Transaction;
 use App\Models\User;
+use App\Services\SpreadsheetExportService;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class AccountController extends Controller
 {
     public function __construct()
@@ -164,6 +166,96 @@ class AccountController extends Controller
                 ? new LedgerOpeningResource($chart_of_account->opening)
                 : null,
         ]);
+    }
+
+    public function exportTransactions(
+        Request $request,
+        Account $chart_of_account,
+        SpreadsheetExportService $spreadsheetExportService,
+    ): BinaryFileResponse {
+        $this->authorize('view', $chart_of_account);
+
+        $chart_of_account->loadMissing(['accountType', 'branch']);
+
+        $dateConversionService = app(\App\Services\DateConversionService::class);
+
+        $transactions = Transaction::query()
+            ->whereHas('lines', function ($query) use ($chart_of_account) {
+                $query->where('account_id', $chart_of_account->id);
+            })
+            ->with([
+                'currency',
+                'lines' => function ($query) use ($chart_of_account) {
+                    $query->where('account_id', $chart_of_account->id);
+                },
+            ])
+            ->orderBy('date')
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get();
+
+        $rows = [];
+        $runningBalance = 0.0;
+
+        foreach ($transactions as $transaction) {
+            $line = $transaction->lines->first();
+            $rate = (float) ($transaction->rate ?: 1);
+            $debit = round((float) ($line?->debit ?? 0) * $rate, 2);
+            $credit = round((float) ($line?->credit ?? 0) * $rate, 2);
+            $runningBalance += $debit - $credit;
+
+            $rows[] = [
+                'date' => $dateConversionService->toDisplay($transaction->date) ?: $transaction->date,
+                'transaction_number' => $transaction->voucher_number ?: '-',
+                'description' => trim((string) ($line?->remark ?? $transaction->remark ?? '')) ?: '-',
+                'debit' => $debit,
+                'credit' => $credit,
+                'balance' => round($runningBalance, 2),
+                'currency' => $transaction->currency?->code ?? $transaction->currency?->name ?? '',
+                'rate' => $rate,
+            ];
+        }
+
+        $sheetTitle = $spreadsheetExportService->localeTranslation('general', 'transaction_summary', 'Transaction Summary');
+        $titlePrefix = $chart_of_account->local_name ?: $chart_of_account->name;
+
+        return $spreadsheetExportService->download([
+            'filename' => Str::slug($titlePrefix . '-' . $sheetTitle) . '-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name' => $sheetTitle,
+            'sheet_title' => $sheetTitle,
+            'title' => $titlePrefix . ' - ' . $sheetTitle,
+            'company_name' => $this->exportCompanyName($request),
+            'exported_on' => now()->format('Y m d'),
+            'rtl' => in_array(app()->getLocale(), ['fa', 'ps'], true),
+            'include_row_number' => true,
+            'row_number_label' => $spreadsheetExportService->localeTranslation('report', 'columns.no', 'No.'),
+            'columns' => [
+                ['key' => 'date', 'label' => $spreadsheetExportService->localeTranslation('general', 'date', 'Date')],
+                ['key' => 'transaction_number', 'label' => $spreadsheetExportService->localeTranslation('general', 'number', 'Number')],
+                ['key' => 'description', 'label' => $spreadsheetExportService->localeTranslation('general', 'description', 'Description')],
+                ['key' => 'debit', 'label' => $spreadsheetExportService->localeTranslation('general', 'debit', 'Debit'), 'type' => 'money', 'align' => 'right'],
+                ['key' => 'credit', 'label' => $spreadsheetExportService->localeTranslation('general', 'credit', 'Credit'), 'type' => 'money', 'align' => 'right'],
+                ['key' => 'balance', 'label' => $spreadsheetExportService->localeTranslation('general', 'balance', 'Balance'), 'type' => 'money', 'align' => 'right'],
+                ['key' => 'currency', 'label' => $spreadsheetExportService->localeTranslation('admin', 'currency.currency', 'Currency')],
+                ['key' => 'rate', 'label' => $spreadsheetExportService->localeTranslation('general', 'rate', 'Rate'), 'type' => 'money', 'align' => 'right'],
+            ],
+            'rows' => $rows,
+        ]);
+    }
+
+    protected function exportCompanyName(Request $request): string
+    {
+        $company = data_get($request->user(), 'company');
+
+        if (! $company) {
+            return config('app.name');
+        }
+
+        return match (app()->getLocale()) {
+            'fa' => $company->name_fa ?: $company->name_en ?: $company->abbreviation ?: config('app.name'),
+            'ps' => $company->name_pa ?: $company->name_en ?: $company->abbreviation ?: config('app.name'),
+            default => $company->name_en ?: $company->abbreviation ?: $company->name_fa ?: $company->name_pa ?: config('app.name'),
+        };
     }
 
     public function edit(Request $request, Account $chart_of_account)

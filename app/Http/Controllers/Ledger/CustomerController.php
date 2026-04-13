@@ -23,6 +23,10 @@ use Illuminate\Support\Facades\DB;
 use App\Support\Inertia\CacheKey;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
+use App\Services\SpreadsheetExportService;
+use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class CustomerController extends Controller
 {
     public function __construct()
@@ -159,6 +163,68 @@ class CustomerController extends Controller
         ]);
     }
 
+    public function export(
+        Request $request,
+        Ledger $customer,
+        SpreadsheetExportService $spreadsheetExportService,
+    ): BinaryFileResponse {
+        $this->authorize('view', $customer);
+
+        $validated = $request->validate([
+            'list' => ['nullable', 'string', Rule::in(['sales', 'receipts', 'payments'])],
+        ]);
+
+        $list = $validated['list'] ?? 'sales';
+        $customer->loadMissing(['currency', 'branch']);
+
+        $rows = match ($list) {
+            'receipts' => $this->exportReceiptRows($customer),
+            'payments' => $this->exportPaymentRows($customer),
+            default => $this->exportSaleRows($customer),
+        };
+
+        $moduleLabel = match ($list) {
+            'receipts' => $spreadsheetExportService->localeTranslation('receipt', 'receipts', 'Receipts'),
+            'payments' => $spreadsheetExportService->localeTranslation('payment', 'payments', 'Payments'),
+            default => $spreadsheetExportService->localeTranslation('sale', 'sales', 'Sales'),
+        };
+
+        $entityLabel = $spreadsheetExportService->localeTranslation('ledger', 'customer', 'Customer');
+        $sheetTitle = $entityLabel . ' ' . $moduleLabel;
+
+        return $spreadsheetExportService->download([
+            'filename' => Str::slug($customer->name . '-' . $sheetTitle) . '-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name' => $sheetTitle,
+            'sheet_title' => $sheetTitle,
+            'title' => $customer->name . ' - ' . $moduleLabel,
+            'company_name' => $this->exportCompanyName($request),
+            'exported_on' => now()->format('Y m d'),
+            'rtl' => in_array(app()->getLocale(), ['fa', 'ps'], true),
+            'include_row_number' => true,
+            'row_number_label' => $spreadsheetExportService->localeTranslation('report', 'columns.no', 'No.'),
+            'columns' => match ($list) {
+                'receipts', 'payments' => [
+                    ['key' => 'number', 'label' => $spreadsheetExportService->localeTranslation('general', 'number', 'Number')],
+                    ['key' => 'date', 'label' => $spreadsheetExportService->localeTranslation('general', 'date', 'Date')],
+                    ['key' => 'amount', 'label' => $spreadsheetExportService->localeTranslation('general', 'amount', 'Amount'), 'type' => 'money', 'align' => 'right'],
+                    ['key' => 'currency', 'label' => $spreadsheetExportService->localeTranslation('admin', 'currency.currency', 'Currency')],
+                    ['key' => 'rate', 'label' => $spreadsheetExportService->localeTranslation('general', 'rate', 'Rate'), 'type' => 'money', 'align' => 'right'],
+                    ['key' => 'payment_mode', 'label' => $spreadsheetExportService->localeTranslation('general', 'payment_method', 'Payment Method')],
+                    ['key' => 'description', 'label' => $spreadsheetExportService->localeTranslation('general', 'description', 'Description')],
+                ],
+                default => [
+                    ['key' => 'number', 'label' => $spreadsheetExportService->localeTranslation('general', 'number', 'Number')],
+                    ['key' => 'date', 'label' => $spreadsheetExportService->localeTranslation('general', 'date', 'Date')],
+                    ['key' => 'type', 'label' => $spreadsheetExportService->localeTranslation('general', 'type', 'Type')],
+                    ['key' => 'amount', 'label' => $spreadsheetExportService->localeTranslation('general', 'amount', 'Amount'), 'type' => 'money', 'align' => 'right'],
+                    ['key' => 'status', 'label' => $spreadsheetExportService->localeTranslation('general', 'status', 'Status')],
+                    ['key' => 'description', 'label' => $spreadsheetExportService->localeTranslation('general', 'description', 'Description')],
+                ],
+            },
+            'rows' => $rows,
+        ]);
+    }
+
     /**
      * Show the form for editing the specified resource.
      */
@@ -168,6 +234,74 @@ class CustomerController extends Controller
         return inertia('Ledgers/Customers/Edit', [
             'customer' => new LedgerResource($customer),
         ]);
+    }
+
+    protected function exportSaleRows(Ledger $customer): array
+    {
+        $sales = $customer->sales()->with(['transaction.currency', 'items'])->orderBy('date')->orderBy('id')->get();
+        $rows = collect(SaleResource::collection($sales)->resolve());
+
+        return $rows->map(function (array $row) {
+            return [
+                'number' => $row['number'] ?? $row['reference_id'] ?? $row['id'] ?? '-',
+                'date' => $row['date'] ?? '-',
+                'type' => $row['type'] ?? '-',
+                'amount' => $row['amount'] ?? 0,
+                'status' => $row['payment_status_label'] ?? $row['payment_status'] ?? '-',
+                'description' => $row['description'] ?? '-',
+            ];
+        })->all();
+    }
+
+    protected function exportReceiptRows(Ledger $customer): array
+    {
+        $receipts = $customer->receipts()->with(['transaction.currency', 'transaction.lines.account'])->orderBy('date')->orderBy('id')->get();
+        $rows = collect(ReceiptResource::collection($receipts)->resolve());
+
+        return $rows->map(function (array $row) {
+            return [
+                'number' => $row['number'] ?? $row['reference_id'] ?? $row['id'] ?? '-',
+                'date' => $row['date'] ?? '-',
+                'amount' => $row['amount'] ?? 0,
+                'currency' => $row['currency_code'] ?? data_get($row, 'transaction.currency.code') ?? data_get($row, 'transaction.currency.name') ?? '',
+                'rate' => $row['rate'] ?? 0,
+                'payment_mode' => $row['payment_mode_label'] ?? $row['payment_mode'] ?? '-',
+                'description' => $row['narration'] ?? $row['description'] ?? '-',
+            ];
+        })->all();
+    }
+
+    protected function exportPaymentRows(Ledger $customer): array
+    {
+        $payments = $customer->payments()->with(['transaction.currency', 'transaction.lines.account'])->orderBy('date')->orderBy('id')->get();
+        $rows = collect(PaymentResource::collection($payments)->resolve());
+
+        return $rows->map(function (array $row) {
+            return [
+                'number' => $row['number'] ?? $row['reference_id'] ?? $row['id'] ?? '-',
+                'date' => $row['date'] ?? '-',
+                'amount' => $row['amount'] ?? 0,
+                'currency' => $row['currency_code'] ?? data_get($row, 'transaction.currency.code') ?? data_get($row, 'transaction.currency.name') ?? '',
+                'rate' => $row['rate'] ?? 0,
+                'payment_mode' => $row['payment_mode_label'] ?? $row['payment_mode'] ?? '-',
+                'description' => $row['narration'] ?? $row['description'] ?? '-',
+            ];
+        })->all();
+    }
+
+    protected function exportCompanyName(Request $request): string
+    {
+        $company = data_get($request->user(), 'company');
+
+        if (! $company) {
+            return config('app.name');
+        }
+
+        return match (app()->getLocale()) {
+            'fa' => $company->name_fa ?: $company->name_en ?: $company->abbreviation ?: config('app.name'),
+            'ps' => $company->name_pa ?: $company->name_en ?: $company->abbreviation ?: config('app.name'),
+            default => $company->name_en ?: $company->abbreviation ?: $company->name_fa ?: $company->name_pa ?: config('app.name'),
+        };
     }
 
     /**

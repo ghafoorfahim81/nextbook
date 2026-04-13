@@ -36,6 +36,7 @@ use App\Models\Inventory\StockMovement;
 use App\Models\Inventory\StockBalance;
 use App\Models\Purchase\Purchase;
 use App\Models\Sale\Sale;
+use App\Services\SpreadsheetExportService;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 class ItemController extends Controller
 {
@@ -189,19 +190,7 @@ class ItemController extends Controller
     }
     public function inRecords(Request $request, Item $item)
     {
-        $stocks = StockMovement::with([
-                'warehouse',
-                'unitMeasure',
-                'reference' => function (MorphTo $morphTo) {
-                    $morphTo->morphWith([
-                        Purchase::class => ['supplier'],
-                        Sale::class => ['customer'],
-                    ]);
-                },
-            ])
-            ->where('item_id', $item->id)
-            ->where('movement_type', StockMovementType::IN->value)
-            ->orderBy('date', 'desc')
+        $stocks = $this->stockMovementQuery($item, StockMovementType::IN->value)
             ->paginate($request->input('per_page', 10));
 
         return response()->json([
@@ -217,19 +206,7 @@ class ItemController extends Controller
 
     public function outRecords(Request $request, Item $item)
     {
-        $stockOuts = StockMovement::with([
-                'warehouse',
-                'unitMeasure',
-                'reference' => function (MorphTo $morphTo) {
-                    $morphTo->morphWith([
-                        Purchase::class => ['supplier'],
-                        Sale::class => ['customer'],
-                    ]);
-                },
-            ])
-            ->where('item_id', $item->id)
-            ->where('movement_type', StockMovementType::OUT->value)
-            ->orderBy('date', 'desc')
+        $stockOuts = $this->stockMovementQuery($item, StockMovementType::OUT->value)
             ->paginate($request->input('per_page', 10));
 
         return response()->json([
@@ -241,6 +218,30 @@ class ItemController extends Controller
                 'total' => $stockOuts->total(),
             ],
         ]);
+    }
+
+    public function exportInRecords(Request $request, Item $item, SpreadsheetExportService $spreadsheetExportService)
+    {
+        return $this->exportStockMovements(
+            request: $request,
+            item: $item,
+            movementType: StockMovementType::IN->value,
+            sheetLabel: $spreadsheetExportService->localeTranslation('item', 'in_records', 'In Records'),
+            filenamePrefix: 'item-in-records',
+            spreadsheetExportService: $spreadsheetExportService,
+        );
+    }
+
+    public function exportOutRecords(Request $request, Item $item, SpreadsheetExportService $spreadsheetExportService)
+    {
+        return $this->exportStockMovements(
+            request: $request,
+            item: $item,
+            movementType: StockMovementType::OUT->value,
+            sheetLabel: $spreadsheetExportService->localeTranslation('item', 'out_records', 'Out Records'),
+            filenamePrefix: 'item-out-records',
+            spreadsheetExportService: $spreadsheetExportService,
+        );
     }
 
     public function edit(Request $request, Item $item)
@@ -565,5 +566,92 @@ class ItemController extends Controller
         if ($balance) {
             $balance->forceDelete();
         }
+    }
+
+    protected function exportStockMovements(
+        Request $request,
+        Item $item,
+        string $movementType,
+        string $sheetLabel,
+        string $filenamePrefix,
+        SpreadsheetExportService $spreadsheetExportService,
+    ) {
+        $movements = $this->stockMovementQuery($item, $movementType)->get();
+        $rows = collect(StockMovementResource::collection($movements)->resolve())
+            ->map(function (array $row) {
+                return [
+                    'ledger_name' => $row['ledger_name'] ?? '-',
+                    'bill_number' => $row['bill_number'] ?? '-',
+                    'quantity' => $row['quantity'] ?? 0,
+                    'source' => $row['source'] ?? '-',
+                    'unit_measure_name' => $row['unit_measure_name'] ?? '-',
+                    'date' => $row['date'] ?? '-',
+                    'batch' => $row['batch'] ?? '-',
+                    'expire_date' => $row['expire_date'] ?? '-',
+                    'unit_cost' => $row['unit_cost'] ?? 0,
+                    'warehouse_name' => $row['warehouse_name'] ?? '-',
+                ];
+            })
+            ->all();
+
+        $sheetTitle = $item->name . ' - ' . $sheetLabel;
+
+        return $spreadsheetExportService->download([
+            'filename' => Str::slug($filenamePrefix . '-' . $item->name) . '-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name' => Str::limit($sheetTitle, 31, ''),
+            'sheet_title' => $sheetTitle,
+            'title' => $sheetTitle,
+            'company_name' => $this->exportCompanyName($request),
+            'exported_on' => now()->format('Y m d'),
+            'rtl' => in_array(app()->getLocale(), ['fa', 'ps'], true),
+            'include_row_number' => true,
+            'row_number_label' => $spreadsheetExportService->localeTranslation('report', 'columns.no', 'No.'),
+            'columns' => [
+                ['key' => 'ledger_name', 'label' => $spreadsheetExportService->localeTranslation('general', 'ledger', 'Ledger')],
+                ['key' => 'bill_number', 'label' => $spreadsheetExportService->localeTranslation('general', 'bill_number', 'Bill Number')],
+                ['key' => 'quantity', 'label' => $spreadsheetExportService->localeTranslation('general', 'quantity', 'Quantity'), 'type' => 'quantity', 'align' => 'right'],
+                ['key' => 'source', 'label' => $spreadsheetExportService->localeTranslation('general', 'source', 'Source')],
+                ['key' => 'unit_measure_name', 'label' => $spreadsheetExportService->localeTranslation('admin', 'unit_measure.unit_measure', 'Unit Measure')],
+                ['key' => 'date', 'label' => $spreadsheetExportService->localeTranslation('general', 'date', 'Date')],
+                ['key' => 'batch', 'label' => $spreadsheetExportService->localeTranslation('item', 'batch', 'Batch')],
+                ['key' => 'expire_date', 'label' => $spreadsheetExportService->localeTranslation('item', 'expire_date', 'Expire Date')],
+                ['key' => 'unit_cost', 'label' => $spreadsheetExportService->localeTranslation('general', 'unit_price', 'Unit Price'), 'type' => 'money', 'align' => 'right'],
+                ['key' => 'warehouse_name', 'label' => $spreadsheetExportService->localeTranslation('admin', 'warehouse.warehouse', 'Warehouse')],
+            ],
+            'rows' => $rows,
+        ]);
+    }
+
+    protected function stockMovementQuery(Item $item, string $movementType)
+    {
+        return StockMovement::with([
+                'warehouse',
+                'unitMeasure',
+                'reference' => function (MorphTo $morphTo) {
+                    $morphTo->morphWith([
+                        Purchase::class => ['supplier'],
+                        Sale::class => ['customer'],
+                    ]);
+                },
+            ])
+            ->where('item_id', $item->id)
+            ->where('movement_type', $movementType)
+            ->orderBy('date', 'desc')
+            ->orderBy('id', 'desc');
+    }
+
+    protected function exportCompanyName(Request $request): string
+    {
+        $company = data_get($request->user(), 'company');
+
+        if (! $company) {
+            return config('app.name');
+        }
+
+        return match (app()->getLocale()) {
+            'fa' => $company->name_fa ?: $company->name_en ?: $company->abbreviation ?: config('app.name'),
+            'ps' => $company->name_pa ?: $company->name_en ?: $company->abbreviation ?: config('app.name'),
+            default => $company->name_en ?: $company->abbreviation ?: $company->name_fa ?: $company->name_pa ?: config('app.name'),
+        };
     }
 }

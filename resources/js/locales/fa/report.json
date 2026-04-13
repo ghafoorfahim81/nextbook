@@ -6,6 +6,8 @@
   "back_to_reports": "بازگشت به گزارشات",
   "export_excel": "خروجی اکسل",
   "snapshot_note": "این گزارش بر اساس وضعیت فعلی موجودی تهیه شده است.",
+  "company_name": "نام شرکت",
+  "exported_on": "تاریخ خروجی",
   "groups": {
     "financial": "گزارشات مالی",
     "financial_description": "گزارشات و صورت‌های اصلی حسابداری.",
@@ -68,6 +70,9 @@
     "net_profit": "سود خالص"
   },
   "columns": {
+    "no": "شماره",
+    "section": "بخش",
+    "account_name": "نام حساب",
     "ledger_name": "دفتر حساب",
     "total_debit": "بدهکار",
     "total_credit": "بستانکار",
@@ -185,6 +190,9 @@
       "delete": "حذف"
     },
     "columns": {
+      "no": "شماره",
+      "section": "بخش",
+      "account_name": "نام حساب",
       "user": "کاربر",
       "role": "نقش",
       "total_activities": "فعالیت",

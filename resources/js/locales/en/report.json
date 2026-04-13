@@ -1,4 +1,4 @@
-﻿{
+{
   "title": "Reports",
   "subtitle": "Operational, inventory, and financial reports for posted transactions.",
   "catalog_label": "Report catalog",
@@ -6,6 +6,8 @@
   "back_to_reports": "Back to reports",
   "export_excel": "Export Excel",
   "snapshot_note": "This report is based on the current stock snapshot.",
+  "company_name": "Company name",
+  "exported_on": "Exported on",
   "groups": {
     "financial": "Financial Reports",
     "financial_description": "Core accounting reports and statements.",
@@ -68,6 +70,9 @@
     "net_profit": "Net profit"
   },
   "columns": {
+    "no": "No.",
+    "section": "Section",
+    "account_name": "Account Name",
     "ledger_name": "Ledger",
     "total_debit": "Debit",
     "total_credit": "Credit",
@@ -185,6 +190,9 @@
       "delete": "Deletes"
     },
     "columns": {
+    "no": "No.",
+    "section": "Section",
+    "account_name": "Account Name",
       "user": "User",
       "role": "Role",
       "total_activities": "Activities",
@@ -220,3 +228,5 @@
     }
   }
 }
+
+

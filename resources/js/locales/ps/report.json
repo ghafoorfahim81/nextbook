@@ -6,6 +6,8 @@
   "back_to_reports": "راپورونو ته بېرته",
   "export_excel": "اکسل ته صادرول",
   "snapshot_note": "دا راپور د موجوده سټاک د انځور پر بنسټ جوړ شوی دی.",
+  "company_name": "نام شرکت",
+  "exported_on": "تاریخ خروجی",
   "groups": {
     "financial": "مالي راپورونه",
     "financial_description": "د حسابدارۍ اصلي راپورونه او صورتونه.",
@@ -68,6 +70,9 @@
     "net_profit": "خالصه ګټه"
   },
   "columns": {
+    "no": "شماره",
+    "section": "بخش",
+    "account_name": "نام حساب",
     "ledger_name": "لېجر",
     "total_debit": "ډیبیټ",
     "total_credit": "کریډیټ",
@@ -185,6 +190,9 @@
       "delete": "حذف"
     },
     "columns": {
+      "no": "شماره",
+      "section": "بخش",
+      "account_name": "نام حساب",
       "user": "کاروونکی",
       "role": "رول",
       "total_activities": "فعالیت",

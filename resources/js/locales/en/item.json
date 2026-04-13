@@ -1,4 +1,4 @@
-﻿{
+{
     "item": "Item",
     "items": "Items",
     "cost": "Cost",
@@ -60,6 +60,8 @@
     "current_stock": "Current Stock",
     "in_records": "In Records",
     "out_records": "Out Records",
+    "export_in_records": "Export In Records",
+    "export_out_records": "Export Out Records",
     "search_item": "Search Item",
     "item_type": "Item Type",
     "sku": "Stock Keeping Unit",

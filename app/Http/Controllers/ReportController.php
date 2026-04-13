@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Services\ReportService;
+use App\Services\SpreadsheetExportService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ReportController extends Controller
 {
@@ -38,7 +39,10 @@ class ReportController extends Controller
         ]);
     }
 
-    public function export(Request $request): StreamedResponse
+    public function export(
+        Request $request,
+        SpreadsheetExportService $spreadsheetExportService,
+    ): BinaryFileResponse
     {
         $filters = $request->validate([
             'report' => ['nullable', 'string', Rule::in(ReportService::REPORT_KEYS)],
@@ -54,18 +58,6 @@ class ReportController extends Controller
 
         $export = $this->reportService->getExportData($request->user(), $filters);
 
-        return response()->streamDownload(function () use ($export) {
-            $handle = fopen('php://output', 'w');
-            fwrite($handle, "\xEF\xBB\xBF");
-            fputcsv($handle, $export['headings']);
-
-            foreach ($export['rows'] as $row) {
-                fputcsv($handle, collect($row)->only($export['headings'])->all());
-            }
-
-            fclose($handle);
-        }, $export['filename'], [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-        ]);
+        return $spreadsheetExportService->download($export);
     }
 }
