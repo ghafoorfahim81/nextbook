@@ -34,3 +34,4 @@ Route::middleware([
 
 
 Route::apiResource('purchase-payments', App\Http\Controllers\Purchase\PurchasePaymentController::class);
+Route::apiResource('sale-receives', App\Http\Controllers\Sale\SaleReceiveController::class);

@@ -7,6 +7,7 @@ use App\Http\Requests\Sale\SaleStoreRequest;
 use App\Http\Requests\Sale\SaleUpdateRequest;
 use App\Http\Resources\Sale\SaleResource;
 use App\Models\Sale\Sale;
+use App\Services\BillAllocationService;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Warehouse;
@@ -248,6 +249,8 @@ class SaleController extends Controller
                 ],
                 lines: $lines
             );
+
+            app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
 
             return $sale;
         });
@@ -623,6 +626,8 @@ class SaleController extends Controller
                 lines: $lines
             );
 
+            app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
+
             return $sale;
         });
 
@@ -868,6 +873,16 @@ class SaleController extends Controller
     {
         $sale->update(['status' => $request->status]);
         return back()->with('success', __('general.sale_status_updated_successfully'));
+    }
+
+    public function openBills(Request $request, BillAllocationService $billAllocationService)
+    {
+        $ledgerId = (string) $request->query('ledger_id', '');
+        $excludeReceiptId = (string) $request->query('exclude_receipt_id', '');
+
+        return response()->json([
+            'data' => $ledgerId ? $billAllocationService->openSalesForCustomer($ledgerId, $excludeReceiptId ?: null) : [],
+        ]);
     }
 
     public function print(Request $request, Sale $sale)

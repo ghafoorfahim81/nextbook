@@ -6,6 +6,7 @@ use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Enums\SalePurchaseType;
+use App\Enums\PaymentStatus;
 
 class SaleResource extends JsonResource
 {
@@ -66,6 +67,12 @@ class SaleResource extends JsonResource
             'old_balance_nature' => $oldNetBalance >= 0 ? 'dr' : 'cr',
             'description' => $this->description,
             'status' => $this->status,
+            'payment_status' => $this->payment_status instanceof PaymentStatus
+                ? $this->payment_status->value
+                : $this->payment_status,
+            'payment_status_label' => $this->payment_status instanceof PaymentStatus
+                ? $this->payment_status->getLabel()
+                : (PaymentStatus::tryFrom((string) $this->payment_status)?->getLabel() ?? $this->payment_status),
             'transaction_total' => $this->transaction?->amount,
             'transaction' => new TransactionResource($this->whenLoaded('transaction', $this->transaction)),
             'warehouse' => $this->warehouse(),

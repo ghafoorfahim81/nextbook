@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Payment\PaymentStoreRequest;
 use App\Http\Requests\Payment\PaymentUpdateRequest;
 use App\Http\Resources\Payment\PaymentResource;
+use App\Enums\PaymentMode;
 use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
 use App\Models\Payment\Payment;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
+use App\Services\BillAllocationService;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,7 +37,7 @@ class PaymentController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $payments = Payment::with(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy'])
+        $payments = Payment::with(['ledger', 'transaction.currency', 'transaction.lines.account', 'purchasePayments.purchase', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection)
@@ -67,6 +69,10 @@ class PaymentController extends Controller
         $latest = Payment::max('number') > 0 ? Payment::max('number') + 1 : 1;
         return inertia('Payments/Create', [
             'latestNumber' => $latest,
+            'paymentModes' => collect(PaymentMode::cases())->map(fn (PaymentMode $mode) => [
+                'id' => $mode->value,
+                'name' => $mode->getLabel(),
+            ])->values(),
         ]);
     }
 
@@ -89,10 +95,12 @@ class PaymentController extends Controller
             $rate = (float) $validated['rate'];
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $bankAccountId = $validated['bank_account_id'];
+            $paymentMode = $validated['payment_mode'] ?? PaymentMode::OnAccount->value;
             $payment = Payment::create([
                 'number' => $validated['number'],
                 'date' => $date,
                 'ledger_id' => $ledger->id,
+                'payment_mode' => $paymentMode,
                 'cheque_no' => $validated['cheque_no'] ?? null,
                 'narration' => $validated['narration'] ?? null,
             ]);
@@ -127,6 +135,8 @@ class PaymentController extends Controller
                 ],
             );
 
+            app(BillAllocationService::class)->syncPaymentAllocations($payment, $amount, $validated['allocations'] ?? []);
+
             return $payment;
 
         });
@@ -148,7 +158,7 @@ class PaymentController extends Controller
 
     public function show(Request $request, Payment $payment)
     {
-        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy']);
+        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'purchasePayments.purchase', 'createdBy', 'updatedBy']);
         return response()->json([
             'data' => new PaymentResource($payment),
         ]);
@@ -163,6 +173,7 @@ class PaymentController extends Controller
             'transaction.currency',
             'transaction.lines.account',
             'transaction.lines.ledger',
+            'purchasePayments.purchase',
             'createdBy',
             'updatedBy',
         ]);
@@ -176,9 +187,13 @@ class PaymentController extends Controller
 
     public function edit(Request $request, Payment $payment)
     {
-        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy']);
+        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'purchasePayments.purchase', 'createdBy', 'updatedBy']);
         return inertia('Payments/Edit', [
             'data' => new PaymentResource($payment),
+            'paymentModes' => collect(PaymentMode::cases())->map(fn (PaymentMode $mode) => [
+                'id' => $mode->value,
+                'name' => $mode->getLabel(),
+            ])->values(),
         ]);
     }
 
@@ -188,10 +203,15 @@ class PaymentController extends Controller
             $validated = $request->validated();
 
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $payment->date;
+            $currentPaymentMode = $payment->payment_mode instanceof PaymentMode
+                ? $payment->payment_mode->value
+                : $payment->payment_mode;
+            $paymentMode = $validated['payment_mode'] ?? $currentPaymentMode ?? PaymentMode::OnAccount->value;
             $payment->update([
                 'number' => $validated['number'] ?? $payment->number,
                 'date' => $date,
                 'ledger_id' => $validated['ledger_id'] ?? $payment->ledger_id,
+                'payment_mode' => $paymentMode,
                 'cheque_no' => $validated['cheque_no'] ?? $payment->cheque_no,
                 'narration' => $validated['narration'] ?? $payment->narration,
             ]);
@@ -207,7 +227,7 @@ class PaymentController extends Controller
             TransactionLine::where('transaction_id', $payment->transaction->id)->forceDelete();
             Transaction::where('id', $payment->transaction->id)->forceDelete();
             $transactionService = app(TransactionService::class);
-            $transaction = $transactionService->post(
+            $transactionService->post(
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -229,6 +249,8 @@ class PaymentController extends Controller
                     ],
                 ],
             );
+
+            app(BillAllocationService::class)->syncPaymentAllocations($payment, $amount, $validated['allocations'] ?? []);
         });
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
@@ -245,7 +267,7 @@ class PaymentController extends Controller
     public function destroy(Request $request, Payment $payment)
     {
         DB::transaction(function () use ($payment) {
-
+            $allocatedPurchaseIds = $payment->purchasePayments()->pluck('purchase_id')->all();
             $transaction = $payment->transaction()->first();
 
             if ($transaction) {
@@ -253,7 +275,10 @@ class PaymentController extends Controller
                 $transaction->delete();
             }
 
+            $payment->purchasePayments()->delete();
             $payment->delete();
+
+            app(BillAllocationService::class)->recalculatePurchasePaymentStatuses($allocatedPurchaseIds);
         });
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
@@ -272,6 +297,8 @@ class PaymentController extends Controller
             }
 
             $payment->restore();
+            $payment->purchasePayments()->withTrashed()->restore();
+            app(BillAllocationService::class)->recalculatePurchasePaymentStatuses($payment->purchasePayments()->pluck('purchase_id')->all());
         });
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));

@@ -7,6 +7,7 @@ use App\Http\Requests\Purchase\PurchaseStoreRequest;
 use App\Http\Requests\Purchase\PurchaseUpdateRequest;
 use App\Http\Resources\Purchase\PurchaseResource;
 use App\Models\Purchase\Purchase;
+use App\Services\BillAllocationService;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Warehouse;
@@ -203,6 +204,8 @@ class PurchaseController extends Controller
                 ],
                 lines: $lines
             );
+
+            app(BillAllocationService::class)->recalculatePurchasePaymentStatuses([$purchase->id]);
 
 
             // Create accounting transactions
@@ -413,6 +416,8 @@ class PurchaseController extends Controller
                 lines: $lines
             );
 
+            app(BillAllocationService::class)->recalculatePurchasePaymentStatuses([$purchase->id]);
+
             return $purchase;
         });
 
@@ -619,5 +624,15 @@ class PurchaseController extends Controller
     {
         $purchase->update(['status' => $request->status]);
         return back()->with('success', __('general.purchase_status_updated_successfully'));
+    }
+
+    public function openBills(Request $request, BillAllocationService $billAllocationService)
+    {
+        $ledgerId = (string) $request->query('ledger_id', '');
+        $excludePaymentId = (string) $request->query('exclude_payment_id', '');
+
+        return response()->json([
+            'data' => $ledgerId ? $billAllocationService->openPurchasesForSupplier($ledgerId, $excludePaymentId ?: null) : [],
+        ]);
     }
 }

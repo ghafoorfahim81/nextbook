@@ -2,6 +2,7 @@
 
 namespace App\Models\Payment;
 
+use App\Enums\PaymentMode;
 use App\Models\Ledger\Ledger;
 use App\Models\Transaction\Transaction;
 use App\Traits\HasBranch;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\BranchSpecific;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -26,6 +28,7 @@ class Payment extends Model
         'number',
         'date',
         'ledger_id',
+        'payment_mode',
         'cheque_no',
         'narration',
         'branch_id',
@@ -36,6 +39,7 @@ class Payment extends Model
     protected $casts = [
         'id' => 'string',
         'ledger_id' => 'string',
+        'payment_mode' => PaymentMode::class,
         'date' => 'date',
         'created_by' => 'string',
         'updated_by' => 'string',
@@ -70,6 +74,11 @@ class Payment extends Model
         return $this->hasOne(Transaction::class, 'reference_id');
     }
 
+    public function purchasePayments(): HasMany
+    {
+        return $this->hasMany(\App\Models\Purchase\PurchasePayment::class);
+    }
+
     protected function getRelationships(): array
     {
         return [
@@ -80,5 +89,4 @@ class Payment extends Model
         ];
     }
 }
-
 

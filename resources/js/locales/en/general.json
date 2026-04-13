@@ -200,5 +200,17 @@
   "description": "Description",
   "sale_type": "Sale Type",
   "payable": "Payable",
-  "receivable": "Receivable"
+  "receivable": "Receivable",
+  "payment_mode": "Payment Mode",
+  "payment_status": "Payment Status",
+  "allocate_bills": "Allocate bills",
+  "bills_selected": "bills selected",
+  "allocated_amount": "Allocated Amount",
+  "remaining_amount": "Remaining Amount",
+  "allocate_amount": "Allocate Amount",
+  "allocation": "Allocation",
+  "auto_distribute": "Auto distribute",
+  "select_all_bills": "Select all bills",
+  "bill_allocations": "Bill Allocations",
+  "bill": "Bill"
 }

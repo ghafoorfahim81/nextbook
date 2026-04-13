@@ -94,6 +94,15 @@ return [
         'fifo' => 'اولین ورود اولین خروج',
         'lifo' => 'آخرین ورود اولین خروج',
     ],
+    'payment_mode' => [
+        'bill_by_bill' => 'بر اساس فاکتور',
+        'on_account' => 'بر اساس حساب',
+    ],
+    'payment_status' => [
+        'paid' => 'پرداخت شده',
+        'unpaid' => 'باقی',
+        'partially_paid' => 'بخشی پرداخت شده',
+    ],
 ];
 
 

@@ -1,14 +1,14 @@
 <?php
 
-namespace Database\Factories\Purchase;
+namespace Database\Factories\Sale;
 
-use App\Models\Payment\Payment;
-use App\Models\Purchase\Purchase;
 use App\Models\Administration\Branch;
+use App\Models\Receipt\Receipt;
+use App\Models\Sale\Sale;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-class PurchasePaymentFactory extends Factory
+class SaleReceiveFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -16,8 +16,8 @@ class PurchasePaymentFactory extends Factory
     public function definition(): array
     {
         return [
-            'purchase_id' => Purchase::factory(),
-            'payment_id' => Payment::factory(),
+            'sale_id' => Sale::factory(),
+            'receipt_id' => Receipt::factory(),
             'amount' => fake()->randomFloat(2, 0, 9999999999),
             'branch_id' => Branch::factory(),
             'created_by' => User::factory()->create()->id,

@@ -203,6 +203,18 @@
   "receivable": "دریافتی",
   "paid_total": "مبلغ پرداخت شده",
   "payable_amount": "مبلغ قابل پرداخت",
-  "receivable_amount": "مبلغ قابل دریافت"
+  "receivable_amount": "مبلغ قابل دریافت",
+  "payment_mode": "روش پرداخت",
+  "payment_status": "وضعیت پرداخت",
+  "allocate_bills": "تخصیص فاکتورها",
+  "bills_selected": "فاکتورهای انتخاب شده",
+  "allocated_amount": "مبلغ تخصیص داده شده",
+  "remaining_amount": "مانده مبلغ",
+  "allocate_amount": "مبلغ تخصیص",
+  "allocation": "تخصیص",
+  "auto_distribute": "تخصیص خودکار",
+  "select_all_bills": "انتخاب همه فاکتورها",
+  "bill_allocations": "تخصیص فاکتورها",
+  "bill": "فاکتور"
 }
 

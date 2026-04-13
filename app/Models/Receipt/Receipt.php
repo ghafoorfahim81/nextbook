@@ -2,6 +2,7 @@
 
 namespace App\Models\Receipt;
 
+use App\Enums\PaymentMode;
 use App\Models\Ledger\Ledger;
 use App\Models\Transaction\Transaction;
 use App\Traits\HasBranch;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\BranchSpecific;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -26,6 +28,7 @@ class Receipt extends Model
         'number',
         'date',
         'ledger_id', 
+        'payment_mode',
         'cheque_no',
         'narration',
         'currency_id',
@@ -39,6 +42,7 @@ class Receipt extends Model
     protected $casts = [
         'id' => 'string',
         'ledger_id' => 'string', 
+        'payment_mode' => PaymentMode::class,
         'currency_id' => 'string',
         'rate' => 'float',
         'amount' => 'float',
@@ -76,6 +80,11 @@ class Receipt extends Model
         return $this->hasOne(Transaction::class, 'reference_id');
     }
 
+    public function saleReceives(): HasMany
+    {
+        return $this->hasMany(\App\Models\Sale\SaleReceive::class);
+    }
+
 
     protected function getRelationships(): array
     {
@@ -87,5 +96,4 @@ class Receipt extends Model
         ];
     }
 }
-
 

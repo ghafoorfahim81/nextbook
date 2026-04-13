@@ -96,6 +96,13 @@ function closeDialog() {
                         </div>
                         <div class="space-y-1">
                             <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                                <FileText class="w-3 h-3" />
+                                {{ t('general.payment_mode') }}
+                            </div>
+                            <div class="text-sm font-medium text-foreground">{{ payment.payment_mode_label || payment.payment_mode || '-' }}</div>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2 text-xs text-muted-foreground">
                                 <User class="w-3 h-3" />
                                 {{ t('general.created_by') }}
                             </div>
@@ -141,6 +148,28 @@ function closeDialog() {
                         <div v-else class="text-sm text-muted-foreground">-</div>
                     </div>
                 </div>
+
+                <div v-if="payment.purchase_payments?.length" class="border border-border rounded-lg p-4 bg-card">
+                    <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.bill_allocations') || 'Bill allocations' }}</div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-muted/40">
+                                <tr>
+                                    <th class="px-3 py-2 text-left">{{ t('general.bill') || 'Bill' }}</th>
+                                    <th class="px-3 py-2 text-right">{{ t('general.amount') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="allocation in payment.purchase_payments" :key="allocation.id" class="border-t">
+                                    <td class="px-3 py-2">
+                                        #{{ allocation.purchase?.number || allocation.purchase_id }}
+                                    </td>
+                                    <td class="px-3 py-2 text-right tabular-nums">{{ allocation.amount }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <DialogFooter>
@@ -151,5 +180,4 @@ function closeDialog() {
         </DialogContent>
     </Dialog>
 </template>
-
 
