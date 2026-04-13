@@ -17,6 +17,8 @@ class PurchasePaymentResource extends JsonResource
             'purchase_id' => $this->purchase_id,
             'payment_id' => $this->payment_id,
             'amount' => $this->amount,
+            'purchase' => $this->whenLoaded('purchase'),
+            'payment' => $this->whenLoaded('payment'),
             'created_by' => $this->created_by,
             'updated_by' => $this->updated_by,
             'deleted_by' => $this->deleted_by,

@@ -39,6 +39,7 @@ const printItem = (id) => {
 const columns = computed(() => ([
     { key: 'number', label: t('general.number'), sortable: true },
     { key: 'ledger_name', label: 'Ledger' },
+    { key: 'payment_mode_label', label: t('general.payment_mode') },
     { key: 'amount', label: t('general.amount'), sortable: true },
     { key: 'currency_code', label: t('admin.currency.currency') },
     { key: 'date', label: t('general.date'), sortable: true },

@@ -2,11 +2,13 @@
 
 namespace App\Http\Resources\Payment;
 
+use App\Enums\PaymentMode;
 use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\UserManagement\UserSimpleResource;
+use App\Http\Resources\Purchase\PurchasePaymentResource;
 
 class PaymentResource extends JsonResource
 {
@@ -18,6 +20,12 @@ class PaymentResource extends JsonResource
             'number' => $this->number,
             'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
             'ledger_id' => $this->ledger_id,
+            'payment_mode' => $this->payment_mode instanceof PaymentMode
+                ? $this->payment_mode->value
+                : $this->payment_mode,
+            'payment_mode_label' => $this->payment_mode instanceof PaymentMode
+                ? $this->payment_mode->getLabel()
+                : (PaymentMode::tryFrom((string) $this->payment_mode)?->getLabel() ?? $this->payment_mode),
             'ledger' => $this->whenLoaded('ledger'),
             'ledger_name' => $this->ledger?->name,
             // derive from bank/payment transactions
@@ -32,9 +40,9 @@ class PaymentResource extends JsonResource
             'description' => $this->narration,
             'transaction_id' => $this->transaction_id,
             'transaction' => new TransactionResource($this->transaction),
+            'purchase_payments' => PurchasePaymentResource::collection($this->whenLoaded('purchasePayments')),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
         ];
     }
 }
-

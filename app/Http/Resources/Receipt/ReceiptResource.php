@@ -2,11 +2,13 @@
 
 namespace App\Http\Resources\Receipt;
 
+use App\Enums\PaymentMode;
 use App\Http\Resources\Transaction\TransactionResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\UserManagement\UserSimpleResource;
+use App\Http\Resources\Sale\SaleReceiveResource;
 class ReceiptResource extends JsonResource
 {
     /**
@@ -20,6 +22,12 @@ class ReceiptResource extends JsonResource
             'number' => $this->number,
             'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
             'ledger_id' => $this->ledger_id,
+            'payment_mode' => $this->payment_mode instanceof PaymentMode
+                ? $this->payment_mode->value
+                : $this->payment_mode,
+            'payment_mode_label' => $this->payment_mode instanceof PaymentMode
+                ? $this->payment_mode->getLabel()
+                : (PaymentMode::tryFrom((string) $this->payment_mode)?->getLabel() ?? $this->payment_mode),
             'ledger' => $this->whenLoaded('ledger'),
             'ledger_name' => $this->ledger?->name,
             'amount' => $this->transaction?->lines[0]->debit>0?$this->transaction?->lines[0]->debit: $this->transaction?->lines[0]->credit,
@@ -32,10 +40,10 @@ class ReceiptResource extends JsonResource
             'bank_account_id' => $this->transaction?->lines[0]->account_id,
             'bank_account' => new AccountResource($this->transaction?->lines[0]->account),
             'transaction' => new TransactionResource($this->transaction),
+            'sale_receives' => SaleReceiveResource::collection($this->whenLoaded('saleReceives')),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
         ];
     }
 }
-
 

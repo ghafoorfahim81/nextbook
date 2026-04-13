@@ -104,12 +104,14 @@ Route::middleware([
     Route::get('/item-barcode-print', BarcodePrintController::class)
         ->name('item.barcode.print');
 
+    Route::get('/purchases/open-bills', [\App\Http\Controllers\Purchase\PurchaseController::class, 'openBills'])->name('purchases.open-bills');
     Route::resource('/purchases', \App\Http\Controllers\Purchase\PurchaseController::class);
     Route::patch('/update-purchase-status/{purchase}/status', [\App\Http\Controllers\Purchase\PurchaseController::class, 'updatePurchaseStatus'])->name('purchases.update-purchase-status');
     Route::patch('/purchases/{purchase}/restore', [\App\Http\Controllers\Purchase\PurchaseController::class, 'restore'])->name('purchases.restore')->withTrashed();
     //    Route::post('item_entry/Store', ['as' => 'item_entry.store', 'uses' => 'FastEntry\ItemEntryController@store'])->middleware(['dbconfig','auth:sanctum']);
     Route::get('/purchase-item-change', [NextController::class, 'purchaseItemChange'])->name('purchase.item.change');
 
+    Route::get('/sales/open-bills', [\App\Http\Controllers\Sale\SaleController::class, 'openBills'])->name('sales.open-bills');
     Route::resource('/sales', \App\Http\Controllers\Sale\SaleController::class);
     Route::patch('/update-sale-status/{sale}/status', [\App\Http\Controllers\Sale\SaleController::class, 'updateSaleStatus'])->name('sales.update-sale-status');
     Route::patch('/sales/{sale}/restore', [\App\Http\Controllers\Sale\SaleController::class, 'restore'])->name('sales.restore')->withTrashed();

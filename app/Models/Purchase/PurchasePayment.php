@@ -26,6 +26,7 @@ class PurchasePayment extends Model
     protected $fillable = [
         'purchase_id',
         'payment_id',
+        'amount',
         'branch_id',
         'created_by',
         'updated_by',
@@ -42,6 +43,7 @@ class PurchasePayment extends Model
         return [
             'purchase_id' => 'string',
             'payment_id' => 'string',
+            'amount' => 'float',
             'branch_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',

@@ -3,9 +3,11 @@
 namespace App\Models\Purchase;
 
 use App\Enums\SalePurchaseType;
+use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
@@ -37,6 +39,7 @@ class Purchase extends Model
         'due_date',
         'description',
         'status',
+        'payment_status',
         'created_by',
         'updated_by',
     ];
@@ -53,8 +56,9 @@ class Purchase extends Model
             'date' => 'date',
             'discount' => 'float',
             'bank_account_id' => 'string',
-            'type' => SalePurchaseType::class,
-            'created_by' => 'string',
+        'type' => SalePurchaseType::class,
+        'payment_status' => PaymentStatus::class,
+        'created_by' => 'string',
             'updated_by' => 'string',
             'due_date' => 'date',
         ];
@@ -97,6 +101,11 @@ class Purchase extends Model
     public function items()
     {
         return $this->hasMany(\App\Models\Purchase\PurchaseItem::class);
+    }
+
+    public function purchasePayments(): HasMany
+    {
+        return $this->hasMany(PurchasePayment::class);
     }
 
     public function getDependencyMessage(): string

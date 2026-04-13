@@ -2,9 +2,11 @@
 
 namespace App\Models\Sale;
 
+use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
@@ -36,6 +38,7 @@ class Sale extends Model
         'due_date',
         'description',
         'status',
+        'payment_status',
         'created_by',
         'updated_by',
     ];
@@ -53,8 +56,9 @@ class Sale extends Model
             'discount' => 'float',
             'created_by' => 'string',
             'updated_by' => 'string',
-            'due_date' => 'date',
-        ];
+        'due_date' => 'date',
+        'payment_status' => PaymentStatus::class,
+    ];
     }
 
     protected static function searchableColumns(): array
@@ -93,6 +97,11 @@ class Sale extends Model
     public function items()
     {
         return $this->hasMany(\App\Models\Sale\SaleItem::class);
+    }
+
+    public function saleReceives(): HasMany
+    {
+        return $this->hasMany(SaleReceive::class);
     }
 
     public function stockOuts()

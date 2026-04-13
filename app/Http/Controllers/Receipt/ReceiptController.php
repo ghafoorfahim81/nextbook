@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Receipt\ReceiptStoreRequest;
 use App\Http\Requests\Receipt\ReceiptUpdateRequest;
 use App\Http\Resources\Receipt\ReceiptResource;
+use App\Enums\PaymentMode;
 use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
 use App\Models\Receipt\Receipt;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
+use App\Services\BillAllocationService;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -35,7 +37,7 @@ class ReceiptController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $receipts = Receipt::with(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy'])
+        $receipts = Receipt::with(['ledger', 'transaction.currency', 'transaction.lines.account', 'saleReceives.sale', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection)
@@ -68,6 +70,10 @@ class ReceiptController extends Controller
         $latest = Receipt::max('number') > 0 ? Receipt::max('number') + 1 : 1;
         return inertia('Receipts/Create', [
             'latestNumber' => $latest,
+            'paymentModes' => collect(PaymentMode::cases())->map(fn (PaymentMode $mode) => [
+                'id' => $mode->value,
+                'name' => $mode->getLabel(),
+            ])->values(),
         ]);
     }
 
@@ -82,10 +88,12 @@ class ReceiptController extends Controller
             $rate = (float) $validated['rate'];
             $bankAccountId = $validated['bank_account_id'];
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+            $paymentMode = $validated['payment_mode'] ?? PaymentMode::OnAccount->value;
             $receipt = Receipt::create([
                 'number' => $validated['number'],
                 'date' => $date,
                 'ledger_id' => $ledger->id,
+                'payment_mode' => $paymentMode,
                 'cheque_no' => $validated['cheque_no'] ?? null,
                 'narration' => $validated['narration'] ?? null,
             ]);
@@ -119,6 +127,8 @@ class ReceiptController extends Controller
                 ],
             );
 
+            app(BillAllocationService::class)->syncReceiptAllocations($receipt, $amount, $validated['allocations'] ?? []);
+
             return $receipt;
         });
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
@@ -138,7 +148,7 @@ class ReceiptController extends Controller
 
     public function show(Request $request, Receipt $receipt)
     {
-        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy']);
+        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'saleReceives.sale', 'createdBy', 'updatedBy']);
         return response()->json([
             'data' => new ReceiptResource($receipt),
         ]);
@@ -153,6 +163,7 @@ class ReceiptController extends Controller
             'transaction.currency',
             'transaction.lines.account',
             'transaction.lines.ledger',
+            'saleReceives.sale',
             'createdBy',
             'updatedBy',
         ]);
@@ -167,9 +178,13 @@ class ReceiptController extends Controller
 
     public function edit(Request $request, Receipt $receipt)
     {
-        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'createdBy', 'updatedBy']);
+        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'saleReceives.sale', 'createdBy', 'updatedBy']);
         return inertia('Receipts/Edit', [
             'data' => new ReceiptResource($receipt),
+            'paymentModes' => collect(PaymentMode::cases())->map(fn (PaymentMode $mode) => [
+                'id' => $mode->value,
+                'name' => $mode->getLabel(),
+            ])->values(),
         ]);
     }
 
@@ -178,10 +193,15 @@ class ReceiptController extends Controller
         DB::transaction(function () use ($request, $receipt) {
             $validated = $request->validated();
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $receipt->date;
+            $currentPaymentMode = $receipt->payment_mode instanceof PaymentMode
+                ? $receipt->payment_mode->value
+                : $receipt->payment_mode;
+            $paymentMode = $validated['payment_mode'] ?? $currentPaymentMode ?? PaymentMode::OnAccount->value;
             $receipt->update([
                 'number' => $validated['number'],
                 'date' => $date,
                 'ledger_id' => $validated['ledger_id'],
+                'payment_mode' => $paymentMode,
                 'cheque_no' => $validated['cheque_no'] ?? null,
                 'narration' => $validated['narration'] ?? null,
             ]);
@@ -197,7 +217,7 @@ class ReceiptController extends Controller
             TransactionLine::where('transaction_id', $receipt->transaction->id)->forceDelete();
              Transaction::where('id', $receipt->transaction->id)->forceDelete();
              $transactionService = app(TransactionService::class);
-             $transaction = $transactionService->post(
+            $transactionService->post(
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -219,7 +239,8 @@ class ReceiptController extends Controller
                     ],
                 ],
             );
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
+            app(BillAllocationService::class)->syncReceiptAllocations($receipt, $amount, $validated['allocations'] ?? []);
+            Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         });
 
         $redirect = redirect()->route('receipts.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.receipt')]));
@@ -234,6 +255,7 @@ class ReceiptController extends Controller
     public function destroy(Request $request, Receipt $receipt)
     {
         DB::transaction(function () use ($receipt) {
+            $allocatedSaleIds = $receipt->saleReceives()->pluck('sale_id')->all();
             // Soft delete linked transactions then the receipt
                 $transaction = $receipt->transaction()->first();
 
@@ -242,7 +264,10 @@ class ReceiptController extends Controller
                     $transaction->delete();
                 }
 
+                $receipt->saleReceives()->delete();
                 $receipt->delete();
+
+                app(BillAllocationService::class)->recalculateSalePaymentStatuses($allocatedSaleIds);
         });
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
@@ -259,6 +284,8 @@ class ReceiptController extends Controller
             }
 
             $receipt->restore();
+            $receipt->saleReceives()->withTrashed()->restore();
+            app(BillAllocationService::class)->recalculateSalePaymentStatuses($receipt->saleReceives()->pluck('sale_id')->all());
         });
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 

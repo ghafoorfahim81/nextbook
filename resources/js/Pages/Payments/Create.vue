@@ -1,12 +1,14 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import { useForm, usePage } from '@inertiajs/vue3'
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
+import axios from 'axios'
 import { useLazyProps } from '@/composables/useLazyProps'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
+import BillAllocationDialog from '@/Components/next/BillAllocationDialog.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n'
@@ -17,14 +19,20 @@ const page = usePage()
 const ledgers = computed(() => page.props.ledgers?.data || [])
 const accounts = computed(() => page.props.accounts?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
+const paymentModes = computed(() => page.props.paymentModes || [])
 
 useLazyProps(page.props, ['ledgers', 'accounts'])
+const billLoading = ref(false)
+const showBillDialog = ref(false)
+const billOptions = ref([])
+const initialized = ref(false)
 
 const form = useForm({
   number: page.props.latestNumber ?? '',
   date: '',
   ledger_id: '',
   selected_ledger: null,
+  payment_mode: 'on_account',
   amount: '',
   bank_account_id: '',
   selected_bank_account: null,
@@ -33,6 +41,7 @@ const form = useForm({
   rate: '',
   cheque_no: '',
   narration: '',
+  allocations: [],
 })
 
 const submitAction = ref(null)
@@ -72,6 +81,52 @@ function handleSelectChange(field, value) {
     if (chosen) form.rate = chosen.exchange_rate
   }
 }
+
+const loadBills = async () => {
+  if (!form.ledger_id) {
+    billOptions.value = []
+    return
+  }
+
+  billLoading.value = true
+  try {
+    const { data } = await axios.get('/purchases/open-bills', {
+      params: { ledger_id: form.ledger_id },
+    })
+    billOptions.value = data?.data || []
+  } finally {
+    billLoading.value = false
+  }
+}
+
+const openBillDialog = async () => {
+  if (form.payment_mode !== 'bill_by_bill' || !form.ledger_id) {
+    return
+  }
+
+  await loadBills()
+  showBillDialog.value = true
+}
+
+const handleBillAllocationsSave = (allocations) => {
+  form.allocations = allocations
+}
+
+watch([() => form.ledger_id, () => form.payment_mode], async ([ledgerId, paymentMode], [prevLedgerId, prevPaymentMode]) => {
+  if (!initialized.value) {
+    return
+  }
+
+  if (paymentMode !== 'bill_by_bill') {
+    form.allocations = []
+    showBillDialog.value = false
+    return
+  }
+
+  if (ledgerId && (ledgerId !== prevLedgerId || paymentMode !== prevPaymentMode)) {
+    await openBillDialog()
+  }
+})
 
 function oldBalanceText() {
   const s = form.selected_ledger?.statement
@@ -120,6 +175,10 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
       const latest = Number(form.number || 0)
       if (createAndNew) {
         form.reset('date', 'amount', 'cheque_no', 'narration')
+        form.payment_mode = 'on_account'
+        form.allocations = []
+        showBillDialog.value = false
+        billOptions.value = []
         form.number = String((isNaN(latest) ? 0 : latest) + 1)
       }
       if (createAndPrint) {
@@ -135,6 +194,10 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
     }
   })
 }
+
+onMounted(() => {
+  initialized.value = true
+})
 </script>
 
 <template>
@@ -176,6 +239,17 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
+          <NextSelect
+            :options="paymentModes"
+            v-model="form.payment_mode"
+            label-key="name"
+            value-key="id"
+            :reduce="mode => mode.id"
+            :floating-text="t('general.payment_mode')"
+            :searchable="false"
+            :clearable="false"
+            :error="form.errors?.payment_mode"
+          />
           <NextInput :placeholder="t('general.enter', { text: t('general.rate') })" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
           <NextInput :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
           <NextSelect
@@ -191,6 +265,19 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
             resource-type="accounts"
             :search-fields="['name', 'number', 'slug']"
           />
+          <div class="flex flex-col gap-2">
+            <button
+              v-if="form.payment_mode === 'bill_by_bill'"
+              type="button"
+              class="inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm font-medium"
+              @click="openBillDialog"
+            >
+              {{ t('general.allocate_bills') || 'Allocate bills' }}
+            </button>
+            <p v-if="form.allocations.length" class="text-xs text-muted-foreground">
+              {{ form.allocations.length }} {{ t('general.bills_selected') || 'bills selected' }}
+            </p>
+          </div>
           <NextInput :placeholder="t('general.enter', { text: t('general.cheque_no') })" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('general.cheque_no')" />
           <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="md:col-span-2">
@@ -219,6 +306,18 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
         @create-and-new="submitActionHandler('create_and_new')"
         @save-and-print="submitActionHandler('create_and_print')"
         @cancel="() => $inertia.visit('/payments')"
+      />
+      <BillAllocationDialog
+        :open="showBillDialog"
+        :title="t('general.allocate_bills') || 'Allocate bills'"
+        bill-label="Purchase"
+        :amount="Number(form.amount || 0)"
+        :bills="billOptions"
+        :loading="billLoading"
+        :allocations="form.allocations"
+        @update:open="showBillDialog = $event"
+        @update:allocations="(value) => form.allocations = value"
+        @save="handleBillAllocationsSave"
       />
     </form>
   </AppLayout>

@@ -2,6 +2,7 @@
 
 namespace Database\Factories\Administration;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use App\Models\Administration\Branch;
 
@@ -26,6 +27,8 @@ class BranchFactory extends Factory
             'remark' => fake()->optional()->sentence(),
             'location' => fake()->optional()->city(),
             'parent_id' => null,
+            'created_by' => User::factory()->create()->id,
+            'updated_by' => null,
         ];
     }
 }
