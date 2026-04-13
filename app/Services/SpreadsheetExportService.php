@@ -141,7 +141,9 @@ class SpreadsheetExportService
 
         foreach ($rows as $rowIndex => $row) {
             $sheetRowIndex = $firstDataRowIndex + $rowIndex;
-            $rowStyle = $rowIndex % 2 === 0 ? 4 : 5;
+            $rowStyle = $rowIndex % 2 === 0
+                ? ($rtl ? 6 : 4)
+                : ($rtl ? 7 : 5);
             $cells = [];
 
             foreach ($columns as $columnIndex => $column) {
@@ -162,10 +164,15 @@ class SpreadsheetExportService
                 $type = (string) ($column['type'] ?? 'text');
                 $align = (string) ($column['align'] ?? '');
                 $isNumeric = in_array($type, ['money', 'quantity', 'integer', 'number'], true) && is_numeric($value);
+                $cellStyle = $rowStyle;
+
+                if (! $rtl && ($align === 'right' || $isNumeric)) {
+                    $cellStyle += 2;
+                }
 
                 $cells[] = [
                     'value' => $isNumeric ? (float) $value : $value,
-                    'style' => $rowStyle + (($align === 'right' || $isNumeric) ? 2 : 0),
+                    'style' => $cellStyle,
                     'type' => $isNumeric ? 'number' : 'inlineStr',
                     'column_index' => $columnIndex + 1,
                 ];
@@ -176,9 +183,6 @@ class SpreadsheetExportService
 
         $rowCount = $firstDataRowIndex + count($rows) - 1;
         $dimension = 'A1:' . $lastColumn . max($rowCount, $headerRowIndex);
-        $autoFilter = $rows === []
-            ? ''
-            : '<autoFilter ref="' . $this->rangeRef(1, $headerRowIndex, count($columns), $rowCount) . '"/>';
         $mergeCells = sprintf(
             '<mergeCells count="3">%s%s%s</mergeCells>',
             $this->mergeCellRef('A1', $lastColumn . '1'),
@@ -199,9 +203,8 @@ class SpreadsheetExportService
             . '<dimension ref="' . $dimension . '"/>'
             . $sheetView
             . '<sheetFormatPr defaultRowHeight="20"/>'
-            . '<cols>' . $this->columnWidthsXml($columns) . '</cols>'
+            . '<cols>' . $this->columnWidthsXml($columns, $rows) . '</cols>'
             . '<sheetData>' . implode('', $rowsXml) . '</sheetData>'
-            . $autoFilter
             . $mergeCells
             . '<pageMargins left="0.5" right="0.5" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>'
             . '</worksheet>';
@@ -233,27 +236,93 @@ class SpreadsheetExportService
         return $xml;
     }
 
-    protected function columnWidthsXml(array $columns): string
+    protected function columnWidthsXml(array $columns, array $rows = []): string
     {
         $widths = [];
+        $rowCount = max(1, count($rows));
 
         foreach ($columns as $index => $column) {
             $key = (string) ($column['key'] ?? '');
             $label = (string) ($column['label'] ?? $key);
-            $baseWidth = max(8, min(40, mb_strlen($label) + 2));
+            $baseWidth = $this->estimateDisplayWidth($label);
+            $configuredWidth = $column['width'] ?? null;
+            $configuredMinWidth = $column['min_width'] ?? null;
+
+            if (is_numeric($configuredWidth)) {
+                $baseWidth = max($baseWidth, (float) $configuredWidth);
+            }
 
             if ($key === '__row_number') {
-                $baseWidth = 8;
+                $baseWidth = max($baseWidth, $this->estimateDisplayWidth((string) $rowCount), 6);
+            } else {
+                foreach ($rows as $row) {
+                    $value = data_get($row, $key);
+                    $baseWidth = max($baseWidth, $this->estimateDisplayWidth($this->stringifyCellValue($value)));
+                }
             }
 
             if (in_array((string) ($column['type'] ?? ''), ['money', 'quantity', 'integer', 'number'], true)) {
-                $baseWidth = max($baseWidth, 12);
+                $baseWidth = max($baseWidth, 11);
             }
 
+            $baseWidth += 4;
+
+            if (is_numeric($configuredMinWidth)) {
+                $baseWidth = max($baseWidth, (float) $configuredMinWidth);
+            }
+
+            $baseWidth = max(6, min(72, $baseWidth));
             $widths[] = '<col min="' . ($index + 1) . '" max="' . ($index + 1) . '" width="' . $baseWidth . '" customWidth="1"/>';
         }
 
         return implode('', $widths);
+    }
+
+    protected function stringifyCellValue(mixed $value): string
+    {
+        if ($value === null) {
+            return '';
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'True' : 'False';
+        }
+
+        if (is_array($value) || is_object($value)) {
+            return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '';
+        }
+
+        return trim((string) $value);
+    }
+
+    protected function estimateDisplayWidth(string $text): float
+    {
+        $text = trim($text);
+
+        if ($text === '') {
+            return 0.0;
+        }
+
+        $width = 0.0;
+        $characters = preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        foreach ($characters as $character) {
+            if (preg_match('/\s/u', $character)) {
+                $width += 0.5;
+            } elseif (preg_match('/[0-9]/u', $character)) {
+                $width += 0.9;
+            } elseif (preg_match('/[A-Za-z]/u', $character)) {
+                $width += 1.0;
+            } elseif (preg_match('/[\p{Arabic}\p{Hebrew}\p{Han}\p{Hiragana}\p{Katakana}\p{Hangul}]/u', $character)) {
+                $width += 1.35;
+            } elseif (preg_match('/[.,:;\/\\\\\-\(\)%]/u', $character)) {
+                $width += 0.7;
+            } else {
+                $width += 1.1;
+            }
+        }
+
+        return $width;
     }
 
     protected function stylesXml(): string
