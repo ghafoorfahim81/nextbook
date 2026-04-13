@@ -268,111 +268,111 @@ class ItemController extends Controller
             $validated['photo'] = $path;
         }
         DB::transaction(function () use ($validated, $item) {
-            $existingDraftOpenings = $item->openings()
-                ->where('status', StockStatus::DRAFT->value)
-                ->orderBy('created_at')
-                ->orderBy('id')
-                ->get()
-                ->keyBy('id');
+            // $existingDraftOpenings = $item->openings()
+            //     ->where('status', StockStatus::DRAFT->value)
+            //     ->orderBy('created_at')
+            //     ->orderBy('id')
+            //     ->get()
+            //     ->keyBy('id');
 
             // 1) Update item
             $item->update($validated);
 
             // 2) Handle openings
-            $openings = collect($validated['openings'] ?? []);
-            $transactionService = app(\App\Services\TransactionService::class);
-            $submittedOpeningIds = $openings
-                ->pluck('id')
-                ->filter()
-                ->values();
+            // $openings = collect($validated['openings'] ?? []);
+            // $transactionService = app(\App\Services\TransactionService::class);
+            // $submittedOpeningIds = $openings
+            //     ->pluck('id')
+            //     ->filter()
+            //     ->values();
 
-            $existingDraftOpenings
-                ->reject(fn (StockMovement $opening) => $submittedOpeningIds->contains($opening->id))
-                ->each(function (StockMovement $opening) {
-                    $this->deleteOpeningBalance($opening);
-                });
+            // $existingDraftOpenings
+            //     ->reject(fn (StockMovement $opening) => $submittedOpeningIds->contains($opening->id))
+            //     ->each(function (StockMovement $opening) {
+            //         $this->deleteOpeningBalance($opening);
+            //     });
 
-            $existingDraftOpenings->each(function (StockMovement $opening) {
-                $opening->forceDelete();
-            });
+            // $existingDraftOpenings->each(function (StockMovement $opening) {
+            //     $opening->forceDelete();
+            // });
 
-            $openings
-                ->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0 && $o['status'] == StockStatus::DRAFT->value)
-                ->each(function ($o) use ($item, $validated, $existingDraftOpenings) {
-                    $existingOpening = !empty($o['id']) ? $existingDraftOpenings->get($o['id']) : null;
-                    $balanceId = $existingOpening ? $this->resolveOpeningBalanceId($existingOpening) : null;
-                    $stockService = app(\App\Services\StockService::class);
-                    $branchId = auth()->user()->branch_id ?? app('active_branch_id');
+            // $openings
+            //     ->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0 && $o['status'] == StockStatus::DRAFT->value)
+            //     ->each(function ($o) use ($item, $validated, $existingDraftOpenings) {
+            //         $existingOpening = !empty($o['id']) ? $existingDraftOpenings->get($o['id']) : null;
+            //         $balanceId = $existingOpening ? $this->resolveOpeningBalanceId($existingOpening) : null;
+            //         $stockService = app(\App\Services\StockService::class);
+            //         $branchId = auth()->user()->branch_id ?? app('active_branch_id');
 
-                    $stock = $stockService->post([
-                        'item_id'         => $item->id,
-                        'movement_type'   => StockMovementType::IN->value,
-                        'unit_measure_id' => $validated['unit_measure_id'], // from item form
-                        'quantity'        => (float) $o['quantity'],
-                        'source'          => StockSourceType::OPENING->value,
-                        'unit_cost'       => (float) $o['unit_price'],
-                        'status'          => StockStatus::DRAFT->value,
-                        'batch'           => $o['batch'] ?? null,
-                        'date'            => Carbon::now()->toDateString(),
-                        'expire_date'     => $o['expire_date'] ?? null,
-                        'size_id'         => $validated['size_id'] ?? null,
-                        'warehouse_id'    => $o['warehouse_id'],
-                        'branch_id'       => $branchId,
-                        'balance_id'      => $balanceId,
-                        'replace_balance' => $balanceId !== null,
-                    ]);
+            //         $stock = $stockService->post([
+            //             'item_id'         => $item->id,
+            //             'movement_type'   => StockMovementType::IN->value,
+            //             'unit_measure_id' => $validated['unit_measure_id'], // from item form
+            //             'quantity'        => (float) $o['quantity'],
+            //             'source'          => StockSourceType::OPENING->value,
+            //             'unit_cost'       => (float) $o['unit_price'],
+            //             'status'          => StockStatus::DRAFT->value,
+            //             'batch'           => $o['batch'] ?? null,
+            //             'date'            => Carbon::now()->toDateString(),
+            //             'expire_date'     => $o['expire_date'] ?? null,
+            //             'size_id'         => $validated['size_id'] ?? null,
+            //             'warehouse_id'    => $o['warehouse_id'],
+            //             'branch_id'       => $branchId,
+            //             'balance_id'      => $balanceId,
+            //             'replace_balance' => $balanceId !== null,
+            //         ]);
 
-                });
+            //     });
 
                 // Delete opening stocks
-                $filteredOpenings = $openings->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0);
+                // $filteredOpenings = $openings->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0);
 
-                $openingTransaction = $item->openingTransaction()->first();
-                    if ($openingTransaction) {
-                        // Then safely delete the related transactions
-                        if ($openingTransaction->id) {
-                            TransactionLine::where('transaction_id', $openingTransaction->id)->forceDelete();
-                            Transaction::where('id', $openingTransaction->id)->forceDelete();
-                        }
-                    }
+                // $openingTransaction = $item->openingTransaction()->first();
+                //     if ($openingTransaction) {
+                //         // Then safely delete the related transactions
+                //         if ($openingTransaction->id) {
+                //             TransactionLine::where('transaction_id', $openingTransaction->id)->forceDelete();
+                //             Transaction::where('id', $openingTransaction->id)->forceDelete();
+                //         }
+                //     }
 
                 // Create opening transactions
-                if ($filteredOpenings->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0)->count() > 0) {
-                    $glAccounts = Cache::get('gl_accounts');
-                    $homeCurrency = Cache::get('home_currency');
-                    $itemType = $validated['item_type'];
-                    $openingBalanceAccount = $glAccounts['opening-balance-equity'];
-                    if ($itemType == ItemType::INVENTORY_MATERIALS->value) {
-                        $inventoryAccount = $glAccounts['inventory-stock'];
-                    }
-                    elseif ($itemType == ItemType::NON_INVENTORY_MATERIALS->value) {
-                        $inventoryAccount = $glAccounts['non-inventory-items'];
-                    }
-                    elseif ($itemType == ItemType::RAW_MATERIALS->value) {
-                        $inventoryAccount = $glAccounts['raw-materials'];
-                    }
-                    elseif ($itemType == ItemType::FINISHED_GOOD_ITEMS->value) {
-                        $inventoryAccount = $glAccounts['finished-goods'];
-                    }
-                    $transaction = $transactionService->post(
-                        header: [
-                          'currency_id' => $homeCurrency->id,
-                          'rate' => 1,
-                          'date' => Carbon::now()->toDateString(),
-                          'reference_type' => Item::class,
-                          'reference_id' => $item->id,
-                          'remark' => 'Opening balance for item ' . $item->name,
-                        ],
-                        lines: [
-                          ['account_id' => $inventoryAccount,   'debit' => $filteredOpenings->sum(function ($o) {
-                            return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
-                        }), 'credit' => 0],
-                          ['account_id' => $openingBalanceAccount, 'debit' => 0,    'credit' => $filteredOpenings->sum(function ($o) {
-                            return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
-                        })],
-                        ]
-                      );
-                }
+                // if ($filteredOpenings->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0)->count() > 0) {
+                //     $glAccounts = Cache::get('gl_accounts');
+                //     $homeCurrency = Cache::get('home_currency');
+                //     $itemType = $validated['item_type'];
+                //     $openingBalanceAccount = $glAccounts['opening-balance-equity'];
+                //     if ($itemType == ItemType::INVENTORY_MATERIALS->value) {
+                //         $inventoryAccount = $glAccounts['inventory-stock'];
+                //     }
+                //     elseif ($itemType == ItemType::NON_INVENTORY_MATERIALS->value) {
+                //         $inventoryAccount = $glAccounts['non-inventory-items'];
+                //     }
+                //     elseif ($itemType == ItemType::RAW_MATERIALS->value) {
+                //         $inventoryAccount = $glAccounts['raw-materials'];
+                //     }
+                //     elseif ($itemType == ItemType::FINISHED_GOOD_ITEMS->value) {
+                //         $inventoryAccount = $glAccounts['finished-goods'];
+                //     }
+                //     $transaction = $transactionService->post(
+                //         header: [
+                //           'currency_id' => $homeCurrency->id,
+                //           'rate' => 1,
+                //           'date' => Carbon::now()->toDateString(),
+                //           'reference_type' => Item::class,
+                //           'reference_id' => $item->id,
+                //           'remark' => 'Opening balance for item ' . $item->name,
+                //         ],
+                //         lines: [
+                //           ['account_id' => $inventoryAccount,   'debit' => $filteredOpenings->sum(function ($o) {
+                //             return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
+                //         }), 'credit' => 0],
+                //           ['account_id' => $openingBalanceAccount, 'debit' => 0,    'credit' => $filteredOpenings->sum(function ($o) {
+                //             return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
+                //         })],
+                //         ]
+                //       );
+                // }
 
         });
 
