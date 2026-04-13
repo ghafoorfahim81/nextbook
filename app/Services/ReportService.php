@@ -64,7 +64,7 @@ class ReportService
         $result = $this->getReportData($filters);
 
         if (($result['meta']['layout'] ?? null) === 'statement') {
-            return $this->statementExportData($filters['report'], $result);
+            return $this->statementExportData($filters['report'], $result, $user);
         }
 
         $rows = collect($result['rows'] ?? []);
@@ -73,13 +73,26 @@ class ReportService
             : $this->defaultExportHeadings($filters['report']);
 
         return [
-            'filename' => $filters['report'].'-'.now()->format('Ymd-His').'.csv',
-            'headings' => $headings,
+            'filename' => $filters['report'] . '-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name' => $this->reportLabel($filters['report']),
+            'sheet_title' => $this->reportLabel($filters['report']),
+            'title' => $this->reportLabel($filters['report']),
+            'company_name' => $this->exportCompanyName($user),
+            'exported_on' => now()->format('Y m d'),
+            'rtl' => in_array(app()->getLocale(), ['fa', 'ps'], true),
+            'include_row_number' => true,
+            'row_number_label' => $this->reportColumnLabel('no'),
+            'columns' => collect($headings)
+                ->map(fn ($key) => [
+                    'key' => $key,
+                    'label' => $this->reportColumnLabel($key),
+                    'type' => $this->exportColumnType($key),
+                ])
+                ->values()
+                ->all(),
             'rows' => $rows->map(fn ($row) => collect($row)->only($headings)->all())->all(),
         ];
-    }
-
-    public function getReportData(array $filters): array
+    }    public function getReportData(array $filters): array
     {
         return match ($filters['report']) {
             'trial_balance' => $this->getTrialBalance($filters),
@@ -1040,7 +1053,7 @@ class ReportService
         ];
     }
 
-    protected function statementExportData(string $reportKey, array $result): array
+    protected function statementExportData(string $reportKey, array $result, ?Authenticatable $user = null): array
     {
         $rows = [];
 
@@ -1067,13 +1080,23 @@ class ReportService
         }
 
         return [
-            'filename' => $reportKey.'-'.now()->format('Ymd-His').'.csv',
-            'headings' => ['section', 'account_name', 'balance'],
+            'filename' => $reportKey . '-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name' => $this->reportLabel($reportKey),
+            'sheet_title' => $this->reportLabel($reportKey),
+            'title' => $this->reportLabel($reportKey),
+            'company_name' => $this->exportCompanyName($user),
+            'exported_on' => now()->format('Y m d'),
+            'rtl' => in_array(app()->getLocale(), ['fa', 'ps'], true),
+            'include_row_number' => true,
+            'row_number_label' => $this->reportColumnLabel('no'),
+            'columns' => [
+                ['key' => 'section', 'label' => $this->reportColumnLabel('section'), 'type' => 'text'],
+                ['key' => 'account_name', 'label' => $this->reportColumnLabel('account_name'), 'type' => 'text'],
+                ['key' => 'balance', 'label' => $this->reportColumnLabel('balance'), 'type' => 'number', 'align' => 'right'],
+            ],
             'rows' => $rows,
         ];
-    }
-
-    protected function getUserActivity(array $filters): array
+    }    protected function getUserActivity(array $filters): array
     {
         $totalUsers = $this->userActivityUsersBaseQuery($filters)->count('u.id');
         $userRoles = $this->userActivityUserRoles($filters);
@@ -1452,7 +1475,90 @@ class ReportService
         };
     }
 
-    protected function emptyResult(string $messageKey): array
+    protected function reportTranslations(): array
+    {
+        static $cache = [];
+
+        $locale = app()->getLocale();
+
+        if (! array_key_exists($locale, $cache)) {
+            $path = resource_path("js/locales/{$locale}/report.json");
+
+            if (! is_file($path)) {
+                $path = resource_path('js/locales/en/report.json');
+            }
+
+            $cache[$locale] = json_decode((string) file_get_contents($path), true) ?: [];
+        }
+
+        return $cache[$locale];
+    }
+
+    protected function reportTranslation(string $key, ?string $fallback = null): string
+    {
+        $value = data_get($this->reportTranslations(), $key);
+
+        return filled($value) ? (string) $value : (string) ($fallback ?? $key);
+    }
+
+    protected function reportLabel(string $reportKey): string
+    {
+        return $this->reportTranslation("reports.{$reportKey}.label", Str::headline($reportKey));
+    }
+
+    protected function reportColumnLabel(string $key): string
+    {
+        return $this->reportTranslation("columns.{$key}", Str::headline(str_replace('_', ' ', $key)));
+    }
+
+    protected function exportColumnType(string $key): string
+    {
+        $numericKeys = [
+            'ledger_id',
+            'total_debit',
+            'total_credit',
+            'balance',
+            'debit',
+            'credit',
+            'running_balance',
+            'amount_received',
+            'amount_paid',
+            'quantity',
+            'unit_price',
+            'total_amount',
+            'average_cost',
+            'total_value',
+            'reorder_level',
+            'total_quantity',
+            'total_items',
+            'total_assets',
+            'total_liabilities',
+            'total_equity',
+            'equation_total',
+            'total_revenue',
+            'total_cost_of_goods_sold',
+            'gross_profit',
+            'total_expenses',
+            'net_profit',
+        ];
+
+        return in_array($key, $numericKeys, true) ? 'number' : 'text';
+    }
+
+    protected function exportCompanyName(?Authenticatable $user = null): string
+    {
+        $company = data_get($user, 'company');
+
+        if (! $company) {
+            return config('app.name');
+        }
+
+        return match (app()->getLocale()) {
+            'fa' => $company->name_fa ?: $company->name_en ?: $company->abbreviation ?: config('app.name'),
+            'ps' => $company->name_pa ?: $company->name_en ?: $company->abbreviation ?: config('app.name'),
+            default => $company->name_en ?: $company->abbreviation ?: $company->name_fa ?: $company->name_pa ?: config('app.name'),
+        };
+    }    protected function emptyResult(string $messageKey): array
     {
         return [
             'rows' => [],

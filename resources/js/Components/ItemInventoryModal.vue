@@ -1,17 +1,17 @@
 <script setup>
-import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import axios from 'axios'
 import {
   Package, Hash, Pill, Box, Tag, Layers, TrendingUp, TrendingDown,
-  DollarSign, Palette, Ruler, Image, MapPin, Barcode, Search,
-  Building, Target, User
+  DollarSign, Palette, Ruler, MapPin, Barcode, Search,
+  Building, Target, User, Download
 } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import JsBarcode from 'jsbarcode'
 
 const props = defineProps({
-  modelValue: { type: Boolean, default: false }, 
-  item_id: { type: String, required: true },
+  modelValue: { type: Boolean, default: false },
+  item_id: { type: [String, Number], required: true },
 })
 const emit = defineEmits(['update:modelValue'])
 const { t } = useI18n()
@@ -29,7 +29,6 @@ const currentRecords = computed(() =>
   activeTab.value === 'in' ? inRecords.value : outRecords.value
 )
 
-console.log(item.value)
 const itemDetails = computed(() => [
   { label: t('general.name'), value: item.value?.name, icon: Package },
   { label: t('item.code'), value: item.value?.code, icon: Hash },
@@ -64,6 +63,7 @@ const itemDetails = computed(() => [
 const close = () => emit('update:modelValue', false)
 
 const resetState = () => {
+  item.value = null
   inRecords.value = []
   outRecords.value = []
   inPage.value = 1
@@ -71,24 +71,14 @@ const resetState = () => {
   inHasMore.value = true
   outHasMore.value = true
   activeTab.value = 'in'
+  loading.value = false
 }
-onMounted(() => {
-  if (props.modelValue) {
-    resetState()
-    loadMore()
-  }
-})
 
 const fetchItem = async () => {
   const res = await axios.get(`/items/${props.item_id}`)
   item.value = res.data.data
   return res.data.data
 }
-watch(item.value, () => { 
-  if (props.modelValue && props.item_id) {
-    fetchItem()
-  }
-}, { immediate: true })
 
 const fetchRecords = async (type, page) => {
   const res = await axios.get(`/items/${props.item_id}/${type}-records`, {
@@ -135,6 +125,16 @@ const switchTab = (tab) => {
   if (tab === 'out' && outRecords.value.length === 0) loadMore()
 }
 
+const exportCurrentRecords = () => {
+  if (!props.item_id) return
+
+  const routeName = activeTab.value === 'in'
+    ? 'items.in-records.export'
+    : 'items.out-records.export'
+
+  window.location.href = route(routeName, props.item_id)
+}
+
 const renderItemBarcode = async (retries = 4) => {
   const barcode = item.value?.barcode
   if (!barcode) return
@@ -160,14 +160,23 @@ const renderItemBarcode = async (retries = 4) => {
 }
 
 watch(
-  () => props.modelValue,
-  (open) => {
-    if (open) {
+  [() => props.modelValue, () => props.item_id],
+  async ([open, itemId], [previousOpen, previousItemId] = []) => {
+    if (!open || !itemId) {
       resetState()
-      loadMore()
-      renderItemBarcode()
+      return
     }
-  }
+
+    if (previousOpen === open && previousItemId === itemId) {
+      return
+    }
+
+    resetState()
+    await fetchItem()
+    await loadMore()
+    renderItemBarcode()
+  },
+  { immediate: true }
 )
 
 watch(
@@ -198,10 +207,10 @@ watch(
             </div>
             <div>
               <h2 class="text-xl font-bold text-foreground">
-                {{ item.name }}
+                {{ item?.name }}
               </h2>
               <p class="text-xs text-muted-foreground mt-1">
-                {{ item.code }}
+                {{ item?.code }}
               </p>
             </div>
           </div>
@@ -252,7 +261,7 @@ watch(
                 <div class="flex-1 min-w-0">
                   <p class="text-xs text-muted-foreground">{{ t('general.on_hand') }}</p>
                   <p class="text-sm font-medium text-foreground truncate">
-                    {{ item.on_hand ?? '—' }}
+                    {{ item?.on_hand ?? '—' }}
                   </p>
                 </div>
               </div>
@@ -264,7 +273,7 @@ watch(
                 <div class="flex-1 min-w-0">
                   <p class="text-xs text-muted-foreground font-bold">{{ t('item.in_records') }}</p>
                   <p class="text-sm font-medium text-foreground truncate font-weight-bold">
-                    {{ item.stock_count ?? '—' }}
+                    {{ item?.stock_count ?? '—' }}
                   </p>
                 </div>
               </div>
@@ -275,7 +284,7 @@ watch(
                 <div class="flex-1 min-w-0">
                   <p class="text-xs text-muted-foreground text-bold text-bold">{{ t('item.out_records') }}</p>
                   <p class="text-sm font-medium text-foreground truncate text-bold">
-                    {{ item.stock_out_count ?? '—' }}
+                    {{ item?.stock_out_count ?? '—' }}
                   </p>
                 </div>
               </div>
@@ -283,28 +292,39 @@ watch(
           </div>
 
           <!-- Tabs -->
-          <div class="px-6 pt-3 flex gap-2 border-b border-border bg-background">
+          <div class="px-6 pt-3 flex items-center justify-between gap-3 border-b border-border bg-background">
+            <div class="flex gap-2">
+              <button
+                class="px-3 py-2 text-sm rounded-t-md border-b-2"
+                :class="
+                  activeTab === 'in'
+                    ? 'border-violet-500 text-violet-600 font-bold'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                "
+                @click="switchTab('in')"
+              >
+                {{ t('item.in_records') }}
+              </button>
+              <button
+                class="px-3 py-2 text-sm rounded-t-md border-b-2"
+                :class="
+                  activeTab === 'out'
+                    ? 'border-violet-500 text-violet-600 font-bold'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                "
+                @click="switchTab('out')"
+              >
+                {{ t('item.out_records') }}
+              </button>
+            </div>
+
             <button
-              class="px-3 py-2 text-sm rounded-t-md border-b-2"
-              :class="
-                activeTab === 'in'
-                  ? 'border-violet-500 text-violet-600 font-bold'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              "
-              @click="switchTab('in')"
+              class="inline-flex items-center gap-2 rounded-md bg-violet-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-violet-600 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="loading || !item_id"
+              @click="exportCurrentRecords"
             >
-              {{ t('item.in_records') }}
-            </button>
-            <button
-              class="px-3 py-2 text-sm rounded-t-md border-b-2"
-              :class="
-                activeTab === 'out'
-                  ? 'border-violet-500 text-violet-600 font-bold'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              "
-              @click="switchTab('out')"
-            >
-              {{ t('item.out_records') }}
+              <Download class="h-3.5 w-3.5" />
+              {{ activeTab === 'in' ? t('item.export_in_records') : t('item.export_out_records') }}
             </button>
           </div>
 
@@ -370,7 +390,7 @@ watch(
               </tr>
 
               <tr v-if="!loading && currentRecords.length === 0">
-                <td colspan="9" class="py-8 text-center text-muted-foreground">
+                <td colspan="11" class="py-8 text-center text-muted-foreground">
                   {{ $t('general.no_record_available') }}
                 </td>
               </tr>
@@ -384,7 +404,7 @@ watch(
               <span
                 class="h-3 w-3 rounded-full border-2 border-border border-t-violet-500 animate-spin"
               />
-              Loading more…
+              Loading more...
             </div>
           </div>
         </div> <!-- end scrollable content -->
@@ -392,5 +412,3 @@ watch(
     </div>
   </teleport>
 </template>
-
-

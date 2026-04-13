@@ -9,6 +9,7 @@ import {
     DialogTitle,
 } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
+import LedgerListTable from '@/Components/reports/LedgerListTable.vue';
 
 const { t } = useI18n();
 
@@ -59,6 +60,50 @@ const transactionRows = computed(() => {
             amount,
             remark: txn?.remark ?? line?.remark ?? '',
         };
+    });
+});
+
+const transactionTableRows = computed(() => {
+    let runningBalance = 0;
+
+    return transactionRows.value.map((row) => {
+        const rate = Number(row.rate || 1);
+        const debit = Number(row.type === 'debit' ? row.amount * rate : 0);
+        const credit = Number(row.type === 'credit' ? row.amount * rate : 0);
+        runningBalance += debit - credit;
+
+        return {
+            id: row.id,
+            date: row.date,
+            transaction_number: row.voucher_number || row.reference_id || row.id,
+            description: row.remark || row.description || '-',
+            debit,
+            credit,
+            balance: runningBalance,
+            currency: row.currency?.code || row.currency?.name || '',
+            rate,
+        };
+    });
+});
+
+const transactionColumns = computed(() => [
+    { key: 'date', label: t('general.date') },
+    { key: 'transaction_number', label: t('general.number') },
+    { key: 'description', label: t('general.description') },
+    { key: 'debit', label: t('general.debit'), type: 'money', align: 'right' },
+    { key: 'credit', label: t('general.credit'), type: 'money', align: 'right' },
+    { key: 'balance', label: t('general.balance'), type: 'money', align: 'right' },
+    { key: 'currency', label: t('admin.currency.currency') },
+    { key: 'rate', label: t('general.rate'), type: 'money', align: 'right' },
+]);
+
+const exportUrl = computed(() => {
+    if (!accountData.value?.id) {
+        return '';
+    }
+
+    return route('chart-of-accounts.export-transactions', {
+        chart_of_account: accountData.value.id,
     });
 });
 
@@ -308,62 +353,17 @@ const closeDialog = () => {
 
                     <!-- Transactions table -->
                     <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-4">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="text-sm font-semibold">
-                                {{ t('general.transaction_summary') }}
-                            </div>
-                        </div>
-
-                        <table class="min-w-full text-sm">
-                            <thead>
-                                <tr class="border-b border-border text-left rtl:text-right text-muted-foreground">
-                                    <th class="py-2 pr-4">#</th>
-                                    <th class="py-2 pr-4">{{ t('general.date') }}</th>
-                                    <th class="py-2 pr-4">{{ t('general.type') }}</th>
-                                    <th class="py-2 pr-4">{{ t('general.amount') }}</th>
-                                    <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
-                                    <th class="py-2 pr-4">{{ t('general.rate') }}</th>
-                                    <th class="py-2 pr-4">{{ t('general.remark') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-if="!transactionRows.length">
-                                    <td
-                                        colspan="6"
-                                        class="py-4 text-center text-muted-foreground"
-                                    >
-                                        {{ t('general.no_data_found') }}
-                                    </td>
-                                </tr>
-                                <tr
-                                    v-for="(row, index) in transactionRows"
-                                    :key="row.id"
-                                    class="border-b border-border last:border-b-0"
-                                >
-                                    <td class="py-2 pr-4">
-                                        {{ index + 1 }}
-                                    </td>
-                                    <td class="py-2 pr-4">
-                                        {{ row.date }}
-                                    </td>
-                                    <td class="py-2 pr-4 capitalize">
-                                        {{ row.type }}
-                                    </td>
-                                    <td class="py-2 pr-4">
-                                        {{ formatAmount(row.amount) }}
-                                    </td>
-                                    <td class="py-2 pr-4">
-                                        {{ row.currency?.code || row.currency?.name || '' }}
-                                    </td>
-                                    <td class="py-2 pr-4">
-                                        {{ row.rate }}
-                                    </td>
-                                    <td class="py-2 pr-4">
-                                        {{ row.remark }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <LedgerListTable
+                            :title="t('general.transaction_summary')"
+                            :rows="transactionTableRows"
+                            :columns="transactionColumns"
+                            :empty-message="t('general.no_data_found')"
+                            :export-url="exportUrl"
+                            :export-label="t('report.export_excel')"
+                            :row-number-label="t('report.columns.no')"
+                            :default-sort-key="'date'"
+                            default-sort-direction="desc"
+                        />
                     </div>
                 </div>
 
@@ -438,5 +438,3 @@ const closeDialog = () => {
         </DialogContent>
     </Dialog>
 </template>
-
-

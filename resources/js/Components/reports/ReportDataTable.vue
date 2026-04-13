@@ -9,10 +9,30 @@ const props = defineProps({
   rows: { type: Array, default: () => [] },
   pagination: { type: Object, required: true },
   emptyMessage: { type: String, required: true },
+  rowNumberLabel: { type: String, default: '#' },
+  showRowNumber: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['page-change'])
 const { t } = useI18n()
+
+const displayColumns = computed(() => {
+  const columns = props.columns || []
+
+  if (!props.showRowNumber) {
+    return columns
+  }
+
+  return [
+    {
+      key: '__row_number',
+      label: props.rowNumberLabel,
+      align: 'right',
+      type: 'integer',
+    },
+    ...columns,
+  ]
+})
 
 const pages = computed(() => {
   const current = Number(props.pagination.current_page || 1)
@@ -23,6 +43,11 @@ const pages = computed(() => {
 
   return Array.from({ length: end - first + 1 }, (_, index) => first + index)
 })
+
+function getRowNumber(index) {
+  const from = Number(props.pagination.from || 0)
+  return (from > 0 ? from : 0) + index + 1
+}
 
 function formatValue(column, row) {
   const value = row[column.key]
@@ -60,7 +85,7 @@ function formatValue(column, row) {
         <TableHeader>
           <TableRow class="border-border">
             <TableHead
-              v-for="column in columns"
+              v-for="column in displayColumns"
               :key="column.key"
               class="text-muted-foreground rtl:text-right"
               :class="column.align === 'right' ? 'text-right' : ''"
@@ -71,18 +96,30 @@ function formatValue(column, row) {
         </TableHeader>
         <TableBody>
           <TableRow v-if="!rows.length" class="border-border">
-            <TableCell :colspan="columns.length" class="py-8 text-center text-sm text-muted-foreground">
+            <TableCell :colspan="displayColumns.length" class="py-8 text-center text-sm text-muted-foreground">
               {{ emptyMessage }}
             </TableCell>
           </TableRow>
           <TableRow v-for="(row, index) in rows" :key="row.id || row.reference_id || index" class="border-border">
             <TableCell
-              v-for="column in columns"
+              v-for="column in displayColumns"
               :key="column.key"
               class="text-card-foreground"
               :class="column.align === 'right' ? 'text-right' : ''"
             >
-              {{ formatValue(column, row) }}
+              <template v-if="column.key === '__row_number'">
+                {{ getRowNumber(index) }}
+              </template>
+              <slot
+                v-else
+                :name="`cell-${column.key}`"
+                :row="row"
+                :value="formatValue(column, row)"
+                :column="column"
+                :row-index="index"
+              >
+                {{ formatValue(column, row) }}
+              </slot>
             </TableCell>
           </TableRow>
         </TableBody>

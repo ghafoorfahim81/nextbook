@@ -2,10 +2,12 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import LedgerListTable from '@/Components/reports/LedgerListTable.vue';
 
 const props = defineProps({
     supplier: { type: Object, required: true },
     purchases: { type: Object, required: false },
+    receipts: { type: Object, required: false },
     payments: { type: Object, required: false },
 });
 
@@ -16,6 +18,7 @@ const statement = computed(() => supplierData.value.statement ?? {});
 const openings = computed(() => supplierData.value.openings ?? []);
 
 const purchaseRows = computed(() => props.purchases?.data ?? props.purchases ?? []);
+const receiptRows = computed(() => props.receipts?.data ?? props.receipts ?? []);
 const paymentRows = computed(() => props.payments?.data ?? props.payments ?? []);
 
 const activeMainTab = ref('general');
@@ -25,6 +28,62 @@ const formatAmount = (value) => {
     if (value === null || value === undefined) return '-';
     return Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
+
+const exportUrl = (list) => route('suppliers.export', {
+    supplier: supplierData.value.id,
+    list,
+});
+
+const supplierPurchaseTableRows = computed(() => purchaseRows.value.map((row) => ({
+    id: row.id,
+    number: row.number || row.reference_id || row.id,
+    date: row.date,
+    type: row.type || '-',
+    amount: row.amount,
+    status: row.payment_status_label || row.payment_status || '-',
+    description: row.description || '-',
+})));
+
+const supplierReceiptTableRows = computed(() => receiptRows.value.map((row) => ({
+    id: row.id,
+    number: row.number || row.reference_id || row.id,
+    date: row.date,
+    amount: row.amount,
+    currency: row.currency_code || row.transaction?.currency?.code || row.transaction?.currency?.name || '',
+    rate: row.rate || 0,
+    payment_mode: row.payment_mode_label || row.payment_mode || '-',
+    description: row.narration || row.description || '-',
+})));
+
+const supplierPaymentTableRows = computed(() => paymentRows.value.map((row) => ({
+    id: row.id,
+    number: row.number || row.reference_id || row.id,
+    date: row.date,
+    amount: row.amount,
+    currency: row.currency_code || row.transaction?.currency?.code || row.transaction?.currency?.name || '',
+    rate: row.rate || 0,
+    payment_mode: row.payment_mode_label || row.payment_mode || '-',
+    description: row.narration || row.description || '-',
+})));
+
+const supplierPurchaseColumns = computed(() => [
+    { key: 'number', label: t('general.number') },
+    { key: 'date', label: t('general.date') },
+    { key: 'type', label: t('general.type') },
+    { key: 'amount', label: t('general.amount'), type: 'money', align: 'right' },
+    { key: 'status', label: t('general.status') },
+    { key: 'description', label: t('general.description') },
+]);
+
+const supplierMovementColumns = computed(() => [
+    { key: 'number', label: t('general.number') },
+    { key: 'date', label: t('general.date') },
+    { key: 'amount', label: t('general.amount'), type: 'money', align: 'right' },
+    { key: 'currency', label: t('admin.currency.currency') },
+    { key: 'rate', label: t('general.rate'), type: 'money', align: 'right' },
+    { key: 'payment_mode', label: t('general.payment_method') },
+    { key: 'description', label: t('general.description') },
+]);
 </script>
 
 <template>
@@ -137,100 +196,79 @@ const formatAmount = (value) => {
                     </div>
                 </div>
 
-                <!-- Purchases / Payments tables -->
+                <!-- Purchases / Receipts / Payments tables -->
                 <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border p-4">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex gap-4">
-                            <button
-                                type="button"
-                                class="px-3 py-1.5 text-sm rounded-full"
-                                :class="activeTxnTab === 'purchases'
-                                    ? 'bg-primary text-white'
-                                    : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
-                                @click="activeTxnTab = 'purchases'"
-                            >
-                                {{ t('purchase.purchases') }}
-                            </button>
-                            <button
-                                type="button"
-                                class="px-3 py-1.5 text-sm rounded-full"
-                                :class="activeTxnTab === 'payments'
-                                    ? 'bg-primary text-white'
-                                    : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
-                                @click="activeTxnTab = 'payments'"
-                            >
-                                {{ t('payment.payments') }}
-                            </button>
-                        </div>
+                    <div class="flex flex-wrap items-center gap-3 mb-4">
+                        <button
+                            type="button"
+                            class="px-3 py-1.5 text-sm rounded-full"
+                            :class="activeTxnTab === 'purchases'
+                                ? 'bg-primary text-white'
+                                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
+                            @click="activeTxnTab = 'purchases'"
+                        >
+                            {{ t('purchase.purchases') }}
+                        </button>
+                        <button
+                            type="button"
+                            class="px-3 py-1.5 text-sm rounded-full"
+                            :class="activeTxnTab === 'receipts'
+                                ? 'bg-primary text-white'
+                                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
+                            @click="activeTxnTab = 'receipts'"
+                        >
+                            {{ t('receipt.receipts') }}
+                        </button>
+                        <button
+                            type="button"
+                            class="px-3 py-1.5 text-sm rounded-full"
+                            :class="activeTxnTab === 'payments'
+                                ? 'bg-primary text-white'
+                                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
+                            @click="activeTxnTab = 'payments'"
+                        >
+                            {{ t('payment.payments') }}
+                        </button>
                     </div>
 
-                    <div v-if="activeTxnTab === 'purchases'">
-                        <table class="min-w-full text-sm">
-                            <thead>
-                                <tr class="border-b text-left text-gray-500">
-                                    <th class="py-2 pr-4">#</th>
-                                    <th class="py-2 pr-4">{{ t('general.type') }}</th>
-                                    <th class="py-2 pr-4">{{ t('general.date') }}</th>
-                                    <th class="py-2 pr-4">{{ t('general.amount') }}</th>
-                                    <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-if="!purchaseRows.length">
-                                    <td colspan="5" class="py-4 text-center text-gray-400">
-                                        {{ t('general.no_data') }}
-                                    </td>
-                                </tr>
-                                <tr
-                                    v-for="(row, index) in purchaseRows"
-                                    :key="row.id"
-                                    class="border-b last:border-b-0"
-                                >
-                                    <td class="py-2 pr-4">{{ row.reference_id || row.id || index + 1 }}</td>
-                                    <td class="py-2 pr-4 capitalize">{{ row.type }}</td>
-                                    <td class="py-2 pr-4">{{ row.date }}</td>
-                                    <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
-                                    <td class="py-2 pr-4">
-                                        {{ row.currency?.code || row.currency?.name || '' }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <LedgerListTable
+                        v-if="activeTxnTab === 'purchases'"
+                        :title="t('purchase.purchases')"
+                        :rows="supplierPurchaseTableRows"
+                        :columns="supplierPurchaseColumns"
+                        :empty-message="t('general.no_data_found')"
+                        :export-url="exportUrl('purchases')"
+                        :export-label="t('report.export_excel')"
+                        :row-number-label="t('report.columns.no')"
+                        :default-sort-key="'date'"
+                        default-sort-direction="desc"
+                    />
 
-                    <div v-else>
-                        <table class="min-w-full text-sm">
-                            <thead>
-                                <tr class="border-b text-left text-gray-500">
-                                    <th class="py-2 pr-4">#</th>
-                                    <th class="py-2 pr-4">{{ t('general.type') }}</th>
-                                    <th class="py-2 pr-4">{{ t('general.date') }}</th>
-                                    <th class="py-2 pr-4">{{ t('general.amount') }}</th>
-                                    <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-if="!paymentRows.length">
-                                    <td colspan="5" class="py-4 text-center text-gray-400">
-                                        {{ t('general.no_data') }}
-                                    </td>
-                                </tr>
-                                <tr
-                                    v-for="(row, index) in paymentRows"
-                                    :key="row.id"
-                                    class="border-b last:border-b-0"
-                                >
-                                    <td class="py-2 pr-4">{{ row.reference_id || row.id || index + 1 }}</td>
-                                    <td class="py-2 pr-4 capitalize">{{ row.type }}</td>
-                                    <td class="py-2 pr-4">{{ row.date }}</td>
-                                    <td class="py-2 pr-4">{{ formatAmount(row.amount) }}</td>
-                                    <td class="py-2 pr-4">
-                                        {{ row.currency?.code || row.currency?.name || '' }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <LedgerListTable
+                        v-else-if="activeTxnTab === 'receipts'"
+                        :title="t('receipt.receipts')"
+                        :rows="supplierReceiptTableRows"
+                        :columns="supplierMovementColumns"
+                        :empty-message="t('general.no_data_found')"
+                        :export-url="exportUrl('receipts')"
+                        :export-label="t('report.export_excel')"
+                        :row-number-label="t('report.columns.no')"
+                        :default-sort-key="'date'"
+                        default-sort-direction="desc"
+                    />
+
+                    <LedgerListTable
+                        v-else
+                        :title="t('payment.payments')"
+                        :rows="supplierPaymentTableRows"
+                        :columns="supplierMovementColumns"
+                        :empty-message="t('general.no_data_found')"
+                        :export-url="exportUrl('payments')"
+                        :export-label="t('report.export_excel')"
+                        :row-number-label="t('report.columns.no')"
+                        :default-sort-key="'date'"
+                        default-sort-direction="desc"
+                    />
                 </div>
             </div>
 
@@ -282,4 +320,3 @@ const formatAmount = (value) => {
         </div>
     </AppLayout>
 </template>
-

@@ -199,6 +199,7 @@ function sourceLabel(sourceKey) {
         <Table>
           <TableHeader>
             <TableRow class="border-border">
+              <TableHead>{{ t('report.columns.no') }}</TableHead>
               <TableHead>{{ t('report.user_activity.columns.user') }}</TableHead>
               <TableHead>{{ t('report.user_activity.columns.role') }}</TableHead>
               <TableHead class="text-right">{{ t('report.user_activity.columns.total_activities') }}</TableHead>
@@ -213,12 +214,15 @@ function sourceLabel(sourceKey) {
 
           <TableBody>
             <TableRow v-if="!rows.length" class="border-border">
-              <TableCell colspan="9" class="py-8 text-center text-sm text-muted-foreground">
+              <TableCell colspan="10" class="py-8 text-center text-sm text-muted-foreground">
                 {{ emptyMessage }}
               </TableCell>
             </TableRow>
 
-            <TableRow v-for="row in rows" :key="row.user_id" class="border-border">
+            <TableRow v-for="(row, index) in rows" :key="row.user_id" class="border-border">
+              <TableCell>
+                {{ (Number(pagination.from || 0) || 0) + index + 1 }}
+              </TableCell>
               <TableCell class="min-w-[260px]">
                 <div class="flex items-center gap-3">
                   <div class="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500 font-semibold text-white">

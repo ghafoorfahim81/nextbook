@@ -77,6 +77,7 @@ Route::middleware([
     Route::patch('/account-types/{accountType}/restore', [\App\Http\Controllers\Account\AccountTypeController::class, 'restore'])->name('account-types.restore')->withTrashed();
     Route::resource('chart-of-accounts', \App\Http\Controllers\Account\AccountController::class);
     Route::patch('/chart-of-accounts/{chart_of_account}/restore', [\App\Http\Controllers\Account\AccountController::class, 'restore'])->name('chart-of-accounts.restore')->withTrashed();
+    Route::get('/chart-of-accounts/{chart_of_account}/export-transactions', [\App\Http\Controllers\Account\AccountController::class, 'exportTransactions'])->name('chart-of-accounts.export-transactions');
     Route::resource('/currencies', \App\Http\Controllers\Administration\CurrencyController::class);
     Route::patch('/currencies/{currency}/restore', [\App\Http\Controllers\Administration\CurrencyController::class, 'restore'])->name('currencies.restore')->withTrashed();
     Route::get('/currency-rate-updates', [\App\Http\Controllers\Administration\CurrencyRateUpdateController::class, 'index'])->name('currency-rate-updates.index');
@@ -92,8 +93,10 @@ Route::middleware([
     Route::patch('/ledgers/{ledger}/restore', [\App\Http\Controllers\Ledger\LedgerController::class, 'restore'])->name('ledgers.restore')->withTrashed();
     Route::resource('/suppliers', \App\Http\Controllers\Ledger\SupplierController::class);
     Route::patch('/suppliers/{supplier}/restore', [\App\Http\Controllers\Ledger\SupplierController::class, 'restore'])->name('suppliers.restore')->withTrashed();
+    Route::get('/suppliers/{supplier}/export', [\App\Http\Controllers\Ledger\SupplierController::class, 'export'])->name('suppliers.export');
     Route::resource('/customers', \App\Http\Controllers\Ledger\CustomerController::class);
     Route::patch('/customers/{customer}/restore', [\App\Http\Controllers\Ledger\CustomerController::class, 'restore'])->name('customers.restore')->withTrashed();
+    Route::get('/customers/{customer}/export', [\App\Http\Controllers\Ledger\CustomerController::class, 'export'])->name('customers.export');
     Route::get('/item-fast-entry', [ItemFastEntryController::class, 'create'])->name('item.fast.entry');
     Route::post('/item-fast-entry', [ItemFastEntryController::class, 'store'])
         ->name('item.fast.store');
@@ -148,7 +151,9 @@ Route::middleware([
 
     // Item Inventory Modal
     Route::get('/items/{item}/in-records', [\App\Http\Controllers\Inventory\ItemController::class, 'inRecords'])->name('items.in-records');
+    Route::get('/items/{item}/in-records/export', [\App\Http\Controllers\Inventory\ItemController::class, 'exportInRecords'])->name('items.in-records.export');
     Route::get('/items/{item}/out-records', [\App\Http\Controllers\Inventory\ItemController::class, 'outRecords'])->name('items.out-records');
+    Route::get('/items/{item}/out-records/export', [\App\Http\Controllers\Inventory\ItemController::class, 'exportOutRecords'])->name('items.out-records.export');
 
     // Owners
     Route::resource('/owners', \App\Http\Controllers\Owner\OwnerController::class);
