@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { Dialog, DialogContent } from '@/Components/ui/dialog'
 import { Button } from '@/Components/ui/button'
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue'
-import { UserStar } from 'lucide-vue-next'
+import { Printer, UserStar } from 'lucide-vue-next'
 
 const { t } = useI18n()
 
@@ -33,6 +33,11 @@ const openingRows = computed(() => (opening.value?.id ? [opening.value] : []))
 const formatAmount = (value) => {
   if (value === null || value === undefined) return '-'
   return Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+const openPrint = (routeName, id) => {
+  if (!routeName || !id) return
+  window.open(route(routeName, id), '_blank')
 }
 
 const loadSupplier = async (id) => {
@@ -69,7 +74,7 @@ const purchasesTableRows = computed(() => purchases.value.map((row) => ({
   description: row.description || '-',
 })))
 
-const movementTableRows = (source) => source.map((row) => ({
+const movementTableRows = (source, printRoute) => source.map((row) => ({
   id: row.id,
   number: row.number || row.reference_id || row.id,
   date: row.date,
@@ -78,10 +83,11 @@ const movementTableRows = (source) => source.map((row) => ({
   rate: row.rate || 0,
   payment_mode: row.payment_mode_label || row.payment_mode || '-',
   description: row.narration || row.description || '-',
+  printRoute,
 }))
 
-const receiptTableRows = computed(() => movementTableRows(receipts.value))
-const paymentTableRows = computed(() => movementTableRows(payments.value))
+const receiptTableRows = computed(() => movementTableRows(receipts.value, 'receipts.print'))
+const paymentTableRows = computed(() => movementTableRows(payments.value, 'payments.print'))
 
 const purchasesColumns = computed(() => [
   { key: 'number', label: t('general.number') },
@@ -100,6 +106,7 @@ const movementColumns = computed(() => [
   { key: 'rate', label: t('general.rate'), type: 'money', align: 'right' },
   { key: 'payment_mode', label: t('general.payment_method') },
   { key: 'description', label: t('general.description') },
+  { key: 'actions', label: t('general.actions'), align: 'right' },
 ])
 
 watch(
@@ -296,7 +303,14 @@ const closeDialog = () => {
                   :row-number-label="t('report.columns.no')"
                   default-sort-key="date"
                   default-sort-direction="desc"
-                />
+                >
+                  <template #cell-actions="{ row }">
+                    <Button variant="outline" size="sm" class="gap-2" @click="openPrint(row.printRoute, row.id)">
+                      <Printer class="h-4 w-4" />
+                      {{ t('datatable.print') }}
+                    </Button>
+                  </template>
+                </LedgerListTable>
 
                 <LedgerListTable
                   v-else
@@ -309,7 +323,14 @@ const closeDialog = () => {
                   :row-number-label="t('report.columns.no')"
                   default-sort-key="date"
                   default-sort-direction="desc"
-                />
+                >
+                  <template #cell-actions="{ row }">
+                    <Button variant="outline" size="sm" class="gap-2" @click="openPrint(row.printRoute, row.id)">
+                      <Printer class="h-4 w-4" />
+                      {{ t('datatable.print') }}
+                    </Button>
+                  </template>
+                </LedgerListTable>
               </div>
             </div>
 

@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, useSlots } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Download, ArrowUpDown } from 'lucide-vue-next'
 import { Button } from '@/Components/ui/button'
@@ -23,6 +23,7 @@ const props = defineProps({
 })
 
 const { t } = useI18n()
+const slots = useSlots()
 
 const {
   search,
@@ -46,6 +47,7 @@ const sortOptions = computed(() => (props.columns || [])
 
 const searchLabel = computed(() => props.searchPlaceholder || t('general.search'))
 const exportButtonLabel = computed(() => props.exportLabel || t('report.export_excel'))
+const customCellColumns = computed(() => (props.columns || []).filter((column) => slots[`cell-${column.key}`]))
 
 const exportTable = () => {
   if (!props.exportUrl) {
@@ -112,6 +114,17 @@ const exportTable = () => {
       :pagination="pagination"
       :empty-message="emptyMessage"
       :row-number-label="rowNumberLabel"
-    />
+    >
+      <template
+        v-for="column in customCellColumns"
+        :key="column.key"
+        #[`cell-${column.key}`]="slotProps"
+      >
+        <slot
+          :name="`cell-${column.key}`"
+          v-bind="slotProps"
+        />
+      </template>
+    </ReportDataTable>
   </div>
 </template>
