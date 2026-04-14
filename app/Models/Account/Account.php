@@ -106,17 +106,19 @@ class Account extends Model
                 $totalDebit  = (float) ($totals->total_debit ?? 0);
                 $totalCredit = (float) ($totals->total_credit ?? 0);
 
-                // ALWAYS calculate net this way
-                $netBalance = $totalDebit>0 ? $totalDebit - $totalCredit : $totalCredit;
+                $diff = $totalDebit - $totalCredit;
 
-                // Determine real balance nature from math
-                if ($netBalance > 0) {
+                if ($diff > 0) {
                     $balanceNature = 'dr';
-                } elseif ($netBalance < 0) {
+                    $netBalance = $diff;
+                } elseif ($diff < 0) {
                     $balanceNature = 'cr';
+                    $netBalance = abs($diff);
                 } else {
                     $balanceNature = null;
+                    $netBalance = 0;
                 }
+           
 
                 $balanceAmount = abs($netBalance);
 
@@ -134,7 +136,7 @@ class Account extends Model
                 }
 
                 return [
-                    'balance'               => $formattedBalance,
+                    'balance'               => $totalCredit,
                     'balance_nature'        => $balanceNature,
                     'balance_with_nature'   => $balanceAmount > 0
                         ? $balanceAmount . '.' . $balanceNature

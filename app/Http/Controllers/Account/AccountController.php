@@ -36,7 +36,7 @@ class AccountController extends Controller
 
     public function index(Request $request)
     {
- 
+
         $perPage = $request->input('perPage',  recordsPerPage());
         $sortField = $request->input('sortField', 'created_at');
         $sortDirection = $request->input('sortDirection', 'desc');
@@ -202,7 +202,7 @@ class AccountController extends Controller
             $rate = (float) ($transaction->rate ?: 1);
             $debit = round((float) ($line?->debit ?? 0) * $rate, 2);
             $credit = round((float) ($line?->credit ?? 0) * $rate, 2);
-            $runningBalance += $debit - $credit;
+            // $runningBalance += $debit - $credit;
 
             $rows[] = [
                 'date' => $dateConversionService->toDisplay($transaction->date) ?: $transaction->date,
@@ -210,7 +210,7 @@ class AccountController extends Controller
                 'description' => trim((string) ($line?->remark ?? $transaction->remark ?? '')) ?: '-',
                 'debit' => $debit,
                 'credit' => $credit,
-                'balance' => round($runningBalance, 2),
+                // 'balance' => round($runningBalance, 2),
                 'currency' => $transaction->currency?->code ?? $transaction->currency?->name ?? '',
                 'rate' => $rate,
             ];
@@ -231,13 +231,13 @@ class AccountController extends Controller
             'row_number_label' => $spreadsheetExportService->localeTranslation('report', 'columns.no', 'No.'),
             'columns' => [
                 ['key' => 'date', 'label' => $spreadsheetExportService->localeTranslation('general', 'date', 'Date'), 'width' => 14],
-                ['key' => 'transaction_number', 'label' => $spreadsheetExportService->localeTranslation('general', 'number', 'Number'), 'width' => 16],
+                // ['key' => 'transaction_number', 'label' => $spreadsheetExportService->localeTranslation('general', 'number', 'Number'), 'width' => 16],
                 ['key' => 'description', 'label' => $spreadsheetExportService->localeTranslation('general', 'description', 'Description'), 'width' => 34],
-                ['key' => 'debit', 'label' => $spreadsheetExportService->localeTranslation('general', 'debit', 'Debit'), 'type' => 'money', 'align' => 'right', 'width' => 14],
-                ['key' => 'credit', 'label' => $spreadsheetExportService->localeTranslation('general', 'credit', 'Credit'), 'type' => 'money', 'align' => 'right', 'width' => 14],
-                ['key' => 'balance', 'label' => $spreadsheetExportService->localeTranslation('general', 'balance', 'Balance'), 'type' => 'money', 'align' => 'right', 'width' => 14],
                 ['key' => 'currency', 'label' => $spreadsheetExportService->localeTranslation('admin', 'currency.currency', 'Currency'), 'width' => 12],
                 ['key' => 'rate', 'label' => $spreadsheetExportService->localeTranslation('general', 'rate', 'Rate'), 'type' => 'money', 'align' => 'right', 'width' => 12],
+                ['key' => 'debit', 'label' => $spreadsheetExportService->localeTranslation('general', 'debit', 'Debit'), 'type' => 'money', 'align' => 'right', 'width' => 14],
+                ['key' => 'credit', 'label' => $spreadsheetExportService->localeTranslation('general', 'credit', 'Credit'), 'type' => 'money', 'align' => 'right', 'width' => 14],
+                // ['key' => 'balance', 'label' => $spreadsheetExportService->localeTranslation('general', 'balance', 'Balance'), 'type' => 'money', 'align' => 'right', 'width' => 14],
             ],
             'rows' => $rows,
         ]);
