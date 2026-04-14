@@ -106,28 +106,18 @@ class Account extends Model
                 $totalDebit  = (float) ($totals->total_debit ?? 0);
                 $totalCredit = (float) ($totals->total_credit ?? 0);
 
-                $diff = $totalDebit - $totalCredit;
-
-                if ($diff > 0) {
-                    $balanceNature = 'dr';
-                    $netBalance = $diff;
-                } elseif ($diff < 0) {
-                    $balanceNature = 'cr';
-                    $netBalance = abs($diff);
-                } else {
-                    $balanceNature = null;
-                    $netBalance = 0;
-                }
-           
-
+                $netBalance = $totalDebit>0 ? $totalDebit - $totalCredit : $totalCredit - $totalDebit;
                 $balanceAmount = abs($netBalance);
+                $balanceNature = $netBalance > 0
+                    ? 'dr'
+                    : ($netBalance < 0 ? 'cr' : null);
 
                 $natureFormat = balanceNatureFormat();
 
                 // Format based on system setting
                 if ($natureFormat === 'with_nature') {
                     $formattedBalance = $balanceAmount > 0
-                        ? $balanceAmount . '.' . $balanceNature
+                        ? $balanceAmount . ' ' . $balanceNature
                         : 0;
                 } elseif ($natureFormat === 'without_nature') {
                     $formattedBalance = $netBalance; // signed
@@ -136,10 +126,11 @@ class Account extends Model
                 }
 
                 return [
-                    'balance'               => $totalCredit,
+                    'balance'               => $formattedBalance,
+                    'balance_amount'        => $balanceAmount,
                     'balance_nature'        => $balanceNature,
                     'balance_with_nature'   => $balanceAmount > 0
-                        ? $balanceAmount . '.' . $balanceNature
+                        ? $balanceAmount . ' ' . $balanceNature
                         : 0,
                     'total_debit'           => $totalDebit,
                     'total_credit'          => $totalCredit,
