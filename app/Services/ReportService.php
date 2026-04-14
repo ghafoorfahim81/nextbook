@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\LedgerType;
+use App\Enums\StockMovementType;
 use App\Enums\StockStatus;
 use App\Enums\TransactionStatus;
 use App\Models\Administration\Branch;
@@ -13,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -35,6 +37,17 @@ class ReportService
         'stock_movement',
         'low_stock',
         'inventory_valuation',
+        'batch_wise_report',
+        'expiry_wise_report',
+        'zero_on_hand_report',
+        'fast_moving_report',
+        'slow_moving_report',
+        'today_sale_purchase_closing_stock_report',
+        'near_expiry_report',
+        'maximum_stock_report',
+        'group_summary_report',
+        'day_book_report',
+        'journal_book_report',
         'user_activity',
     ];
 
@@ -110,6 +123,17 @@ class ReportService
             'stock_movement' => $this->getStockMovements($filters),
             'low_stock' => $this->getLowStock($filters),
             'inventory_valuation' => $this->getInventoryValuation($filters),
+            'batch_wise_report' => $this->getBatchWiseReport($filters),
+            'expiry_wise_report' => $this->getExpiryWiseReport($filters),
+            'zero_on_hand_report' => $this->getZeroOnHandReport($filters),
+            'fast_moving_report' => $this->getFastMovingReport($filters),
+            'slow_moving_report' => $this->getSlowMovingReport($filters),
+            'today_sale_purchase_closing_stock_report' => $this->getTodaySalePurchaseClosingStockReport($filters),
+            'near_expiry_report' => $this->getNearExpiryReport($filters),
+            'maximum_stock_report' => $this->getMaximumStockReport($filters),
+            'group_summary_report' => $this->getGroupSummaryReport($filters),
+            'day_book_report' => $this->getDayBookReport($filters),
+            'journal_book_report' => $this->getJournalBookReport($filters),
             'user_activity' => $this->getUserActivity($filters),
             default => $this->getTrialBalance($filters),
         };
@@ -739,6 +763,789 @@ class ReportService
                 'total_quantity' => $this->quantityValue($summaryRow?->total_quantity),
                 'total_value' => $this->moneyValue($summaryRow?->total_value),
             ],
+        );
+    }
+
+    public function getBatchWiseReport(array $filters): array
+    {
+        $movementTotals = $this->stockMovementTotalsByBatchSubquery($filters['branch_id']);
+
+        $query = $this->stockBatchTotalsQuery($filters)
+            ->where('i.is_batch_tracked', true)
+            ->leftJoinSub($movementTotals, 'sm_totals', function ($join) {
+                $join->on('sm_totals.item_id', '=', 'sb.item_id')
+                    ->whereRaw('COALESCE(sm_totals.batch, \'\') = COALESCE(sb.batch, \'\')')
+                    ->whereRaw('COALESCE(sm_totals.expire_date::text, \'\') = COALESCE(sb.expire_date::text, \'\')');
+            })
+            ->where(function ($builder) {
+                $builder->whereRaw('COALESCE(sb.quantity, 0) <> 0')
+                    ->orWhereRaw('COALESCE(sm_totals.total_in, 0) <> 0')
+                    ->orWhereRaw('COALESCE(sm_totals.total_out, 0) <> 0');
+            })
+            ->groupBy('i.id', 'i.code', 'i.name', 'sb.batch', 'sb.expire_date')
+            ->selectRaw('i.code as item_code')
+            ->selectRaw('i.name as item_name')
+            ->selectRaw('sb.batch as batch_number')
+            ->selectRaw('sb.expire_date')
+            ->selectRaw('COALESCE(SUM(COALESCE(sm_totals.total_in, 0)), 0) as in_quantity')
+            ->selectRaw('COALESCE(SUM(COALESCE(sm_totals.total_out, 0)), 0) as out_quantity')
+            ->selectRaw('COALESCE(SUM(sb.quantity), 0) as on_hand')
+            ->orderBy('i.code')
+            ->orderBy('i.name')
+            ->orderByRaw('CASE WHEN sb.batch IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('sb.batch')
+            ->orderBy('sb.expire_date');
+
+        $summaryRow = DB::query()
+            ->fromSub(clone $query, 'batch_rows')
+            ->selectRaw('COALESCE(SUM(in_quantity), 0) as total_in')
+            ->selectRaw('COALESCE(SUM(out_quantity), 0) as total_out')
+            ->selectRaw('COALESCE(SUM(on_hand), 0) as total_on_hand')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'item_code' => $row->item_code,
+                'item_name' => $row->item_name,
+                'batch_number' => $row->batch_number ?: '-',
+                'expiry_date' => $row->expire_date ? $this->displayDate($row->expire_date) : '-',
+                'in_quantity' => $this->quantityValue($row->in_quantity),
+                'out_quantity' => $this->quantityValue($row->out_quantity),
+                'on_hand' => $this->quantityValue($row->on_hand),
+            ],
+            [
+                'total_in' => $this->quantityValue($summaryRow?->total_in),
+                'total_out' => $this->quantityValue($summaryRow?->total_out),
+                'total_on_hand' => $this->quantityValue($summaryRow?->total_on_hand),
+            ],
+            ['layout' => 'snapshot'],
+        );
+    }
+
+    public function getExpiryWiseReport(array $filters): array
+    {
+        $movementTotals = $this->stockMovementTotalsByExpirySubquery($filters['branch_id']);
+
+        $query = $this->stockExpiryTotalsQuery($filters)
+            ->where('i.is_expiry_tracked', true)
+            ->leftJoinSub($movementTotals, 'sm_totals', function ($join) {
+                $join->on('sm_totals.item_id', '=', 'sb.item_id')
+                    ->whereRaw('COALESCE(sm_totals.expire_date::text, \'\') = COALESCE(sb.expire_date::text, \'\')');
+            })
+            ->where(function ($builder) {
+                $builder->whereRaw('COALESCE(sb.quantity, 0) <> 0')
+                    ->orWhereRaw('COALESCE(sm_totals.total_in, 0) <> 0')
+                    ->orWhereRaw('COALESCE(sm_totals.total_out, 0) <> 0');
+            })
+            ->groupBy('i.id', 'i.code', 'i.name', 'sb.expire_date')
+            ->selectRaw('i.code as item_code')
+            ->selectRaw('i.name as item_name')
+            ->selectRaw('sb.expire_date')
+            ->selectRaw('COALESCE(SUM(COALESCE(sm_totals.total_in, 0)), 0) as in_quantity')
+            ->selectRaw('COALESCE(SUM(COALESCE(sm_totals.total_out, 0)), 0) as out_quantity')
+            ->selectRaw('COALESCE(SUM(sb.quantity), 0) as on_hand')
+            ->orderBy('i.code')
+            ->orderBy('i.name')
+            ->orderBy('sb.expire_date');
+
+        $summaryRow = DB::query()
+            ->fromSub(clone $query, 'expiry_rows')
+            ->selectRaw('COALESCE(SUM(in_quantity), 0) as total_in')
+            ->selectRaw('COALESCE(SUM(out_quantity), 0) as total_out')
+            ->selectRaw('COALESCE(SUM(on_hand), 0) as total_on_hand')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'item_code' => $row->item_code,
+                'item_name' => $row->item_name,
+                'expiry_date' => $row->expire_date ? $this->displayDate($row->expire_date) : '-',
+                'in_quantity' => $this->quantityValue($row->in_quantity),
+                'out_quantity' => $this->quantityValue($row->out_quantity),
+                'on_hand' => $this->quantityValue($row->on_hand),
+            ],
+            [
+                'total_in' => $this->quantityValue($summaryRow?->total_in),
+                'total_out' => $this->quantityValue($summaryRow?->total_out),
+                'total_on_hand' => $this->quantityValue($summaryRow?->total_on_hand),
+            ],
+            ['layout' => 'snapshot'],
+        );
+    }
+
+    public function getZeroOnHandReport(array $filters): array
+    {
+        $stockTotals = $this->stockTotalsByItemSubquery($filters['branch_id']);
+        $movementTotals = $this->stockMovementTotalsByItemSubquery($filters['branch_id']);
+
+        $query = DB::table('items as i')
+            ->leftJoinSub($stockTotals, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
+            ->leftJoinSub($movementTotals, 'movement_totals', fn ($join) => $join->on('movement_totals.item_id', '=', 'i.id'))
+            ->where('i.branch_id', $filters['branch_id'])
+            ->whereNull('i.deleted_at')
+            ->whereRaw('COALESCE(stock_totals.on_hand, 0) = 0')
+            ->selectRaw('i.code as item_code')
+            ->selectRaw('i.name as item_name')
+            ->selectRaw('COALESCE(movement_totals.total_in, 0) as total_in')
+            ->selectRaw('COALESCE(movement_totals.total_out, 0) as total_out')
+            ->selectRaw('COALESCE(stock_totals.on_hand, 0) as on_hand')
+            ->orderBy('i.code')
+            ->orderBy('i.name');
+
+        $summaryRow = DB::query()
+            ->fromSub(clone $query, 'zero_rows')
+            ->selectRaw('COUNT(*) as total_items')
+            ->selectRaw('COALESCE(SUM(total_in), 0) as total_in')
+            ->selectRaw('COALESCE(SUM(total_out), 0) as total_out')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'item_code' => $row->item_code,
+                'item_name' => $row->item_name,
+                'total_in' => $this->quantityValue($row->total_in),
+                'total_out' => $this->quantityValue($row->total_out),
+                'on_hand' => $this->quantityValue($row->on_hand),
+            ],
+            [
+                'total_items' => (int) ($summaryRow?->total_items ?? 0),
+                'total_in' => $this->quantityValue($summaryRow?->total_in),
+                'total_out' => $this->quantityValue($summaryRow?->total_out),
+            ],
+            ['layout' => 'snapshot'],
+        );
+    }
+
+    public function getFastMovingReport(array $filters): array
+    {
+        $saleTotals = $this->saleTotalsByItemSubquery($filters);
+        $periodDays = $this->periodDays($filters);
+
+        $query = DB::table('items as i')
+            ->leftJoinSub($saleTotals, 'sale_totals', fn ($join) => $join->on('sale_totals.item_id', '=', 'i.id'))
+            ->where('i.branch_id', $filters['branch_id'])
+            ->whereNull('i.deleted_at')
+            ->whereRaw('COALESCE(sale_totals.total_sold, 0) > 0')
+            ->orderByDesc('sale_totals.total_sold')
+            ->orderByDesc('sale_totals.sale_count')
+            ->orderBy('i.code')
+            ->selectRaw('i.code as item_code')
+            ->selectRaw('i.name as item_name')
+            ->selectRaw('COALESCE(sale_totals.total_sold, 0) as total_sold')
+            ->selectRaw('COALESCE(sale_totals.sale_count, 0) as sale_count')
+            ->selectRaw('COALESCE(sale_totals.total_sold, 0) / NULLIF(?, 0) as average_per_day', [$periodDays]);
+
+        $summaryRow = DB::query()
+            ->fromSub(clone $query, 'fast_moving_rows')
+            ->selectRaw('COALESCE(SUM(total_sold), 0) as total_sold')
+            ->selectRaw('COALESCE(SUM(sale_count), 0) as sale_count')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'item_code' => $row->item_code,
+                'item_name' => $row->item_name,
+                'total_sold' => $this->quantityValue($row->total_sold),
+                'sale_count' => (int) $row->sale_count,
+                'average_per_day' => $this->quantityValue($row->average_per_day),
+            ],
+            [
+                'total_sold' => $this->quantityValue($summaryRow?->total_sold),
+                'sale_count' => (int) ($summaryRow?->sale_count ?? 0),
+                'average_per_day' => $this->quantityValue(($summaryRow?->total_sold ?? 0) / max($periodDays, 1)),
+            ],
+            ['layout' => 'snapshot'],
+        );
+    }
+
+    public function getSlowMovingReport(array $filters): array
+    {
+        $saleTotals = $this->saleTotalsByItemSubquery($filters);
+        $firstInDates = $this->stockFirstInDateSubquery($filters['branch_id']);
+        $reportEnd = Carbon::parse($filters['date_to']);
+
+        $query = DB::table('items as i')
+            ->leftJoinSub($saleTotals, 'sale_totals', fn ($join) => $join->on('sale_totals.item_id', '=', 'i.id'))
+            ->leftJoinSub($firstInDates, 'first_stock', fn ($join) => $join->on('first_stock.item_id', '=', 'i.id'))
+            ->where('i.branch_id', $filters['branch_id'])
+            ->whereNull('i.deleted_at')
+            ->whereRaw('COALESCE(sale_totals.total_sold, 0) > 0')
+            ->orderBy('sale_totals.total_sold')
+            ->orderBy('sale_totals.sale_count')
+            ->orderBy('i.code')
+            ->selectRaw('i.code as item_code')
+            ->selectRaw('i.name as item_name')
+            ->selectRaw('COALESCE(sale_totals.total_sold, 0) as total_sold')
+            ->selectRaw('COALESCE(sale_totals.sale_count, 0) as sale_count')
+            ->selectRaw("COALESCE(first_stock.first_stock_in_date, i.created_at) as first_stock_in_date")
+            ->selectRaw('GREATEST(1, COALESCE(DATE_PART(\'day\', ?::timestamp - COALESCE(first_stock.first_stock_in_date, i.created_at)::timestamp), 0)) as days_on_hand', [$reportEnd->toDateTimeString()])
+            ->selectRaw('COALESCE(sale_totals.total_sold, 0) / NULLIF(GREATEST(1, COALESCE(DATE_PART(\'day\', ?::timestamp - COALESCE(first_stock.first_stock_in_date, i.created_at)::timestamp), 0)), 0) as turnover_rate', [$reportEnd->toDateTimeString()]);
+
+        $summaryRow = DB::query()
+            ->fromSub(clone $query, 'slow_moving_rows')
+            ->selectRaw('COALESCE(SUM(total_sold), 0) as total_sold')
+            ->selectRaw('COALESCE(SUM(sale_count), 0) as sale_count')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'item_code' => $row->item_code,
+                'item_name' => $row->item_name,
+                'total_sold' => $this->quantityValue($row->total_sold),
+                'sale_count' => (int) $row->sale_count,
+                'days_on_hand' => (int) $row->days_on_hand,
+                'turnover_rate' => round((float) $row->turnover_rate, 4),
+            ],
+            [
+                'total_sold' => $this->quantityValue($summaryRow?->total_sold),
+                'sale_count' => (int) ($summaryRow?->sale_count ?? 0),
+                'days_on_hand' => (int) max(1, Carbon::parse($filters['date_to'])->diffInDays(Carbon::parse($filters['date_from'])) + 1),
+                'turnover_rate' => round((float) (($summaryRow?->total_sold ?? 0) / max(1, Carbon::parse($filters['date_to'])->diffInDays(Carbon::parse($filters['date_from'])) + 1)), 4),
+            ],
+            ['layout' => 'snapshot'],
+        );
+    }
+
+    public function getTodaySalePurchaseClosingStockReport(array $filters): array
+    {
+        $today = Carbon::parse($filters['date_to'])->toDateString();
+        $stockTotals = $this->stockTotalsByItemSubquery($filters['branch_id']);
+        $todayMovements = $this->todayStockMovementTotalsByItemSubquery($filters['branch_id'], $today);
+
+        $query = DB::table('items as i')
+            ->leftJoinSub($stockTotals, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
+            ->leftJoinSub($todayMovements, 'today_totals', fn ($join) => $join->on('today_totals.item_id', '=', 'i.id'))
+            ->where('i.branch_id', $filters['branch_id'])
+            ->whereNull('i.deleted_at')
+            ->whereRaw('COALESCE(stock_totals.on_hand, 0) <> 0 OR COALESCE(today_totals.purchase_today, 0) <> 0 OR COALESCE(today_totals.sale_today, 0) <> 0')
+            ->orderBy('i.code')
+            ->orderBy('i.name')
+            ->selectRaw('i.code as item_code')
+            ->selectRaw('i.name as item_name')
+            ->selectRaw('COALESCE(stock_totals.on_hand, 0) as current_on_hand')
+            ->selectRaw('COALESCE(today_totals.purchase_today, 0) as purchase_today')
+            ->selectRaw('COALESCE(today_totals.sale_today, 0) as sale_today')
+            ->selectRaw('COALESCE(stock_totals.on_hand, 0) - COALESCE(today_totals.purchase_today, 0) + COALESCE(today_totals.sale_today, 0) as opening_balance')
+            ->selectRaw('COALESCE(stock_totals.on_hand, 0) as closing_balance');
+
+        $summaryRow = DB::query()
+            ->fromSub(clone $query, 'today_stock_rows')
+            ->selectRaw('COALESCE(SUM(opening_balance), 0) as opening_balance')
+            ->selectRaw('COALESCE(SUM(purchase_today), 0) as purchase_today')
+            ->selectRaw('COALESCE(SUM(sale_today), 0) as sale_today')
+            ->selectRaw('COALESCE(SUM(closing_balance), 0) as closing_balance')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'item_code' => $row->item_code,
+                'item_name' => $row->item_name,
+                'opening_balance' => $this->quantityValue($row->opening_balance),
+                'purchase_today' => $this->quantityValue($row->purchase_today),
+                'sale_today' => $this->quantityValue($row->sale_today),
+                'closing_balance' => $this->quantityValue($row->closing_balance),
+            ],
+            [
+                'opening_balance' => $this->quantityValue($summaryRow?->opening_balance),
+                'purchase_today' => $this->quantityValue($summaryRow?->purchase_today),
+                'sale_today' => $this->quantityValue($summaryRow?->sale_today),
+                'closing_balance' => $this->quantityValue($summaryRow?->closing_balance),
+            ],
+            ['layout' => 'snapshot'],
+        );
+    }
+
+    public function getNearExpiryReport(array $filters): array
+    {
+        $today = Carbon::parse($filters['date_from'])->toDateString();
+        $cutoff = Carbon::parse($filters['date_from'])->addDays(30)->toDateString();
+
+        $query = $this->stockBatchTotalsQuery($filters)
+            ->whereNotNull('sb.expire_date')
+            ->where('i.is_expiry_tracked', true)
+            ->whereBetween('sb.expire_date', [$today, $cutoff])
+            ->whereRaw('COALESCE(sb.quantity, 0) > 0')
+            ->groupBy('i.id', 'i.code', 'i.name', 'sb.batch', 'sb.expire_date')
+            ->orderBy('sb.expire_date')
+            ->orderBy('i.code')
+            ->selectRaw('i.code as item_code')
+            ->selectRaw('i.name as item_name')
+            ->selectRaw('sb.batch as batch_number')
+            ->selectRaw('sb.expire_date')
+            ->selectRaw('COALESCE(SUM(sb.quantity), 0) as on_hand');
+
+        $summaryRow = DB::query()
+            ->fromSub(clone $query, 'near_expiry_rows')
+            ->selectRaw('COUNT(*) as total_items')
+            ->selectRaw('COALESCE(SUM(on_hand), 0) as total_on_hand')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'item_code' => $row->item_code,
+                'item_name' => $row->item_name,
+                'batch_number' => $row->batch_number ?: '-',
+                'expiry_date' => $row->expire_date ? $this->displayDate($row->expire_date) : '-',
+                'on_hand' => $this->quantityValue($row->on_hand),
+                'days_until_expiry' => $row->expire_date ? (int) Carbon::parse($today)->diffInDays(Carbon::parse($row->expire_date), false) : null,
+            ],
+            [
+                'total_items' => (int) ($summaryRow?->total_items ?? 0),
+                'total_on_hand' => $this->quantityValue($summaryRow?->total_on_hand),
+            ],
+            ['layout' => 'snapshot'],
+        );
+    }
+
+    public function getMaximumStockReport(array $filters): array
+    {
+        $stockTotals = $this->stockTotalsByItemSubquery($filters['branch_id']);
+
+        $query = DB::table('items as i')
+            ->leftJoinSub($stockTotals, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
+            ->where('i.branch_id', $filters['branch_id'])
+            ->whereNull('i.deleted_at')
+            ->whereNotNull('i.maximum_stock')
+            ->where('i.maximum_stock', '>', 0)
+            ->whereRaw('COALESCE(stock_totals.on_hand, 0) > i.maximum_stock')
+            ->orderByRaw('(COALESCE(stock_totals.on_hand, 0) - i.maximum_stock) DESC')
+            ->orderBy('i.code')
+            ->selectRaw('i.code as item_code')
+            ->selectRaw('i.name as item_name')
+            ->selectRaw('i.maximum_stock as max_stock_level')
+            ->selectRaw('COALESCE(stock_totals.on_hand, 0) as on_hand')
+            ->selectRaw('COALESCE(stock_totals.on_hand, 0) - i.maximum_stock as excess_quantity');
+
+        $summaryRow = DB::query()
+            ->fromSub(clone $query, 'maximum_stock_rows')
+            ->selectRaw('COUNT(*) as total_items')
+            ->selectRaw('COALESCE(SUM(excess_quantity), 0) as total_excess_quantity')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'item_code' => $row->item_code,
+                'item_name' => $row->item_name,
+                'max_stock_level' => $this->quantityValue($row->max_stock_level),
+                'on_hand' => $this->quantityValue($row->on_hand),
+                'excess_quantity' => $this->quantityValue($row->excess_quantity),
+            ],
+            [
+                'total_items' => (int) ($summaryRow?->total_items ?? 0),
+                'total_excess_quantity' => $this->quantityValue($summaryRow?->total_excess_quantity),
+            ],
+            ['layout' => 'snapshot'],
+        );
+    }
+
+    public function getGroupSummaryReport(array $filters): array
+    {
+        $lifetimeTotals = $this->accountLifetimeTotalsSubquery($filters);
+        $accountTypeNature = $this->accountTypeNatureExpression('at');
+
+        $query = DB::table('accounts as a')
+            ->join('account_types as at', function ($join) use ($filters) {
+                $join->on('at.id', '=', 'a.account_type_id')
+                    ->where('at.branch_id', '=', $filters['branch_id'])
+                    ->whereNull('at.deleted_at');
+            })
+            ->leftJoinSub($lifetimeTotals, 'lifetime', fn ($join) => $join->on('lifetime.account_id', '=', 'a.id'))
+            ->where('a.branch_id', $filters['branch_id'])
+            ->whereNull('a.deleted_at')
+            ->whereRaw("{$accountTypeNature} IN ('asset', 'liability', 'equity', 'income', 'expense')")
+            ->orderByRaw($this->accountTypeNatureOrderExpression('at'))
+            ->orderBy('at.name')
+            ->orderBy('a.name')
+            ->selectRaw('a.id as account_id')
+            ->selectRaw('a.name as account_name')
+            ->selectRaw('at.id as account_type_id')
+            ->selectRaw('at.name as account_type')
+            ->selectRaw("{$accountTypeNature} as account_type_nature")
+            ->selectRaw('0 as opening_balance')
+            ->selectRaw('COALESCE(lifetime.total_debit, 0) as debit')
+            ->selectRaw('COALESCE(lifetime.total_credit, 0) as credit')
+            ->selectRaw('COALESCE(lifetime.balance, 0) as closing_balance');
+
+        $rows = $query->get();
+
+        $sections = $rows
+            ->groupBy('account_type_id')
+            ->map(function ($sectionRows) {
+                $section = $sectionRows->first();
+                $rows = $sectionRows->map(fn ($row) => [
+                    'account_name' => $row->account_name,
+                    'opening_balance' => $this->moneyValue($row->opening_balance),
+                    'debit' => $this->moneyValue($row->debit),
+                    'credit' => $this->moneyValue($row->credit),
+                    'closing_balance' => $this->moneyValue($row->closing_balance),
+                ])->values()->all();
+
+                $totals = [
+                    'account_name' => 'Total '.$section->account_type,
+                    'opening_balance' => $this->moneyValue($sectionRows->sum(fn ($row) => (float) $row->opening_balance)),
+                    'debit' => $this->moneyValue($sectionRows->sum(fn ($row) => (float) $row->debit)),
+                    'credit' => $this->moneyValue($sectionRows->sum(fn ($row) => (float) $row->credit)),
+                    'closing_balance' => $this->moneyValue($sectionRows->sum(fn ($row) => (float) $row->closing_balance)),
+                ];
+
+                return [
+                    'key' => $section->account_type_id,
+                    'label' => $section->account_type,
+                    'rows' => $rows,
+                    'totals' => $totals,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $summary = [
+            'opening_balance' => $this->moneyValue($rows->sum(fn ($row) => (float) $row->opening_balance)),
+            'debit' => $this->moneyValue($rows->sum(fn ($row) => (float) $row->debit)),
+            'credit' => $this->moneyValue($rows->sum(fn ($row) => (float) $row->credit)),
+            'closing_balance' => $this->moneyValue($rows->sum(fn ($row) => (float) $row->closing_balance)),
+        ];
+
+        return [
+            'rows' => $rows->map(fn ($row) => [
+                'account_name' => $row->account_name,
+                'opening_balance' => $this->moneyValue($row->opening_balance),
+                'debit' => $this->moneyValue($row->debit),
+                'credit' => $this->moneyValue($row->credit),
+                'closing_balance' => $this->moneyValue($row->closing_balance),
+            ])->values()->all(),
+            'pagination' => $this->singlePagePagination(),
+            'summary' => $summary,
+            'meta' => [
+                'layout' => 'group_summary',
+                'sections' => $sections,
+            ],
+        ];
+    }
+
+    public function getDayBookReport(array $filters): array
+    {
+        $query = DB::table('transaction_lines as tl')
+            ->join('transactions as t', function ($join) use ($filters) {
+                $join->on('t.id', '=', 'tl.transaction_id')
+                    ->where('t.branch_id', '=', $filters['branch_id'])
+                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereNull('t.deleted_at');
+            })
+            ->join('accounts as a', function ($join) use ($filters) {
+                $join->on('a.id', '=', 'tl.account_id')
+                    ->where('a.branch_id', '=', $filters['branch_id'])
+                    ->whereNull('a.deleted_at');
+            })
+            ->whereNull('tl.deleted_at');
+
+        $this->applyDateFilter($query, 't.date', $filters);
+
+        $summaryRow = (clone $query)
+            ->selectRaw('COALESCE(SUM(tl.debit * t.rate), 0) as total_debit')
+            ->selectRaw('COALESCE(SUM(tl.credit * t.rate), 0) as total_credit')
+            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as balance')
+            ->first();
+
+        $query
+            ->orderBy('t.date')
+            ->orderBy('t.created_at')
+            ->orderBy('t.id')
+            ->orderBy('tl.id')
+            ->selectRaw('t.created_at as transaction_time')
+            ->selectRaw('a.name as account_name')
+            ->selectRaw('t.reference_type')
+            ->selectRaw('COALESCE(t.voucher_number, t.reference_id::text, \'-\') as reference')
+            ->selectRaw('COALESCE(tl.debit * t.rate, 0) as debit')
+            ->selectRaw('COALESCE(tl.credit * t.rate, 0) as credit')
+            ->selectRaw("COALESCE(NULLIF(tl.remark, ''), NULLIF(t.remark, ''), '') as narration");
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'time' => Carbon::parse($row->transaction_time)->format('H:i'),
+                'account_name' => $row->account_name,
+                'transaction_type' => $this->referenceLabel($row->reference_type),
+                'reference' => $row->reference,
+                'debit' => $this->moneyValue($row->debit),
+                'credit' => $this->moneyValue($row->credit),
+                'narration' => $row->narration ?: '-',
+            ],
+            [
+                'total_debit' => $this->moneyValue($summaryRow?->total_debit),
+                'total_credit' => $this->moneyValue($summaryRow?->total_credit),
+                'balance' => $this->moneyValue($summaryRow?->balance),
+            ],
+        );
+    }
+
+    public function getJournalBookReport(array $filters): array
+    {
+        $lifetimeTotals = $this->accountLifetimeTotalsSubquery($filters);
+        $accountTypeNature = $this->accountTypeNatureExpression('at');
+
+        $query = DB::table('account_types as at')
+            ->join('accounts as a', function ($join) use ($filters) {
+                $join->on('a.account_type_id', '=', 'at.id')
+                    ->where('a.branch_id', '=', $filters['branch_id'])
+                    ->whereNull('a.deleted_at');
+            })
+            ->leftJoinSub($lifetimeTotals, 'lifetime', fn ($join) => $join->on('lifetime.account_id', '=', 'a.id'))
+            ->where('at.branch_id', $filters['branch_id'])
+            ->whereNull('at.deleted_at')
+            ->whereRaw("{$accountTypeNature} IN ('asset', 'liability', 'equity', 'income', 'expense')")
+            ->groupBy('at.id', 'at.name', 'at.nature', 'at.slug')
+            ->orderByRaw($this->accountTypeNatureOrderExpression('at'))
+            ->orderBy('at.name')
+            ->selectRaw('at.name as account_type')
+            ->selectRaw('COALESCE(SUM(COALESCE(lifetime.total_debit, 0)), 0) as total_debit')
+            ->selectRaw('COALESCE(SUM(COALESCE(lifetime.total_credit, 0)), 0) as total_credit')
+            ->selectRaw('COALESCE(SUM(COALESCE(lifetime.balance, 0)), 0) as balance');
+
+        $summaryRow = DB::query()
+            ->fromSub(clone $query, 'journal_rows')
+            ->selectRaw('COALESCE(SUM(total_debit), 0) as total_debit')
+            ->selectRaw('COALESCE(SUM(total_credit), 0) as total_credit')
+            ->selectRaw('COALESCE(SUM(balance), 0) as balance')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'account_type' => $row->account_type,
+                'total_debit' => $this->moneyValue($row->total_debit),
+                'total_credit' => $this->moneyValue($row->total_credit),
+                'balance' => $this->moneyValue($row->balance),
+            ],
+            [
+                'total_debit' => $this->moneyValue($summaryRow?->total_debit),
+                'total_credit' => $this->moneyValue($summaryRow?->total_credit),
+                'balance' => $this->moneyValue($summaryRow?->balance),
+            ],
+        );
+    }
+
+    protected function accountLifetimeTotalsSubquery(array $filters): Builder
+    {
+        return DB::table('transaction_lines as tl')
+            ->join('transactions as t', function ($join) use ($filters) {
+                $join->on('t.id', '=', 'tl.transaction_id')
+                    ->where('t.branch_id', '=', $filters['branch_id'])
+                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereNull('t.deleted_at');
+            })
+            ->whereNull('tl.deleted_at')
+            ->groupBy('tl.account_id')
+            ->selectRaw('tl.account_id')
+            ->selectRaw('COALESCE(SUM(tl.debit * t.rate), 0) as total_debit')
+            ->selectRaw('COALESCE(SUM(tl.credit * t.rate), 0) as total_credit')
+            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as balance');
+    }
+
+    protected function accountTypeNatureExpression(string $alias = 'at'): string
+    {
+        return "COALESCE(NULLIF({$alias}.nature, ''), CASE
+            WHEN {$alias}.slug IN ('cash-or-bank', 'account-receivable', 'other-current-asset', 'fixed-asset') THEN 'asset'
+            WHEN {$alias}.slug IN ('account-payable', 'other-current-liability', 'long-term-liability') THEN 'liability'
+            WHEN {$alias}.slug = 'equity' THEN 'equity'
+            WHEN {$alias}.slug = 'income' THEN 'income'
+            WHEN {$alias}.slug IN ('cost-of-goods-sold', 'expense') THEN 'expense'
+            ELSE NULL
+        END)";
+    }
+
+    protected function accountTypeNatureOrderExpression(string $alias = 'at'): string
+    {
+        $accountTypeNature = $this->accountTypeNatureExpression($alias);
+
+        return "CASE {$accountTypeNature}
+            WHEN 'asset' THEN 1
+            WHEN 'liability' THEN 2
+            WHEN 'equity' THEN 3
+            WHEN 'income' THEN 4
+            WHEN 'expense' THEN 5
+            ELSE 6
+        END";
+    }
+
+    protected function stockBatchTotalsQuery(array $filters): Builder
+    {
+        return DB::table('stock_balances as sb')
+            ->join('items as i', function ($join) use ($filters) {
+                $join->on('i.id', '=', 'sb.item_id')
+                    ->where('i.branch_id', '=', $filters['branch_id'])
+                    ->whereNull('i.deleted_at');
+            })
+            ->where('sb.branch_id', $filters['branch_id'])
+            ->whereNull('sb.deleted_at')
+            ->whereNotIn('sb.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value]);
+    }
+
+    protected function stockExpiryTotalsQuery(array $filters): Builder
+    {
+        return $this->stockBatchTotalsQuery($filters)
+            ->whereNotNull('sb.expire_date');
+    }
+
+    protected function stockTotalsByItemSubquery(string $branchId): Builder
+    {
+        return DB::table('stock_balances as sb')
+            ->where('sb.branch_id', $branchId)
+            ->whereNull('sb.deleted_at')
+            ->whereNotIn('sb.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
+            ->groupBy('sb.item_id')
+            ->selectRaw('sb.item_id')
+            ->selectRaw('COALESCE(SUM(sb.quantity), 0) as on_hand');
+    }
+
+    protected function stockBatchMovementTotalsSubquery(string $branchId): Builder
+    {
+        return DB::table('stock_movements as sm')
+            ->where('sm.branch_id', $branchId)
+            ->whereNull('sm.deleted_at')
+            ->whereNotIn('sm.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
+            ->groupBy('sm.item_id', 'sm.batch', 'sm.expire_date')
+            ->selectRaw('sm.item_id')
+            ->selectRaw('sm.batch')
+            ->selectRaw('sm.expire_date')
+            ->selectRaw("COALESCE(SUM(CASE WHEN sm.movement_type = 'in' THEN sm.quantity ELSE 0 END), 0) as total_in")
+            ->selectRaw("COALESCE(SUM(CASE WHEN sm.movement_type = 'out' THEN sm.quantity ELSE 0 END), 0) as total_out");
+    }
+
+    protected function stockMovementTotalsByBatchSubquery(string $branchId): Builder
+    {
+        return $this->stockBatchMovementTotalsSubquery($branchId);
+    }
+
+    protected function stockMovementTotalsByExpirySubquery(string $branchId): Builder
+    {
+        return DB::table('stock_movements as sm')
+            ->where('sm.branch_id', $branchId)
+            ->whereNull('sm.deleted_at')
+            ->whereNotIn('sm.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
+            ->whereNotNull('sm.expire_date')
+            ->groupBy('sm.item_id', 'sm.expire_date')
+            ->selectRaw('sm.item_id')
+            ->selectRaw('sm.expire_date')
+            ->selectRaw("COALESCE(SUM(CASE WHEN sm.movement_type = 'in' THEN sm.quantity ELSE 0 END), 0) as total_in")
+            ->selectRaw("COALESCE(SUM(CASE WHEN sm.movement_type = 'out' THEN sm.quantity ELSE 0 END), 0) as total_out");
+    }
+
+    protected function stockMovementTotalsByItemSubquery(string $branchId): Builder
+    {
+        return DB::table('stock_movements as sm')
+            ->where('sm.branch_id', $branchId)
+            ->whereNull('sm.deleted_at')
+            ->whereNotIn('sm.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
+            ->groupBy('sm.item_id')
+            ->selectRaw('sm.item_id')
+            ->selectRaw("COALESCE(SUM(CASE WHEN sm.movement_type = 'in' THEN sm.quantity ELSE 0 END), 0) as total_in")
+            ->selectRaw("COALESCE(SUM(CASE WHEN sm.movement_type = 'out' THEN sm.quantity ELSE 0 END), 0) as total_out");
+    }
+
+    protected function stockFirstInDateSubquery(string $branchId): Builder
+    {
+        return DB::table('stock_movements as sm')
+            ->where('sm.branch_id', $branchId)
+            ->whereNull('sm.deleted_at')
+            ->whereNotIn('sm.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
+            ->where('sm.movement_type', StockMovementType::IN->value)
+            ->groupBy('sm.item_id')
+            ->selectRaw('sm.item_id')
+            ->selectRaw('MIN(sm.date) as first_stock_in_date');
+    }
+
+    protected function saleTotalsByItemSubquery(array $filters): Builder
+    {
+        return DB::table('sale_items as si')
+            ->join('sales as s', function ($join) use ($filters) {
+                $join->on('s.id', '=', 'si.sale_id')
+                    ->where('s.branch_id', '=', $filters['branch_id'])
+                    ->whereNull('s.deleted_at');
+            })
+            ->join('transactions as t', function ($join) use ($filters) {
+                $join->on('t.reference_id', '=', 's.id')
+                    ->where('t.branch_id', '=', $filters['branch_id'])
+                    ->where('t.reference_type', '=', Sale::class)
+                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereNull('t.deleted_at');
+            })
+            ->whereNull('si.deleted_at')
+            ->when($filters['date_from'] ?? null, fn ($query) => $query->whereBetween('s.date', [$filters['date_from'], $filters['date_to']]))
+            ->groupBy('si.item_id')
+            ->selectRaw('si.item_id')
+            ->selectRaw('COALESCE(SUM(si.quantity), 0) as total_sold')
+            ->selectRaw('COUNT(DISTINCT si.sale_id) as sale_count');
+    }
+
+    protected function todayStockMovementTotalsByItemSubquery(string $branchId, string $date): Builder
+    {
+        return DB::table('stock_movements as sm')
+            ->where('sm.branch_id', $branchId)
+            ->whereNull('sm.deleted_at')
+            ->whereNotIn('sm.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
+            ->whereDate('sm.date', $date)
+            ->groupBy('sm.item_id')
+            ->selectRaw('sm.item_id')
+            ->selectRaw("COALESCE(SUM(CASE WHEN sm.source = 'purchase' AND sm.movement_type = 'in' THEN sm.quantity ELSE 0 END), 0) as purchase_today")
+            ->selectRaw("COALESCE(SUM(CASE WHEN sm.source = 'sale' AND sm.movement_type = 'out' THEN sm.quantity ELSE 0 END), 0) as sale_today");
+    }
+
+    protected function accountOpeningBalancesSubquery(array $filters): Builder
+    {
+        return DB::table('transaction_lines as tl')
+            ->join('transactions as t', function ($join) use ($filters) {
+                $join->on('t.id', '=', 'tl.transaction_id')
+                    ->where('t.branch_id', '=', $filters['branch_id'])
+                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereNull('t.deleted_at');
+            })
+            ->whereNull('tl.deleted_at')
+            ->whereDate('t.date', '<', $filters['date_from'])
+            ->groupBy('tl.account_id')
+            ->selectRaw('tl.account_id')
+            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as opening_balance');
+    }
+
+    protected function accountPeriodTotalsSubquery(array $filters): Builder
+    {
+        return DB::table('transaction_lines as tl')
+            ->join('transactions as t', function ($join) use ($filters) {
+                $join->on('t.id', '=', 'tl.transaction_id')
+                    ->where('t.branch_id', '=', $filters['branch_id'])
+                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereNull('t.deleted_at');
+            })
+            ->whereNull('tl.deleted_at')
+            ->whereBetween('t.date', [$filters['date_from'], $filters['date_to']])
+            ->groupBy('tl.account_id')
+            ->selectRaw('tl.account_id')
+            ->selectRaw('COALESCE(SUM(tl.debit * t.rate), 0) as total_debit')
+            ->selectRaw('COALESCE(SUM(tl.credit * t.rate), 0) as total_credit');
+    }
+
+    protected function periodDays(array $filters): int
+    {
+        return max(
+            1,
+            Carbon::parse($filters['date_from'])->startOfDay()->diffInDays(Carbon::parse($filters['date_to'])->startOfDay()) + 1,
         );
     }
 
@@ -1470,6 +2277,17 @@ class ReportService
             'stock_movement' => ['date', 'item', 'warehouse', 'movement_type', 'quantity', 'unit_price', 'source_type', 'reference_type', 'reference_id'],
             'low_stock' => ['item', 'warehouse', 'quantity', 'reorder_level'],
             'inventory_valuation' => ['item', 'quantity', 'average_cost', 'total_value'],
+            'batch_wise_report' => ['item_code', 'item_name', 'batch_number', 'expiry_date', 'in_quantity', 'out_quantity', 'on_hand'],
+            'expiry_wise_report' => ['item_code', 'item_name', 'expiry_date', 'in_quantity', 'out_quantity', 'on_hand'],
+            'zero_on_hand_report' => ['item_code', 'item_name', 'total_in', 'total_out', 'on_hand'],
+            'fast_moving_report' => ['item_code', 'item_name', 'total_sold', 'sale_count', 'average_per_day'],
+            'slow_moving_report' => ['item_code', 'item_name', 'total_sold', 'sale_count', 'days_on_hand', 'turnover_rate'],
+            'today_sale_purchase_closing_stock_report' => ['item_code', 'item_name', 'opening_balance', 'purchase_today', 'sale_today', 'closing_balance'],
+            'near_expiry_report' => ['item_code', 'item_name', 'batch_number', 'expiry_date', 'on_hand', 'days_until_expiry'],
+            'maximum_stock_report' => ['item_code', 'item_name', 'max_stock_level', 'on_hand', 'excess_quantity'],
+            'group_summary_report' => ['account_name', 'opening_balance', 'debit', 'credit', 'closing_balance'],
+            'day_book_report' => ['time', 'account_name', 'transaction_type', 'reference', 'debit', 'credit', 'narration'],
+            'journal_book_report' => ['account_type', 'total_debit', 'total_credit', 'balance'],
             'user_activity' => ['user_name', 'email', 'role', 'total_activities', 'logins', 'creates', 'updates', 'deletes', 'last_login', 'top_sources'],
             default => ['value'],
         };
@@ -1498,7 +2316,23 @@ class ReportService
     {
         $value = data_get($this->reportTranslations(), $key);
 
-        return filled($value) ? (string) $value : (string) ($fallback ?? $key);
+        if (filled($value)) {
+            return (string) $value;
+        }
+
+        if (app()->getLocale() !== 'en') {
+            $englishPath = resource_path('js/locales/en/report.json');
+            $english = is_file($englishPath)
+                ? json_decode((string) file_get_contents($englishPath), true) ?: []
+                : [];
+            $englishValue = data_get($english, $key);
+
+            if (filled($englishValue)) {
+                return (string) $englishValue;
+            }
+        }
+
+        return (string) ($fallback ?? $key);
     }
 
     protected function reportLabel(string $reportKey): string
@@ -1540,6 +2374,22 @@ class ReportService
             'gross_profit',
             'total_expenses',
             'net_profit',
+            'in_quantity',
+            'out_quantity',
+            'on_hand',
+            'total_sold',
+            'sale_count',
+            'average_per_day',
+            'days_on_hand',
+            'turnover_rate',
+            'opening_balance',
+            'purchase_today',
+            'sale_today',
+            'closing_balance',
+            'days_until_expiry',
+            'max_stock_level',
+            'excess_quantity',
+            'balance',
         ];
 
         return in_array($key, $numericKeys, true) ? 'number' : 'text';
@@ -1598,22 +2448,28 @@ class ReportService
         $today = Carbon::today()->toDateString();
         $defaultFrom = Carbon::today()->startOfMonth()->toDateString();
 
-        $dateFrom = ! empty($filters['date_from'])
-            ? $this->dateConversionService->toGregorian((string) $filters['date_from'])
-            : $defaultFrom;
-
-        $dateTo = ! empty($filters['date_to'])
-            ? $this->dateConversionService->toGregorian((string) $filters['date_to'])
-            : $today;
-
-        if ($dateFrom > $dateTo) {
-            [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
-        }
-
         $requestedReport = (string) ($filters['report'] ?? 'trial_balance');
         $report = in_array($requestedReport, self::REPORT_KEYS, true)
             ? $requestedReport
             : 'trial_balance';
+
+        [$reportDefaultFrom, $reportDefaultTo] = match ($report) {
+            'day_book_report', 'today_sale_purchase_closing_stock_report' => [$today, $today],
+            'near_expiry_report' => [$today, Carbon::today()->addDays(30)->toDateString()],
+            default => [$defaultFrom, $today],
+        };
+
+        $dateFrom = ! empty($filters['date_from'])
+            ? $this->dateConversionService->toGregorian((string) $filters['date_from'])
+            : $reportDefaultFrom;
+
+        $dateTo = ! empty($filters['date_to'])
+            ? $this->dateConversionService->toGregorian((string) $filters['date_to'])
+            : $reportDefaultTo;
+
+        if ($dateFrom > $dateTo) {
+            [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
+        }
 
         $requestedPerPage = (int) ($filters['per_page'] ?? 25);
         $perPage = in_array($requestedPerPage, [15, 25, 50, 100], true)
@@ -1704,7 +2560,7 @@ class ReportService
 
     protected function resolveBranchId(?Authenticatable $user): string
     {
-        $branchId = $user?->branch_id ?? auth()->user()?->branch_id;
+        $branchId = $user?->branch_id ?? Auth::user()?->branch_id;
 
         if ($branchId) {
             return (string) $branchId;

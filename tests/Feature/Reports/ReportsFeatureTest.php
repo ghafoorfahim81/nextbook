@@ -8,6 +8,7 @@ use App\Enums\StockStatus;
 use App\Services\StockService;
 use App\Services\TransactionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia;
 use Tests\Support\BuildsErpContext;
 use Tests\TestCase;
@@ -69,7 +70,7 @@ class ReportsFeatureTest extends TestCase
         });
     }
 
-    public function test_reports_export_streams_inventory_valuation_csv(): void
+    public function test_reports_export_streams_inventory_valuation_xlsx(): void
     {
         $stockService = app(StockService::class);
 
@@ -99,10 +100,70 @@ class ReportsFeatureTest extends TestCase
         ]));
 
         $response->assertOk();
-        $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 
-        $csv = $response->streamedContent();
-        $this->assertTrue(str_contains($csv, 'item,quantity,average_cost,total_value'));
-        $this->assertTrue(str_contains($csv, 'Test Item'));
+        $xlsx = $response->streamedContent();
+        $tmpPath = tempnam(sys_get_temp_dir(), 'report_xlsx_');
+        $this->assertNotFalse($tmpPath);
+
+        file_put_contents($tmpPath, $xlsx);
+
+        $zip = new \ZipArchive();
+        $this->assertTrue($zip->open($tmpPath));
+
+        $sheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
+        $this->assertNotFalse($sheetXml);
+        $this->assertTrue(str_contains($sheetXml, 'Test Item'));
+        $this->assertTrue(str_contains($sheetXml, 'Average cost'));
+
+        $zip->close();
+        @unlink($tmpPath);
+    }
+
+    public function test_group_summary_report_falls_back_to_slug_when_account_type_nature_is_missing(): void
+    {
+        DB::table('account_types')
+            ->where('branch_id', $this->ctx['branch']->id)
+            ->update(['nature' => null]);
+
+        $response = $this->get(route('reports.index', [
+            'report' => 'group_summary_report',
+            'branch_id' => $this->ctx['branch']->id,
+            'date_from' => '2026-03-01',
+            'date_to' => '2026-03-31',
+            'per_page' => 25,
+        ]));
+
+        $response->assertOk();
+        $response->assertInertia(function (AssertableInertia $page) {
+            $page->component('Reports/Index')
+                ->has('result.rows')
+                ->has('result.meta.sections')
+                ->where('result.meta.sections.0.rows.0.account_name', 'Accounts Receivable')
+                ->where('result.meta.layout', 'group_summary');
+        });
+    }
+
+    public function test_journal_book_report_falls_back_to_slug_when_account_type_nature_is_missing(): void
+    {
+        DB::table('account_types')
+            ->where('branch_id', $this->ctx['branch']->id)
+            ->update(['nature' => null]);
+
+        $response = $this->get(route('reports.index', [
+            'report' => 'journal_book_report',
+            'branch_id' => $this->ctx['branch']->id,
+            'date_from' => '2026-03-01',
+            'date_to' => '2026-03-31',
+            'per_page' => 25,
+        ]));
+
+        $response->assertOk();
+        $response->assertInertia(function (AssertableInertia $page) {
+            $page->component('Reports/Index')
+                ->has('result.rows')
+                ->where('result.rows.0.account_type', 'Accounts Receivable')
+                ->where('result.rows.0.total_debit', 0);
+        });
     }
 }

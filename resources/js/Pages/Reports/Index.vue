@@ -15,10 +15,14 @@ import {
   Boxes,
   Archive,
   TrendingUp,
+  TrendingDown,
   Users,
   Truck,
   ClipboardList,
   Download,
+  CalendarClock,
+  PackageX,
+  FileText,
 } from 'lucide-vue-next'
 import AppLayout from '@/Layouts/Layout.vue'
 import { Button } from '@/Components/ui/button'
@@ -27,6 +31,7 @@ import ReportFilters from '@/Components/reports/ReportFilters.vue'
 import ReportSummaryCards from '@/Components/reports/ReportSummaryCards.vue'
 import ReportDataTable from '@/Components/reports/ReportDataTable.vue'
 import ReportStatement from '@/Components/reports/ReportStatement.vue'
+import ReportGroupedTable from '@/Components/reports/ReportGroupedTable.vue'
 import ReportUserActivity from '@/Components/reports/ReportUserActivity.vue'
 
 const props = defineProps({
@@ -342,6 +347,229 @@ const reportDefinitions = computed(() => ({
       { key: 'total_value', label: t('report.columns.total_value'), type: 'money', align: 'right' },
     ],
   },
+  batch_wise_report: {
+    label: t('report.reports.batch_wise_report.label'),
+    description: t('report.reports.batch_wise_report.description'),
+    filters: [],
+    snapshot: true,
+    group: 'inventory',
+    icon: Boxes,
+    summary: [
+      { key: 'total_in', label: t('report.summary.total_in'), type: 'quantity' },
+      { key: 'total_out', label: t('report.summary.total_out'), type: 'quantity' },
+      { key: 'total_on_hand', label: t('report.summary.total_on_hand'), type: 'quantity' },
+    ],
+    columns: [
+      { key: 'item_code', label: t('report.columns.item_code') },
+      { key: 'item_name', label: t('report.columns.item_name') },
+      { key: 'batch_number', label: t('report.columns.batch_number') },
+      { key: 'expiry_date', label: t('report.columns.expiry_date') },
+      { key: 'in_quantity', label: t('report.columns.in_quantity'), type: 'quantity', align: 'right' },
+      { key: 'out_quantity', label: t('report.columns.out_quantity'), type: 'quantity', align: 'right' },
+      { key: 'on_hand', label: t('report.columns.on_hand'), type: 'quantity', align: 'right' },
+    ],
+  },
+  expiry_wise_report: {
+    label: t('report.reports.expiry_wise_report.label'),
+    description: t('report.reports.expiry_wise_report.description'),
+    filters: [],
+    snapshot: true,
+    group: 'inventory',
+    icon: CalendarClock,
+    summary: [
+      { key: 'total_in', label: t('report.summary.total_in'), type: 'quantity' },
+      { key: 'total_out', label: t('report.summary.total_out'), type: 'quantity' },
+      { key: 'total_on_hand', label: t('report.summary.total_on_hand'), type: 'quantity' },
+    ],
+    columns: [
+      { key: 'item_code', label: t('report.columns.item_code') },
+      { key: 'item_name', label: t('report.columns.item_name') },
+      { key: 'expiry_date', label: t('report.columns.expiry_date') },
+      { key: 'in_quantity', label: t('report.columns.in_quantity'), type: 'quantity', align: 'right' },
+      { key: 'out_quantity', label: t('report.columns.out_quantity'), type: 'quantity', align: 'right' },
+      { key: 'on_hand', label: t('report.columns.on_hand'), type: 'quantity', align: 'right' },
+    ],
+  },
+  zero_on_hand_report: {
+    label: t('report.reports.zero_on_hand_report.label'),
+    description: t('report.reports.zero_on_hand_report.description'),
+    filters: [],
+    snapshot: true,
+    group: 'inventory',
+    icon: PackageX,
+    summary: [
+      { key: 'total_items', label: t('report.summary.total_items'), type: 'integer' },
+      { key: 'total_in', label: t('report.summary.total_in'), type: 'quantity' },
+      { key: 'total_out', label: t('report.summary.total_out'), type: 'quantity' },
+    ],
+    columns: [
+      { key: 'item_code', label: t('report.columns.item_code') },
+      { key: 'item_name', label: t('report.columns.item_name') },
+      { key: 'total_in', label: t('report.columns.total_in'), type: 'quantity', align: 'right' },
+      { key: 'total_out', label: t('report.columns.total_out'), type: 'quantity', align: 'right' },
+      { key: 'on_hand', label: t('report.columns.on_hand'), type: 'quantity', align: 'right' },
+    ],
+  },
+  fast_moving_report: {
+    label: t('report.reports.fast_moving_report.label'),
+    description: t('report.reports.fast_moving_report.description'),
+    filters: [],
+    group: 'inventory',
+    icon: TrendingUp,
+    summary: [
+      { key: 'total_sold', label: t('report.summary.total_sold'), type: 'quantity' },
+      { key: 'sale_count', label: t('report.summary.sale_count'), type: 'integer' },
+      { key: 'average_per_day', label: t('report.summary.average_per_day'), type: 'quantity' },
+    ],
+    columns: [
+      { key: 'item_code', label: t('report.columns.item_code') },
+      { key: 'item_name', label: t('report.columns.item_name') },
+      { key: 'total_sold', label: t('report.columns.total_sold'), type: 'quantity', align: 'right' },
+      { key: 'sale_count', label: t('report.columns.sale_count'), type: 'integer', align: 'right' },
+      { key: 'average_per_day', label: t('report.columns.average_per_day'), type: 'quantity', align: 'right' },
+    ],
+  },
+  slow_moving_report: {
+    label: t('report.reports.slow_moving_report.label'),
+    description: t('report.reports.slow_moving_report.description'),
+    filters: [],
+    group: 'inventory',
+    icon: TrendingDown,
+    summary: [
+      { key: 'total_sold', label: t('report.summary.total_sold'), type: 'quantity' },
+      { key: 'sale_count', label: t('report.summary.sale_count'), type: 'integer' },
+      { key: 'days_on_hand', label: t('report.summary.days_on_hand'), type: 'integer' },
+    ],
+    columns: [
+      { key: 'item_code', label: t('report.columns.item_code') },
+      { key: 'item_name', label: t('report.columns.item_name') },
+      { key: 'total_sold', label: t('report.columns.total_sold'), type: 'quantity', align: 'right' },
+      { key: 'sale_count', label: t('report.columns.sale_count'), type: 'integer', align: 'right' },
+      { key: 'days_on_hand', label: t('report.columns.days_on_hand'), type: 'integer', align: 'right' },
+      { key: 'turnover_rate', label: t('report.columns.turnover_rate'), type: 'quantity', align: 'right' },
+    ],
+  },
+  today_sale_purchase_closing_stock_report: {
+    label: t('report.reports.today_sale_purchase_closing_stock_report.label'),
+    description: t('report.reports.today_sale_purchase_closing_stock_report.description'),
+    filters: [],
+    snapshot: true,
+    group: 'inventory',
+    icon: ClipboardList,
+    summary: [
+      { key: 'opening_balance', label: t('report.summary.opening_balance'), type: 'quantity' },
+      { key: 'purchase_today', label: t('report.summary.purchase_today'), type: 'quantity' },
+      { key: 'sale_today', label: t('report.summary.sale_today'), type: 'quantity' },
+      { key: 'closing_balance', label: t('report.summary.closing_balance'), type: 'quantity' },
+    ],
+    columns: [
+      { key: 'item_code', label: t('report.columns.item_code') },
+      { key: 'item_name', label: t('report.columns.item_name') },
+      { key: 'opening_balance', label: t('report.columns.opening_balance'), type: 'quantity', align: 'right' },
+      { key: 'purchase_today', label: t('report.columns.purchase_today'), type: 'quantity', align: 'right' },
+      { key: 'sale_today', label: t('report.columns.sale_today'), type: 'quantity', align: 'right' },
+      { key: 'closing_balance', label: t('report.columns.closing_balance'), type: 'quantity', align: 'right' },
+    ],
+  },
+  near_expiry_report: {
+    label: t('report.reports.near_expiry_report.label'),
+    description: t('report.reports.near_expiry_report.description'),
+    filters: [],
+    snapshot: true,
+    group: 'inventory',
+    icon: CalendarClock,
+    summary: [
+      { key: 'total_items', label: t('report.summary.total_items'), type: 'integer' },
+      { key: 'total_on_hand', label: t('report.summary.total_on_hand'), type: 'quantity' },
+    ],
+    columns: [
+      { key: 'item_code', label: t('report.columns.item_code') },
+      { key: 'item_name', label: t('report.columns.item_name') },
+      { key: 'batch_number', label: t('report.columns.batch_number') },
+      { key: 'expiry_date', label: t('report.columns.expiry_date') },
+      { key: 'on_hand', label: t('report.columns.on_hand'), type: 'quantity', align: 'right' },
+      { key: 'days_until_expiry', label: t('report.columns.days_until_expiry'), type: 'integer', align: 'right' },
+    ],
+  },
+  maximum_stock_report: {
+    label: t('report.reports.maximum_stock_report.label'),
+    description: t('report.reports.maximum_stock_report.description'),
+    filters: [],
+    snapshot: true,
+    group: 'inventory',
+    icon: Archive,
+    summary: [
+      { key: 'total_items', label: t('report.summary.total_items'), type: 'integer' },
+      { key: 'total_excess_quantity', label: t('report.summary.total_excess_quantity'), type: 'quantity' },
+    ],
+    columns: [
+      { key: 'item_code', label: t('report.columns.item_code') },
+      { key: 'item_name', label: t('report.columns.item_name') },
+      { key: 'max_stock_level', label: t('report.columns.max_stock_level'), type: 'quantity', align: 'right' },
+      { key: 'on_hand', label: t('report.columns.on_hand'), type: 'quantity', align: 'right' },
+      { key: 'excess_quantity', label: t('report.columns.excess_quantity'), type: 'quantity', align: 'right' },
+    ],
+  },
+  group_summary_report: {
+    label: t('report.reports.group_summary_report.label'),
+    description: t('report.reports.group_summary_report.description'),
+    filters: [],
+    group: 'financial',
+    icon: Landmark,
+    summary: [
+      { key: 'opening_balance', label: t('report.summary.opening_balance'), type: 'money' },
+      { key: 'debit', label: t('report.summary.total_debit'), type: 'money' },
+      { key: 'credit', label: t('report.summary.total_credit'), type: 'money' },
+      { key: 'closing_balance', label: t('report.summary.closing_balance'), type: 'money' },
+    ],
+    layout: 'group_summary',
+    columns: [
+      { key: 'account_name', label: t('report.columns.account_name') },
+      { key: 'opening_balance', label: t('report.columns.opening_balance'), type: 'balance', align: 'right' },
+      { key: 'debit', label: t('report.columns.debit'), type: 'money', align: 'right' },
+      { key: 'credit', label: t('report.columns.credit'), type: 'money', align: 'right' },
+      { key: 'closing_balance', label: t('report.columns.closing_balance'), type: 'balance', align: 'right' },
+    ],
+  },
+  day_book_report: {
+    label: t('report.reports.day_book_report.label'),
+    description: t('report.reports.day_book_report.description'),
+    filters: [],
+    group: 'financial',
+    icon: FileText,
+    summary: [
+      { key: 'total_debit', label: t('report.summary.total_debit'), type: 'money' },
+      { key: 'total_credit', label: t('report.summary.total_credit'), type: 'money' },
+      { key: 'balance', label: t('report.summary.balance'), type: 'money' },
+    ],
+    columns: [
+      { key: 'time', label: t('report.columns.time') },
+      { key: 'account_name', label: t('report.columns.account_name') },
+      { key: 'transaction_type', label: t('report.columns.transaction_type') },
+      { key: 'reference', label: t('report.columns.reference') },
+      { key: 'debit', label: t('report.columns.debit'), type: 'money', align: 'right' },
+      { key: 'credit', label: t('report.columns.credit'), type: 'money', align: 'right' },
+      { key: 'narration', label: t('report.columns.narration') },
+    ],
+  },
+  journal_book_report: {
+    label: t('report.reports.journal_book_report.label'),
+    description: t('report.reports.journal_book_report.description'),
+    filters: [],
+    group: 'financial',
+    icon: BookOpenText,
+    summary: [
+      { key: 'total_debit', label: t('report.summary.total_debit'), type: 'money' },
+      { key: 'total_credit', label: t('report.summary.total_credit'), type: 'money' },
+      { key: 'balance', label: t('report.summary.balance'), type: 'money' },
+    ],
+    columns: [
+      { key: 'account_type', label: t('report.columns.account_type') },
+      { key: 'total_debit', label: t('report.columns.total_debit'), type: 'money', align: 'right' },
+      { key: 'total_credit', label: t('report.columns.total_credit'), type: 'money', align: 'right' },
+      { key: 'balance', label: t('report.columns.balance'), type: 'balance', align: 'right' },
+    ],
+  },
   user_activity: {
     label: t('report.reports.user_activity.label'),
     description: t('report.reports.user_activity.description'),
@@ -369,6 +597,7 @@ const catalogSections = computed(() => catalogBlueprint.value.map((section) => (
 })).filter((section) => section.reports.length))
 const isDetailView = computed(() => props.reportSelected)
 const heroBadgeLabel = computed(() => (isDetailView.value ? activeDefinition.value.label : t('report.catalog_label')))
+const isGroupedLayout = computed(() => props.result.meta?.layout === 'group_summary')
 
 const summaryCards = computed(() => (activeDefinition.value.summary || [])
   .filter((card) => props.result.summary?.[card.key] !== undefined)
@@ -428,6 +657,8 @@ function selectReport(reportKey) {
   localFilters.value = {
     ...localFilters.value,
     report: reportKey,
+    date_from: '',
+    date_to: '',
     ledger_id: '',
     customer_id: '',
     supplier_id: '',
@@ -530,6 +761,13 @@ function exportReport() {
           <ReportStatement
             v-else-if="isStatementLayout"
             :sections="result.meta?.sections || []"
+            :empty-message="emptyMessage"
+          />
+
+          <ReportGroupedTable
+            v-else-if="isGroupedLayout"
+            :sections="result.meta?.sections || []"
+            :columns="activeDefinition.columns"
             :empty-message="emptyMessage"
           />
 

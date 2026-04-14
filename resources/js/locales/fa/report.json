@@ -59,6 +59,22 @@
     "total_quantity": "مجموع مقدار",
     "total_value": "مجموع ارزش",
     "total_items": "تعداد اقلام",
+    "total_in": "مجموع ورودی",
+    "total_out": "مجموع خروجی",
+    "total_on_hand": "مجموع موجودی",
+    "total_sold": "مجموع فروش",
+    "sale_count": "تعداد فروش",
+    "average_per_day": "میانگین روزانه",
+    "days_on_hand": "روزهای موجودی",
+    "turnover_rate": "نرخ گردش",
+    "opening_balance": "موجودی آغازین",
+    "purchase_today": "خرید امروز",
+    "sale_today": "فروش امروز",
+    "closing_balance": "موجودی پایانی",
+    "days_until_expiry": "روزهای تا انقضا",
+    "max_stock_level": "حداکثر موجودی",
+    "excess_quantity": "مقدار مازاد",
+    "total_excess_quantity": "مجموع مقدار مازاد",
     "total_assets": "مجموع دارایی‌ها",
     "total_liabilities": "بدهی‌ها",
     "total_equity": "مجموع سرمایه",
@@ -98,6 +114,31 @@
     "warehouse": "انبار",
     "average_cost": "میانگین قیمت تمام‌شده",
     "total_value": "ارزش کل",
+    "item_code": "کد کالا",
+    "item_name": "نام کالا",
+    "batch_number": "شماره بچ",
+    "expiry_date": "تاریخ انقضا",
+    "in_quantity": "ورودی",
+    "out_quantity": "خروجی",
+    "on_hand": "موجودی",
+    "time": "زمان",
+    "transaction_type": "نوع تراکنش",
+    "narration": "شرح",
+    "account_type": "نوع حساب",
+    "total_in": "ورودی",
+    "total_out": "خروجی",
+    "opening_balance": "موجودی آغازین",
+    "purchase_today": "خرید امروز",
+    "sale_today": "فروش امروز",
+    "closing_balance": "موجودی پایانی",
+    "days_until_expiry": "روزهای تا انقضا",
+    "max_stock_level": "حداکثر موجودی",
+    "excess_quantity": "مقدار مازاد",
+    "sale_count": "تعداد فروش",
+    "average_per_day": "میانگین روزانه",
+    "days_on_hand": "روزهای موجودی",
+    "turnover_rate": "نرخ گردش",
+    "total_sold": "مجموع فروش",
     "movement_type": "نوع گردش",
     "source_type": "نوع منبع",
     "reference_id": "شناسه مرجع",
@@ -163,6 +204,50 @@
     "inventory_valuation": {
       "label": "ارزش‌گذاری موجودی",
       "description": "ارزش فعلی موجودی به تفکیک کالا."
+    },
+    "batch_wise_report": {
+      "label": "گزارش به تفکیک بچ",
+      "description": "موجودی هر بچ همراه با ورودی، خروجی و موجودی فعلی."
+    },
+    "expiry_wise_report": {
+      "label": "گزارش بر اساس انقضا",
+      "description": "گردش موجودی بر اساس تاریخ انقضای هر بچ."
+    },
+    "zero_on_hand_report": {
+      "label": "اقلام با موجودی صفر",
+      "description": "اقلامی که موجودی فعلی آن‌ها صفر است، همراه با جمع ورودی و خروجی."
+    },
+    "fast_moving_report": {
+      "label": "گزارش اقلام پرفروش",
+      "description": "اقلامی با بیشترین مقدار و تعداد فروش."
+    },
+    "slow_moving_report": {
+      "label": "گزارش اقلام کم‌گردش",
+      "description": "اقلامی با کمترین میزان فروش و گردش موجودی."
+    },
+    "today_sale_purchase_closing_stock_report": {
+      "label": "فروش، خرید و موجودی پایانی امروز",
+      "description": "موجودی آغازین، خرید امروز، فروش امروز و موجودی پایانی هر کالا."
+    },
+    "near_expiry_report": {
+      "label": "گزارش نزدیک انقضا",
+      "description": "اقلام و بچ‌هایی که در ۳۰ روز آینده منقضی می‌شوند."
+    },
+    "maximum_stock_report": {
+      "label": "گزارش موجودی بیش از حد",
+      "description": "اقلامی که موجودی فعلی آن‌ها از حداکثر تعیین‌شده بیشتر است."
+    },
+    "group_summary_report": {
+      "label": "خلاصه گروهی حساب‌ها",
+      "description": "حساب‌ها بر اساس نوع حساب همراه با موجودی آغازین، بدهکار، بستانکار و موجودی پایانی."
+    },
+    "day_book_report": {
+      "label": "دفتر روزانه",
+      "description": "ردیف‌های ثبت‌شده تراکنش‌ها برای بازه تاریخ انتخاب‌شده."
+    },
+    "journal_book_report": {
+      "label": "دفتر روزنامه",
+      "description": "مجموع بدهکار، بستانکار و مانده بر اساس نوع حساب."
     },
     "user_activity": {
       "label": "فعالیت کاربران",
