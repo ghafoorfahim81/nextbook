@@ -59,6 +59,22 @@
     "total_quantity": "ټول مقدار",
     "total_value": "ټول ارزښت",
     "total_items": "توکي",
+    "total_in": "ټول داخل",
+    "total_out": "ټول خارج",
+    "total_on_hand": "ټول موجودي",
+    "total_sold": "ټول خرڅلاو",
+    "sale_count": "د خرڅلاو شمېر",
+    "average_per_day": "ورځنی اوسط",
+    "days_on_hand": "د موجودۍ ورځې",
+    "turnover_rate": "د گردش کچه",
+    "opening_balance": "د پیل موجودي",
+    "purchase_today": "نننۍ پېرود",
+    "sale_today": "نننۍ خرڅلاو",
+    "closing_balance": "وروستۍ موجودي",
+    "days_until_expiry": "تر ختمېدو ورځې",
+    "max_stock_level": "اعظمي موجودي",
+    "excess_quantity": "اضافي اندازه",
+    "total_excess_quantity": "ټوله اضافي اندازه",
     "total_assets": "ټولې شتمنۍ",
     "total_liabilities": "ټولې پورونه",
     "total_equity": "ټول حقوق",
@@ -98,6 +114,31 @@
     "warehouse": "ګودام",
     "average_cost": "اوسط لګښت",
     "total_value": "ټول ارزښت",
+    "item_code": "د توکي کوډ",
+    "item_name": "د توکي نوم",
+    "batch_number": "د بچ شمېره",
+    "expiry_date": "د ختمېدو نېټه",
+    "in_quantity": "داخل",
+    "out_quantity": "خارج",
+    "on_hand": "موجودي",
+    "time": "وخت",
+    "transaction_type": "د تراکنش ډول",
+    "narration": "تشریح",
+    "account_type": "د حساب ډول",
+    "total_in": "داخل",
+    "total_out": "خارج",
+    "opening_balance": "د پیل موجودي",
+    "purchase_today": "نننۍ پېرود",
+    "sale_today": "نننۍ خرڅلاو",
+    "closing_balance": "وروستۍ موجودي",
+    "days_until_expiry": "تر ختمېدو ورځې",
+    "max_stock_level": "اعظمي موجودي",
+    "excess_quantity": "اضافي اندازه",
+    "sale_count": "د خرڅلاو شمېر",
+    "average_per_day": "ورځنی اوسط",
+    "days_on_hand": "د موجودۍ ورځې",
+    "turnover_rate": "د گردش کچه",
+    "total_sold": "ټول خرڅلاو",
     "movement_type": "د حرکت ډول",
     "source_type": "د سرچینې ډول",
     "reference_id": "د مرجع پېژند",
@@ -163,6 +204,50 @@
     "inventory_valuation": {
       "label": "د سټاک ارزښت",
       "description": "د اوسني ګدام ارزښت د توکي له مخې."
+    },
+    "batch_wise_report": {
+      "label": "د بچ له مخې راپور",
+      "description": "د هر بچ داخل، خارج او موجودي د بچ په تفکیک سره."
+    },
+    "expiry_wise_report": {
+      "label": "د ختمېدو له مخې راپور",
+      "description": "د هر بچ د ختمېدو نېټې له مخې د موجودۍ حرکت."
+    },
+    "zero_on_hand_report": {
+      "label": "صفر موجودي لرونکي توکي",
+      "description": "هغه توکي چې اوسنۍ موجودي یې صفر ده، له ټول داخل او خارج سره."
+    },
+    "fast_moving_report": {
+      "label": "چټک خرڅېدونکي توکي",
+      "description": "هغه توکي چې تر ټولو ډېر خرڅلاو لري."
+    },
+    "slow_moving_report": {
+      "label": "ورو خوځېدونکي توکي",
+      "description": "هغه توکي چې لږ خرڅلاو او کم گردش لري."
+    },
+    "today_sale_purchase_closing_stock_report": {
+      "label": "د نن خرڅلاو، پېرود او وروستۍ موجودي",
+      "description": "د هر توکي پیل موجودي، نننۍ پېرود، نننۍ خرڅلاو او وروستۍ موجودي."
+    },
+    "near_expiry_report": {
+      "label": "نږدې ختمېدو راپور",
+      "description": "هغه توکي او بچونه چې په راتلونکو ۳۰ ورځو کې ختمېږي."
+    },
+    "maximum_stock_report": {
+      "label": "د اعظمي موجودۍ راپور",
+      "description": "هغه توکي چې اوسنۍ موجودي یې له ټاکل شوې اعظمي کچې لوړه ده."
+    },
+    "group_summary_report": {
+      "label": "د حسابونو ګروپي لنډيز",
+      "description": "حسابونه د حساب ډول له مخې، له پیل موجودي، پور، پوروړي او وروستۍ موجودۍ سره."
+    },
+    "day_book_report": {
+      "label": "ورځنی کتاب",
+      "description": "د ټاکل شوې نېټې د تراکنش ثبت شوې لیکې."
+    },
+    "journal_book_report": {
+      "label": "ژورنال کتاب",
+      "description": "ټول داخل، خارج او مانده د حساب ډول له مخې."
     },
     "user_activity": {
       "label": "د کاروونکو فعالیت",

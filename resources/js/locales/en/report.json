@@ -59,6 +59,22 @@
     "total_quantity": "Total quantity",
     "total_value": "Total value",
     "total_items": "Items",
+    "total_in": "Total in",
+    "total_out": "Total out",
+    "total_on_hand": "Total on hand",
+    "total_sold": "Total sold",
+    "sale_count": "Sale count",
+    "average_per_day": "Average per day",
+    "days_on_hand": "Days on hand",
+    "turnover_rate": "Turnover rate",
+    "opening_balance": "Opening balance",
+    "purchase_today": "Purchase today",
+    "sale_today": "Sale today",
+    "closing_balance": "Closing balance",
+    "days_until_expiry": "Days until expiry",
+    "max_stock_level": "Max stock level",
+    "excess_quantity": "Excess quantity",
+    "total_excess_quantity": "Total excess quantity",
     "total_assets": "Total assets",
     "total_liabilities": "Total liabilities",
     "total_equity": "Total equity",
@@ -98,6 +114,31 @@
     "warehouse": "Warehouse",
     "average_cost": "Average cost",
     "total_value": "Total value",
+    "total_sold": "Total sold",
+    "item_code": "Item Code",
+    "item_name": "Item Name",
+    "batch_number": "Batch Number",
+    "expiry_date": "Expiry Date",
+    "in_quantity": "In",
+    "out_quantity": "Out",
+    "on_hand": "On hand",
+    "time": "Time",
+    "transaction_type": "Transaction Type",
+    "narration": "Narration",
+    "account_type": "Account Type",
+    "total_in": "In",
+    "total_out": "Out",
+    "opening_balance": "Opening Balance",
+    "purchase_today": "Purchase (Today)",
+    "sale_today": "Sale (Today)",
+    "closing_balance": "Closing Balance",
+    "days_until_expiry": "Days Until Expiry",
+    "max_stock_level": "Max Stock Level",
+    "excess_quantity": "Excess Quantity",
+    "sale_count": "Sale Count",
+    "average_per_day": "Average per Day",
+    "days_on_hand": "Days on Hand",
+    "turnover_rate": "Turnover Rate",
     "movement_type": "Movement",
     "source_type": "Source",
     "reference_id": "Reference ID",
@@ -163,6 +204,50 @@
     "inventory_valuation": {
       "label": "Inventory valuation",
       "description": "Current inventory value grouped by item."
+    },
+    "batch_wise_report": {
+      "label": "Batch wise report",
+      "description": "Current batch quantities with in, out, and on hand totals by batch."
+    },
+    "expiry_wise_report": {
+      "label": "Expiry wise report",
+      "description": "Current expiry-based quantities with in, out, and on hand totals."
+    },
+    "zero_on_hand_report": {
+      "label": "Items with zero on hand",
+      "description": "Items that currently have zero stock, plus lifetime in and out totals."
+    },
+    "fast_moving_report": {
+      "label": "Fast moving report",
+      "description": "Items with the highest sales quantity and sale frequency."
+    },
+    "slow_moving_report": {
+      "label": "Slow moving report",
+      "description": "Items with the lowest sales movement and stock turnover."
+    },
+    "today_sale_purchase_closing_stock_report": {
+      "label": "Today's sale, purchase & closing stock",
+      "description": "Opening balance, today's purchases, today's sales, and closing balance by item."
+    },
+    "near_expiry_report": {
+      "label": "Near expiry report",
+      "description": "Items and batches expiring within the next 30 days."
+    },
+    "maximum_stock_report": {
+      "label": "Maximum stock report",
+      "description": "Items whose current stock is above the defined maximum stock level."
+    },
+    "group_summary_report": {
+      "label": "Group summary report",
+      "description": "Accounts grouped by account type with opening, debit, credit, and closing balances."
+    },
+    "day_book_report": {
+      "label": "Day book",
+      "description": "Posted transaction lines for the selected date range."
+    },
+    "journal_book_report": {
+      "label": "Journal book",
+      "description": "Total debit, credit, and balance grouped by account type."
     },
     "user_activity": {
       "label": "User activity",

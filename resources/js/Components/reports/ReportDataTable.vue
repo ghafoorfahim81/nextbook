@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/Components/ui/button'
@@ -46,7 +46,7 @@ const pages = computed(() => {
 
 function getRowNumber(index) {
   const from = Number(props.pagination.from || 0)
-  return (from > 0 ? from : 0) + index + 1
+  return from > 0 ? from + index : index + 1
 }
 
 function formatValue(column, row) {
@@ -72,6 +72,14 @@ function formatValue(column, row) {
 
   if (column.type === 'integer') {
     return Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })
+  }
+
+  if (column.type === 'balance') {
+    const amount = Number(value || 0)
+    if (amount === 0) {
+      return '0.00'
+    }
+    return `${Math.abs(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${amount >= 0 ? 'Dr' : 'Cr'}`
   }
 
   return value
