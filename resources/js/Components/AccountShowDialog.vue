@@ -38,7 +38,6 @@ const loading = ref(false);
 const activeMainTab = ref('general');
 
 const accountData = computed(() => account.value ?? {});
-const balance = computed(() => accountData.value?.balance);
 
 const transactionRows = computed(() => {
     const txns = transactions.value || [];
@@ -71,14 +70,14 @@ const transactionTableRows = computed(() => {
         const rate = Number(row.rate || 1);
         const debit = Number(row.type === 'debit' ? row.amount * rate : 0);
         const credit = Number(row.type === 'credit' ? row.amount * rate : 0);
-       
+
         return {
             id: row.id,
             date: row.date,
             transaction_number: row.voucher_number || row.reference_id || row.id,
             description: row.remark || row.description || '-',
             debit,
-            credit, 
+            credit,
             currency: row.currency?.code || row.currency?.name || '',
             rate,
         };
@@ -131,6 +130,22 @@ const statement = computed(() => {
         balance: balanceAmount,
         balance_nature: balanceNature,
     };
+});
+
+const balanceDisplay = computed(() => {
+    const balanceAmount = Number(statement.value.balance || 0);
+    const balanceNature = statement.value.balance_nature;
+
+    if (!balanceAmount || !balanceNature) {
+        return formatAmount(0);
+    }
+
+    if (props.balanceNatureFormat === 'without_nature') {
+        const signedBalance = balanceNature === 'cr' ? balanceAmount : balanceAmount;
+        return formatAmount(signedBalance);
+    }
+
+    return `${formatAmount(balanceAmount)} ${balanceNature.toUpperCase()}`;
 });
 
 const formatAmount = (value) => {
@@ -265,10 +280,11 @@ const closeDialog = () => {
                                         </div>
                                         <div
                                             class="text-base font-medium"
+                                            :class="statement.balance_nature === 'cr' ? 'text-green-600' : 'text-primary'"
 
                                         >
                                         <span dir="ltr" class="inline-block text-left tabular-nums">
-                                            {{ statement.total_credit }}
+                                            {{ balanceDisplay }}
                                         </span>
 
                                         </div>

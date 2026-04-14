@@ -32,6 +32,7 @@ const {
   perPage,
   paginatedRows,
   pagination,
+  setPage,
 } = useClientTable(computed(() => props.rows), {
   defaultSortKey: props.defaultSortKey,
   defaultSortDirection: props.defaultSortDirection,
@@ -114,6 +115,7 @@ const exportTable = () => {
       :pagination="pagination"
       :empty-message="emptyMessage"
       :row-number-label="rowNumberLabel"
+      @page-change="setPage"
     >
       <template
         v-for="column in customCellColumns"
