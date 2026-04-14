@@ -39,6 +39,7 @@ const activeMainTab = ref('general');
 
 const accountData = computed(() => account.value ?? {});
 const balance = computed(() => accountData.value?.balance);
+
 const transactionRows = computed(() => {
     const txns = transactions.value || [];
     const accountId = accountData.value?.id || props.accountId;
@@ -70,16 +71,14 @@ const transactionTableRows = computed(() => {
         const rate = Number(row.rate || 1);
         const debit = Number(row.type === 'debit' ? row.amount * rate : 0);
         const credit = Number(row.type === 'credit' ? row.amount * rate : 0);
-        runningBalance += debit - credit;
-
+       
         return {
             id: row.id,
             date: row.date,
             transaction_number: row.voucher_number || row.reference_id || row.id,
             description: row.remark || row.description || '-',
             debit,
-            credit,
-            balance: runningBalance,
+            credit, 
             currency: row.currency?.code || row.currency?.name || '',
             rate,
         };
@@ -88,13 +87,13 @@ const transactionTableRows = computed(() => {
 
 const transactionColumns = computed(() => [
     { key: 'date', label: t('general.date') },
-    { key: 'transaction_number', label: t('general.number') },
+    // { key: 'transaction_number', label: t('general.number') },
     { key: 'description', label: t('general.description') },
-    { key: 'debit', label: t('general.debit'), type: 'money', align: 'right' },
-    { key: 'credit', label: t('general.credit'), type: 'money', align: 'right' },
-    { key: 'balance', label: t('general.balance'), type: 'money', align: 'right' },
     { key: 'currency', label: t('admin.currency.currency') },
     { key: 'rate', label: t('general.rate'), type: 'money', align: 'right' },
+    { key: 'credit', label: t('general.credit'), type: 'money', align: 'right' },
+    { key: 'debit', label: t('general.debit'), type: 'money', align: 'right' },
+    // { key: 'balance', label: t('general.balance'), type: 'money', align: 'right' },
 ]);
 
 const exportUrl = computed(() => {
@@ -269,7 +268,7 @@ const closeDialog = () => {
 
                                         >
                                         <span dir="ltr" class="inline-block text-left tabular-nums">
-                                            {{ balance }}
+                                            {{ statement.total_credit }}
                                         </span>
 
                                         </div>
