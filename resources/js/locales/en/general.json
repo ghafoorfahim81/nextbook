@@ -36,6 +36,7 @@
   "result_not_found": "Result not found",
   "updated_by": "Updated by",
   "updated_at": "Updated at",
+  "loss_price_warning": "You are at a loss. Unit price is lower than average cost (avgCost: {avgCost}, unit price: {unitPrice})",
   "created_by": "Created by",
   "deleted_by": "Deleted by",
   "loading": "Loading",

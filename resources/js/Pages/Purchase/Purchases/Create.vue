@@ -3,7 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
 import axios from 'axios'
-import { useForm } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
@@ -21,6 +21,7 @@ import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next';
 import { useLazyProps } from '@/composables/useLazyProps'
+import { todayValueForCalendar } from '@/utils/dateDefaults'
 const { t } = useI18n();
 const showFilter = () => {
     showFilter.value = true;
@@ -28,6 +29,8 @@ const showFilter = () => {
 
 
 const { toast } = useToast()
+const page = usePage()
+const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
 
 const props = defineProps({
     ledgers: {type: Object, required: false, default: () => ({ data: [] })},
@@ -41,7 +44,24 @@ const props = defineProps({
     bankAccounts: {type: Object, required: true},
 })
 
-useLazyProps(props, ['ledgers', 'accounts'])
+const { fetchLazyProps } = useLazyProps(props, ['ledgers', 'accounts'])
+
+const buildEmptyRow = () => ({
+    item_id: '',
+    selected_item: '',
+    quantity: '',
+    unit_measure_id: '',
+    batch: '',
+    expire_date: '',
+    unit_price: '',
+    base_unit_price: '',
+    on_hand: '',
+    available_measures: [],
+    selected_measure: '',
+    item_discount: '',
+    free: '',
+    tax: '',
+})
 
 const form = useForm({
     number: props.purchaseNumber,
@@ -70,20 +90,57 @@ const form = useForm({
     warehouse_id: '',
     selected_warehouse: '',
     item_list:[],
-    items: Array.from({ length: 6 }, () => ({
-        item_id: '',
-        selected_item: '',
-        quantity: '',
-        unit_measure_id: '',
-        batch: '',
-        expire_date: '',
-        unit_price: '',
-        selected_measure: '',
-        item_discount: '',
-        free: '',
-        tax: '',
-    })),
+    items: Array.from({ length: 6 }, buildEmptyRow),
 })
+
+const resolveDefaultCurrency = () => props.currencies?.data?.find((currency) => currency.is_base_currency) ?? null
+const resolveDefaultPurchaseType = () => props.salePurchaseTypes?.find((type) => type.id === 'cash') ?? null
+const resolveDefaultWarehouse = () => props.warehouses?.data?.find((warehouse) => warehouse.is_main === true) ?? null
+const resolveDefaultBankAccount = () => props.bankAccounts?.find((account) => account.slug === 'cash-in-hand') ?? null
+
+const applyCreateDefaults = ({ number = props.purchaseNumber } = {}) => {
+    const defaultCurrency = resolveDefaultCurrency()
+    if (defaultCurrency) {
+        form.selected_currency = defaultCurrency
+        form.rate = defaultCurrency.exchange_rate
+        form.currency_id = defaultCurrency.id
+    }
+
+    const defaultPurchaseType = resolveDefaultPurchaseType()
+    if (defaultPurchaseType) {
+        form.selected_purchase_type = defaultPurchaseType
+        form.purchase_type = defaultPurchaseType.id
+    }
+
+    const defaultWarehouse = resolveDefaultWarehouse()
+    if (defaultWarehouse) {
+        form.selected_warehouse = defaultWarehouse
+        form.warehouse_id = defaultWarehouse.id
+    }
+
+    const defaultBankAccount = resolveDefaultBankAccount()
+    if (defaultBankAccount) {
+        form.selected_bank_account = defaultBankAccount
+        form.bank_account_id = defaultBankAccount.id
+    }
+
+    form.number = number
+    form.date = todayValueForCalendar(calendarType.value)
+}
+
+const resetFormForCreate = ({ number = props.purchaseNumber } = {}) => {
+    form.reset()
+    form.clearErrors()
+    handleResetPayment()
+    form.item_list = []
+    form.transaction_total = 0
+    form.discount_total = 0
+    form.items = Array.from({ length: 6 }, buildEmptyRow)
+    disabled = false
+    applyCreateDefaults({ number })
+    fetchLazyProps()
+    loadItemOptions(form.warehouse_id)
+}
 
 //  load items
 const itemSearchOptions = computed(() => {
@@ -136,7 +193,7 @@ watch(() => props.purchaseNumber, (newPurchaseNumber) => {
 // Set base currency as default
 watch(() => props.currencies?.data, (currencies) => {
     if (currencies && !form.currency_id) {
-        const baseCurrency = currencies.find(c => c.is_base_currency);
+        const baseCurrency = resolveDefaultCurrency();
         if (baseCurrency) {
             form.selected_currency = baseCurrency;
             form.rate = baseCurrency.exchange_rate;
@@ -148,7 +205,7 @@ watch(() => props.currencies?.data, (currencies) => {
 
 watch(() => props.salePurchaseTypes, (salePurchaseTypes) => {
     if (salePurchaseTypes && !form.selected_purchase_type) {
-        const baseSalePurchaseType = salePurchaseTypes.find(c => c.id === 'cash');
+        const baseSalePurchaseType = resolveDefaultPurchaseType();
         if (baseSalePurchaseType) {
             form.selected_purchase_type = baseSalePurchaseType;
             form.purchase_type = baseSalePurchaseType.id;
@@ -158,7 +215,7 @@ watch(() => props.salePurchaseTypes, (salePurchaseTypes) => {
 
 watch(() => props.warehouses.data, (warehouses) => {
     if (warehouses && !form.selected_warehouse) {
-        const baseWarehouse = warehouses.find(c => c.is_main === true);
+        const baseWarehouse = resolveDefaultWarehouse();
         if (baseWarehouse) {
             form.selected_warehouse = baseWarehouse;
             form.warehouse_id = baseWarehouse.id;
@@ -168,7 +225,7 @@ watch(() => props.warehouses.data, (warehouses) => {
 
 watch(() => props.bankAccounts, (bankAccounts) => {
     if (bankAccounts && !form.selected_bank_account) {
-        const baseBankAccount = bankAccounts.find(c => c.slug === 'cash-in-hand');
+        const baseBankAccount = resolveDefaultBankAccount();
         if (baseBankAccount) {
             form.selected_bank_account = baseBankAccount;
             form.bank_account_id = baseBankAccount.id;
@@ -212,13 +269,10 @@ const handleSelectChange = (field, value) => {
         form.rate = value.exchange_rate;
     }
     if(field === 'purchase_type') {
-        if(value === 'cash') {
+        if(value?.id === 'cash') {
             handleResetPayment();
         }
-        else{
-            form[field] = value;
-            }
-        }
+    }
     form[field] = value.id;
 };
 
@@ -247,36 +301,10 @@ function handleSubmit(createAndNew = false) {
     if (createAndNew) {
         form.transform((data) => ({ ...data, create_and_new: true })).post(route('purchases.store'), {
             onSuccess: () => {
-                form.reset();
                 notifySound('success');
                 const currentNumber = Number(form.number ?? props.purchaseNumber ?? 0);
                 const nextNumber = isNaN(currentNumber) ? 0 : currentNumber + 1;
-                form.number = (nextNumber);
-                // Re-initialize currency field with default
-                if (props.currencies?.data) {
-                    const baseCurrency = props.currencies.data.find(c => c.is_base_currency);
-                    if (baseCurrency) {
-                        form.selected_currency = baseCurrency;
-                        form.rate = baseCurrency.exchange_rate;
-                        form.currency_id = baseCurrency.id;
-                    }
-                }
-                // Re-initialize sale_purchase_type with default
-                if (props.salePurchaseTypes) {
-                    const baseSalePurchaseType = props.salePurchaseTypes.find(c => c.id === 'cash');
-                    if (baseSalePurchaseType) {
-                        form.selected_purchase_type = baseSalePurchaseType;
-                        form.purchase_type = baseSalePurchaseType.id;
-                    }
-                }
-                // Re-initialize warehouse with default
-                if (props.warehouses?.data) {
-                    const baseWarehouse = props.warehouses.data.find(c => c.is_main === true);
-                    if (baseWarehouse) {
-                        form.selected_warehouse = baseWarehouse;
-                        form.warehouse_id = baseWarehouse.id;
-                    }
-                }
+                resetFormForCreate({ number: nextNumber });
                 toast({
                     title: 'Success',
                     description: 'Purchase created successfully',
@@ -326,12 +354,11 @@ const handlePaymentDialogConfirm = () => {
 };
 
 const handlePaymentDialogCancel = () => {
-    // Reset the sale/purchase type back to debit when dialog is cancelled
     if (props.salePurchaseTypes) {
-
-        const debitType = props.salePurchaseTypes.find(type => type.id === 'debit');
-        if (debitType) {
-            form.selected_purchase_type = debitType;
+        const cashType = resolveDefaultPurchaseType();
+        if (cashType) {
+            form.selected_purchase_type = cashType;
+            form.purchase_type = cashType.id;
         }
     }
     showPaymentDialog.value = false;
@@ -350,6 +377,7 @@ onMounted(() => {
         prevSidebarOpen.value = sidebar.open.value
         sidebar.setOpen(false)
     }
+    applyCreateDefaults()
     // Auto-generate bill number: latest + 1
     ;(async () => {
     })()
@@ -368,7 +396,7 @@ watch(() => form.rate, (newRate) => {
         const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
         const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
         const baseUnitPrice = Number(row.base_unit_price ?? row.selected_item?.unit_price ?? row.selected_item?.purchase_price ?? 0)
-        row.unit_price = (baseUnitPrice / (selectedUnit || 1)) * (Number(newRate) || 0)
+        row.unit_price = (baseUnitPrice * selectedUnit * (Number(newRate) || 0)) / baseUnit
     })
 })
 
@@ -607,11 +635,11 @@ const addRow = () => {
     })
 }
 const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
-const general_fields = computed(() =>  user_preferences.value?.purchase.general_fields ?? user_preferences.value.purchase.general_fields ?? []).value
-const item_columns = computed(() => user_preferences.value?.purchase.item_columns ?? user_preferences.value.purchase.item_columns ?? []).value
-const purchase_preferences = computed(() => user_preferences.value?.purchase ?? user_preferences.value.purchase ?? []).value
-const item_management = computed(() => user_preferences.value?.item_management ?? user_preferences.value.item_management ?? []).value
-const spec_text = computed(() => item_management?.spec_text ?? item_management?.spec_text ?? 'batch').value
+const general_fields = user_preferences.value?.purchase?.general_fields ?? {}
+const item_columns = user_preferences.value?.purchase?.item_columns ?? {}
+const purchase_preferences = user_preferences.value?.purchase ?? {}
+const item_management = user_preferences.value?.item_management ?? {}
+const spec_text = item_management?.spec_text ?? 'batch'
 
 </script>
 
@@ -728,7 +756,7 @@ const spec_text = computed(() => item_management?.spec_text ?? item_management?.
                                     label-key="name"
                                     :placeholder="t('general.search_or_select')"
                                     id="item_id"
-                                    :error="form.errors?.[`items.${index}.item_id`]"`
+                                    :error="form.errors?.[`items.${index}.item_id`]"
                                     :show-arrow="false"
                                     :searchable="true"
                                     resource-type="items-list"

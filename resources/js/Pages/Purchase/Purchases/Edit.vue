@@ -33,6 +33,7 @@ const props = defineProps({
     accounts: { type: Object, required: false, default: () => ({ data: [] }) },
     user_preferences: { type: Object, required: true },
     bankAccounts: { type: Array, required: true },
+    stockLocked: { type: Boolean, default: false },
 });
 
 useLazyProps(props, ['ledgers', 'accounts']);
@@ -607,6 +608,14 @@ onUnmounted(() => {
 <template>
     <AppLayout :title="t('general.edit', { name: t('purchase.purchase') })" :sidebar-collapsed="true">
         <form @submit.prevent="handleSubmitAction">
+            <div
+                v-if="stockLocked"
+                class="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200"
+            >
+                This purchase has posted stock and can no longer be edited.
+            </div>
+
+            <div :class="{ 'pointer-events-none select-none opacity-60': stockLocked }">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.edit', { name: t('purchase.purchase') }) }}
@@ -880,6 +889,7 @@ onUnmounted(() => {
                 </div>
                 <TransactionSummary :summary="transactionSummary" :balance-nature="form?.selected_ledger?.statement?.balance_nature" />
             </div>
+            </div>
 
             <SubmitButtons
                 :create-label="t('general.update')"
@@ -888,7 +898,7 @@ onUnmounted(() => {
                 :creating-label="t('general.updating', { name: t('purchase.purchase') })"
                 :create-loading="createLoading"
                 :create-and-new-loading="createAndNewLoading"
-                :disabled="disabled"
+                :disabled="disabled || stockLocked"
                 :show-create-and-new="false"
                 @cancel="() => $inertia.visit(route('purchases.index'))"
             />
