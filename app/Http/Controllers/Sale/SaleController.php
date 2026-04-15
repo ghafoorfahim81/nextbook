@@ -415,7 +415,7 @@ class SaleController extends Controller
 
     public function show(Request $request, Sale $sale)
     {
-        $sale->load(['items.item', 'items.unitMeasure', 'customer', 'transaction.currency', 'createdBy']);
+        $sale->load(['items.item', 'items.unitMeasure', 'customer', 'transaction.currency', 'createdBy', 'updatedBy']);
 
         return response()->json([
             'data' => new SaleResource($sale),

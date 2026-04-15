@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Sale;
 
 use App\Http\Resources\Transaction\TransactionResource;
+use App\Http\Resources\UserManagement\UserSimpleResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Enums\SalePurchaseType;
@@ -39,6 +40,7 @@ class SaleResource extends JsonResource
             'customer_name' => $this->customer?->name,
             'date' => $dateConversionService->toDisplay($this->date),
             'due_date' => $dateConversionService->toDisplay($this->due_date),
+            'updated_at' => $dateConversionService->toDisplay($this->updated_at?->toDateString()),
             'transaction_id' => $this->transaction_id,
             'amount' => $this->items->sum(function ($item) {
                 $row_total = floatval($item->quantity) * floatval($item->unit_price);
@@ -95,6 +97,8 @@ class SaleResource extends JsonResource
                     'unit_measure_id' => $item->unit_measure_id,
                 ];
             })),
+            'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
+            'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
         ];
     }
 }

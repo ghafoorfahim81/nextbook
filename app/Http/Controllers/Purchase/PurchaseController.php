@@ -225,7 +225,7 @@ class PurchaseController extends Controller
 
     public function show(Request $request, Purchase $purchase)
     {
-        $purchase->load(['items.item', 'items.unitMeasure', 'supplier', 'transaction.currency']);
+        $purchase->load(['items.item', 'items.unitMeasure', 'supplier', 'transaction.currency', 'createdBy', 'updatedBy']);
 
         return response()->json([
             'data' => new PurchaseResource($purchase),
