@@ -473,10 +473,8 @@ class PurchaseController extends Controller
         $balanceBuckets = [];
 
         foreach ($movements as $movement) {
-            $status = $movement->status?->value ?? $movement->status;
             $expireDate = $movement->expire_date?->toDateString();
             $bucketKey = implode('|', [
-                $status,
                 $movement->batch ?? '',
                 $expireDate ?? '',
             ]);
@@ -488,7 +486,7 @@ class PurchaseController extends Controller
                     'warehouse_id' => $warehouseId,
                     'batch' => $movement->batch,
                     'expire_date' => $expireDate,
-                    'status' => $status,
+                    'status' => $movement->status?->value ?? $movement->status,
                     'quantity' => 0,
                     'in_quantity' => 0,
                     'in_value' => 0,
