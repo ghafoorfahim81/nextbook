@@ -210,11 +210,11 @@ class StockService
                 'warehouse_id' => $data['warehouse_id'],
                 'batch' => $data['batch'] ?? null,
                 'expire_date' => $data['expire_date'] ? $this->dateConversionService->toGregorian($data['expire_date']) : null,
-                'status' => $data['status'] ?? StockStatus::DRAFT->value,
             ],
             [
                 'quantity' => 0,
                 'average_cost' => 0,
+                'status' => $data['status'] ?? StockStatus::DRAFT->value,
             ]
         );
 
@@ -291,7 +291,6 @@ class StockService
                     ->where('branch_id', $data['branch_id'])
                     ->where('item_id', $data['item_id'])
                     ->where('warehouse_id', $data['warehouse_id'])
-                    ->where('status', $allocation['status'])
                     ->when($allocation['batch'] !== null, function ($query) use ($allocation) {
                         return $query->where('batch', $allocation['batch']);
                     }, function ($query) {
