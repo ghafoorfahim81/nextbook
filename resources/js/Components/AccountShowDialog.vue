@@ -41,31 +41,33 @@ const accountData = computed(() => account.value ?? {});
 
 const transactionRows = computed(() => {
     const txns = transactions.value || [];
-    const accountId = accountData.value?.id || props.accountId;
-    return txns.map((txn) => {
+    return txns.flatMap((txn) => {
         const lines = Array.isArray(txn?.lines) ? txn.lines : [];
-        const line = accountId
-            ? lines.find((l) => l.account_id === accountId) || lines[0]
-            : lines[0];
 
-        const debit = Number(line?.debit || 0);
-        const credit = Number(line?.credit || 0);
-        const type = debit > 0 ? 'debit' : credit > 0 ? 'credit' : '';
-        const amount = debit > 0 ? debit : credit;
+        return lines.map((line, lineIndex) => {
+            const debit = Number(line?.debit || 0);
+            const credit = Number(line?.credit || 0);
+            const type = debit > 0 ? 'debit' : credit > 0 ? 'credit' : '';
+            const amount = debit > 0 ? debit : credit;
 
-        return {
-            ...txn,
-            _account_line: line || null,
-            type,
-            amount,
-            remark: txn?.remark ?? line?.remark ?? '',
-        };
+            return {
+                id: line?.id || `${txn?.id || 'txn'}-${lineIndex}`,
+                transaction_id: txn?.id || null,
+                line_id: line?.id || null,
+                type,
+                amount,
+                rate: txn?.rate || 1,
+                date: txn?.date,
+                transaction_number: txn?.voucher_number || txn?.reference_id || txn?.id,
+                description: line?.remark || txn?.remark || txn?.description || '-',
+                currency: txn?.currency?.code || txn?.currency?.name || '',
+                remark: line?.remark ?? txn?.remark ?? '',
+            };
+        });
     });
 });
 
 const transactionTableRows = computed(() => {
-    let runningBalance = 0;
-
     return transactionRows.value.map((row) => {
         const rate = Number(row.rate || 1);
         const debit = Number(row.type === 'debit' ? row.amount * rate : 0);
@@ -74,11 +76,11 @@ const transactionTableRows = computed(() => {
         return {
             id: row.id,
             date: row.date,
-            transaction_number: row.voucher_number || row.reference_id || row.id,
-            description: row.remark || row.description || '-',
+            transaction_number: row.transaction_number || row.id,
+            description: row.description || row.remark || '-',
             debit,
             credit,
-            currency: row.currency?.code || row.currency?.name || '',
+            currency: row.currency || '',
             rate,
         };
     });

@@ -198,22 +198,24 @@ class AccountController extends Controller
         $runningBalance = 0.0;
 
         foreach ($transactions as $transaction) {
-            $line = $transaction->lines->first();
             $rate = (float) ($transaction->rate ?: 1);
-            $debit = round((float) ($line?->debit ?? 0) * $rate, 2);
-            $credit = round((float) ($line?->credit ?? 0) * $rate, 2);
-            // $runningBalance += $debit - $credit;
 
-            $rows[] = [
-                'date' => $dateConversionService->toDisplay($transaction->date) ?: $transaction->date,
-                'transaction_number' => $transaction->voucher_number ?: '-',
-                'description' => trim((string) ($line?->remark ?? $transaction->remark ?? '')) ?: '-',
-                'debit' => $debit,
-                'credit' => $credit,
-                // 'balance' => round($runningBalance, 2),
-                'currency' => $transaction->currency?->code ?? $transaction->currency?->name ?? '',
-                'rate' => $rate,
-            ];
+            foreach ($transaction->lines as $line) {
+                $debit = round((float) ($line?->debit ?? 0) * $rate, 2);
+                $credit = round((float) ($line?->credit ?? 0) * $rate, 2);
+                // $runningBalance += $debit - $credit;
+
+                $rows[] = [
+                    'date' => $dateConversionService->toDisplay($transaction->date) ?: $transaction->date,
+                    'transaction_number' => $transaction->voucher_number ?: '-',
+                    'description' => trim((string) ($line?->remark ?? $transaction->remark ?? '')) ?: '-',
+                    'debit' => $debit,
+                    'credit' => $credit,
+                    // 'balance' => round($runningBalance, 2),
+                    'currency' => $transaction->currency?->code ?? $transaction->currency?->name ?? '',
+                    'rate' => $rate,
+                ];
+            }
         }
 
         $sheetTitle = $spreadsheetExportService->localeTranslation('general', 'transaction_summary', 'Transaction Summary');
