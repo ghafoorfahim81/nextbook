@@ -212,6 +212,27 @@ const closeDialog = () => {
                                         {{ sale.transaction?.currency?.symbol || '' }} {{ formattedGrandTotal }}
                                     </div>
                                 </div>
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <User class="h-3 w-3" />
+                                        {{ t('general.created_by') }}
+                                    </div>
+                                    <div class="text-sm font-medium text-foreground">{{ sale.created_by?.name || '-' }}</div>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <User class="h-3 w-3" />
+                                        {{ t('general.updated_by') }}
+                                    </div>
+                                    <div class="text-sm font-medium text-foreground">{{ sale.updated_by?.name || '-' }}</div>
+                                </div>
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <Calendar class="h-3 w-3" />
+                                        {{ t('general.updated_at') }}
+                                    </div>
+                                    <div class="text-sm font-medium text-foreground">{{ sale.updated_at || '-' }}</div>
+                                </div>
                                 <div class="space-y-1.5" v-if="sale.raw_type === 'credit'">
                                     <div class="flex items-center gap-2 text-xs text-muted-foreground">
                                         <DollarSign class="h-3 w-3" />
