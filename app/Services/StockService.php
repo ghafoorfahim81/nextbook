@@ -8,6 +8,7 @@ use App\Models\Administration\UnitMeasure;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -110,6 +111,7 @@ class StockService
             ->orderBy('id')
             ->lockForUpdate()
             ->get();
+        /** @var \Illuminate\Database\Eloquent\Collection<int, StockMovement> $inMovements */
 
         $allocations = [];
 
@@ -120,7 +122,9 @@ class StockService
 
             $deductQty = min($movement->qty_remaining, $remaining);
 
-            $movement->decrement('qty_remaining', $deductQty);
+            $movement->qty_remaining = (float) $movement->qty_remaining - $deductQty;
+            $movement->status = StockStatus::POSTED->value;
+            $movement->save();
 
             $outMovement = StockMovement::create([
                 ...$data,
@@ -136,7 +140,7 @@ class StockService
                 'quantity' => $deductQty,
                 'batch' => $movement->batch,
                 'expire_date' => $movement->expire_date?->toDateString(),
-                'status' => $movement->status?->value ?? $movement->status,
+                'status' => $this->stockStatusValue($movement->status),
                 'movement_id' => $movement->id,
                 'out_movement_id' => $outMovement->id,
             ];
@@ -307,6 +311,7 @@ class StockService
                     ->get();
 
                 $this->decrementBalances($balances, (float) $allocation['quantity']);
+                $this->markBalancesAsPosted($balances);
             }
 
             return;
@@ -330,6 +335,7 @@ class StockService
             ->get();
 
         $this->decrementBalances($balances, (float) $data['quantity']);
+        $this->markBalancesAsPosted($balances);
     }
 
     /**
@@ -391,7 +397,7 @@ class StockService
      */
     protected function getCostingMethod(string $branchId): string
     {
-        return auth()->user()->company->costing_method->value;
+        return Auth::user()?->company?->costing_method?->value ?? 'fifo';
     }
 
     public function getStockLevel(string $itemId, string $warehouseId, ?string $batch = null, ?string $expireDate = null): array
@@ -436,6 +442,23 @@ class StockService
                 'stock' => 'Negative stock is not allowed.'
             ]);
         }
+    }
+
+    protected function markBalancesAsPosted($balances): void
+    {
+        foreach ($balances as $balance) {
+            if ($this->stockStatusValue($balance->status) === StockStatus::POSTED->value) {
+                continue;
+            }
+
+            $balance->status = StockStatus::POSTED->value;
+            $balance->save();
+        }
+    }
+
+    protected function stockStatusValue(mixed $status): string
+    {
+        return $status instanceof StockStatus ? $status->value : (string) $status;
     }
 
     protected function normalizeDate(?string $date): ?string
