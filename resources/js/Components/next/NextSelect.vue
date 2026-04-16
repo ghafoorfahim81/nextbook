@@ -11,6 +11,8 @@
         @update:modelValue="val => emit('update:modelValue', val)"
         @search="handleSearch"
         @update:search="onSearchUpdate"
+        @open="handleOpen"
+        @close="handleClose"
         :filterable="false"
         :clearable="clearable"
         :loading="isLoading"
@@ -252,6 +254,7 @@
 
   const cachedOptions = ref(new Map())
   const searchableOptions = ref([...props.options])
+  const currentSearchTerm = ref('')
   const { searchResources, isLoading } = useSearchResources()
 
   const resolvedSearchFields = computed(() => {
@@ -273,6 +276,16 @@
   const optionKey = (option) => {
     if (option && typeof option === 'object') return option?.[props.valueKey]
     return option
+  }
+
+  const cacheOption = (option) => {
+    const key = optionKey(option)
+    if (key == null) return
+    cachedOptions.value.set(key, option)
+  }
+
+  const cacheOptions = (options = []) => {
+    options.forEach(cacheOption)
   }
 
   const reduceInternal = (option) => {
@@ -305,7 +318,13 @@
     }
   }
 
+  const resetSearchableOptions = () => {
+    searchableOptions.value = [...props.options]
+    ensureSelectedOptionInOptions()
+  }
+
   watch(() => props.options, (opts) => {
+    cacheOptions(opts)
     searchableOptions.value = [...opts]
     ensureSelectedOptionInOptions()
   }, { immediate: true })
@@ -329,17 +348,26 @@
   // 🔥 COMPOSABLE SIGNALS RESET
   if (results === null) return
 
+  cacheOptions(results)
   searchableOptions.value = results
 }
 
   const onSearchUpdate = (val) => {
+    currentSearchTerm.value = val || ''
     if (!val || !val.trim()) {
-      searchableOptions.value = []
-    nextTick(() => {
-      searchableOptions.value = [...props.options]
-      ensureSelectedOptionInOptions()
-    })
+      nextTick(resetSearchableOptions)
+    }
+}
+
+const handleOpen = () => {
+  if (!currentSearchTerm.value.trim()) {
+    resetSearchableOptions()
   }
+}
+
+const handleClose = () => {
+  currentSearchTerm.value = ''
+  nextTick(resetSearchableOptions)
 }
 
 const openAddDialog = () => {
@@ -359,7 +387,7 @@ const addCreatedOptionToOptions = (created) => {
   if (createdKey == null) return
 
   // cache for ensureSelectedOptionInOptions()
-  cachedOptions.value.set(createdKey, created)
+  cacheOption(created)
 
   // prepend and dedupe
   searchableOptions.value = [
