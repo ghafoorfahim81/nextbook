@@ -700,11 +700,11 @@ class SearchController extends Controller
     private function searchCategories(string $searchTerm, array $fields, int $limit, array $additionalParams): array
     {
         $query = Category::query()
-            ->select('id', 'name', 'description')
+            ->select('id', 'name', 'remark')
             ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
-                    if (in_array($field, ['name', 'description'])) {
+                    if (in_array($field, ['name', 'remark'])) {
                         $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
                     }
                 }
