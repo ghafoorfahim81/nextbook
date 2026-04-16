@@ -43,7 +43,7 @@ const baseTotal = computed(() => {
                 <div class="grid grid-cols-2 gap-4 text-sm">
                     <div>
                         <span class="text-muted-foreground">{{ t('general.date') }}:</span>
-                        <span class="ml-2 font-medium">{{ expense.formatted_date }}</span>
+                        <span class="ml-2 font-medium">{{ expense.date }}</span>
                     </div>
                     <div>
                         <span class="text-muted-foreground">{{ t('expense.category') }}:</span>
@@ -81,10 +81,9 @@ const baseTotal = computed(() => {
                         <table class="w-full text-sm">
                             <thead class="bg-muted/50">
                                 <tr>
-                                    <th class="px-4 py-2 text-left">#</th>
-                                    <th class="px-4 py-2 text-left">{{ t('expense.title') }}</th>
-                                    <th class="px-4 py-2 text-right">{{ t('general.amount') }}</th>
-                                    <th class="px-4 py-2 text-left">{{ t('general.note') }}</th>
+                                    <th class="px-4 py-2 text-left rtl:text-right">#</th>
+                                    <th class="px-4 py-2 text-left rtl:text-right">{{ t('expense.title') }}</th>
+                                    <th class="px-4 py-2 text-right">{{ t('general.amount') }}</th> 
                                 </tr>
                             </thead>
                             <tbody>
@@ -93,8 +92,7 @@ const baseTotal = computed(() => {
                                     <td class="px-4 py-2">{{ detail.title }}</td>
                                     <td class="px-4 py-2 text-right">
                                         {{ expense.currency?.symbol }} {{ Number(detail.amount).toLocaleString() }}
-                                    </td>
-                                    <td class="px-4 py-2 text-muted-foreground">{{ detail.note || '-' }}</td>
+                                    </td> 
                                 </tr>
                             </tbody>
                             <tfoot class="bg-violet-500/10 font-semibold">
@@ -139,7 +137,7 @@ const baseTotal = computed(() => {
                             bg-green-100 border border-green-300
                             dark:bg-green-900/[.94] dark:border-green-700 text-green-900 dark:text-green-100
                             flex flex-col items-start min-h-[88px]">
-                            <Badge variant="success" class="bg-green-600 mb-2" style="direction: ltr;">CR</Badge>
+                            <Badge variant="success" class="bg-green-600 mb-2" style="direction: ltr;">DR</Badge>
                             <p class="font-medium break-words">{{ expense.expense_account?.name }}</p>
                             <p class="text-muted-foreground">
                                 {{ expense.currency?.symbol }} {{ total.toLocaleString() }}
@@ -150,7 +148,7 @@ const baseTotal = computed(() => {
                             bg-red-100 border border-red-300
                             dark:bg-red-900/[.93] dark:border-red-700 text-red-900 dark:text-red-100
                             flex flex-col items-start min-h-[88px]">
-                            <Badge variant="destructive" class="mb-2" style="direction: ltr;">DR</Badge>
+                            <Badge variant="destructive" class="mb-2" style="direction: ltr;">CR</Badge>
                             <p class="font-medium break-words">{{ expense.bank_account?.name }}</p>
                             <p class="text-muted-foreground">
                                 {{ expense.currency?.symbol }} {{ total.toLocaleString() }}
