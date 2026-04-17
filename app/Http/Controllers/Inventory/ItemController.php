@@ -528,7 +528,6 @@ class ItemController extends Controller
             ->where('item_id', $opening->item_id)
             ->where('branch_id', $opening->branch_id)
             ->where('warehouse_id', $opening->warehouse_id)
-            ->where('status', $opening->status?->value ?? $opening->status)
             ->when($opening->batch !== null, function ($query) use ($opening) {
                 return $query->where('batch', $opening->batch);
             }, function ($query) {
@@ -549,7 +548,6 @@ class ItemController extends Controller
             ->where('item_id', $opening->item_id)
             ->where('branch_id', $opening->branch_id)
             ->where('warehouse_id', $opening->warehouse_id)
-            ->where('status', $opening->status?->value ?? $opening->status)
             ->when($opening->batch !== null, function ($query) use ($opening) {
                 return $query->where('batch', $opening->batch);
             }, function ($query) {

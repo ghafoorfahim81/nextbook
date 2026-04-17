@@ -67,6 +67,15 @@ const user_preferences = computed(() => props.user_preferences?.data ?? props.us
 const visibleFields = computed(() => user_preferences.value.item_management.visible_fields ?? []).value
 const specText = computed(() => user_preferences.value.item_management.spec_text ?? '')
 
+const createOpeningRow = (warehouse = null) => ({
+    batch: '',
+    expire_date: '',
+    unit_price: 0,
+    quantity: 0,
+    warehouse_id: warehouse?.id ?? null,
+    selected_warehouse: warehouse,
+})
+
 const form = useForm({
     name: '',
     code: '',
@@ -106,9 +115,7 @@ const form = useForm({
     photo: null, // file
     is_batch_tracked: false,
     is_expiry_tracked: false,
-    openings: [
-        { batch: '', expire_date: '','unit_price': 0, quantity: 0, warehouse_id: null, selected_warehouse: null },
-    ],
+    openings: [createOpeningRow()],
 })
 
 const findBySlugOrName = (list, want) => {
@@ -188,6 +195,11 @@ const preferredAssetAccountIdForItemType = computed(() => {
     return match?.id ?? defaultAssetAccountId.value
 })
 
+const resolveDefaultWarehouse = () => {
+    const list = warehouses.value || []
+    return list.find((warehouse) => warehouse.is_main === true) || list[0] || null
+}
+
 const settingAssetAccount = ref(false)
 const assetAccountUserSet = ref(false)
 watch(() => form.asset_account_id, () => {
@@ -265,6 +277,33 @@ watch(() => props.maxCode, (maxCode) => {
     }
 }, { immediate: true })
 
+const applyItemDefaults = ({ code = formatCode(props.maxCode) } = {}) => {
+    const defaultWarehouse = resolveDefaultWarehouse()
+
+    form.code = code
+    form.item_type = defaultItemTypeId.value
+    form.income_account_id = defaultIncomeAccountId.value
+    form.cost_account_id = defaultCostAccountId.value
+    assetAccountUserSet.value = false
+    setAssetAccountId(preferredAssetAccountIdForItemType.value)
+    form.openings = [createOpeningRow(defaultWarehouse)]
+    generateBarcode()
+}
+
+const resetFormForCreate = ({ code = formatCode(props.maxCode) } = {}) => {
+    form.reset()
+    form.clearErrors()
+    assetAccountUserSet.value = false
+    attachmentPreview.value = null
+    if (fileInput.value) {
+        fileInput.value.value = ''
+    }
+    applyItemDefaults({ code })
+    nextTick(() => {
+        focusNameField()
+    })
+}
+
 // file handler (no v-model on file inputs)
 const onPhotoChange = (e) => {
     const f = e.target.files?.[0]
@@ -317,10 +356,9 @@ const handleSubmitAction = (createAndNew = false) => {
                 class: 'bg-green-600',
             });
             if (isCreateAndNew) {
-                form.reset();
-                if (typeof buildOpenings === 'function') {
-                    form.openings = buildOpenings();
-                }
+                const currentCode = Number(form.code || props.maxCode || 0)
+                const nextCode = formatCode((Number.isNaN(currentCode) ? Number(props.maxCode || 0) : currentCode) + 1)
+                resetFormForCreate({ code: nextCode })
                 form.transform((d) => d); // Reset transform to identity
             }
         },
@@ -426,6 +464,7 @@ watch(
 )
 
 onMounted(() => {
+    applyItemDefaults()
     if (!form.barcode) {
         generateBarcode()
     }

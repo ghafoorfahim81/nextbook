@@ -42,12 +42,19 @@ const itemManagement = computed(() => userPreferences.value?.item_management ?? 
 const specText = computed(() => itemManagement.value?.spec_text ?? 'batch');
 const decimalPlaces = computed(() => Number(userPreferences.value?.appearance?.decimal_places ?? 2));
 const saleRecord = props.sale?.data ?? props.sale ?? {};
+const MIN_SALE_ROWS = 6;
 
 useLazyProps(props, ['ledgers', 'accounts']);
 
 const toNum = (value, fallback = 0) => {
     const number = Number(value);
     return Number.isNaN(number) ? fallback : number;
+};
+
+const quantityOutInBaseUnits = ({ quantity = 0, free = 0, selectedMeasure = null, selectedItem = null } = {}) => {
+    const baseUnit = Number(selectedItem?.unitMeasure?.unit) || 1;
+    const selectedUnit = Number(selectedMeasure?.unit) || baseUnit;
+    return (toNum(quantity, 0) + toNum(free, 0)) * (selectedUnit / baseUnit);
 };
 
 const buildEmptyRow = () => ({
@@ -66,6 +73,8 @@ const buildEmptyRow = () => ({
     item_discount: '',
     free: '',
     tax: '',
+    persisted_item_id: '',
+    persisted_quantity_base: 0,
 });
 
 const getAvailableMeasures = (selectedItem) => {
@@ -100,6 +109,12 @@ const initialRows = (saleRecord?.items || []).map((item) => {
     const baseUnitPrice = selectedUnit
         ? (toNum(item.unit_price, 0) * baseUnit) / (selectedUnit * rate)
         : toNum(item.unit_price, 0);
+    const persistedQuantityBase = quantityOutInBaseUnits({
+        quantity: item.quantity,
+        free: item.free,
+        selectedMeasure,
+        selectedItem,
+    });
 
     return {
         ...buildEmptyRow(),
@@ -118,6 +133,8 @@ const initialRows = (saleRecord?.items || []).map((item) => {
         item_discount: item.discount || '',
         free: item.free || '',
         tax: item.tax || '',
+        persisted_item_id: item.item_id,
+        persisted_quantity_base: persistedQuantityBase,
     };
 });
 
@@ -153,7 +170,7 @@ const form = useForm({
     warehouse_id: saleRecord.warehouse_id,
     selected_warehouse: findById(props.warehouses?.data, saleRecord.warehouse_id) || saleRecord.warehouse || '',
     item_list: saleRecord.item_list || [],
-    items: initialRows.length ? [...initialRows, buildEmptyRow()] : Array.from({ length: 6 }, buildEmptyRow),
+    items: initialRows.length ? [...initialRows] : Array.from({ length: MIN_SALE_ROWS }, buildEmptyRow),
 });
 
 const hydratedExistingRows = ref(false);
@@ -187,6 +204,17 @@ const loadItemOptions = async (warehouseId = form.warehouse_id) => {
 const ensureTrailingEmptyRow = () => {
     const lastRow = form.items[form.items.length - 1];
     if (lastRow?.selected_item) form.items.push(buildEmptyRow());
+};
+
+const ensureMinimumRows = () => {
+    while (form.items.length < MIN_SALE_ROWS) {
+        form.items.push(buildEmptyRow());
+    }
+};
+
+const normalizeRowLayout = () => {
+    ensureTrailingEmptyRow();
+    ensureMinimumRows();
 };
 
 const hydrateExistingItems = () => {
@@ -223,7 +251,7 @@ const hydrateExistingItems = () => {
         row.base_unit_price = Number.isFinite(baseUnitPrice) ? baseUnitPrice : toNum(row.unit_price, 0);
     });
 
-    ensureTrailingEmptyRow();
+    normalizeRowLayout();
     hydratedExistingRows.value = true;
 };
 
@@ -241,7 +269,7 @@ watch(() => form.warehouse_id, async (warehouseId, previousWarehouseId) => {
     }
 
     if (previousWarehouseId && previousWarehouseId !== warehouseId) {
-        form.items = [buildEmptyRow()];
+        form.items = Array.from({ length: MIN_SALE_ROWS }, buildEmptyRow);
     }
 }, { immediate: true });
 
@@ -280,7 +308,7 @@ const handleResetPayment = () => {
 const handleSelectChange = (field, value) => {
     if (field === 'currency_id') form.rate = value.exchange_rate;
     if (field === 'sale_type' && value?.id === 'cash') handleResetPayment();
-    if (field === 'warehouse_id') form.items = [buildEmptyRow()];
+    if (field === 'warehouse_id') form.items = Array.from({ length: MIN_SALE_ROWS }, buildEmptyRow);
     form[field] = value?.id ?? value;
 };
 
@@ -413,11 +441,22 @@ const onhand = (index) => {
     const item = form.items[index];
     if (!item || !item.selected_item) return '';
 
+    const onHandBase = Number(item.selected_batch?.on_hand ?? item.selected_item?.on_hand ?? item.on_hand) || 0;
     const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1;
     const selectedUnit = Number(item.selected_measure?.unit) || baseUnit;
-    const onHand = Number(item.selected_batch?.on_hand ?? item.selected_item?.on_hand ?? item.on_hand) || 0;
-    const converted = (onHand * baseUnit) / selectedUnit;
-    return converted - (Number(item.free) || 0) - (Number(item.quantity) || 0);
+    const persistedQuantityBase = (item.selected_item?.id || item.item_id) === item.persisted_item_id
+        ? toNum(item.persisted_quantity_base, 0)
+        : 0;
+    const currentQuantityBase = quantityOutInBaseUnits({
+        quantity: item.quantity,
+        free: item.free,
+        selectedMeasure: item.selected_measure,
+        selectedItem: item.selected_item,
+    });
+    const adjustedOnHandBase = onHandBase + persistedQuantityBase - currentQuantityBase;
+    const converted = (adjustedOnHandBase * baseUnit) / selectedUnit;
+
+    return Number.isFinite(converted) ? Number(converted.toFixed(2)) : 0;
 };
 
 const rowTotal = (index) => {
@@ -434,6 +473,7 @@ const deleteRow = (index) => {
     if (form.items.length === 1) return;
     form.items.splice(index, 1);
     if (!form.items.length) form.items.push(buildEmptyRow());
+    normalizeRowLayout();
 };
 
 watch(() => form.rate, (newRate) => {
@@ -446,6 +486,29 @@ watch(() => form.rate, (newRate) => {
         row.unit_price = (baseUnitPrice * selectedUnit * toNum(newRate, 1)) / baseUnit;
     });
 });
+
+const displayedAverageCost = (row) => {
+    if (!row?.selected_item) return 0;
+
+    const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1;
+    const selectedUnit = Number(row.selected_measure?.unit) || baseUnit;
+    return (toNum(row.selected_item?.avg_cost, 0) * selectedUnit * toNum(form.rate, 1)) / baseUnit;
+};
+
+const getLossWarning = (row) => {
+    if (!row?.selected_item) return '';
+
+    const avgCost = displayedAverageCost(row);
+    const unitPrice = toNum(row.unit_price, 0);
+    if (unitPrice <= 0 || avgCost <= 0 || unitPrice >= avgCost) {
+        return '';
+    }
+
+    return t('general.loss_price_warning', {
+        avgCost: avgCost.toFixed(decimalPlaces.value),
+        unitPrice: unitPrice.toFixed(decimalPlaces.value),
+    });
+};
 
 const totalRows = computed(() => form.items.filter((item) => item?.selected_item).length);
 const totalItemDiscount = computed(() => form.items.reduce((acc, item) => acc + toNum(item.item_discount, 0), 0));
@@ -468,15 +531,17 @@ const totalQuantity = computed(() => Number(form.items.reduce((acc, item) => acc
 const totalFree = computed(() => Number(form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0).toFixed(decimalPlaces.value)));
 
 const transactionSummary = computed(() => {
-    const paid = toNum(form.payment.amount, 0);
+    const type = form.selected_sale_type?.id || form.sale_type;
     const oldBalance = toNum(form?.selected_ledger?.statement?.balance, 0);
     const balanceNature = form?.selected_ledger?.statement?.balance_nature;
     const hasSelectedItem = Array.isArray(form.items) && form.items.some((row) => !!row.selected_item);
     const netAmount = goodsTotal.value - totalDiscount.value + totalTax.value;
-    const grandTotal = netAmount - paid;
-    const balance = hasSelectedItem
-        ? (balanceNature === 'dr' ? (grandTotal + oldBalance) : (grandTotal - oldBalance))
-        : 0;
+    const paid = type === 'cash'
+        ? netAmount
+        : (type === 'credit' ? toNum(form.payment.amount, 0) : 0);
+    const receivableDelta = netAmount - paid;
+    const signedOldBalance = balanceNature === 'dr' ? oldBalance : -oldBalance;
+    const signedBalance = hasSelectedItem ? signedOldBalance + receivableDelta : signedOldBalance;
 
     return {
         valueOfGoods: Number(goodsTotal.value.toFixed(decimalPlaces.value)),
@@ -484,10 +549,10 @@ const transactionSummary = computed(() => {
         billDiscount: billDiscountCurrency.value,
         itemDiscount: totalItemDiscount.value,
         cashReceived: paid,
-        balance,
-        grandTotal,
+        balance: Math.abs(signedBalance),
+        grandTotal: netAmount,
         oldBalance,
-        balanceNature,
+        balanceNature: signedBalance >= 0 ? 'dr' : 'cr',
         currencySymbol: form.selected_currency?.symbol,
     };
 });
@@ -784,14 +849,22 @@ onUnmounted(() => {
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                                <NextInput
-                                    v-model="item.unit_price"
-                                    :disabled="!item?.selected_item"
-                                    type="number"
-                                    step="any"
-                                    inputmode="decimal"
-                                    :error="form.errors?.[`item_list.${index}.unit_price`]"
-                                />
+                                <div class="space-y-1">
+                                    <NextInput
+                                        v-model="item.unit_price"
+                                        :disabled="!item?.selected_item"
+                                        type="number"
+                                        step="any"
+                                        inputmode="decimal"
+                                        :error="form.errors?.[`item_list.${index}.unit_price`]"
+                                    />
+                                    <div
+                                        v-if="getLossWarning(item)"
+                                        class="text-xs text-amber-600 dark:text-amber-400"
+                                    >
+                                        {{ getLossWarning(item) }}
+                                    </div>
+                                </div>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="itemColumns.discount">
                                 <NextInput

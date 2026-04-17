@@ -648,6 +648,7 @@ class ReportService
         $query
             ->orderByDesc('sm.date')
             ->orderByDesc('sm.created_at')
+            ->selectRaw('sm.id as id')
             ->selectRaw('sm.date')
             ->selectRaw('i.name as item')
             ->selectRaw('w.name as warehouse')
@@ -662,6 +663,7 @@ class ReportService
             $query,
             $filters,
             fn ($row) => [
+                'id' => $row->id,
                 'date' => $this->displayDate($row->date),
                 'item' => $row->item,
                 'warehouse' => $row->warehouse,

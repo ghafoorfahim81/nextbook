@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
@@ -12,7 +12,10 @@ import { useI18n } from 'vue-i18n';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { Trash2, Plus, Upload } from 'lucide-vue-next';
 import { toast } from 'vue-sonner';
+import { todayValueForCalendar } from '@/utils/dateDefaults'
 const { t } = useI18n();
+const page = usePage()
+const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
 
 const props = defineProps({
     categories: { type: Object, required: true },
@@ -46,6 +49,8 @@ const form = useForm({
     selected_currency: null,
 });
 
+const defaultExpenseDetails = () => [{ amount: '', title: '' }]
+
 const submitAction = ref(null);
 const createLoading = computed(() => form.processing && submitAction.value === 'create');
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new');
@@ -70,6 +75,16 @@ watch(() => props.currencies, (currencies) => {
         }
     }
 }, { immediate: true });
+
+const applyCreateDefaults = () => {
+    const baseCurrency = props.homeCurrency || props.currencies?.data?.find?.((currency) => currency.is_base_currency) || props.currencies?.find?.((currency) => currency.is_base_currency)
+    form.date = todayValueForCalendar(calendarType.value)
+    if (baseCurrency) {
+        form.selected_currency = baseCurrency
+        form.currency_id = baseCurrency.id
+        form.rate = baseCurrency.exchange_rate || 1
+    }
+}
 
 // Update rate when currency changes
 const handleCurrencyChange = (currency) => {
@@ -168,17 +183,9 @@ const handleSubmit = (createAndNew = false) => {
             });
             if (createAndNew) {
                 form.reset();
-                form.details = [{ amount: '', title: '' }];
+                form.details = defaultExpenseDetails();
                 attachmentPreview.value = null;
-                // Re-set default currency
-                if (props.currencies) {
-                    const baseCurrency = props.currencies.find(c => c.is_base_currency);
-                    if (baseCurrency) {
-                        form.selected_currency = baseCurrency;
-                        form.currency_id = baseCurrency.id;
-                        form.rate = baseCurrency.exchange_rate || 1;
-                    }
-                }
+                applyCreateDefaults();
             }
         },
         onError: () => {
@@ -201,6 +208,7 @@ try {
 const prevSidebarOpen = ref(true);
 
 onMounted(() => {
+    applyCreateDefaults();
     if (sidebar) {
         prevSidebarOpen.value = sidebar.open.value;
         sidebar.setOpen(false);

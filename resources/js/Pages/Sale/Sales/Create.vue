@@ -3,7 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
 import axios from 'axios'
-import { useForm } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
@@ -21,6 +21,7 @@ import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next';
 import { useLazyProps } from '@/composables/useLazyProps'
+import { todayValueForCalendar } from '@/utils/dateDefaults'
 const { t } = useI18n();
 const showFilter = () => {
     showFilter.value = true;
@@ -28,6 +29,8 @@ const showFilter = () => {
 
 
 const { toast } = useToast()
+const page = usePage()
+const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
 
 const props = defineProps({
     ledgers: {type: Object, required: false, default: () => ({ data: [] })},
@@ -43,14 +46,32 @@ const props = defineProps({
 
 })
 const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
-const general_fields = computed(() =>  user_preferences.value?.sale.general_fields ?? user_preferences.value.sale.general_fields ?? []).value
-const item_columns = computed(() => user_preferences.value?.sale.item_columns ?? user_preferences.value.sale.item_columns ?? []).value
-const sale_preferences = computed(() => user_preferences.value?.sale ?? user_preferences.value.sale ?? []).value
-const item_management = computed(() => user_preferences.value?.item_management ?? user_preferences.value.item_management ?? []).value
-const spec_text = computed(() => item_management?.spec_text ?? item_management?.spec_text ?? 'batch').value
-const decimalPlaces = computed(() => user_preferences.value?.appearance?.decimal_places ?? user_preferences.value.appearance.decimal_places ?? 2).value
+const general_fields = user_preferences.value?.sale?.general_fields ?? {}
+const item_columns = user_preferences.value?.sale?.item_columns ?? {}
+const sale_preferences = user_preferences.value?.sale ?? {}
+const item_management = user_preferences.value?.item_management ?? {}
+const spec_text = item_management?.spec_text ?? 'batch'
+const decimalPlaces = Number(user_preferences.value?.appearance?.decimal_places ?? 2)
 
-useLazyProps(props, ['ledgers', 'accounts'])
+const buildEmptyRow = () => ({
+    item_id: '',
+    selected_item: '',
+    quantity: '',
+    unit_measure_id: '',
+    batch: '',
+    selected_batch: null,
+    expire_date: '',
+    unit_price: '',
+    base_unit_price: '',
+    on_hand: '',
+    available_measures: [],
+    selected_measure: '',
+    item_discount: '',
+    free: '',
+    tax: '',
+})
+
+const { fetchLazyProps } = useLazyProps(props, ['ledgers', 'accounts'])
 
 const form = useForm({
     number: props.saleNumber,
@@ -79,24 +100,64 @@ const form = useForm({
     warehouse_id: '',
     selected_warehouse: '',
     item_list:[],
-    items: Array.from({ length: 6 }, () => ({
-        item_id: '',
-        selected_item: '',
-        quantity: '',
-        unit_measure_id: '',
-        batch: '',
-        selected_batch: null,
-        expire_date: '',
-        unit_price: '',
-        base_unit_price: '',
-        on_hand: '',
-        available_measures: [],
-        selected_measure: '',
-        item_discount: '',
-        free: '',
-        tax: '',
-    })),
+    items: Array.from({ length: 6 }, buildEmptyRow),
 })
+
+const resolveDefaultLedger = () => props.ledgers?.data?.find((ledger) => ledger.code === 'CASH-CUST') ?? null
+const resolveDefaultCurrency = () => props.currencies?.data?.find((currency) => currency.is_base_currency) ?? null
+const resolveDefaultSaleType = () => props.salePurchaseTypes?.find((type) => type.id === 'cash') ?? null
+const resolveDefaultWarehouse = () => props.warehouses?.data?.find((warehouse) => warehouse.is_main === true) ?? null
+const resolveDefaultBankAccount = () => props.bankAccounts?.find((account) => account.slug === 'cash-in-hand') ?? null
+
+const applyCreateDefaults = ({ number = props.saleNumber } = {}) => {
+    const defaultLedger = resolveDefaultLedger()
+    if (defaultLedger) {
+        form.selected_ledger = defaultLedger
+        form.customer_id = defaultLedger.id
+    }
+
+    const defaultCurrency = resolveDefaultCurrency()
+    if (defaultCurrency) {
+        form.selected_currency = defaultCurrency
+        form.rate = defaultCurrency.exchange_rate
+        form.currency_id = defaultCurrency.id
+    }
+
+    const defaultSaleType = resolveDefaultSaleType()
+    if (defaultSaleType) {
+        form.selected_sale_type = defaultSaleType
+        form.sale_type = defaultSaleType.id
+    }
+
+    const defaultWarehouse = resolveDefaultWarehouse()
+    if (defaultWarehouse) {
+        form.selected_warehouse = defaultWarehouse
+        form.warehouse_id = defaultWarehouse.id
+    }
+
+    const defaultBankAccount = resolveDefaultBankAccount()
+    if (defaultBankAccount) {
+        form.selected_bank_account = defaultBankAccount
+        form.bank_account_id = defaultBankAccount.id
+    }
+
+    form.number = number
+    form.date = todayValueForCalendar(calendarType.value)
+}
+
+const resetFormForCreate = ({ number = props.saleNumber } = {}) => {
+    form.reset()
+    form.clearErrors()
+    handleResetPayment()
+    form.item_list = []
+    form.transaction_total = 0
+    form.discount_total = 0
+    form.items = Array.from({ length: 6 }, buildEmptyRow)
+    disabled = false
+    applyCreateDefaults({ number })
+    fetchLazyProps()
+    loadItemOptions(form.warehouse_id)
+}
 
 //  load items
 const itemSearchOptions = computed(() => {
@@ -140,7 +201,7 @@ watch(() => form.warehouse_id, (warehouseId) => {
 // selected ledger
 watch(() => props.ledgers?.data, (ledgers) => {
     if (ledgers && !form.selected_ledger) {
-        const baseLedger = ledgers.find(c => c.code === 'CASH-CUST');
+        const baseLedger = resolveDefaultLedger();
         if (baseLedger) {
             form.selected_ledger = baseLedger;
             form.customer_id = baseLedger.id;
@@ -158,7 +219,7 @@ watch(() => props.saleNumber, (newSaleNumber) => {
 // Set base currency as default
 watch(() => props.currencies?.data, (currencies) => {
     if (currencies && !form.currency_id) {
-        const baseCurrency = currencies.find(c => c.is_base_currency);
+        const baseCurrency = resolveDefaultCurrency();
         if (baseCurrency) {
             form.selected_currency = baseCurrency;
             form.rate = baseCurrency.exchange_rate;
@@ -170,7 +231,7 @@ watch(() => props.currencies?.data, (currencies) => {
 
 watch(() => props.salePurchaseTypes, (salePurchaseTypes) => {
     if (salePurchaseTypes && !form.selected_sale_type) {
-        const baseSalePurchaseType = salePurchaseTypes.find(c => c.id === 'cash');
+        const baseSalePurchaseType = resolveDefaultSaleType();
         if (baseSalePurchaseType) {
             form.selected_sale_type = baseSalePurchaseType;
             form.sale_type = baseSalePurchaseType.id;
@@ -180,7 +241,7 @@ watch(() => props.salePurchaseTypes, (salePurchaseTypes) => {
 
 watch(() => props.warehouses.data, (warehouses) => {
     if (warehouses && !form.selected_warehouse) {
-        const baseWarehouse = warehouses.find(c => c.is_main === true);
+        const baseWarehouse = resolveDefaultWarehouse();
         if (baseWarehouse) {
             form.selected_warehouse = baseWarehouse;
             form.warehouse_id = baseWarehouse.id;
@@ -190,7 +251,7 @@ watch(() => props.warehouses.data, (warehouses) => {
 
 watch(() => props.bankAccounts, (bankAccounts) => {
     if (bankAccounts && !form.selected_bank_account) {
-        const baseBankAccount = bankAccounts.find(c => c.slug === 'cash-in-hand');
+        const baseBankAccount = resolveDefaultBankAccount();
         if (baseBankAccount) {
             form.selected_bank_account = baseBankAccount;
             form.bank_account_id = baseBankAccount.id;
@@ -239,34 +300,16 @@ const handleResetPayment = () => {
 }
 const handleSelectChange = (field, value) => {
     if(field === 'warehouse_id') {
-    // Deselect all selected items when warehouse changes
-        form.items.forEach(item => {
-            item.selected_item = null;
-            item.available_measures = [];
-            item.selected_measure = '';
-            item.unit_price = '';
-            item.base_unit_price = '';
-            item.quantity = '';
-            item.on_hand = '';
-            item.selected_batch = null;
-            item.batch = '';
-            item.expire_date = '';
-            item.discount = '';
-            item.free = '';
-            item.tax = '';
-        });
+        form.items = Array.from({ length: 6 }, buildEmptyRow);
     }
     if(field === 'currency_id') {
         form.rate = value.exchange_rate;
     }
     if(field === 'sale_type') {
-        if(value === 'cash') {
+        if(value?.id === 'cash') {
             handleResetPayment();
         }
-        else{
-            form[field] = value;
-            }
-        }
+    }
     form[field] = value.id;
 };
 
@@ -331,36 +374,10 @@ function handleSubmit({ createAndNew = false, createAndPrint = false } = {}) {
     if (createAndNew) {
         form.transform((data) => ({ ...data, ...payload })).post(route('sales.store'), {
             onSuccess: () => {
-                form.reset();
                 notifySound('success');
                 const currentNumber = Number(form.number ?? props.saleNumber ?? 0);
                 const nextNumber = isNaN(currentNumber) ? 0 : currentNumber + 1;
-                form.number = (nextNumber);
-                // Re-initialize currency field with default
-                if (props.currencies?.data) {
-                    const baseCurrency = props.currencies.data.find(c => c.is_base_currency);
-                    if (baseCurrency) {
-                        form.selected_currency = baseCurrency;
-                        form.rate = baseCurrency.exchange_rate;
-                        form.currency_id = baseCurrency.id;
-                    }
-                }
-                // Re-initialize sale_sale_type with default
-                if (props.salePurchaseTypes) {
-                    const baseSalePurchaseType = props.salePurchaseTypes.find(c => c.id === 'cash');
-                    if (baseSalePurchaseType) {
-                        form.selected_sale_type = baseSalePurchaseType;
-                        form.sale_type = baseSalePurchaseType.id;
-                    }
-                }
-                // Re-initialize warehouse with default
-                if (props.warehouses?.data) {
-                    const baseWarehouse = props.warehouses.data.find(c => c.is_main === true);
-                    if (baseWarehouse) {
-                        form.selected_warehouse = baseWarehouse;
-                        form.warehouse_id = baseWarehouse.id;
-                    }
-                }
+                resetFormForCreate({ number: nextNumber });
                 toast({
                     title: 'Success',
                     description: 'Sale created successfully',
@@ -416,12 +433,11 @@ const handlePaymentDialogConfirm = () => {
 };
 
 const handlePaymentDialogCancel = () => {
-    // Reset the sale/purchase type back to debit when dialog is cancelled
     if (props.salePurchaseTypes) {
-
-        const debitType = props.salePurchaseTypes.find(type => type.id === 'debit');
-        if (debitType) {
-            form.selected_sale_type = debitType;
+        const cashType = resolveDefaultSaleType();
+        if (cashType) {
+            form.selected_sale_type = cashType;
+            form.sale_type = cashType.id;
         }
     }
     showPaymentDialog.value = false;
@@ -440,6 +456,7 @@ onMounted(() => {
         prevSidebarOpen.value = sidebar.open.value
         sidebar.setOpen(false)
     }
+    applyCreateDefaults()
     // Auto-generate bill number: latest + 1
     ;(async () => {
     })()
@@ -458,9 +475,32 @@ watch(() => form.rate, (newRate) => {
         const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
         const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
         const baseUnitPrice = Number(row.base_unit_price ?? row.selected_item?.unit_price ?? row.selected_item?.sale_price ?? 0)
-        row.unit_price = (baseUnitPrice / (selectedUnit || 1)) * (Number(newRate) || 0)
+        row.unit_price = (baseUnitPrice * selectedUnit * (Number(newRate) || 0)) / baseUnit
     })
 })
+
+const displayedAverageCost = (row) => {
+    if (!row?.selected_item) return 0
+
+    const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
+    const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
+    return (toNum(row.selected_item?.avg_cost, 0) * selectedUnit * toNum(form.rate, 1)) / baseUnit
+}
+
+const getLossWarning = (row) => {
+    if (!row?.selected_item) return ''
+
+    const avgCost = displayedAverageCost(row)
+    const unitPrice = toNum(row.unit_price, 0)
+    if (unitPrice <= 0 || avgCost <= 0 || unitPrice >= avgCost) {
+        return ''
+    }
+
+    return t('general.loss_price_warning', {
+        avgCost: avgCost.toFixed(decimalPlaces),
+        unitPrice: unitPrice.toFixed(decimalPlaces),
+    })
+}
 
 const notifySound = (type) => {
     if(type === 'success') {
@@ -814,7 +854,7 @@ const addRow = () => {
                                     label-key="name"
                                     :placeholder="t('general.search_or_select')"
                                     id="item_id"
-                                    :error="form.errors?.[`items.${index}.item_id`]"`
+                                    :error="form.errors?.[`items.${index}.item_id`]"
                                     :show-arrow="false"
                                     :searchable="true"
                                     resource-type="items-list"
@@ -832,7 +872,7 @@ const addRow = () => {
                                     label-key="batch"
                                     :placeholder="t('general.search_or_select')"
                                     id="batch_id"
-                                    :error="form.errors?.[`items.${index}.batch`]"`
+                                    :error="form.errors?.[`items.${index}.batch`]"
                                     :show-arrow="false"
                                     value-key="batch"
                                     :reduce="batch => batch"
@@ -877,13 +917,21 @@ const addRow = () => {
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
-                                <NextInput
-                                    v-model="item.unit_price"
-                                    :disabled="!item?.selected_item"
-                                    type="number" step="any"
-                                    inputmode="decimal"
-                                    :error="form.errors?.[`item_list.${index}.unit_price`]"
-                                />
+                                <div class="space-y-1">
+                                    <NextInput
+                                        v-model="item.unit_price"
+                                        :disabled="!item?.selected_item"
+                                        type="number" step="any"
+                                        inputmode="decimal"
+                                        :error="form.errors?.[`item_list.${index}.unit_price`]"
+                                    />
+                                    <div
+                                        v-if="getLossWarning(item)"
+                                        class="text-xs text-amber-600 dark:text-amber-400"
+                                    >
+                                        {{ getLossWarning(item) }}
+                                    </div>
+                                </div>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.discount">
                                 <NextInput

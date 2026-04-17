@@ -25,6 +25,7 @@ use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
 use App\Support\Preferences\InvoiceThemeOptions;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
@@ -121,7 +122,7 @@ class SaleController extends Controller
                 $lineGrossTotal = $quantity * $unitPrice;
 
                 $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
-                $unitCost = (float) $itemModel->avgCost();
+                $unitCost = (float) ($itemModel?->stockBalances()->avg('average_cost') ?? 0);
                 $totalCost = $unitCost * $quantity;
 
                 $totalCostOfGoodsSold += $totalCost;
@@ -415,7 +416,7 @@ class SaleController extends Controller
 
     public function show(Request $request, Sale $sale)
     {
-        $sale->load(['items.item', 'items.unitMeasure', 'customer', 'transaction.currency', 'createdBy']);
+        $sale->load(['items.item', 'items.unitMeasure', 'customer', 'transaction.currency', 'createdBy', 'updatedBy']);
 
         return response()->json([
             'data' => new SaleResource($sale),
@@ -503,7 +504,7 @@ class SaleController extends Controller
                 $lineGrossTotal = $quantity * $unitPrice;
 
                 $itemModel = Item::findOrFail($item['item_id']);
-                $unitCost = (float) ($itemModel->avgCost() ?? 0);
+                $unitCost = (float) ($itemModel->stockBalances()->avg('average_cost') ?? 0);
                 $totalCost = $unitCost * $quantity;
 
                 $stockService->post([
@@ -675,6 +676,7 @@ class SaleController extends Controller
             ->orderBy('date')
             ->orderBy('id')
             ->get();
+        /** @var \Illuminate\Database\Eloquent\Collection<int, StockMovement> $movements */
 
         StockBalance::query()
             ->where('branch_id', $branchId)
@@ -689,10 +691,8 @@ class SaleController extends Controller
         $balanceBuckets = [];
 
         foreach ($movements as $movement) {
-            $status = $movement->status?->value ?? $movement->status;
             $expireDate = $movement->expire_date?->toDateString();
             $bucketKey = implode('|', [
-                $status,
                 $movement->batch ?? '',
                 $expireDate ?? '',
             ]);
@@ -704,11 +704,15 @@ class SaleController extends Controller
                     'warehouse_id' => $warehouseId,
                     'batch' => $movement->batch,
                     'expire_date' => $expireDate,
-                    'status' => $status,
+                    'status' => $this->stockStatusValue($movement->status),
                     'quantity' => 0,
                     'in_quantity' => 0,
                     'in_value' => 0,
                 ];
+            }
+
+            if ($this->stockStatusValue($movement->status) === StockStatus::POSTED->value) {
+                $balanceBuckets[$bucketKey]['status'] = StockStatus::POSTED->value;
             }
 
             if ($movement->movement_type === StockMovementType::IN) {
@@ -740,7 +744,7 @@ class SaleController extends Controller
         }
 
         $inMovements = $movements
-            ->filter(fn ($movement) => $movement->movement_type === StockMovementType::IN)
+            ->filter(fn (StockMovement $movement) => $movement->movement_type === StockMovementType::IN)
             ->values();
 
         foreach ($inMovements as $movement) {
@@ -749,7 +753,7 @@ class SaleController extends Controller
         }
 
         $outMovements = $movements
-            ->filter(fn ($movement) => $movement->movement_type === StockMovementType::OUT)
+            ->filter(fn (StockMovement $movement) => $movement->movement_type === StockMovementType::OUT)
             ->values();
 
         foreach ($outMovements as $outMovement) {
@@ -888,7 +892,7 @@ class SaleController extends Controller
     public function print(Request $request, Sale $sale)
     {
 
-        $company = auth()->user()?->company;
+        $company = Auth::user()?->company;
         $sale = $sale->load([
             'customer',
             'items.item',
@@ -941,5 +945,10 @@ class SaleController extends Controller
         //     'Content-Type' => 'application/pdf',
         //     'Content-Disposition' => 'inline; filename="sale-'.$sale->number.'.pdf"',
         // ]);
+    }
+
+    private function stockStatusValue(mixed $status): string
+    {
+        return $status instanceof StockStatus ? $status->value : (string) $status;
     }
 }

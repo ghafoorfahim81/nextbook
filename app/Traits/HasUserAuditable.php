@@ -17,6 +17,11 @@ trait HasUserAuditable
             if ($user?->id && empty($model->created_by)) {
                 $model->created_by = $user->id;
             }
+
+            // Keep updated_by reserved for true edits only.
+            if (method_exists($model, 'isFillable') && $model->isFillable('updated_by')) {
+                $model->updated_by = null;
+            }
         });
 
         static::updating(function ($model) use ($resolveUser) {

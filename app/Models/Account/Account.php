@@ -108,9 +108,9 @@ class Account extends Model
 
                 $netBalance = $totalDebit>0 ? $totalDebit - $totalCredit : $totalCredit - $totalDebit;
                 $balanceAmount = abs($netBalance);
-                $balanceNature = $netBalance > 0
+                $balanceNature = $totalDebit > $totalCredit
                     ? 'dr'
-                    : ($netBalance < 0 ? 'cr' : null);
+                    : ($totalCredit > $totalDebit ? 'cr' : null);
 
                 $natureFormat = balanceNatureFormat();
 

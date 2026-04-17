@@ -13,11 +13,13 @@ import SubmitButtons from '@/Components/SubmitButtons.vue'
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { Trash2 } from 'lucide-vue-next'
 import { useSidebar } from '@/Components/ui/sidebar/utils'
+import { todayValueForCalendar } from '@/utils/dateDefaults'
 
 const { t } = useI18n()
 const { toast } = useToast()
 
 const page = usePage()
+const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
 const warehouses = computed(() => page.props.warehouses?.data || page.props.warehouses || [])
 const unitMeasures = computed(() => page.props.unitMeasures?.data || page.props.unitMeasures || [])
 const itemOptions = ref([])
@@ -34,6 +36,7 @@ const createEmptyRow = () => ({
   base_unit_price: '',
   available_measures: [],
 })
+const defaultTransferRows = () => [createEmptyRow(), createEmptyRow(), createEmptyRow(), createEmptyRow()]
 
 const form = useForm({
   date: '',
@@ -43,7 +46,7 @@ const form = useForm({
   selected_to_warehouse: null,
   transfer_cost: '',
   remarks: '',
-  items: [createEmptyRow(), createEmptyRow(), createEmptyRow(), createEmptyRow()],
+  items: defaultTransferRows(),
 })
 
 const submitAction = ref(null)
@@ -93,6 +96,13 @@ watch(
   },
   { immediate: true }
 )
+
+const applyCreateDefaults = () => {
+  const preferredWarehouse = warehouses.value.find(str => str.is_main) || warehouses.value[0] || null
+  form.date = todayValueForCalendar(calendarType.value)
+  form.selected_from_warehouse = preferredWarehouse
+  form.from_warehouse_id = preferredWarehouse?.id || ''
+}
 
 watch(() => form.from_warehouse_id, (warehouseId) => {
   if (!warehouseId) {
@@ -249,7 +259,8 @@ function handleSubmit(createAndNew = false) {
 
       if (createAndNew) {
         form.reset()
-        form.items = [createEmptyRow(), createEmptyRow(), createEmptyRow()]
+        form.items = defaultTransferRows()
+        applyCreateDefaults()
       }
     },
   })
@@ -268,6 +279,7 @@ onMounted(() => {
     prevSidebarOpen.value = sidebar.open.value
     sidebar.setOpen(false)
   }
+  applyCreateDefaults()
 })
 onUnmounted(() => {
   if (sidebar) {
