@@ -13,9 +13,11 @@ import SubmitButtons from '@/Components/SubmitButtons.vue'
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
+import { todayValueForCalendar } from '@/utils/dateDefaults'
 const { t } = useI18n()
 
 const page = usePage()
+const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
 const ledgers = computed(() => page.props.ledgers?.data || [])
 const accounts = computed(() => page.props.accounts?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
@@ -73,6 +75,18 @@ watch(currencies, (list) => {
     }
   }
 }, { immediate: true })
+
+const applyCreateDefaults = ({ number = page.props.latestNumber ?? form.number } = {}) => {
+  form.number = number
+  form.date = todayValueForCalendar(calendarType.value)
+
+  const base = currencies.value.find(c => c.is_base_currency)
+  if (base) {
+    form.selected_currency = base
+    form.currency_id = base.id
+    form.rate = base.exchange_rate
+  }
+}
 
 function handleSelectChange(field, value) {
   form[field] = value
@@ -179,7 +193,7 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
         form.allocations = []
         showBillDialog.value = false
         billOptions.value = []
-        form.number = String((isNaN(latest) ? 0 : latest) + 1)
+        applyCreateDefaults({ number: String((isNaN(latest) ? 0 : latest) + 1) })
       }
       if (createAndPrint) {
         finalizePrint(page)
@@ -196,6 +210,7 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
 }
 
 onMounted(() => {
+  applyCreateDefaults()
   initialized.value = true
 })
 </script>

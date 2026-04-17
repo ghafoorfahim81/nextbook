@@ -26,6 +26,7 @@ use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\ValidationException;
 use App\Services\DateConversionService;
 class PurchaseController extends Controller
 {
@@ -225,7 +226,7 @@ class PurchaseController extends Controller
 
     public function show(Request $request, Purchase $purchase)
     {
-        $purchase->load(['items.item', 'items.unitMeasure', 'supplier', 'transaction.currency']);
+        $purchase->load(['items.item', 'items.unitMeasure', 'supplier', 'transaction.currency', 'createdBy', 'updatedBy']);
 
         return response()->json([
             'data' => new PurchaseResource($purchase),
@@ -235,6 +236,7 @@ class PurchaseController extends Controller
     public function edit(Request $request, Purchase $purchase)
     {
         $bankAccounts = (new Account())->getAccountsByAccountTypeSlug('cash-or-bank');
+        $stockLocked = $this->purchaseHasPostedStock($purchase);
 
         return inertia('Purchase/Purchases/Edit', [
             'purchase' => new PurchaseResource($purchase->load([
@@ -247,11 +249,18 @@ class PurchaseController extends Controller
                 'transaction.lines.ledger',
             ])),
             'bankAccounts' => $bankAccounts,
+            'stockLocked' => $stockLocked,
         ]);
     }
 
     public function update(PurchaseUpdateRequest $request, Purchase $purchase, TransactionService $transactionService, StockService $stockService)
     {
+        if ($this->purchaseHasPostedStock($purchase)) {
+            throw ValidationException::withMessages([
+                'purchase' => 'This purchase contains posted stock and can no longer be edited.',
+            ]);
+        }
+
         $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $stockService) {
             $validated = $request->validated();
             $validated['type'] = $validated['purchase_type'] ?? $purchase->type ?? 'cash';
@@ -459,6 +468,7 @@ class PurchaseController extends Controller
             ->orderBy('date')
             ->orderBy('id')
             ->get();
+        /** @var \Illuminate\Database\Eloquent\Collection<int, StockMovement> $movements */
 
         StockBalance::query()
             ->where('branch_id', $branchId)
@@ -473,10 +483,8 @@ class PurchaseController extends Controller
         $balanceBuckets = [];
 
         foreach ($movements as $movement) {
-            $status = $movement->status?->value ?? $movement->status;
             $expireDate = $movement->expire_date?->toDateString();
             $bucketKey = implode('|', [
-                $status,
                 $movement->batch ?? '',
                 $expireDate ?? '',
             ]);
@@ -488,11 +496,15 @@ class PurchaseController extends Controller
                     'warehouse_id' => $warehouseId,
                     'batch' => $movement->batch,
                     'expire_date' => $expireDate,
-                    'status' => $status,
+                    'status' => $this->stockStatusValue($movement->status),
                     'quantity' => 0,
                     'in_quantity' => 0,
                     'in_value' => 0,
                 ];
+            }
+
+            if ($this->stockStatusValue($movement->status) === StockStatus::POSTED->value) {
+                $balanceBuckets[$bucketKey]['status'] = StockStatus::POSTED->value;
             }
 
             if ($movement->movement_type === StockMovementType::IN) {
@@ -524,13 +536,27 @@ class PurchaseController extends Controller
         }
 
         $inMovements = $movements
-            ->filter(fn ($movement) => $movement->movement_type === StockMovementType::IN)
+            ->filter(fn (StockMovement $movement) => $movement->movement_type === StockMovementType::IN)
             ->values();
 
         foreach ($inMovements as $movement) {
             $movement->qty_remaining = (float) $movement->quantity;
             $movement->save();
         }
+    }
+
+    private function purchaseHasPostedStock(Purchase $purchase): bool
+    {
+        return StockMovement::query()
+            ->where('reference_type', Purchase::class)
+            ->where('reference_id', $purchase->id)
+            ->where('status', StockStatus::POSTED->value)
+            ->exists();
+    }
+
+    private function stockStatusValue(mixed $status): string
+    {
+        return $status instanceof StockStatus ? $status->value : (string) $status;
     }
 
     public function destroy(Request $request, Purchase $purchase)

@@ -34,6 +34,8 @@
   "radio": "راډیو",
   "result_not_found": "نتیجه و نه موندل شوه",
   "updated_by": "نوی شوی له خوا",
+  "updated_at": "د نوي کېدو نېټه",
+  "loss_price_warning": "تاسو په تاوان کې یاست. د واحد بیه د اوسط لګښت څخه کمه ده (اوسط لګښت: {avgCost}، د واحد بیه: {unitPrice})",
   "created_by": "جوړ شوی له خوا",
   "deleted_by": "ړنګ شوی له خوا",
   "loading": "لوډ کېږي",
