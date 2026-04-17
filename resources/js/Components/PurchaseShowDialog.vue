@@ -69,6 +69,7 @@ const formattedTotalAmount = computed(() => Number(totalAmount.value || 0).toFix
 const formattedTotalDiscount = computed(() => Number(totalDiscount.value || 0).toFixed(2));
 const formattedTotalTax = computed(() => Number(totalTax.value || 0).toFixed(2));
 const formattedGrandTotal = computed(() => Number(grandTotal.value || 0).toFixed(2));
+const formatLineValue = (value) => Number(value || 0).toFixed(2);
 
 // Fetch purchase data when dialog opens
 watch(() => props.open, async (isOpen) => {
@@ -162,14 +163,14 @@ const closeDialog = () => {
         <DialogContent class="max-w-6xl overflow-hidden p-0">
             <div class="w-full rounded-2xl bg-background text-foreground shadow-2xl">
                 <DialogHeader class="border-b border-border bg-gradient-to-r from-violet-400/10 via-background to-background px-6 py-5 text-left dark:from-violet-900/30">
-                    <div class="flex items-center justify-between gap-4">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex items-center gap-3">
                             <Package2 class="h-6 w-6 text-violet-500" />
                             <DialogTitle class="text-xl font-semibold text-foreground">
                                 {{ t('purchase.purchase') }} #{{ purchase?.number }}
                             </DialogTitle>
                         </div>
-                        <Badge :class="statusBadgeClasses">
+                        <Badge :class="statusBadgeClasses" class="w-fit">
                             {{ getStatusLabel(purchase?.status) }}
                         </Badge>
                     </div>
@@ -252,7 +253,104 @@ const closeDialog = () => {
                                     <h3 class="text-base font-semibold text-foreground">{{ t('item.item') }}</h3>
                                 </div>
                             </div>
-                            <div class="overflow-x-auto">
+                            <div class="space-y-3 p-4 md:hidden">
+                                <div
+                                    v-for="(item, index) in purchase.items"
+                                    :key="item.id"
+                                    class="rounded-xl border border-border bg-background/70 p-4"
+                                >
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <div class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                                #{{ index + 1 }}
+                                            </div>
+                                            <div class="truncate text-sm font-semibold text-foreground">
+                                                {{ item.item_name }}
+                                            </div>
+                                            <div class="text-xs text-muted-foreground">
+                                                {{ item.item_code || '-' }}
+                                            </div>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-xs text-muted-foreground">{{ t('general.total') }}</div>
+                                            <div class="text-sm font-semibold text-violet-600 dark:text-violet-400">
+                                                {{ purchase.transaction?.currency?.symbol || '' }} {{ formatLineValue(item.subtotal) }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                                        <div>
+                                            <div class="text-xs text-muted-foreground">{{ t('general.batch') }}</div>
+                                            <div class="font-medium text-foreground">{{ item.batch || '-' }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-muted-foreground">{{ t('general.expire_date') }}</div>
+                                            <div class="font-medium text-foreground">{{ item.expire_date || '-' }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-muted-foreground">{{ t('general.qty') }}</div>
+                                            <div class="font-medium text-foreground">{{ item.quantity }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-muted-foreground">{{ t('general.unit') }}</div>
+                                            <div class="font-medium text-foreground">{{ item.unit_measure_name || '-' }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-muted-foreground">{{ t('general.price') }}</div>
+                                            <div class="font-medium text-foreground">{{ formatLineValue(item.unit_price) }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-muted-foreground">{{ t('general.discount') }}</div>
+                                            <div class="font-medium text-foreground">{{ formatLineValue(item.discount) }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-muted-foreground">{{ t('general.free') }}</div>
+                                            <div class="font-medium text-foreground">{{ formatLineValue(item.free) }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs text-muted-foreground">{{ t('general.tax') }}</div>
+                                            <div class="font-medium text-foreground">{{ formatLineValue(item.tax) }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="rounded-xl border border-border bg-muted/20 p-4">
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <span class="text-muted-foreground">{{ t('general.qty') }}</span>
+                                            <span class="font-semibold text-foreground">
+                                                {{ purchase.items?.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0) }}
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center justify-between gap-3">
+                                            <span class="text-muted-foreground">{{ t('general.amount') }}</span>
+                                            <span class="font-semibold text-foreground">{{ formattedTotalAmount }}</span>
+                                        </div>
+                                        <div class="flex items-center justify-between gap-3">
+                                            <span class="text-muted-foreground">{{ t('general.discount') }}</span>
+                                            <span class="font-semibold text-foreground">{{ formattedTotalDiscount }}</span>
+                                        </div>
+                                        <div class="flex items-center justify-between gap-3">
+                                            <span class="text-muted-foreground">{{ t('general.free') }}</span>
+                                            <span class="font-semibold text-foreground">
+                                                {{ purchase.items?.reduce((sum, item) => sum + parseFloat(item.free || 0), 0) }}
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center justify-between gap-3">
+                                            <span class="text-muted-foreground">{{ t('general.tax') }}</span>
+                                            <span class="font-semibold text-foreground">{{ formattedTotalTax }}</span>
+                                        </div>
+                                        <div class="flex items-center justify-between gap-3 border-t border-border pt-2">
+                                            <span class="text-muted-foreground">{{ t('general.total') }}</span>
+                                            <span class="text-base font-bold text-violet-600 dark:text-violet-400">
+                                                {{ purchase.transaction?.currency?.symbol || '' }} {{ formattedGrandTotal }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="hidden overflow-x-auto md:block">
                                 <table class="w-full text-sm">
                                     <thead class="border-b border-border bg-muted/40">
                                         <tr>
@@ -317,8 +415,8 @@ const closeDialog = () => {
                     </div>
                 </div>
                 <DialogFooter class="border-t border-border bg-background/95 px-6 py-4">
-                    <div class="flex w-full items-center justify-between gap-3">
-                        <div v-if="purchase?.status === 'pending'" class="flex gap-2">
+                    <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div v-if="purchase?.status === 'pending'" class="flex flex-col gap-2 sm:flex-row">
                             <Button
                                 @click="handleReject"
                                 :disabled="form.processing"
