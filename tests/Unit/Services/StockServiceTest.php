@@ -172,6 +172,53 @@ class StockServiceTest extends TestCase
         $this->assertEquals(10.0, (float) $balance->average_cost);
     }
 
+    public function test_fifo_out_movement_unit_cost_is_saved_in_selected_unit_measure(): void
+    {
+        $service = app(StockService::class);
+
+        $boxMeasure = UnitMeasure::factory()->create([
+            'branch_id' => $this->ctx['branch']->id,
+            'quantity_id' => $this->ctx['quantity']->id,
+            'name' => 'Box',
+            'unit' => '6',
+            'symbol' => 'box',
+            'is_active' => true,
+        ]);
+
+        $base = [
+            'item_id' => $this->ctx['item']->id,
+            'source' => StockSourceType::PURCHASE->value,
+            'status' => StockStatus::POSTED->value,
+            'batch' => null,
+            'expire_date' => null,
+            'size_id' => $this->ctx['size']->id,
+            'warehouse_id' => $this->ctx['warehouse']->id,
+            'branch_id' => $this->ctx['branch']->id,
+            'reference_type' => 'out-measure-cost-test',
+            'reference_id' => $this->ctx['item']->id,
+        ];
+
+        $service->post(array_merge($base, [
+            'movement_type' => StockMovementType::IN->value,
+            'unit_measure_id' => $this->ctx['unit_measure']->id,
+            'quantity' => 12,
+            'unit_cost' => 10,
+            'date' => '2026-03-01',
+        ]));
+
+        $outMovement = $service->post(array_merge($base, [
+            'movement_type' => StockMovementType::OUT->value,
+            'unit_measure_id' => $boxMeasure->id,
+            'quantity' => 1,
+            'unit_cost' => 0,
+            'date' => '2026-03-02',
+        ]))[0];
+
+        $this->assertSame($boxMeasure->id, $outMovement->unit_measure_id);
+        $this->assertEquals(1.0, (float) $outMovement->quantity);
+        $this->assertEquals(60.0, (float) $outMovement->unit_cost);
+    }
+
     public function test_batch_tracked_items_require_batch_number(): void
     {
         $service = app(StockService::class);
