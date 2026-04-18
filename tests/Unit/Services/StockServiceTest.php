@@ -6,6 +6,7 @@ use App\Enums\CostingMethod;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
+use App\Models\Administration\UnitMeasure;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
 use App\Services\StockService;
@@ -128,6 +129,47 @@ class StockServiceTest extends TestCase
             ->firstOrFail();
 
         $this->assertEquals(15.0, round((float) $out->unit_cost, 2));
+    }
+
+    public function test_in_movement_keeps_entered_quantity_while_balance_uses_item_unit_quantity(): void
+    {
+        $service = app(StockService::class);
+
+        $boxMeasure = UnitMeasure::factory()->create([
+            'branch_id' => $this->ctx['branch']->id,
+            'quantity_id' => $this->ctx['quantity']->id,
+            'name' => 'Box',
+            'unit' => '6',
+            'symbol' => 'box',
+            'is_active' => true,
+        ]);
+
+        $movement = $service->post([
+            'item_id' => $this->ctx['item']->id,
+            'movement_type' => StockMovementType::IN->value,
+            'unit_measure_id' => $boxMeasure->id,
+            'quantity' => 2,
+            'source' => StockSourceType::PURCHASE->value,
+            'unit_cost' => 60,
+            'status' => StockStatus::POSTED->value,
+            'batch' => null,
+            'date' => '2026-03-01',
+            'expire_date' => null,
+            'size_id' => $this->ctx['size']->id,
+            'warehouse_id' => $this->ctx['warehouse']->id,
+            'branch_id' => $this->ctx['branch']->id,
+            'reference_type' => 'measure-conversion-test',
+            'reference_id' => $this->ctx['item']->id,
+        ])[0];
+
+        $balance = StockBalance::query()->firstOrFail();
+
+        $this->assertSame($boxMeasure->id, $movement->unit_measure_id);
+        $this->assertEquals(2.0, (float) $movement->quantity);
+        $this->assertEquals(60.0, (float) $movement->unit_cost);
+        $this->assertEquals(12.0, (float) $movement->qty_remaining);
+        $this->assertEquals(12.0, (float) $balance->quantity);
+        $this->assertEquals(10.0, (float) $balance->average_cost);
     }
 
     public function test_batch_tracked_items_require_batch_number(): void
