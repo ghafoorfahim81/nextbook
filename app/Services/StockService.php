@@ -28,17 +28,12 @@ class StockService
     {
         return DB::transaction(function () use ($data) {
             $item = Item::lockForUpdate()->findOrFail($data['item_id']);
+            [$movementData, $balanceData, $conversionFactor] = $this->prepareStockPayloads($item, $data);
 
-            if ($item->unit_measure_id != $data['unit_measure_id']) {
-                $selected_um = UnitMeasure::find($data['unit_measure_id'])->unit;
-                $current_um  = UnitMeasure::find($item->unit_measure_id)->unit;
-                $data['unit_cost']    = (($current_um * $data['unit_cost']) / $selected_um);
-                $data['quantity'] = ($selected_um * $data['quantity']) / $current_um;
-            }
             if ($data['movement_type'] === StockMovementType::IN->value) {
-                return $this->handleIn($item, $data);
+                return $this->handleIn($item, $movementData, $balanceData);
             } else {
-                return $this->handleOut($item, $data);
+                return $this->handleOut($item, $movementData, $balanceData, $conversionFactor);
             }
         });
     }
@@ -46,16 +41,16 @@ class StockService
     /**
      * Handle Stock IN
      */
-    protected function handleIn(Item $item, array $data): array
+    protected function handleIn(Item $item, array $movementData, array $balanceData): array
     {
-        $this->validateBatch($item, $data);
+        $this->validateBatch($item, $movementData);
 
         $movement = StockMovement::create([
-            ...$data,
-            'qty_remaining' => $data['quantity'],
+            ...$movementData,
+            'qty_remaining' => $balanceData['quantity'],
         ]);
 
-        $this->increaseBalance($item, $data);
+        $this->increaseBalance($item, $balanceData);
 
         return [$movement];
     }
@@ -63,21 +58,21 @@ class StockService
     /**
      * Handle Stock OUT
      */
-    protected function handleOut(Item $item, array $data): array
+    protected function handleOut(Item $item, array $movementData, array $balanceData, float $conversionFactor): array
     {
-        $this->validateStockAvailability($data);
-        $method = $this->getCostingMethod($data['branch_id']);
+        $this->validateStockAvailability($balanceData);
+        $method = $this->getCostingMethod($movementData['branch_id']);
 
         if ($method === 'fifo') {
-            $allocations = $this->deductFIFO($item, $data);
-            $this->decreaseBalance($data, $allocations);
+            $allocations = $this->deductFIFO($item, $movementData, $balanceData, $conversionFactor);
+            $this->decreaseBalance($balanceData, $allocations);
 
             return $allocations;
         } else {
-            $movement = $this->deductWeightedAverage($item, $data);
+            $movement = $this->deductWeightedAverage($item, $movementData, $balanceData);
         }
 
-        $this->decreaseBalance($data);
+        $this->decreaseBalance($balanceData);
 
         return [$movement];
     }
@@ -85,22 +80,22 @@ class StockService
     /**
      * FIFO Deduction
      */
-    protected function deductFIFO(Item $item, array $data): array
+    protected function deductFIFO(Item $item, array $movementData, array $balanceData, float $conversionFactor): array
     {
-        $remaining = $data['quantity'];
+        $remaining = $balanceData['quantity'];
         $query = StockMovement::query()
-            ->where('branch_id', $data['branch_id'])
-            ->where('item_id', $data['item_id'])
-            ->where('warehouse_id', $data['warehouse_id'])
+            ->where('branch_id', $balanceData['branch_id'])
+            ->where('item_id', $balanceData['item_id'])
+            ->where('warehouse_id', $balanceData['warehouse_id'])
             ->where('movement_type', StockMovementType::IN->value)
             ->where('qty_remaining', '>', 0);
 
-        if ($item->is_batch_tracked && !empty($data['batch'])) {
-            $query->where('batch', $data['batch']);
+        if ($item->is_batch_tracked && !empty($balanceData['batch'])) {
+            $query->where('batch', $balanceData['batch']);
         }
 
-        if (!empty($data['expire_date'])) {
-            $query->whereDate('expire_date', $this->normalizeDate($data['expire_date']));
+        if (!empty($balanceData['expire_date'])) {
+            $query->whereDate('expire_date', $this->normalizeDate($balanceData['expire_date']));
         }
 
         $inMovements = $query
@@ -127,10 +122,10 @@ class StockService
             $movement->save();
 
             $outMovement = StockMovement::create([
-                ...$data,
+                ...$movementData,
                 'batch' => $movement->batch,
-                'quantity' => $deductQty,
-                'date' => $this->normalizeDate($data['date']),
+                'quantity' => $this->convertFromItemUnit($deductQty, $conversionFactor),
+                'date' => $this->normalizeDate($movementData['date']),
                 'expire_date' => $movement->expire_date?->toDateString(),
                 'unit_cost' => $movement->unit_cost,
                 'qty_remaining' => null,
@@ -160,19 +155,19 @@ class StockService
     /**
      * Weighted Average Deduction
      */
-    protected function deductWeightedAverage(Item $item, array $data): StockMovement
+    protected function deductWeightedAverage(Item $item, array $movementData, array $balanceData): StockMovement
     {
         $balance = StockBalance::query()
-            ->where('branch_id', $data['branch_id'])
-            ->where('item_id', $data['item_id'])
-            ->where('warehouse_id', $data['warehouse_id'])
+            ->where('branch_id', $balanceData['branch_id'])
+            ->where('item_id', $balanceData['item_id'])
+            ->where('warehouse_id', $balanceData['warehouse_id'])
             ->lockForUpdate()
             ->firstOrFail();
 
         return StockMovement::create([
-            ...$data,
-            'date' => $this->normalizeDate($data['date']),
-            'expire_date' => $data['expire_date'] ? $this->normalizeDate($data['expire_date']) : null,
+            ...$movementData,
+            'date' => $this->normalizeDate($movementData['date']),
+            'expire_date' => $movementData['expire_date'] ? $this->normalizeDate($movementData['expire_date']) : null,
             'unit_cost' => $balance->average_cost,
             'qty_remaining' => null,
         ]);
@@ -459,6 +454,41 @@ class StockService
     protected function stockStatusValue(mixed $status): string
     {
         return $status instanceof StockStatus ? $status->value : (string) $status;
+    }
+
+    protected function prepareStockPayloads(Item $item, array $data): array
+    {
+        $movementData = $data;
+        $balanceData = $data;
+        $conversionFactor = $this->resolveConversionFactor($item->unit_measure_id, $data['unit_measure_id']);
+
+        if ($conversionFactor !== 1.0) {
+            $balanceData['unit_cost'] = (float) $data['unit_cost'] / $conversionFactor;
+            $balanceData['quantity'] = (float) $data['quantity'] * $conversionFactor;
+        }
+
+        return [$movementData, $balanceData, $conversionFactor];
+    }
+
+    protected function resolveConversionFactor(string $itemUnitMeasureId, string $selectedUnitMeasureId): float
+    {
+        if ($itemUnitMeasureId === $selectedUnitMeasureId) {
+            return 1.0;
+        }
+
+        $selectedUnit = (float) UnitMeasure::query()->findOrFail($selectedUnitMeasureId)->unit;
+        $itemUnit = (float) UnitMeasure::query()->findOrFail($itemUnitMeasureId)->unit;
+
+        return $selectedUnit / $itemUnit;
+    }
+
+    protected function convertFromItemUnit(float $quantity, float $conversionFactor): float
+    {
+        if ($conversionFactor === 0.0) {
+            return $quantity;
+        }
+
+        return $quantity / $conversionFactor;
     }
 
     protected function normalizeDate(?string $date): ?string
