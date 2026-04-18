@@ -69,7 +69,7 @@ class StockService
 
             return $allocations;
         } else {
-            $movement = $this->deductWeightedAverage($item, $movementData, $balanceData);
+            $movement = $this->deductWeightedAverage($item, $movementData, $balanceData, $conversionFactor);
         }
 
         $this->decreaseBalance($balanceData);
@@ -127,7 +127,7 @@ class StockService
                 'quantity' => $this->convertFromItemUnit($deductQty, $conversionFactor),
                 'date' => $this->normalizeDate($movementData['date']),
                 'expire_date' => $movement->expire_date?->toDateString(),
-                'unit_cost' => $movement->unit_cost,
+                'unit_cost' => $this->convertMovementCostToSelectedUnit($movement, $item, $conversionFactor),
                 'qty_remaining' => null,
             ]);
 
@@ -155,7 +155,7 @@ class StockService
     /**
      * Weighted Average Deduction
      */
-    protected function deductWeightedAverage(Item $item, array $movementData, array $balanceData): StockMovement
+    protected function deductWeightedAverage(Item $item, array $movementData, array $balanceData, float $conversionFactor): StockMovement
     {
         $balance = StockBalance::query()
             ->where('branch_id', $balanceData['branch_id'])
@@ -168,7 +168,7 @@ class StockService
             ...$movementData,
             'date' => $this->normalizeDate($movementData['date']),
             'expire_date' => $movementData['expire_date'] ? $this->normalizeDate($movementData['expire_date']) : null,
-            'unit_cost' => $balance->average_cost,
+            'unit_cost' => $this->convertToSelectedUnitCost((float) $balance->average_cost, $conversionFactor),
             'qty_remaining' => null,
         ]);
     }
@@ -489,6 +489,19 @@ class StockService
         }
 
         return $quantity / $conversionFactor;
+    }
+
+    protected function convertToSelectedUnitCost(float $itemUnitCost, float $conversionFactor): float
+    {
+        return $itemUnitCost * $conversionFactor;
+    }
+
+    protected function convertMovementCostToSelectedUnit(StockMovement $movement, Item $item, float $conversionFactor): float
+    {
+        $sourceConversionFactor = $this->resolveConversionFactor($item->unit_measure_id, $movement->unit_measure_id);
+        $itemUnitCost = (float) $movement->unit_cost / $sourceConversionFactor;
+
+        return $this->convertToSelectedUnitCost($itemUnitCost, $conversionFactor);
     }
 
     protected function normalizeDate(?string $date): ?string
