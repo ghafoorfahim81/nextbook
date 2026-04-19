@@ -122,9 +122,19 @@ class SaleController extends Controller
                 $lineGrossTotal = $quantity * $unitPrice;
 
                 $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
-                $unitCost = (float) ($itemModel?->stockBalances()->avg('average_cost') ?? 0);
-                $totalCost = $unitCost * $quantity;
+                $avgCost = (float) ($itemModel->stockBalances()->avg('average_cost') ?? 0);
 
+                if($item['unit_measure_id'] != $itemModel->unit_measure_id) {
+                    $selectedUnit = (float) \App\Models\Administration\UnitMeasure::query()->findOrFail($item['unit_measure_id'])->unit;
+                    $itemUnit = (float) $itemModel->unitMeasure->unit;
+                    // $qty = ($quantity * $selectedUnit) / $itemUnit;
+                    $unitCost = ($selectedUnit * $avgCost) / $itemUnit;
+                    $totalCost = $unitCost * $quantity;
+                }
+                else{
+                    $unitCost = $avgCost;
+                    $totalCost = $unitCost * $quantity;
+                } 
                 $totalCostOfGoodsSold += $totalCost;
 
                 $stockService->post([
@@ -504,9 +514,18 @@ class SaleController extends Controller
                 $lineGrossTotal = $quantity * $unitPrice;
 
                 $itemModel = Item::findOrFail($item['item_id']);
-                $unitCost = (float) ($itemModel->stockBalances()->avg('average_cost') ?? 0);
-                $totalCost = $unitCost * $quantity;
-
+                $avgCost = (float) ($itemModel->stockBalances()->avg('average_cost') ?? 0);
+                if($item['unit_measure_id'] != $itemModel->unit_measure_id) {
+                    $selectedUnit = (float) \App\Models\Administration\UnitMeasure::query()->findOrFail($item['unit_measure_id'])->unit;
+                    $itemUnit = (float) $itemModel->unitMeasure->unit;
+                    // $qty = ($quantity * $selectedUnit) / $itemUnit;
+                    $unitCost = ($selectedUnit * $avgCost) / $itemUnit;
+                    $totalCost = $unitCost * $quantity;
+                }
+                else{
+                    $unitCost = $avgCost;
+                    $totalCost = $unitCost * $quantity;
+                } 
                 $stockService->post([
                     'item_id'         => $item['item_id'],
                     'movement_type'   => StockMovementType::OUT->value,
