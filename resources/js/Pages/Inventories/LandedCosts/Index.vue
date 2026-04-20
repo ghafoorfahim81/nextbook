@@ -15,7 +15,7 @@ const props = defineProps({
 });
 
 const columns = computed(() => ([
-  { key: 'purchase_number', label: t('landed_cost.purchase_order'), sortable: true },
+  { key: 'purchase_number', label: t('landed_cost.purchase_order'), sortable: false },
   { key: 'date', label: t('general.date'), sortable: true },
   { key: 'total_cost', label: t('landed_cost.total_additional_cost'), sortable: true },
   { key: 'allocated_total', label: t('landed_cost.allocated_amount'), sortable: true },

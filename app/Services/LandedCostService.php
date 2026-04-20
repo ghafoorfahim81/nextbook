@@ -6,7 +6,6 @@ use App\Enums\LandedCostAllocationMethod;
 use App\Enums\LandedCostStatus;
 use App\Models\Account\Account;
 use App\Models\Administration\Currency;
-use App\Models\Inventory\Item;
 use App\Models\Inventory\LandedCost;
 use App\Models\Inventory\LandedCostItem;
 use App\Models\Inventory\StockBalance;
@@ -17,6 +16,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 class LandedCostService
 {
@@ -53,9 +53,35 @@ class LandedCostService
         return $created;
     }
 
+    public function syncPurchases(LandedCost $landedCost, array $purchaseIds = []): void
+    {
+        $purchaseIds = collect($purchaseIds)
+            ->filter()
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $landedCost->purchases()->detach();
+
+        if (! empty($purchaseIds)) {
+            $landedCost->purchases()->attach(collect($purchaseIds)->mapWithKeys(function (string $purchaseId): array {
+                return [
+                    $purchaseId => [
+                        'id' => (string) Str::ulid(),
+                    ],
+                ];
+            })->all());
+        }
+
+        $landedCost->update([
+            'purchase_id' => $purchaseIds[0] ?? null,
+        ]);
+    }
+
     public function preview(LandedCost $landedCost, array $payload = []): array
     {
-        $rows = $this->resolveRows($landedCost, data_get($payload, 'items', []));
+        $rows = $this->resolveRows($landedCost, data_get($payload, 'items', []), data_get($payload, 'purchase_ids', []));
         $totalCost = (float) data_get($payload, 'total_cost', $landedCost->total_cost);
         $method = $this->resolveMethod(data_get($payload, 'allocation_method', $landedCost->allocation_method?->value ?? $landedCost->allocation_method));
 
@@ -65,13 +91,14 @@ class LandedCostService
     public function allocate(LandedCost $landedCost, array $payload = []): LandedCost
     {
         return DB::transaction(function () use ($landedCost, $payload) {
-            $landedCost->loadMissing(['purchase.items.item', 'items.item']);
+            $landedCost->loadMissing(['purchases.items.item', 'items.item']);
 
             $preview = $this->preview($landedCost, $payload);
 
+            $this->syncPurchases($landedCost, data_get($payload, 'purchase_ids', data_get($payload, 'purchase_id', [])));
+
             $landedCost->update([
                 'date' => data_get($payload, 'date', $landedCost->date),
-                'purchase_id' => data_get($payload, 'purchase_id', $landedCost->purchase_id),
                 'total_cost' => data_get($payload, 'total_cost', $landedCost->total_cost),
                 'allocated_total' => $preview['allocated_total'],
                 'allocation_method' => data_get($payload, 'allocation_method', $landedCost->allocation_method?->value ?? $landedCost->allocation_method),
@@ -81,14 +108,14 @@ class LandedCostService
 
             $this->syncItems($landedCost, $preview['rows']);
 
-            return $landedCost->fresh(['purchase.items.item', 'items.item']);
+            return $landedCost->fresh(['purchases.items.item', 'items.item']);
         });
     }
 
     public function post(LandedCost $landedCost): array
     {
         return DB::transaction(function () use ($landedCost) {
-            $landedCost->loadMissing(['purchase.items.item', 'items.item', 'purchase']);
+            $landedCost->loadMissing(['purchases.items.item', 'items.item']);
 
             if (($landedCost->status instanceof LandedCostStatus ? $landedCost->status->value : (string) $landedCost->status) === LandedCostStatus::Posted->value) {
                 throw ValidationException::withMessages([
@@ -135,27 +162,20 @@ class LandedCostService
                 'branch_id' => $landedCost->branch_id,
             ]);
 
-            $inventoryLines = collect($preview['rows'])
-                ->groupBy(fn (array $row) => $this->resolveInventoryAccountId((string) $row['item_id']))
-                ->map(function (Collection $group, string $accountId) {
-                    return [
-                        'account_id' => $accountId,
-                        'ledger_id' => null,
-                        'debit' => round($group->sum(fn ($row) => (float) data_get($row, 'allocated_amount', 0)), 2),
-                        'credit' => 0,
-                        'remark' => 'Inventory capitalization for landed cost',
-                    ];
-                })
-                ->filter(fn (array $line) => (float) $line['debit'] > 0)
-                ->values()
-                ->all();
+            $inventoryLine = [
+                'account_id' => $this->resolveInventoryStockAccountId(),
+                'ledger_id' => null,
+                'debit' => round($preview['allocated_total'], 2),
+                'credit' => 0,
+                'remark' => 'Inventory capitalization for landed cost',
+            ];
 
             $clearingLine = [
                 'account_id' => $this->resolveClearingAccountId(),
                 'ledger_id' => null,
                 'debit' => 0,
                 'credit' => round($preview['allocated_total'], 2),
-                'remark' => 'Freight/Customs clearing for landed cost',
+                'remark' => 'Landed costs clearing for landed cost',
             ];
 
             $transaction = $this->transactionService->post(
@@ -169,7 +189,7 @@ class LandedCostService
                     'status' => 'posted',
                 ],
                 lines: [
-                    ...$inventoryLines,
+                    $inventoryLine,
                     $clearingLine,
                 ],
             );
@@ -182,7 +202,7 @@ class LandedCostService
             ]);
 
             return [
-                'landed_cost' => $landedCost->fresh(['purchase.items.item', 'items.item']),
+                'landed_cost' => $landedCost->fresh(['purchases.items.item', 'items.item']),
                 'journal_entry' => $journalEntry,
                 'transaction' => $transaction,
             ];
@@ -271,7 +291,7 @@ class LandedCostService
     /**
      * @param array<int, array<string, mixed>>|Collection<int, mixed> $rows
      */
-    private function resolveRows(LandedCost $landedCost, array|Collection $rows): array
+    private function resolveRows(LandedCost $landedCost, array|Collection $rows, array|Collection $purchaseIds = []): array
     {
         $normalizedRows = collect($rows)
             ->filter(fn ($row) => filled(data_get($row, 'item_id')))
@@ -293,31 +313,50 @@ class LandedCostService
             })->all();
         }
 
-        if (! $landedCost->purchase_id) {
+        $purchaseIds = collect($purchaseIds)
+            ->filter()
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values();
+
+        if ($purchaseIds->isEmpty()) {
+            if ($landedCost->relationLoaded('purchases') && $landedCost->purchases->isNotEmpty()) {
+                $purchaseIds = $landedCost->purchases->pluck('id')->values();
+            } elseif ($landedCost->purchase_id) {
+                $purchaseIds = collect([$landedCost->purchase_id]);
+            }
+        }
+
+        if ($purchaseIds->isEmpty()) {
             return [];
         }
 
-        $purchase = $landedCost->relationLoaded('purchase')
-            ? $landedCost->purchase
-            : Purchase::with('items.item')->find($landedCost->purchase_id);
+        $purchases = Purchase::query()
+            ->with(['items.item', 'items.purchase'])
+            ->whereIn('id', $purchaseIds->all())
+            ->get();
 
-        if (! $purchase) {
+        if ($purchases->isEmpty()) {
             return [];
         }
 
-        return $purchase->items->map(function (PurchaseItem $item) {
-            return [
-                'purchase_item_id' => $item->id,
-                'item_id' => $item->item_id,
-                'quantity' => (float) $item->quantity,
-                'unit_cost' => (float) $item->unit_price,
-                'weight' => 0,
-                'volume' => 0,
-                'warehouse_id' => $item->warehouse_id,
-                'batch' => $item->batch,
-                'expire_date' => $item->expire_date?->toDateString(),
-            ];
-        })->all();
+        return $purchases->flatMap(function (Purchase $purchase) {
+            return $purchase->items->map(function (PurchaseItem $item) use ($purchase) {
+                return [
+                    'purchase_id' => $purchase->id,
+                    'purchase_number' => $purchase->number,
+                    'purchase_item_id' => $item->id,
+                    'item_id' => $item->item_id,
+                    'quantity' => (float) $item->quantity,
+                    'unit_cost' => (float) $item->unit_price,
+                    'weight' => 0,
+                    'volume' => 0,
+                    'warehouse_id' => $item->warehouse_id,
+                    'batch' => $item->batch,
+                    'expire_date' => $item->expire_date?->toDateString(),
+                ];
+            });
+        })->values()->all();
     }
 
     private function resolveMethod(string|LandedCostAllocationMethod|null $method): LandedCostAllocationMethod
@@ -329,18 +368,8 @@ class LandedCostService
         return LandedCostAllocationMethod::tryFrom((string) $method) ?? LandedCostAllocationMethod::ByValue;
     }
 
-    private function resolveInventoryAccountId(string $itemId): string
+    private function resolveInventoryStockAccountId(): string
     {
-        $item = Item::withoutGlobalScopes()->with(['assetAccount', 'costAccount'])->find($itemId);
-
-        if ($item?->asset_account_id) {
-            return $item->asset_account_id;
-        }
-
-        if ($item?->cost_account_id) {
-            return $item->cost_account_id;
-        }
-
         return data_get(Cache::get('gl_accounts'), 'inventory-stock')
             ?? Account::withoutGlobalScopes()->where('slug', 'inventory-stock')->value('id')
             ?? throw ValidationException::withMessages([
@@ -350,12 +379,12 @@ class LandedCostService
 
     private function resolveClearingAccountId(): string
     {
-        return data_get(Cache::get('gl_accounts'), 'freight-customs-clearing')
+        return data_get(Cache::get('gl_accounts'), 'landed-costs-clearing')
+            ?? Account::withoutGlobalScopes()->where('slug', 'landed-costs-clearing')->value('id')
+            ?? data_get(Cache::get('gl_accounts'), 'freight-customs-clearing')
             ?? Account::withoutGlobalScopes()->where('slug', 'freight-customs-clearing')->value('id')
-            ?? data_get(Cache::get('gl_accounts'), 'inventory-stock')
-            ?? Account::withoutGlobalScopes()->where('slug', 'inventory-stock')->value('id')
             ?? throw ValidationException::withMessages([
-                'items' => __('general.landed_cost_freight_customs_clearing_account_could_not_be_resolved'),
+                'items' => __('general.landed_cost_landed_costs_clearing_account_could_not_be_resolved'),
             ]);
     }
 

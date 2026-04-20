@@ -35,17 +35,29 @@ const normalizeRecord = (value) => {
     ? { ...value.data }
     : { ...value };
 
-  const items = payload.items;
-  payload.items = Array.isArray(items)
-    ? items
-    : Array.isArray(items?.data)
-      ? items.data
-      : [];
+  const normalizeCollection = (collection) => {
+    if (Array.isArray(collection)) {
+      return collection;
+    }
+
+    if (Array.isArray(collection?.data)) {
+      return collection.data;
+    }
+
+    return [];
+  };
+
+  payload.items = normalizeCollection(payload.items);
+  payload.purchases = normalizeCollection(payload.purchases);
+  payload.purchase_ids = Array.isArray(payload.purchase_ids) ? payload.purchase_ids : [];
+  payload.purchase_numbers = Array.isArray(payload.purchase_numbers) ? payload.purchase_numbers : [];
 
   return payload;
 };
 
 const blankRow = () => ({
+  purchase_id: '',
+  purchase_number: '',
   purchase_item_id: '',
   item_id: '',
   selected_item: null,
@@ -57,6 +69,8 @@ const blankRow = () => ({
 });
 
 const normalizeItem = (row) => ({
+  purchase_id: row?.purchase_id || row?.purchase_item?.purchase_id || '',
+  purchase_number: row?.purchase_number || row?.purchase_item?.purchase?.number || '',
   purchase_item_id: row?.purchase_item_id || row?.purchase_item?.id || '',
   item_id: row?.item_id || row?.item?.id || '',
   selected_item: row?.item_name
@@ -75,6 +89,13 @@ const normalizeItem = (row) => ({
   item_cost_after: row?.item_cost_after ?? 0,
 });
 
+const normalizePurchase = (purchase) => ({
+  id: purchase?.id || '',
+  number: purchase?.number || '',
+  supplier_name: purchase?.supplier_name || purchase?.supplier?.name || '',
+  name: purchase?.name || `#${purchase?.number || ''}${purchase?.supplier_name || purchase?.supplier?.name ? ` - ${purchase?.supplier_name || purchase?.supplier?.name}` : ''}`,
+});
+
 const getItemOnHand = (item) => Number(
   item?.on_hand
     ?? item?.onHand
@@ -91,7 +112,7 @@ const getItemAvgCost = (item) => Number(
 );
 
 const autoFillManualItemValues = (item) => {
-  if (form.purchase_id || form.selected_purchase?.id) {
+  if ((form.purchase_ids || []).length) {
     return {
       quantity: '',
       unit_cost: '',
@@ -108,6 +129,8 @@ const handleItemSelection = (row, item) => {
   row.selected_item = item || null;
   row.item_id = item?.id || '';
   row.purchase_item_id = '';
+  row.purchase_id = '';
+  row.purchase_number = '';
 
   if (!item) {
     row.quantity = '';
@@ -125,19 +148,31 @@ const handleItemSelection = (row, item) => {
 
 const currentRecord = ref(normalizeRecord(props.landedCost));
 
-const defaultPurchase = computed(() => {
-  if (!currentRecord.value?.purchase_id) return null;
-  return props.purchases.find((purchase) => purchase.id === currentRecord.value.purchase_id) || null;
+const defaultPurchases = computed(() => {
+  const recordPurchases = Array.isArray(currentRecord.value?.purchases) ? currentRecord.value.purchases : [];
+  if (recordPurchases.length > 0) {
+    return recordPurchases.map(normalizePurchase);
+  }
+
+  const recordPurchaseIds = Array.isArray(currentRecord.value?.purchase_ids) ? currentRecord.value.purchase_ids : [];
+  if (recordPurchaseIds.length === 0) {
+    return [];
+  }
+
+  return props.purchases
+    .filter((purchase) => recordPurchaseIds.includes(purchase.id))
+    .map(normalizePurchase);
 });
 
 const form = useForm({
   date: currentRecord.value?.date || todayValueForCalendar(calendarType.value),
-  purchase_id: currentRecord.value?.purchase_id || '',
-  selected_purchase: defaultPurchase.value,
+  purchase_id: currentRecord.value?.purchase_id || defaultPurchases.value[0]?.id || '',
+  purchase_ids: Array.isArray(currentRecord.value?.purchase_ids) ? currentRecord.value.purchase_ids : defaultPurchases.value.map((purchase) => purchase.id),
+  selected_purchases: defaultPurchases.value,
   total_cost: currentRecord.value?.total_cost || '',
   allocation_method: currentRecord.value?.allocation_method_id || 'by_value',
   notes: currentRecord.value?.notes || '',
-  items: (props.landedCost?.items || []).length > 0 ? (props.landedCost.items || []).map(normalizeItem) : [blankRow()],
+  items: (currentRecord.value?.items || []).length > 0 ? (currentRecord.value.items || []).map(normalizeItem) : [blankRow()],
 });
 
 const isPosted = computed(() => currentRecord.value?.status_id === 'posted');
@@ -238,8 +273,16 @@ const previewForRow = (row) => previewRows.value.find((previewRow) => (
 const setRecordFromResponse = (data) => {
   currentRecord.value = data;
   form.date = data.date || form.date;
-  form.purchase_id = data.purchase_id || '';
-  form.selected_purchase = props.purchases.find((purchase) => purchase.id === data.purchase_id) || null;
+  const responsePurchases = Array.isArray(data.purchases) ? data.purchases.map(normalizePurchase) : [];
+  const responsePurchaseIds = Array.isArray(data.purchase_ids) && data.purchase_ids.length > 0
+    ? data.purchase_ids
+    : responsePurchases.map((purchase) => purchase.id);
+
+  form.purchase_id = data.purchase_id || responsePurchaseIds[0] || '';
+  form.purchase_ids = responsePurchaseIds;
+  form.selected_purchases = Array.isArray(data.purchases)
+    ? responsePurchases
+    : props.purchases.filter((purchase) => responsePurchaseIds.includes(purchase.id)).map(normalizePurchase);
   form.total_cost = data.total_cost || '';
   form.allocation_method = data.allocation_method_id || 'by_value';
   form.notes = data.notes || '';
@@ -248,6 +291,7 @@ const setRecordFromResponse = (data) => {
 
 const prepareItemsPayload = () => form.items
   .map((row) => ({
+    purchase_id: row.purchase_id || row.purchase_item?.purchase_id || null,
     purchase_item_id: row.purchase_item_id || null,
     item_id: row.selected_item?.id || row.item_id || null,
     quantity: row.quantity,
@@ -260,7 +304,8 @@ const prepareItemsPayload = () => form.items
 
 const buildPayload = () => ({
   date: form.date,
-  purchase_id: form.selected_purchase?.id || form.purchase_id || null,
+  purchase_id: form.purchase_ids[0] || form.purchase_id || null,
+  purchase_ids: form.purchase_ids || [],
   total_cost: form.total_cost,
   allocation_method: form.allocation_method,
   notes: form.notes,
@@ -300,7 +345,7 @@ const saveDraft = () => {
 
 const fetchPurchaseItems = async (purchase) => {
   if (!purchase?.id) {
-    return;
+    return [];
   }
 
   try {
@@ -308,11 +353,12 @@ const fetchPurchaseItems = async (purchase) => {
     const purchaseData = response.data?.data;
 
     if (!purchaseData) {
-      return;
+      return [];
     }
 
-    form.purchase_id = purchaseData.purchase_id || purchase.id;
-    form.items = (purchaseData.items || []).map((row) => ({
+    return (purchaseData.items || []).map((row) => ({
+      purchase_id: purchase.id,
+      purchase_number: purchaseData.number || purchase.number || '',
       purchase_item_id: row.id,
       item_id: row.item_id,
       selected_item: row.item || { id: row.item_id, name: row.item_name, code: row.item_code },
@@ -324,7 +370,15 @@ const fetchPurchaseItems = async (purchase) => {
     }));
   } catch (error) {
     toast.error(t('landed_cost.failed_to_load_purchase_items'));
+    return [];
   }
+};
+
+const loadSelectedPurchaseItems = async (purchases) => {
+  const rows = await Promise.all((purchases || []).map((purchase) => fetchPurchaseItems(purchase)));
+  const mergedRows = rows.flat().filter((row) => !!row.item_id);
+
+  form.items = mergedRows.length > 0 ? mergedRows : [blankRow()];
 };
 
 const addRow = () => {
@@ -343,13 +397,21 @@ const removeRow = (index) => {
   form.items.splice(index, 1);
 };
 
-const selectPurchase = async (purchase) => {
-  form.selected_purchase = purchase || null;
-  form.purchase_id = purchase?.id || '';
+const selectPurchases = async (purchases) => {
+  const selected = Array.isArray(purchases)
+    ? purchases.map(normalizePurchase).filter((purchase) => purchase.id)
+    : [];
 
-  if (purchase?.id) {
-    await fetchPurchaseItems(purchase);
+  form.selected_purchases = selected;
+  form.purchase_ids = selected.map((purchase) => purchase.id);
+  form.purchase_id = form.purchase_ids[0] || '';
+
+  if (selected.length === 0) {
+    form.items = [blankRow()];
+    return;
   }
+
+  await loadSelectedPurchaseItems(selected);
 };
 
 const calculateAllocation = async () => {
@@ -416,11 +478,13 @@ onMounted(() => {
           />
           <NextSelect
             :options="purchases"
-            v-model="form.selected_purchase"
-            @update:modelValue="selectPurchase"
+            v-model="form.selected_purchases"
+            @update:modelValue="selectPurchases"
             label-key="name"
             value-key="id"
             :reduce="purchase => purchase"
+            :multiple="true"
+            :close-on-select="false"
             :floating-text="t('landed_cost.purchase_order')"
             :searchable="true"
             resource-type="purchases"
@@ -470,6 +534,7 @@ onMounted(() => {
             <thead class="bg-muted/40 text-sm text-muted-foreground">
               <tr>
                 <th class="px-3 py-2 text-left">#</th>
+                <th class="px-3 py-2 text-left">{{ t('landed_cost.purchase_order') }}</th>
                 <th class="px-3 py-2 text-left">{{ t('landed_cost.item') }}</th>
                 <th class="px-3 py-2 text-left">{{ t('landed_cost.quantity') }}</th>
                 <th class="px-3 py-2 text-left">{{ t('general.unit_price') }}</th>
@@ -483,6 +548,11 @@ onMounted(() => {
             <tbody>
               <tr v-for="(row, index) in form.items" :key="index" class="border-t">
                 <td class="px-3 py-2 align-top">{{ index + 1 }}</td>
+                <td class="px-3 py-2 align-top min-w-[180px]">
+                  <div class="text-sm font-medium">
+                    {{ row.purchase_number || row.purchase_item?.purchase?.number || '-' }}
+                  </div>
+                </td>
                 <td class="px-3 py-2 align-top min-w-[260px]">
                   <NextSelect
                     :options="[]"
@@ -530,8 +600,9 @@ onMounted(() => {
             </tbody>
             <tfoot class="bg-muted/30">
               <tr>
-                <td colspan="6" class="px-3 py-3 text-right font-semibold">{{ t('landed_cost.line_total') }}</td>
+                <td colspan="7" class="px-3 py-3 text-right font-semibold">{{ t('landed_cost.line_total') }}</td>
                 <td class="px-3 py-3 font-semibold">{{ totalRowCost.toFixed(2) }}</td>
+                <td></td>
                 <td></td>
               </tr>
             </tfoot>

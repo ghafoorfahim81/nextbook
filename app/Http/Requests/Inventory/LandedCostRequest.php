@@ -18,6 +18,8 @@ class LandedCostRequest extends FormRequest
         return [
             'date' => ['required', 'date'],
             'purchase_id' => ['nullable', 'string', 'exists:purchases,id'],
+            'purchase_ids' => ['nullable', 'array'],
+            'purchase_ids.*' => ['string', 'distinct', 'exists:purchases,id'],
             'total_cost' => ['required', 'numeric', 'min:0.01'],
             'allocated_total' => ['nullable', 'numeric', 'min:0'],
             'allocation_method' => ['required', 'string', Rule::in(LandedCostAllocationMethod::values())],
@@ -26,6 +28,7 @@ class LandedCostRequest extends FormRequest
             'items' => ['nullable', 'array'],
             'items.*.id' => ['nullable', 'string', 'exists:landed_cost_items,id'],
             'items.*.purchase_item_id' => ['nullable', 'string', 'exists:purchase_items,id'],
+            'items.*.purchase_id' => ['nullable', 'string', 'exists:purchases,id'],
             'items.*.item_id' => ['nullable', 'string', 'exists:items,id'],
             'items.*.quantity' => ['nullable', 'numeric', 'min:0'],
             'items.*.unit_cost' => ['nullable', 'numeric', 'min:0'],

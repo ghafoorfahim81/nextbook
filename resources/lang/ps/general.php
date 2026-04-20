@@ -72,6 +72,7 @@ return [
     'landed_cost_no_items_to_allocate' => 'Add at least one item to allocate landed cost.',
     'landed_cost_allocation_basis_must_be_greater_than_zero' => 'Allocation basis must be greater than zero.',
     'landed_cost_inventory_stock_account_could_not_be_resolved' => 'Inventory stock account could not be resolved.',
+    'landed_cost_landed_costs_clearing_account_could_not_be_resolved' => 'Landed costs clearing account could not be resolved.',
     'landed_cost_freight_customs_clearing_account_could_not_be_resolved' => 'Freight/customs clearing account could not be resolved.',
     'landed_cost_home_currency_could_not_be_resolved' => 'Home currency could not be resolved.',
 ];

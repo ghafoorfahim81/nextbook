@@ -15,6 +15,8 @@ class LandedCostItemResource extends JsonResource
             'landed_cost_id' => $this->landed_cost_id,
             'purchase_item_id' => $this->purchase_item_id,
             'item_id' => $this->item_id,
+            'purchase_id' => $this->purchaseItem?->purchase_id,
+            'purchase_number' => $this->purchaseItem?->purchase?->number,
             'item_name' => $this->item?->name,
             'item_code' => $this->item?->code,
             'purchase_item' => PurchaseItemResource::make($this->whenLoaded('purchaseItem')),

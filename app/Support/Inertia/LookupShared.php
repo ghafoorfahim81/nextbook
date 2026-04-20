@@ -118,6 +118,7 @@ final class LookupShared
                 'cash-in-hand',
                 'cost-of-goods-sold',
                 'inventory-stock',
+                'landed-costs-clearing',
                 'freight-customs-clearing',
                 'retained-earnings',
                 'opening-balance-equity',

@@ -7,6 +7,7 @@ use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasBranch;
@@ -102,6 +103,13 @@ class Purchase extends Model
     public function items()
     {
         return $this->hasMany(\App\Models\Purchase\PurchaseItem::class);
+    }
+
+    public function landedCosts(): BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\Inventory\LandedCost::class, 'landed_cost_purchases')
+            ->withTimestamps()
+            ->withPivot('id');
     }
 
     public function purchasePayments(): HasMany

@@ -24,12 +24,22 @@ const normalizeRecord = (value) => {
     ? { ...value.data }
     : { ...value };
 
-  const items = payload.items;
-  payload.items = Array.isArray(items)
-    ? items
-    : Array.isArray(items?.data)
-      ? items.data
-      : [];
+  const normalizeCollection = (collection) => {
+    if (Array.isArray(collection)) {
+      return collection;
+    }
+
+    if (Array.isArray(collection?.data)) {
+      return collection.data;
+    }
+
+    return [];
+  };
+
+  payload.items = normalizeCollection(payload.items);
+  payload.purchases = normalizeCollection(payload.purchases);
+  payload.purchase_numbers = Array.isArray(payload.purchase_numbers) ? payload.purchase_numbers : [];
+  payload.purchase_ids = Array.isArray(payload.purchase_ids) ? payload.purchase_ids : [];
 
   return payload;
 };
@@ -48,6 +58,13 @@ const statusClasses = computed(() => ({
 
 const canPost = computed(() => record.value?.status_id !== 'posted');
 const canEdit = computed(() => record.value?.status_id !== 'posted');
+const purchaseNumbersLabel = computed(() => {
+  const numbers = record.value?.purchase_numbers?.length
+    ? record.value.purchase_numbers
+    : (record.value?.purchase_number ? [record.value.purchase_number] : []);
+
+  return numbers.length ? numbers.join(', ') : '-';
+});
 const landedUnitCost = (row) => Number(
   row.quantity ? (row.item_cost_after / row.quantity) : (row.unit_cost || 0),
 ).toFixed(4);
@@ -154,7 +171,7 @@ const totalLanded = computed(() => Number(
           <div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <span>{{ t('general.date') }}: {{ record.date }}</span>
             <span>|</span>
-            <span>{{ t('landed_cost.purchase_order') }}: {{ record.purchase_number || '-' }}</span>
+            <span>{{ t('landed_cost.purchase_order') }}: {{ purchaseNumbersLabel }}</span>
           </div>
         </div>
 
@@ -201,8 +218,8 @@ const totalLanded = computed(() => Number(
           <div class="mt-1 text-lg font-semibold tabular-nums">{{ totalLanded }}</div>
         </div>
         <div class="rounded-xl border bg-card p-4 shadow-sm">
-          <div class="text-xs text-muted-foreground">{{ t('landed_cost.allocation_method') }}</div>
-          <div class="mt-1 text-lg font-semibold">{{ record.allocation_method }}</div>
+          <div class="text-xs text-muted-foreground">{{ t('landed_cost.purchase_order') }}</div>
+          <div class="mt-1 text-lg font-semibold">{{ purchaseNumbersLabel }}</div>
         </div>
       </div>
 
@@ -219,6 +236,7 @@ const totalLanded = computed(() => Number(
           <table class="min-w-[1000px] w-full">
             <thead class="bg-muted/40 text-sm text-muted-foreground">
               <tr>
+                <th class="px-3 py-2 text-left">{{ t('landed_cost.purchase_order') }}</th>
                 <th class="px-3 py-2 text-left">{{ t('landed_cost.item') }}</th>
                 <th class="px-3 py-2 text-left">{{ t('landed_cost.base_unit_cost') }}</th>
                 <th class="px-3 py-2 text-left">{{ t('landed_cost.allocated_percentage') }}</th>
@@ -228,6 +246,9 @@ const totalLanded = computed(() => Number(
             </thead>
             <tbody>
               <tr v-for="row in previewRows" :key="row.id" class="border-t">
+                <td class="px-3 py-2">
+                  {{ row.purchase_number || row.purchase_item?.purchase?.number || '-' }}
+                </td>
                 <td class="px-3 py-2">
                   {{ row.item_name || row.item?.name || row.item_id }}
                 </td>
@@ -239,9 +260,7 @@ const totalLanded = computed(() => Number(
             </tbody>
             <tfoot class="bg-muted/30">
               <tr>
-                <td class="px-3 py-3 font-semibold">{{ t('general.total') }}</td>
-                <td></td>
-                <td></td>
+                <td colspan="4" class="px-3 py-3 font-semibold">{{ t('general.total') }}</td>
                 <td class="px-3 py-3 font-semibold">{{ totalLanded }}</td>
                 <td></td>
               </tr>

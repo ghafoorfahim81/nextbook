@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -66,6 +67,7 @@ class LandedCost extends Model
             'status',
             'allocation_method',
             'purchase.number',
+            'purchases.number',
         ];
     }
 
@@ -82,9 +84,29 @@ class LandedCost extends Model
         return $this->belongsTo(Purchase::class);
     }
 
+    public function purchases(): BelongsToMany
+    {
+        return $this->belongsToMany(Purchase::class, 'landed_cost_purchases')
+            ->withTimestamps()
+            ->withPivot('id');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(LandedCostItem::class, 'landed_cost_id');
+    }
+
+    protected function dynamicFilterHandlers(): array
+    {
+        return [
+            'purchase_id' => function ($query, $value): void {
+                $ids = is_array($value) ? array_values(array_filter($value)) : [$value];
+
+                $query->whereHas('purchases', function ($relation) use ($ids): void {
+                    $relation->whereIn('purchases.id', $ids);
+                });
+            },
+        ];
     }
 
     protected function getRelationships(): array
@@ -93,6 +115,10 @@ class LandedCost extends Model
             'items' => [
                 'model' => 'landed cost items',
                 'message' => 'This landed cost has allocation lines',
+            ],
+            'purchases' => [
+                'model' => 'purchases',
+                'message' => 'This landed cost is linked to purchases',
             ],
         ];
     }
