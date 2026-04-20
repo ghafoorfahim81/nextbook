@@ -106,6 +106,22 @@ class PurchaseController extends Controller
                 $quantity = (float) $item['quantity'];
                 $unitPrice = (float) $item['unit_price'];
                 $itemDiscount = isset($item['discount']) ? (float) $item['discount'] : 0;
+                $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
+                $avgCost = (float) ($itemModel->stockBalances()->avg('average_cost') ?? 0);
+                if($item['unit_measure_id'] != $itemModel->unit_measure_id) {
+                    $selectedUnit = (float) \App\Models\Administration\UnitMeasure::query()->findOrFail($item['unit_measure_id'])->unit;
+                    $itemUnit = (float) $itemModel->unitMeasure->unit;
+                    // $qty = ($quantity * $selectedUnit) / $itemUnit;
+                    $unitCost = ($selectedUnit * $avgCost) / $itemUnit;
+                    $totalCost = $unitCost * $quantity;
+                }
+                else{
+                    $unitCost = $avgCost;
+                    $totalCost = $avgCost * $quantity;
+                }
+
+                dd($avgCost * $quantity);
+
                 $stock = $stockService->post([
                     'item_id'         => $item['item_id'],
                     'movement_type'   => StockMovementType::IN->value,
@@ -128,7 +144,7 @@ class PurchaseController extends Controller
                 $lines[] = [
                     'account_id' => $accountId,
                     'ledger_id'  => null,
-                    'debit'      => $quantity * $unitPrice,
+                    'debit'      => $totalCost,
                     'credit'     => 0,
                     'remark'     => 'Purchase item: '.$itemModel->name,
                 ];
