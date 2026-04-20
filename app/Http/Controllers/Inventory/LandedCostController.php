@@ -28,7 +28,7 @@ class LandedCostController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $query = LandedCost::with(['purchase.supplier', 'items.item', 'createdBy', 'updatedBy'])
+        $query = LandedCost::with(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection);
@@ -93,9 +93,10 @@ class LandedCostController extends Controller
                 'notes' => $request->validated('notes'),
             ]);
 
+            $service->syncPurchases($landedCost, $this->resolvePurchaseIds($request));
             $service->syncItems($landedCost, $request->input('items', []));
 
-            return $landedCost->fresh(['purchase.supplier', 'items.item', 'createdBy', 'updatedBy']);
+            return $landedCost->fresh(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy']);
         });
 
         if ($request->expectsJson()) {
@@ -107,7 +108,7 @@ class LandedCostController extends Controller
 
     public function show(Request $request, LandedCost $landedCost)
     {
-        $landedCost->load(['purchase.supplier', 'items.item', 'createdBy', 'updatedBy']);
+        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy']);
         $payload = LandedCostResource::make($landedCost)->resolve($request);
 
         if ($request->expectsJson()) {
@@ -123,7 +124,7 @@ class LandedCostController extends Controller
 
     public function edit(Request $request, LandedCost $landedCost)
     {
-        $landedCost->load(['purchase.items.item', 'items.item', 'createdBy', 'updatedBy']);
+        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy']);
         $payload = LandedCostResource::make($landedCost)->resolve($request);
 
         return inertia('Inventories/LandedCosts/Edit', [
@@ -155,9 +156,10 @@ class LandedCostController extends Controller
                 'notes' => $request->validated('notes'),
             ]);
 
+            $service->syncPurchases($landedCost, $this->resolvePurchaseIds($request));
             $service->syncItems($landedCost, $request->input('items', []));
 
-            return $landedCost->fresh(['purchase.supplier', 'items.item', 'createdBy', 'updatedBy']);
+            return $landedCost->fresh(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy']);
         });
 
         if ($request->expectsJson()) {
@@ -230,5 +232,23 @@ class LandedCostController extends Controller
                 'name' => sprintf('#%s%s', $purchase->number, $purchase->supplier?->name ? ' - ' . $purchase->supplier?->name : ''),
             ])
             ->values();
+    }
+
+    private function resolvePurchaseIds(Request $request): array
+    {
+        $purchaseIds = $request->input('purchase_ids', []);
+
+        if (blank($purchaseIds)) {
+            $purchaseIds = $request->filled('purchase_id')
+                ? [$request->input('purchase_id')]
+                : [];
+        }
+
+        return collect($purchaseIds)
+            ->filter()
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 }

@@ -353,13 +353,13 @@ class Account extends Model
                 'is_main' => true,
             ],
             [
-                'name' => 'Freight/Customs Clearing',
+                'name' => 'Landed Costs Clearing',
                 'local_name' => 'تسویه انتقالات و گمرک',
-                'number' => '3022',
+                'number' => '3060',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
                 'account_type_slug' => 'other-current-asset',
-                'slug' => 'freight-customs-clearing',
-                'remark' => 'Freight and customs clearing account',
+                'slug' => 'landed-costs-clearing',
+                'remark' => 'Temporary holding for freight, customs, insurance before allocation to inventory',
                 'is_main' => true,
             ],
             [

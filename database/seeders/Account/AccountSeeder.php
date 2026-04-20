@@ -46,6 +46,9 @@ class AccountSeeder extends Seeder
             'branch_id' => $mainBranch->id,
             'created_by' => User::where('name', 'admin')->first()->id,
         ];
-        Account::create($newAccount);
+        Account::firstOrCreate([
+            'slug' => 'landed-costs-clearing',
+            'branch_id' => $mainBranch->id,
+        ], $newAccount);
     }
 }

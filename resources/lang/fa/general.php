@@ -72,6 +72,7 @@ return [
     'landed_cost_no_items_to_allocate' => 'برای تخصیص هزینه ورود، حداقل یک آیتم اضافه کنید.',
     'landed_cost_allocation_basis_must_be_greater_than_zero' => 'مبنای تخصیص باید بزرگ‌تر از صفر باشد.',
     'landed_cost_inventory_stock_account_could_not_be_resolved' => 'حساب موجودی انبار قابل تشخیص نیست.',
+    'landed_cost_landed_costs_clearing_account_could_not_be_resolved' => 'حساب تسویه هزینه‌های حمل و گمرک قابل تشخیص نیست.',
     'landed_cost_freight_customs_clearing_account_could_not_be_resolved' => 'حساب تسویه کرایه/گمرک قابل تشخیص نیست.',
     'landed_cost_home_currency_could_not_be_resolved' => 'ارز پایه قابل تشخیص نیست.',
     'dependencies_found' => 'نمی‌توان این رکورد را حذف کنید چون در بخش های دیگر استفاده شده است.',
