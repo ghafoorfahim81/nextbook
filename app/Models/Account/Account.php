@@ -353,6 +353,16 @@ class Account extends Model
                 'is_main' => true,
             ],
             [
+                'name' => 'Freight/Customs Clearing',
+                'local_name' => 'تسویه انتقالات و گمرک',
+                'number' => '3022',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
+                'account_type_slug' => 'other-current-asset',
+                'slug' => 'freight-customs-clearing',
+                'remark' => 'Freight and customs clearing account',
+                'is_main' => true,
+            ],
+            [
                 'name' => 'Non-Inventory items',
                 'local_name' => 'کالاهای غیرانبارشی',
                 'number' => '3021',

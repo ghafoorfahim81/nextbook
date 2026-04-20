@@ -89,6 +89,7 @@ Route::middleware([
 
     Route::resource('/items', \App\Http\Controllers\Inventory\ItemController::class);
     Route::patch('/items/{item}/restore', [\App\Http\Controllers\Inventory\ItemController::class, 'restore'])->name('items.restore')->withTrashed();
+    Route::resource('/landed-costs', \App\Http\Controllers\Inventory\LandedCostController::class);
     Route::resource('/ledgers', \App\Http\Controllers\Ledger\LedgerController::class);
     Route::patch('/ledgers/{ledger}/restore', [\App\Http\Controllers\Ledger\LedgerController::class, 'restore'])->name('ledgers.restore')->withTrashed();
     Route::resource('/suppliers', \App\Http\Controllers\Ledger\SupplierController::class);

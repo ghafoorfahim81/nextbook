@@ -102,4 +102,15 @@ return [
         'unpaid' => 'Unpaid',
         'partially_paid' => 'Partially paid',
     ],
+    'landed_cost_status' => [
+        'draft' => 'Draft',
+        'allocated' => 'Allocated',
+        'posted' => 'Posted',
+    ],
+    'landed_cost_allocation_method' => [
+        'by_value' => 'By Value',
+        'by_quantity' => 'By Quantity',
+        'by_weight' => 'By Weight',
+        'by_volume' => 'By Volume',
+    ],
 ];

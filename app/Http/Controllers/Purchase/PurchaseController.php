@@ -108,19 +108,18 @@ class PurchaseController extends Controller
                 $itemDiscount = isset($item['discount']) ? (float) $item['discount'] : 0;
                 $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
                 $avgCost = (float) ($itemModel->stockBalances()->avg('average_cost') ?? 0);
-                if($item['unit_measure_id'] != $itemModel->unit_measure_id) {
-                    $selectedUnit = (float) \App\Models\Administration\UnitMeasure::query()->findOrFail($item['unit_measure_id'])->unit;
-                    $itemUnit = (float) $itemModel->unitMeasure->unit;
-                    // $qty = ($quantity * $selectedUnit) / $itemUnit;
-                    $unitCost = ($selectedUnit * $avgCost) / $itemUnit;
-                    $totalCost = $unitCost * $quantity;
-                }
-                else{
-                    $unitCost = $avgCost;
-                    $totalCost = $avgCost * $quantity;
-                }
+                // if($item['unit_measure_id'] != $itemModel->unit_measure_id) {
+                //     $selectedUnit = (float) \App\Models\Administration\UnitMeasure::query()->findOrFail($item['unit_measure_id'])->unit;
+                //     $itemUnit = (float) $itemModel->unitMeasure->unit;
+                //     // $qty = ($quantity * $selectedUnit) / $itemUnit;
+                //     $unitCost = ($selectedUnit * $avgCost) / $itemUnit;
+                //     $totalCost = $unitCost * $quantity;
+                // }
+                // else{
+                //     $unitCost = $avgCost;
+                // }
+                $totalCost = $unitPrice * $quantity;
 
-                dd($avgCost * $quantity);
 
                 $stock = $stockService->post([
                     'item_id'         => $item['item_id'],

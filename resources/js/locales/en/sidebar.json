@@ -40,7 +40,9 @@
     "fast_entry": "Fast Entry",
     "fast_opening": "Fast Opening",
     "barcode_print": "Barcode Print",
-    "item_transfer": "Item Transfer"
+    "item_transfer": "Item Transfer",
+    "landed_cost": "Landed Cost",
+    "landed_costs": "Landed Costs"
   },
   "account": {
     "chart_of_account": "Chart of Account",
