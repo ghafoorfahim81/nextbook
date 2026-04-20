@@ -524,7 +524,7 @@ class SaleController extends Controller
                 }
                 else{
                     $unitCost = $avgCost;
-                    $totalCost = $unitCost * $quantity;
+                    $totalCost = $avgCost * $quantity;
                 } 
                 $stockService->post([
                     'item_id'         => $item['item_id'],
@@ -532,7 +532,7 @@ class SaleController extends Controller
                     'unit_measure_id' => $item['unit_measure_id'],
                     'quantity'        => $quantity,
                     'source'          => StockSourceType::SALE->value,
-                    'unit_cost'       => $unitCost,
+                    'unit_cost'       => $unitPrice,
                     'status'          => StockStatus::POSTED->value,
                     'batch'           => $item['batch'] ?? null,
                     'date'            => $date,
