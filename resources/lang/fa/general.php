@@ -18,6 +18,7 @@ return [
         'item' => 'آیتم',
         'item_transfer' => 'انتقال آیتم',
         'ledger' => 'لیجر',
+        'landed_cost' => 'هزینه ورودی',
         'owner' => 'مالک',
         'payment' => 'پرداخت',
         'purchase' => 'خرید',
@@ -61,6 +62,18 @@ return [
 
     'error_occurred_while_creating' => 'هنگام ایجاد :resource خطایی رخ داد.',
     'error_occurred_while_updating' => 'هنگام به‌روزرسانی :resource خطایی رخ داد.',
+    'landed_cost_select_purchase_and_add_item' => 'لطفاً ابتدا سفارش خرید را انتخاب کنید و حداقل یک آیتم اضافه کنید.',
+    'landed_cost_allocated_total_cannot_exceed_total_cost' => 'مبلغ تخصیص یافته نمی‌تواند از مجموع هزینه بیشتر باشد.',
+    'landed_cost_save_draft_first' => 'ابتدا پیش‌نویس هزینه ورود را ذخیره کنید، سپس تخصیص را انجام دهید.',
+    'landed_cost_posted_cannot_be_edited' => 'هزینه‌های ورود ثبت‌شده قابل ویرایش نیستند.',
+    'landed_cost_posted_cannot_be_deleted' => 'هزینه‌های ورود ثبت‌شده قابل حذف نیستند.',
+    'landed_cost_posted_cannot_be_reallocated' => 'هزینه‌های ورود ثبت‌شده دوباره قابل تخصیص نیستند.',
+    'landed_cost_already_posted' => 'این هزینه ورود قبلاً ثبت شده است.',
+    'landed_cost_no_items_to_allocate' => 'برای تخصیص هزینه ورود، حداقل یک آیتم اضافه کنید.',
+    'landed_cost_allocation_basis_must_be_greater_than_zero' => 'مبنای تخصیص باید بزرگ‌تر از صفر باشد.',
+    'landed_cost_inventory_stock_account_could_not_be_resolved' => 'حساب موجودی انبار قابل تشخیص نیست.',
+    'landed_cost_freight_customs_clearing_account_could_not_be_resolved' => 'حساب تسویه کرایه/گمرک قابل تشخیص نیست.',
+    'landed_cost_home_currency_could_not_be_resolved' => 'ارز پایه قابل تشخیص نیست.',
     'dependencies_found' => 'نمی‌توان این رکورد را حذف کنید چون در بخش های دیگر استفاده شده است.',
     'cannot_delete_item_with_posted_stock_movements' => 'نمی‌توان جنسی را حذف کنید که دارای حرکات انبار ثبت شده است.',
     'posted_stock_movements_found' => 'جنسی با حرکات انبار ثبت شده وجود دارد.',
@@ -74,4 +87,3 @@ return [
     'cost_of_goods_sold' => 'هزینه محصولات فروخته شد',
     'expenses' => 'هزینه ها',
 ];
-

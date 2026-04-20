@@ -35,5 +35,17 @@ class AccountSeeder extends Seeder
                 'created_by' => User::where('name', 'admin')->first()->id,
             ]);
         }
+        $newAccount = [
+            'name' => 'Landed Costs Clearing',
+            'local_name' => 'تسویه هزینه‌های حمل و گمرک',
+            'number' => '3060',
+            'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
+            'slug' => 'landed-costs-clearing',
+            'remark' => 'Temporary holding for freight, customs, insurance before allocation to inventory',
+            'is_main' => true,
+            'branch_id' => $mainBranch->id,
+            'created_by' => User::where('name', 'admin')->first()->id,
+        ];
+        Account::create($newAccount);
     }
 }

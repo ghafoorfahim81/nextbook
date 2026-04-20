@@ -18,6 +18,7 @@ return [
         'item' => 'Item',
         'item_transfer' => 'Item transfer',
         'ledger' => 'Ledger',
+        'landed_cost' => 'Landed cost',
         'owner' => 'Owner',
         'payment' => 'Payment',
         'purchase' => 'Purchase',
@@ -61,5 +62,16 @@ return [
 
     'error_occurred_while_creating' => 'An error occurred while creating :resource.',
     'error_occurred_while_updating' => 'An error occurred while updating :resource.',
+    'landed_cost_select_purchase_and_add_item' => 'Select a purchase order and add at least one item.',
+    'landed_cost_allocated_total_cannot_exceed_total_cost' => 'Allocated total cannot exceed total cost.',
+    'landed_cost_save_draft_first' => 'Save the landed cost draft first, then allocate it.',
+    'landed_cost_posted_cannot_be_edited' => 'Posted landed costs cannot be edited.',
+    'landed_cost_posted_cannot_be_deleted' => 'Posted landed costs cannot be deleted.',
+    'landed_cost_posted_cannot_be_reallocated' => 'Posted landed costs cannot be reallocated.',
+    'landed_cost_already_posted' => 'This landed cost has already been posted.',
+    'landed_cost_no_items_to_allocate' => 'Add at least one item to allocate landed cost.',
+    'landed_cost_allocation_basis_must_be_greater_than_zero' => 'Allocation basis must be greater than zero.',
+    'landed_cost_inventory_stock_account_could_not_be_resolved' => 'Inventory stock account could not be resolved.',
+    'landed_cost_freight_customs_clearing_account_could_not_be_resolved' => 'Freight/customs clearing account could not be resolved.',
+    'landed_cost_home_currency_could_not_be_resolved' => 'Home currency could not be resolved.',
 ];
-

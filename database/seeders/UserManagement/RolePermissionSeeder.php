@@ -33,6 +33,7 @@ class RolePermissionSeeder extends Seeder
             'loans',
 
             'items',
+            'landed_costs',
             'categories',
             'currencies',
             'unit_measures',
@@ -103,6 +104,11 @@ class RolePermissionSeeder extends Seeder
             'export',
         ];
 
+        $landedCostActions = array_merge($baseActions, [
+            'allocate',
+            'post',
+        ]);
+
         $transactionActions = array_merge($baseActions, [
             'print',
             'approve',
@@ -130,9 +136,11 @@ class RolePermissionSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
         foreach ($resources as $resource) {
-            $actions = in_array($resource, $transactionResources, true)
+            $actions = $resource === 'landed_costs'
+                ? $landedCostActions
+                : (in_array($resource, $transactionResources, true)
                 ? $transactionActions
-                : $baseActions;
+                : $baseActions);
 
             foreach ($actions as $action) {
                 Permission::firstOrCreate([
@@ -219,6 +227,14 @@ class RolePermissionSeeder extends Seeder
             'payments.view_any',
             'payments.view',
             'payments.create',
+
+            // Landed Costs
+            'landed_costs.view_any',
+            'landed_costs.view',
+            'landed_costs.create',
+            'landed_costs.update',
+            'landed_costs.allocate',
+            'landed_costs.post',
         ])->get();
 
         $accountant->syncPermissions($accountantPermissions);
