@@ -296,7 +296,7 @@ class StockService
                         return $query->whereNull('batch');
                     })
                     ->when($allocation['expire_date'] !== null, function ($query) use ($allocation) {
-                        return $query->whereDate('expire_date', $allocation['expire_date']);
+                        return $query->whereDate('expire_date', $this->normalizeDate($allocation['expire_date']));
                     }, function ($query) {
                         return $query->whereNull('expire_date');
                     })
