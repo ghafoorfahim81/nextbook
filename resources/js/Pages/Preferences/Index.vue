@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Com
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
 import { Label } from '@/Components/ui/label'
 import { Input } from '@/Components/ui/input'
+import { Spinner } from '@/Components/ui/spinner'
 import { Switch } from '@/Components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
 import { Textarea } from '@/Components/ui/textarea'
@@ -18,7 +19,7 @@ import { toast } from 'vue-sonner';
 import {
     Palette, Package, ShoppingCart, ShoppingBag, CreditCard, Calculator,
     Bell, Shield, Database, Globe, Monitor, RotateCcw, Download, Upload,
-    Save, Plug, Eye, SlidersHorizontal as preferencesIcon
+    Save, Plug, Eye, SlidersHorizontal as preferencesIcon, Search, CircleX
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -36,13 +37,18 @@ const props = defineProps({
     invoiceThemes: { type: Array, required: true },
 })
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const isRTL = computed(() => ['fa', 'ps'].includes(String(locale.value).toLowerCase()))
 const tOr = (key, fallback, params = {}) => {
     const translated = t(key, params)
     return translated === key ? fallback : translated
 }
 
 const activeTab = ref('appearance')
+const menuSearchQuery = ref('')
+const normalizedMenuSearch = computed(() => menuSearchQuery.value.trim().toLowerCase())
+const resettingCategory = ref('')
+const importLoading = ref(false)
 
 const tabs = [
     { id: 'appearance', label: 'preferences.tabs.appearance', icon: Palette },
@@ -58,6 +64,238 @@ const tabs = [
     { id: 'localization', label: 'preferences.tabs.localization', icon: Globe },
     { id: 'display', label: 'preferences.tabs.display', icon: Monitor },
 ]
+
+const tabSearchTerms = {
+    appearance: [
+        'appearance',
+        'font size',
+        'theme',
+        'decimal places',
+        'sidebar menus',
+        'records per page',
+        'balance nature format',
+        'without nature',
+        'with nature',
+        'light',
+        'dark',
+        'system',
+        'cyan',
+        'violet',
+    ],
+    item_management: [
+        'item management',
+        'visible fields',
+        'code',
+        'generic name',
+        'packing',
+        'colors',
+        'size',
+        'brand',
+        'minimum stock',
+        'maximum stock',
+        'file upload',
+        'rate a',
+        'rate b',
+        'rate c',
+        'barcode',
+        'rack no',
+        'fast search',
+        'item type',
+        'sku',
+        'batch',
+        'expiry',
+        'on hand',
+        'measure',
+        'discount',
+        'tax',
+        'free',
+        'spec text',
+    ],
+    sale: [
+        'sale',
+        'invoice prefix',
+        'start number',
+        'due days',
+        'terms',
+        'invoice theme',
+        'auto reminders',
+        'reminder days',
+        'late fee percentage',
+        'tax percentage',
+        'auto calculate tax',
+        'show ledger transactions',
+        'show item transactions',
+        'general fields',
+        'item columns',
+        'number',
+        'date',
+        'currency',
+        'type',
+        'warehouse',
+        'packing',
+        'colors',
+        'size',
+        'brand',
+        'rack no',
+        'category',
+        'rates',
+        'batch',
+        'expiry',
+        'on hand',
+        'measure',
+        'discount',
+        'tax',
+        'free',
+        'sale order',
+        'sale return',
+        'sale quotation',
+    ],
+    purchase: [
+        'purchase',
+        'invoice prefix',
+        'start number',
+        'due days',
+        'terms',
+        'auto reminders',
+        'reminder days',
+        'late fee percentage',
+        'show ledger transactions',
+        'show item transactions',
+        'general fields',
+        'item columns',
+        'number',
+        'date',
+        'currency',
+        'type',
+        'warehouse',
+        'packing',
+        'colors',
+        'size',
+        'brand',
+        'rack no',
+        'category',
+        'rates',
+        'batch',
+        'expiry',
+        'on hand',
+        'measure',
+        'discount',
+        'tax',
+        'free',
+        'purchase order',
+        'purchase return',
+        'purchase quotation',
+    ],
+    receipt_payment: [
+        'receipt payment',
+        'visible fields',
+        'number',
+        'currency',
+        'cheque number',
+        'debit account',
+        'ledger old balance',
+        'default cash account',
+        'lock after days',
+        'auto sequence',
+        'require approval',
+    ],
+    tax_currency: [
+        'tax currency',
+        'tax plus',
+        'tax minus',
+        'multi currency opening',
+    ],
+    notifications: [
+        'notifications',
+        'email notifications',
+        'low balance alert',
+        'low item balance alert',
+        'nearest expiry alert',
+        'overdue purchase alert',
+        'overdue sale alert',
+        'overdue invoice alert',
+        'sale paid alert',
+        'purchase paid alert',
+        'new transaction alert',
+        'daily summary report',
+        'weekly financial summary',
+    ],
+    security: [
+        'security',
+        'session timeout',
+        'login attempts limit',
+        'password min length',
+        'password special chars',
+        'two factor auth',
+        'report lock',
+        'lock reports',
+        'lock password',
+    ],
+    install_plugins: [
+        'install plugins',
+        'measures',
+        'warehouses',
+        'categories',
+        'sizes',
+        'currencies',
+        'ledgers',
+        'customers',
+        'suppliers',
+    ],
+    backup: [
+        'backup',
+        'auto backup',
+        'backup retention days',
+        'cloud backup',
+        'cloud provider',
+        'export formats',
+        'daily',
+        'weekly',
+        'monthly',
+    ],
+    localization: [
+        'localization',
+        'language',
+        'timezone',
+        'date format',
+        'time format',
+        'number format',
+        'first day of week',
+        'sunday',
+        'monday',
+        'saturday',
+    ],
+    display: [
+        'display',
+        'theme',
+        'records per page',
+        'dashboard charts',
+        'show currency symbol',
+        'compact view',
+        'sidebar collapsed',
+        'light',
+        'dark',
+        'system',
+    ],
+}
+
+const visibleTabs = computed(() => {
+    const q = normalizedMenuSearch.value
+
+    if (!q) {
+        return tabs
+    }
+
+    return tabs.filter((tab) => {
+        return [
+            tab.id,
+            t(tab.label),
+            ...(tabSearchTerms[tab.id] || []),
+        ].some((value) => String(value || '').toLowerCase().includes(q))
+    })
+})
+
+const isPreferencesLoading = computed(() => form.processing || pluginForm.processing || importLoading.value || Boolean(resettingCategory.value))
 
 const form = useForm({ ...props.preferences })
 
@@ -119,6 +357,7 @@ const save = () => {
 
 const resetCategory = (category) => {
     if (confirm(t('preferences.confirm_reset'))) {
+        resettingCategory.value = category
         router.post(route('preferences.reset', { category }), {}, {
             preserveScroll: true,
             onSuccess: () => {
@@ -126,6 +365,12 @@ const resetCategory = (category) => {
                 toast.success(t('preferences.reset_success'), {
                     class: 'bg-green-600',
                 })
+            },
+            onFinish: () => {
+                resettingCategory.value = ''
+            },
+            onError: () => {
+                resettingCategory.value = ''
             },
         })
     }
@@ -146,6 +391,7 @@ const handleFileUpload = (event) => {
 
     const formData = new FormData()
     formData.append('file', file)
+    importLoading.value = true
 
     router.post(route('preferences.import'), formData, {
         onSuccess: () => {
@@ -154,8 +400,30 @@ const handleFileUpload = (event) => {
         onError: () => {
             toast({ title: t('preferences.import_error'), variant: 'destructive' })
         },
+        onFinish: () => {
+            importLoading.value = false
+            fileInput.value.value = ''
+        },
     })
 }
+
+const clearMenuSearch = () => {
+    menuSearchQuery.value = ''
+}
+
+watch(
+    () => visibleTabs.value,
+    (nextTabs) => {
+        if (!nextTabs.length) {
+            return
+        }
+
+        if (normalizedMenuSearch.value && !nextTabs.some((tab) => tab.id === activeTab.value)) {
+            activeTab.value = nextTabs[0].id
+        }
+    },
+    { immediate: true },
+)
 
 // Transaction Types for Sale and Purchases
 const saleTransactionTypes = ['sale', 'sale_order', 'sale_return', 'sale_quotation']
@@ -274,31 +542,61 @@ const receiptPaymentFields = [
                         {{ t('preferences.export') }}
                     </Button>
                     <Button @click="save" :disabled="form.processing">
-                        <Save class="w-4 h-4 mr-2" />
-                        {{ t('preferences.save') }}
+                        <Spinner v-if="form.processing" class="w-4 h-4 mr-2" />
+                        <Save v-else class="w-4 h-4 mr-2" />
+                        {{ form.processing ? t('general.loading') : t('preferences.save') }}
                     </Button>
                 </div>
+            </div>
+
+            <div v-if="isPreferencesLoading" class="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted-foreground shadow-sm">
+                <Spinner class="h-4 w-4" />
+                {{ t('general.loading') }}...
             </div>
 
             <div class="flex flex-col gap-6 lg:flex-row">
                 <!-- Sidebar Navigation -->
                 <div class="w-full shrink-0 lg:w-64">
-                    <nav class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:sticky lg:top-4 lg:block lg:space-y-1">
-                        <button
-                            v-for="tab in tabs"
-                            :key="tab.id"
-                            @click="activeTab = tab.id"
-                            :class="[
-                                'w-full justify-start flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors',
-                                activeTab === tab.id
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                            ]"
-                        >
-                            <component :is="tab.icon" class="w-5 h-5" />
-                            {{ t(tab.label) }}
-                        </button>
-                    </nav>
+                    <div class="space-y-3 lg:sticky lg:top-4">
+                        <div class="relative">
+                            <Search
+                                class="pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                                :class="isRTL ? 'right-3' : 'left-3'"
+                            />
+                            <Input
+                                v-model="menuSearchQuery"
+                                :placeholder="t('general.search_placeholder', { name: t('preferences.title').toLowerCase() })"
+                                :class="isRTL ? 'pl-10 pr-9' : 'pl-9 pr-10'"
+                            />
+                            <button
+                                v-if="normalizedMenuSearch"
+                                type="button"
+                                class="absolute inset-y-0 flex items-center justify-center px-3 text-muted-foreground transition-colors hover:text-foreground"
+                                :class="isRTL ? 'left-0' : 'right-0'"
+                                :aria-label="t('general.clear')"
+                                @click="clearMenuSearch"
+                            >
+                                <CircleX class="h-4 w-4" />
+                            </button>
+                        </div>
+
+                        <nav class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:block lg:space-y-1">
+                            <button
+                                v-for="tab in visibleTabs"
+                                :key="tab.id"
+                                @click="activeTab = tab.id"
+                                :class="[
+                                    'w-full justify-start flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors',
+                                    activeTab === tab.id
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                                ]"
+                            >
+                                <component :is="tab.icon" class="w-5 h-5" />
+                                {{ t(tab.label) }}
+                            </button>
+                        </nav>
+                    </div>
                 </div>
 
                 <!-- Content Area -->
@@ -1105,8 +1403,9 @@ const receiptPaymentFields = [
                                 <CardDescription>{{ t('preferences.install_plugins.description') }}</CardDescription>
                             </div>
                             <Button variant="default" size="sm" @click="savePlugins" :disabled="pluginSaving">
-                                <Save class="w-4 h-4 mr-2" />
-                                {{ t('preferences.install_plugins.save') }}
+                                <Spinner v-if="pluginSaving" class="w-4 h-4 mr-2" />
+                                <Save v-else class="w-4 h-4 mr-2" />
+                                {{ pluginSaving ? t('general.loading') : t('preferences.install_plugins.save') }}
                             </Button>
                         </CardHeader>
                         <CardContent class="space-y-6">
