@@ -94,7 +94,8 @@ class SaleController extends Controller
         $sale = DB::transaction(function () use ($request, $transactionService, $stockService, $validated) {
             $validated = $request->validated();
 
-            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+            $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+            // dd($validated['date']);
             $validated['type'] = $validated['sale_type'] ?? 'cash';
             $validated['status'] = TransactionStatus::POSTED->value;
 
@@ -109,7 +110,7 @@ class SaleController extends Controller
 
             $lines = [];
             $totalCostOfGoodsSold = 0;
-
+            // dd($validated['item_list']);
             $glAccounts = Cache::get('gl_accounts');
 
             foreach ($validated['item_list'] as $item) {
@@ -146,7 +147,7 @@ class SaleController extends Controller
                     'unit_cost'       => $unitCost,
                     'status'          => StockStatus::POSTED->value,
                     'batch'           => $item['batch'] ?? null,
-                    'date'            => $date,
+                    'date'            => $validated['date'],
                     'expire_date'     => $item['expire_date'] ?? null,
                     'size_id'         => $validated['size_id'] ?? null,
                     'warehouse_id'    => $validated['warehouse_id'],
@@ -252,7 +253,7 @@ class SaleController extends Controller
                 header: [
                     'currency_id'    => $validated['currency_id'],
                     'rate'           => $validated['rate'],
-                    'date'           => $date,
+                    'date'           => $validated['date'],
                     'remark'         => 'Sale #' . $sale->number,
                     'status'         => TransactionStatus::POSTED->value,
                     'reference_type' => Sale::class,

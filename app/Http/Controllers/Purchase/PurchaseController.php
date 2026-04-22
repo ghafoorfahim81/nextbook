@@ -92,8 +92,8 @@ class PurchaseController extends Controller
 
             $validated['type']  = $validated['purchase_type'] ?? 'cash';
             $validated['status'] = TransactionStatus::POSTED->value;
-
-            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+ 
+            $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $purchase = Purchase::create($validated);
             $validated['item_list'] = array_map(function ($item) use ($validated) {
                 $item['discount'] = $item['item_discount'] ? $item['item_discount'] : 0;
@@ -118,9 +118,7 @@ class PurchaseController extends Controller
                 else{
                     $unitCost = $avgCost;
                     $totalCost = $avgCost * $quantity;
-                }
-
-                dd($avgCost * $quantity);
+                } 
 
                 $stock = $stockService->post([
                     'item_id'         => $item['item_id'],
@@ -131,7 +129,7 @@ class PurchaseController extends Controller
                     'unit_cost'       => (float) $item['unit_price'],
                     'status'          => StockStatus::DRAFT->value,
                     'batch'           => $item['batch'] ?? null,
-                    'date'            => $date,
+                    'date'            => $validated['date'],
                     'expire_date'     => $item['expire_date'],
                     'size_id'         => $validated['size_id'] ?? null,
                     'warehouse_id'    => $validated['warehouse_id'],
@@ -213,7 +211,7 @@ class PurchaseController extends Controller
                 header: [
                     'currency_id'   => $validated['currency_id'],
                     'rate'          => $validated['rate'],
-                    'date'          => $date,
+                    'date'          => $validated['date'],
                     'remark'        => 'Purchase #' . $purchase->number,
                     'status'        => TransactionStatus::POSTED->value,
                     'reference_type'=> Purchase::class,
@@ -282,7 +280,7 @@ class PurchaseController extends Controller
             $validated['type'] = $validated['purchase_type'] ?? $purchase->type ?? 'cash';
             $validated['status'] = TransactionStatus::POSTED->value;
 
-            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $purchase->date;
+            $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $purchase->date;
             $affectedCombos = $purchase->items()
                 ->get(['item_id', 'warehouse_id', 'branch_id'])
                 ->map(fn ($item) => [
@@ -346,7 +344,7 @@ class PurchaseController extends Controller
                     'unit_cost'       => $unitPrice,
                     'status'          => StockStatus::DRAFT->value,
                     'batch'           => $item['batch'] ?? null,
-                    'date'            => $date,
+                    'date'            => $validated['date'],
                     'expire_date'     => $item['expire_date'] ?? null,
                     'size_id'         => $validated['size_id'] ?? null,
                     'warehouse_id'    => $validated['warehouse_id'],
@@ -432,7 +430,7 @@ class PurchaseController extends Controller
                 header: [
                     'currency_id'    => $validated['currency_id'],
                     'rate'           => $validated['rate'],
-                    'date'           => $date,
+                    'date'           => $validated['date'],
                     'remark'         => 'Purchase #' . $purchase->number,
                     'status'         => TransactionStatus::POSTED->value,
                     'reference_type' => Purchase::class,

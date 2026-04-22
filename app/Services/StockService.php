@@ -32,7 +32,7 @@ class StockService
 
             if ($data['movement_type'] === StockMovementType::IN->value) {
                 return $this->handleIn($item, $movementData, $balanceData);
-            } else {
+            } else { 
                 return $this->handleOut($item, $movementData, $balanceData, $conversionFactor);
             }
         });
@@ -47,6 +47,7 @@ class StockService
 
         $movement = StockMovement::create([
             ...$movementData,
+            'expire_date' => $this->normalizeDate($movementData['expire_date']), 
             'qty_remaining' => $balanceData['quantity'],
         ]);
 
@@ -65,6 +66,7 @@ class StockService
 
         if ($method === 'fifo') {
             $allocations = $this->deductFIFO($item, $movementData, $balanceData, $conversionFactor);
+            // dd($allocations);
             $this->decreaseBalance($balanceData, $allocations);
 
             return $allocations;
@@ -82,7 +84,7 @@ class StockService
      */
     protected function deductFIFO(Item $item, array $movementData, array $balanceData, float $conversionFactor): array
     {
-        $remaining = $balanceData['quantity'];
+        $remaining = $balanceData['quantity']; 
         $query = StockMovement::query()
             ->where('branch_id', $balanceData['branch_id'])
             ->where('item_id', $balanceData['item_id'])
@@ -96,7 +98,7 @@ class StockService
 
         if (!empty($balanceData['expire_date'])) {
             $query->whereDate('expire_date', $this->normalizeDate($balanceData['expire_date']));
-        }
+        } 
 
         $inMovements = $query
             ->orderByRaw('CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END')
@@ -105,28 +107,24 @@ class StockService
             ->orderBy('created_at')
             ->orderBy('id')
             ->lockForUpdate()
-            ->get();
-        /** @var \Illuminate\Database\Eloquent\Collection<int, StockMovement> $inMovements */
+            ->get();  
 
-        $allocations = [];
-
+        $allocations = []; 
         foreach ($inMovements as $movement) {
             if ($remaining <= 0) {
                 break;
-            }
-
-            $deductQty = min($movement->qty_remaining, $remaining);
-
+            } 
+            $deductQty = min($movement->qty_remaining, $remaining); 
             $movement->qty_remaining = (float) $movement->qty_remaining - $deductQty;
             $movement->status = StockStatus::POSTED->value;
-            $movement->save();
+            $movement->save(); 
 
             $outMovement = StockMovement::create([
                 ...$movementData,
                 'batch' => $movement->batch,
                 'quantity' => $this->convertFromItemUnit($deductQty, $conversionFactor),
                 'date' => $this->normalizeDate($movementData['date']),
-                'expire_date' => $movement->expire_date?->toDateString(),
+                'expire_date' => $this->normalizeDate($movement->expire_date),
                 'unit_cost' => $this->convertMovementCostToSelectedUnit($movement, $item, $conversionFactor),
                 'qty_remaining' => null,
             ]);
@@ -134,15 +132,13 @@ class StockService
             $allocations[] = [
                 'quantity' => $deductQty,
                 'batch' => $movement->batch,
-                'expire_date' => $movement->expire_date?->toDateString(),
+                'expire_date' => ($movement->expire_date?->toDateString()),
                 'status' => $this->stockStatusValue($movement->status),
                 'movement_id' => $movement->id,
                 'out_movement_id' => $outMovement->id,
-            ];
-
-            $remaining -= $deductQty;
-        }
-
+            ]; 
+            $remaining -= $deductQty; 
+        } 
         if ($remaining > 0) {
             throw ValidationException::withMessages([
                 'stock' => 'Insufficient stock for FIFO deduction.'
@@ -192,7 +188,7 @@ class StockService
                 'quantity' => $data['quantity'],
                 'average_cost' => $data['unit_cost'],
                 'batch' => $data['batch'] ?? null,
-                'expire_date' => $data['expire_date'] ? $this->dateConversionService->toGregorian($data['expire_date']) : null,
+                'expire_date' => $data['expire_date'] ? $this->normalizeDate($data['expire_date']) : null,
                 'warehouse_id' => $data['warehouse_id'],
                 'branch_id' => $data['branch_id'],
                 'item_id' => $data['item_id'],
@@ -208,7 +204,7 @@ class StockService
                 'item_id' => $data['item_id'],
                 'warehouse_id' => $data['warehouse_id'],
                 'batch' => $data['batch'] ?? null,
-                'expire_date' => $data['expire_date'] ? $this->dateConversionService->toGregorian($data['expire_date']) : null,
+                'expire_date' => $data['expire_date'] ? $this->normalizeDate($data['expire_date']) : null,
             ],
             [
                 'quantity' => 0,
@@ -283,7 +279,8 @@ class StockService
      * Decrease Balance
      */
     protected function decreaseBalance(array $data, ?array $allocations = null): void
-    {
+    { 
+
         if ($allocations !== null) {
             foreach ($allocations as $allocation) {
                 $balances = StockBalance::query()
@@ -296,7 +293,7 @@ class StockService
                         return $query->whereNull('batch');
                     })
                     ->when($allocation['expire_date'] !== null, function ($query) use ($allocation) {
-                        return $query->whereDate('expire_date', $this->normalizeDate($allocation['expire_date']));
+                        return $query->whereDate('expire_date', $allocation['expire_date']);
                     }, function ($query) {
                         return $query->whereNull('expire_date');
                     })
@@ -304,13 +301,15 @@ class StockService
                     ->orderBy('created_at')
                     ->orderBy('id')
                     ->get();
+                // dd($allocation['expire_date'], $balances);
 
-                $this->decrementBalances($balances, (float) $allocation['quantity']);
+                $this->decrementBalances($balances, (float) $allocation['quantity'], $allocation);
                 $this->markBalancesAsPosted($balances);
             }
 
             return;
         }
+ 
 
         $balances = StockBalance::query()
             ->where('branch_id', $data['branch_id'])
@@ -329,7 +328,7 @@ class StockService
             ->orderBy('id')
             ->get();
 
-        $this->decrementBalances($balances, (float) $data['quantity']);
+        $this->decrementBalances($balances, (float) $data['quantity'], []);
         $this->markBalancesAsPosted($balances);
     }
 
@@ -412,7 +411,7 @@ class StockService
         ];
     }
 
-    protected function decrementBalances($balances, float $quantity): void
+    protected function decrementBalances($balances, float $quantity, array $allocation): void
     {
         $remaining = $quantity;
 
@@ -434,7 +433,9 @@ class StockService
 
         if ($remaining > 0) {
             throw ValidationException::withMessages([
-                'stock' => 'Negative stock is not allowed.'
+                    'stock' => 'Negative stock is not allowed.',
+                    'allocation' => $allocation['expire_date'] ,
+                    'quantity' => $quantity,
             ]);
         }
     }

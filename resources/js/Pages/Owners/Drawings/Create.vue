@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import { computed, ref, watch } from 'vue'
-import { useForm } from '@inertiajs/vue3'
+import { useForm, usePage, router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import NextInput from '@/Components/next/NextInput.vue'
@@ -9,7 +9,7 @@ import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
-import { router } from '@inertiajs/vue3'
+import { todayValueForCalendar } from '@/utils/dateDefaults'
 
 const { t } = useI18n()
 
@@ -25,7 +25,9 @@ const bankAccounts = computed(() => props.bankAccounts?.data ?? props.bankAccoun
 const currencies = computed(() => props.currencies?.data ?? props.currencies ?? [])
 const homeCurrency = computed(() => props.homeCurrency?.data ?? props.homeCurrency ?? null)
 
-const todayValue = () => new Date().toLocaleDateString('en-CA')
+const page = usePage()
+const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
+const todayValue = () => todayValueForCalendar(calendarType.value)
 
 const form = useForm({
   owner_id: '',

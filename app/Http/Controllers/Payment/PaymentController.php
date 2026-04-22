@@ -93,12 +93,12 @@ class PaymentController extends Controller
             $amount = (float) $validated['amount'];
             $currencyId = $validated['currency_id'];
             $rate = (float) $validated['rate'];
-            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+            $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $bankAccountId = $validated['bank_account_id'];
             $paymentMode = $validated['payment_mode'] ?? PaymentMode::OnAccount->value;
             $payment = Payment::create([
                 'number' => $validated['number'],
-                'date' => $date,
+                'date' => $validated['date'],
                 'ledger_id' => $ledger->id,
                 'payment_mode' => $paymentMode,
                 'cheque_no' => $validated['cheque_no'] ?? null,
@@ -114,7 +114,7 @@ class PaymentController extends Controller
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
-                    'date' => $date,
+                    'date' => $validated['date'],
                     'reference_type' => Payment::class,
                     'reference_id' => $payment->id,
                     'remark' => $debitRemark,
@@ -202,14 +202,14 @@ class PaymentController extends Controller
         DB::transaction(function () use ($request, $payment) {
             $validated = $request->validated();
 
-            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $payment->date;
+            $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $payment->date;
             $currentPaymentMode = $payment->payment_mode instanceof PaymentMode
                 ? $payment->payment_mode->value
                 : $payment->payment_mode;
             $paymentMode = $validated['payment_mode'] ?? $currentPaymentMode ?? PaymentMode::OnAccount->value;
             $payment->update([
                 'number' => $validated['number'] ?? $payment->number,
-                'date' => $date,
+                'date' => $validated['date'],
                 'ledger_id' => $validated['ledger_id'] ?? $payment->ledger_id,
                 'payment_mode' => $paymentMode,
                 'cheque_no' => $validated['cheque_no'] ?? $payment->cheque_no,
@@ -231,7 +231,7 @@ class PaymentController extends Controller
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
-                    'date' => $date,
+                    'date' => $validated['date'],
                     'reference_type' => Payment::class,
                     'reference_id' => $payment->id,
                 ],

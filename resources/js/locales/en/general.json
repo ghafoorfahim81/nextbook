@@ -214,5 +214,6 @@
   "auto_distribute": "Auto distribute",
   "select_all_bills": "Select all bills",
   "bill_allocations": "Bill Allocations",
-  "bill": "Bill"
+  "bill": "Bill",
+  "transaction": "Transaction"
 }

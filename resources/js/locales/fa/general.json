@@ -217,6 +217,7 @@
   "auto_distribute": "تخصیص خودکار",
   "select_all_bills": "انتخاب همه فاکتورها",
   "bill_allocations": "تخصیص فاکتورها",
-  "bill": "فاکتور"
+  "bill": "فاکتور",
+  "transaction": "تراکنش"
 }
 

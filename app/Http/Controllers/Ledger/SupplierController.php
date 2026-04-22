@@ -106,7 +106,7 @@ class SupplierController extends Controller
                 header: [
                     'currency_id' => $validated['opening_currency_id'],
                     'rate' => (float) $validated['rate'],
-                    'date' => now(),
+                    'date' => now()->toDateString(),
                     'reference_type' => Ledger::class,
                     'reference_id' => $ledger->id,
                     'remark' => 'Opening balance for supplier ' . $ledger->name,
@@ -334,7 +334,7 @@ class SupplierController extends Controller
                 header: [
                     'currency_id' => $validated['opening_currency_id'],
                     'rate' => (float) $validated['rate'],
-                    'date' => now(),
+                    'date' => now()->toDateString(),
                     'reference_type' => Ledger::class,
                     'reference_id' => $supplier->id,
                     'remark' => 'Opening balance for supplier ' . $supplier->name,
