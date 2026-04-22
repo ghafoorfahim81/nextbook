@@ -37,23 +37,5 @@ class FastEntryRequest extends FormRequest
             'items.*.warehouse_id'        => ['nullable','exists:warehouses,id'],
         ];
     }
-
-    public function prepareForValidation(): void
-    {
-        // Trim & coerce simple types if you want
-//        $items = collect($this->input('items', []))
-//            ->map(function($r) {
-//                $r['purchase_price'] = $r['purchase_price'] === '' ? null : $r['purchase_price'];
-//                $r['sale_price']     = $r['sale_price'] === '' ? null : $r['sale_price'];
-//                $r['quantity']       = $r['quantity'] === '' ? null : $r['quantity'];
-//                return $r;
-//            })
-//            // drop completely empty rows (safety)
-//            ->filter(function($r){
-//                return collect($r)->except(['_key'])->some(fn($v) => $v !== null && $v !== '');
-//            })
-//            ->values();
-//
-//        $this->merge(['items' => $items]);
-    }
+ 
 }

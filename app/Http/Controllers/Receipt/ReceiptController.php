@@ -87,11 +87,11 @@ class ReceiptController extends Controller
             $currencyId = $validated['currency_id'];
             $rate = (float) $validated['rate'];
             $bankAccountId = $validated['bank_account_id'];
-            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+            $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $paymentMode = $validated['payment_mode'] ?? PaymentMode::OnAccount->value;
             $receipt = Receipt::create([
                 'number' => $validated['number'],
-                'date' => $date,
+                'date' => $validated['date'],
                 'ledger_id' => $ledger->id,
                 'payment_mode' => $paymentMode,
                 'cheque_no' => $validated['cheque_no'] ?? null,
@@ -107,7 +107,7 @@ class ReceiptController extends Controller
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
-                    'date' => $date,
+                    'date' => $validated['date'],
                     'reference_type' => Receipt::class,
                     'reference_id' => $receipt->id,
                     'remark' => $creditRemark,
@@ -192,14 +192,14 @@ class ReceiptController extends Controller
     {
         DB::transaction(function () use ($request, $receipt) {
             $validated = $request->validated();
-            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $receipt->date;
+            $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $receipt->date;
             $currentPaymentMode = $receipt->payment_mode instanceof PaymentMode
                 ? $receipt->payment_mode->value
                 : $receipt->payment_mode;
             $paymentMode = $validated['payment_mode'] ?? $currentPaymentMode ?? PaymentMode::OnAccount->value;
             $receipt->update([
                 'number' => $validated['number'],
-                'date' => $date,
+                'date' => $validated['date'],
                 'ledger_id' => $validated['ledger_id'],
                 'payment_mode' => $paymentMode,
                 'cheque_no' => $validated['cheque_no'] ?? null,
@@ -221,7 +221,7 @@ class ReceiptController extends Controller
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
-                    'date' => $date,
+                    'date' => $validated['date'],
                     'reference_type' => Receipt::class,
                     'reference_id' => $receipt->id,
                 ],

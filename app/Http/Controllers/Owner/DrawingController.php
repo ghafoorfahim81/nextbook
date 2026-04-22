@@ -22,7 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Response;
-
+use App\Services\DateConversionService;
 class DrawingController extends Controller
 {
     public function __construct()
@@ -93,20 +93,20 @@ class DrawingController extends Controller
         DB::transaction(function () use ($validated, $transactionService) {
             $owner = Owner::with('drawingAccount')->findOrFail($validated['owner_id']);
             abort_unless($owner->drawing_account_id, 422, 'Selected owner does not have a drawing account.');
-
+            $dateConversionService = app(DateConversionService::class);
+            $date = $validated['date'] ? $dateConversionService->toGregorian($validated['date']) : null;
             $drawing = Drawing::create([
                 'owner_id' => $owner->id,
-                'date' => $validated['date'],
+                'date' => $date,
                 'narration' => $validated['narration'] ?? null,
             ]);
-
             $amount = (float) $validated['amount'];
 
             $transactionService->post(
                 header: [
                     'currency_id' => $validated['currency_id'],
                     'rate' => $validated['rate'],
-                    'date' => $validated['date'],
+                    'date' => $date,
                     'reference_type' => Drawing::class,
                     'reference_id' => $drawing->id,
                     'remark' => $validated['narration'] ?? "Drawing by {$owner->name}",
@@ -187,10 +187,11 @@ class DrawingController extends Controller
 
             $amount = (float) $validated['amount'];
             $transaction = $drawing->transaction()->with('lines')->first();
-
+            $dateConversionService = app(DateConversionService::class);
+            $date = $validated['date'] ? $dateConversionService->toGregorian($validated['date']) : null;
             $drawing->update([
                 'owner_id' => $owner->id,
-                'date' => $validated['date'],
+                'date' => $date,
                 'narration' => $validated['narration'] ?? null,
             ]);
 
@@ -203,7 +204,7 @@ class DrawingController extends Controller
                 header: [
                     'currency_id' => $validated['currency_id'],
                     'rate' => $validated['rate'],
-                    'date' => $validated['date'],
+                    'date' => $date,
                     'reference_type' => Drawing::class,
                     'reference_id' => $drawing->id,
                     'remark' => $validated['narration'] ?? "Drawing by {$owner->name}",

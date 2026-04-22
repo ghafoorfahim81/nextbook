@@ -23,9 +23,8 @@ class DrawingResource extends JsonResource
         return [
             'id' => $this->id,
             'owner_id' => $this->owner_id,
-            'owner' => OwnerResource::make($this->whenLoaded('owner')),
-            'date' => $this->date?->format('Y-m-d'),
-            'formatted_date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
+            'owner' => OwnerResource::make($this->whenLoaded('owner')), 
+            'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
             'narration' => $this->narration,
             'amount' => $amount,
             'currency_id' => $transaction?->currency_id,

@@ -17,6 +17,7 @@ use Inertia\Response;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
 use App\Models\User;
+use Carbon\Carbon;
 class OwnerController extends Controller
 {
     public function __construct()
@@ -88,8 +89,7 @@ class OwnerController extends Controller
             // Create financial transactions
             $amount = (float) $validated['amount'];
             $currencyId = $validated['opening_currency_id'];
-            $rate = (float) $validated['rate'];
-            $today = now()->toDateString();
+            $rate = (float) $validated['rate']; 
 
             // Credit owner's capital account (capital contribution)
             if($amount > 0 && $currencyId && $rate) {
@@ -97,7 +97,7 @@ class OwnerController extends Controller
                    header: [
                        'currency_id' => $currencyId,
                        'rate' => $rate,
-                       'date' => $today,
+                       'date' => Carbon::now()->toDateString(),
                        'reference_type' => Owner::class,
                        'reference_id' => $owner->id,
                    ],
@@ -153,8 +153,7 @@ class OwnerController extends Controller
 
     public function update(OwnerUpdateRequest $request, Owner $owner)
     { 
-        $validated = $request->validated();
-        // dd($validated);
+        $validated = $request->validated(); 
         DB::transaction(function () use ($owner, $validated) {
             $amount = (float) ($validated['amount'] ?? 0);
             $currencyId = $validated['currency_id'] ?? $owner->transaction?->currency_id;
@@ -185,7 +184,7 @@ class OwnerController extends Controller
                     header: [
                         'currency_id' => $currencyId,
                         'rate' => $rate,
-                        'date' => now()->toDateString(),
+                        'date' => Carbon::now()->toDateString(),
                         'reference_type' => Owner::class,
                         'reference_id' => $owner->id,
                         'remark' => "Owner contribution for {$owner->name}",
