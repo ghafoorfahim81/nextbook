@@ -26,6 +26,8 @@ import {
 } from 'lucide-vue-next'
 import AppLayout from '@/Layouts/Layout.vue'
 import { Button } from '@/Components/ui/button'
+import { Spinner } from '@/Components/ui/spinner'
+import { Skeleton } from '@/Components/ui/skeleton'
 import ReportCatalog from '@/Components/reports/ReportCatalog.vue'
 import ReportFilters from '@/Components/reports/ReportFilters.vue'
 import ReportSummaryCards from '@/Components/reports/ReportSummaryCards.vue'
@@ -44,6 +46,7 @@ const props = defineProps({
 
 const { t } = useI18n()
 const localFilters = ref(normalizeFilters(props.filters))
+const isLoadingReport = ref(false)
 
 watch(
   () => props.filters,
@@ -623,12 +626,27 @@ function compactFilters(filters) {
   )
 }
 
-function submit(page = 1) {
-  router.get('/reports', compactFilters({ ...localFilters.value, page }), {
+function visitReports(filters) {
+  isLoadingReport.value = true
+
+  router.get('/reports', compactFilters(filters), {
     preserveState: true,
     preserveScroll: true,
     replace: true,
+    onFinish: () => {
+      isLoadingReport.value = false
+    },
+    onError: () => {
+      isLoadingReport.value = false
+    },
+    onCancel: () => {
+      isLoadingReport.value = false
+    },
   })
+}
+
+function submit(page = 1) {
+  visitReports({ ...localFilters.value, page })
 }
 
 function resetFilters() {
@@ -667,19 +685,15 @@ function selectReport(reportKey) {
     page: 1,
   }
 
-  submit(1)
+  visitReports({ ...localFilters.value, report: reportKey, page: 1 })
 }
 
 function goBackToCatalog() {
-  router.get('/reports', compactFilters({
+  visitReports({
     branch_id: localFilters.value.branch_id,
     date_from: localFilters.value.date_from,
     date_to: localFilters.value.date_to,
     per_page: localFilters.value.per_page,
-  }), {
-    preserveState: true,
-    preserveScroll: true,
-    replace: true,
   })
 }
 
@@ -707,79 +721,143 @@ function exportReport() {
       </section>
 
       <ReportCatalog
-        v-if="!isDetailView"
+        v-if="!isDetailView && !isLoadingReport"
         :sections="catalogSections"
         :active-report="localFilters.report"
         @select="selectReport"
       />
 
-      <section v-if="isDetailView" class="space-y-5 rounded-[28px] border border-border bg-gradient-to-b from-card via-card to-background p-5 shadow-sm">
-        <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:grid-rows-[auto_auto] lg:items-start">
-          <p class="text-xs font-semibold uppercase tracking-[0.28em] text-primary lg:self-center">{{ t('report.active_report') }}</p>
-          <Button variant="outline" class="w-fit shrink-0 lg:justify-self-end" @click="goBackToCatalog">
-            {{ t('report.back_to_reports') }}
-          </Button>
-          <div class="space-y-3">
-            <h2 class="text-2xl font-semibold tracking-tight text-foreground">{{ activeDefinition.label }}</h2>
-            <p class="max-w-3xl text-sm leading-7 text-muted-foreground">{{ activeDefinition.description }}</p>
-          </div>
-          <Button class="gap-2 lg:self-end lg:justify-self-end" @click="exportReport">
-            <Download class="h-4 w-4" />
-            {{ t('report.export_excel') }}
-          </Button>
+      <section
+        v-else-if="!isDetailView && isLoadingReport"
+        class="space-y-5 rounded-[28px] border border-border bg-gradient-to-b from-card via-card to-background p-5 shadow-sm"
+        aria-busy="true"
+      >
+        <div class="flex items-center gap-3 text-sm text-muted-foreground">
+          <Spinner class="h-5 w-5" />
+          {{ t('general.loading') }}...
         </div>
 
-        <ReportFilters
-          :filters="localFilters"
-          :options="filterOptions"
-          :active-definition="activeDefinition"
-          :report-list="reportList"
-          :show-report-select="false"
-          @update:filters="updateFilters"
-          @submit="submit(1)"
-          @reset="resetFilters"
-        />
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div v-for="index in 6" :key="index" class="rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <Skeleton class="h-12 w-12 rounded-2xl" />
+            <Skeleton class="mt-4 h-5 w-3/4" />
+            <Skeleton class="mt-3 h-4 w-full" />
+            <Skeleton class="mt-2 h-4 w-5/6" />
+          </div>
+        </div>
+      </section>
 
-        <ReportSummaryCards v-if="!isUserActivityLayout" :cards="summaryCards" />
-
-        <section class="space-y-3">
-          <div>
-            <h3 class="text-xl font-semibold tracking-tight text-foreground">{{ t('report.table.results') }}</h3>
-            <p class="text-sm text-muted-foreground">{{ activeDefinition.description }}</p>
+      <section v-if="isDetailView" class="space-y-5 rounded-[28px] border border-border bg-gradient-to-b from-card via-card to-background p-5 shadow-sm" :aria-busy="isLoadingReport">
+        <template v-if="isLoadingReport">
+          <div class="flex items-center gap-3 text-sm text-muted-foreground">
+            <Spinner class="h-5 w-5" />
+            {{ t('general.loading') }}...
           </div>
 
-          <ReportUserActivity
-            v-if="isUserActivityLayout"
-            :summary="result.summary || {}"
-            :rows="result.rows || []"
-            :pagination="result.pagination"
-            :meta="result.meta || {}"
-            :empty-message="emptyMessage"
-            @page-change="submit"
+          <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:grid-rows-[auto_auto] lg:items-start">
+            <div class="space-y-2">
+              <Skeleton class="h-3 w-32" />
+              <Skeleton class="h-8 w-72" />
+              <Skeleton class="h-4 w-full max-w-3xl" />
+            </div>
+            <Skeleton class="h-10 w-32 lg:justify-self-end" />
+            <Skeleton class="h-8 w-80 max-w-full" />
+            <Skeleton class="h-10 w-36 lg:self-end lg:justify-self-end" />
+          </div>
+
+          <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div v-for="index in 4" :key="`summary-${index}`" class="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <Skeleton class="h-4 w-24" />
+              <Skeleton class="mt-3 h-7 w-3/4" />
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <Skeleton class="h-6 w-40" />
+              <Skeleton class="mt-2 h-4 w-72" />
+            </div>
+
+            <div class="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <div class="space-y-3">
+                <Skeleton class="h-10 w-full" />
+                <Skeleton class="h-10 w-full" />
+                <Skeleton class="h-10 w-full" />
+                <Skeleton class="h-10 w-full" />
+                <Skeleton class="h-10 w-full" />
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:grid-rows-[auto_auto] lg:items-start">
+            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-primary lg:self-center">{{ t('report.active_report') }}</p>
+            <Button variant="outline" class="w-fit shrink-0 lg:justify-self-end" @click="goBackToCatalog">
+              {{ t('report.back_to_reports') }}
+            </Button>
+            <div class="space-y-3">
+              <h2 class="text-2xl font-semibold tracking-tight text-foreground">{{ activeDefinition.label }}</h2>
+              <p class="max-w-3xl text-sm leading-7 text-muted-foreground">{{ activeDefinition.description }}</p>
+            </div>
+            <Button class="gap-2 lg:self-end lg:justify-self-end" @click="exportReport">
+              <Download class="h-4 w-4" />
+              {{ t('report.export_excel') }}
+            </Button>
+          </div>
+
+          <ReportFilters
+            :filters="localFilters"
+            :options="filterOptions"
+            :active-definition="activeDefinition"
+            :report-list="reportList"
+            :show-report-select="false"
+            @update:filters="updateFilters"
+            @submit="submit(1)"
+            @reset="resetFilters"
           />
 
-          <ReportStatement
-            v-else-if="isStatementLayout"
-            :sections="result.meta?.sections || []"
-            :empty-message="emptyMessage"
-          />
+          <ReportSummaryCards v-if="!isUserActivityLayout" :cards="summaryCards" />
 
-          <ReportGroupedTable
-            v-else-if="isGroupedLayout"
-            :sections="result.meta?.sections || []"
-            :columns="activeDefinition.columns"
-            :empty-message="emptyMessage"
-          />
+          <section class="space-y-3">
+            <div>
+              <h3 class="text-xl font-semibold tracking-tight text-foreground">{{ t('report.table.results') }}</h3>
+              <p class="text-sm text-muted-foreground">{{ activeDefinition.description }}</p>
+            </div>
 
-          <ReportDataTable
-            v-else
-            :columns="activeDefinition.columns"
-            :rows="result.rows || []"
-            :pagination="result.pagination"
-            :empty-message="emptyMessage"
-            @page-change="submit"
-          />
-        </section>
+            <ReportUserActivity
+              v-if="isUserActivityLayout"
+              :summary="result.summary || {}"
+              :rows="result.rows || []"
+              :pagination="result.pagination"
+              :meta="result.meta || {}"
+              :empty-message="emptyMessage"
+              @page-change="submit"
+            />
+
+            <ReportStatement
+              v-else-if="isStatementLayout"
+              :sections="result.meta?.sections || []"
+              :empty-message="emptyMessage"
+            />
+
+            <ReportGroupedTable
+              v-else-if="isGroupedLayout"
+              :sections="result.meta?.sections || []"
+              :columns="activeDefinition.columns"
+              :empty-message="emptyMessage"
+            />
+
+            <ReportDataTable
+              v-else
+              :columns="activeDefinition.columns"
+              :rows="result.rows || []"
+              :pagination="result.pagination"
+              :empty-message="emptyMessage"
+              @page-change="submit"
+            />
+          </section>
+        </template>
       </section>
     </div>
   </AppLayout>
