@@ -117,12 +117,36 @@ const rows = computed(() => (props.invoice?.items ?? []).map((item, index) => {
 const minimumRows = computed(() => ({ format1: 4, format2: 12, format3: 8, format4: 4, format5: 0 }[themeId.value] ?? 4))
 const fillerRows = computed(() => Array.from({ length: Math.max(0, minimumRows.value - rows.value.length) }, (_, index) => index))
 const format1FillerRows = computed(() => {
-  if (themeId.value !== 'format1' || rows.value.length >= 4) {
+  if (themeId.value !== 'format1' || rows.value.length >= 8) {
     return []
   }
 
   return Array.from({ length: 6 }, (_, index) => index)
 })
+const format1RowsPerPage = 20
+
+const chunkRows = (items, chunkSize) => {
+  if (!items.length) {
+    return [[]]
+  }
+
+  const chunks = []
+
+  for (let index = 0; index < items.length; index += chunkSize) {
+    chunks.push(items.slice(index, index + chunkSize))
+  }
+
+  return chunks
+}
+
+const format1Pages = computed(() => {
+  if (themeId.value !== 'format1') {
+    return []
+  }
+
+  return chunkRows(rows.value, format1RowsPerPage)
+})
+
 const subtotal = computed(() => rows.value.reduce((sum, item) => sum + item.baseTotal, 0))
 const itemDiscountTotal = computed(() => rows.value.reduce((sum, item) => sum + item.discount, 0))
 const billDiscountRaw = computed(() => toNumber(props.invoice?.discount))
@@ -144,115 +168,160 @@ const signatureLabel = computed(() => t('invoice.signature'))
 
 <template>
   <div class="invoice-print-root" :dir="direction">
-    <section v-if="themeId === 'format1'" class="print-surface theme-format1 space-y-5" :class="isRTL ? 'text-right' : 'text-left'">
-      <header class="space-y-4 pb-4" dir="ltr">
-        <div class="flex items-start gap-10">
-          <div class="min-w-0 flex-1 space-y-7">
-            <div class="flex items-center gap-4">
-              <img v-if="companyLogo" :src="companyLogo" :alt="companyName" class="max-h-16 w-auto max-w-[220px] rounded-xl   object-contain bg-white px-2 py-1" />
-              <div v-else class="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-700 text-xl font-bold text-white">{{ companyInitial }}</div>
-              <p class="text-[30px] font-semibold text-slate-900" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">{{ companyName }}</p>
+    <template v-if="themeId === 'format1'">
+      <section
+        v-for="(pageRows, pageIndex) in format1Pages"
+        :key="`format1-page-${pageIndex}`"
+        class="print-surface theme-format1 space-y-5 format1-page"
+        :class="isRTL ? 'text-right' : 'text-left'"
+        :style="pageIndex < format1Pages.length - 1 ? 'break-after: page; page-break-after: always;' : ''"
+      >
+        <header class="format1-print-header space-y-4" dir="ltr">
+          <template v-if="pageIndex === 0">
+            <div class="flex items-start">
+              <div class="min-w-0 flex-1 space-y-7">
+                <div class="flex items-center gap-4">
+                  <img v-if="companyLogo" :src="companyLogo" :alt="companyName" class="max-h-16 w-auto max-w-[220px] rounded-xl bg-white px-2 py-1" />
+                  <div v-else class="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-700 text-xl font-bold text-white">{{ companyInitial }}</div>
+                  <p class="text-[30px] font-semibold text-slate-900" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">{{ companyName }}</p>
+                </div>
+                <div v-if="!isRTL" class="w-fit space-y-2 text-left text-slate-900">
+                  <p class="flex items-baseline gap-2 whitespace-nowrap text-[18px] font-semibold" :class="isRTL ? 'justify-end' : 'justify-start'" :dir="isRTL ? 'rtl' : 'ltr'">
+                    <span>{{ t('invoice.invoice_number') }}:</span>
+                    <span dir="ltr">{{ invoiceNumberText }}</span>
+                  </p>
+                  <p class="flex items-baseline gap-2 whitespace-nowrap text-[18px] font-medium" :class="isRTL ? 'justify-end' : 'justify-start'" :dir="isRTL ? 'rtl' : 'ltr'">
+                    <span>{{ t('invoice.issue_date') }}:</span>
+                    <span dir="ltr">{{ issueDateText }}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div class="ml-auto shrink-0 pt-1">
+                <div class="inline-flex min-w-[300px] justify-center text-[30px] font-bold uppercase leading-none tracking-[0.08em] text-black">
+                   {{ t('invoice.sale_invoice') }}
+                </div>
+                <div v-if="isRTL" class="mt-6 ml-auto w-fit space-y-2 text-right text-slate-900">
+                  <p class="flex items-baseline justify-end gap-2 whitespace-nowrap text-[18px] font-semibold" dir="rtl">
+                    <span>{{ t('invoice.invoice_number') }}:</span>
+                    <span dir="ltr">{{ invoiceNumberText }}</span>
+                  </p>
+                  <p class="flex items-baseline justify-end gap-2 whitespace-nowrap text-[18px] font-medium" dir="rtl">
+                    <span>{{ t('invoice.issue_date') }}:</span>
+                    <span dir="ltr">{{ issueDateText }}</span>
+                  </p>
+                </div>
+              </div>
             </div>
-            <div v-if="!isRTL" class="w-fit space-y-2 text-left text-slate-900">
-              <p class="flex items-baseline gap-2 whitespace-nowrap text-[18px] font-semibold" :class="isRTL ? 'justify-end' : 'justify-start'" :dir="isRTL ? 'rtl' : 'ltr'">
-                <span>{{ t('invoice.invoice_number') }}:</span>
-                <span dir="ltr">{{ invoiceNumberText }}</span>
-              </p>
-              <p class="flex items-baseline gap-2 whitespace-nowrap text-[18px] font-medium" :class="isRTL ? 'justify-end' : 'justify-start'" :dir="isRTL ? 'rtl' : 'ltr'">
-                <span>{{ t('invoice.issue_date') }}:</span>
-                <span dir="ltr">{{ issueDateText }}</span>
-              </p>
+          </template>
+
+          <template v-if="pageIndex === 0">
+            <div class="border-t-2 border-slate-500"></div>
+
+            <div class="grid grid-cols-2 gap-12 text-slate-800">
+              <div class="space-y-2" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">
+                <p class="text-[20px] font-medium">{{ t('invoice.bill_from') }}:</p>
+                <p class="text-[18px]"> {{ companyName }}</p>
+                <p class="text-[18px]">{{ companyAddress }}</p>
+                <p class="text-[18px]">{{ companyPhone }}</p>
+              </div>
+
+              <div class="space-y-2" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">
+                <p class="text-[20px] font-medium">{{ t('invoice.bill_to') }}:</p>
+                <p class="text-[18px]">{{ t('ledger.customer.customer') }}: {{ customerName }}</p>
+                <p class="text-[18px]">{{ t('invoice.address') }}: {{ customerAddress }}</p>
+                <p class="text-[18px]">{{ t('invoice.phone') }}: {{ customerPhone }}</p>
+              </div>
+            </div>
+          </template>
+
+          <template v-else>
+            <div class="flex items-start justify-between gap-6">
+              <div class="flex items-center gap-4">
+                <img v-if="companyLogo" :src="companyLogo" :alt="companyName" class="max-h-12 w-auto max-w-[140px] rounded-xl bg-white px-2 py-1" />
+                <div v-else class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-700 text-lg font-bold text-white">{{ companyInitial }}</div>
+                <p class="text-[24px] font-semibold text-slate-900" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">{{ companyName }}</p>
+              </div>
+
+              <div class="shrink-0 text-right">
+                <div class="text-[22px] font-bold uppercase leading-none tracking-[0.08em] text-black">
+                  {{ t('invoice.sale_invoice') }}
+                </div>
+                <p class="mt-2 text-[15px] font-semibold text-slate-900">
+                  {{ t('invoice.invoice_number') }}: <span dir="ltr">{{ invoiceNumberText }}</span>
+                </p>
+                <p class="mt-1 text-[15px] font-medium text-slate-900">
+                  {{ t('invoice.issue_date') }}: <span dir="ltr">{{ issueDateText }}</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="border-t-2 border-slate-500"></div>
+          </template>
+        </header>
+
+        <table class="invoice-grid-table theme-format1-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>{{ t('invoice.item') }}</th>
+              <th>{{ t('invoice.unit') }}</th>
+              <th>{{ t('invoice.quantity') }}</th>
+              <th>{{ t('invoice.rate') }}</th>
+              <th>{{ t('invoice.tax') }}</th>
+              <th>{{ t('invoice.amount') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in pageRows" :key="row.id">
+              <td>{{ row.row }}</td>
+              <td class="font-medium text-slate-800">{{ row.name }}</td>
+              <td>{{ row.unit }}</td>
+              <td>{{ formatNumber(row.quantity) }}</td>
+              <td>{{ formatNumber(row.unitPrice) }}</td>
+              <td>{{ formatNumber(row.tax) }}</td>
+              <td>{{ formatNumber(row.total) }}</td>
+            </tr>
+            <template v-if="format1Pages.length === 1">
+              <tr v-for="index in format1FillerRows" :key="`f1-filler-${index}`" class="filler-row">
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+
+        <div v-if="pageIndex === format1Pages.length - 1" class="mt-auto flex items-end justify-between gap-10" dir="ltr" :class="isRTL ? 'flex-row-reverse' : ''">
+          <div :class="isRTL ? 'w-[360px] shrink-0 space-y-4' : 'min-w-0 flex-1 space-y-4'">
+            <div class="space-y-2">
+              <h2 class="text-base font-semibold text-slate-900" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">{{ t('invoice.terms_conditions') }}</h2>
+              <p class="text-sm leading-6 text-slate-600" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">{{ termsText }}</p>
+            </div>
+            <div class="w-full pt-8">
+              <div class="border-t border-slate-400"></div>
+              <p class="pt-2 text-sm font-medium text-slate-700" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">{{ signatureLabel }}</p>
             </div>
           </div>
-
-          <div class="ml-auto shrink-0 pt-1">
-            <div class="inline-flex min-w-[340px] justify-center bg-slate-700 px-6 py-2 text-[58px] font-bold uppercase leading-none tracking-[0.08em] text-white">
-              {{ t('invoice.invoice') }}
-            </div>
-            <div v-if="isRTL" class="mt-6 ml-auto w-fit space-y-2 text-right text-slate-900">
-              <p class="flex items-baseline justify-end gap-2 whitespace-nowrap text-[18px] font-semibold" dir="rtl">
-                <span>{{ t('invoice.invoice_number') }}:</span>
-                <span dir="ltr">{{ invoiceNumberText }}</span>
-              </p>
-              <p class="flex items-baseline justify-end gap-2 whitespace-nowrap text-[18px] font-medium" dir="rtl">
-                <span>{{ t('invoice.issue_date') }}:</span>
-                <span dir="ltr">{{ issueDateText }}</span>
-              </p>
+          <div class="w-[280px] shrink-0 space-y-2">
+            <div class="space-y-2">
+              <div v-for="entry in summaryRows" :key="entry.label" class="flex items-center justify-between border-b border-slate-200 py-1.5 text-sm" :class="isRTL ? 'flex-row-reverse' : ''">
+                <span class="text-slate-600">{{ entry.label }}</span>
+                <span :class="entry.strong ? 'text-lg font-semibold text-slate-900' : 'font-medium text-slate-700'">{{ entry.value }}</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="border-t-2 border-slate-500"></div>
-
-        <div class="grid grid-cols-2 gap-12 pt-4 text-slate-800">
-          <div class="space-y-2" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">
-            <p class="text-[20px] font-medium">{{ t('invoice.bill_from') }}:</p>
-            <p class="text-[18px]"> {{ companyName }}</p>
-            <p class="text-[18px]">{{ companyAddress }}</p>
-            <p class="text-[18px]">{{ companyPhone }}</p>
-          </div>
-
-          <div class="space-y-2" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">
-            <p class="text-[20px] font-medium">{{ t('invoice.bill_to') }}:</p>
-            <p class="text-[18px]">{{ t('ledger.customer.customer') }}: {{ customerName }}</p>
-            <p class="text-[18px]">{{ t('invoice.address') }}: {{ customerAddress }}</p>
-            <p class="text-[18px]">{{ t('invoice.phone') }}: {{ customerPhone }}</p>
-          </div>
-        </div>
-      </header>
-
-      <table class="invoice-grid-table theme-format1-table">
-        <thead>
-          <tr>
-            <th>{{ t('invoice.item') }}</th>
-            <th>{{ t('invoice.unit') }}</th>
-            <th>{{ t('invoice.quantity') }}</th>
-            <th>{{ t('invoice.rate') }}</th>
-            <th>{{ t('invoice.tax') }}</th>
-            <th>{{ t('invoice.amount') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="row in rows" :key="row.id">
-            <td class="font-medium text-slate-800">{{ row.name }}</td>
-            <td>{{ row.unit }}</td>
-            <td>{{ formatNumber(row.quantity) }}</td>
-            <td>{{ formatNumber(row.unitPrice) }}</td>
-            <td>{{ formatNumber(row.tax) }}</td>
-            <td>{{ formatNumber(row.total) }}</td>
-          </tr>
-          <tr v-for="index in format1FillerRows" :key="`f1-filler-${index}`" class="filler-row">
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="mt-auto flex items-end justify-between gap-12" dir="ltr" :class="isRTL ? 'flex-row-reverse' : ''">
-        <div :class="isRTL ? 'w-[360px] shrink-0 space-y-4' : 'min-w-0 flex-1 space-y-4'">
-          <div class="space-y-2">
-            <h2 class="text-base font-semibold text-slate-900" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">{{ t('invoice.terms_conditions') }}</h2>
-            <p class="text-sm leading-6 text-slate-600" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">{{ termsText }}</p>
-          </div>
-          <div class="w-full pt-8">
-            <div class="border-t border-slate-400"></div>
-            <p class="pt-2 text-sm font-medium text-slate-700" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">{{ signatureLabel }}</p>
-          </div>
-        </div>
-        <div class="w-[280px] shrink-0 space-y-2">
-          <div class="space-y-2">
-            <div v-for="entry in summaryRows" :key="entry.label" class="flex items-center justify-between border-b border-slate-200 py-1.5 text-sm" :class="isRTL ? 'flex-row-reverse' : ''">
-              <span class="text-slate-600">{{ entry.label }}</span>
-              <span :class="entry.strong ? 'text-lg font-semibold text-slate-900' : 'font-medium text-slate-700'">{{ entry.value }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+        <footer class="format1-page-footer">
+          Page {{ pageIndex + 1 }} / {{ format1Pages.length }}
+        </footer>
+      </section>
+    </template>
 
     <section v-else-if="themeId === 'format2'" class="print-surface theme-format2 space-y-6" :class="isRTL ? 'text-right' : 'text-left'">
       <header class="space-y-6 pb-2">

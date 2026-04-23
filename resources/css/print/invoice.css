@@ -36,10 +36,60 @@
   min-height: auto;
 }
 
+.theme-format1 .invoice-grid-table th,
+.theme-format1 .invoice-grid-table td {
+  padding: 5px 8px;
+}
+
+.theme-format1 .invoice-grid-table th {
+  font-size: 9px;
+}
+
+.theme-format1 .invoice-grid-table td {
+  font-size: 10px;
+}
+
+.format1-page {
+  break-after: page;
+  page-break-after: always;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-height: 277mm;
+  padding-bottom: 14mm;
+  position: relative;
+}
+
+.format1-page:last-child {
+  break-after: auto;
+  page-break-after: auto;
+}
+
+.format1-page-footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 6mm;
+  margin-top: 0;
+  padding-top: 0;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+}
+
 .invoice-grid-table {
   width: 100%;
   border-collapse: collapse;
   break-inside: auto;
+}
+
+.invoice-grid-table thead {
+  display: table-header-group;
+}
+
+.invoice-grid-table tbody {
+  display: table-row-group;
 }
 
 .invoice-grid-table th,
@@ -60,8 +110,13 @@
   color: #475569;
 }
 
-.print-surface > * {
+.print-surface > :not(table) {
   break-inside: avoid;
+}
+
+.print-surface > table {
+  break-inside: auto;
+  page-break-inside: auto;
 }
 
 .invoice-grid-table tr {
@@ -143,7 +198,12 @@
   }
 
   .theme-format1 {
+    min-height: 0;
+  }
+
+  .format1-page {
     min-height: 277mm;
+    padding-bottom: 14mm;
   }
 
   .voucher-print-root .print-surface {
