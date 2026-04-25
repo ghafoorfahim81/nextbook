@@ -2,9 +2,7 @@
 
 namespace App\Http\Resources\Sale;
 
-use App\Models\Inventory\StockMovement;
 use App\Enums\StockMovementType;
-use App\Enums\StockSourceType;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -12,29 +10,42 @@ class SaleItemResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
+     *
+     * Stock movements are expected to be passed via ->additional(['stockMovements' => $collection])
+     * on the parent collection, keyed by item_id. This avoids N+1 queries when rendering
+     * a sale with many items.
      */
     public function toArray(Request $request): array
     {
         $dateConversionService = app(\App\Services\DateConversionService::class);
 
-        // Retrieve the unit cost from the stock movement posted for this sale item.
-        // The stock movement is linked via reference_id (sale_id) and item_id.
-        $stockMovement = StockMovement::where('reference_id', $this->sale_id)
-            ->where('reference_type', \App\Models\Sale\Sale::class)
-            ->where('item_id', $this->item_id)
-            ->where('movement_type', StockMovementType::OUT)
-            ->first();
+        // Use the pre-loaded movements map passed from SaleResource (keyed by item_id).
+        // Fall back to a single DB query only when used standalone (e.g. direct API calls).
+        $stockMovements = $this->additional['stockMovements'] ?? null;
+        if ($stockMovements !== null) {
+            $movement = $stockMovements->get($this->item_id);
+            $unitCost = $movement ? (float) $movement->unit_cost : 0.0;
+        } else {
+            $movement = \App\Models\Inventory\StockMovement::where('reference_id', $this->sale_id)
+                ->where('reference_type', \App\Models\Sale\Sale::class)
+                ->where('item_id', $this->item_id)
+                ->where('movement_type', StockMovementType::OUT)
+                ->value('unit_cost');
+            $unitCost = $movement ? (float) $movement : 0.0;
+        }
 
-        $unitCost = $stockMovement ? (float) $stockMovement->unit_cost : 0.0;
-        $quantity  = (float) $this->quantity;
-        $subtotal  = ($quantity * (float) $this->unit_price) - (float) ($this->discount ?? 0) + (float) ($this->tax ?? 0);
-        $lineCost  = $unitCost * $quantity;
+        // Use the sale number passed from SaleResource to avoid lazy-loading $this->sale.
+        $saleNumber = $this->additional['saleNumber'] ?? $this->sale_id;
+
+        $quantity   = (float) $this->quantity;
+        $subtotal   = ($quantity * (float) $this->unit_price) - (float) ($this->discount ?? 0) + (float) ($this->tax ?? 0);
+        $lineCost   = $unitCost * $quantity;
         $lineProfit = $subtotal - $lineCost;
 
         return [
             'id' => $this->id,
             'sale_id' => $this->sale_id,
-            'sale_number' => $this->sale->number,
+            'sale_number' => $saleNumber,
             'item_id' => $this->item_id,
             'item' => $this->whenLoaded('item', function () {
                 return [

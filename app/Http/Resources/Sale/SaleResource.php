@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Enums\SalePurchaseType;
 use App\Enums\PaymentStatus;
+use App\Enums\StockMovementType;
+use App\Models\Inventory\StockMovement;
 
 class SaleResource extends JsonResource
 {
@@ -33,18 +35,47 @@ class SaleResource extends JsonResource
         $remainingAmount = abs((float) $ledgerEffect);
         $oldNetBalance = (float) data_get($customerStatement, 'net_balance', 0) - (float) $ledgerEffect;
         $items = $this->relationLoaded('items') ? $this->items : collect();
-        $saleAmount = $this->relationLoaded('items')
-            ? $items->sum(function ($item) {
-                $row_total = (float) $item->quantity * (float) $item->unit_price;
-                $item_discount = (float) ($item->discount ?? 0);
-                $sale_discount = $this->discount_type === 'percentage'
-                    ? $row_total * ((float) $this->discount / 100)
-                    : (float) ($this->discount ?? 0);
+        // `transactions` has no `amount` column — always compute from items when loaded.
+        $saleAmount = $items->sum(function ($item) {
+            $row_total = (float) $item->quantity * (float) $item->unit_price;
+            $item_discount = (float) ($item->discount ?? 0);
+            $sale_discount = $this->discount_type === 'percentage'
+                ? $row_total * ((float) $this->discount / 100)
+                : (float) ($this->discount ?? 0);
 
-                return $row_total - $item_discount - $sale_discount;
-            })
-            : (float) ($transaction?->amount ?? 0);
+            return $row_total - $item_discount - $sale_discount;
+        });
         $warehouse = $this->relationLoaded('items') ? $this->warehouse() : null;
+
+        // Resolve stock movements: use pre-loaded collection if passed via ->additional(),
+        // otherwise fetch once from DB (e.g. for the show/print endpoints).
+        $stockMovements = $this->additional['stockMovements'] ?? null;
+        if ($stockMovements === null && !$isListing && $this->relationLoaded('items')) {
+            $stockMovements = StockMovement::where('reference_id', $this->id)
+                ->where('reference_type', \App\Models\Sale\Sale::class)
+                ->where('movement_type', StockMovementType::OUT)
+                ->get(['item_id', 'unit_cost', 'quantity'])
+                ->keyBy('item_id');
+        }
+
+        // Compute total cost and profit from the already-resolved movements (no extra query).
+        $totalCostValue = null;
+        $totalProfitValue = null;
+        if (!$isListing && $stockMovements !== null) {
+            $totalCostValue = $stockMovements->sum(fn ($m) => (float) $m->unit_cost * (float) $m->quantity);
+
+            $totalRevenue = $items->sum(function ($item) {
+                return (float) $item->quantity * (float) $item->unit_price
+                    - (float) ($item->discount ?? 0)
+                    + (float) ($item->tax ?? 0);
+            });
+            $saleLevelDiscount = $this->discount_type === 'percentage'
+                ? $items->sum(fn ($item) => (float) $item->quantity * (float) $item->unit_price)
+                    * ((float) $this->discount / 100)
+                : (float) ($this->discount ?? 0);
+
+            $totalProfitValue = ($totalRevenue - $saleLevelDiscount) - $totalCostValue;
+        }
 
         return [
             'id' => $this->id,
@@ -78,13 +109,18 @@ class SaleResource extends JsonResource
             'payment_status_label' => $this->payment_status instanceof PaymentStatus
                 ? $this->payment_status->getLabel()
                 : (PaymentStatus::tryFrom((string) $this->payment_status)?->getLabel() ?? $this->payment_status),
-            'transaction_total' => $this->transaction?->amount,
+            'transaction_total' => $saleAmount,
             'transaction' => new TransactionResource($this->whenLoaded('transaction', $this->transaction)),
             'warehouse' => $warehouse,
             'warehouse_id' => $warehouse?->id,
             'currency_id' => $this->transaction?->currency_id,
             'rate' => $this->transaction?->rate,
-            'items' => $this->whenLoaded('items', SaleItemResource::collection($this->items)),
+            'items' => $this->whenLoaded('items', fn () =>
+                SaleItemResource::collection($this->items)->additional([
+                    'stockMovements' => $stockMovements ?? collect(),
+                    'saleNumber'     => $this->number,
+                ])
+            ),
             'item_list' => $this->whenLoaded('items', $this->items->map(function ($item) use ($dateConversionService) {
                 return [
                     'item_id' => $item->item_id,
@@ -102,41 +138,8 @@ class SaleResource extends JsonResource
             })),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
-            'total_cost' => $this->when(
-                !$isListing && $this->relationLoaded('items'),
-                function () {
-                return \App\Models\Inventory\StockMovement::where('reference_id', $this->id)
-                    ->where('reference_type', \App\Models\Sale\Sale::class)
-                    ->where('movement_type', \App\Enums\StockMovementType::OUT)
-                    ->get()
-                    ->sum(fn ($m) => (float) $m->unit_cost * (float) $m->quantity);
-            }),
-            'total_profit' => $this->when(
-                !$isListing && $this->relationLoaded('items'),
-                function () {
-                $totalRevenue = $this->items->sum(function ($item) {
-                    $rowTotal = (float) $item->quantity * (float) $item->unit_price;
-                    $itemDiscount = (float) ($item->discount ?? 0);
-                    $tax = (float) ($item->tax ?? 0);
-                    return $rowTotal - $itemDiscount + $tax;
-                });
-
-                $saleLevelDiscount = 0;
-                if ($this->discount_type === 'percentage') {
-                    $grossAmount = $this->items->sum(fn ($item) => (float) $item->quantity * (float) $item->unit_price);
-                    $saleLevelDiscount = $grossAmount * ((float) $this->discount / 100);
-                } else {
-                    $saleLevelDiscount = (float) ($this->discount ?? 0);
-                }
-
-                $totalCost = \App\Models\Inventory\StockMovement::where('reference_id', $this->id)
-                    ->where('reference_type', \App\Models\Sale\Sale::class)
-                    ->where('movement_type', \App\Enums\StockMovementType::OUT)
-                    ->get()
-                    ->sum(fn ($m) => (float) $m->unit_cost * (float) $m->quantity);
-
-                return ($totalRevenue - $saleLevelDiscount) - $totalCost;
-            }),
+            'total_cost' => $totalCostValue,
+            'total_profit' => $totalProfitValue,
         ];
     }
 }
