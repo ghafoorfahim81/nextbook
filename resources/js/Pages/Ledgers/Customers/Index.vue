@@ -1,8 +1,7 @@
 <script setup>
     import AppLayout from '@/Layouts/Layout.vue';
     import DataTable from '@/Components/DataTable.vue';
-    import CustomerShowDialog from '@/Components/CustomerShowDialog.vue';
-    import { ref, computed } from 'vue';
+    import { computed } from 'vue';
     import { useDeleteResource } from '@/composables/useDeleteResource';
     import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3'
@@ -32,12 +31,8 @@ import { router } from '@inertiajs/vue3'
         router.visit(route('customers.edit', item.id));
     }
 
-    const showDialog = ref(false)
-    const selectedCustomerId = ref(null)
-
     const showItem = (item) => {
-        selectedCustomerId.value = item
-        showDialog.value = true
+        router.visit(route('customers.show', item));
     }
     const { deleteResource } = useDeleteResource()
     const deleteItem = (id) => {
@@ -45,7 +40,6 @@ import { router } from '@inertiajs/vue3'
             title: t('general.delete', { name: t('ledger.customer.customer') }),
             description: t('general.delete_description', { name: t('ledger.customer.customer') }),
             successMessage: t('general.delete_success', { name: t('ledger.customer.customer') }),
-            onError: () => showItem(id),
         })
 
     };
@@ -88,11 +82,6 @@ import { router } from '@inertiajs/vue3'
             :addTitle="t('ledger.customer.customer')"
             :addAction="'redirect'"
             :addRoute="'customers.create'"
-        />
-
-        <CustomerShowDialog
-            v-model:open="showDialog"
-            :customer-id="selectedCustomerId"
         />
     </AppLayout>
 </template>

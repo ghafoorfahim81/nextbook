@@ -1,8 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import SupplierShowDialog from '@/Components/SupplierShowDialog.vue';
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3'
@@ -33,12 +32,8 @@ const editItem = (item) => {
     router.visit(route('suppliers.edit', item.id));
 };
 
-const showDialog = ref(false);
-const selectedSupplierId = ref(null);
-
 const showItem = (item) => {
-    selectedSupplierId.value = item;
-    showDialog.value = true;
+    router.visit(route('suppliers.show', item));
 };
 
 const deleteItem = (id) => {
@@ -85,11 +80,6 @@ const filterFields = computed(() => ([
             :addTitle="t('ledger.supplier.supplier')"
             :addAction="'redirect'"
             :addRoute="'suppliers.create'"
-        />
-
-        <SupplierShowDialog
-            v-model:open="showDialog"
-            :supplier-id="selectedSupplierId"
         />
     </AppLayout>
 </template>

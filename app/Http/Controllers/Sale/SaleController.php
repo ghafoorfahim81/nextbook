@@ -468,8 +468,14 @@ class SaleController extends Controller
             ->get(['item_id', 'unit_cost', 'quantity'])
             ->keyBy('item_id');
 
-        return response()->json([
-            'data' => (new SaleResource($sale))->additional(['stockMovements' => $stockMovements]),
+        $resource = (new SaleResource($sale))->additional(['stockMovements' => $stockMovements]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $resource]);
+        }
+
+        return inertia('Sale/Sales/Show', [
+            'sale' => $resource,
         ]);
     }
 

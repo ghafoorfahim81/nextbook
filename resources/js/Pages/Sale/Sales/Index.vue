@@ -1,8 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import SaleShowDialog from '@/Components/SaleShowDialog.vue';
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { router } from '@inertiajs/vue3'
@@ -13,9 +12,6 @@ const props = defineProps({
     filters: Object,
     filterOptions: Object,
 })
-
-const showDialog = ref(false);
-const selectedSaleId = ref(null);
 
 const editItem = (item) => {
     router.visit(route('sales.edit', item.id));
@@ -29,8 +25,7 @@ const deleteItem = (id) => {
 }
 
 const showItem = (id) => {
-    selectedSaleId.value = id;
-    showDialog.value = true;
+    router.visit(route('sales.show', id));
 }
 
 const printItem = (id) => {
@@ -106,10 +101,5 @@ const filterFields = computed(() => ([
             :addAction="'redirect'"
             :addRoute="'sales.create'"
             />
-
-        <SaleShowDialog
-            v-model="showDialog"
-            :sale-id="selectedSaleId"
-        />
     </AppLayout>
 </template>

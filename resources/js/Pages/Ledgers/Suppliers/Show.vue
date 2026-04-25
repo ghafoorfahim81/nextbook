@@ -90,23 +90,23 @@ const supplierMovementColumns = computed(() => [
     <AppLayout :title="`${t('ledger.supplier.supplier')} - ${supplierData.name || ''}`">
         <div class="space-y-4">
             <!-- Top tabs: General / Opening -->
-            <div class="border-b flex gap-4">
+            <div class="border-b border-border flex gap-4">
                 <button
                     type="button"
-                    class="px-4 py-2 -mb-px border-b-2"
+                    class="px-4 py-2 -mb-px border-b-2 transition-colors"
                     :class="activeMainTab === 'general'
                         ? 'border-primary text-primary font-semibold'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'"
+                        : 'border-transparent text-muted-foreground hover:text-foreground'"
                     @click="activeMainTab = 'general'"
                 >
                     {{ t('general.general') }}
                 </button>
                 <button
                     type="button"
-                    class="px-4 py-2 -mb-px border-b-2"
+                    class="px-4 py-2 -mb-px border-b-2 transition-colors"
                     :class="activeMainTab === 'opening'
                         ? 'border-primary text-primary font-semibold'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'"
+                        : 'border-transparent text-muted-foreground hover:text-foreground'"
                     @click="activeMainTab = 'opening'"
                 >
                     {{ t('item.opening') }}
@@ -117,7 +117,7 @@ const supplierMovementColumns = computed(() => [
             <div v-if="activeMainTab === 'general'" class="space-y-4">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <!-- Left: avatar + statement -->
-                    <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border p-4 flex flex-col items-center gap-4">
+                    <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-4 flex flex-col items-center gap-4">
                         <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white text-2xl font-bold">
                             {{ (supplierData.name || '').charAt(0).toUpperCase() }}
                         </div>
@@ -125,30 +125,34 @@ const supplierMovementColumns = computed(() => [
                             <div class="text-lg font-semibold text-primary">
                                 {{ supplierData.name }}
                             </div>
-                            <div class="text-xs text-gray-500 mt-1">
+                            <div class="text-xs text-muted-foreground mt-1">
                                 {{ supplierData.code }}
                             </div>
-                            <div class="mt-2 text-xs text-gray-400">
+                            <div class="mt-2 text-xs text-muted-foreground/70">
                                 {{ t('ledger.supplier.supplier') }}
                             </div>
                         </div>
 
+                        <!-- Statement summary -->
                         <div class="w-full grid grid-cols-3 gap-2 mt-4">
-                            <div class="border rounded-lg px-3 py-2 text-center">
-                                <div class="text-xs text-gray-500">{{ t('general.credit') }}</div>
-                                <div class="text-sm font-semibold text-emerald-600">
+                            <div class="border border-border rounded-lg px-3 py-2 text-center bg-background">
+                                <div class="text-xs text-muted-foreground">{{ t('general.credit') }}</div>
+                                <div class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                                     {{ formatAmount(statement.total_credit) }}
                                 </div>
                             </div>
-                            <div class="border rounded-lg px-3 py-2 text-center">
-                                <div class="text-xs text-gray-500">{{ t('general.debit') }}</div>
-                                <div class="text-sm font-semibold text-blue-600">
+                            <div class="border border-border rounded-lg px-3 py-2 text-center bg-background">
+                                <div class="text-xs text-muted-foreground">{{ t('general.debit') }}</div>
+                                <div class="text-sm font-semibold text-blue-600 dark:text-blue-400">
                                     {{ formatAmount(statement.total_debit) }}
                                 </div>
                             </div>
-                            <div class="border rounded-lg px-3 py-2 text-center">
-                                <div class="text-xs text-gray-500">{{ t('general.balance') }}</div>
-                                <div class="text-sm font-semibold" :class="statement.balance_nature === 'cr' ? 'text-emerald-600' : 'text-blue-600'">
+                            <div class="border border-border rounded-lg px-3 py-2 text-center bg-background">
+                                <div class="text-xs text-muted-foreground">{{ t('general.balance') }}</div>
+                                <div class="text-sm font-semibold"
+                                    :class="statement.balance_nature === 'cr'
+                                        ? 'text-emerald-600 dark:text-emerald-400'
+                                        : 'text-blue-600 dark:text-blue-400'">
                                     {{ formatAmount(statement.balance) }}{{ statement.balance_nature }}
                                 </div>
                             </div>
@@ -156,75 +160,69 @@ const supplierMovementColumns = computed(() => [
                     </div>
 
                     <!-- Right: basic info -->
-                    <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-xl shadow-sm border p-4">
+                    <div class="lg:col-span-2 bg-card text-card-foreground rounded-xl shadow-sm border border-border p-4">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <div class="text-xs text-gray-500">{{ t('general.name') }}</div>
-                                <div class="font-medium">{{ supplierData.name }}</div>
+                                <div class="text-xs text-muted-foreground">{{ t('general.name') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.name }}</div>
                             </div>
                             <div>
-                                <div class="text-xs text-gray-500">{{ t('ledger.contact_person') }}</div>
-                                <div class="font-medium">{{ supplierData.contact_person }}</div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.contact_person') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.contact_person }}</div>
                             </div>
                             <div>
-                                <div class="text-xs text-gray-500">{{ t('general.phone') }}</div>
-                                <div class="font-medium">{{ supplierData.phone_no }}</div>
+                                <div class="text-xs text-muted-foreground">{{ t('general.phone') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.phone_no }}</div>
                             </div>
                             <div>
-                                <div class="text-xs text-gray-500">{{ t('general.email') }}</div>
-                                <div class="font-medium">{{ supplierData.email }}</div>
+                                <div class="text-xs text-muted-foreground">{{ t('general.email') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.email }}</div>
                             </div>
                             <div>
-                                <div class="text-xs text-gray-500">{{ t('admin.currency.currency') }}</div>
-                                <div class="font-medium">
-                                    {{ supplierData.currency?.name || '' }}
-                                </div>
+                                <div class="text-xs text-muted-foreground">{{ t('admin.currency.currency') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.currency?.name || '' }}</div>
                             </div>
                             <div>
-                                <div class="text-xs text-gray-500">{{ t('general.branch') }}</div>
-                                <div class="font-medium">
-                                    {{ supplierData.branch?.name || '' }}
-                                </div>
+                                <div class="text-xs text-muted-foreground">{{ t('general.branch') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.branch?.name || '' }}</div>
                             </div>
                             <div class="md:col-span-2">
-                                <div class="text-xs text-gray-500">{{ t('general.address') }}</div>
-                                <div class="font-medium">
-                                    {{ supplierData.address }}
-                                </div>
+                                <div class="text-xs text-muted-foreground">{{ t('general.address') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.address }}</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Purchases / Receipts / Payments tables -->
-                <div class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border p-4">
+                <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-4">
                     <div class="flex flex-wrap items-center gap-3 mb-4">
                         <button
                             type="button"
-                            class="px-3 py-1.5 text-sm rounded-full"
+                            class="px-3 py-1.5 text-sm rounded-full transition-colors"
                             :class="activeTxnTab === 'purchases'
-                                ? 'bg-primary text-white'
-                                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80'"
                             @click="activeTxnTab = 'purchases'"
                         >
                             {{ t('purchase.purchases') }}
                         </button>
                         <button
                             type="button"
-                            class="px-3 py-1.5 text-sm rounded-full"
+                            class="px-3 py-1.5 text-sm rounded-full transition-colors"
                             :class="activeTxnTab === 'receipts'
-                                ? 'bg-primary text-white'
-                                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80'"
                             @click="activeTxnTab = 'receipts'"
                         >
                             {{ t('receipt.receipts') }}
                         </button>
                         <button
                             type="button"
-                            class="px-3 py-1.5 text-sm rounded-full"
+                            class="px-3 py-1.5 text-sm rounded-full transition-colors"
                             :class="activeTxnTab === 'payments'
-                                ? 'bg-primary text-white'
-                                : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'"
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80'"
                             @click="activeTxnTab = 'payments'"
                         >
                             {{ t('payment.payments') }}
@@ -240,10 +238,9 @@ const supplierMovementColumns = computed(() => [
                         :export-url="exportUrl('purchases')"
                         :export-label="t('report.export_excel')"
                         :row-number-label="t('report.columns.no')"
-                        :default-sort-key="'date'"
+                        default-sort-key="date"
                         default-sort-direction="desc"
                     />
-
                     <LedgerListTable
                         v-else-if="activeTxnTab === 'receipts'"
                         :title="t('receipt.receipts')"
@@ -253,10 +250,9 @@ const supplierMovementColumns = computed(() => [
                         :export-url="exportUrl('receipts')"
                         :export-label="t('report.export_excel')"
                         :row-number-label="t('report.columns.no')"
-                        :default-sort-key="'date'"
+                        default-sort-key="date"
                         default-sort-direction="desc"
                     />
-
                     <LedgerListTable
                         v-else
                         :title="t('payment.payments')"
@@ -266,20 +262,20 @@ const supplierMovementColumns = computed(() => [
                         :export-url="exportUrl('payments')"
                         :export-label="t('report.export_excel')"
                         :row-number-label="t('report.columns.no')"
-                        :default-sort-key="'date'"
+                        default-sort-key="date"
                         default-sort-direction="desc"
                     />
                 </div>
             </div>
 
             <!-- OPENING TAB -->
-            <div v-else class="bg-white dark:bg-gray-900 rounded-xl shadow-sm border p-4">
-                <div class="text-sm font-semibold mb-3">
+            <div v-else class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-4">
+                <div class="text-sm font-semibold mb-3 text-foreground">
                     {{ t('item.opening') }}
                 </div>
                 <table class="min-w-full text-sm">
                     <thead>
-                        <tr class="border-b text-left text-gray-500">
+                        <tr class="border-b border-border text-left rtl:text-right text-muted-foreground">
                             <th class="py-2 pr-4">{{ t('admin.currency.currency') }}</th>
                             <th class="py-2 pr-4">{{ t('general.amount') }}</th>
                             <th class="py-2 pr-4">{{ t('general.rate') }}</th>
@@ -289,30 +285,20 @@ const supplierMovementColumns = computed(() => [
                     </thead>
                     <tbody>
                         <tr v-if="!openings.length">
-                            <td colspan="5" class="py-4 text-center text-gray-400">
-                                {{ t('general.no_data') }}
+                            <td colspan="5" class="py-4 text-center text-muted-foreground">
+                                {{ t('general.no_data_found') }}
                             </td>
                         </tr>
                         <tr
                             v-for="opening in openings"
                             :key="opening.id"
-                            class="border-b last:border-b-0"
+                            class="border-b border-border last:border-b-0 text-foreground"
                         >
-                            <td class="py-2 pr-4">
-                                {{ opening.currency?.name || '' }}
-                            </td>
-                            <td class="py-2 pr-4">
-                                {{ formatAmount(opening.amount) }}
-                            </td>
-                            <td class="py-2 pr-4">
-                                {{ opening.rate }}
-                            </td>
-                            <td class="py-2 pr-4 capitalize">
-                                {{ opening.type }}
-                            </td>
-                            <td class="py-2 pr-4">
-                                {{ opening.date }}
-                            </td>
+                            <td class="py-2 pr-4">{{ opening.currency?.name || '' }}</td>
+                            <td class="py-2 pr-4">{{ formatAmount(opening.amount) }}</td>
+                            <td class="py-2 pr-4">{{ opening.rate }}</td>
+                            <td class="py-2 pr-4 capitalize">{{ opening.type }}</td>
+                            <td class="py-2 pr-4">{{ opening.date }}</td>
                         </tr>
                     </tbody>
                 </table>

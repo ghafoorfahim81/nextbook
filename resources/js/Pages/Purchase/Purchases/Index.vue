@@ -1,8 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import PurchaseShowDialog from '@/Components/PurchaseShowDialog.vue';
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { router } from '@inertiajs/vue3'
@@ -13,9 +12,6 @@ const props = defineProps({
     filters: Object,
     filterOptions: Object,
 })
-
-const showDialog = ref(false);
-const selectedPurchaseId = ref(null);
 
 const editItem = (item) => {
     router.visit(route('purchases.edit', item.id));
@@ -29,8 +25,7 @@ const deleteItem = (id) => {
 }
 
 const showItem = (id) => {
-    selectedPurchaseId.value = id;
-    showDialog.value = true;
+    router.visit(route('purchases.show', id));
 }
 
 const columns = computed(() => ([
@@ -100,12 +95,5 @@ const filterFields = computed(() => ([
          :addAction="'redirect'"
          :addRoute="'purchases.create'"
          />
-
-        <!-- Purchase Show Dialog -->
-        <PurchaseShowDialog
-            :open="showDialog"
-            :purchase-id="selectedPurchaseId"
-            @update:open="showDialog = $event"
-        />
     </AppLayout>
 </template>

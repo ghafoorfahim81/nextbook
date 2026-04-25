@@ -181,12 +181,17 @@ class ItemController extends Controller
 
     public function show(Request $request, Item $item)
     {
-        // $item->load(['stock_count', 'stock_out_count']);
         $item->load('assetAccount', 'incomeAccount', 'costAccount', 'createdBy', 'updatedBy', 'brand', 'size', 'stocks');
-        return response()->json([
-            'data' => ItemResource::make($item),
-        ]);
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => ItemResource::make($item),
+            ]);
+        }
+
+        return inertia('Inventories/Items/Show', [
+            'item' => ItemResource::make($item),
+        ]);
     }
     public function inRecords(Request $request, Item $item)
     {
