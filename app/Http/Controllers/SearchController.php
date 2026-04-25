@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\Inventory\ItemResource;
+use App\Http\Resources\Ledger\LedgerOptionResource;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Account\Account;
 use App\Models\Administration\Size;
@@ -150,15 +151,27 @@ class SearchController extends Controller
     /**
      * Search ledgers (suppliers, customers, etc.)
      */
-    private function searchLedgers(string $searchTerm, array $fields, int $limit, array $additionalParams): array
+    private function searchLedgers(string $searchTerm, array $fields, int $limit, array $additionalParams): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
     {
         $query = Ledger::query()
-            ->select('id', 'name', 'type', 'email', 'phone_no', 'address')
+            ->select([
+                'id',
+                'name',
+                'code',
+                'type',
+                'email',
+                'phone_no',
+                'address',
+                'currency_id',
+                'is_active',
+                'branch_id',
+            ])
+            ->withStatementTotals()
             ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
-                    if (in_array($field, ['name', 'email', 'phone_no', 'address'])) {
-                        $q->orWhereRaw('LOWER(' . $field . ') iLike ?', [$searchTerm]);
+                    if (in_array($field, ['name', 'code', 'email', 'phone_no', 'address'], true)) {
+                        $q->orWhere($field, 'ilike', $searchTerm);
                     }
                 }
             });
@@ -172,7 +185,9 @@ class SearchController extends Controller
             $query->where('branch_id', $additionalParams['branch_id']);
         }
 
-        return $query->limit($limit)->get()->toArray();
+        return LedgerOptionResource::collection(
+            $query->orderBy('name')->limit($limit)->get()
+        );
     }
 
     /**
