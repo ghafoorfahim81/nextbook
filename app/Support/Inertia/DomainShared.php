@@ -5,7 +5,7 @@ namespace App\Support\Inertia;
 use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\Account\AccountTypeResource;
 use App\Http\Resources\Inventory\ItemResource;
-use App\Http\Resources\Ledger\LedgerResource;
+use App\Http\Resources\Ledger\LedgerOptionResource;
 use App\Models\Account\Account;
 use App\Models\Account\AccountType;
 use App\Models\Inventory\Item;
@@ -42,8 +42,26 @@ final class DomainShared
             'ledgers' => Inertia::lazy(fn() => Cache::remember(
                 CacheKey::forCompanyBranchLocale($request, 'ledgers'),
                 $cacheDuration,
-                fn() => LedgerResource::collection(
-                    Ledger::query()->orderBy('id')->limit(1000)->get()
+                fn() => LedgerOptionResource::collection(
+                    Ledger::query()
+                        ->select([
+                            'id',
+                            'name',
+                            'code',
+                            'type',
+                            'email',
+                            'phone_no',
+                            'address',
+                            'currency_id',
+                            'is_active',
+                            'branch_id',
+                        ])
+                        ->withStatementTotals()
+                        ->where('is_active', true)
+                        ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")
+                        ->orderBy('name')
+                        ->limit(200)
+                        ->get()
                 )
             )),
             'items' => Inertia::lazy(fn() => Cache::remember(

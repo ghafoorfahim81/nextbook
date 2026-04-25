@@ -15,9 +15,11 @@ use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Facades\DB;
 use App\Traits\HasCache;
 use App\Models\Purchase\Purchase;
 use App\Models\Payment\Payment;
@@ -150,6 +152,26 @@ class Ledger extends Model
         'currency_id',
         'created_by',
     ];
+
+    public function scopeWithStatementTotals(Builder $query): Builder
+    {
+        $lineTotals = DB::table('transaction_lines')
+            ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
+            ->whereColumn('transaction_lines.ledger_id', 'ledgers.id')
+            ->whereColumn('transactions.branch_id', 'ledgers.branch_id')
+            ->whereNull('transaction_lines.deleted_at')
+            ->whereNull('transactions.deleted_at');
+
+        return $query
+            ->selectSub(
+                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.debit * transactions.rate), 0)'),
+                'statement_total_debit'
+            )
+            ->selectSub(
+                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.credit * transactions.rate), 0)'),
+                'statement_total_credit'
+            );
+    }
 
     protected static function searchableColumns(): array
     {
