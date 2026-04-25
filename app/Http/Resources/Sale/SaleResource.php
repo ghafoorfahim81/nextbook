@@ -99,6 +99,37 @@ class SaleResource extends JsonResource
             })),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
+            'total_cost' => $this->whenLoaded('items', function () {
+                return \App\Models\Inventory\StockMovement::where('reference_id', $this->id)
+                    ->where('reference_type', \App\Models\Sale\Sale::class)
+                    ->where('movement_type', \App\Enums\StockMovementType::OUT)
+                    ->get()
+                    ->sum(fn ($m) => (float) $m->unit_cost * (float) $m->quantity);
+            }),
+            'total_profit' => $this->whenLoaded('items', function () {
+                $totalRevenue = $this->items->sum(function ($item) {
+                    $rowTotal = (float) $item->quantity * (float) $item->unit_price;
+                    $itemDiscount = (float) ($item->discount ?? 0);
+                    $tax = (float) ($item->tax ?? 0);
+                    return $rowTotal - $itemDiscount + $tax;
+                });
+
+                $saleLevelDiscount = 0;
+                if ($this->discount_type === 'percentage') {
+                    $grossAmount = $this->items->sum(fn ($item) => (float) $item->quantity * (float) $item->unit_price);
+                    $saleLevelDiscount = $grossAmount * ((float) $this->discount / 100);
+                } else {
+                    $saleLevelDiscount = (float) ($this->discount ?? 0);
+                }
+
+                $totalCost = \App\Models\Inventory\StockMovement::where('reference_id', $this->id)
+                    ->where('reference_type', \App\Models\Sale\Sale::class)
+                    ->where('movement_type', \App\Enums\StockMovementType::OUT)
+                    ->get()
+                    ->sum(fn ($m) => (float) $m->unit_cost * (float) $m->quantity);
+
+                return ($totalRevenue - $saleLevelDiscount) - $totalCost;
+            }),
         ];
     }
 }

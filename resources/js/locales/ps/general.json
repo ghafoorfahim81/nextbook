@@ -153,6 +153,12 @@
   "unit_price": "قیمت واحد",
   "created_successfully": "موفقانه ثبت شد",
   "code": "کد",
-  "description": "توضیحات"
+  "description": "توضیحات",
+  "profit": "ګټه",
+  "loss": "زیان",
+  "total_cost": "ټول لګښت",
+  "total_profit": "ټوله ګټه / زیان",
+  "unit_cost": "د واحد لګښت",
+  "line_profit": "ګټه / زیان"
 }
 

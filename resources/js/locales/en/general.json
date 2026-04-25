@@ -215,5 +215,11 @@
   "select_all_bills": "Select all bills",
   "bill_allocations": "Bill Allocations",
   "bill": "Bill",
-  "transaction": "Transaction"
+  "transaction": "Transaction",
+  "profit": "Profit",
+  "loss": "Loss",
+  "total_cost": "Total Cost",
+  "total_profit": "Total Profit / Loss",
+  "unit_cost": "Unit Cost",
+  "line_profit": "Profit / Loss"
 }
