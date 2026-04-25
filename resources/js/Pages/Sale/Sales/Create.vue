@@ -895,7 +895,7 @@ const addRow = () => {
                                 />
                             </td>
                             <td class="text-center" v-if="item_columns.on_hand">
-                                 <span :title="String(onhand(index))" >{{ Number(onhand(index)).toFixed(1) }}</span>
+                                 <span :title="String(onhand(index))" >{{ Number(onhand(index))  }}</span>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect

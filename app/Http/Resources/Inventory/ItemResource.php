@@ -59,8 +59,36 @@ class ItemResource extends JsonResource
             'sku' => $this->sku,
             'item_type' => $this->item_type ? $this->item_type?->getLabel() : null,
             'item_type_id' => $this->item_type,
-            'stock_count' => $this->stocks->where('movement_type', StockMovementType::IN->value)->sum('quantity'),
-            'stock_out_count' => $this->stocks->where('movement_type', StockMovementType::OUT->value)->sum('quantity'),
+            // Calculate total in quantity in item's base unit
+            // Only provide stock_count and stock_out_count if 'stocks' relation is loaded
+            'stock_count' => $this->whenLoaded('stocks', function () {
+                return $this->stocks
+                    ->where('movement_type', StockMovementType::IN->value)
+                    ->sum(function ($stock) {
+                        // If unit_measure_id differs (e.g. sale in box, item in each), normalize to item unit
+                        if ((string)$stock->unit_measure_id === (string)$this->unit_measure_id || !$stock->unit_measure_id) {
+                            return $stock->quantity;
+                        }
+                        $stockUnit = (float) optional($stock->unitMeasure)->unit ?: 1;
+                        $itemUnit = (float) optional($this->unitMeasure)->unit ?: 1;
+                        if ($itemUnit == 0) $itemUnit = 1; // avoid div 0
+                        return $stock->quantity * ($stockUnit / $itemUnit);
+                    });
+            }),
+            'stock_out_count' => $this->whenLoaded('stocks', function () {
+                return $this->stocks
+                    ->where('movement_type', StockMovementType::OUT->value)
+                    ->sum(function ($stock) {
+                        if ((string)$stock->unit_measure_id === (string)$this->unit_measure_id || !$stock->unit_measure_id) {
+                            return $stock->quantity;
+                        }
+                        $stockUnit = (float) optional($stock->unitMeasure)->unit ?: 1;
+                        $itemUnit = (float) optional($this->unitMeasure)->unit ?: 1;
+                        if ($itemUnit == 0) $itemUnit = 1;
+                        return $stock->quantity * ($stockUnit / $itemUnit);
+                    });
+            }),
+     
             'branch_id' => $this->branch_id,
             'on_hand' => number_format($this->onHand(), 2),
             'avg_cost' => number_format($this->avgCost(), 2),

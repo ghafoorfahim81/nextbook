@@ -827,7 +827,7 @@ onUnmounted(() => {
                                 />
                             </td>
                             <td class="text-center" v-if="itemColumns.on_hand">
-                                <span :title="String(onhand(index))">{{ Number(onhand(index) || 0).toFixed(1) }}</span>
+                                <span :title="String(onhand(index))">{{ Number(onhand(index) || 0)  }}</span>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="itemColumns.measure">
                                 <NextSelect
