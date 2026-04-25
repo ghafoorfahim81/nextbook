@@ -218,6 +218,12 @@
   "select_all_bills": "انتخاب همه فاکتورها",
   "bill_allocations": "تخصیص فاکتورها",
   "bill": "فاکتور",
-  "transaction": "تراکنش"
+  "transaction": "تراکنش",
+  "profit": "سود",
+  "loss": "ضرر",
+  "total_cost": "مجموع هزینه",
+  "total_profit": "مجموع سود / ضرر",
+  "unit_cost": "هزینه واحد",
+  "line_profit": "سود / ضرر"
 }
 

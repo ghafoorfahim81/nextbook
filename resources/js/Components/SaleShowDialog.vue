@@ -13,7 +13,7 @@ import {
 } from '@/Components/ui/dialog';
 import { Button } from '@/Components/ui/button';
 import { Badge } from '@/Components/ui/badge';
-import { Package2, FileText, User, Calendar, DollarSign, FileCheck } from 'lucide-vue-next';
+import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp } from 'lucide-vue-next';
 
 const { t } = useI18n();
 const { toast } = useToast();
@@ -37,6 +37,7 @@ const totalAmount = ref(0);
 const totalDiscount = ref(0);
 const totalTax = ref(0);
 const grandTotal = ref(0);
+const totalProfit = ref(0);
 
 const statusBadgeClasses = computed(() => {
     if (!sale.value) return 'border-border bg-muted text-foreground';
@@ -56,6 +57,8 @@ const formattedTotalAmount = computed(() => Number(totalAmount.value || 0).toFix
 const formattedTotalDiscount = computed(() => Number(totalDiscount.value || 0).toFixed(2));
 const formattedTotalTax = computed(() => Number(totalTax.value || 0).toFixed(2));
 const formattedGrandTotal = computed(() => Number(grandTotal.value || 0).toFixed(2));
+const formattedTotalProfit = computed(() => Number(totalProfit.value || 0).toFixed(2));
+const isProfitable = computed(() => Number(totalProfit.value || 0) >= 0);
 const formatLineValue = (value) => Number(value || 0).toFixed(2);
 
 const getStatusLabel = (status) => {
@@ -77,6 +80,7 @@ const resetSale = () => {
     totalDiscount.value = 0;
     totalTax.value = 0;
     grandTotal.value = 0;
+    totalProfit.value = 0;
 };
 
 const calculateTotals = () => {
@@ -102,6 +106,7 @@ const calculateTotals = () => {
 
     totalTax.value = Number(sale.value.items.reduce((sum, item) => sum + Number(item.tax || 0), 0));
     grandTotal.value = Number(totalAmount.value - totalDiscount.value + totalTax.value);
+    totalProfit.value = Number(sale.value.total_profit ?? sale.value.items.reduce((sum, item) => sum + Number(item.line_profit || 0), 0));
 };
 
 const loadSale = async (id) => {
@@ -211,6 +216,20 @@ const closeDialog = () => {
                                     </div>
                                     <div class="text-sm font-medium text-foreground">
                                         {{ sale.transaction?.currency?.symbol || '' }} {{ formattedGrandTotal }}
+                                    </div>
+                                </div>
+                                <div class="space-y-1.5 rounded-lg px-3 py-2"
+                                    :class="isProfitable
+                                        ? 'bg-green-500/10 border border-green-500/30'
+                                        : 'bg-red-500/10 border border-red-500/30'">
+                                    <div class="flex items-center gap-2 text-xs"
+                                        :class="isProfitable ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                                        <TrendingUp class="h-3 w-3" />
+                                        {{ t('general.total_profit') }}
+                                    </div>
+                                    <div class="text-sm font-bold"
+                                        :class="isProfitable ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                                        {{ sale.transaction?.currency?.symbol || '' }} {{ formattedTotalProfit }}
                                     </div>
                                 </div>
                                 <div class="space-y-1.5">
@@ -323,6 +342,13 @@ const closeDialog = () => {
                                             <div class="text-xs text-muted-foreground">{{ t('general.tax') }}</div>
                                             <div class="font-medium text-foreground">{{ formatLineValue(item.tax) }}</div>
                                         </div>
+                                        <div>
+                                            <div class="text-xs text-muted-foreground">{{ t('general.line_profit') }}</div>
+                                            <div class="font-medium"
+                                                :class="Number(item.line_profit || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                                                {{ formatLineValue(item.line_profit) }}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -358,6 +384,16 @@ const closeDialog = () => {
                                                 {{ sale.transaction?.currency?.symbol || '' }} {{ formattedGrandTotal }}
                                             </span>
                                         </div>
+                                        <div class="flex items-center justify-between gap-3 border-t border-border pt-2">
+                                            <span class="flex items-center gap-1 text-muted-foreground">
+                                                <TrendingUp class="h-3 w-3" />
+                                                {{ t('general.total_profit') }}
+                                            </span>
+                                            <span class="text-base font-bold"
+                                                :class="isProfitable ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                                                {{ sale.transaction?.currency?.symbol || '' }} {{ formattedTotalProfit }}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -366,16 +402,17 @@ const closeDialog = () => {
                                     <thead class="border-b border-border bg-muted/40">
                                         <tr>
                                             <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">#</th>
-                                            <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('item.item') }}</th>
-                                            <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.batch') }}</th>
-                                            <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.expire_date') }}</th>
-                                            <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.qty') }}</th>
-                                            <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.unit') }}</th>
-                                            <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.price') }}</th>
-                                            <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.discount') }}</th>
-                                            <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.free') }}</th>
-                                            <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.tax') }}</th>
-                                            <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.total') }}</th>
+                                            <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('item.item') }}</th>
+                                            <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.batch') }}</th>
+                                            <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.expire_date') }}</th>
+                                            <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.qty') }}</th>
+                                            <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.unit') }}</th>
+                                            <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.price') }}</th>
+                                            <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.discount') }}</th>
+                                            <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.free') }}</th>
+                                            <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.tax') }}</th>
+                                            <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.total') }}</th>
+                                            <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.line_profit') }}</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-border">
@@ -400,6 +437,10 @@ const closeDialog = () => {
                                             <td class="px-3 py-3 text-right text-foreground">{{ item.free || 0 }}</td>
                                             <td class="px-3 py-3 text-right text-foreground">{{ item.tax || 0 }}</td>
                                             <td class="px-3 py-3 text-right font-semibold text-foreground">{{ item.subtotal ? Number(item.subtotal).toFixed(2) : '0.00' }}</td>
+                                            <td class="px-3 py-3 text-right font-semibold"
+                                                :class="Number(item.line_profit || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                                                {{ Number(item.line_profit || 0).toFixed(2) }}
+                                            </td>
                                         </tr>
                                     </tbody>
                                     <tfoot class="border-t border-border bg-muted/30">
@@ -417,6 +458,10 @@ const closeDialog = () => {
                                             <td class="px-3 py-4 text-right text-sm font-semibold text-foreground">{{ formattedTotalTax }}</td>
                                             <td class="px-3 py-4 text-right text-lg font-bold text-violet-600 dark:text-violet-400">
                                                 {{ sale.transaction?.currency?.symbol || '' }} {{ formattedGrandTotal }}
+                                            </td>
+                                            <td class="px-3 py-4 text-right text-lg font-bold"
+                                                :class="isProfitable ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
+                                                {{ sale.transaction?.currency?.symbol || '' }} {{ formattedTotalProfit }}
                                             </td>
                                         </tr>
                                     </tfoot>

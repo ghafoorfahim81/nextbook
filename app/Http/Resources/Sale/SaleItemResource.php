@@ -2,6 +2,9 @@
 
 namespace App\Http\Resources\Sale;
 
+use App\Models\Inventory\StockMovement;
+use App\Enums\StockMovementType;
+use App\Enums\StockSourceType;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -13,6 +16,21 @@ class SaleItemResource extends JsonResource
     public function toArray(Request $request): array
     {
         $dateConversionService = app(\App\Services\DateConversionService::class);
+
+        // Retrieve the unit cost from the stock movement posted for this sale item.
+        // The stock movement is linked via reference_id (sale_id) and item_id.
+        $stockMovement = StockMovement::where('reference_id', $this->sale_id)
+            ->where('reference_type', \App\Models\Sale\Sale::class)
+            ->where('item_id', $this->item_id)
+            ->where('movement_type', StockMovementType::OUT)
+            ->first();
+
+        $unitCost = $stockMovement ? (float) $stockMovement->unit_cost : 0.0;
+        $quantity  = (float) $this->quantity;
+        $subtotal  = ($quantity * (float) $this->unit_price) - (float) ($this->discount ?? 0) + (float) ($this->tax ?? 0);
+        $lineCost  = $unitCost * $quantity;
+        $lineProfit = $subtotal - $lineCost;
+
         return [
             'id' => $this->id,
             'sale_id' => $this->sale_id,
@@ -46,7 +64,10 @@ class SaleItemResource extends JsonResource
             'discount' => $this->discount,
             'free' => $this->free,
             'tax' => $this->tax,
-            'subtotal' => ($this->quantity * $this->unit_price) - $this->discount + $this->tax,
+            'subtotal' => $subtotal,
+            'unit_cost' => $unitCost,
+            'line_cost' => $lineCost,
+            'line_profit' => $lineProfit,
         ];
     }
 }
