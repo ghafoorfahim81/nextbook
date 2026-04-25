@@ -1,8 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import DataTable from '@/Components/DataTable.vue'
-import ItemInventoryModal from '@/Components/ItemInventoryModal.vue'
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useDeleteResource } from '@/composables/useDeleteResource.js'
 import { useI18n } from 'vue-i18n'
 import { router } from '@inertiajs/vue3'
@@ -27,8 +26,6 @@ const columns = computed(() => ([
 ]))
 
 const { deleteResource } = useDeleteResource()
-const showInventory = ref(false)
-const itemId = ref(null)
 
 const editItem = (item) => {
   router.visit(route('items.edit', item.id));
@@ -43,8 +40,7 @@ const deleteItem = (id) => {
 }
 
 const openInventory = (id) => {
-  itemId.value = id
-  showInventory.value = true
+  router.visit(route('items.show', id));
 }
 
 const filterFields = computed(() => ([
@@ -108,12 +104,6 @@ const filterFields = computed(() => ([
       :addTitle="t('item.item')"
       :addAction="'redirect'"
       :addRoute="'items.create'"
-    />
-
-    <ItemInventoryModal
-      v-if="itemId"
-      v-model="showInventory"
-      :item_id="itemId"
     />
   </AppLayout>
 </template>

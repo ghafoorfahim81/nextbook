@@ -165,6 +165,7 @@ class AccountController extends Controller
             'opening' => $chart_of_account->opening
                 ? new LedgerOpeningResource($chart_of_account->opening)
                 : null,
+            'balanceNatureFormat' => balanceNatureFormat(),
         ]);
     }
 

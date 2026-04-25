@@ -1,12 +1,10 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import AccountShowDialog from '@/Components/AccountShowDialog.vue';
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3';
-import { useAuth } from '@/composables/useAuth';
 const props = defineProps({
     accounts: Object,
     user: Object,
@@ -30,12 +28,8 @@ const editItem = (item) => {
     router.visit(route('chart-of-accounts.edit', item.id));
 };
 
-const showDialog = ref(false);
-const selectedAccountId = ref(null);
-
 const showItem = (id) => {
-    selectedAccountId.value = id;
-    showDialog.value = true;
+    router.visit(route('chart-of-accounts.show', id));
 };
 const filterFields = computed(() => ([
     { key: 'number', label: t('general.number'), type: 'text' },
@@ -82,12 +76,6 @@ const deleteItem = (id) => {
             :addTitle="t('account.account')"
             :addAction="'redirect'"
             :addRoute="'chart-of-accounts.create'"
-        />
-
-        <AccountShowDialog
-            v-model:open="showDialog"
-            :account-id="selectedAccountId"
-            :balance-nature-format="balanceNatureFormat"
         />
     </AppLayout>
 </template>

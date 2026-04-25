@@ -242,8 +242,14 @@ class PurchaseController extends Controller
     {
         $purchase->load(['items.item', 'items.unitMeasure', 'supplier', 'transaction.currency', 'createdBy', 'updatedBy']);
 
-        return response()->json([
-            'data' => new PurchaseResource($purchase),
+        if ($request->expectsJson()) {
+            return response()->json([
+                'data' => new PurchaseResource($purchase),
+            ]);
+        }
+
+        return inertia('Purchase/Purchases/Show', [
+            'purchase' => new PurchaseResource($purchase),
         ]);
     }
 
