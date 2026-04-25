@@ -462,8 +462,14 @@ class SaleController extends Controller
     {
         $sale->load(['items.item', 'items.unitMeasure', 'customer', 'transaction.currency', 'createdBy', 'updatedBy']);
 
+        $stockMovements = StockMovement::where('reference_id', $sale->id)
+            ->where('reference_type', Sale::class)
+            ->where('movement_type', StockMovementType::OUT)
+            ->get(['item_id', 'unit_cost', 'quantity'])
+            ->keyBy('item_id');
+
         return response()->json([
-            'data' => new SaleResource($sale),
+            'data' => (new SaleResource($sale))->additional(['stockMovements' => $stockMovements]),
         ]);
     }
 
@@ -471,16 +477,31 @@ class SaleController extends Controller
     {
         $bankAccounts = (new Account())->getAccountsByAccountTypeSlug('cash-or-bank');
 
+        // Load only what the edit form needs.
+        // transaction.lines is needed to find the payment line (account_id + debit).
+        // We do NOT load lines.account or lines.ledger — those are not used by the edit form.
+        // customer is loaded with minimal columns; the heavy `statement` accessor is not
+        // triggered because we don't access it here.
+        $sale->load([
+            'items.item.unitMeasure',
+            'items.unitMeasure',
+            'items.warehouse',
+            'customer:id,name,type',
+            'transaction',
+            'transaction.currency:id,code,symbol,is_base_currency,exchange_rate',
+            'transaction.lines:id,transaction_id,account_id,ledger_id,debit,credit',
+        ]);
+
+        // Pre-load all stock movements for this sale in one query and attach to the resource
+        // so SaleItemResource doesn't fire N individual queries.
+        $stockMovements = StockMovement::where('reference_id', $sale->id)
+            ->where('reference_type', Sale::class)
+            ->where('movement_type', StockMovementType::OUT)
+            ->get(['item_id', 'unit_cost', 'quantity'])
+            ->keyBy('item_id');
+
         return inertia('Sale/Sales/Edit', [
-            'sale' => new SaleResource($sale->load([
-                'items.item.unitMeasure',
-                'items.unitMeasure',
-                'items.warehouse',
-                'customer',
-                'transaction.currency',
-                'transaction.lines.account',
-                'transaction.lines.ledger',
-            ])),
+            'sale' => (new SaleResource($sale))->additional(['stockMovements' => $stockMovements]),
             'bankAccounts' => $bankAccounts,
         ]);
     }
