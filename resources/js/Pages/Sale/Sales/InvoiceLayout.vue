@@ -160,7 +160,7 @@ const summaryRows = computed(() => [
   { label: t('invoice.discount'), value: formatNumber(totalDiscount.value) },
   { label: t('invoice.old_balance'), value: formatOldBalanceAmount(oldBalance.value) },
   { label: t('invoice.remaining_amount'), value: formatNumber(remainingAmount.value) },
-  { label: t('invoice.total_due'), value: formatNumber(invoiceTotal.value), strong: true },
+  { label: t('invoice.total_due'), value: formatNumber(invoiceTotal.value+oldBalance.value), strong: true },
 ])
 
 const signatureLabel = computed(() => t('invoice.signature'))
@@ -219,40 +219,57 @@ const signatureLabel = computed(() => t('invoice.signature'))
             <div class="border-t-2 border-slate-500"></div>
 
             <div class="grid grid-cols-2 gap-12 text-slate-800">
+             
+
               <div class="space-y-2" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">
-                <p class="text-[20px] font-medium">{{ t('invoice.bill_from') }}:</p>
+                <!-- <p class="text-[20px] font-medium">{{ t('invoice.bill_to') }}:</p> -->
+                <p class="text-[18px]">{{ t('ledger.customer.customer') }}: {{ customerName }}</p>
+                <!-- <p class="text-[18px]">{{ t('invoice.address') }}: {{ customerAddress }}</p>
+                <p class="text-[18px]">{{ t('invoice.phone') }}: {{ customerPhone }}</p> -->
+              </div>
+              <div class="space-y-2" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">
+                <!-- <p class="text-[20px] font-medium">{{ t('invoice.bill_from') }}:</p> -->
                 <p class="text-[18px]"> {{ companyName }}</p>
                 <p class="text-[18px]">{{ companyAddress }}</p>
                 <p class="text-[18px]">{{ companyPhone }}</p>
-              </div>
-
-              <div class="space-y-2" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">
-                <p class="text-[20px] font-medium">{{ t('invoice.bill_to') }}:</p>
-                <p class="text-[18px]">{{ t('ledger.customer.customer') }}: {{ customerName }}</p>
-                <p class="text-[18px]">{{ t('invoice.address') }}: {{ customerAddress }}</p>
-                <p class="text-[18px]">{{ t('invoice.phone') }}: {{ customerPhone }}</p>
               </div>
             </div>
           </template>
 
           <template v-else>
-            <div class="flex items-start justify-between gap-6">
-              <div class="flex items-center gap-4">
-                <img v-if="companyLogo" :src="companyLogo" :alt="companyName" class="max-h-12 w-auto max-w-[140px] rounded-xl bg-white px-2 py-1" />
-                <div v-else class="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-700 text-lg font-bold text-white">{{ companyInitial }}</div>
-                <p class="text-[24px] font-semibold text-slate-900" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">{{ companyName }}</p>
+            <div class="flex items-start">
+              <div class="min-w-0 flex-1 space-y-7">
+                <div class="flex items-center gap-4">
+                  <img v-if="companyLogo" :src="companyLogo" :alt="companyName" class="max-h-16 w-auto max-w-[220px] rounded-xl bg-white px-2 py-1" />
+                  <div v-else class="flex h-14 w-14 items-center justify-center rounded-xl bg-slate-700 text-xl font-bold text-white">{{ companyInitial }}</div>
+                  <p class="text-[30px] font-semibold text-slate-900" :dir="direction" :class="isRTL ? 'text-right' : 'text-left'">{{ companyName }}</p>
+                </div>
+                <div v-if="!isRTL" class="w-fit space-y-2 text-left text-slate-900">
+                  <p class="flex items-baseline gap-2 whitespace-nowrap text-[18px] font-semibold" :class="isRTL ? 'justify-end' : 'justify-start'" :dir="isRTL ? 'rtl' : 'ltr'">
+                    <span>{{ t('invoice.invoice_number') }}:</span>
+                    <span dir="ltr">{{ invoiceNumberText }}</span>
+                  </p>
+                  <p class="flex items-baseline gap-2 whitespace-nowrap text-[18px] font-medium" :class="isRTL ? 'justify-end' : 'justify-start'" :dir="isRTL ? 'rtl' : 'ltr'">
+                    <span>{{ t('invoice.issue_date') }}:</span>
+                    <span dir="ltr">{{ issueDateText }}</span>
+                  </p>
+                </div>
               </div>
 
-              <div class="shrink-0 text-right">
-                <div class="text-[22px] font-bold uppercase leading-none tracking-[0.08em] text-black">
+              <div class="ml-auto shrink-0 pt-1">
+                <div class="inline-flex min-w-[300px] justify-center text-[30px] font-bold uppercase leading-none tracking-[0.08em] text-black">
                   {{ t('invoice.sale_invoice') }}
                 </div>
-                <p class="mt-2 text-[15px] font-semibold text-slate-900">
-                  {{ t('invoice.invoice_number') }}: <span dir="ltr">{{ invoiceNumberText }}</span>
-                </p>
-                <p class="mt-1 text-[15px] font-medium text-slate-900">
-                  {{ t('invoice.issue_date') }}: <span dir="ltr">{{ issueDateText }}</span>
-                </p>
+                <div v-if="isRTL" class="mt-6 ml-auto w-fit space-y-2 text-right text-slate-900">
+                  <p class="flex items-baseline justify-end gap-2 whitespace-nowrap text-[18px] font-semibold" dir="rtl">
+                    <span>{{ t('invoice.invoice_number') }}:</span>
+                    <span dir="ltr">{{ invoiceNumberText }}</span>
+                  </p>
+                  <p class="flex items-baseline justify-end gap-2 whitespace-nowrap text-[18px] font-medium" dir="rtl">
+                    <span>{{ t('invoice.issue_date') }}:</span>
+                    <span dir="ltr">{{ issueDateText }}</span>
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -273,9 +290,9 @@ const signatureLabel = computed(() => t('invoice.signature'))
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in pageRows" :key="row.id">
-              <td>{{ row.row }}</td>
-              <td class="font-medium text-slate-800">{{ row.name }}</td>
+            <tr v-for="row in pageRows" :key="row.id" class="text-[20px]">
+              <td class="py-2">{{ row.row }}</td>
+              <td class="text-slate-800 text-[32px]">{{ row.name }}</td>
               <td>{{ row.unit }}</td>
               <td>{{ formatNumber(row.quantity) }}</td>
               <td>{{ formatNumber(row.unitPrice) }}</td>
@@ -318,7 +335,7 @@ const signatureLabel = computed(() => t('invoice.signature'))
         </div>
 
         <footer class="format1-page-footer">
-          Page {{ pageIndex + 1 }} / {{ format1Pages.length }}
+          {{t('invoice.page')}} {{ pageIndex + 1 }} / {{ format1Pages.length }}
         </footer>
       </section>
     </template>
