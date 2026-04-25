@@ -594,8 +594,8 @@ const handleSubmit = ({ saveAndPrint = false } = {}) => {
             notifySound('success');
             if (saveAndPrint) finalizePrint(page);
             toast({
-                title: 'Success',
-                description: 'Sale updated successfully',
+                title: t('general.success'),
+                description: t('general.update_success', { name: t('sale.sale') }),
                 variant: 'success',
                 class: 'bg-green-600 text-white',
             });
@@ -604,8 +604,8 @@ const handleSubmit = ({ saveAndPrint = false } = {}) => {
             cleanupPrintWindow();
             notifySound('error');
             toast({
-                title: 'Error updating sale',
-                description: 'Error updating sale',
+                title: t('general.error'),
+                description: t('general.update_error', { name: t('sale.sale') }),
                 variant: 'destructive',
                 class: 'bg-pink-600 text-white',
             });

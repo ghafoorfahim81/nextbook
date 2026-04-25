@@ -79,10 +79,27 @@ class Sale extends Model
         'customer_id',
         'transaction.currency_id',
         'type',
+        'warehouse_id',
         'date',
         'due_date',
         'created_by',
     ];
+
+    protected function dynamicFilterHandlers(): array
+    {
+        return [
+            'warehouse_id' => function ($query, $value) {
+                $query->whereHas('items', function ($itemQuery) use ($value) {
+                    if (is_array($value)) {
+                        $itemQuery->whereIn('warehouse_id', $value);
+                        return;
+                    }
+
+                    $itemQuery->where('warehouse_id', $value);
+                });
+            },
+        ];
+    }
 
     public function customer(): BelongsTo
     {

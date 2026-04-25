@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Sale;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sale\SaleStoreRequest;
 use App\Http\Requests\Sale\SaleUpdateRequest;
+use App\Http\Resources\Sale\SaleListResource;
 use App\Http\Resources\Sale\SaleResource;
 use App\Models\Sale\Sale;
+use App\Models\Sale\SaleItem;
 use App\Services\BillAllocationService;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
+use App\Models\Administration\UnitMeasure;
 use App\Models\Administration\Warehouse;
 use App\Models\User;
 use Carbon\Carbon;
@@ -44,17 +47,53 @@ class SaleController extends Controller
     {
         $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'id');
-        $sortDirection = $request->input('sortDirection', 'desc');
+        $sortDirection = strtolower($request->input('sortDirection', 'desc')) === 'asc' ? 'asc' : 'desc';
         $filters = (array) $request->input('filters', []);
+        $sortableFields = [
+            'id' => 'sales.id',
+            'number' => 'sales.number',
+            'date' => 'sales.date',
+            'type' => 'sales.type',
+            'amount' => 'items_gross_total',
+        ];
+        $sortColumn = $sortableFields[$sortField] ?? 'sales.id';
 
-        $sales = Sale::with(['customer', 'transaction.currency', 'stockOuts.warehouse'])
+        $itemGrossTotal = SaleItem::query()
+            ->selectRaw('COALESCE(SUM(quantity * unit_price), 0)')
+            ->whereColumn('sale_items.sale_id', 'sales.id')
+            ->whereNull('sale_items.deleted_at');
+        $itemDiscountTotal = SaleItem::query()
+            ->selectRaw('COALESCE(SUM(discount), 0)')
+            ->whereColumn('sale_items.sale_id', 'sales.id')
+            ->whereNull('sale_items.deleted_at');
+        $itemTaxTotal = SaleItem::query()
+            ->selectRaw('COALESCE(SUM(tax), 0)')
+            ->whereColumn('sale_items.sale_id', 'sales.id')
+            ->whereNull('sale_items.deleted_at');
+
+        $sales = Sale::query()
+            ->select([
+                'sales.id',
+                'sales.number',
+                'sales.customer_id',
+                'sales.date',
+                'sales.discount',
+                'sales.discount_type',
+                'sales.type',
+                'sales.status',
+                'sales.payment_status',
+            ])
+            ->selectSub($itemGrossTotal, 'items_gross_total')
+            ->selectSub($itemDiscountTotal, 'items_discount_total')
+            ->selectSub($itemTaxTotal, 'items_tax_total')
+            ->with(['customer:id,name'])
             ->search($request->query('search'))
             ->filter($filters)
-            ->orderBy($sortField, $sortDirection)
+            ->orderBy($sortColumn, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
         return inertia('Sale/Sales/Index', [
-            'sales' => SaleResource::collection($sales),
+            'sales' => SaleListResource::collection($sales),
             'filterOptions' => [
                 'customers' => Ledger::query()->where('type', 'customer')->orderBy('name')->get(['id', 'name']),
                 'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
@@ -92,8 +131,6 @@ class SaleController extends Controller
         $validated = $request->validated();
 
         $sale = DB::transaction(function () use ($request, $transactionService, $stockService, $validated) {
-            $validated = $request->validated();
-
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             // dd($validated['date']);
             $validated['type'] = $validated['sale_type'] ?? 'cash';
@@ -109,34 +146,30 @@ class SaleController extends Controller
             $sale->items()->createMany($validated['item_list']);
 
             $lines = [];
-            $totalCostOfGoodsSold = 0;
-            // dd($validated['item_list']);
             $glAccounts = Cache::get('gl_accounts');
+            [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
 
             foreach ($validated['item_list'] as $item) {
                 $quantity = (float) $item['quantity'];
                 $unitPrice = (float) $item['unit_price'];
-                $itemDiscount = isset($item['discount']) ? (float) $item['discount'] : 0;
 
                 // Assumption:
                 // item_discount is the TOTAL discount for this line, not per-unit discount.
                 $lineGrossTotal = $quantity * $unitPrice;
 
-                $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
-                $avgCost = (float) ($itemModel->stockBalances()->avg('average_cost') ?? 0);
-
-                if($item['unit_measure_id'] != $itemModel->unit_measure_id) {
-                    $selectedUnit = (float) \App\Models\Administration\UnitMeasure::query()->findOrFail($item['unit_measure_id'])->unit;
-                    $itemUnit = (float) $itemModel->unitMeasure->unit;
-                    // $qty = ($quantity * $selectedUnit) / $itemUnit;
-                    $unitCost = ($selectedUnit * $avgCost) / $itemUnit;
-                    $totalCost = $unitCost * $quantity;
+                $itemModel = $itemModelsById[$item['item_id']] ?? null;
+                if (!$itemModel) {
+                    throw (new \Illuminate\Database\Eloquent\ModelNotFoundException())->setModel(Item::class, [$item['item_id']]);
                 }
-                else{
-                    $unitCost = $avgCost;
-                    $totalCost = $unitCost * $quantity;
-                } 
-                $totalCostOfGoodsSold += $totalCost;
+
+                $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0);
+                $unitCost = $this->resolveUnitCost(
+                    avgCost: $avgCost,
+                    selectedUnitMeasureId: $item['unit_measure_id'],
+                    itemUnitMeasureId: $itemModel->unit_measure_id,
+                    unitValuesById: $unitValuesById,
+                );
+                $totalCost = $unitCost * $quantity;
 
                 $stockService->post([
                     'item_id'         => $item['item_id'],
@@ -508,32 +541,32 @@ class SaleController extends Controller
             $lines = [];
             $totalDiscount = (float) $request->input('discount_total', 0);
             $glAccounts = Cache::get('gl_accounts');
+            [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
 
             foreach ($validated['item_list'] as $item) {
                 $quantity = (float) $item['quantity'];
                 $unitPrice = (float) $item['unit_price'];
                 $lineGrossTotal = $quantity * $unitPrice;
 
-                $itemModel = Item::findOrFail($item['item_id']);
-                $avgCost = (float) ($itemModel->stockBalances()->avg('average_cost') ?? 0);
-                if($item['unit_measure_id'] != $itemModel->unit_measure_id) {
-                    $selectedUnit = (float) \App\Models\Administration\UnitMeasure::query()->findOrFail($item['unit_measure_id'])->unit;
-                    $itemUnit = (float) $itemModel->unitMeasure->unit;
-                    // $qty = ($quantity * $selectedUnit) / $itemUnit;
-                    $unitCost = ($selectedUnit * $avgCost) / $itemUnit;
-                    $totalCost = $unitCost * $quantity;
+                $itemModel = $itemModelsById[$item['item_id']] ?? null;
+                if (!$itemModel) {
+                    throw (new \Illuminate\Database\Eloquent\ModelNotFoundException())->setModel(Item::class, [$item['item_id']]);
                 }
-                else{
-                    $unitCost = $avgCost;
-                    $totalCost = $avgCost * $quantity;
-                } 
+                $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0);
+                $unitCost = $this->resolveUnitCost(
+                    avgCost: $avgCost,
+                    selectedUnitMeasureId: $item['unit_measure_id'],
+                    itemUnitMeasureId: $itemModel->unit_measure_id,
+                    unitValuesById: $unitValuesById,
+                );
+                $totalCost = $unitCost * $quantity;
                 $stockService->post([
                     'item_id'         => $item['item_id'],
                     'movement_type'   => StockMovementType::OUT->value,
                     'unit_measure_id' => $item['unit_measure_id'],
                     'quantity'        => $quantity,
                     'source'          => StockSourceType::SALE->value,
-                    'unit_cost'       => $unitPrice,
+                    'unit_cost'       => $unitCost,
                     'status'          => StockStatus::POSTED->value,
                     'batch'           => $item['batch'] ?? null,
                     'date'            => $date,
@@ -683,7 +716,8 @@ class SaleController extends Controller
 
     private function rebuildStockStateForItemWarehouse(string $branchId, string $warehouseId, string $itemId): void
     {
-        $item = Item::find($itemId);
+        /** @var Item|null $item */
+        $item = Item::query()->find($itemId);
 
         if (!$item) {
             return;
@@ -709,13 +743,15 @@ class SaleController extends Controller
         }
 
         $balanceBuckets = [];
+        $unitFactors = [];
 
         foreach ($movements as $movement) {
-            $expireDate = $movement->expire_date?->toDateString();
+            $expireDate = $movement->expire_date ? Carbon::parse($movement->expire_date)->toDateString() : null;
             $bucketKey = implode('|', [
                 $movement->batch ?? '',
                 $expireDate ?? '',
             ]);
+            $movementQuantityInItemUnit = $this->convertMovementQuantityToItemUnit($movement, $item, $unitFactors);
 
             if (!isset($balanceBuckets[$bucketKey])) {
                 $balanceBuckets[$bucketKey] = [
@@ -736,11 +772,11 @@ class SaleController extends Controller
             }
 
             if ($movement->movement_type === StockMovementType::IN) {
-                $balanceBuckets[$bucketKey]['quantity'] += (float) $movement->quantity;
-                $balanceBuckets[$bucketKey]['in_quantity'] += (float) $movement->quantity;
-                $balanceBuckets[$bucketKey]['in_value'] += (float) $movement->quantity * (float) $movement->unit_cost;
+                $balanceBuckets[$bucketKey]['quantity'] += $movementQuantityInItemUnit;
+                $balanceBuckets[$bucketKey]['in_quantity'] += $movementQuantityInItemUnit;
+                $balanceBuckets[$bucketKey]['in_value'] += $movementQuantityInItemUnit * (float) $movement->unit_cost;
             } else {
-                $balanceBuckets[$bucketKey]['quantity'] -= (float) $movement->quantity;
+                $balanceBuckets[$bucketKey]['quantity'] -= $movementQuantityInItemUnit;
             }
         }
 
@@ -777,7 +813,7 @@ class SaleController extends Controller
             ->values();
 
         foreach ($outMovements as $outMovement) {
-            $remaining = (float) $outMovement->quantity;
+            $remaining = $this->convertMovementQuantityToItemUnit($outMovement, $item, $unitFactors);
 
             foreach ($inMovements as $inMovement) {
                 if ($remaining <= 0) {
@@ -788,7 +824,9 @@ class SaleController extends Controller
                     continue;
                 }
 
-                if ($outMovement->expire_date && $inMovement->expire_date?->toDateString() !== $outMovement->expire_date?->toDateString()) {
+                $inExpireDate = $inMovement->expire_date ? Carbon::parse($inMovement->expire_date)->toDateString() : null;
+                $outExpireDate = $outMovement->expire_date ? Carbon::parse($outMovement->expire_date)->toDateString() : null;
+                if ($outExpireDate && $inExpireDate !== $outExpireDate) {
                     continue;
                 }
 
@@ -804,6 +842,90 @@ class SaleController extends Controller
                 $remaining -= $deduct;
             }
         }
+    }
+
+    private function convertMovementQuantityToItemUnit(StockMovement $movement, Item $item, array &$unitFactors): float
+    {
+        if ($movement->unit_measure_id === $item->unit_measure_id) {
+            return (float) $movement->quantity;
+        }
+
+        if (!array_key_exists($movement->unit_measure_id, $unitFactors)) {
+            $movementUnit = \App\Models\Administration\UnitMeasure::query()->find($movement->unit_measure_id);
+            $itemUnit = \App\Models\Administration\UnitMeasure::query()->find($item->unit_measure_id);
+
+            if (!$movementUnit || !$itemUnit || (float) $itemUnit->unit === 0.0) {
+                $unitFactors[$movement->unit_measure_id] = 1.0;
+            } else {
+                $unitFactors[$movement->unit_measure_id] = (float) $movementUnit->unit / (float) $itemUnit->unit;
+            }
+        }
+
+        return (float) $movement->quantity * $unitFactors[$movement->unit_measure_id];
+    }
+
+    private function buildSaleItemCostLookup(array $items): array
+    {
+        $itemIds = collect($items)
+            ->pluck('item_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($itemIds->isEmpty()) {
+            return [[], [], []];
+        }
+
+        $itemModelsById = Item::query()
+            ->whereIn('id', $itemIds)
+            ->get(['id', 'name', 'unit_measure_id', 'income_account_id', 'cost_account_id', 'asset_account_id'])
+            ->keyBy('id')
+            ->all();
+
+        $averageCostsByItemId = StockBalance::query()
+            ->selectRaw('item_id, AVG(average_cost) as avg_cost')
+            ->whereIn('item_id', $itemIds)
+            ->groupBy('item_id')
+            ->pluck('avg_cost', 'item_id')
+            ->map(fn ($value) => (float) $value)
+            ->all();
+
+        $itemUnitMeasureIds = collect($itemModelsById)
+            ->pluck('unit_measure_id');
+        $selectedUnitMeasureIds = collect($items)
+            ->pluck('unit_measure_id')
+            ->filter();
+        $allUnitMeasureIds = $itemUnitMeasureIds
+            ->merge($selectedUnitMeasureIds)
+            ->unique()
+            ->values();
+
+        $unitValuesById = UnitMeasure::query()
+            ->whereIn('id', $allUnitMeasureIds)
+            ->pluck('unit', 'id')
+            ->map(fn ($value) => (float) $value)
+            ->all();
+
+        return [$itemModelsById, $averageCostsByItemId, $unitValuesById];
+    }
+
+    private function resolveUnitCost(
+        float $avgCost,
+        string $selectedUnitMeasureId,
+        string $itemUnitMeasureId,
+        array $unitValuesById
+    ): float {
+        if ($selectedUnitMeasureId === $itemUnitMeasureId) {
+            return $avgCost;
+        }
+
+        $selectedUnit = (float) ($unitValuesById[$selectedUnitMeasureId] ?? 0);
+        $itemUnit = (float) ($unitValuesById[$itemUnitMeasureId] ?? 0);
+        if ($itemUnit === 0.0) {
+            return $avgCost;
+        }
+
+        return ($selectedUnit * $avgCost) / $itemUnit;
     }
 
     public function destroy(Request $request, Sale $sale)
