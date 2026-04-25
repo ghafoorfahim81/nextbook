@@ -17,13 +17,14 @@ class SaleResource extends JsonResource
 
     public function toArray(Request $request): array
     {
+        $isListing = $request->routeIs('sales.index');
         $dateConversionService = app(\App\Services\DateConversionService::class);
         $transaction = $this->relationLoaded('transaction') ? $this->transaction : null;
         $transactionRate = (float) ($transaction?->rate ?? 1);
         $transactionLines = $transaction?->relationLoaded('lines')
             ? $transaction->lines
             : collect();
-        $customerStatement = $this->relationLoaded('customer') && $this->customer
+        $customerStatement = !$isListing && $this->relationLoaded('customer') && $this->customer
             ? $this->customer->statement
             : null;
         $ledgerEffect = $transactionLines
@@ -31,6 +32,19 @@ class SaleResource extends JsonResource
             ->sum(fn ($line) => ((float) $line->debit - (float) $line->credit) * $transactionRate);
         $remainingAmount = abs((float) $ledgerEffect);
         $oldNetBalance = (float) data_get($customerStatement, 'net_balance', 0) - (float) $ledgerEffect;
+        $items = $this->relationLoaded('items') ? $this->items : collect();
+        $saleAmount = $this->relationLoaded('items')
+            ? $items->sum(function ($item) {
+                $row_total = (float) $item->quantity * (float) $item->unit_price;
+                $item_discount = (float) ($item->discount ?? 0);
+                $sale_discount = $this->discount_type === 'percentage'
+                    ? $row_total * ((float) $this->discount / 100)
+                    : (float) ($this->discount ?? 0);
+
+                return $row_total - $item_discount - $sale_discount;
+            })
+            : (float) ($transaction?->amount ?? 0);
+        $warehouse = $this->relationLoaded('items') ? $this->warehouse() : null;
 
         return [
             'id' => $this->id,
@@ -42,18 +56,7 @@ class SaleResource extends JsonResource
             'due_date' => $dateConversionService->toDisplay($this->due_date),
             'updated_at' => $dateConversionService->toDisplay($this->updated_at?->toDateString()),
             'transaction_id' => $this->transaction_id,
-            'amount' => $this->items->sum(function ($item) {
-                $row_total = floatval($item->quantity) * floatval($item->unit_price);
-                $item_discount = floatval($item->discount ?? 0);
-
-                if ($this->discount_type === 'percentage') {
-                    $sale_discount = $row_total * (floatval($this->discount) / 100);
-                } else {
-                    $sale_discount = floatval($this->discount ?? 0);
-                }
-
-                return $row_total - $item_discount - $sale_discount;
-            }),
+            'amount' => $saleAmount,
             'discount' => $this->discount,
             'discount_type' => $this->discount_type,
             'type' => ($this->type instanceof SalePurchaseType)
@@ -77,8 +80,8 @@ class SaleResource extends JsonResource
                 : (PaymentStatus::tryFrom((string) $this->payment_status)?->getLabel() ?? $this->payment_status),
             'transaction_total' => $this->transaction?->amount,
             'transaction' => new TransactionResource($this->whenLoaded('transaction', $this->transaction)),
-            'warehouse' => $this->warehouse(),
-            'warehouse_id' => $this->warehouse()?->id,
+            'warehouse' => $warehouse,
+            'warehouse_id' => $warehouse?->id,
             'currency_id' => $this->transaction?->currency_id,
             'rate' => $this->transaction?->rate,
             'items' => $this->whenLoaded('items', SaleItemResource::collection($this->items)),
@@ -99,14 +102,18 @@ class SaleResource extends JsonResource
             })),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
-            'total_cost' => $this->whenLoaded('items', function () {
+            'total_cost' => $this->when(
+                !$isListing && $this->relationLoaded('items'),
+                function () {
                 return \App\Models\Inventory\StockMovement::where('reference_id', $this->id)
                     ->where('reference_type', \App\Models\Sale\Sale::class)
                     ->where('movement_type', \App\Enums\StockMovementType::OUT)
                     ->get()
                     ->sum(fn ($m) => (float) $m->unit_cost * (float) $m->quantity);
             }),
-            'total_profit' => $this->whenLoaded('items', function () {
+            'total_profit' => $this->when(
+                !$isListing && $this->relationLoaded('items'),
+                function () {
                 $totalRevenue = $this->items->sum(function ($item) {
                     $rowTotal = (float) $item->quantity * (float) $item->unit_price;
                     $itemDiscount = (float) ($item->discount ?? 0);
