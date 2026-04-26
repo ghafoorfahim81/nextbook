@@ -3,6 +3,7 @@
     "menu": "Menu"
   },
   "main": {
+    "home": "Home",
     "dashboard": "Dashboard",
     "administration": "Administration",
     "inventory": "Inventory",

@@ -184,6 +184,7 @@ class PreferencesController extends Controller
     private function getSidebarMenuOptions(): array
     {
         return [
+            ['value' => 'home', 'label' => 'sidebar.main.home'],
             ['value' => 'dashboard', 'label' => 'sidebar.main.dashboard'],
             ['value' => 'account', 'label' => 'sidebar.main.account'],
             ['value' => 'administration', 'label' => 'sidebar.main.administration'],

@@ -20,6 +20,7 @@ use App\Http\Middleware\CheckCompany;
 use App\Http\Controllers\Administration\SwitchBranchController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\QuickCreateController;
+use App\Http\Controllers\HomeController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -44,6 +45,12 @@ Route::middleware([
     'verified',
     CheckCompany::class,
 ])->group(function () {
+    // Home page (default after login)
+    Route::get('/home', [HomeController::class, 'index'])->name('home');
+    Route::post('/home/exchange', [HomeController::class, 'exchange'])->name('home.exchange');
+    Route::post('/home/unit-convert', [HomeController::class, 'unitConvert'])->name('home.unit-convert');
+    Route::get('/home/weather', [HomeController::class, 'weather'])->name('home.weather');
+
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/data', [DashboardController::class, 'data'])->name('dashboard.data');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');

@@ -3,6 +3,7 @@
     "menu": "منو"
   },
   "main": {
+    "home": "خانه",
     "dashboard": "داشبورد",
     "administration": "مدیریت",
     "inventory": "انبار",

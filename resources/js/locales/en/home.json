@@ -1,0 +1,71 @@
+{
+  "title": "Home",
+  "clock": {
+    "title": "Clock"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "today": "Today",
+    "prev": "Previous",
+    "next": "Next"
+  },
+  "quick_links": {
+    "title": "Quick Links",
+    "dashboard": "Dashboard",
+    "chart_of_accounts": "Chart of Accounts",
+    "journal_entry": "Journal Entry",
+    "items": "Items",
+    "sales": "Sales",
+    "purchases": "Purchases",
+    "receipts": "Receipts",
+    "payments": "Payments"
+  },
+  "currency_rates": {
+    "title": "Currency Rates",
+    "code": "Code",
+    "name": "Name",
+    "rate": "Exchange Rate",
+    "base": "Base",
+    "no_data": "No currencies found"
+  },
+  "currency_exchange": {
+    "title": "Currency Exchange",
+    "amount": "Amount",
+    "from": "From",
+    "to": "To",
+    "result": "Result",
+    "convert": "Convert",
+    "select_currency": "Select currency"
+  },
+  "weather": {
+    "title": "Weather",
+    "city": "City / Province",
+    "feels_like": "Feels like",
+    "humidity": "Humidity",
+    "wind": "Wind",
+    "loading": "Loading weather...",
+    "error": "Could not load weather data",
+    "no_api_key": "Weather API key not configured",
+    "search": "Search city"
+  },
+  "date_conversion": {
+    "title": "Date Conversion",
+    "gregorian": "Gregorian",
+    "jalali": "Jalali (Persian)",
+    "hijri": "Hijri",
+    "convert": "Convert",
+    "result": "Result",
+    "enter_date": "Enter date"
+  },
+  "unit_exchange": {
+    "title": "Unit Converter",
+    "amount": "Amount",
+    "from": "From Unit",
+    "to": "To Unit",
+    "result": "Result",
+    "convert": "Convert",
+    "select_unit": "Select unit",
+    "incompatible": "Units are not compatible",
+    "no_units": "No units available"
+  }
+}

@@ -65,6 +65,7 @@ class User extends Authenticatable
             'records_per_page' => 15,
             'balance_nature_format'=> 'with_nature',
             'sidebar_menus' => [
+                'home',
                 'dashboard',
                 'account',
                 'administration',

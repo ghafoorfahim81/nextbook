@@ -1,0 +1,71 @@
+{
+  "title": "کور",
+  "clock": {
+    "title": "ساعت"
+  },
+  "calendar": {
+    "title": "کلنډر",
+    "today": "نن",
+    "prev": "مخکینی",
+    "next": "راتلونکی"
+  },
+  "quick_links": {
+    "title": "چټک لینکونه",
+    "dashboard": "ډشبورډ",
+    "chart_of_accounts": "د حسابونو جدول",
+    "journal_entry": "ژورنال",
+    "items": "توکي",
+    "sales": "خرڅلاو",
+    "purchases": "پېرودونه",
+    "receipts": "رسیدونه",
+    "payments": "پرېمینټونه"
+  },
+  "currency_rates": {
+    "title": "د اسعارو نرخونه",
+    "code": "کوډ",
+    "name": "نوم",
+    "rate": "د تبادلې نرخ",
+    "base": "اساسي",
+    "no_data": "اسعار ونه موندل شول"
+  },
+  "currency_exchange": {
+    "title": "د اسعارو تبادله",
+    "amount": "مقدار",
+    "from": "له",
+    "to": "ته",
+    "result": "پایله",
+    "convert": "بدلول",
+    "select_currency": "اسعار غوره کړئ"
+  },
+  "weather": {
+    "title": "هوا",
+    "city": "ښار / ولایت",
+    "feels_like": "احساس کیږي",
+    "humidity": "لندوالی",
+    "wind": "باد",
+    "loading": "بارول...",
+    "error": "د هوا معلومات ترلاسه نشول",
+    "no_api_key": "د هوا API کیلي تنظیم نه ده",
+    "search": "ښار لټول"
+  },
+  "date_conversion": {
+    "title": "د نیټې بدلون",
+    "gregorian": "میلادي",
+    "jalali": "لمریز (جلالي)",
+    "hijri": "هجري",
+    "convert": "بدلول",
+    "result": "پایله",
+    "enter_date": "نیټه دننه کړئ"
+  },
+  "unit_exchange": {
+    "title": "د یونټ بدلون",
+    "amount": "مقدار",
+    "from": "له یونټ",
+    "to": "یونټ ته",
+    "result": "پایله",
+    "convert": "بدلول",
+    "select_unit": "یونټ غوره کړئ",
+    "incompatible": "یونټونه سازګار ندي",
+    "no_units": "یونټونه شتون نلري"
+  }
+}
