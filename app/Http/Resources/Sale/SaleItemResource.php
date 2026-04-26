@@ -33,7 +33,7 @@ class SaleItemResource extends JsonResource
                 ->value('unit_cost');
             $unitCost = $movement ? (float) $movement : 0.0;
         }
-
+        // dd($unitCost);
         // Use the sale number passed from SaleResource to avoid lazy-loading $this->sale.
         $saleNumber = $this->additional['saleNumber'] ?? $this->sale_id;
 

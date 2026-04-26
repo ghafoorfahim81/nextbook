@@ -59,7 +59,7 @@ final class DomainShared
                         ->withStatementTotals()
                         ->where('is_active', true)
                         ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")
-                        ->orderBy('name')
+                        ->orderBy('created_at','desc')
                         ->limit(200)
                         ->get()
                 )

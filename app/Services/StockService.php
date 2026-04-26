@@ -65,8 +65,7 @@ class StockService
         $method = $this->getCostingMethod($movementData['branch_id']);
 
         if ($method === 'fifo') {
-            $allocations = $this->deductFIFO($item, $movementData, $balanceData, $conversionFactor);
-            // dd($allocations);
+            $allocations = $this->deductFIFO($item, $movementData, $balanceData, $conversionFactor); 
             $this->decreaseBalance($balanceData, $allocations);
 
             return $allocations;

@@ -265,6 +265,7 @@ console.log('this is the showOpeningWarning', showOpeningWarning.value)
                         @update:modelValue="(value) => handleSelectChange('unit_measure_id', value)"
                         label-key="name"
                         value-key="id"
+                        :disabled="form.openings.some(o => o.status === 'posted')"
                         id="measure"
                         :floating-text="t('admin.unit_measure.unit_measure')"
                         :searchable="true"
@@ -456,7 +457,7 @@ console.log('this is the showOpeningWarning', showOpeningWarning.value)
                 </div>
                 <div class="md:col-span-3 mt-4">
                     <div class="pt-2">
-                        <div class="flex items-center justify-between" >
+                        <!-- <div class="flex items-center justify-between" >
                             <span class="font-bold">{{ t('item.opening') }}</span>
                             <button
                                 type="button"
@@ -465,7 +466,7 @@ console.log('this is the showOpeningWarning', showOpeningWarning.value)
                             >
                                 + {{ t('general.add', { title: t('item.opening') }) }}
                             </button>
-                        </div>
+                        </div> -->
                         <div
                             v-for="(opening, index) in form.openings"
                             :key="index" 

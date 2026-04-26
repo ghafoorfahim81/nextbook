@@ -166,7 +166,7 @@ class SearchController extends Controller
                 'is_active',
                 'branch_id',
             ])
-            ->withStatementTotals()
+            ->withStatementTotals() 
             ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {
@@ -186,7 +186,7 @@ class SearchController extends Controller
         }
 
         return LedgerOptionResource::collection(
-            $query->orderBy('name')->limit($limit)->get()
+            $query->orderBy('created_at','desc')->limit($limit)->get()
         );
     }
 

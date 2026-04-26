@@ -709,13 +709,14 @@ onMounted(() => {
                         <Alert variant="destructive">
                             <div class="flex items-center gap-2">
                                 <AlertCircleIcon class="w-4 h-4 text-orange-500" />
-                                <AlertTitle class="text-orange-500">{{ t('item.opening_key_points') }}</AlertTitle>
+                                <AlertTitle class="text-orange-500">{{ t('item.opening_warning.title') }}</AlertTitle>
                             </div>
                             <AlertDescription class="mx-2 text-orange-500 mt-2">
                                 <ul class=" list-inside list-disc space-y-1">
-                                    <li>{{ t('item.opening_key_points_1') }}</li>
-                                    <li>{{ t('item.opening_key_points_2') }}</li>
-                                    <li>{{ t('item.opening_key_points_3') }}</li>
+                                    <li>{{ t('item.opening_key_points.1') }}</li>
+                                    <li>{{ t('item.opening_key_points.2') }}</li>
+                                    <li>{{ t('item.opening_key_points.3') }}</li>
+                                    <li>{{ t('item.opening_key_points.4') }}</li>
                                     <li v-show="form.is_batch_tracked">{{ t('item.batch_warning') }}</li>
                                     <li v-show="form.is_expiry_tracked">{{ t('item.expiry_warning') }}</li>
                                 </ul>

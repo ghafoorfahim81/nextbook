@@ -92,6 +92,7 @@ class SupplierController extends Controller
     {
         $validated = $request->validated();
         $validated['type'] = 'supplier';
+        $validated['is_active'] = $validated['is_active'] ?? true;
         $ledger = Ledger::create($validated);
         $glAccounts = Cache::get('gl_accounts');
         $transactionService = app(TransactionService::class);
@@ -312,6 +313,7 @@ class SupplierController extends Controller
     {
 
         $validated = $request->validated();
+        $validated['is_active'] = $validated['is_active'] ?? true;
         $supplier->update($validated);
 
         // Remove existing opening balances
