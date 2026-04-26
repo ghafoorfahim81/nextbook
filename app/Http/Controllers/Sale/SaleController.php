@@ -148,7 +148,7 @@ class SaleController extends Controller
             $lines = [];
             $glAccounts = Cache::get('gl_accounts');
             [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
-
+            // dd($itemModelsById, $averageCostsByItemId, $unitValuesById);
             foreach ($validated['item_list'] as $item) {
                 $quantity = (float) $item['quantity'];
                 $unitPrice = (float) $item['unit_price'];
@@ -162,13 +162,13 @@ class SaleController extends Controller
                     throw (new \Illuminate\Database\Eloquent\ModelNotFoundException())->setModel(Item::class, [$item['item_id']]);
                 }
 
-                $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0);
+                $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0); 
                 $unitCost = $this->resolveUnitCost(
                     avgCost: $avgCost,
                     selectedUnitMeasureId: $item['unit_measure_id'],
                     itemUnitMeasureId: $itemModel->unit_measure_id,
                     unitValuesById: $unitValuesById,
-                );
+                ); 
                 $totalCost = $unitCost * $quantity;
 
                 $stockService->post([
@@ -318,145 +318,7 @@ class SaleController extends Controller
 
         return $redirect;
     }
-    // public function store(SaleStoreRequest $request, TransactionService $transactionService, StockService $stockService)
-    // {
-    //     $validated = $request->validated();
-    //     $sale = DB::transaction(function () use ($request, $transactionService, $stockService, $validated) {
-    //         // Create purchase
-    //         $validated = $request->validated();
-
-    //         $validated['type']  = $validated['sale_type'] ?? 'cash';
-    //         $validated['status'] = TransactionStatus::POSTED->value;
-
-    //         $sale = Sale::create($validated);
-    //         $validated['item_list'] = array_map(function ($item) use ($validated) {
-    //             $item['discount'] = $item['item_discount'] ? $item['item_discount'] : 0;
-    //             $item['warehouse_id'] = $validated['warehouse_id'];
-    //             return $item;
-    //         }, $validated['item_list']);
-    //         $sale->items()->createMany($validated['item_list']);
-
-    //         $lines = [];
-    //         foreach ($validated['item_list'] as $item) {
-    //             $total = (float) $item['quantity'] * (float) $item['unit_price'];
-    //             $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
-    //             $unitCost = $itemModel->avgCost();
-    //             $totalCost = $unitCost * $item['quantity'];
-    //             $stock = $stockService->post([
-    //                 'item_id'         => $item['item_id'],
-    //                 'movement_type'   => StockMovementType::OUT->value,
-    //                 'unit_measure_id' => $item['unit_measure_id'], // from item form
-    //                 'quantity'        => (float) $item['quantity'],
-    //                 'source'          => StockSourceType::SALE->value,
-    //                 'unit_cost'       => $unitCost,
-    //                 'status'          => StockStatus::POSTED->value,
-    //                 'batch'           => $item['batch'] ?? null,
-    //                 'date'            => $validated['date'],
-    //                 'expire_date'     => $item['expire_date'],
-    //                 'size_id'         => $validated['size_id'] ?? null,
-    //                 'warehouse_id'    => $validated['warehouse_id'],
-    //                 'branch_id'       => $sale->branch_id,
-    //                 'reference_type'  => Sale::class,
-    //                 'reference_id'    => $sale->id,
-    //             ]);
-    //             $lines[] = [
-    //                 'account_id' => $itemModel->income_account_id,
-    //                 'ledger_id'  => null,
-    //                 'debit'      => 0,
-    //                 'credit'     => $total,
-    //                 'remark'     => 'Sale item: '.$itemModel->name,
-    //             ];
-    //             $lines[] = [
-    //                 'account_id' => $itemModel->cost_account_id,
-    //                 'ledger_id'  => null,
-    //                 'debit'      => $totalCost,
-    //                 'credit'     => 0,
-    //                 'remark'     => 'Sale item: '.$itemModel->name,
-    //             ];
-    //             $lines[] = [
-    //                 'account_id' => $itemModel->asset_account_id,
-    //                 'ledger_id'  => null,
-    //                 'debit'      => 0,
-    //                 'credit'     => $totalCost,
-    //                 'remark'     => 'Sale item: '.$itemModel->name,
-    //             ];
-
-    //             // $stockService->addStock($item, $validated['warehouse_id'], Sale::class, $sale->id, $validated['date']);
-    //         }
-    //         if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
-
-    //             $lines[] = [
-    //                 'account_id' => $validated['bank_account_id'], // cash/bank
-    //                 'ledger_id'  => null,
-    //                 'debit'      => $validated['transaction_total'],
-    //                 'credit'     => 0,
-    //                 'remark'     => 'Customer payment received for sale #' . $sale->number,
-    //             ];
-    //         }
-    //         $glAccounts = Cache::get('gl_accounts');
-    //         if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
-    //             $lines[] = [
-    //                 'account_id' => $glAccounts['account-receivable'],
-    //                 'ledger_id'  => $validated['customer_id'],
-    //                 'debit'      => $validated['transaction_total'],
-    //                 'credit'     => 0,
-    //                 'remark'     => 'Customer payment received for sale #' . $sale->number,
-    //             ];
-    //         }
-    //         if($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
-    //             if($validated['payment']['amount'] > 0) {
-    //                 $amount = (float) $validated['payment']['amount'];
-    //                 $lines[] = [
-    //                     'account_id' => $validated['payment']['account_id'],
-    //                     'debit' => $amount,
-    //                     'credit' => 0,
-    //                 ];
-    //                 $lines[] = [
-    //                     'account_id' => $glAccounts['account-receivable'],
-    //                     'ledger_id' => $validated['customer_id'],
-    //                     'debit' => $validated['transaction_total'] - $amount,
-    //                     'credit' => 0,
-    //                     'remark' => 'Customer payment received for sale #' . $sale->number,
-    //                 ];
-    //             }
-    //             else{
-    //                 $lines[] = [
-    //                     'account_id' => $glAccounts['account-receivable'],
-    //                     'ledger_id' => $validated['customer_id'],
-    //                     'debit' => $validated['transaction_total'],
-    //                     'credit' => 0,
-    //                     'remark' => 'Payment of sale #' . $sale->number,
-    //                 ];
-    //             }
-    //         }
-
-    //         $transactionService->post(
-    //             header: [
-    //                 'currency_id'   => $validated['currency_id'],
-    //                 'rate'          => $validated['rate'],
-    //                 'date'          => $validated['date'],
-    //                 'remark'        => 'Sale #' . $sale->number,
-    //                 'status'        => TransactionStatus::POSTED->value,
-    //                 'reference_type'=> Sale::class,
-    //                 'reference_id'  => $sale->id,
-    //             ],
-    //             lines: $lines
-    //         );
-
-
-    //         // Create accounting transactions
-
-
-    //         return $sale;
-    //     });
-
-    //     if ((bool) $request->create_and_new) {
-    //         // Stay on the same page; frontend will reset form and increment number
-    //         return redirect()->back()->with('success', __('general.created_successfully', ['resource' => __('general.resource.sale')]));
-    //     }
-
-    //     return redirect()->route('sales.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.sale')]));
-    // }
+  
 
     public function show(Request $request, Sale $sale)
     {

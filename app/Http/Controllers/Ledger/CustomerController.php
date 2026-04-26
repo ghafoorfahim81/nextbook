@@ -88,6 +88,7 @@ class CustomerController extends Controller
     {
         $validated = $request->validated();
         $validated['type'] = 'customer';
+        $validated['is_active'] = $validated['is_active'] ?? true;
         $ledger = Ledger::create($validated);
         $glAccounts = Cache::get('gl_accounts');
         $transactionService = app(TransactionService::class);
@@ -310,6 +311,7 @@ class CustomerController extends Controller
     public function update(LedgerUpdateRequest $request, Ledger $customer)
     {
         $validated = $request->validated();
+        $validated['is_active'] = $validated['is_active'] ?? true;
         $customer->update($validated);
 
         // Remove existing opening balances

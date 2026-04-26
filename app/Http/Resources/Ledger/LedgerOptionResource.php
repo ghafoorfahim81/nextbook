@@ -26,8 +26,7 @@ class LedgerOptionResource extends JsonResource
             'email' => $this->email,
             'phone_no' => $this->phone_no,
             'address' => $this->address,
-            'currency_id' => $this->currency_id,
-            'is_active' => (bool) $this->is_active,
+            'currency_id' => $this->currency_id, 
             'statement' => [
                 'balance' => $balanceAmount,
                 'balance_amount' => $balanceAmount,

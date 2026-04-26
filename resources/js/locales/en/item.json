@@ -83,12 +83,18 @@
     "is_expiry_tracked_desc": "Enable expiry tracking for the item.",
     "opening_lock_warning": "Opening Lock Warning",
     "opening_lock_warning_description": "Some of the openings of this item are locked. Because this records are already in use and you can't edit them.",
-    "opening_warning": "Opening Warning",
-    "opening_key_points": "Opening key Points",
-    "opening_warning_description": "Be careful to enter real opening quantities. If you enter wrong quantities, you can't edit them after they are used.",
-    "opening_key_points_1": "Be careful to enter real opening quantities.",
-    "opening_key_points_2": "If you enter wrong quantities, you can't edit them after they are used.",
-    "opening_key_points_3": "Be careful to select the correct warehouse.",
+    "opening_warning":{
+        "title": "Opening Warning",
+        "description": "Be careful to enter real opening quantities. If you enter wrong quantities, you can't edit them after they are used."
+    }, 
     "batch_warning": "If you enable batch tracking, you can't edit it once it is created.",
-    "expiry_warning": "If you enable expiry tracking, you can't edit it once it is created."
+    "expiry_warning": "If you enable expiry tracking, you can't edit it once it is created.",
+    "opening_key_points":{ 
+        "1": "Be careful to enter real opening quantities.",
+        "2": "If you enter wrong quantities, you can't edit them after they are used.",
+        "3": "Be careful to select the correct warehouse.",
+        "4": "You can't edit the unit measure once the opening is posted.",
+        "5": "If you enable batch tracking, you can't edit it once it is created.",
+        "6": "If you enable expiry tracking, you can't edit it once it is created."
+    }
 }
