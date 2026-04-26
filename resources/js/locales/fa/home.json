@@ -1,0 +1,71 @@
+{
+  "title": "خانه",
+  "clock": {
+    "title": "ساعت"
+  },
+  "calendar": {
+    "title": "تقویم",
+    "today": "امروز",
+    "prev": "قبلی",
+    "next": "بعدی"
+  },
+  "quick_links": {
+    "title": "لینک‌های سریع",
+    "dashboard": "داشبورد",
+    "chart_of_accounts": "چارت حساب",
+    "journal_entry": "ژورنال",
+    "items": "اجناس",
+    "sales": "فروشات",
+    "purchases": "خریدها",
+    "receipts": "رسیدها",
+    "payments": "پرداخت‌ها"
+  },
+  "currency_rates": {
+    "title": "نرخ ارزها",
+    "code": "کد",
+    "name": "نام",
+    "rate": "نرخ تبادله",
+    "base": "پایه",
+    "no_data": "ارزی یافت نشد"
+  },
+  "currency_exchange": {
+    "title": "تبادله ارز",
+    "amount": "مقدار",
+    "from": "از",
+    "to": "به",
+    "result": "نتیجه",
+    "convert": "تبدیل",
+    "select_currency": "ارز را انتخاب کنید"
+  },
+  "weather": {
+    "title": "آب و هوا",
+    "city": "شهر / ولایت",
+    "feels_like": "احساس می‌شود",
+    "humidity": "رطوبت",
+    "wind": "باد",
+    "loading": "در حال بارگذاری...",
+    "error": "خطا در دریافت اطلاعات آب و هوا",
+    "no_api_key": "کلید API آب و هوا تنظیم نشده",
+    "search": "جستجوی شهر"
+  },
+  "date_conversion": {
+    "title": "تبدیل تاریخ",
+    "gregorian": "میلادی",
+    "jalali": "شمسی (جلالی)",
+    "hijri": "هجری",
+    "convert": "تبدیل",
+    "result": "نتیجه",
+    "enter_date": "تاریخ را وارد کنید"
+  },
+  "unit_exchange": {
+    "title": "تبدیل واحد",
+    "amount": "مقدار",
+    "from": "از واحد",
+    "to": "به واحد",
+    "result": "نتیجه",
+    "convert": "تبدیل",
+    "select_unit": "واحد را انتخاب کنید",
+    "incompatible": "واحدها سازگار نیستند",
+    "no_units": "واحدی موجود نیست"
+  }
+}

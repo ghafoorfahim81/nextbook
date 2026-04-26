@@ -92,7 +92,7 @@ import { usePage, Link, router } from '@inertiajs/vue3'
 import Toaster from '@/Components/ui/toast/Toaster.vue'
 // @ts-ignore - Vue SFC default export shim
 import Sonner from '@/Components/ui/sonner/Sonner.vue'
-import { HousePlug, ShoppingCart, Receipt as ReceiptIcon } from 'lucide-vue-next'
+import { HousePlug, ShoppingCart, Receipt as ReceiptIcon, Home } from 'lucide-vue-next'
 // @ts-ignore - Vue SFC default export shim
 import NotificationDropdown from '@/Components/notifications/NotificationDropdown.vue'
 import QuickLinks from '@/Components/next/QuickLinks.vue'
@@ -462,6 +462,12 @@ function switchBranch() {
 
 const navMain = computed(() => [
     {
+        key: 'home',
+        title: t('sidebar.main.home'),
+        url: '/home',
+        icon: Home,
+    },
+    {
         key: 'dashboard',
         title: t('sidebar.main.dashboard'),
         url: '/dashboard',
@@ -614,6 +620,11 @@ const filteredNavMain = computed(() => {
 
     return navMain.value
         .map((item) => {
+            // Home menu has no permissions, always show
+            if (item.key === 'home') {
+                return item
+            }
+
             if (allowedMenus && item.key && !allowedMenus.has(item.key)) {
                 return null
             }
