@@ -1,16 +1,46 @@
 {
   "title": "Home",
+  "hero": {
+    "eyebrow": "Workspace overview",
+    "greeting": "Welcome back, {name}",
+    "description": "Start the day with the tools you use most, then check time, weather, and conversion helpers without leaving the homepage.",
+    "open_dashboard": "Open dashboard",
+    "open_reports": "Open reports",
+    "workspace": "Today's workspace",
+    "live_snapshot": "Live snapshot",
+    "branch_label": "Branch",
+    "weather_label": "Weather",
+    "calendar_label": "Calendar",
+    "weather_pending": "Live weather loading",
+    "branch_fallback": "Current branch",
+    "calendar_modes": {
+      "gregorian": "Gregorian",
+      "jalali": "Jalali"
+    },
+    "stats": {
+      "shortcuts": "Ready shortcuts",
+      "currencies": "Tracked currencies",
+      "units": "Available units",
+      "city": "Weather focus"
+    }
+  },
   "clock": {
-    "title": "Clock"
+    "title": "Clock",
+    "description": "Live Kabul time with Gregorian, Hijri, and Jalali dates.",
+    "timezone": "Kabul time · UTC +4:30",
+    "center_label": "NextBook"
   },
   "calendar": {
     "title": "Calendar",
+    "description": "Switch months and keep today's date in view.",
     "today": "Today",
     "prev": "Previous",
     "next": "Next"
   },
   "quick_links": {
     "title": "Quick Links",
+    "description": "Jump straight into your busiest modules.",
+    "open_module": "Open module",
     "dashboard": "Dashboard",
     "chart_of_accounts": "Chart of Accounts",
     "journal_entry": "Journal Entry",
@@ -22,6 +52,7 @@
   },
   "currency_rates": {
     "title": "Currency Rates",
+    "description": "Monitor configured rates and identify the base currency.",
     "code": "Code",
     "name": "Name",
     "rate": "Exchange Rate",
@@ -30,6 +61,7 @@
   },
   "currency_exchange": {
     "title": "Currency Exchange",
+    "description": "Convert between available currencies using current stored rates.",
     "amount": "Amount",
     "from": "From",
     "to": "To",
@@ -39,6 +71,7 @@
   },
   "weather": {
     "title": "Weather",
+    "description": "Current conditions and a seven-day forecast for your selected city.",
     "city": "City / Province",
     "feels_like": "Feels like",
     "humidity": "Humidity",
@@ -46,25 +79,32 @@
     "loading": "Loading weather...",
     "error": "Could not load weather data",
     "no_api_key": "Weather API key not configured",
-    "search": "Search city"
+    "search": "Search city",
+    "forecast": "7-Day Forecast",
+    "today": "Today"
   },
   "date_conversion": {
     "title": "Date Conversion",
+    "description": "Convert between Gregorian and Jalali dates.",
     "gregorian": "Gregorian",
     "jalali": "Jalali (Persian)",
     "hijri": "Hijri",
     "convert": "Convert",
     "result": "Result",
-    "enter_date": "Enter date"
+    "enter_date": "Enter date",
+    "invalid": "Invalid date. Use YYYY-MM-DD format."
   },
   "unit_exchange": {
     "title": "Unit Converter",
+    "description": "Convert values between related measurement units.",
     "amount": "Amount",
     "from": "From Unit",
     "to": "To Unit",
     "result": "Result",
     "convert": "Convert",
     "select_unit": "Select unit",
+    "select_type": "Select type",
+    "type": "Type",
     "incompatible": "Units are not compatible",
     "no_units": "No units available"
   }

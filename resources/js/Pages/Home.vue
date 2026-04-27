@@ -1,19 +1,20 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import { Head, usePage } from '@inertiajs/vue3'
+import { Head, Link, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 import AppLayout from '@/Layouts/Layout.vue'
-import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card'
 import { Button } from '@/Components/ui/button'
 import { Input } from '@/Components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
 import { Badge } from '@/Components/ui/badge'
-import { Link } from '@inertiajs/vue3'
 import {
   LayoutDashboard, BookOpen, FileText, Package,
   ShoppingCart, ShoppingBag, Receipt, CreditCard,
-  ArrowLeftRight, RefreshCw, Loader2, Search,
+  ArrowLeftRight, Loader2, Search, Sparkles,
+  CircleDollarSign, Scale, CloudSun, CalendarDays,
+  MapPin, ArrowUpRight, NotebookText, ArrowRight,
 } from 'lucide-vue-next'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -29,8 +30,9 @@ const props = defineProps<{
   }>
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const page = usePage<any>()
+const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value) || page.props.direction === 'rtl')
 
 // calendar_type comes from company settings (auth.user.calendar_type).
 // PHP backed enums serialize as plain strings in JSON, but guard against
@@ -41,6 +43,23 @@ const calendarType = computed<string>(() => {
   const val = (raw && typeof raw === 'object' && 'value' in raw) ? raw.value : raw
   return (typeof val === 'string' && val) ? val : 'gregorian'
 })
+
+const firstName = computed(() => {
+  const name = page.props.auth?.user?.name?.trim()
+  return name ? name.split(/\s+/)[0] : t('home.title')
+})
+
+const activeBranchName = computed(() =>
+  page.props.activeBranchName
+  || page.props.auth?.user?.branch_name
+  || t('home.hero.branch_fallback'),
+)
+
+const calendarModeLabel = computed(() =>
+  calendarType.value === 'jalali'
+    ? t('home.hero.calendar_modes.jalali')
+    : t('home.hero.calendar_modes.gregorian'),
+)
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ── JALALI CONVERSION  ────────────────────────────────────────────────────────
@@ -150,6 +169,7 @@ function jalaliDaysInMonth(jy: number, jm: number): number {
 
 const clockCanvas = ref<HTMLCanvasElement | null>(null)
 const digitalTime  = ref('')
+const digitalMeridiem = ref('')
 const dayName      = ref('')
 let clockTimer: ReturnType<typeof setInterval> | null = null
 
@@ -208,7 +228,9 @@ function toHijri(gy: number, gm: number, gd: number): [number, number, number] {
 function updateClock() {
   const now = new Date()
   const h = now.getHours(), m = now.getMinutes(), s = now.getSeconds()
-  digitalTime.value = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+  const hour12 = h % 12 || 12
+  digitalTime.value = `${String(hour12).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`
+  digitalMeridiem.value = h >= 12 ? 'PM' : 'AM'
   dayName.value = persianWeekDays[now.getDay()]
 
   const gy = now.getFullYear(), gm = now.getMonth() + 1, gd = now.getDate()
@@ -253,73 +275,88 @@ function drawClock(now: Date) {
   if (!ctx) return
   const W = canvas.width, H = canvas.height
   const cx = W / 2, cy = H / 2
-  const r = Math.min(cx, cy) - 4
+  const r = Math.min(cx, cy) - 8
   const isDark = document.documentElement.classList.contains('dark')
 
   ctx.clearRect(0, 0, W, H)
 
-  // Face gradient
-  const grad = ctx.createRadialGradient(cx, cy, r * 0.1, cx, cy, r)
-  grad.addColorStop(0, isDark ? '#1e3a2f' : '#e8f5e9')
-  grad.addColorStop(1, isDark ? '#0d1f17' : '#c8e6c9')
+  // Base clock face
   ctx.beginPath()
   ctx.arc(cx, cy, r, 0, Math.PI * 2)
-  ctx.fillStyle = grad
+  ctx.fillStyle = isDark ? '#0f172a' : '#ffffff'
   ctx.fill()
-  ctx.strokeStyle = isDark ? '#2d6a4f' : '#388e3c'
-  ctx.lineWidth = 3
+  ctx.strokeStyle = isDark ? '#334155' : '#d4d4d8'
+  ctx.lineWidth = 2
   ctx.stroke()
 
-  // Minute dots
+  // Minute and hour ticks
   for (let i = 0; i < 60; i++) {
     const angle = (i * Math.PI) / 30
     const isHour = i % 5 === 0
-    const dotR = isHour ? 3 : 1.5
-    const dist = r - (isHour ? 12 : 8)
-    const x = cx + Math.sin(angle) * dist
-    const y = cy - Math.cos(angle) * dist
+    const outer = r - 10
+    const inner = outer - (isHour ? 14 : 7)
+    const x1 = cx + Math.sin(angle) * inner
+    const y1 = cy - Math.cos(angle) * inner
+    const x2 = cx + Math.sin(angle) * outer
+    const y2 = cy - Math.cos(angle) * outer
     ctx.beginPath()
-    ctx.arc(x, y, dotR, 0, Math.PI * 2)
-    ctx.fillStyle = isDark ? (isHour ? '#a8d5b5' : '#4a7c59') : (isHour ? '#2e7d32' : '#81c784')
-    ctx.fill()
+    ctx.moveTo(x1, y1)
+    ctx.lineTo(x2, y2)
+    ctx.strokeStyle = isDark ? '#f8fafc' : '#111111'
+    ctx.lineWidth = isHour ? 3.4 : 1.4
+    ctx.lineCap = 'round'
+    ctx.stroke()
   }
 
-  // Persian hour numbers (12, 3, 6, 9)
-  const persianNums: Record<number, string> = { 0: '۱۲', 3: '۳', 6: '۶', 9: '۹' }
-  ctx.font = `bold ${Math.floor(r * 0.14)}px sans-serif`
+  // Hour numbers 1-12
+  ctx.font = `700 ${Math.floor(r * 0.16)}px sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillStyle = isDark ? '#b7e4c7' : '#1b5e20'
-  for (const [idx, label] of Object.entries(persianNums)) {
-    const angle = (Number(idx) * Math.PI) / 6
-    const dist = r - 22
-    ctx.fillText(label, cx + Math.sin(angle) * dist, cy - Math.cos(angle) * dist)
+  ctx.fillStyle = isDark ? '#f8fafc' : '#111111'
+  for (let i = 1; i <= 12; i++) {
+    const angle = (i * Math.PI) / 6
+    const dist = r - 34
+    ctx.fillText(String(i), cx + Math.sin(angle) * dist, cy - Math.cos(angle) * dist)
   }
+
+  // Center label
+  ctx.font = `500 ${Math.floor(r * 0.12)}px sans-serif`
+  ctx.fillStyle = isDark ? '#cbd5e1' : '#1f2937'
+  ctx.fillText(t('home.clock.center_label'), cx, cy + r * 0.22)
 
   const sec = now.getSeconds()
   const min = now.getMinutes() + sec / 60
   const hr  = now.getHours() % 12 + min / 60
 
   // Hour hand
-  drawHand(ctx, cx, cy, (hr * Math.PI) / 6, r * 0.52, 5, isDark ? '#e8f5e9' : '#1b5e20')
+  drawHand(ctx, cx, cy, (hr * Math.PI) / 6, r * 0.45, 8, isDark ? '#f8fafc' : '#222222', r * 0.12)
   // Minute hand
-  drawHand(ctx, cx, cy, (min * Math.PI) / 30, r * 0.72, 3.5, isDark ? '#e8f5e9' : '#1b5e20')
-  // Second hand (gold/yellow like screenshot)
-  drawHand(ctx, cx, cy, (sec * Math.PI) / 30, r * 0.82, 1.5, '#f9a825')
+  drawHand(ctx, cx, cy, (min * Math.PI) / 30, r * 0.7, 5.5, isDark ? '#f8fafc' : '#222222', r * 0.18)
+  // Second hand
+  drawHand(ctx, cx, cy, (sec * Math.PI) / 30, r * 0.8, 2.2, '#f59e0b', r * 0.3)
   // Center dot
   ctx.beginPath()
-  ctx.arc(cx, cy, 5, 0, Math.PI * 2)
-  ctx.fillStyle = '#f9a825'
+  ctx.arc(cx, cy, 8, 0, Math.PI * 2)
+  ctx.fillStyle = '#f59e0b'
   ctx.fill()
   ctx.beginPath()
-  ctx.arc(cx, cy, 2.5, 0, Math.PI * 2)
-  ctx.fillStyle = '#fff'
+  ctx.arc(cx, cy, 3.5, 0, Math.PI * 2)
+  ctx.fillStyle = isDark ? '#0f172a' : '#ffffff'
   ctx.fill()
 }
 
-function drawHand(ctx: CanvasRenderingContext2D, cx: number, cy: number, angle: number, length: number, width: number, color: string) {
+function drawHand(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  angle: number,
+  length: number,
+  width: number,
+  color: string,
+  tail = 0,
+) {
   ctx.beginPath()
-  ctx.moveTo(cx, cy)
+  ctx.moveTo(cx - Math.sin(angle) * tail, cy + Math.cos(angle) * tail)
   ctx.lineTo(cx + Math.sin(angle) * length, cy - Math.cos(angle) * length)
   ctx.strokeStyle = color
   ctx.lineWidth = width
@@ -520,7 +557,7 @@ function wmoInfo(code: number, isDay = true): { emoji: string; label: string } {
 const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
 function forecastDayLabel(dateStr: string, idx: number): string {
-  if (idx === 0) return 'Today'
+  if (idx === 0) return t('home.weather.today')
   const d = new Date(dateStr + 'T00:00:00')
   return dayNames[d.getDay()]
 }
@@ -553,6 +590,44 @@ function searchWeather() {
 
 onMounted(() => fetchWeather())
 
+const weatherSummary = computed(() => {
+  if (weatherData.value?.temp != null) {
+    return `${Math.round(weatherData.value.temp)}°C · ${weatherData.value.city}`
+  }
+
+  if (weatherLoading.value) {
+    return t('home.hero.weather_pending')
+  }
+
+  return weatherCity.value
+})
+
+const dateConversionOptions = computed(() => [
+  {
+    key: 'to_jalali',
+    from: t('home.date_conversion.gregorian'),
+    to: t('home.date_conversion.jalali'),
+  },
+  {
+    key: 'to_gregorian',
+    from: t('home.date_conversion.jalali'),
+    to: t('home.date_conversion.gregorian'),
+  },
+])
+
+const heroStats = computed(() => [
+  { label: t('home.hero.stats.shortcuts'), value: String(quickLinks.value.length).padStart(2, '0'), icon: Sparkles },
+  { label: t('home.hero.stats.currencies'), value: String(props.currencies.length), icon: CircleDollarSign },
+  { label: t('home.hero.stats.units'), value: String(props.unitMeasures.length), icon: Scale },
+  { label: t('home.hero.stats.city'), value: weatherCity.value, icon: CloudSun },
+])
+
+const heroPanelItems = computed(() => [
+  { label: t('home.hero.branch_label'), value: activeBranchName.value, icon: MapPin },
+  { label: t('home.hero.weather_label'), value: weatherSummary.value, icon: CloudSun },
+  { label: t('home.hero.calendar_label'), value: calendarModeLabel.value, icon: CalendarDays },
+])
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // ── 7. DATE CONVERSION ────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -581,7 +656,7 @@ function convertDate() {
       dateConvResult.value = `${gy}-${String(gm).padStart(2,'0')}-${String(gd).padStart(2,'0')}`
     }
   } catch {
-    dateConvError.value = 'Invalid date. Use YYYY-MM-DD format.'
+    dateConvError.value = t('home.date_conversion.invalid')
   }
 }
 
@@ -645,426 +720,570 @@ async function doUnitConvert() {
   <AppLayout>
     <Head :title="t('home.title')" />
 
-    <div class="p-4 md:p-3 space-y-3">
-      <h1 class="text-2xl font-semibold tracking-tight">{{ t('home.title') }}</h1>
+    <div class="space-y-5 text-foreground">
+      <section class="relative overflow-hidden rounded-[32px] border border-border bg-gradient-to-br from-primary/15 via-background to-secondary/10 shadow-sm">
+        <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+        <div class="absolute -top-24 end-0 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+        <div class="absolute -bottom-24 start-0 h-56 w-56 rounded-full bg-secondary/15 blur-3xl" />
 
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-
-        <!-- ══ 1. ANALOG CLOCK ══════════════════════════════════════════ -->
-        <Card class="flex flex-col">
-          <CardHeader class="pb-1 pt-4">
-            <CardTitle class="text-base">{{ t('home.clock.title') }}</CardTitle>
-          </CardHeader>
-          <CardContent class="flex flex-col items-center gap-1.5 px-4 pb-4">
-            <!-- Analog clock -->
-            <canvas ref="clockCanvas" width="150" height="150" class="rounded-full" />
-
-            <!-- Timezone + digital time -->
-            <p class="text-[10px] text-muted-foreground leading-none">ساعت کابل · UTC +4:30</p>
-            <p class="text-2xl font-bold tracking-widest tabular-nums font-mono leading-none" dir="ltr">{{ digitalTime }}</p>
-
-            <!-- Day name -->
-            <p class="text-xs font-semibold text-muted-foreground leading-none">{{ dayName }}</p>
-
-            <!-- Three date sub-cards -->
-            <div class="grid grid-cols-3 gap-2 w-full mt-1">
-              <!-- Gregorian -->
-              <div class="flex flex-col items-center gap-0.5 rounded-lg border border-border bg-muted/30 px-1.5 py-2 text-center">
-                <span class="text-base leading-none">{{ gregorianDisplay.icon }}</span>
-                <span class="text-[9px] text-muted-foreground">{{ gregorianDisplay.label }}</span>
-                <span class="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold">{{ gregorianDisplay.weekDay }}</span>
-                <span class="text-xl font-bold leading-tight">{{ gregorianDisplay.day }}</span>
-                <span class="text-[11px] font-medium">{{ gregorianDisplay.monthName }}</span>
-                <span class="text-[9px] text-muted-foreground" dir="ltr">{{ gregorianDisplay.full }}</span>
-              </div>
-              <!-- Hijri -->
-              <div class="flex flex-col items-center gap-0.5 rounded-lg border border-border bg-muted/30 px-1.5 py-2 text-center">
-                <span class="text-base leading-none">{{ hijriDisplay.icon }}</span>
-                <span class="text-[9px] text-muted-foreground">{{ hijriDisplay.label }}</span>
-                <span class="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold">{{ hijriDisplay.weekDay }}</span>
-                <span class="text-xl font-bold leading-tight">{{ hijriDisplay.day }}</span>
-                <span class="text-[11px] font-medium">{{ hijriDisplay.monthName }}</span>
-                <span class="text-[9px] text-muted-foreground" dir="ltr">{{ hijriDisplay.full }}</span>
-              </div>
-              <!-- Jalali -->
-              <div class="flex flex-col items-center gap-0.5 rounded-lg border border-border bg-muted/30 px-1.5 py-2 text-center">
-                <span class="text-base leading-none">{{ jalaliDisplay.icon }}</span>
-                <span class="text-[9px] text-muted-foreground">{{ jalaliDisplay.label }}</span>
-                <span class="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold">{{ jalaliDisplay.weekDay }}</span>
-                <span class="text-xl font-bold leading-tight">{{ jalaliDisplay.day }}</span>
-                <span class="text-[11px] font-medium">{{ jalaliDisplay.monthName }}</span>
-                <span class="text-[9px] text-muted-foreground" dir="ltr">{{ jalaliDisplay.full }}</span>
-              </div>
+        <div class="relative grid gap-6 px-5 py-6 lg:px-7 lg:py-7 xl:grid-cols-[1.35fr_.95fr]">
+          <div class="space-y-6">
+            <div class="flex flex-wrap items-center gap-2">
+              <Badge class="rounded-full bg-primary/15 px-3 py-1 text-primary hover:bg-primary/15">
+                {{ t('home.hero.eyebrow') }}
+              </Badge>
+              <Badge variant="secondary" class="rounded-full px-3 py-1 text-xs">
+                {{ activeBranchName }}
+              </Badge>
             </div>
-          </CardContent>
-        </Card>
 
-        <!-- ══ 2. CALENDAR ══════════════════════════════════════════════ -->
-        <Card class="flex flex-col">
-          <CardHeader class="pb-2">
-            <CardTitle class="text-base">{{ t('home.calendar.title') }}</CardTitle>
-          </CardHeader>
-          <CardContent class="px-3 pb-3">
-            <div class="flex items-center justify-between mb-2">
-              <Button variant="ghost" size="icon" class="h-7 w-7" @click="prevMonth">‹</Button>
-              <span class="text-sm font-medium">{{ calendarTitle }}</span>
-              <Button variant="ghost" size="icon" class="h-7 w-7" @click="nextMonth">›</Button>
+            <div class="space-y-3">
+              <h1 class="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                {{ t('home.hero.greeting', { name: firstName }) }}
+              </h1>
+              <p class="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
+                {{ t('home.hero.description') }}
+              </p>
             </div>
-            <div class="grid grid-cols-7 mb-1">
-              <div v-for="wd in weekDays" :key="wd" class="text-center text-xs text-muted-foreground font-medium py-1">
-                {{ wd }}
-              </div>
-            </div>
-            <div class="grid grid-cols-7 gap-y-0.5">
+
+            <div class="mx-auto grid max-w-5xl gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <div
-                v-for="(cell, idx) in calendarDays"
-                :key="idx"
-                class="text-center text-xs py-1 rounded-md select-none"
-                :class="{
-                  'text-muted-foreground/30': !cell.currentMonth,
-                  'bg-primary text-primary-foreground font-bold rounded-full': cell.isToday,
-                  'hover:bg-muted cursor-pointer': cell.currentMonth && !cell.isToday,
-                }"
+                v-for="stat in heroStats"
+                :key="stat.label"
+                class="rounded-2xl border border-border/70 bg-background/80 p-4 shadow-sm backdrop-blur"
               >
-                {{ cell.day || '' }}
+                <div class="flex justify-center">
+                  <component :is="stat.icon" class="size-5 text-primary" />
+                </div>
+                <p class="mt-4 text-2xl font-semibold tracking-tight text-foreground text-center">{{ stat.value }}</p>
+                <p class="mt-1 text-xs text-muted-foreground text-center">{{ stat.label }}</p>
               </div>
             </div>
-            <div class="mt-2 flex justify-center">
-              <Button variant="outline" size="sm" class="h-7 text-xs" @click="goToday">
-                {{ t('home.calendar.today') }}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
 
-        <!-- ══ 3. QUICK LINKS ═══════════════════════════════════════════ -->
-        <Card class="flex flex-col">
-          <CardHeader class="pb-2">
-            <CardTitle class="text-base">{{ t('home.quick_links.title') }}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div class="grid grid-cols-2 gap-2">
+            <div class="flex flex-wrap gap-3">
               <Link
-                v-for="link in quickLinks"
-                :key="link.url"
-                :href="link.url"
-                class="flex flex-col items-center gap-1.5 rounded-lg border border-border bg-muted/40 p-3 text-center text-xs font-medium hover:bg-muted transition-colors"
+                href="/dashboard"
+                class="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90"
               >
-                <component :is="link.icon" class="size-5 text-primary" />
-                <span>{{ link.label }}</span>
+                <LayoutDashboard class="size-4" />
+                {{ t('home.hero.open_dashboard') }}
+              </Link>
+              <Link
+                href="/reports"
+                class="inline-flex items-center gap-2 rounded-xl border border-border bg-background/90 px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-muted"
+              >
+                <FileText class="size-4" />
+                {{ t('home.hero.open_reports') }}
               </Link>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <!-- ══ 4. CURRENCY RATES ════════════════════════════════════════ -->
-        <Card class="flex flex-col md:col-span-2 xl:col-span-1">
-          <CardHeader class="pb-2">
-            <CardTitle class="text-base">{{ t('home.currency_rates.title') }}</CardTitle>
-          </CardHeader>
-          <CardContent class="px-3 pb-3">
-            <div v-if="currencies.length === 0" class="text-sm text-muted-foreground text-center py-4">
-              {{ t('home.currency_rates.no_data') }}
-            </div>
-            <div v-else class="overflow-auto max-h-56">
-              <table class="w-full text-xs">
-                <thead>
-                  <tr class="border-b border-border">
-                    <th class="text-start py-1.5 px-1 font-medium text-muted-foreground">{{ t('home.currency_rates.code') }}</th>
-                    <th class="text-start py-1.5 px-1 font-medium text-muted-foreground">{{ t('home.currency_rates.name') }}</th>
-                    <th class="text-end py-1.5 px-1 font-medium text-muted-foreground">{{ t('home.currency_rates.rate') }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="cur in currencies" :key="cur.id" class="border-b border-border/50 last:border-0 hover:bg-muted/40">
-                    <td class="py-1.5 px-1">
-                      <div class="flex items-center gap-1.5">
-                        <span class="font-mono font-semibold">{{ cur.code }}</span>
-                        <Badge v-if="cur.is_base_currency" variant="secondary" class="text-[10px] px-1 py-0 h-4">
-                          {{ t('home.currency_rates.base') }}
-                        </Badge>
-                      </div>
-                    </td>
-                    <td class="py-1.5 px-1 text-muted-foreground">{{ cur.name }}</td>
-                    <td class="py-1.5 px-1 text-end font-mono">
-                      {{ cur.symbol }} {{ Number(cur.exchange_rate).toLocaleString(undefined, { maximumFractionDigits: 4 }) }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-
-        <!-- ══ 5. CURRENCY EXCHANGE ═════════════════════════════════════ -->
-        <Card class="flex flex-col">
-          <CardHeader class="pb-2">
-            <CardTitle class="text-base">{{ t('home.currency_exchange.title') }}</CardTitle>
-          </CardHeader>
-          <CardContent class="space-y-3">
-            <div>
-              <label class="text-xs text-muted-foreground mb-1 block">{{ t('home.currency_exchange.amount') }}</label>
-              <Input v-model.number="exchangeAmount" type="number" min="0" class="h-8 text-sm" />
-            </div>
-            <div class="flex items-end gap-2">
-              <div class="flex-1">
-                <label class="text-xs text-muted-foreground mb-1 block">{{ t('home.currency_exchange.from') }}</label>
-                <Select v-model="exchangeFrom">
-                  <SelectTrigger class="h-8 text-sm">
-                    <SelectValue :placeholder="t('home.currency_exchange.select_currency')" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="cur in currencies" :key="cur.code" :value="cur.code">
-                      {{ cur.code }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button variant="ghost" size="icon" class="h-8 w-8 mb-0.5 shrink-0" @click="swapCurrencies">
-                <ArrowLeftRight class="size-4" />
-              </Button>
-              <div class="flex-1">
-                <label class="text-xs text-muted-foreground mb-1 block">{{ t('home.currency_exchange.to') }}</label>
-                <Select v-model="exchangeTo">
-                  <SelectTrigger class="h-8 text-sm">
-                    <SelectValue :placeholder="t('home.currency_exchange.select_currency')" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="cur in currencies" :key="cur.code" :value="cur.code">
-                      {{ cur.code }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <Button class="w-full h-8 text-sm" :disabled="exchangeLoading" @click="doExchange">
-              <Loader2 v-if="exchangeLoading" class="size-4 animate-spin me-1" />
-              {{ t('home.currency_exchange.convert') }}
-            </Button>
-            <div v-if="exchangeResult" class="rounded-md bg-muted px-3 py-2 text-sm font-semibold text-center">
-              {{ exchangeResult }}
-            </div>
-            <p v-if="exchangeError" class="text-xs text-destructive text-center">{{ exchangeError }}</p>
-          </CardContent>
-        </Card>
-
-        <!-- ══ 6. WEATHER (Open-Meteo) ══════════════════════════════════ -->
-        <Card class="flex flex-col overflow-hidden">
-          <CardContent class="p-0">
-            <!-- Header bar -->
-            <div class="flex items-start justify-between p-4 pb-2">
+          <div class="rounded-[28px] border border-white/60 bg-background/85 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-background/70">
+            <div class="flex items-start justify-between gap-3">
               <div>
-                <p class="text-base font-bold">
-                  {{ weatherData ? `${weatherData.city}, ${weatherData.country}` : t('home.weather.title') }}
+                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
+                  {{ t('home.hero.workspace') }}
                 </p>
-                <p class="text-xs text-muted-foreground mt-0.5">{{ t('home.weather.title') }}</p>
+                <h2 class="mt-1 text-xl font-semibold tracking-tight">{{ t('home.hero.live_snapshot') }}</h2>
               </div>
-              <!-- City search -->
-              <div class="flex gap-1.5">
-                <Select v-model="weatherSearch" class="w-36">
-                  <SelectTrigger class="h-7 text-xs">
-                    <SelectValue :placeholder="t('home.weather.city')" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="p in afghaniProvinces" :key="p" :value="p">{{ p }}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  class="h-7 w-7"
-                  :disabled="weatherLoading"
-                  @click="searchWeather"
+              <Badge variant="secondary" class="rounded-full px-3 py-1">
+                {{ calendarModeLabel }}
+              </Badge>
+            </div>
+
+            <div class="mt-5 grid gap-5 sm:grid-cols-[auto,1fr] sm:items-center">
+              <div class="mx-auto flex flex-col items-center gap-2">
+                <canvas ref="clockCanvas" width="200" height="200" class="rounded-full" />
+                <div class="text-center">
+                  <div class="flex items-end justify-center gap-2 font-mono text-foreground" dir="ltr">
+                    <p class="text-3xl font-semibold tracking-[0.18em]">
+                      {{ digitalTime || '--:--:--' }}
+                    </p>
+                    <span class="pb-0.5 text-xl font-semibold">{{ digitalMeridiem }}</span>
+                  </div>
+                  <p class="mt-1 text-sm font-medium text-muted-foreground">{{ dayName }}</p>
+                  <p class="mt-1 text-[11px] text-muted-foreground">{{ t('home.clock.timezone') }}</p>
+                </div>
+              </div>
+
+              <div
+                class="w-full space-y-4"
+                :class="isRTL ? '' : 'mx-auto max-w-[25rem]'"
+              >
+                <div class="grid grid-cols-3 gap-2">
+                  <div class="min-h-[9rem] rounded-2xl border border-border/70 bg-muted/35 px-2 py-3 text-center">
+                    <p class="text-base leading-none">{{ gregorianDisplay.icon }}</p>
+                    <p class="mt-1 text-[10px] text-muted-foreground">{{ gregorianDisplay.label }}</p>
+                    <p class="mt-2 text-xl font-semibold leading-none">{{ gregorianDisplay.day }}</p>
+                    <p class="mt-1 text-[11px] font-medium">{{ gregorianDisplay.monthName }}</p>
+                    <p class="mt-1 text-[10px] text-muted-foreground" dir="ltr">{{ gregorianDisplay.full }}</p>
+                  </div>
+                  <div class="min-h-[9rem] rounded-2xl border border-border/70 bg-muted/35 px-2 py-3 text-center">
+                    <p class="text-base leading-none">{{ hijriDisplay.icon }}</p>
+                    <p class="mt-1 text-[10px] text-muted-foreground">{{ hijriDisplay.label }}</p>
+                    <p class="mt-2 text-xl font-semibold leading-none">{{ hijriDisplay.day }}</p>
+                    <p class="mt-1 text-[11px] font-medium">{{ hijriDisplay.monthName }}</p>
+                    <p class="mt-1 text-[10px] text-muted-foreground" dir="ltr">{{ hijriDisplay.full }}</p>
+                  </div>
+                  <div class="min-h-[9rem] rounded-2xl border border-border/70 bg-muted/35 px-2 py-3 text-center">
+                    <p class="text-base leading-none">{{ jalaliDisplay.icon }}</p>
+                    <p class="mt-1 text-[10px] text-muted-foreground">{{ jalaliDisplay.label }}</p>
+                    <p class="mt-2 text-xl font-semibold leading-none">{{ jalaliDisplay.day }}</p>
+                    <p class="mt-1 text-[11px] font-medium">{{ jalaliDisplay.monthName }}</p>
+                    <p class="mt-1 text-[10px] text-muted-foreground" dir="ltr">{{ jalaliDisplay.full }}</p>
+                  </div>
+                </div>
+
+                <div class="grid gap-2 sm:grid-cols-3">
+                  <div
+                    v-for="item in heroPanelItems"
+                    :key="item.label"
+                    class="flex min-h-[7.25rem] flex-col items-center justify-center rounded-2xl border border-border/70 bg-background/70 p-3 text-center"
+                  >
+                    <div class="flex flex-col items-center gap-1 text-xs text-muted-foreground">
+                      <component :is="item.icon" class="size-3.5 text-primary" />
+                      <span>{{ item.label }}</span>
+                    </div>
+                    <p class="mt-2 text-sm font-medium leading-6 text-foreground">{{ item.value }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid gap-4 xl:grid-cols-[1.35fr_.95fr]">
+        <div class="space-y-4">
+          <Card class="overflow-hidden rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+            <CardHeader class="border-b border-border/60 pb-4">
+              <div class="flex items-start gap-3">
+                <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Sparkles class="size-5" />
+                </div>
+                <div class="space-y-1">
+                  <CardTitle class="text-base">{{ t('home.quick_links.title') }}</CardTitle>
+                  <CardDescription>{{ t('home.quick_links.description') }}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent class="pt-6">
+              <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <Link
+                  v-for="link in quickLinks"
+                  :key="link.url"
+                  :href="link.url"
+                  class="group rounded-2xl border border-border/70 bg-background/70 p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted/60"
                 >
-                  <Loader2 v-if="weatherLoading" class="size-3.5 animate-spin" />
-                  <Search v-else class="size-3.5" />
-                </Button>
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                      <component :is="link.icon" class="size-5" />
+                    </div>
+                    <ArrowUpRight class="size-4 text-muted-foreground transition group-hover:text-primary" />
+                  </div>
+                  <div class="mt-4">
+                    <p class="text-sm font-medium text-foreground">{{ link.label }}</p>
+                    <p class="mt-1 text-xs text-muted-foreground">{{ t('home.quick_links.open_module') }}</p>
+                  </div>
+                </Link>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            <!-- Error state -->
-            <div v-if="weatherError" class="px-4 pb-4 text-sm text-destructive">{{ weatherError }}</div>
-
-            <!-- Loading -->
-            <div v-else-if="weatherLoading && !weatherData" class="px-4 pb-4 text-sm text-muted-foreground">
-              {{ t('home.weather.loading') }}
-            </div>
-
-            <!-- Current weather card -->
-            <div v-else-if="weatherData" class="px-3 pb-3 space-y-3">
-              <!-- Main current block -->
-              <div class="rounded-xl bg-muted/50 p-3">
-                <div class="flex items-center justify-between">
+          <div class="grid gap-4 lg:grid-cols-2">
+            <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+              <CardHeader class="pb-4">
+                <div class="flex items-start gap-3">
+                  <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <ArrowLeftRight class="size-5" />
+                  </div>
+                  <div class="space-y-1">
+                    <CardTitle class="text-base">{{ t('home.currency_exchange.title') }}</CardTitle>
+                    <CardDescription>{{ t('home.currency_exchange.description') }}</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent class="space-y-4">
+                <div>
+                  <label class="mb-1 block text-xs text-muted-foreground">{{ t('home.currency_exchange.amount') }}</label>
+                  <Input v-model.number="exchangeAmount" type="number" min="0" class="h-10 text-sm" />
+                </div>
+                <div class="grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
                   <div>
-                    <p class="text-4xl font-bold tracking-tight">{{ weatherData.temp?.toFixed(1) }}°C</p>
-                    <span class="mt-1 inline-block rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
-                      {{ wmoInfo(weatherData.code, weatherData.is_day).label }}
+                    <label class="mb-1 block text-xs text-muted-foreground">{{ t('home.currency_exchange.from') }}</label>
+                    <Select v-model="exchangeFrom">
+                      <SelectTrigger class="h-10 text-sm">
+                        <SelectValue :placeholder="t('home.currency_exchange.select_currency')" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="cur in currencies" :key="cur.code" :value="cur.code">
+                          {{ cur.code }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button variant="ghost" size="icon" class="h-10 w-10 shrink-0 rounded-xl border border-border" @click="swapCurrencies">
+                    <ArrowLeftRight class="size-4" />
+                  </Button>
+                  <div>
+                    <label class="mb-1 block text-xs text-muted-foreground">{{ t('home.currency_exchange.to') }}</label>
+                    <Select v-model="exchangeTo">
+                      <SelectTrigger class="h-10 text-sm">
+                        <SelectValue :placeholder="t('home.currency_exchange.select_currency')" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="cur in currencies" :key="cur.code" :value="cur.code">
+                          {{ cur.code }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <Button class="h-10 w-full text-sm" :disabled="exchangeLoading" @click="doExchange">
+                  <Loader2 v-if="exchangeLoading" class="me-1 size-4 animate-spin" />
+                  {{ t('home.currency_exchange.convert') }}
+                </Button>
+                <div v-if="exchangeResult" class="rounded-2xl bg-muted px-3 py-3 text-center text-sm font-semibold">
+                  {{ exchangeResult }}
+                </div>
+                <p v-if="exchangeError" class="text-center text-xs text-destructive">{{ exchangeError }}</p>
+              </CardContent>
+            </Card>
+
+            <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+              <CardHeader class="pb-4">
+                <div class="flex items-start gap-3">
+                  <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <Scale class="size-5" />
+                  </div>
+                  <div class="space-y-1">
+                    <CardTitle class="text-base">{{ t('home.unit_exchange.title') }}</CardTitle>
+                    <CardDescription>{{ t('home.unit_exchange.description') }}</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent class="space-y-4">
+                <div v-if="props.unitMeasures.length === 0" class="py-4 text-center text-sm text-muted-foreground">
+                  {{ t('home.unit_exchange.no_units') }}
+                </div>
+                <template v-else>
+                  <div>
+                    <label class="mb-1 block text-xs text-muted-foreground">{{ t('home.unit_exchange.type') }}</label>
+                    <Select v-model="selectedQuantityId">
+                      <SelectTrigger class="h-10 text-sm">
+                        <SelectValue :placeholder="t('home.unit_exchange.select_type')" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem v-for="(group, qid) in quantityGroups" :key="String(qid)" :value="String(qid)">
+                          {{ group.label }}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label class="mb-1 block text-xs text-muted-foreground">{{ t('home.unit_exchange.amount') }}</label>
+                    <Input v-model.number="unitAmount" type="number" class="h-10 text-sm" />
+                  </div>
+                  <div class="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label class="mb-1 block text-xs text-muted-foreground">{{ t('home.unit_exchange.from') }}</label>
+                      <Select v-model="unitFromId">
+                        <SelectTrigger class="h-10 text-sm">
+                          <SelectValue :placeholder="t('home.unit_exchange.select_unit')" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem v-for="u in unitsForQuantity" :key="u.id" :value="u.id">
+                            {{ u.name }} ({{ u.symbol }})
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label class="mb-1 block text-xs text-muted-foreground">{{ t('home.unit_exchange.to') }}</label>
+                      <Select v-model="unitToId">
+                        <SelectTrigger class="h-10 text-sm">
+                          <SelectValue :placeholder="t('home.unit_exchange.select_unit')" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem v-for="u in unitsForQuantity" :key="u.id" :value="u.id">
+                            {{ u.name }} ({{ u.symbol }})
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <Button class="h-10 w-full text-sm" :disabled="unitLoading" @click="doUnitConvert">
+                    <Loader2 v-if="unitLoading" class="me-1 size-4 animate-spin" />
+                    {{ t('home.unit_exchange.convert') }}
+                  </Button>
+                  <div v-if="unitResult" class="rounded-2xl bg-muted px-3 py-3 text-center text-sm font-semibold font-mono">
+                    {{ unitResult }}
+                  </div>
+                  <p v-if="unitError" class="text-center text-xs text-destructive">{{ unitError }}</p>
+                </template>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card class="overflow-hidden rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+            <CardHeader class="border-b border-border/60 pb-4">
+              <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div class="flex items-start gap-3">
+                  <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <CloudSun class="size-5" />
+                  </div>
+                  <div class="space-y-1">
+                    <CardTitle class="text-base">
+                      {{ weatherData ? `${weatherData.city}, ${weatherData.country}` : t('home.weather.title') }}
+                    </CardTitle>
+                    <CardDescription>{{ t('home.weather.description') }}</CardDescription>
+                  </div>
+                </div>
+
+                <div class="flex gap-2">
+                  <Select v-model="weatherSearch" class="w-40">
+                    <SelectTrigger class="h-9 min-w-[150px] text-xs">
+                      <SelectValue :placeholder="t('home.weather.city')" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="p in afghaniProvinces" :key="p" :value="p">{{ p }}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button size="icon" variant="outline" class="h-9 w-9 rounded-xl" :disabled="weatherLoading" @click="searchWeather">
+                    <Loader2 v-if="weatherLoading" class="size-4 animate-spin" />
+                    <Search v-else class="size-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent class="pt-5">
+              <div v-if="weatherError" class="text-sm text-destructive">{{ weatherError }}</div>
+
+              <div v-else-if="weatherLoading && !weatherData" class="text-sm text-muted-foreground">
+                {{ t('home.weather.loading') }}
+              </div>
+
+              <div v-else-if="weatherData" class="space-y-4">
+                <div class="rounded-[24px] bg-muted/50 p-4">
+                  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p class="text-4xl font-semibold tracking-tight">{{ weatherData.temp?.toFixed(1) }}°C</p>
+                      <span class="mt-2 inline-flex rounded-full bg-background px-3 py-1 text-xs font-medium text-muted-foreground">
+                        {{ wmoInfo(weatherData.code, weatherData.is_day).label }}
+                      </span>
+                    </div>
+                    <span class="text-6xl leading-none">{{ wmoInfo(weatherData.code, weatherData.is_day).emoji }}</span>
+                  </div>
+                  <div v-if="weatherData.forecast?.length" class="mt-4 flex flex-wrap gap-2">
+                    <span class="rounded-full bg-background px-3 py-1 text-xs">
+                      ↑ {{ weatherData.forecast[0].max?.toFixed(0) }}°
+                    </span>
+                    <span class="rounded-full bg-background px-3 py-1 text-xs">
+                      ↓ {{ weatherData.forecast[0].min?.toFixed(0) }}°
                     </span>
                   </div>
-                  <span class="text-5xl leading-none">{{ wmoInfo(weatherData.code, weatherData.is_day).emoji }}</span>
                 </div>
-                <!-- High / Low from today's forecast -->
-                <div class="mt-2 flex gap-2" v-if="weatherData.forecast?.length">
-                  <span class="rounded-full bg-muted px-3 py-1 text-xs">
-                    ↑ {{ weatherData.forecast[0].max?.toFixed(0) }}°
-                  </span>
-                  <span class="rounded-full bg-muted px-3 py-1 text-xs">
-                    ↓ {{ weatherData.forecast[0].min?.toFixed(0) }}°
-                  </span>
-                </div>
-              </div>
 
-              <!-- 7-day forecast strip -->
-              <div v-if="weatherData.forecast?.length">
-                <p class="text-xs font-semibold text-muted-foreground mb-2">7-Day Forecast</p>
-                <div class="flex gap-2 overflow-x-auto pb-1">
-                  <div
-                    v-for="(day, idx) in weatherData.forecast"
-                    :key="day.date"
-                    class="flex-shrink-0 flex flex-col items-center gap-1 rounded-xl border px-2.5 py-2 text-center text-xs min-w-[60px]"
-                    :class="idx === 0 ? 'border-primary bg-primary/10' : 'border-border bg-muted/40'"
-                  >
-                    <span class="font-semibold">{{ forecastDayLabel(day.date, idx) }}</span>
-                    <span class="text-[10px] text-muted-foreground">{{ forecastDateLabel(day.date) }}</span>
-                    <span class="text-xl leading-none">{{ wmoInfo(day.code).emoji }}</span>
-                    <div class="flex gap-1 text-[11px]">
-                      <span class="font-bold">{{ day.max?.toFixed(0) }}°</span>
-                      <span class="text-muted-foreground">{{ day.min?.toFixed(0) }}°</span>
+                <div v-if="weatherData.forecast?.length">
+                  <p class="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                    {{ t('home.weather.forecast') }}
+                  </p>
+                  <div class="flex gap-2 overflow-x-auto pb-1">
+                    <div
+                      v-for="(day, idx) in weatherData.forecast"
+                      :key="day.date"
+                      class="flex min-w-[70px] flex-shrink-0 flex-col items-center gap-1 rounded-2xl border px-3 py-3 text-center text-xs"
+                      :class="idx === 0 ? 'border-primary bg-primary/10' : 'border-border bg-muted/40'"
+                    >
+                      <span class="font-semibold">{{ forecastDayLabel(day.date, Number(idx)) }}</span>
+                      <span class="text-[10px] text-muted-foreground">{{ forecastDateLabel(day.date) }}</span>
+                      <span class="text-2xl leading-none">{{ wmoInfo(day.code).emoji }}</span>
+                      <div class="flex gap-1 text-[11px]">
+                        <span class="font-bold">{{ day.max?.toFixed(0) }}°</span>
+                        <span class="text-muted-foreground">{{ day.min?.toFixed(0) }}°</span>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                <div class="grid gap-3 sm:grid-cols-3">
+                  <div class="rounded-2xl bg-muted/50 p-3 text-center text-xs">
+                    <p class="text-muted-foreground">{{ t('home.weather.feels_like') }}</p>
+                    <p class="mt-1 text-sm font-semibold">{{ weatherData.feels_like?.toFixed(0) }}°C</p>
+                  </div>
+                  <div class="rounded-2xl bg-muted/50 p-3 text-center text-xs">
+                    <p class="text-muted-foreground">{{ t('home.weather.humidity') }}</p>
+                    <p class="mt-1 text-sm font-semibold">{{ weatherData.humidity }}%</p>
+                  </div>
+                  <div class="rounded-2xl bg-muted/50 p-3 text-center text-xs">
+                    <p class="text-muted-foreground">{{ t('home.weather.wind') }}</p>
+                    <p class="mt-1 text-sm font-semibold">{{ weatherData.wind_speed?.toFixed(1) }} km/h</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div class="space-y-4">
+          <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+            <CardHeader class="pb-4">
+              <div class="flex items-start gap-3">
+                <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <CalendarDays class="size-5" />
+                </div>
+                <div class="space-y-1">
+                  <CardTitle class="text-base">{{ t('home.calendar.title') }}</CardTitle>
+                  <CardDescription>{{ t('home.calendar.description') }}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent class="space-y-4">
+              <div class="flex items-center justify-between">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="h-8 w-8 rounded-full"
+                  :aria-label="t('home.calendar.prev')"
+                  @click="prevMonth"
+                >
+                  ‹
+                </Button>
+                <div class="text-center">
+                  <p class="text-sm font-medium">{{ calendarTitle }}</p>
+                  <p class="text-xs text-muted-foreground">{{ calendarModeLabel }}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="h-8 w-8 rounded-full"
+                  :aria-label="t('home.calendar.next')"
+                  @click="nextMonth"
+                >
+                  ›
+                </Button>
               </div>
 
-              <!-- Extra stats -->
-              <div class="grid grid-cols-3 gap-2 text-xs text-center">
-                <div class="rounded-lg bg-muted/50 p-2">
-                  <p class="text-muted-foreground">{{ t('home.weather.feels_like') }}</p>
-                  <p class="font-semibold">{{ weatherData.feels_like?.toFixed(0) }}°C</p>
+              <div class="grid grid-cols-7 gap-y-1">
+                <div v-for="wd in weekDays" :key="wd" class="py-1 text-center text-xs font-medium text-muted-foreground">
+                  {{ wd }}
                 </div>
-                <div class="rounded-lg bg-muted/50 p-2">
-                  <p class="text-muted-foreground">{{ t('home.weather.humidity') }}</p>
-                  <p class="font-semibold">{{ weatherData.humidity }}%</p>
-                </div>
-                <div class="rounded-lg bg-muted/50 p-2">
-                  <p class="text-muted-foreground">{{ t('home.weather.wind') }}</p>
-                  <p class="font-semibold">{{ weatherData.wind_speed?.toFixed(1) }} km/h</p>
+                <div
+                  v-for="(cell, idx) in calendarDays"
+                  :key="idx"
+                  class="flex h-9 items-center justify-center rounded-xl text-xs transition-colors"
+                  :class="{
+                    'text-muted-foreground/30': !cell.currentMonth,
+                    'bg-primary text-primary-foreground font-bold shadow-sm': cell.isToday,
+                    'hover:bg-muted cursor-pointer': cell.currentMonth && !cell.isToday,
+                  }"
+                >
+                  {{ cell.day || '' }}
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        <!-- ══ 7. DATE CONVERSION ═══════════════════════════════════════ -->
-        <Card class="flex flex-col">
-          <CardHeader class="pb-2">
-            <CardTitle class="text-base">{{ t('home.date_conversion.title') }}</CardTitle>
-          </CardHeader>
-          <CardContent class="space-y-3">
-            <div class="flex rounded-md overflow-hidden border border-border text-xs">
-              <button
-                class="flex-1 py-1.5 transition-colors"
-                :class="dateConvMode === 'to_jalali' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
-                @click="dateConvMode = 'to_jalali'; dateConvResult = ''; dateConvError = ''"
-              >
-                {{ t('home.date_conversion.gregorian') }} → {{ t('home.date_conversion.jalali') }}
-              </button>
-              <button
-                class="flex-1 py-1.5 transition-colors"
-                :class="dateConvMode === 'to_gregorian' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
-                @click="dateConvMode = 'to_gregorian'; dateConvResult = ''; dateConvError = ''"
-              >
-                {{ t('home.date_conversion.jalali') }} → {{ t('home.date_conversion.gregorian') }}
-              </button>
-            </div>
-            <div>
-              <label class="text-xs text-muted-foreground mb-1 block">
-                {{ dateConvMode === 'to_jalali' ? 'YYYY-MM-DD (Gregorian)' : 'YYYY/MM/DD (Jalali)' }}
-              </label>
-              <Input
-                v-model="dateConvInput"
-                :placeholder="dateConvMode === 'to_jalali' ? '2024-03-20' : '1402/12/29'"
-                class="h-8 text-sm font-mono"
-                @keyup.enter="convertDate"
-              />
-            </div>
-            <Button class="w-full h-8 text-sm" @click="convertDate">
-              {{ t('home.date_conversion.convert') }}
-            </Button>
-            <div v-if="dateConvResult" class="rounded-md bg-muted px-3 py-2 text-sm font-mono font-semibold text-center">
-              {{ dateConvResult }}
-            </div>
-            <p v-if="dateConvError" class="text-xs text-destructive text-center">{{ dateConvError }}</p>
-          </CardContent>
-        </Card>
-
-        <!-- ══ 8. UNIT EXCHANGE ═════════════════════════════════════════ -->
-        <Card class="flex flex-col">
-          <CardHeader class="pb-2">
-            <CardTitle class="text-base">{{ t('home.unit_exchange.title') }}</CardTitle>
-          </CardHeader>
-          <CardContent class="space-y-3">
-            <div v-if="props.unitMeasures.length === 0" class="text-sm text-muted-foreground text-center py-4">
-              {{ t('home.unit_exchange.no_units') }}
-            </div>
-            <template v-else>
-              <div>
-                <label class="text-xs text-muted-foreground mb-1 block">Type</label>
-                <Select v-model="selectedQuantityId">
-                  <SelectTrigger class="h-8 text-sm">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="(group, qid) in quantityGroups" :key="String(qid)" :value="String(qid)">
-                      {{ group.label }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label class="text-xs text-muted-foreground mb-1 block">{{ t('home.unit_exchange.amount') }}</label>
-                <Input v-model.number="unitAmount" type="number" class="h-8 text-sm" />
-              </div>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="text-xs text-muted-foreground mb-1 block">{{ t('home.unit_exchange.from') }}</label>
-                  <Select v-model="unitFromId">
-                    <SelectTrigger class="h-8 text-sm">
-                      <SelectValue :placeholder="t('home.unit_exchange.select_unit')" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="u in unitsForQuantity" :key="u.id" :value="u.id">
-                        {{ u.name }} ({{ u.symbol }})
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label class="text-xs text-muted-foreground mb-1 block">{{ t('home.unit_exchange.to') }}</label>
-                  <Select v-model="unitToId">
-                    <SelectTrigger class="h-8 text-sm">
-                      <SelectValue :placeholder="t('home.unit_exchange.select_unit')" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="u in unitsForQuantity" :key="u.id" :value="u.id">
-                        {{ u.name }} ({{ u.symbol }})
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <Button class="w-full h-8 text-sm" :disabled="unitLoading" @click="doUnitConvert">
-                <Loader2 v-if="unitLoading" class="size-4 animate-spin me-1" />
-                {{ t('home.unit_exchange.convert') }}
+              <Button variant="outline" size="sm" class="h-9 w-full rounded-xl text-sm" @click="goToday">
+                {{ t('home.calendar.today') }}
               </Button>
-              <div v-if="unitResult" class="rounded-md bg-muted px-3 py-2 text-sm font-semibold font-mono text-center">
-                {{ unitResult }}
-              </div>
-              <p v-if="unitError" class="text-xs text-destructive text-center">{{ unitError }}</p>
-            </template>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-      </div>
+          <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+            <CardHeader class="pb-4">
+              <div class="flex items-start gap-3">
+                <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <CircleDollarSign class="size-5" />
+                </div>
+                <div class="space-y-1">
+                  <CardTitle class="text-base">{{ t('home.currency_rates.title') }}</CardTitle>
+                  <CardDescription>{{ t('home.currency_rates.description') }}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div v-if="currencies.length === 0" class="py-4 text-center text-sm text-muted-foreground">
+                {{ t('home.currency_rates.no_data') }}
+              </div>
+              <div v-else class="max-h-72 overflow-auto">
+                <table class="w-full text-xs">
+                  <thead>
+                    <tr class="border-b border-border">
+                      <th class="px-1 py-2 text-start font-medium text-muted-foreground">{{ t('home.currency_rates.code') }}</th>
+                      <th class="px-1 py-2 text-start font-medium text-muted-foreground">{{ t('home.currency_rates.name') }}</th>
+                      <th class="px-1 py-2 text-end font-medium text-muted-foreground">{{ t('home.currency_rates.rate') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="cur in currencies" :key="cur.id" class="border-b border-border/50 last:border-0 hover:bg-muted/40">
+                      <td class="px-1 py-2">
+                        <div class="flex items-center gap-1.5">
+                          <span class="font-mono font-semibold">{{ cur.code }}</span>
+                          <Badge v-if="cur.is_base_currency" variant="secondary" class="h-4 px-1 py-0 text-[10px]">
+                            {{ t('home.currency_rates.base') }}
+                          </Badge>
+                        </div>
+                      </td>
+                      <td class="px-1 py-2 text-muted-foreground">{{ cur.name }}</td>
+                      <td class="px-1 py-2 text-end font-mono">
+                        {{ cur.symbol }} {{ Number(cur.exchange_rate).toLocaleString(undefined, { maximumFractionDigits: 4 }) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+            <CardHeader class="pb-4">
+              <div class="flex items-start gap-3">
+                <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <NotebookText class="size-5" />
+                </div>
+                <div class="space-y-1">
+                  <CardTitle class="text-base">{{ t('home.date_conversion.title') }}</CardTitle>
+                  <CardDescription>{{ t('home.date_conversion.description') }}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent class="space-y-4">
+              <div class="flex overflow-hidden rounded-xl border border-border text-xs">
+                <button
+                  v-for="option in dateConversionOptions"
+                  :key="option.key"
+                  class="flex flex-1 items-center justify-center gap-2 py-2 transition-colors"
+                  :class="dateConvMode === option.key ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
+                  @click="dateConvMode = option.key as 'to_jalali' | 'to_gregorian'; dateConvResult = ''; dateConvError = ''"
+                >
+                  <ArrowRight v-if="isRTL" class="size-3.5 shrink-0" />
+                  <span>{{ option.from }}</span>
+                  <ArrowRight v-if="!isRTL" class="size-3.5 shrink-0" />
+                  <span>{{ option.to }}</span>
+                </button>
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-muted-foreground">
+                  {{ dateConvMode === 'to_jalali' ? 'YYYY-MM-DD (Gregorian)' : 'YYYY/MM/DD (Jalali)' }}
+                </label>
+                <Input
+                  v-model="dateConvInput"
+                  :placeholder="dateConvMode === 'to_jalali' ? '2024-03-20' : '1402/12/29'"
+                  class="h-10 text-sm font-mono"
+                  @keyup.enter="convertDate"
+                />
+              </div>
+              <Button class="h-10 w-full text-sm" @click="convertDate">
+                {{ t('home.date_conversion.convert') }}
+              </Button>
+              <div v-if="dateConvResult" class="rounded-2xl bg-muted px-3 py-3 text-center font-mono text-sm font-semibold">
+                {{ dateConvResult }}
+              </div>
+              <p v-if="dateConvError" class="text-center text-xs text-destructive">{{ dateConvError }}</p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
     </div>
   </AppLayout>
 </template>
