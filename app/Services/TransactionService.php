@@ -100,7 +100,7 @@ class TransactionService
             'currency_id'    => 'required|exists:currencies,id',
             'rate'           => 'required|numeric|min:0',
             'date'           => 'required|date',
-            'voucher_number' => 'nullable|string',
+            'voucher_number' => 'nullable',
             'reference_type' => 'nullable|string',
             'reference_id'   => 'nullable|string',
             'remark'         => 'nullable|string',
