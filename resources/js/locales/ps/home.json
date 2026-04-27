@@ -1,16 +1,46 @@
 {
   "title": "کور",
+  "hero": {
+    "eyebrow": "د کاري فضا عمومي کتنه",
+    "greeting": "بیا راغلاست، {name}",
+    "description": "خپل ورځنی کار له مهمو وسایلو پیل کړئ او د کور پاڼې له پرېښودو پرته وخت، هوا او د تبدیل وسایل وګورئ.",
+    "open_dashboard": "ډشبورډ پرانیزئ",
+    "open_reports": "راپورونه پرانیزئ",
+    "workspace": "د نن کاري فضا",
+    "live_snapshot": "ژوندی انځور",
+    "branch_label": "څانګه",
+    "weather_label": "هوا",
+    "calendar_label": "کلیزه",
+    "weather_pending": "د ژوندۍ هوا بارول",
+    "branch_fallback": "اوسنۍ څانګه",
+    "calendar_modes": {
+      "gregorian": "میلادي",
+      "jalali": "جلالي"
+    },
+    "stats": {
+      "shortcuts": "چمتو شارټکټونه",
+      "currencies": "ثبت شوې اسعار",
+      "units": "شته واحدونه",
+      "city": "ټاکل شوی ښار"
+    }
+  },
   "clock": {
-    "title": "ساعت"
+    "title": "ساعت",
+    "description": "د کابل ژوندی وخت له میلادي، هجري او جلالي نیټو سره.",
+    "timezone": "د کابل وخت · UTC +4:30",
+    "center_label": "نکست بوک"
   },
   "calendar": {
     "title": "کلنډر",
+    "description": "میاشتې بدل کړئ او د نن نېټه همېشه په نظر کې وساتئ.",
     "today": "نن",
     "prev": "مخکینی",
     "next": "راتلونکی"
   },
   "quick_links": {
     "title": "چټک لینکونه",
+    "description": "مستقیم خپلو ډېرو کارېدونکو برخو ته لاړ شئ.",
+    "open_module": "برخه پرانیزئ",
     "dashboard": "ډشبورډ",
     "chart_of_accounts": "د حسابونو جدول",
     "journal_entry": "ژورنال",
@@ -22,6 +52,7 @@
   },
   "currency_rates": {
     "title": "د اسعارو نرخونه",
+    "description": "ثبت شوي نرخونه وڅارئ او بنسټیزه اسعار ژر وپېژنئ.",
     "code": "کوډ",
     "name": "نوم",
     "rate": "د تبادلې نرخ",
@@ -30,6 +61,7 @@
   },
   "currency_exchange": {
     "title": "د اسعارو تبادله",
+    "description": "د اوسنیو ثبت شویو نرخونو په کارولو اسعار سره تبدیل کړئ.",
     "amount": "مقدار",
     "from": "له",
     "to": "ته",
@@ -39,6 +71,7 @@
   },
   "weather": {
     "title": "هوا",
+    "description": "ستاسو د ټاکل شوي ښار لپاره اوسنی حالت او د اوو ورځو وړاندوینه.",
     "city": "ښار / ولایت",
     "feels_like": "احساس کیږي",
     "humidity": "لندوالی",
@@ -46,25 +79,32 @@
     "loading": "بارول...",
     "error": "د هوا معلومات ترلاسه نشول",
     "no_api_key": "د هوا API کیلي تنظیم نه ده",
-    "search": "ښار لټول"
+    "search": "ښار لټول",
+    "forecast": "د ۷ ورځو وړاندوینه",
+    "today": "نن"
   },
   "date_conversion": {
     "title": "د نیټې بدلون",
+    "description": "نیټې د میلادي او جلالي ترمنځ بدلې کړئ.",
     "gregorian": "میلادي",
     "jalali": "لمریز (جلالي)",
     "hijri": "هجري",
     "convert": "بدلول",
     "result": "پایله",
-    "enter_date": "نیټه دننه کړئ"
+    "enter_date": "نیټه دننه کړئ",
+    "invalid": "ناسمه نیټه ده. د YYYY-MM-DD بڼه وکاروئ."
   },
   "unit_exchange": {
     "title": "د یونټ بدلون",
+    "description": "ارزښتونه د تړلو اندازو واحدونو ترمنځ بدل کړئ.",
     "amount": "مقدار",
     "from": "له یونټ",
     "to": "یونټ ته",
     "result": "پایله",
     "convert": "بدلول",
     "select_unit": "یونټ غوره کړئ",
+    "select_type": "ډول وټاکئ",
+    "type": "ډول",
     "incompatible": "یونټونه سازګار ندي",
     "no_units": "یونټونه شتون نلري"
   }
