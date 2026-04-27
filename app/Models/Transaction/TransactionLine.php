@@ -58,4 +58,5 @@ class TransactionLine extends Model
     {
         return $this->belongsTo(JournalClass::class, 'journal_class_id');
     }
+
 }

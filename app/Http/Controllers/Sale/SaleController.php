@@ -156,21 +156,19 @@ class SaleController extends Controller
                 // Assumption:
                 // item_discount is the TOTAL discount for this line, not per-unit discount.
                 $lineGrossTotal = $quantity * $unitPrice;
-
                 $itemModel = $itemModelsById[$item['item_id']] ?? null;
                 if (!$itemModel) {
                     throw (new \Illuminate\Database\Eloquent\ModelNotFoundException())->setModel(Item::class, [$item['item_id']]);
                 }
 
-                $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0); 
+                $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0);
                 $unitCost = $this->resolveUnitCost(
                     avgCost: $avgCost,
                     selectedUnitMeasureId: $item['unit_measure_id'],
                     itemUnitMeasureId: $itemModel->unit_measure_id,
                     unitValuesById: $unitValuesById,
-                ); 
+                );
                 $totalCost = $unitCost * $quantity;
-
                 $stockService->post([
                     'item_id'         => $item['item_id'],
                     'movement_type'   => StockMovementType::OUT->value,
@@ -195,7 +193,7 @@ class SaleController extends Controller
                     'ledger_id'  => null,
                     'debit'      => 0,
                     'credit'     => $lineGrossTotal,
-                    'remark'     => 'Sale item: ' . $itemModel->name,
+                    'remark'     => 'Sale income for item: ' . $itemModel->name . ' for sale number: ' . $sale->number,
                 ];
 
                 // Cost of goods sold
@@ -204,7 +202,7 @@ class SaleController extends Controller
                     'ledger_id'  => null,
                     'debit'      => $totalCost,
                     'credit'     => 0,
-                    'remark'     => 'COGS for sale item: ' . $itemModel->name,
+                    'remark'     => 'COGS for item: ' . $itemModel->name . ' for sale number: ' . $sale->number,
                 ];
 
                 // Inventory reduction
@@ -213,7 +211,7 @@ class SaleController extends Controller
                     'ledger_id'  => null,
                     'debit'      => 0,
                     'credit'     => $totalCost,
-                    'remark'     => 'Inventory out for sale item: ' . $itemModel->name,
+                    'remark'     => 'Inventory out for item: ' . $itemModel->name . ' for sale number: ' . $sale->number,
                 ];
             }
 
@@ -287,7 +285,8 @@ class SaleController extends Controller
                     'currency_id'    => $validated['currency_id'],
                     'rate'           => $validated['rate'],
                     'date'           => $validated['date'],
-                    'remark'         => 'Sale #' . $sale->number,
+                    'voucher_number' => $sale->number,
+                    'remark'         => 'Sale for sale number: ' . $sale->number,
                     'status'         => TransactionStatus::POSTED->value,
                     'reference_type' => Sale::class,
                     'reference_id'   => $sale->id,
@@ -318,7 +317,7 @@ class SaleController extends Controller
 
         return $redirect;
     }
-  
+
 
     public function show(Request $request, Sale $sale)
     {
@@ -472,7 +471,7 @@ class SaleController extends Controller
                     'ledger_id'  => null,
                     'debit'      => 0,
                     'credit'     => $lineGrossTotal,
-                    'remark'     => 'Sale item: ' . $itemModel->name,
+                    'remark'     => 'Sale income for item: ' . $itemModel->name . ' for sale number: ' . $sale->number,
                 ];
 
                 $lines[] = [
@@ -480,7 +479,7 @@ class SaleController extends Controller
                     'ledger_id'  => null,
                     'debit'      => $totalCost,
                     'credit'     => 0,
-                    'remark'     => 'COGS for sale item: ' . $itemModel->name,
+                    'remark'     => 'COGS for item: ' . $itemModel->name . ' for sale number: ' . $sale->number,
                 ];
 
                 $lines[] = [
@@ -488,7 +487,7 @@ class SaleController extends Controller
                     'ledger_id'  => null,
                     'debit'      => 0,
                     'credit'     => $totalCost,
-                    'remark'     => 'Inventory out for sale item: ' . $itemModel->name,
+                    'remark'     => 'Inventory out for item: ' . $itemModel->name . ' for sale number: ' . $sale->number,
                 ];
             }
 
@@ -561,7 +560,8 @@ class SaleController extends Controller
                     'currency_id'    => $validated['currency_id'],
                     'rate'           => $validated['rate'],
                     'date'           => $date,
-                    'remark'         => 'Sale #' . $sale->number,
+                    'voucher_number' => $sale->number,
+                    'remark'         => 'Sale for sale number: ' . $sale->number,
                     'status'         => TransactionStatus::POSTED->value,
                     'reference_type' => Sale::class,
                     'reference_id'   => $sale->id,
