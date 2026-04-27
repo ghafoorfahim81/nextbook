@@ -7,6 +7,7 @@ use App\Http\Requests\Account\AccountStoreRequest;
 use App\Http\Requests\Account\AccountUpdateRequest;
 use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\Account\AccountTypeResource;
+use App\Http\Resources\Account\AccountListResource;
 use App\Http\Resources\Administration\BranchResource;
 use App\Http\Resources\Administration\CurrencyResource;
 use App\Http\Resources\Ledger\LedgerOpeningResource;
@@ -49,7 +50,7 @@ class AccountController extends Controller
             ->paginate($perPage)
             ->withQueryString();
         return inertia('Accounts/Accounts/Index', [
-            'accounts' => AccountResource::collection($accounts),
+            'accounts' => AccountListResource::collection($accounts),
             'filterOptions' => [
                 'accountTypes' => AccountType::orderBy('name')->get(['id', 'name']),
                 'users' => User::query()
