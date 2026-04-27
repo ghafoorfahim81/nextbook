@@ -645,7 +645,7 @@ async function doUnitConvert() {
   <AppLayout>
     <Head :title="t('home.title')" />
 
-    <div class="p-4 md:p-6 space-y-6">
+    <div class="p-4 md:p-3 space-y-3">
       <h1 class="text-2xl font-semibold tracking-tight">{{ t('home.title') }}</h1>
 
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

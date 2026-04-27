@@ -67,6 +67,7 @@ const transactionTableRows = computed(() =>
 
 const transactionColumns = computed(() => [
     { key: 'date', label: t('general.date') },
+    { key: 'reference_number', label: t('general.reference_number') },
     { key: 'description', label: t('general.description') },
     { key: 'currency', label: t('admin.currency.currency') },
     { key: 'rate', label: t('general.rate'), type: 'money', align: 'right' },

@@ -28,7 +28,7 @@ class Transaction extends Model
      */
     protected $keyType = 'string';
     public $incrementing = false;
-    protected $fillable = [ 
+    protected $fillable = [
         'voucher_number',
         'status',
         'currency_id',
@@ -107,4 +107,5 @@ class Transaction extends Model
         return $this->belongsTo(\App\Models\Sale\Sale::class, 'reference_id')
             ->where('reference_type', 'income');
     }
+
 }

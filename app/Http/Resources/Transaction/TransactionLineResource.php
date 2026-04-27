@@ -22,6 +22,7 @@ class TransactionLineResource extends JsonResource
             'credit' => $this->credit,
             'remark' => $this->remark,
             'ledger_id' => $this->ledger_id,
+            'reference_number' => $this->transaction?->voucher_number,
             'ledger' => $this->whenLoaded('ledger', fn () => new LedgerResource($this->ledger)),
             'journal_class_id' => $this->journal_class_id,
             'journal_class' => $this->whenLoaded('journalClass', fn () => new JournalClassResource($this->journalClass)),
