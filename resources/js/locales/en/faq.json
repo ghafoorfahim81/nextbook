@@ -1,0 +1,48 @@
+{
+  "title": "Frequently Asked Questions",
+  "description": "Quick answers to common questions",
+  "search_placeholder": "Search FAQs...",
+  "no_results": "No FAQs found",
+  "items": [
+    {
+      "id": "1",
+      "question": "What is a Journal Entry?",
+      "answer": "A journal entry is a record of a business transaction in your accounting system. It includes debits and credits that must balance, ensuring accurate financial records. Each entry affects at least two accounts."
+    },
+    {
+      "id": "2",
+      "question": "How to add a Landed Cost?",
+      "answer": "To add a landed cost: 1) Go to Purchases, 2) Select the purchase order, 3) Click 'Add Landed Cost', 4) Enter additional costs like shipping, customs, or insurance, 5) Allocate costs to items proportionally or manually."
+    },
+    {
+      "id": "3",
+      "question": "How to create a new Sale?",
+      "answer": "Navigate to Sales > Create New Sale. Select the customer, add items with quantities and prices, apply any discounts, choose payment terms, and save. You can also print or email the invoice directly."
+    },
+    {
+      "id": "4",
+      "question": "What is Chart of Accounts?",
+      "answer": "The Chart of Accounts is a complete listing of all accounts in your general ledger. It organizes accounts into categories like Assets, Liabilities, Equity, Revenue, and Expenses for better financial reporting."
+    },
+    {
+      "id": "5",
+      "question": "How to manage Inventory?",
+      "answer": "Go to Items to view all inventory. You can add new items, adjust stock levels, set reorder points, track serial numbers, and view stock movement history. Use Item Transfers to move stock between branches."
+    },
+    {
+      "id": "6",
+      "question": "How to record a Payment?",
+      "answer": "Navigate to Payments > Create Payment. Select the vendor or customer, choose the invoice to pay, enter the payment amount and method, and save. The system automatically updates the invoice status."
+    },
+    {
+      "id": "7",
+      "question": "What are Financial Periods?",
+      "answer": "Financial periods are time frames (usually monthly or yearly) used to organize and report financial data. You can open, close, or lock periods to control when transactions can be posted."
+    },
+    {
+      "id": "8",
+      "question": "How to generate Reports?",
+      "answer": "Go to Reports section and select the report type you need (Balance Sheet, Income Statement, etc.). Choose the date range, filters, and format. You can export reports to PDF or Excel."
+    }
+  ]
+}
