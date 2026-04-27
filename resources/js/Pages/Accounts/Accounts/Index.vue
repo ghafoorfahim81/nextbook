@@ -14,13 +14,13 @@ const props = defineProps({
 });
 const { t } = useI18n();
 const columns = computed(() => ([
+    { key: 'number', label: t('general.number') },
     { key: 'english_name', label: t('general.name') },
     { key: 'local_name', label: t('account.local_name') },
-    { key: 'number', label: t('general.number') },
-    { key: 'remark', label: t('general.remark') },
+    { key: 'balance', label: t('general.balance') },
+    // { key: 'remark', label: t('general.remark') },
     { key: 'parent.name', label: t('account.parent') },
     { key: 'account_type.name', label: t('account.account_type') },
-    { key: 'balance', label: t('general.balance') },
     { key: 'actions', label: t('general.actions') },
 ]));
 

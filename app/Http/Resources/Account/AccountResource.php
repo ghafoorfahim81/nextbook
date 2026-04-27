@@ -22,8 +22,7 @@ class AccountResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $displayName,
-            'english_name' => $this->name,
-            'english_name' => $this->name,
+            'english_name' => $this->name, 
             'local_name' => $this->local_name,
             'number' => $this->number,
             'account_type_id' => $this->account_type_id,
@@ -38,12 +37,14 @@ class AccountResource extends JsonResource
             'slug' => $this->slug,
             'is_active' => $this->is_active,
             'is_main' => $this->is_main,
-            'parent'    => new AccountResource($this->whenLoaded('parent')),
-            'children' => AccountResource::collection($this->whenLoaded('children')),
+            'parent'    => $this->whenLoaded('parent', fn() => new AccountResource($this->parent)),
+            'children' => $this->whenLoaded('children', fn() => AccountResource::collection($this->children)),
             'branch_id' => $this->branch_id,
             'branch'    => $this->branch,
             'remark' => $this->remark,
-            'transactions' => TransactionLineResource::collection($this->transactionLines),  // Return the transaction lines
+            'transactions' => $this->whenLoaded('transactionLines', function () {
+                return TransactionLineResource::collection($this->transactionLines);
+            }),  // Return the transaction lines
             'opening' => $this->relationLoaded('opening') && $this->opening
                 ? new LedgerOpeningResource($this->opening)
                 : null,
