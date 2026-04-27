@@ -107,5 +107,33 @@
     "type": "Type",
     "incompatible": "Units are not compatible",
     "no_units": "No units available"
+  },
+  "calculator": {
+    "title": "Calculator",
+    "description": "Quick calculations for transactions"
+  },
+  "notes": {
+    "title": "Notes & Reminders",
+    "description": "Personal notes for the day",
+    "add_placeholder": "Add a note or reminder...",
+    "no_notes": "No notes yet. Add your first note above."
+  },
+  "system_status": {
+    "title": "System Status",
+    "description": "Database and system health",
+    "backup": "Database Backup",
+    "backup_success": "Success",
+    "backup_pending": "Pending",
+    "disk_usage": "Disk Usage",
+    "updates": "System Updates",
+    "updates_available": "{count} update available | {count} updates available"
+  },
+  "favorites": {
+    "title": "Favorite Shortcuts",
+    "description": "Quick access to your favorites",
+    "add_label": "Label (e.g., Dashboard)",
+    "add_url": "URL (e.g., /dashboard)",
+    "add_button": "Add Favorite",
+    "no_favorites": "No favorites yet. Add your first favorite above."
   }
 }

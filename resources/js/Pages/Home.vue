@@ -15,6 +15,9 @@ import {
   ArrowLeftRight, Loader2, Search, Sparkles,
   CircleDollarSign, Scale, CloudSun, CalendarDays,
   MapPin, ArrowUpRight, NotebookText, ArrowRight,
+  Calculator, StickyNote, Database, Star, Trash2,
+  Plus, X, Check, AlertCircle, HardDrive, HelpCircle,
+  ChevronDown, ChevronUp,
 } from 'lucide-vue-next'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -473,14 +476,14 @@ function buildJalaliCalendar(jy: number, jm: number): CalCell[] {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const quickLinks = computed(() => [
-  { label: t('home.quick_links.dashboard'),         url: '/dashboard',         icon: LayoutDashboard },
-  { label: t('home.quick_links.chart_of_accounts'), url: '/chart-of-accounts', icon: BookOpen },
-  { label: t('home.quick_links.journal_entry'),     url: '/journal-entries',   icon: FileText },
-  { label: t('home.quick_links.items'),             url: '/items',             icon: Package },
-  { label: t('home.quick_links.sales'),             url: '/sales',             icon: ShoppingCart },
-  { label: t('home.quick_links.purchases'),         url: '/purchases',         icon: ShoppingBag },
-  { label: t('home.quick_links.receipts'),          url: '/receipts',          icon: Receipt },
-  { label: t('home.quick_links.payments'),          url: '/payments',          icon: CreditCard },
+  { label: t('home.quick_links.dashboard'),         url: '/dashboard',         icon: LayoutDashboard, shortcut: 'Alt + D' },
+  { label: t('home.quick_links.chart_of_accounts'), url: '/chart-of-accounts', icon: BookOpen, shortcut: 'Alt + A' },
+  { label: t('home.quick_links.journal_entry'),     url: '/journal-entries',   icon: FileText, shortcut: 'Alt + J' },
+  { label: t('home.quick_links.items'),             url: '/items',             icon: Package, shortcut: 'Alt + I' },
+  { label: t('home.quick_links.sales'),             url: '/sales',             icon: ShoppingCart, shortcut: 'Alt + S' },
+  { label: t('home.quick_links.purchases'),         url: '/purchases',         icon: ShoppingBag, shortcut: 'Alt + P' },
+  { label: t('home.quick_links.receipts'),          url: '/receipts',          icon: Receipt, shortcut: 'Alt + R' },
+  { label: t('home.quick_links.payments'),          url: '/payments',          icon: CreditCard, shortcut: 'Alt + M' },
 ])
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -714,6 +717,224 @@ async function doUnitConvert() {
     unitError.value = e?.response?.data?.error || 'Error'
   } finally { unitLoading.value = false }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── 9. CALCULATOR WIDGET ──────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const calcDisplay = ref('0')
+const calcPrevValue = ref<number | null>(null)
+const calcOperation = ref<string | null>(null)
+const calcNewNumber = ref(true)
+
+function calcAppendNumber(num: string) {
+  if (calcNewNumber.value) {
+    calcDisplay.value = num
+    calcNewNumber.value = false
+  } else {
+    calcDisplay.value = calcDisplay.value === '0' ? num : calcDisplay.value + num
+  }
+}
+
+function calcAppendDecimal() {
+  if (calcNewNumber.value) {
+    calcDisplay.value = '0.'
+    calcNewNumber.value = false
+  } else if (!calcDisplay.value.includes('.')) {
+    calcDisplay.value += '.'
+  }
+}
+
+function calcClear() {
+  calcDisplay.value = '0'
+  calcPrevValue.value = null
+  calcOperation.value = null
+  calcNewNumber.value = true
+}
+
+function calcSetOperation(op: string) {
+  if (calcPrevValue.value !== null && calcOperation.value && !calcNewNumber.value) {
+    calcEquals()
+  }
+  calcPrevValue.value = parseFloat(calcDisplay.value)
+  calcOperation.value = op
+  calcNewNumber.value = true
+}
+
+function calcEquals() {
+  if (calcPrevValue.value === null || calcOperation.value === null) return
+  const current = parseFloat(calcDisplay.value)
+  let result = 0
+  switch (calcOperation.value) {
+    case '+': result = calcPrevValue.value + current; break
+    case '-': result = calcPrevValue.value - current; break
+    case '*': result = calcPrevValue.value * current; break
+    case '/': result = current !== 0 ? calcPrevValue.value / current : 0; break
+  }
+  calcDisplay.value = String(result)
+  calcPrevValue.value = null
+  calcOperation.value = null
+  calcNewNumber.value = true
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── 10. NOTEPAD / STICKY NOTES ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface Note {
+  id: string
+  text: string
+  createdAt: Date
+}
+
+const notes = ref<Note[]>([])
+const newNoteText = ref('')
+
+// Load notes from localStorage
+onMounted(() => {
+  const stored = localStorage.getItem('home_notes')
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored)
+      notes.value = parsed.map((n: any) => ({ ...n, createdAt: new Date(n.createdAt) }))
+    } catch (e) {
+      notes.value = []
+    }
+  }
+})
+
+function saveNotes() {
+  localStorage.setItem('home_notes', JSON.stringify(notes.value))
+}
+
+function addNote() {
+  if (!newNoteText.value.trim()) return
+  notes.value.unshift({
+    id: Date.now().toString(),
+    text: newNoteText.value.trim(),
+    createdAt: new Date(),
+  })
+  newNoteText.value = ''
+  saveNotes()
+}
+
+function deleteNote(id: string) {
+  notes.value = notes.value.filter(n => n.id !== id)
+  saveNotes()
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── 11. SYSTEM STATUS ─────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const systemStatus = ref({
+  lastBackup: '2026-04-26 14:30',
+  backupStatus: 'success',
+  diskUsage: 45,
+  updatesAvailable: 2,
+})
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── 12. SHORTCUTS TO FAVORITES ───────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface Favorite {
+  id: string
+  label: string
+  url: string
+  icon: string
+}
+
+const favorites = ref<Favorite[]>([
+  { id: '1', label: 'Dashboard', url: '/dashboard', icon: 'LayoutDashboard' },
+  { id: '2', label: 'Sales', url: '/sales', icon: 'ShoppingCart' },
+])
+
+const showAddFavorite = ref(false)
+const newFavLabel = ref('')
+const newFavUrl = ref('')
+
+// Load favorites from localStorage
+onMounted(() => {
+  const stored = localStorage.getItem('home_favorites')
+  if (stored) {
+    try {
+      favorites.value = JSON.parse(stored)
+    } catch (e) {
+      // Keep defaults
+    }
+  }
+})
+
+function saveFavorites() {
+  localStorage.setItem('home_favorites', JSON.stringify(favorites.value))
+}
+
+function addFavorite() {
+  if (!newFavLabel.value.trim() || !newFavUrl.value.trim()) return
+  favorites.value.push({
+    id: Date.now().toString(),
+    label: newFavLabel.value.trim(),
+    url: newFavUrl.value.trim(),
+    icon: 'Star',
+  })
+  newFavLabel.value = ''
+  newFavUrl.value = ''
+  showAddFavorite.value = false
+  saveFavorites()
+}
+
+function removeFavorite(id: string) {
+  favorites.value = favorites.value.filter(f => f.id !== id)
+  saveFavorites()
+}
+
+const iconMap: Record<string, any> = {
+  LayoutDashboard, ShoppingCart, ShoppingBag, Package, FileText, BookOpen, Receipt, CreditCard, Star,
+}
+
+function getIcon(iconName: string) {
+  return iconMap[iconName] || Star
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── 13. FAQ WIDGET ────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface FAQItem {
+  id: string
+  question: string
+  answer: string
+  expanded?: boolean
+}
+
+const faqItems = ref<FAQItem[]>([])
+const faqSearch = ref('')
+
+// Load FAQ from locale files
+onMounted(async () => {
+  try {
+    const faqModule = await import(`./locales/${locale.value}/faq.json`)
+    faqItems.value = faqModule.default.items.map((item: FAQItem) => ({ ...item, expanded: false }))
+  } catch (e) {
+    console.error('Failed to load FAQ:', e)
+    faqItems.value = []
+  }
+})
+
+const filteredFAQs = computed(() => {
+  if (!faqSearch.value.trim()) return faqItems.value
+  const search = faqSearch.value.toLowerCase()
+  return faqItems.value.filter(item =>
+    item.question.toLowerCase().includes(search) ||
+    item.answer.toLowerCase().includes(search)
+  )
+})
+
+function toggleFAQ(id: string) {
+  const item = faqItems.value.find(f => f.id === id)
+  if (item) item.expanded = !item.expanded
+}
 </script>
 
 <template>
@@ -853,7 +1074,8 @@ async function doUnitConvert() {
         </div>
       </section>
 
-      <section class="grid gap-4 xl:grid-cols-[1.35fr_.95fr]">
+      <section class="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+        <!-- Column 1: Quick Links, Currency & Unit Exchange, Weather -->
         <div class="space-y-4">
           <Card class="overflow-hidden rounded-3xl border border-border/80 bg-card/95 shadow-sm">
             <CardHeader class="border-b border-border/60 pb-4">
@@ -867,30 +1089,31 @@ async function doUnitConvert() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent class="pt-6">
-              <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <CardContent class="pt-3">
+              <div class="grid gap-2 sm:grid-cols-2">
                 <Link
                   v-for="link in quickLinks"
                   :key="link.url"
                   :href="link.url"
-                  class="group rounded-2xl border border-border/70 bg-background/70 p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted/60"
+                  class="group rounded-2xl border border-border/70 bg-background/70 p-2 transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted/60"
                 >
                   <div class="flex items-start justify-between gap-3">
-                    <div class="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                      <component :is="link.icon" class="size-5" />
+                    <div class="flex size-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                      <component :is="link.icon" class="size-4" />
                     </div>
-                    <ArrowUpRight class="size-4 text-muted-foreground transition group-hover:text-primary" />
+                    <ArrowUpRight class="size- text-muted-foreground transition group-hover:text-primary" />
                   </div>
-                  <div class="mt-4">
+                  <div class="mt-">
                     <p class="text-sm font-medium text-foreground">{{ link.label }}</p>
-                    <p class="mt-1 text-xs text-muted-foreground">{{ t('home.quick_links.open_module') }}</p>
+                    <!-- <p class="mt-1 text-xs text-muted-foreground">{{ t('home.quick_links.open_module') }}</p> -->
+                    <p class="mt-1 text-xs text-muted-foreground"><Kbd>{{ link.shortcut }}</Kbd></p>
                   </div>
                 </Link>
               </div>
             </CardContent>
           </Card>
 
-          <div class="grid gap-4 lg:grid-cols-2">
+          <div class="grid gap-4">
             <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
               <CardHeader class="pb-4">
                 <div class="flex items-start gap-3">
@@ -1126,6 +1349,7 @@ async function doUnitConvert() {
           </Card>
         </div>
 
+        <!-- Column 2: Calendar, Currency Rates, Calculator, Notes -->
         <div class="space-y-4">
           <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
             <CardHeader class="pb-4">
@@ -1234,7 +1458,7 @@ async function doUnitConvert() {
               </div>
             </CardContent>
           </Card>
-
+<!-- 
           <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
             <CardHeader class="pb-4">
               <div class="flex items-start gap-3">
@@ -1280,6 +1504,438 @@ async function doUnitConvert() {
                 {{ dateConvResult }}
               </div>
               <p v-if="dateConvError" class="text-center text-xs text-destructive">{{ dateConvError }}</p>
+            </CardContent>
+          </Card> -->
+
+          <!-- Calculator Widget -->
+          <!-- <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+            <CardHeader class="pb-4">
+              <div class="flex items-start gap-3">
+                <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Calculator class="size-5" />
+                </div>
+                <div class="space-y-1">
+                  <CardTitle class="text-base">{{ t('home.calculator.title') }}</CardTitle>
+                  <CardDescription>{{ t('home.calculator.description') }}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent class="space-y-3">
+              <div class="rounded-2xl bg-muted/50 p-4 text-end font-mono text-2xl font-semibold">
+                {{ calcDisplay }}
+              </div>
+              <div class="grid grid-cols-4 gap-2">
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('7')">7</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('8')">8</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('9')">9</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcSetOperation('/')">/</Button>
+                
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('4')">4</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('5')">5</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('6')">6</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcSetOperation('*')">×</Button>
+                
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('1')">1</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('2')">2</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('3')">3</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcSetOperation('-')">-</Button>
+                
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('0')">0</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendDecimal()">.</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcClear()">C</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcSetOperation('+')">+</Button>
+              </div>
+              <Button class="h-12 w-full text-base" @click="calcEquals()">=</Button>
+            </CardContent>
+          </Card> -->
+
+          <!-- Notepad / Sticky Notes Widget -->
+          <!-- <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+            <CardHeader class="pb-4">
+              <div class="flex items-start gap-3">
+                <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <StickyNote class="size-5" />
+                </div>
+                <div class="space-y-1">
+                  <CardTitle class="text-base">{{ t('home.notes.title') }}</CardTitle>
+                  <CardDescription>{{ t('home.notes.description') }}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent class="space-y-3">
+              <div class="flex gap-2">
+                <Input
+                  v-model="newNoteText"
+                  :placeholder="t('home.notes.add_placeholder')"
+                  class="h-10 text-sm"
+                  @keyup.enter="addNote"
+                />
+                <Button size="icon" class="h-10 w-10 shrink-0" @click="addNote">
+                  <Plus class="size-4" />
+                </Button>
+              </div>
+              
+              <div v-if="notes.length === 0" class="py-8 text-center text-sm text-muted-foreground">
+                {{ t('home.notes.no_notes') }}
+              </div>
+              
+              <div v-else class="space-y-2 max-h-[300px] overflow-y-auto">
+                <div
+                  v-for="note in notes"
+                  :key="note.id"
+                  class="group rounded-2xl border border-border/70 bg-muted/30 p-3 transition hover:bg-muted/50"
+                >
+                  <div class="flex items-start justify-between gap-2">
+                    <p class="flex-1 text-sm">{{ note.text }}</p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      class="h-6 w-6 shrink-0 opacity-0 transition group-hover:opacity-100"
+                      @click="deleteNote(note.id)"
+                    >
+                      <Trash2 class="size-3.5" />
+                    </Button>
+                  </div>
+                  <p class="mt-1 text-[10px] text-muted-foreground">
+                    {{ note.createdAt.toLocaleString() }}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>  -->
+
+          <!-- Shortcuts to Favorites Widget -->
+          <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+            <CardHeader class="pb-4">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex items-start gap-3">
+                  <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <Star class="size-5" />
+                  </div>
+                  <div class="space-y-1">
+                    <CardTitle class="text-base">{{ t('home.favorites.title') }}</CardTitle>
+                    <CardDescription>{{ t('home.favorites.description') }}</CardDescription>
+                  </div>
+                </div>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  class="h-8 w-8 shrink-0 rounded-xl"
+                  @click="showAddFavorite = !showAddFavorite"
+                >
+                  <Plus v-if="!showAddFavorite" class="size-4" />
+                  <X v-else class="size-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent class="space-y-3">
+              <div v-if="showAddFavorite" class="space-y-2 rounded-2xl border border-border/70 bg-muted/30 p-3">
+                <Input
+                  v-model="newFavLabel"
+                  :placeholder="t('home.favorites.add_label')"
+                  class="h-9 text-sm"
+                />
+                <Input
+                  v-model="newFavUrl"
+                  :placeholder="t('home.favorites.add_url')"
+                  class="h-9 text-sm"
+                />
+                <Button size="sm" class="h-9 w-full" @click="addFavorite">
+                  <Check class="me-1 size-3.5" />
+                  {{ t('home.favorites.add_button') }}
+                </Button>
+              </div>
+
+              <div v-if="favorites.length === 0" class="py-8 text-center text-sm text-muted-foreground">
+                {{ t('home.favorites.no_favorites') }}
+              </div>
+
+              <div v-else class="grid gap-2 sm:grid-cols-2">
+                <Link
+                  v-for="fav in favorites"
+                  :key="fav.id"
+                  :href="fav.url"
+                  class="group relative rounded-2xl border border-border/70 bg-background/70 p-3 transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted/60"
+                >
+                  <div class="flex items-center gap-3">
+                    <div class="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <component :is="getIcon(fav.icon)" class="size-4" />
+                    </div>
+                    <p class="flex-1 text-sm font-medium">{{ fav.label }}</p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      class="h-6 w-6 shrink-0 opacity-0 transition group-hover:opacity-100"
+                      @click.prevent="removeFavorite(fav.id)"
+                    >
+                      <X class="size-3.5" />
+                    </Button>
+                  </div>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <!-- Column 3: Date Conversion, Calculator, Notes, System Status, FAQ -->
+        <div class="space-y-4">
+          <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+            <CardHeader class="pb-4">
+              <div class="flex items-start gap-3">
+                <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <NotebookText class="size-5" />
+                </div>
+                <div class="space-y-1">
+                  <CardTitle class="text-base">{{ t('home.date_conversion.title') }}</CardTitle>
+                  <CardDescription>{{ t('home.date_conversion.description') }}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent class="space-y-4">
+              <div class="flex overflow-hidden rounded-xl border border-border text-xs">
+                <button
+                  v-for="option in dateConversionOptions"
+                  :key="option.key"
+                  class="flex flex-1 items-center justify-center gap-2 py-2 transition-colors"
+                  :class="dateConvMode === option.key ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
+                  @click="dateConvMode = option.key as 'to_jalali' | 'to_gregorian'; dateConvResult = ''; dateConvError = ''"
+                >
+                  <ArrowRight v-if="isRTL" class="size-3.5 shrink-0" />
+                  <span>{{ option.from }}</span>
+                  <ArrowRight v-if="!isRTL" class="size-3.5 shrink-0" />
+                  <span>{{ option.to }}</span>
+                </button>
+              </div>
+              <div>
+                <label class="mb-1 block text-xs text-muted-foreground">
+                  {{ dateConvMode === 'to_jalali' ? 'YYYY-MM-DD (Gregorian)' : 'YYYY/MM/DD (Jalali)' }}
+                </label>
+                <Input
+                  v-model="dateConvInput"
+                  :placeholder="dateConvMode === 'to_jalali' ? '2024-03-20' : '1402/12/29'"
+                  class="h-10 text-sm font-mono"
+                  @keyup.enter="convertDate"
+                />
+              </div>
+              <Button class="h-10 w-full text-sm" @click="convertDate">
+                {{ t('home.date_conversion.convert') }}
+              </Button>
+              <div v-if="dateConvResult" class="rounded-2xl bg-muted px-3 py-3 text-center font-mono text-sm font-semibold">
+                {{ dateConvResult }}
+              </div>
+              <p v-if="dateConvError" class="text-center text-xs text-destructive">{{ dateConvError }}</p>
+            </CardContent>
+          </Card>
+
+          <!-- Calculator Widget -->
+          <!-- <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+            <CardHeader class="pb-4">
+              <div class="flex items-start gap-3">
+                <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Calculator class="size-5" />
+                </div>
+                <div class="space-y-1">
+                  <CardTitle class="text-base">{{ t('home.calculator.title') }}</CardTitle>
+                  <CardDescription>{{ t('home.calculator.description') }}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent class="space-y-3">
+              <div class="rounded-2xl bg-muted/50 p-4 text-end font-mono text-2xl font-semibold">
+                {{ calcDisplay }}
+              </div>
+              <div class="grid grid-cols-4 gap-2">
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('7')">7</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('8')">8</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('9')">9</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcSetOperation('/')">/</Button>
+                
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('4')">4</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('5')">5</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('6')">6</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcSetOperation('*')">×</Button>
+                
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('1')">1</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('2')">2</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('3')">3</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcSetOperation('-')">-</Button>
+                
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendNumber('0')">0</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcAppendDecimal()">.</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcClear()">C</Button>
+                <Button variant="outline" class="h-12 text-base" @click="calcSetOperation('+')">+</Button>
+              </div>
+              <Button class="h-12 w-full text-base" @click="calcEquals()">=</Button>
+            </CardContent>
+          </Card> -->
+
+          <!-- Notepad / Sticky Notes Widget -->
+          <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+            <CardHeader class="pb-4">
+              <div class="flex items-start gap-3">
+                <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <StickyNote class="size-5" />
+                </div>
+                <div class="space-y-1">
+                  <CardTitle class="text-base">{{ t('home.notes.title') }}</CardTitle>
+                  <CardDescription>{{ t('home.notes.description') }}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent class="space-y-3">
+              <div class="flex gap-2">
+                <Input
+                  v-model="newNoteText"
+                  :placeholder="t('home.notes.add_placeholder')"
+                  class="h-10 text-sm"
+                  @keyup.enter="addNote"
+                />
+                <Button size="icon" class="h-10 w-10 shrink-0" @click="addNote">
+                  <Plus class="size-4" />
+                </Button>
+              </div>
+              
+              <div v-if="notes.length === 0" class="py-8 text-center text-sm text-muted-foreground">
+                {{ t('home.notes.no_notes') }}
+              </div>
+              
+              <div v-else class="space-y-2 max-h-[300px] overflow-y-auto">
+                <div
+                  v-for="note in notes"
+                  :key="note.id"
+                  class="group rounded-2xl border border-border/70 bg-muted/30 p-3 transition hover:bg-muted/50"
+                >
+                  <div class="flex items-start justify-between gap-2">
+                    <p class="flex-1 text-sm">{{ note.text }}</p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      class="h-6 w-6 shrink-0 opacity-0 transition group-hover:opacity-100"
+                      @click="deleteNote(note.id)"
+                    >
+                      <Trash2 class="size-3.5" />
+                    </Button>
+                  </div>
+                  <p class="mt-1 text-[10px] text-muted-foreground">
+                    {{ note.createdAt.toLocaleString() }}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <!-- System Status Widget -->
+          <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+            <CardHeader class="pb-4">
+              <div class="flex items-start gap-3">
+                <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Database class="size-5" />
+                </div>
+                <div class="space-y-1">
+                  <CardTitle class="text-base">{{ t('home.system_status.title') }}</CardTitle>
+                  <CardDescription>{{ t('home.system_status.description') }}</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent class="space-y-3">
+              <div class="rounded-2xl border border-border/70 bg-muted/30 p-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <div class="flex size-8 items-center justify-center rounded-full bg-green-500/10">
+                      <Check class="size-4 text-green-600 dark:text-green-400" />
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium">{{ t('home.system_status.backup') }}</p>
+                      <p class="text-xs text-muted-foreground">{{ systemStatus.lastBackup }}</p>
+                    </div>
+                  </div>
+                  <Badge variant="secondary" class="rounded-full">
+                    {{ systemStatus.backupStatus === 'success' ? t('home.system_status.backup_success') : t('home.system_status.backup_pending') }}
+                  </Badge>
+                </div>
+              </div>
+
+              <div class="rounded-2xl border border-border/70 bg-muted/30 p-3">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center gap-2">
+                    <HardDrive class="size-4 text-muted-foreground" />
+                    <p class="text-sm font-medium">{{ t('home.system_status.disk_usage') }}</p>
+                  </div>
+                  <span class="text-sm font-semibold">{{ systemStatus.diskUsage }}%</span>
+                </div>
+                <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    class="h-full rounded-full transition-all"
+                    :class="systemStatus.diskUsage > 80 ? 'bg-destructive' : systemStatus.diskUsage > 60 ? 'bg-yellow-500' : 'bg-primary'"
+                    :style="{ width: `${systemStatus.diskUsage}%` }"
+                  />
+                </div>
+              </div>
+
+              <div class="rounded-2xl border border-border/70 bg-muted/30 p-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <div class="flex size-8 items-center justify-center rounded-full bg-blue-500/10">
+                      <AlertCircle class="size-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium">{{ t('home.system_status.updates') }}</p>
+                      <p class="text-xs text-muted-foreground">
+                        {{ systemStatus.updatesAvailable }} update{{ systemStatus.updatesAvailable !== 1 ? 's' : '' }} available
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <!-- FAQ Widget -->
+          <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
+            <CardHeader class="pb-4">
+              <div class="flex items-start gap-3">
+                <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <HelpCircle class="size-5" />
+                </div>
+                <div class="space-y-1">
+                  <CardTitle class="text-base">Frequently Asked Questions</CardTitle>
+                  <CardDescription>Quick answers to common questions</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent class="space-y-3">
+              <div class="relative">
+                <Search class="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  v-model="faqSearch"
+                  placeholder="Search FAQs..."
+                  class="h-10 ps-9 text-sm"
+                />
+              </div>
+
+              <div v-if="filteredFAQs.length === 0" class="py-8 text-center text-sm text-muted-foreground">
+                No FAQs found
+              </div>
+
+              <div v-else class="space-y-2 max-h-[400px] overflow-y-auto">
+                <div
+                  v-for="faq in filteredFAQs"
+                  :key="faq.id"
+                  class="rounded-2xl border border-border/70 bg-muted/30 transition hover:bg-muted/50"
+                >
+                  <button
+                    class="flex w-full items-start justify-between gap-2 p-3 text-start"
+                    @click="toggleFAQ(faq.id)"
+                  >
+                    <p class="flex-1 text-sm font-medium">{{ faq.question }}</p>
+                    <ChevronDown v-if="!faq.expanded" class="size-4 shrink-0 text-muted-foreground" />
+                    <ChevronUp v-else class="size-4 shrink-0 text-muted-foreground" />
+                  </button>
+                  <div v-if="faq.expanded" class="border-t border-border/50 px-3 pb-3 pt-2">
+                    <p class="text-xs text-muted-foreground leading-relaxed">{{ faq.answer }}</p>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
