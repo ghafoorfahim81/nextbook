@@ -6,22 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Inventory\ItemStoreRequest;
 use App\Http\Requests\Inventory\ItemUpdateRequest;
 use App\Http\Resources\Inventory\ItemResource;
-use App\Models\Inventory\Item;
-use App\Models\Inventory\Stock;
-use App\Models\Inventory\StockOpening;
-use App\Models\Inventory\StockOut;
+use App\Http\Resources\Inventory\ItemListResource;
+use App\Models\Inventory\Item; 
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Illuminate\Http\Request; 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Cache;
-use App\Http\Resources\Inventory\StockResource;
-use App\Http\Resources\Inventory\StockOutResource;
-use App\Models\Account\Account;
-use App\Models\Inventory\ItemOpeningTransaction;
+use Illuminate\Support\Facades\Cache; 
+use App\Models\Account\Account; 
 use App\Enums\ItemType;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Administration\Category;
@@ -58,7 +52,7 @@ class ItemController extends Controller
             ->paginate($perPage)
             ->withQueryString();
         return inertia('Inventories/Items/Index', [
-            'items' => ItemResource::collection($items),
+            'items' => ItemListResource::collection($items),
             'filterOptions' => [
                 'itemTypes' => collect(ItemType::cases())->map(fn ($c) => [
                     'id' => $c->value,
