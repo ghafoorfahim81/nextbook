@@ -107,17 +107,17 @@ class PurchaseController extends Controller
                 $unitPrice = (float) $item['unit_price'];
                 $itemDiscount = isset($item['discount']) ? (float) $item['discount'] : 0;
                 $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
-                $avgCost = (float) ($itemModel->stockBalances()->avg('average_cost') ?? 0);
+                
                 if($item['unit_measure_id'] != $itemModel->unit_measure_id) {
                     $selectedUnit = (float) \App\Models\Administration\UnitMeasure::query()->findOrFail($item['unit_measure_id'])->unit;
                     $itemUnit = (float) $itemModel->unitMeasure->unit;
                     // $qty = ($quantity * $selectedUnit) / $itemUnit;
-                    $unitCost = ($selectedUnit * $avgCost) / $itemUnit;
+                    $unitCost = ($selectedUnit * $unitPrice) / $itemUnit;
                     $totalCost = $unitCost * $quantity;
                 }
                 else{
-                    $unitCost = $avgCost;
-                    $totalCost = $avgCost * $quantity;
+                    $unitCost = $unitPrice;
+                    $totalCost = $unitPrice * $quantity;
                 } 
 
                 $stock = $stockService->post([
@@ -205,7 +205,7 @@ class PurchaseController extends Controller
                         'remark' => 'Payment for purchase #' . $purchase->number,
                     ];
                 }
-            }
+            } 
 
             $transactionService->post(
                 header: [
