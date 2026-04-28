@@ -140,7 +140,7 @@ const customerMovementColumns = computed(() => [
                                 <div class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                                     {{  (statement.total_credit) }}
                                 </div>
-                            </div> 1486315
+                            </div> 
                             <div class="border border-border rounded-lg px-3 py-2 text-center bg-background">
                                 <div class="text-xs text-muted-foreground">{{ t('general.debit') }}</div>
                                 <div class="text-sm font-semibold text-blue-600 dark:text-blue-400">
