@@ -138,13 +138,13 @@ const customerMovementColumns = computed(() => [
                             <div class="border border-border rounded-lg px-3 py-2 text-center bg-background">
                                 <div class="text-xs text-muted-foreground">{{ t('general.credit') }}</div>
                                 <div class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                                    {{ formatAmount(statement.total_credit) }}
+                                    {{  (statement.total_credit) }}
                                 </div>
-                            </div>
+                            </div> 1486315
                             <div class="border border-border rounded-lg px-3 py-2 text-center bg-background">
                                 <div class="text-xs text-muted-foreground">{{ t('general.debit') }}</div>
                                 <div class="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                                    {{ formatAmount(statement.total_debit) }}
+                                    {{  (statement.total_debit) }}
                                 </div>
                             </div>
                             <div class="border border-border rounded-lg px-3 py-2 text-center bg-background">
@@ -153,7 +153,7 @@ const customerMovementColumns = computed(() => [
                                     :class="statement.balance_nature === 'cr'
                                         ? 'text-emerald-600 dark:text-emerald-400'
                                         : 'text-blue-600 dark:text-blue-400'">
-                                    {{ formatAmount(statement.balance) }}{{ statement.balance_nature }}
+                                    {{  (statement.balance) }} 
                                 </div>
                             </div>
                         </div>
