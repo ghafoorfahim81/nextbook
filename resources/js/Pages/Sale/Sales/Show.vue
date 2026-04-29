@@ -204,6 +204,7 @@ const currencySymbol = computed(() => saleData.value.transaction?.currency?.symb
                             <div><div class="text-xs text-muted-foreground">{{ t('general.discount') }}</div><div class="font-medium text-foreground">{{ formatLineValue(item.discount) }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.free') }}</div><div class="font-medium text-foreground">{{ formatLineValue(item.free) }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.tax') }}</div><div class="font-medium text-foreground">{{ formatLineValue(item.tax) }}</div></div>
+                            
                             <div>
                                 <div class="text-xs text-muted-foreground">{{ t('general.line_profit') }}</div>
                                 <div class="font-medium" :class="Number(item.line_profit || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
@@ -249,6 +250,7 @@ const currencySymbol = computed(() => saleData.value.transaction?.currency?.symb
                                 <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.free') }}</th>
                                 <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.tax') }}</th>
                                 <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.total') }}</th>
+                                <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.unit_cost') }}</th>
                                 <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.line_profit') }}</th>
                             </tr>
                         </thead>
@@ -269,6 +271,7 @@ const currencySymbol = computed(() => saleData.value.transaction?.currency?.symb
                                 <td class="px-3 py-3 text-right text-foreground">{{ item.free || 0 }}</td>
                                 <td class="px-3 py-3 text-right text-foreground">{{ item.tax || 0 }}</td>
                                 <td class="px-3 py-3 text-right font-semibold text-foreground">{{ item.subtotal ? Number(item.subtotal).toFixed(2) : '0.00' }}</td>
+                                <td class="px-3 py-3 text-right font-semibold text-foreground">{{ item.unit_cost ? Number(item.unit_cost).toFixed(2) : '0.00' }}</td>
                                 <td class="px-3 py-3 text-right font-semibold"
                                     :class="Number(item.line_profit || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
                                     {{ Number(item.line_profit || 0).toFixed(2) }}

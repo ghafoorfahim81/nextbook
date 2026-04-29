@@ -108,6 +108,7 @@
     "customer": "Customer",
     "supplier": "Supplier",
     "item": "Item",
+    "unit_measure": "Unit measure",
     "quantity": "Quantity",
     "unit_price": "Unit price",
     "total_amount": "Total amount",
