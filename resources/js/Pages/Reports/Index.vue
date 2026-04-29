@@ -311,8 +311,7 @@ const reportDefinitions = computed(() => ({
       { key: 'quantity', label: t('report.columns.quantity'), type: 'quantity', align: 'right' },
       { key: 'unit_price', label: t('report.columns.unit_price'), type: 'money', align: 'right' },
       { key: 'source_type', label: t('report.columns.source_type') },
-      { key: 'reference_type', label: t('report.columns.reference_type') },
-      { key: 'reference_id', label: t('report.columns.reference_id') },
+      { key: 'number', label: t('report.columns.reference_number') }, 
     ],
   },
   low_stock: {
