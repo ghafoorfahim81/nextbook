@@ -19,9 +19,10 @@ use App\Traits\BranchSpecific;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Models\Transaction\Transaction;
 use App\Traits\HasUserTracking;
+use Laravel\Scout\Searchable;
 class Sale extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, Searchable, HasUlids, HasSearch, HasSorting, HasUserTracking, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -133,5 +134,19 @@ class Sale extends Model
     public function warehouse()
     {
         return $this->items?->first()?->warehouse;
+    }
+
+    // scout search
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => (int) $this->id,
+            'customer' => $this->customer,
+            'account' => $this->account,
+            'amount' => (float) $this->amount,
+            'date' => $this->date->format('Y-m-d'),
+            'payment_status' => $this->payment_status,
+            'type' => 'sale', // Helps identify result type in global search
+        ];
     }
 }
