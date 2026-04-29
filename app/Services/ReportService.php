@@ -466,6 +466,11 @@ class ReportService
                     ->where('l.branch_id', '=', $filters['branch_id'])
                     ->whereNull('l.deleted_at');
             })
+            ->join('unit_measures as um', function ($join) use ($filters) {
+                $join->on('um.id', '=', 'si.unit_measure_id')
+                    ->where('um.branch_id', '=', $filters['branch_id'])
+                    ->whereNull('um.deleted_at');
+            })
             ->where('s.branch_id', $filters['branch_id'])
             ->whereNull('s.deleted_at')
             ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('si.item_id', $itemId));
@@ -485,6 +490,8 @@ class ReportService
             ->selectRaw('s.number as sale_number')
             ->selectRaw('COALESCE(l.name, \'-\') as customer')
             ->selectRaw('i.name as item')
+            ->selectRaw('i.code as code')
+            ->selectRaw('um.name as unit_measure')
             ->selectRaw('si.quantity as quantity')
             ->selectRaw('si.unit_price as unit_price')
             ->selectRaw('COALESCE(si.quantity * si.unit_price, 0) as total_amount');
@@ -496,7 +503,8 @@ class ReportService
                 'date' => $this->displayDate($row->date),
                 'sale_number' => $row->sale_number,
                 'customer' => $row->customer,
-                'item' => $row->item,
+                'item' => $row->item.' - '.$row->code.'',
+                'unit_measure' => $row->unit_measure,
                 'quantity' => $this->quantityValue($row->quantity),
                 'unit_price' => $this->moneyValue($row->unit_price),
                 'total_amount' => $this->moneyValue($row->total_amount),

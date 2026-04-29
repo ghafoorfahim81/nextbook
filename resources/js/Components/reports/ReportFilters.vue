@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { Button } from '@/Components/ui/button'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
-
+import { useAuth } from '@/composables/useAuth'
 const props = defineProps({
   filters: { type: Object, required: true },
   options: { type: Object, required: true },
@@ -15,6 +15,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:filters', 'submit', 'reset'])
 const { t } = useI18n()
+const { can, isSuperAdmin } = useAuth()
 
 const showLedger = computed(() => props.activeDefinition.filters.includes('ledger_id'))
 const showCustomer = computed(() => props.activeDefinition.filters.includes('customer_id'))
@@ -97,6 +98,7 @@ function setReport(report) {
             @update:modelValue="setReport"
           /> 
         </div>
+        <div v-if="isSuperAdmin">
           <NextSelect
           :floating-text="t('report.filters.branch')"
           :model-value="filters.branch_id"
@@ -106,6 +108,7 @@ function setReport(report) {
           value-key="id"
           @update:modelValue="setFilter('branch_id', $event)"
         />   
+        </div>
           <NextSelect
             :floating-text="t('report.filters.per_page')"
             :model-value="filters.per_page"
@@ -126,7 +129,6 @@ function setReport(report) {
             :floating-text="t('report.filters.ledger')"
             :model-value="filters.ledger_id"
             :options="ledgerOptions"
-            :clearable="false"
             label-key="name"
             value-key="id"
             @update:modelValue="setFilter('ledger_id', $event)"
@@ -139,7 +141,6 @@ function setReport(report) {
             :options="customerOptions"
             label-key="name"
             value-key="id"
-            :clearable="false"
             @update:modelValue="setFilter('customer_id', $event)"
           />
           </div>
@@ -150,7 +151,6 @@ function setReport(report) {
             :options="supplierOptions"
             label-key="name"
             value-key="id"
-            :clearable="false"
             @update:modelValue="setFilter('supplier_id', $event)"
           />
           </div>
@@ -159,7 +159,6 @@ function setReport(report) {
             :floating-text="t('report.filters.item')"
             :model-value="filters.item_id"
             :options="itemOptions"
-            :clearable="false"
             @update:modelValue="setFilter('item_id', $event)"
           /> 
           </div>
@@ -170,7 +169,6 @@ function setReport(report) {
             :options="accountOptions"
             label-key="name"
             value-key="id"
-            :clearable="false"
             @update:modelValue="setFilter('account_id', $event)"
           /> 
         </div>

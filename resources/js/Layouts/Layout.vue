@@ -486,23 +486,7 @@ const navMain = computed(() => [
             { title: t('sidebar.journal_entry.journal_entry'), url: '/journal-entries', icon: FileText, permission: 'journal_entries.view_any' },
         ],
     },
-    {
-        key: 'administration',
-        title: t('sidebar.main.administration'),
-        url: '#',
-        icon: Cog,
-        items: [
-            { title: t('sidebar.administration.category'), url: '/categories', permission: 'categories.view_any' },
-            { title: t('sidebar.administration.currency'), url: '/currencies', permission: 'currencies.view_any' },
-            { title: t('sidebar.administration.currency_rate_update'), url: '/currency-rate-updates', permission: 'currencies.view_any' },
-            { title: t('sidebar.administration.unit_measure'), url: '/unit-measures', permission: 'unit_measures.view_any' },
-            { title: t('sidebar.administration.size'), url: '/sizes', permission: 'sizes.view_any' },
-            { title: t('sidebar.administration.branch'), url: '/branches', permission: 'branches.view_any' },
-            { title: t('sidebar.administration.brand'), url: '/brands', permission: 'brands.view_any' },
-            { title: t('sidebar.administration.warehouse'), url: '/warehouses', permission: 'warehouses.view_any' },
-            { title: t('sidebar.administration.company'), url: '/company', permission: 'companies.view_any' },
-        ],
-    },
+    
     {
         key: 'inventory',
         title: t('sidebar.main.inventory'),
@@ -597,6 +581,23 @@ const navMain = computed(() => [
         title: t('sidebar.main.preferences'),
         url: '/preferences',
         icon: Cog,
+    },
+    {
+        key: 'administration',
+        title: t('sidebar.main.administration'),
+        url: '#',
+        icon: Cog,
+        items: [
+            { title: t('sidebar.administration.category'), url: '/categories', permission: 'categories.view_any' },
+            { title: t('sidebar.administration.currency'), url: '/currencies', permission: 'currencies.view_any' },
+            { title: t('sidebar.administration.currency_rate_update'), url: '/currency-rate-updates', permission: 'currencies.view_any' },
+            { title: t('sidebar.administration.unit_measure'), url: '/unit-measures', permission: 'unit_measures.view_any' },
+            { title: t('sidebar.administration.size'), url: '/sizes', permission: 'sizes.view_any' },
+            { title: t('sidebar.administration.branch'), url: '/branches', permission: 'branches.view_any' },
+            { title: t('sidebar.administration.brand'), url: '/brands', permission: 'brands.view_any' },
+            { title: t('sidebar.administration.warehouse'), url: '/warehouses', permission: 'warehouses.view_any' },
+            { title: t('sidebar.administration.company'), url: '/company', permission: 'companies.view_any' },
+        ],
     },
     {
         key: 'reports',
