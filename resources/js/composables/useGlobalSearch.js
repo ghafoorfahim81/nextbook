@@ -14,6 +14,20 @@ let fuseInstance = null
 let indexLoaded  = false
 let loadPromise  = null   // deduplicate concurrent calls
 
+function normalizeSearchText(value) {
+    return String(value ?? '')
+        .normalize('NFKC')
+        .replace(/[يى]/g, 'ی')
+        .replace(/ك/g, 'ک')
+        .replace(/ة/g, 'ه')
+        .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, '')
+        .replace(/[\u200c\u200d]/g, ' ')
+        .replace(/[_-]/g, ' ')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim()
+}
+
 function buildFuse() {
     fuseInstance = new Fuse(searchIndex.value, {
         keys: [
@@ -22,6 +36,7 @@ function buildFuse() {
             { name: 'code',       weight: 0.15 },
             { name: 'aliases',    weight: 0.2 },
             { name: 'subtitle',   weight: 0.05 },
+            { name: 'normalized_text', weight: 0.4 },
         ],
         threshold: 0.4,
         includeMatches: true,
@@ -66,7 +81,19 @@ export async function loadIndex(force = false) {
             return res.json()
         })
         .then(json => {
-            const data = json.data ?? []
+            const data = (json.data ?? []).map((entry) => {
+                const localAliases = Array.isArray(entry.aliases) ? entry.aliases : []
+                return {
+                    ...entry,
+                    normalized_text: normalizeSearchText([
+                        entry.name,
+                        entry.local_name,
+                        entry.code,
+                        entry.subtitle,
+                        ...localAliases,
+                    ].join(' ')),
+                }
+            })
             console.log('[GlobalSearch] Received', data.length, 'records')
             searchIndex.value = data
             buildFuse()
@@ -97,17 +124,18 @@ export function useGlobalSearch() {
 
     const debouncedSearch = useDebounceFn((q) => {
         const trimmed = (q ?? '').trim()
+        const normalizedQuery = normalizeSearchText(trimmed)
         if (trimmed.length < 2) { results.value = []; return }
 
         if (!fuseInstance) {
             loadIndex().then(() => {
                 if (fuseInstance) {
-                    results.value = fuseInstance.search(trimmed, { limit: 40 })
+                    results.value = fuseInstance.search(normalizedQuery, { limit: 40 })
                 }
             })
             return
         }
-        results.value = fuseInstance.search(trimmed, { limit: 40 })
+        results.value = fuseInstance.search(normalizedQuery, { limit: 40 })
     }, 200)
 
     watch(query, q => debouncedSearch(q))

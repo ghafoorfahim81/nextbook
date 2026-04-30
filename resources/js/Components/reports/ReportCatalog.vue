@@ -14,7 +14,24 @@ const { t, locale } = useI18n()
 const search = ref('')
 const isRTL = computed(() => ['fa', 'ps'].includes(String(locale.value).toLowerCase()))
 
-const normalizedSearch = computed(() => search.value.trim().toLowerCase())
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFKC')
+    // unify Arabic/Persian letter variants for better matching
+    .replace(/[يى]/g, 'ی')
+    .replace(/ك/g, 'ک')
+    .replace(/ة/g, 'ه')
+    // remove Arabic diacritics and tatweel
+    .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, '')
+    // treat ZWNJ and punctuation as spaces for fuzzy contains matching
+    .replace(/[\u200c\u200d]/g, ' ')
+    .replace(/[_-]/g, ' ')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+const normalizedSearch = computed(() => normalizeText(search.value))
 const totalReports = computed(() => props.sections.reduce((total, section) => total + (section.reports?.length || 0), 0))
 
 const filteredSections = computed(() => props.sections
@@ -35,7 +52,7 @@ const filteredSections = computed(() => props.sections
         report.description,
         section.label,
         section.description,
-      ].some((value) => String(value || '').toLowerCase().includes(normalizedSearch.value))
+      ].some((value) => normalizeText(value).includes(normalizedSearch.value))
     }),
   }))
   .filter((section) => section.reports.length))
