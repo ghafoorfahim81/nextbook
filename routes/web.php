@@ -202,6 +202,8 @@ Route::middleware([
     Route::patch('/journal-classes/{journalClass}/restore', [\App\Http\Controllers\JournalEntry\JournalClassController::class, 'restore'])->name('journal-classes.restore')->withTrashed();
     Route::match(['get', 'post'], '/search/items-list', [SearchController::class, 'searchItemsList'])
         ->name('search.items-list');
+    Route::get('/search/global', [SearchController::class, 'globalIndex'])
+        ->name('search.global');
     Route::get('/search/{resourceType}', [SearchController::class, 'search']);
     Route::get('/search/resource-types', [SearchController::class, 'getResourceTypes']);
 

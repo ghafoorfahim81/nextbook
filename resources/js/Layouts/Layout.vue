@@ -95,6 +95,7 @@ import Sonner from '@/Components/ui/sonner/Sonner.vue'
 import { HousePlug, ShoppingCart, Receipt as ReceiptIcon, Home } from 'lucide-vue-next'
 // @ts-ignore - Vue SFC default export shim
 import NotificationDropdown from '@/Components/notifications/NotificationDropdown.vue'
+import GlobalSearch from '@/Components/GlobalSearch.vue'
 import QuickLinks from '@/Components/next/QuickLinks.vue'
 const { t } = useI18n()
 const { locale } = useI18n()
@@ -1077,24 +1078,27 @@ function logout() {
         </Sidebar>
         <SidebarInset class="flex min-h-screen flex-col">
             <header class="relative flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-background/80 px-3 py-2 transition-[width,height] ease-linear supports-[backdrop-filter]:bg-background/60 sm:h-16 sm:flex-nowrap sm:px-4 sm:py-0 rtl:pr-3 sm:rtl:pr-4 group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-                <!-- Left side: Sidebar trigger and breadcrumb -->
-                <div class="flex items-center gap-2">
+                <!-- Left: Sidebar trigger -->
+                <div class="flex shrink-0 items-center gap-2">
                     <SidebarTrigger class="-ml-1"/>
                     <Separator orientation="vertical" class="mr-2 hidden h-4 sm:block" />
                 </div>
-                <div v-show="connectionLabel !='Online'" class="pointer-events-none absolute inset-x-0 top-1/2 hidden -translate-y-1/2 justify-center md:flex">
+
+                <!-- Center: Global search (desktop) / connection status overlay -->
+                <div class="flex min-w-0 flex-1 items-center justify-center px-2">
+                    <GlobalSearch />
+                </div>
+
+                <!-- Connection status badge (absolute, overlays center when offline) -->
+                <div v-show="connectionLabel !== 'Online'" class="pointer-events-none absolute inset-x-0 top-1/2 z-10 hidden -translate-y-1/2 justify-center md:flex">
                     <div class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-1.5 text-xs text-muted-foreground shadow-sm backdrop-blur">
-                        <span
-                            class="size-2 rounded-full"
-                            :class="connectionDotClass"
-                            aria-hidden="true"
-                        />
-                        <span class="font-medium text-foreground">
-                            {{ connectionLabel }}
-                        </span>
+                        <span class="size-2 rounded-full" :class="connectionDotClass" aria-hidden="true" />
+                        <span class="font-medium text-foreground">{{ connectionLabel }}</span>
                     </div>
                 </div>
-                <div class="flex min-w-0 flex-1 items-center justify-end gap-2 sm:gap-3 sm:pr-4">
+
+                <!-- Right: actions -->
+                <div class="flex shrink-0 items-center gap-2 sm:gap-3 sm:pr-4">
 
                     <QuickLinks />
                     <div v-if="isSuperAdmin" class="hidden items-center max-start gap-2 sm:flex">
