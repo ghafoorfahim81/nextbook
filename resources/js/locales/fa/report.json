@@ -143,7 +143,8 @@
     "movement_type": "نوع گردش",
     "source_type": "نوع منبع",
     "reference_id": "شناسه مرجع",
-    "reorder_level": "حد سفارش"
+    "reorder_level": "حد سفارش",
+    "reference_number": "شماره مرجع"
   },
   "reports": {
     "trial_balance": {

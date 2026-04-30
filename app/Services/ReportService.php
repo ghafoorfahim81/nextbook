@@ -643,6 +643,11 @@ class ReportService
                     ->where('w.branch_id', '=', $filters['branch_id'])
                     ->whereNull('w.deleted_at');
             })
+            ->leftJoin('sales as s', function ($join) use ($filters) {
+                $join->on('s.id', '=', 'sm.reference_id')
+                    ->where('s.branch_id', '=', $filters['branch_id'])
+                    ->whereNull('s.deleted_at');
+            })
             ->where('sm.branch_id', $filters['branch_id'])
             ->whereNull('sm.deleted_at')
             ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('sm.item_id', $itemId));
@@ -665,7 +670,8 @@ class ReportService
             ->selectRaw('sm.unit_cost as unit_price')
             ->selectRaw('sm.source as source_type')
             ->selectRaw('sm.reference_type')
-            ->selectRaw('sm.reference_id');
+            ->selectRaw('sm.reference_id')
+            ->selectRaw('s.number as number');
 
         return $this->paginateReport(
             $query,
@@ -681,6 +687,7 @@ class ReportService
                 'source_type' => $this->sourceLabel($row->source_type),
                 'reference_type' => $this->referenceLabel($row->reference_type),
                 'reference_id' => $row->reference_id,
+                'number' => $row->number,
             ],
             [
                 'total_quantity' => $this->quantityValue($summaryRow?->total_quantity),
@@ -2552,7 +2559,7 @@ class ReportService
                     'name' => app()->getLocale() === 'en' ? $row->name : ($row->local_name ?? $row->name)
                 ])
                 ->all(),
-           
+
         ];
     }
 
