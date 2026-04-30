@@ -5,7 +5,7 @@ import { router } from '@inertiajs/vue3'
 
 const PEOPLE_TYPES  = ['customer', 'supplier', 'owner', 'user']
 const ITEM_TYPES    = ['item']
-const FINANCE_TYPES = ['sale', 'purchase', 'receipt', 'payment', 'expense', 'account']
+const FINANCE_TYPES = ['sale', 'purchase', 'receipt', 'payment', 'expense', 'account', 'report']
 
 // ── Module-level singleton ───────────────────────────────────────────────────
 export const searchIndex = ref([])
@@ -20,6 +20,7 @@ function buildFuse() {
             { name: 'name',       weight: 0.5 },
             { name: 'local_name', weight: 0.3 },
             { name: 'code',       weight: 0.15 },
+            { name: 'aliases',    weight: 0.2 },
             { name: 'subtitle',   weight: 0.05 },
         ],
         threshold: 0.4,
