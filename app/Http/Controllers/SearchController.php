@@ -13,11 +13,18 @@ use App\Models\Administration\Company;
 use App\Models\Administration\Brand;
 use App\Models\Administration\Category;
 use App\Models\Administration\Warehouse;
+use App\Models\Expense\Expense;
 use App\Models\Expense\ExpenseCategory;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
 use App\Models\Ledger\Ledger;
+use App\Models\Owner\Owner;
+use App\Models\Payment\Payment;
+use App\Models\Purchase\Purchase;
+use App\Models\Receipt\Receipt;
+use App\Models\Sale\Sale;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -25,6 +32,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
+
 class SearchController extends Controller
 {
     /**
@@ -832,6 +841,231 @@ class SearchController extends Controller
             });
 
         return $query->limit($limit)->get()->toArray();
+    }
+
+    /**
+     * Build a flat index of all searchable records for client-side fuzzy search.
+     * Cached per user+branch for 5 minutes.
+     */
+    public function globalIndex(Request $request): JsonResponse
+    {
+        $user     = Auth::user();
+        $branchId = $user?->branch_id ?? 'default';
+        $cacheKey = 'global_search_index_v4:' . $user?->id . ':' . $branchId;
+
+        if ($request->boolean('refresh')) {
+            Cache::forget($cacheKey);
+        }
+
+        $data = Cache::remember($cacheKey, now()->addMinutes(5), fn () => $this->buildGlobalIndex());
+
+        return response()->json(['data' => $data]);
+    }
+
+    private function buildGlobalIndex(): array
+    {
+        $results = [];
+
+        // Customers
+        try {
+            Ledger::query()->select(['id', 'name', 'code', 'phone_no', 'is_active'])
+                ->where('type', 'customer')->orderByDesc('created_at')->limit(400)->get()
+                ->each(function ($r) use (&$results) {
+                    $results[] = [
+                        'id' => $r->id, 'name' => $r->name, 'code' => $r->code ?? '',
+                        'type' => 'customer',
+                        'subtitle' => 'Customer' . ($r->phone_no ? ' · ' . $r->phone_no : ''),
+                        'url' => '/customers/' . $r->id,
+                        'status' => $r->is_active ? 'active' : 'inactive',
+                        'status_label' => $r->is_active ? 'Active' : 'Inactive',
+                    ];
+                });
+        } catch (\Throwable $e) { Log::warning('[GlobalSearch] customers failed: ' . $e->getMessage()); }
+
+        // Suppliers
+        try {
+            Ledger::query()->select(['id', 'name', 'code', 'phone_no', 'is_active'])
+                ->where('type', 'supplier')->orderByDesc('created_at')->limit(400)->get()
+                ->each(function ($r) use (&$results) {
+                    $results[] = [
+                        'id' => $r->id, 'name' => $r->name, 'code' => $r->code ?? '',
+                        'type' => 'supplier',
+                        'subtitle' => 'Supplier' . ($r->phone_no ? ' · ' . $r->phone_no : ''),
+                        'url' => '/suppliers/' . $r->id,
+                        'status' => $r->is_active ? 'active' : 'inactive',
+                        'status_label' => $r->is_active ? 'Active' : 'Inactive',
+                    ];
+                });
+        } catch (\Throwable $e) { Log::warning('[GlobalSearch] suppliers failed: ' . $e->getMessage()); }
+
+        // Items
+        try {
+            Item::query()->select(['id', 'name', 'code'])->orderByDesc('created_at')->limit(500)->get()
+                ->each(function ($r) use (&$results) {
+                    $results[] = [
+                        'id' => $r->id, 'name' => $r->name, 'code' => $r->code ?? '',
+                        'type' => 'item',
+                        'subtitle' => 'Product' . ($r->code ? ' · SKU: ' . $r->code : ''),
+                        'url' => '/items/' . $r->id,
+                        'status' => 'in_stock', 'status_label' => 'In stock',
+                    ];
+                });
+        } catch (\Throwable $e) { Log::warning('[GlobalSearch] items failed: ' . $e->getMessage()); }
+
+        // Sales
+        try {
+            Sale::query()->with('customer:id,name')->select(['id', 'number', 'customer_id', 'payment_status'])
+                ->orderByDesc('created_at')->limit(300)->get()
+                ->each(function ($r) use (&$results) {
+                    $label  = $r->payment_status?->getLabel() ?? 'Pending';
+                    $status = $r->payment_status?->value ?? 'unpaid';
+                    $results[] = [
+                        'id' => $r->id, 'name' => $r->number ?? ('INV-' . strtoupper(substr($r->id, -6))),
+                        'code' => $r->number ?? '',
+                        'type' => 'sale',
+                        'subtitle' => 'Invoice' . ($r->customer ? ' · ' . $r->customer->name : ''),
+                        'url' => '/sales/' . $r->id,
+                        'status' => $status, 'status_label' => $label,
+                    ];
+                });
+        } catch (\Throwable $e) { Log::warning('[GlobalSearch] sales failed: ' . $e->getMessage()); }
+
+        // Purchases
+        try {
+            Purchase::query()->with('supplier:id,name')->select(['id', 'number', 'supplier_id', 'payment_status'])
+                ->orderByDesc('created_at')->limit(300)->get()
+                ->each(function ($r) use (&$results) {
+                    $label  = $r->payment_status?->getLabel() ?? 'Pending';
+                    $status = $r->payment_status?->value ?? 'unpaid';
+                    $results[] = [
+                        'id' => $r->id, 'name' => $r->number ?? ('PO-' . strtoupper(substr($r->id, -6))),
+                        'code' => $r->number ?? '',
+                        'type' => 'purchase',
+                        'subtitle' => 'Purchase Order' . ($r->supplier ? ' · ' . $r->supplier->name : ''),
+                        'url' => '/purchases/' . $r->id,
+                        'status' => $status, 'status_label' => $label,
+                    ];
+                });
+        } catch (\Throwable $e) { Log::warning('[GlobalSearch] purchases failed: ' . $e->getMessage()); }
+
+        // Receipts
+        try {
+            Receipt::query()->with('ledger:id,name')->select(['id', 'number', 'ledger_id', 'date'])
+                ->orderByDesc('created_at')->limit(300)->get()
+                ->each(function ($r) use (&$results) {
+                    $results[] = [
+                        'id' => $r->id, 'name' => $r->number ?? ('RCP-' . strtoupper(substr($r->id, -6))),
+                        'code' => $r->number ?? '',
+                        'type' => 'receipt',
+                        'subtitle' => 'Receipt' . ($r->ledger ? ' · ' . $r->ledger->name : ''),
+                        'url' => '/receipts/' . $r->id,
+                        'status' => null, 'status_label' => null,
+                    ];
+                });
+        } catch (\Throwable $e) { Log::warning('[GlobalSearch] receipts failed: ' . $e->getMessage()); }
+
+        // Payments
+        try {
+            Payment::query()->with('ledger:id,name')->select(['id', 'number', 'ledger_id', 'date'])
+                ->orderByDesc('created_at')->limit(300)->get()
+                ->each(function ($r) use (&$results) {
+                    $results[] = [
+                        'id' => $r->id, 'name' => $r->number ?? ('PAY-' . strtoupper(substr($r->id, -6))),
+                        'code' => $r->number ?? '',
+                        'type' => 'payment',
+                        'subtitle' => 'Payment' . ($r->ledger ? ' · ' . $r->ledger->name : ''),
+                        'url' => '/payments/' . $r->id,
+                        'status' => null, 'status_label' => null,
+                    ];
+                });
+        } catch (\Throwable $e) { Log::warning('[GlobalSearch] payments failed: ' . $e->getMessage()); }
+
+        // Expenses
+        try {
+            Expense::query()->select(['id', 'date', 'remarks'])->orderByDesc('created_at')->limit(200)->get()
+                ->each(function ($r) use (&$results) {
+                    $name = $r->remarks ? Str::limit($r->remarks, 40) : ('Expense · ' . optional($r->date)->format('d M Y'));
+                    $results[] = [
+                        'id' => $r->id, 'name' => $name, 'code' => '',
+                        'type' => 'expense',
+                        'subtitle' => 'Expense' . ($r->date ? ' · ' . optional($r->date)->format('d M Y') : ''),
+                        'url' => '/expenses/' . $r->id,
+                        'status' => null, 'status_label' => null,
+                    ];
+                });
+        } catch (\Throwable $e) { Log::warning('[GlobalSearch] expenses failed: ' . $e->getMessage()); }
+
+        // Chart of Accounts — eager loading only (no JOIN avoids BranchSpecific/SoftDeletes scope conflicts)
+        try {
+            Account::query()
+                ->with('accountType:id,name')
+                ->select(['id', 'name', 'local_name', 'number', 'account_type_id'])
+                ->where('is_active', true)
+                ->limit(500)
+                ->get()
+                ->each(function ($r) use (&$results) {
+                    // Index both English name and local name so both are searchable
+                    $displayName = $r->name;
+                    $localName   = $r->local_name ?? '';
+                    $typeName    = $r->accountType?->name ?? '';
+                    $results[] = [
+                        'id'           => $r->id,
+                        'name'         => $displayName,
+                        'local_name'   => $localName,
+                        'code'         => $r->number ?? '',
+                        'type'         => 'account',
+                        'subtitle'     => 'Account · ' . $typeName . ($localName ? ' · ' . $localName : ''),
+                        'url'          => '/chart-of-accounts/' . $r->id,
+                        'status'       => null,
+                        'status_label' => null,
+                    ];
+                    // Also add a duplicate entry keyed on local_name so it is independently searchable
+                    if ($localName) {
+                        $results[] = [
+                            'id'           => $r->id . '_local',
+                            'name'         => $localName,
+                            'local_name'   => $localName,
+                            'code'         => $r->number ?? '',
+                            'type'         => 'account',
+                            'subtitle'     => 'Account · ' . $typeName,
+                            'url'          => '/chart-of-accounts/' . $r->id,
+                            'status'       => null,
+                            'status_label' => null,
+                        ];
+                    }
+                });
+        } catch (\Throwable $e) { Log::warning('[GlobalSearch] accounts failed: ' . $e->getMessage()); }
+
+        // Owners
+        try {
+            Owner::query()->select(['id', 'name', 'is_active'])->orderByDesc('created_at')->limit(100)->get()
+                ->each(function ($r) use (&$results) {
+                    $results[] = [
+                        'id' => $r->id, 'name' => $r->name, 'code' => '',
+                        'type' => 'owner',
+                        'subtitle' => 'Owner',
+                        'url' => '/owners/' . $r->id,
+                        'status' => ($r->is_active ?? true) ? 'active' : 'inactive',
+                        'status_label' => ($r->is_active ?? true) ? 'Active' : 'Inactive',
+                    ];
+                });
+        } catch (\Throwable $e) { Log::warning('[GlobalSearch] owners failed: ' . $e->getMessage()); }
+
+        // Users
+        try {
+            User::query()->select(['id', 'name', 'email'])->limit(100)->get()
+                ->each(function ($r) use (&$results) {
+                    $results[] = [
+                        'id' => $r->id, 'name' => $r->name, 'code' => '',
+                        'type' => 'user',
+                        'subtitle' => 'User · ' . $r->email,
+                        'url' => '/users/' . $r->id,
+                        'status' => 'active', 'status_label' => 'Active',
+                    ];
+                });
+        } catch (\Throwable $e) { Log::warning('[GlobalSearch] users failed: ' . $e->getMessage()); }
+
+        return $results;
     }
 
     /**
