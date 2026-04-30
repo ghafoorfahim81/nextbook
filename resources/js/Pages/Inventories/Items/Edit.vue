@@ -478,8 +478,7 @@ console.log('this is the showOpeningWarning', showOpeningWarning.value)
                             <NextInput :label="t('general.quantity')" :disabled="opening.status === 'posted'" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
                             <NextInput :label="t('general.unit_price')" :disabled="opening.status === 'posted'" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
                             <NextSelect
-                                v-model="opening.selected_warehouse"
-                                :disabled="opening.status === 'posted'"
+                                v-model="opening.selected_warehouse" 
                                 @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
                                 :options="warehouses"
                                 label-key="name"
