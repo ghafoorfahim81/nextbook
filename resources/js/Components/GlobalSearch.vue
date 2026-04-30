@@ -9,7 +9,7 @@ import {
 import { useGlobalSearch, searchIndex, loadIndex } from '@/composables/useGlobalSearch'
 
 const { query, results, people, items, finance, counts, isLoading } = useGlobalSearch()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 // ── open / close ──────────────────────────────────────────────────────────────
 const isOpen    = ref(false)
@@ -105,14 +105,29 @@ function navigate(item: any) {
     closeSearch()
 }
 
+const isRtlLocale = computed(() => ['fa', 'ps', 'ar'].includes(String(locale.value).toLowerCase()))
+
+function getResultName(result: any): string {
+    const item = result?.item ?? {}
+    if (item.type === 'report' && isRtlLocale.value && item.local_name) {
+        return String(item.local_name)
+    }
+    return String(item.name ?? '')
+}
+
 // ── highlight ─────────────────────────────────────────────────────────────────
 function esc(s: string) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 }
 
 function highlight(result: any, key = 'name'): string {
-    const text  = String(result.item?.[key] ?? '')
-    const match = result.matches?.find((m: any) => m.key === key)
+    const useLocalReportName = key === 'name'
+        && result?.item?.type === 'report'
+        && isRtlLocale.value
+        && result?.item?.local_name
+    const displayKey = useLocalReportName ? 'local_name' : key
+    const text  = key === 'name' ? getResultName(result) : String(result.item?.[key] ?? '')
+    const match = result.matches?.find((m: any) => m.key === displayKey)
     if (!match?.indices?.length) return esc(text)
 
     let out = '', last = 0

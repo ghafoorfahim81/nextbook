@@ -1041,7 +1041,7 @@ class SearchController extends Controller
             $results[] = [
                 'id'           => 'report_' . $report['key'],
                 'name'         => $report['name'],
-                'local_name'   => '',
+                'local_name'   => $report['local_name'] ?? '',
                 'code'         => $report['key'],
                 'aliases'      => $report['aliases'],
                 'type'         => 'report',
@@ -1116,16 +1116,52 @@ class SearchController extends Controller
             ['key' => 'user_activity', 'name' => 'User Activity', 'group' => 'Management'],
         ];
 
-        return array_map(function ($report) {
+        $localNames = [
+            'trial_balance' => 'تراز آزمایشی',
+            'balance_sheet' => 'بیلانس شیت',
+            'income_statement' => 'سود و زیان',
+            'general_ledger' => 'دفتر کل',
+            'cash_book' => 'کتاب نقدی',
+            'group_summary_report' => 'خلاصه گروهی حساب‌ها',
+            'day_book_report' => 'دفتر روزانه',
+            'journal_book_report' => 'دفتر روزنامه',
+            'receipt_report' => 'گزارش رسید',
+            'payment_report' => 'گزارش پرداخت',
+            'customer_statement' => 'صورت‌حساب مشتری',
+            'supplier_statement' => 'صورت‌حساب تأمین‌کننده',
+            'sales_report' => 'گزارش فروش',
+            'purchase_report' => 'گزارش خرید',
+            'inventory_stock' => 'موجودی کالا',
+            'stock_movement' => 'گردش موجودی',
+            'low_stock' => 'موجودی کم',
+            'inventory_valuation' => 'ارزش‌گذاری موجودی',
+            'batch_wise_report' => 'گزارش به تفکیک بچ',
+            'expiry_wise_report' => 'گزارش بر اساس انقضا',
+            'zero_on_hand_report' => 'اقلام با موجودی صفر',
+            'fast_moving_report' => 'گزارش اقلام پرفروش',
+            'slow_moving_report' => 'گزارش اقلام کم‌گردش',
+            'today_sale_purchase_closing_stock_report' => 'فروش، خرید و موجودی پایانی امروز',
+            'near_expiry_report' => 'گزارش نزدیک انقضا',
+            'maximum_stock_report' => 'گزارش موجودی بیش از حد',
+            'user_activity' => 'فعالیت کاربران',
+        ];
+
+        return array_map(function ($report) use ($localNames) {
             $words = Str::of($report['key'])->replace('_', ' ')->toString();
             $compactKey = str_replace('_', '', $report['key']);
             $compactName = Str::of($report['name'])->replace(' ', '')->lower()->toString();
+            $localName = $localNames[$report['key']] ?? '';
+            $compactLocalName = Str::of($localName)->replace(' ', '')->replace('‌', '')->toString();
+
+            $report['local_name'] = $localName;
 
             $report['aliases'] = array_values(array_unique([
                 $report['key'],
                 $compactKey,
                 $words,
                 $compactName,
+                $localName,
+                $compactLocalName,
                 $report['name'] . ' report',
                 'report',
                 $report['group'],
