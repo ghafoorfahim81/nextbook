@@ -1036,6 +1036,22 @@ class SearchController extends Controller
                 });
         } catch (\Throwable $e) { Log::warning('[GlobalSearch] accounts failed: ' . $e->getMessage()); }
 
+        // Reports
+        collect($this->globalSearchReports())->each(function ($report) use (&$results) {
+            $results[] = [
+                'id'           => 'report_' . $report['key'],
+                'name'         => $report['name'],
+                'local_name'   => '',
+                'code'         => $report['key'],
+                'aliases'      => $report['aliases'],
+                'type'         => 'report',
+                'subtitle'     => 'Report · ' . $report['group'],
+                'url'          => '/reports?report=' . $report['key'],
+                'status'       => null,
+                'status_label' => null,
+            ];
+        });
+
         // Owners
         try {
             Owner::query()->select(['id', 'name', 'is_active'])->orderByDesc('created_at')->limit(100)->get()
@@ -1066,6 +1082,57 @@ class SearchController extends Controller
         } catch (\Throwable $e) { Log::warning('[GlobalSearch] users failed: ' . $e->getMessage()); }
 
         return $results;
+    }
+
+    private function globalSearchReports(): array
+    {
+        $reports = [
+            ['key' => 'trial_balance', 'name' => 'Trial Balance', 'group' => 'Financial'],
+            ['key' => 'balance_sheet', 'name' => 'Balance Sheet', 'group' => 'Financial'],
+            ['key' => 'income_statement', 'name' => 'Income Statement', 'group' => 'Financial'],
+            ['key' => 'general_ledger', 'name' => 'General Ledger', 'group' => 'Financial'],
+            ['key' => 'cash_book', 'name' => 'Cash Book', 'group' => 'Financial'],
+            ['key' => 'group_summary_report', 'name' => 'Group Summary Report', 'group' => 'Financial'],
+            ['key' => 'day_book_report', 'name' => 'Day Book Report', 'group' => 'Financial'],
+            ['key' => 'journal_book_report', 'name' => 'Journal Book Report', 'group' => 'Financial'],
+            ['key' => 'receipt_report', 'name' => 'Receipt Report', 'group' => 'Cash Flow'],
+            ['key' => 'payment_report', 'name' => 'Payment Report', 'group' => 'Cash Flow'],
+            ['key' => 'customer_statement', 'name' => 'Customer Statement', 'group' => 'Party'],
+            ['key' => 'supplier_statement', 'name' => 'Supplier Statement', 'group' => 'Party'],
+            ['key' => 'sales_report', 'name' => 'Sales Report', 'group' => 'Operations'],
+            ['key' => 'purchase_report', 'name' => 'Purchase Report', 'group' => 'Operations'],
+            ['key' => 'inventory_stock', 'name' => 'Inventory Stock', 'group' => 'Inventory'],
+            ['key' => 'stock_movement', 'name' => 'Stock Movement', 'group' => 'Inventory'],
+            ['key' => 'low_stock', 'name' => 'Low Stock', 'group' => 'Inventory'],
+            ['key' => 'inventory_valuation', 'name' => 'Inventory Valuation', 'group' => 'Inventory'],
+            ['key' => 'batch_wise_report', 'name' => 'Batch Wise Report', 'group' => 'Inventory'],
+            ['key' => 'expiry_wise_report', 'name' => 'Expiry Wise Report', 'group' => 'Inventory'],
+            ['key' => 'zero_on_hand_report', 'name' => 'Zero On Hand Report', 'group' => 'Inventory'],
+            ['key' => 'fast_moving_report', 'name' => 'Fast Moving Report', 'group' => 'Inventory'],
+            ['key' => 'slow_moving_report', 'name' => 'Slow Moving Report', 'group' => 'Inventory'],
+            ['key' => 'today_sale_purchase_closing_stock_report', 'name' => 'Today Sale Purchase Closing Stock Report', 'group' => 'Inventory'],
+            ['key' => 'near_expiry_report', 'name' => 'Near Expiry Report', 'group' => 'Inventory'],
+            ['key' => 'maximum_stock_report', 'name' => 'Maximum Stock Report', 'group' => 'Inventory'],
+            ['key' => 'user_activity', 'name' => 'User Activity', 'group' => 'Management'],
+        ];
+
+        return array_map(function ($report) {
+            $words = Str::of($report['key'])->replace('_', ' ')->toString();
+            $compactKey = str_replace('_', '', $report['key']);
+            $compactName = Str::of($report['name'])->replace(' ', '')->lower()->toString();
+
+            $report['aliases'] = array_values(array_unique([
+                $report['key'],
+                $compactKey,
+                $words,
+                $compactName,
+                $report['name'] . ' report',
+                'report',
+                $report['group'],
+            ]));
+
+            return $report;
+        }, $reports);
     }
 
     /**

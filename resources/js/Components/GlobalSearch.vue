@@ -129,7 +129,7 @@ const PERSON_TYPES = new Set(['customer', 'supplier', 'owner', 'user'])
 const ICON_MAP: Record<string, any> = {
     item: Package, sale: FileText, purchase: ShoppingCart,
     receipt: ReceiptText, payment: Banknote, expense: TrendingDown,
-    account: BookOpen, user: User, owner: Building2,
+    account: BookOpen, report: FileText, user: User, owner: Building2,
 }
 const AVATAR_BG: Record<string, string> = {
     customer: 'bg-blue-500',   supplier: 'bg-orange-500',
@@ -137,7 +137,7 @@ const AVATAR_BG: Record<string, string> = {
     item:     'bg-teal-600',   sale:     'bg-emerald-500',
     purchase: 'bg-amber-500',  receipt:  'bg-sky-500',
     payment:  'bg-purple-500', expense:  'bg-rose-500',
-    account:  'bg-slate-500',
+    account:  'bg-slate-500',  report:   'bg-cyan-600',
 }
 const STATUS_CLS: Record<string, string> = {
     active:          'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
