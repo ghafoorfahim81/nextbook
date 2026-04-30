@@ -1,0 +1,16 @@
+{
+  "trigger": "Search anything...",
+  "open_aria": "Open global search (Ctrl+K)",
+  "placeholder": "Search customers, items, invoices...",
+  "empty_title": "Type to search anything...",
+  "empty_description": "Customers, items, invoices, accounts...",
+  "loading_index": "Loading index...",
+  "no_results_for": "No results for \"{query}\"",
+  "navigate": "navigate",
+  "tabs": {
+    "all": "All",
+    "items": "Items",
+    "people": "People",
+    "finance": "Finance"
+  }
+}

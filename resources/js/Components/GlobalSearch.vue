@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { router } from '@inertiajs/vue3'
+import { useI18n } from 'vue-i18n'
 import {
     Search, Package, FileText, ShoppingCart, Banknote,
     TrendingDown, BookOpen, User, Building2, ReceiptText,
@@ -8,6 +9,7 @@ import {
 import { useGlobalSearch, searchIndex, loadIndex } from '@/composables/useGlobalSearch'
 
 const { query, results, people, items, finance, counts, isLoading } = useGlobalSearch()
+const { t } = useI18n()
 
 // ── open / close ──────────────────────────────────────────────────────────────
 const isOpen    = ref(false)
@@ -42,11 +44,13 @@ onUnmounted(() => document.removeEventListener('keydown', onGlobalKey))
 
 // ── tabs ──────────────────────────────────────────────────────────────────────
 const TABS = [
-    { key: 'all',     label: 'All' },
-    { key: 'items',   label: 'Items' },
-    { key: 'people',  label: 'People' },
-    { key: 'finance', label: 'Finance' },
+    { key: 'all',     labelKey: 'global_search.tabs.all' },
+    { key: 'items',   labelKey: 'global_search.tabs.items' },
+    { key: 'people',  labelKey: 'global_search.tabs.people' },
+    { key: 'finance', labelKey: 'global_search.tabs.finance' },
 ] as const
+
+const tabLabel = (key: string) => t(`global_search.tabs.${key}`)
 
 watch(query, () => { activeIdx.value = -1 })
 
@@ -60,14 +64,14 @@ const displayGroups = computed(() => {
             items:   items.value,
             finance: finance.value,
         }
-        return [{ key: tab, label: tab, items: (map[tab] ?? []).map((r, i) => ({ ...r, _idx: i })) }]
+        return [{ key: tab, label: tabLabel(tab), items: (map[tab] ?? []).map((r, i) => ({ ...r, _idx: i })) }]
     }
 
     const groups = []
     let offset = 0
-    if (people.value.length)  { groups.push({ key: 'people',  label: 'People',  items: people.value.map( (r, i) => ({ ...r, _idx: offset + i })) }); offset += people.value.length  }
-    if (items.value.length)   { groups.push({ key: 'items',   label: 'Items',   items: items.value.map(  (r, i) => ({ ...r, _idx: offset + i })) }); offset += items.value.length   }
-    if (finance.value.length) { groups.push({ key: 'finance', label: 'Finance', items: finance.value.map((r, i) => ({ ...r, _idx: offset + i })) }); offset += finance.value.length }
+    if (people.value.length)  { groups.push({ key: 'people',  label: tabLabel('people'),  items: people.value.map( (r, i) => ({ ...r, _idx: offset + i })) }); offset += people.value.length  }
+    if (items.value.length)   { groups.push({ key: 'items',   label: tabLabel('items'),   items: items.value.map(  (r, i) => ({ ...r, _idx: offset + i })) }); offset += items.value.length   }
+    if (finance.value.length) { groups.push({ key: 'finance', label: tabLabel('finance'), items: finance.value.map((r, i) => ({ ...r, _idx: offset + i })) }); offset += finance.value.length }
     return groups
 })
 
@@ -157,11 +161,11 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
     <button
         @click="openSearch"
         class="hidden md:flex items-center gap-2 h-8 w-[260px] lg:w-[360px] rounded-md border border-input bg-background/60 px-3 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors shrink-0"
-        aria-label="Open global search (Ctrl+K)"
+        :aria-label="t('global_search.open_aria')"
     >
         <Search class="size-3.5 shrink-0 opacity-60" />
-        <span class="flex-1 text-left">Search anything...</span>
-        <kbd class="hidden sm:inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 font-mono text-[10px] opacity-60">
+        <span class="flex-1 text-start">{{ t('global_search.trigger') }}</span>
+        <kbd dir="ltr" class="hidden sm:inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 font-mono text-[10px] opacity-60">
             <span class="text-xs">⌘</span>K
         </kbd>
     </button>
@@ -170,7 +174,7 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
     <button
         @click="openSearch"
         class="md:hidden flex items-center justify-center size-8 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-        aria-label="Search"
+        :aria-label="t('general.search')"
     >
         <Search class="size-4" />
     </button>
@@ -213,8 +217,8 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
                                 ref="inputRef"
                                 v-model="query"
                                 type="text"
-                                placeholder="Search customers, items, invoices..."
-                                class="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground outline-none"
+                                :placeholder="t('global_search.placeholder')"
+                                class="flex-1 bg-transparent text-start text-sm text-foreground placeholder:text-muted-foreground outline-none"
                                 autocomplete="off"
                                 spellcheck="false"
                                 @keydown="onInputKey"
@@ -224,10 +228,11 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
                                 @click="query = ''"
                                 class="shrink-0 rounded border border-input bg-background px-2 py-0.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                             >
-                                Clear
+                                {{ t('general.clear') }}
                             </button>
                             <kbd
                                 v-else
+                                dir="ltr"
                                 class="hidden sm:inline-flex h-5 select-none items-center rounded border border-border bg-muted px-1.5 font-mono text-[10px] opacity-60 shrink-0"
                             >Esc</kbd>
                         </div>
@@ -245,7 +250,7 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
                                         : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                                 ]"
                             >
-                                {{ tab.label }}
+                                {{ t(tab.labelKey) }}
                                 <span
                                     v-if="counts[tab.key] > 0"
                                     :class="['text-[9px]', activeTab === tab.key ? 'opacity-80' : 'opacity-55']"
@@ -259,19 +264,19 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
                             <!-- Waiting for input -->
                             <div v-if="query.trim().length < 2" class="flex flex-col items-center py-10 text-center">
                                 <Search class="mb-2 size-8 text-muted-foreground/25" />
-                                <p class="text-sm text-muted-foreground">Type to search anything&hellip;</p>
-                                <p class="mt-1 text-xs text-muted-foreground/50">Customers, items, invoices, accounts&hellip;</p>
+                                <p class="text-sm text-muted-foreground">{{ t('global_search.empty_title') }}</p>
+                                <p class="mt-1 text-xs text-muted-foreground/50">{{ t('global_search.empty_description') }}</p>
                             </div>
 
                             <!-- Loading -->
                             <div v-else-if="isLoading" class="py-10 text-center text-sm text-muted-foreground">
-                                Loading index&hellip;
+                                {{ t('global_search.loading_index') }}
                             </div>
 
                             <!-- No results -->
                             <div v-else-if="displayGroups.every(g => g.items.length === 0)" class="py-10 text-center">
                                 <p class="text-sm text-muted-foreground">
-                                    No results for &ldquo;<span class="text-foreground">{{ query }}</span>&rdquo;
+                                    {{ t('global_search.no_results_for', { query }) }}
                                 </p>
                             </div>
 
@@ -293,7 +298,7 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
                                             @click="navigate(result.item)"
                                             @mouseenter="activeIdx = result._idx"
                                             :class="[
-                                                'w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors',
+                                                'w-full flex items-center gap-3 px-4 py-2.5 text-start transition-colors',
                                                 result._idx === activeIdx
                                                     ? 'bg-accent text-accent-foreground'
                                                     : 'hover:bg-accent/60',
@@ -329,17 +334,17 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
                         <!-- Footer hints -->
                         <div class="flex items-center gap-4 border-t border-border px-4 py-2 text-[10px] text-muted-foreground/70">
                             <span class="flex items-center gap-1">
-                                <kbd class="inline-flex h-4 items-center rounded border border-border/80 bg-muted px-1 font-mono text-[9px]">↑</kbd>
-                                <kbd class="inline-flex h-4 items-center rounded border border-border/80 bg-muted px-1 font-mono text-[9px]">↓</kbd>
-                                navigate
+                                <kbd dir="ltr" class="inline-flex h-4 items-center rounded border border-border/80 bg-muted px-1 font-mono text-[9px]">↑</kbd>
+                                <kbd dir="ltr" class="inline-flex h-4 items-center rounded border border-border/80 bg-muted px-1 font-mono text-[9px]">↓</kbd>
+                                {{ t('global_search.navigate') }}
                             </span>
                             <span class="flex items-center gap-1">
-                                <kbd class="inline-flex h-4 items-center rounded border border-border/80 bg-muted px-1 font-mono text-[9px]">↵</kbd>
-                                open
+                                <kbd dir="ltr" class="inline-flex h-4 items-center rounded border border-border/80 bg-muted px-1 font-mono text-[9px]">↵</kbd>
+                                {{ t('general.open') }}
                             </span>
                             <span class="flex items-center gap-1">
-                                <kbd class="inline-flex h-4 items-center rounded border border-border/80 bg-muted px-1 font-mono text-[9px]">Esc</kbd>
-                                close
+                                <kbd dir="ltr" class="inline-flex h-4 items-center rounded border border-border/80 bg-muted px-1 font-mono text-[9px]">Esc</kbd>
+                                {{ t('general.close') }}
                             </span>
                         </div>
                     </div>
