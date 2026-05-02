@@ -175,7 +175,7 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
     <!-- ── Header trigger button ──────────────────────────────────────────── -->
     <button
         @click="openSearch"
-        class="hidden md:flex items-center gap-2 h-8 w-[260px] lg:w-[360px] rounded-md border border-input bg-background/60 px-3 text-xs text-muted-foreground hover:bg-accent hover:text-foreground transition-colors shrink-0"
+        class="hidden md:flex items-center gap-2 h-8 w-[260px] lg:w-[360px] rounded-md border border-input bg-background/60 px-3 text-xs text-muted-foreground hover:bg-primary hover:text-foreground transition-colors shrink-0"
         :aria-label="t('global_search.open_aria')"
     >
         <Search class="size-3.5 shrink-0 opacity-60" />
@@ -188,7 +188,7 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
     <!-- Mobile icon-only trigger -->
     <button
         @click="openSearch"
-        class="md:hidden flex items-center justify-center size-8 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+        class="md:hidden flex items-center justify-center size-8 rounded-md text-muted-foreground hover:bg-primary hover:text-foreground transition-colors"
         :aria-label="t('general.search')"
     >
         <Search class="size-4" />
@@ -262,7 +262,7 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
                                     'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors',
                                     activeTab === tab.key
                                         ? 'bg-primary text-primary-foreground'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                                        : 'text-muted-foreground hover:text-foreground hover:bg-primary'
                                 ]"
                             >
                                 {{ t(tab.labelKey) }}
@@ -315,8 +315,8 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
                                             :class="[
                                                 'w-full flex items-center gap-3 px-4 py-2.5 text-start transition-colors',
                                                 result._idx === activeIdx
-                                                    ? 'bg-accent text-accent-foreground'
-                                                    : 'hover:bg-accent/60',
+                                                    ? 'bg-primary text-accent-foreground'
+                                                    : 'hover:bg-primary/60',
                                             ]"
                                         >
                                             <!-- Avatar / Icon -->
