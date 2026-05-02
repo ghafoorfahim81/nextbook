@@ -146,6 +146,7 @@ const data = {
 
 const activeTeam = ref(data.teams[0])
 const page = usePage<any>()
+const selectDir = computed(() => ((page.props as { direction?: string }).direction === 'rtl' ? 'rtl' : 'ltr'))
 
 function setActiveTeam(team: typeof data.teams[number]) {
     activeTeam.value = team
@@ -214,14 +215,14 @@ type ConnectionState = 'online' | 'slow' | 'offline'
 const connectionState = ref<ConnectionState>('online')
 const connectionLabel = computed(() => {
     if (connectionState.value === 'offline') {
-        return 'No connection'
+        return t('layout.no_connection')
     }
 
     if (connectionState.value === 'slow') {
-        return 'Slow connection'
+        return t('layout.slow_connection')
     }
 
-    return 'Online'
+    return t('layout.online')
 })
 
 const connectionDotClass = computed(() => {
@@ -1113,7 +1114,7 @@ function logout() {
                             {{ t('layout.branch') || 'Branch' }}
                         </label> -->
 
-                        <Select v-model="selectedBranchId" @update:modelValue="switchBranch">
+                        <Select v-model="selectedBranchId" :dir="selectDir" @update:modelValue="switchBranch">
                             <SelectTrigger class="h-7 w-[110px] text-xs border-input md:w-[130px]">
                                 <SelectValue :placeholder="t('layout.branch')" />
                             </SelectTrigger>
@@ -1122,7 +1123,7 @@ function logout() {
                                     v-for="branch in branches"
                                     :key="branch.id"
                                     :value="branch.id"
-                                    class="px-5 py-2 text-xs data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[highlighted]:bg-primary data-[highlighted]:text-primary-foreground rtl:pe-10 rtl:ps-3 rtl:bg-left rtl:pr-8"
+                                    class="px-5 py-2 text-xs data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[highlighted]:bg-primary data-[highlighted]:text-primary-foreground"
                                 >
                                     {{ branch.name }}
                                 </SelectItem>
@@ -1134,13 +1135,13 @@ function logout() {
                     </div>
                     <NotificationDropdown />
                     <LanguageSwitcher />
-                    <button
+                    <!-- <button
                         @click="toggleColorMode"
                         class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                     >
                         <Moon v-if="isDarkModeActive" class="size-5 text-gray-800 dark:text-gray-200" />
                         <Sun v-else class="size-5 text-gray-800 dark:text-gray-200" />
-                    </button>
+                    </button> -->
                 </div>
 <!--                </div>-->
             </header>
