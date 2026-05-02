@@ -614,23 +614,23 @@ onMounted(() => {
                 <NextInput :label="t('item.cost')" type="number" v-model="form.cost" :error="form.errors?.cost" />
                 <div class="flex flex-row gap-4 w-full">
                     <div class="flex-1">
-                        <NextInput 
-                            :label="t('item.sale_price')" 
-                            type="number" 
-                            :placeholder="t('general.enter', { text: t('item.sale_price') })" 
-                            v-model="form.sale_price" 
-                            :error="form.errors?.sale_price" 
+                        <NextInput
+                            :label="t('item.sale_price')"
+                            type="number"
+                            :placeholder="t('general.enter', { text: t('item.sale_price') })"
+                            v-model="form.sale_price"
+                            :error="form.errors?.sale_price"
                         />
                     </div>
                     <div class="flex-1 flex items-center justify-between border rounded-md">
                         <div>
-                            <NextInput 
-                            :label="t('item.margin_percentage')" 
-                            type="number" 
-                            :placeholder="t('general.enter', { text: t('item.margin_percentage') })" 
-                            v-model="form.margin_percentage" 
-                            :error="form.errors?.margin_percentage" 
-                        /> 
+                            <NextInput
+                            :label="t('item.margin_percentage')"
+                            type="number"
+                            :placeholder="t('general.enter', { text: t('item.margin_percentage') })"
+                            v-model="form.margin_percentage"
+                            :error="form.errors?.margin_percentage"
+                        />
                         </div>
                     <div class="flex items-center justify-end px-2">
                         <Popover v-model:open="isMarginPercentagePopoverOpen">

@@ -32,18 +32,22 @@ function goBack() {
 
 <template>
     <div
-        class="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-border/60 bg-muted/20 px-3 py-2 shadow-sm backdrop-blur-sm"
+        class="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-primary/60 px-3 py-2 shadow-sm backdrop-blur-sm justify-between"
     >
-        <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            class="h-8 gap-1.5 bg-background"
-            @click="goBack"
-        >
-            <ArrowLeft class="h-4 w-4 rtl:rotate-180" />
-            {{ t('general.back') }}
-        </Button>
-        <ModuleHelpButton :module="module" toolbar />
+        <div class="flex items-center gap-2">
+            <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                class="h-8 gap-1.5 bg-background"
+                @click="goBack"
+            >
+                <ArrowLeft class="h-4 w-4 rtl:rotate-180" />
+                {{ t('general.back') }}
+            </Button>
+        </div>
+        <div class="flex items-center gap-2 ms-auto">
+            <ModuleHelpButton :module="module" toolbar />
+        </div>
     </div>
 </template>
