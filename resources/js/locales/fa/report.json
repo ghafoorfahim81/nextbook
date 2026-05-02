@@ -144,7 +144,9 @@
     "source_type": "نوع منبع",
     "reference_id": "شناسه مرجع",
     "reorder_level": "حد سفارش",
-    "reference_number": "شماره مرجع"
+    "reference_number": "شماره مرجع",
+    "expire_date": "تاریخ انقضا",
+    "batch": "بچ"
   },
   "reports": {
     "trial_balance": {

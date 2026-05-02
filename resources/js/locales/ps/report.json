@@ -142,7 +142,10 @@
     "movement_type": "د حرکت ډول",
     "source_type": "د سرچینې ډول",
     "reference_id": "د مرجع پېژند",
-    "reorder_level": "د بیا فرمایش کچه"
+    "reorder_level": "د بیا فرمایش کچه",
+    "reference_number": "د مرجع شماره",
+    "expire_date": "د ختمېدو نېټه",
+    "batch": "د بچ شماره"
   },
   "reports": {
     "trial_balance": {

@@ -73,5 +73,11 @@ return [
     'revenue' => 'درآمد',
     'cost_of_goods_sold' => 'هزینه محصولات فروخته شد',
     'expenses' => 'هزینه ها',
+    'net_profit' => 'سود خالص',
+    'gross_profit' => 'سود خالص',
+    'total_revenue' => 'درآمد کل',
+    'total_cost_of_goods_sold' => 'هزینه محصولات فروخته شد',
+    'total_expenses' => 'هزینه ها کل',
+    'current_period_profit_loss' => 'سود/زیان دوره جاری',
 ];
 

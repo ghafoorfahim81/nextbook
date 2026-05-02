@@ -147,7 +147,7 @@ watch(
 
 <template>
   <Dialog :open="open" @update:open="close">
-    <DialogContent class="max-w-5xl">
+    <DialogContent class="max-w-5xl overflow-y-auto max-h-[90vh]">
       <DialogHeader>
         <DialogTitle>{{ title || t('general.allocate_bills') }}</DialogTitle>
         <DialogDescription>

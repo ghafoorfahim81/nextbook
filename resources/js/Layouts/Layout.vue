@@ -487,7 +487,7 @@ const navMain = computed(() => [
             { title: t('sidebar.journal_entry.journal_entry'), url: '/journal-entries', icon: FileText, permission: 'journal_entries.view_any' },
         ],
     },
-    
+
     {
         key: 'inventory',
         title: t('sidebar.main.inventory'),
@@ -1084,16 +1084,23 @@ function logout() {
                     <Separator orientation="vertical" class="mr-2 hidden h-4 sm:block" />
                 </div>
 
-                <!-- Center: Global search (desktop) / connection status overlay -->
-                <div class="flex min-w-0 flex-1 items-center justify-center px-2">
-                    <GlobalSearch />
-                </div>
-
-                <!-- Connection status badge (absolute, overlays center when offline) -->
-                <div v-show="connectionLabel !== 'Online'" class="pointer-events-none absolute inset-x-0 top-1/2 z-10 hidden -translate-y-1/2 justify-center md:flex">
-                    <div class="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-1.5 text-xs text-muted-foreground shadow-sm backdrop-blur">
-                        <span class="size-2 rounded-full" :class="connectionDotClass" aria-hidden="true" />
-                        <span class="font-medium text-foreground">{{ connectionLabel }}</span>
+                <!-- Center: connection status + global search side by side (no overlap) -->
+                <div class="flex min-w-0 flex-1 items-center justify-center gap-2 px-2 sm:gap-3">
+                    <div
+                        v-show="connectionState !== 'online'"
+                        class="hidden shrink-0 items-center md:inline-flex rtl:flex-row-reverse"
+                    >
+                        <div
+                            class="inline-flex max-w-[140px] items-center gap-2 rounded-full border border-border/70 bg-background/90 px-2.5 py-1 text-[11px] text-muted-foreground shadow-sm backdrop-blur sm:max-w-none sm:px-3 sm:py-1.5 sm:text-xs"
+                            role="status"
+                            :aria-label="connectionLabel"
+                        >
+                            <span class="size-2 shrink-0 rounded-full" :class="connectionDotClass" aria-hidden="true" />
+                            <span class="truncate font-medium text-foreground">{{ connectionLabel }}</span>
+                        </div>
+                    </div>
+                    <div class="flex min-w-0 justify-center">
+                        <GlobalSearch />
                     </div>
                 </div>
 
@@ -1102,9 +1109,9 @@ function logout() {
 
                     <QuickLinks />
                     <div v-if="isSuperAdmin" class="hidden items-center max-start gap-2 sm:flex">
-                        <label class="hidden text-xs text-muted-foreground md:block" for="branch-switcher">
+                        <!-- <label class="hidden text-xs text-muted-foreground md:block" for="branch-switcher">
                             {{ t('layout.branch') || 'Branch' }}
-                        </label>
+                        </label> -->
 
                         <Select v-model="selectedBranchId" @update:modelValue="switchBranch">
                             <SelectTrigger class="h-7 w-[110px] text-xs border-input md:w-[130px]">

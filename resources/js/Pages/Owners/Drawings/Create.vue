@@ -9,6 +9,7 @@ import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
 
 const { t } = useI18n()
@@ -145,6 +146,7 @@ function handleSelectChange(field, value) {
 
 <template>
   <AppLayout :title="t('general.create', { name: t('sidebar.owners.drawing') })">
+    <FormPageToolbar back-route="drawings.index" module="owner" />
     <form @submit.prevent="handleSubmit(false)">
       <div class="mb-5 rounded-xl border border-primary p-4 shadow-sm relative bg-card">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">

@@ -9,7 +9,7 @@ import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import BillAllocationDialog from '@/Components/next/BillAllocationDialog.vue'
-import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
+import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { Spinner } from '@/Components/ui/spinner'
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
@@ -210,12 +210,12 @@ function submit(action = 'update') {
 
 <template>
   <AppLayout :title="t('general.edit', { name: t('payment.payment') })">
+    <FormPageToolbar back-route="payments.index" module="payments" />
     <form @submit.prevent="submit('update')">
       <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.edit', { name: t('payment.payment') }) }}
         </div>
-        <ModuleHelpButton module="payments" />
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextSelect
             :options="ledgers"

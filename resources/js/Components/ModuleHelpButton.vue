@@ -18,6 +18,10 @@ const props = defineProps({
    * Optional extra wrapper classes (e.g. z-index tweaks).
    */
   class: { type: String, required: false, default: '' },
+  /**
+   * Inline trigger aligned with small outline buttons (e.g. next to Back on form pages).
+   */
+  toolbar: { type: Boolean, required: false, default: false },
 })
 
 const { t, tm } = useI18n()
@@ -44,14 +48,28 @@ const items = computed(() => {
 </script>
 
 <template>
-  <div :class="cn(props.positionClass, 'z-50000', props.class)">
+  <div
+    :class="cn(
+      props.toolbar ? 'relative inline-flex items-center z-50000' : props.positionClass,
+      !props.toolbar && 'z-50000',
+      props.class,
+    )"
+  >
     <Dialog>
       <DialogTrigger as-child>
-        <div class="bg-card px-2 py-1 rounded-md shadow-sm border mt-3 text-primary">
-          <!-- <Button type="button" variant="ghost" size="sm" class="h-6 px-2"> -->
-            <Info class="w-4 h-4 text-primary hover:cursor-pointer" />
-            <!-- <span class="text-xs">{{ t('general.info') }}</span>
-          </Button> -->
+        <button
+          v-if="props.toolbar"
+          type="button"
+          class="inline-flex h-8 items-center gap-1.5 rounded-md border border-input bg-background px-2.5 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Info class="size-4 shrink-0 text-primary" aria-hidden="true" />
+          <span>{{ t('general.info') }}</span>
+        </button>
+        <div
+          v-else
+          class="bg-card px-2 py-1 rounded-md shadow-sm border mt-3 text-primary"
+        >
+          <Info class="w-4 h-4 text-primary hover:cursor-pointer" />
         </div>
       </DialogTrigger>
       <DialogContent class="max-w-2xl">

@@ -5,11 +5,13 @@ import { useI18n } from 'vue-i18n';
 import { router, useForm } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import { Package2, FileText, User, Calendar, DollarSign, FileCheck, CheckCircle2, XCircle, ArrowLeft } from 'lucide-vue-next';
+import { Package2, FileText, User, Calendar, DollarSign, FileCheck, CheckCircle2, XCircle, ArrowLeft, SquarePen } from 'lucide-vue-next';
+import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/Components/ui/toast/use-toast';
 
 const { t } = useI18n();
 const { toast } = useToast();
+const { can } = useAuth();
 
 const props = defineProps({
     purchase: { type: Object, required: true },
@@ -92,11 +94,21 @@ const updateStatus = (status) => {
     <AppLayout :title="`${t('purchase.purchase')} #${purchaseData.number}`">
         <div class="space-y-6">
             <!-- Page header -->
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-3">
                     <Button variant="outline" size="sm" @click="router.visit(route('purchases.index'))">
                         <ArrowLeft class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
                         {{ t('general.back') }}
+                    </Button>
+                    <Button
+                        v-if="can('purchases.update') && purchaseData.id"
+                        variant="default"
+                        size="sm"
+                        class="gap-1.5 bg-primary text-primary-foreground"
+                        @click="router.visit(route('purchases.edit', purchaseData.id))"
+                    >
+                        <SquarePen class="h-4 w-4" />
+                        {{ t('datatable.edit') }}
                     </Button>
                     <div class="flex items-center gap-2">
                         <Package2 class="h-6 w-6 text-violet-500" />

@@ -124,6 +124,7 @@
                                 {{ getRowNumber(rowIndex) }}
                             </template>
                             <template v-else-if="column.key === 'actions'">
+                                <div class="flex items-center gap-0.5" @click.stop>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger as-child>
                                         <Button variant="ghost" size="icon" class="h-6 w-6 hover:bg-violet-500 hover:text-white">
@@ -140,6 +141,7 @@
                                         <DropdownMenuItem v-if="props.hasPrint && can(`${props.can}.print`)" :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']" @click="$emit('print', item.id)"><Printer class="h-3 w-3" /> {{ t('datatable.print') }}</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
+                                </div>
                             </template>
                             <template v-else-if="column.render">
                                 {{ column.render(item) }}
@@ -426,5 +428,5 @@ const getRowNumber = (rowIndex) => {
     const per = props.items?.meta?.per_page ?? (perPage.value || 10)
     return (current - 1) * per + rowIndex + 1
 }
- 
+
 </script>

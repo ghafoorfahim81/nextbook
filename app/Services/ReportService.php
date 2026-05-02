@@ -648,6 +648,12 @@ class ReportService
                     ->where('s.branch_id', '=', $filters['branch_id'])
                     ->whereNull('s.deleted_at');
             })
+            ->leftJoin('unit_measures as u', function ($join) use ($filters) {
+                $join->on('u.id', '=', 'sm.unit_measure_id')
+                    // ->where('u.branch_id', '=', $filters['branch_id'])
+                    ->whereNull('u.deleted_at');
+            })
+
             ->where('sm.branch_id', $filters['branch_id'])
             ->whereNull('sm.deleted_at')
             ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('sm.item_id', $itemId));
@@ -665,10 +671,30 @@ class ReportService
             ->selectRaw('sm.date')
             ->selectRaw('i.name as item')
             ->selectRaw('w.name as warehouse')
-            ->selectRaw('sm.movement_type')
+            ->selectRaw('u.name as unit_measure')
+            // Fetch movement_type as the raw enum value, and fetch the translated movement_type using a CASE statement or helper mapping
+            ->selectRaw("
+                CASE sm.movement_type
+                    WHEN 'in' THEN '" . __('enums.stock_direction_type.in') . "'
+                    WHEN 'out' THEN '" . __('enums.stock_direction_type.out') . "'
+                    ELSE sm.movement_type
+                END as movement_type
+            ")
             ->selectRaw('sm.quantity')
             ->selectRaw('sm.unit_cost as unit_price')
-            ->selectRaw('sm.source as source_type')
+            ->selectRaw("
+                CASE sm.source
+                    WHEN 'purchase' THEN '" . __('enums.stock_source_type.purchase') . "'
+                    WHEN 'sale' THEN '" . __('enums.stock_source_type.sale') . "'
+                    WHEN 'adjustment' THEN '" . __('enums.stock_source_type.adjustment') . "'
+                    WHEN 'transfer' THEN '" . __('enums.stock_source_type.transfer') . "'
+                    WHEN 'opening' THEN '" . __('enums.stock_source_type.opening') . "'
+                    ELSE sm.source
+                END as source_type
+            ")
+
+            ->selectRaw('sm.batch')
+            ->selectRaw('sm.expire_date')
             ->selectRaw('sm.reference_type')
             ->selectRaw('sm.reference_id')
             ->selectRaw('s.number as number');
@@ -682,9 +708,12 @@ class ReportService
                 'item' => $row->item,
                 'warehouse' => $row->warehouse,
                 'movement_type' => $row->movement_type,
+                'unit_measure' => $row->unit_measure,
                 'quantity' => $this->quantityValue($row->quantity),
                 'unit_price' => $this->moneyValue($row->unit_price),
                 'source_type' => $this->sourceLabel($row->source_type),
+                'batch' => $row->batch,
+                'expire_date' => $row->expire_date ? $this->displayDate($row->expire_date) : null,
                 'reference_type' => $this->referenceLabel($row->reference_type),
                 'reference_id' => $row->reference_id,
                 'number' => $row->number,
@@ -1588,7 +1617,7 @@ class ReportService
         $retainedEarnings = $this->yearToDateNetProfit($filters);
         if (abs($retainedEarnings) > 0.0001) {
             $equity[] = [
-                'account_name' => 'Current Period Profit / Loss',
+                'account_name' => __('general.current_period_profit_loss'),
                 'balance' => $this->moneyValue($retainedEarnings),
             ];
         }
@@ -1788,7 +1817,7 @@ class ReportService
             ->whereNull('tl.deleted_at')
             ->groupBy('a.id', 'a.name', 'a.slug', 'at.slug')
             ->selectRaw('a.id as account_id')
-            ->selectRaw('a.name as account_name')
+            ->selectRaw("CASE WHEN ? = 'en' THEN a.name ELSE COALESCE(a.local_name, a.name) END as account_name", [app()->getLocale()])
             ->selectRaw('a.slug as account_slug')
             ->selectRaw('at.slug as account_type_slug')
             ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as raw_balance');
