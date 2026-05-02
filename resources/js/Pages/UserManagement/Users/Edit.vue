@@ -4,7 +4,7 @@ import { ref, computed } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import NextInput from "@/Components/next/NextInput.vue";
 import NextSelect from "@/Components/next/NextSelect.vue";
-import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
+import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { Input } from "@/Components/ui/input";
@@ -108,12 +108,12 @@ const goBack = () => {
 
 <template>
     <AppLayout :title="t('general.edit', { name: t('user_mangements.user') })">
+        <FormPageToolbar back-route="users.index" module="user_management" />
         <form @submit.prevent="handleSubmit()">
             <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.edit', { name: t('user_mangements.user') }) }}
                 </div>
-                <ModuleHelpButton module="user_management" />
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <!-- Basic Information -->
                     <NextInput

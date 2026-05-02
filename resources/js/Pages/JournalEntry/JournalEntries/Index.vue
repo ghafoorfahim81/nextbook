@@ -61,7 +61,7 @@ const filterFields = computed(() => ([
 <template>
     <AppLayout :title="t('sidebar.journal_entry.journal_entries')">
         <DataTable
-            can="journals.view_any"
+            can="journal_entries"
             :items="journalEntries"
             :columns="columns"
             :filters="filters"

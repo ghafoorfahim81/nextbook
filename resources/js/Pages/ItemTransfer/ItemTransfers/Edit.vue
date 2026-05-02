@@ -8,7 +8,7 @@ import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
-import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
+import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { Trash2 } from 'lucide-vue-next'
 import { useSidebar } from '@/Components/ui/sidebar/utils'
 import { useLazyProps } from '@/composables/useLazyProps'
@@ -244,12 +244,12 @@ onUnmounted(() => {
 
 <template>
   <AppLayout :title="t('general.edit', { name: t('item_transfer.item_transfer') })" :sidebar-collapsed="true">
+    <FormPageToolbar back-route="item-transfers.index" module="transfer" />
     <form @submit.prevent="handleSubmit">
       <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.edit', { name: t('item_transfer.item_transfer') }) }}
         </div>
-        <ModuleHelpButton module="transfer" />
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextDate v-model="form.date" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
           <NextSelect

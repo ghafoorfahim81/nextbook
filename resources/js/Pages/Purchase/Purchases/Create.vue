@@ -14,7 +14,7 @@ import TransactionSummary from '@/Components/next/TransactionSummary.vue';
 import DiscountSummary from '@/Components/next/DiscountSummary.vue';
 import TaxSummary from '@/Components/next/TaxSummary.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
-import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
+import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
@@ -645,10 +645,10 @@ const spec_text = item_management?.spec_text ?? 'batch'
 
 <template>
     <AppLayout :title="t('general.create', { name: t('purchase.purchase') })" :sidebar-collapsed="true">
+        <FormPageToolbar back-route="purchases.index" module="purchase" />
         <form @submit.prevent="handleSubmitAction(false)">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative ">
             <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('purchase.purchase') }) }}</div>
-            <ModuleHelpButton module="purchase" />
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <NextSelect
                     autofocus

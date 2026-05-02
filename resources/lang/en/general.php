@@ -42,7 +42,7 @@ return [
     'items_created_successfully' => 'Items created successfully.',
     'items_saved_successfully' => 'Items saved successfully.',
 
-    'cannot_delete_main_warehouse' => 'You cannot delete the main warehouse.', 
+    'cannot_delete_main_warehouse' => 'You cannot delete the main warehouse.',
     'cannot_delete_main_branch' => 'You cannot delete the main branch.',
     'cannot_delete_main_account' => 'You cannot delete the main account.',
     'cannot_delete_own_account' => 'You cannot delete your own account.',
@@ -81,5 +81,6 @@ return [
     'total_revenue' => 'Total Revenue',
     'total_cost_of_goods_sold' => 'Total Cost of Goods Sold',
     'total_expenses' => 'Total Expenses',
+    'current_period_profit_loss' => 'Current Period Profit / Loss',
 ];
 

@@ -10,7 +10,7 @@ import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import BillAllocationDialog from '@/Components/next/BillAllocationDialog.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
-import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
+import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useI18n } from 'vue-i18n'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
 const { t } = useI18n()
@@ -236,12 +236,12 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
 
 <template>
   <AppLayout :title="t('general.create', { name: t('receipt.receipt') })"  >
+    <FormPageToolbar back-route="receipts.index" module="receipt" />
     <form @submit.prevent="submitActionHandler('create')">
       <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.create', { name: t('receipt.receipt') }) }}
         </div>
-        <ModuleHelpButton module="receipt" />
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextSelect
             autofocus

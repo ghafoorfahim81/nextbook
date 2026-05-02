@@ -8,11 +8,13 @@ import { Button } from '@/Components/ui/button';
 import {
     Package, Hash, Pill, Box, Tag, Layers, TrendingUp, TrendingDown,
     DollarSign, Palette, Ruler, MapPin, Barcode, Search,
-    Building, Target, User, Download, ArrowLeft,
+    Building, Target, User, Download, ArrowLeft, SquarePen,
 } from 'lucide-vue-next';
+import { useAuth } from '@/composables/useAuth';
 import JsBarcode from 'jsbarcode';
 
 const { t } = useI18n();
+const { can } = useAuth();
 
 const props = defineProps({
     item: { type: Object, required: true },
@@ -136,10 +138,20 @@ onMounted(() => {
     <AppLayout :title="`${t('item.item')} - ${itemData.name || ''}`">
         <div class="space-y-6">
             <!-- Page header -->
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3">
                 <Button variant="outline" size="sm" @click="router.visit(route('items.index'))">
                     <ArrowLeft class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
                     {{ t('general.back') }}
+                </Button>
+                <Button
+                    v-if="can('items.update') && itemData.id"
+                    variant="default"
+                    size="sm"
+                    class="gap-1.5 bg-primary text-primary-foreground"
+                    @click="router.visit(route('items.edit', itemData.id))"
+                >
+                    <SquarePen class="h-4 w-4" />
+                    {{ t('datatable.edit') }}
                 </Button>
                 <div class="flex items-center gap-3">
                     <div class="bg-violet-500 text-white p-2 rounded-lg">
@@ -221,33 +233,33 @@ onMounted(() => {
                     <table class="w-full text-xs text-foreground">
                         <thead class="sticky top-0 border-b-2 border-border z-10 bg-violet-500 text-white">
                             <tr class="text-xs uppercase tracking-wide font-semibold">
-                                <th class="py-3 px-3 text-left whitespace-nowrap">#</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap">{{ t('general.ledger') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap">{{ t('general.bill_number') }}</th>
-                                <th class="py-3 px-3 text-center whitespace-nowrap">{{ t('general.quantity') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap">{{ t('general.source') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap">{{ t('admin.unit_measure.unit_measure') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap">{{ t('general.date') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap">{{ t('item.batch') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap">{{ t('item.expire_date') }}</th>
-                                <th class="py-3 px-3 text-right whitespace-nowrap">{{ t('general.unit_price') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap">{{ t('admin.warehouse.warehouse') }}</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">#</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.ledger') }}</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.bill_number') }}</th>
+                                <th class="py-3 px-3 text-center whitespace-nowrap rtl:text-right">{{ t('general.quantity') }}</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.source') }}</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('admin.unit_measure.unit_measure') }}</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.date') }}</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.batch') }}</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.expire_date') }}</th>
+                                <th class="py-3 px-3 text-right whitespace-nowrap rtl:text-right">{{ t('general.unit_price') }}</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('admin.warehouse.warehouse') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="(row, index) in currentRecords" :key="row.id || index"
                                 class="border-b border-border/60 hover:bg-muted/40 transition">
-                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground">{{ index + 1 }}</td>
-                                <td class="py-3 px-3 whitespace-nowrap font-medium">{{ row.ledger_name || '—' }}</td>
-                                <td class="py-3 px-3 whitespace-nowrap font-semibold">{{ row.bill_number || '—' }}</td>
-                                <td class="py-3 px-3 text-center whitespace-nowrap font-semibold">{{ row.quantity }}</td>
-                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground">{{ row.source }}</td>
-                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground">{{ row.unit_measure_name }}</td>
-                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground">{{ row.date }}</td>
-                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground">{{ row.batch || '—' }}</td>
-                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground">{{ row.expire_date || '—' }}</td>
-                                <td class="py-3 px-3 text-right whitespace-nowrap font-semibold">{{ row.unit_cost }}</td>
-                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground">{{ row.warehouse_name }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ index + 1 }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap font-medium rtl:text-right">{{ row.ledger_name || '—' }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap font-semibold rtl:text-right">{{ row.bill_number || '—' }}</td>
+                                <td class="py-3 px-3 text-center whitespace-nowrap font-semibold rtl:text-right">{{ row.quantity }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.source }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.unit_measure_name }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.date }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.batch || '—' }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.expire_date || '—' }}</td>
+                                <td class="py-3 px-3 text-right whitespace-nowrap font-semibold rtl:text-right">{{ row.unit_cost }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.warehouse_name }}</td>
                             </tr>
                             <tr v-if="!loading && currentRecords.length === 0">
                                 <td colspan="11" class="py-8 text-center text-muted-foreground">{{ t('general.no_record_available') }}</td>

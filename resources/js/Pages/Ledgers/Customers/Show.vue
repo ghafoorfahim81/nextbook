@@ -2,6 +2,10 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { router } from '@inertiajs/vue3';
+import { Button } from '@/Components/ui/button';
+import { ArrowLeft, SquarePen } from 'lucide-vue-next';
+import { useAuth } from '@/composables/useAuth';
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue';
 
 const props = defineProps({
@@ -12,6 +16,7 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+const { can } = useAuth();
 
 const customerData = computed(() => props.customer?.data ?? props.customer ?? {});
 const statement = computed(() => customerData.value.statement ?? {});
@@ -89,6 +94,22 @@ const customerMovementColumns = computed(() => [
 <template>
     <AppLayout :title="`${t('ledger.customer.customer')} - ${customerData.name || ''}`">
         <div class="space-y-4">
+            <div class="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" @click="router.visit(route('customers.index'))">
+                    <ArrowLeft class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                    {{ t('general.back') }}
+                </Button>
+                <Button
+                    v-if="can('customers.update') && customerData.id"
+                    variant="default"
+                    size="sm"
+                    class="gap-1.5 bg-primary text-primary-foreground"
+                    @click="router.visit(route('customers.edit', customerData.id))"
+                >
+                    <SquarePen class="h-4 w-4" />
+                    {{ t('datatable.edit') }}
+                </Button>
+            </div>
             <!-- Top tabs: General / Opening -->
             <div class="border-b border-border flex gap-4">
                 <button
