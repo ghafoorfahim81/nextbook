@@ -53,7 +53,7 @@ const itemDetails = computed(() => [
     { label: t('item.colors'), value: itemData.value?.colors, icon: Palette },
     { label: t('item.size'), value: itemData.value?.size?.name, icon: Ruler },
     { label: t('item.purchase_price'), value: itemData.value?.purchase_price, icon: DollarSign },
-    { label: t('item.cost'), value: itemData.value?.cost, icon: DollarSign },
+    { label: t('item.cost'), value: itemData.value?.avg_cost, icon: DollarSign },
     { label: t('item.sale_price'), value: itemData.value?.sale_price, icon: DollarSign },
     { label: t('item.margin_percentage'), value: itemData.value?.margin_percentage, icon: DollarSign },
     { label: t('item.rate_a'), value: itemData.value?.rate_a, icon: DollarSign },
@@ -187,7 +187,7 @@ onMounted(() => {
                 </div>
 
                 <hr class="my-4 border-border" />
-                <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3">
+                <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-4">
                     <div class="flex items-start gap-2">
                         <div class="bg-violet-500 text-white p-1.5 rounded"><Target class="w-4 h-4" /></div>
                         <div><p class="text-xs text-muted-foreground">{{ t('general.on_hand') }}</p><p class="text-sm font-medium text-foreground">{{ itemData.on_hand ?? '—' }}</p></div>
@@ -199,6 +199,10 @@ onMounted(() => {
                     <div class="flex items-start gap-2">
                         <div class="bg-violet-500 text-white p-1.5 rounded"><TrendingUp class="w-4 h-4" /></div>
                         <div><p class="text-xs text-muted-foreground">{{ t('item.out_records') }}</p><p class="text-sm font-medium text-foreground">{{ itemData.stock_out_count ?? '—' }}</p></div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <div class="bg-violet-500 text-white p-1.5 rounded"><TrendingUp class="w-4 h-4" /></div>
+                        <div><p class="text-xs text-muted-foreground">{{ t('item.stock_value') }}</p><p class="text-sm font-medium text-foreground">{{ itemData.on_hand * itemData.avg_cost ?? '—' }}</p></div>
                     </div>
                 </div>
             </div>

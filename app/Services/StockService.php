@@ -32,7 +32,7 @@ class StockService
 
             if ($data['movement_type'] === StockMovementType::IN->value) {
                 return $this->handleIn($item, $movementData, $balanceData);
-            } else { 
+            } else {
                 return $this->handleOut($item, $movementData, $balanceData, $conversionFactor);
             }
         });
@@ -47,7 +47,7 @@ class StockService
 
         $movement = StockMovement::create([
             ...$movementData,
-            'expire_date' => $this->normalizeDate($movementData['expire_date']), 
+            'expire_date' => $this->normalizeDate($movementData['expire_date']),
             'qty_remaining' => $balanceData['quantity'],
         ]);
 
@@ -65,7 +65,7 @@ class StockService
         $method = $this->getCostingMethod($movementData['branch_id']);
 
         if ($method === 'fifo') {
-            $allocations = $this->deductFIFO($item, $movementData, $balanceData, $conversionFactor); 
+            $allocations = $this->deductFIFO($item, $movementData, $balanceData, $conversionFactor);
             $this->decreaseBalance($balanceData, $allocations);
 
             return $allocations;
@@ -83,7 +83,7 @@ class StockService
      */
     protected function deductFIFO(Item $item, array $movementData, array $balanceData, float $conversionFactor): array
     {
-        $remaining = $balanceData['quantity']; 
+        $remaining = $balanceData['quantity'];
         $query = StockMovement::query()
             ->where('branch_id', $balanceData['branch_id'])
             ->where('item_id', $balanceData['item_id'])
@@ -97,7 +97,7 @@ class StockService
 
         if (!empty($balanceData['expire_date'])) {
             $query->whereDate('expire_date', $this->normalizeDate($balanceData['expire_date']));
-        } 
+        }
 
         $inMovements = $query
             ->orderByRaw('CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END')
@@ -106,17 +106,17 @@ class StockService
             ->orderBy('created_at')
             ->orderBy('id')
             ->lockForUpdate()
-            ->get();  
+            ->get();
 
-        $allocations = []; 
+        $allocations = [];
         foreach ($inMovements as $movement) {
             if ($remaining <= 0) {
                 break;
-            } 
-            $deductQty = min($movement->qty_remaining, $remaining); 
+            }
+            $deductQty = min($movement->qty_remaining, $remaining);
             $movement->qty_remaining = (float) $movement->qty_remaining - $deductQty;
             $movement->status = StockStatus::POSTED->value;
-            $movement->save(); 
+            $movement->save();
 
             $outMovement = StockMovement::create([
                 ...$movementData,
@@ -135,9 +135,9 @@ class StockService
                 'status' => $this->stockStatusValue($movement->status),
                 'movement_id' => $movement->id,
                 'out_movement_id' => $outMovement->id,
-            ]; 
-            $remaining -= $deductQty; 
-        } 
+            ];
+            $remaining -= $deductQty;
+        }
         if ($remaining > 0) {
             throw ValidationException::withMessages([
                 'stock' => 'Insufficient stock for FIFO deduction.'
@@ -172,31 +172,7 @@ class StockService
      * Increase Balance
      */
     protected function increaseBalance(Item $item, array $data): void
-    {
-        $replaceBalance = (bool) ($data['replace_balance'] ?? false);
-        $balance = null;
-
-        if ($replaceBalance && !empty($data['balance_id'])) {
-            $balance = StockBalance::query()
-                ->lockForUpdate()
-                ->find($data['balance_id']);
-        }
-
-        if ($balance) {
-            $balance->update([
-                'quantity' => $data['quantity'],
-                'average_cost' => $data['unit_cost'],
-                'batch' => $data['batch'] ?? null,
-                'expire_date' => $data['expire_date'] ? $this->normalizeDate($data['expire_date']) : null,
-                'warehouse_id' => $data['warehouse_id'],
-                'branch_id' => $data['branch_id'],
-                'item_id' => $data['item_id'],
-                'status' => $data['status'] ?? StockStatus::DRAFT->value,
-            ]);
-
-            return;
-        }
-
+    { 
         $balance = StockBalance::firstOrCreate(
             [
                 'branch_id' => $data['branch_id'],
@@ -207,78 +183,51 @@ class StockService
             ],
             [
                 'quantity' => 0,
-                'average_cost' => 0,
                 'status' => $data['status'] ?? StockStatus::DRAFT->value,
             ]
         );
-
         $newQty = $balance->quantity + $data['quantity'];
 
-        $newAvg = $this->calculateNewAverage(
-            $balance->quantity,
-            $balance->average_cost,
+        $totalQty = (float) StockBalance::where('item_id', $item->id)->sum('quantity');
+
+       $newAvg = $this->calculateNewAverage(
+            $totalQty,           // total qty before this receipt
+            (float) $item->avg_cost,
             $data['quantity'],
             $data['unit_cost']
         );
+        $item->avg_cost = $newAvg;
+        $item->save();
 
         $balance->update([
             'quantity' => $newQty,
-            'average_cost' => $newAvg,
         ]);
 
-        // // Check if item is batch-tracked (you should have this flag in your item model)
-        // $isBatchTracked = $item->is_batch_tracked;  // Assuming 'is_batch_tracked' is a boolean column
+    }
 
-        // // Build the query based on whether the item is batch-tracked
-        // $query = StockBalance::where('item_id', $item->id)
-        //     ->where('warehouse_id', $data['warehouse_id']);
+        /**
+     * Average Cost Formula
+     */
+    protected function calculateNewAverage(
+        float $oldQty,
+        float $oldAvg,
+        float $newQty,
+        float $newCost
+    ): float {
+        if ($oldQty <= 0) {
+            return $newCost;
+        }
 
-        // if ($isBatchTracked) {
-        //     // For batch-tracked items, use both batch and expire_date
-        //     $query->where('batch', $data['batch'])
-        //           ->where('expire_date', $data['expire_date']);
-        // } else {
-        //     // For non-batch items, only use expire_date
-        //     $query->where('expire_date', $data['expire_date']);
-        // }
-
-        // // Fetch the existing balance record, if it exists
-        // $currentBalance = $query->first();
-
-        // if (!$currentBalance) {
-        //     // If no balance exists, create a new record
-        //     $currentBalance = StockBalance::create([
-        //         'branch_id' => $data['branch_id'],
-        //         'item_id' => $data['item_id'],
-        //         'quantity' => $data['quantity'],
-        //         'average_cost' => $data['unit_cost'],
-        //         'warehouse_id' => $data['warehouse_id'],
-        //         'batch' => $data['batch'] ?? null,  // If item is batch-tracked, batch will be set
-        //         'expire_date' => $data['expire_date'] ?? null,
-        //         'status' => $data['status'] ?? StockStatus::DRAFT->value,
-        //     ]);
-        // } else {
-        //     // If the balance exists, update the quantity and average cost
-        //     $newQty = $currentBalance->quantity + $data['quantity'];
-        //     $newAvg = $this->calculateNewAverage(
-        //         $currentBalance->quantity,
-        //         $currentBalance->average_cost,
-        //         $data['quantity'],
-        //         $data['unit_cost']
-        //     );
-
-        //     $currentBalance->update([
-        //         'quantity' => $newQty,
-        //         'average_cost' => $newAvg,
-        //     ]);
-        // }
+        return (
+            ($oldQty * $oldAvg) + ($newQty * $newCost)
+        ) / ($oldQty + $newQty);
     }
 
     /**
      * Decrease Balance
      */
     protected function decreaseBalance(array $data, ?array $allocations = null): void
-    { 
+    {
 
         if ($allocations !== null) {
             foreach ($allocations as $allocation) {
@@ -308,7 +257,7 @@ class StockService
 
             return;
         }
- 
+
 
         $balances = StockBalance::query()
             ->where('branch_id', $data['branch_id'])
@@ -329,24 +278,6 @@ class StockService
 
         $this->decrementBalances($balances, (float) $data['quantity'], []);
         $this->markBalancesAsPosted($balances);
-    }
-
-    /**
-     * Average Cost Formula
-     */
-    protected function calculateNewAverage(
-        float $oldQty,
-        float $oldAvg,
-        float $newQty,
-        float $newCost
-    ): float {
-        if ($oldQty <= 0) {
-            return $newCost;
-        }
-
-        return (
-            ($oldQty * $oldAvg) + ($newQty * $newCost)
-        ) / ($oldQty + $newQty);
     }
 
     /**

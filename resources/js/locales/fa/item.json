@@ -64,6 +64,7 @@
     "export_out_records": "خروجی اکسل خروجی‌ها",
     "search_item": "جستجوی کالا",
     "item_type": "نوع کالا",
+    "stock_value": "ارزش موجودی",
     "sku": "کد واحد نگهداری موجودی",
     "asset_account": "حساب دارایی",
     "income_account": "حساب درآمد",

@@ -53,6 +53,7 @@ class Item extends Model
         'asset_account_id',
         'minimum_stock',
         'maximum_stock',
+        'avg_cost',
         'colors',
         'size_id',
         'photo',
@@ -82,6 +83,7 @@ class Item extends Model
             'category_id' => 'string',
             'size_id' => 'string',
             'margin_percentage' => 'decimal:4',
+            'avg_cost' => 'decimal:4',
             'item_type' => ItemType::class,
             'minimum_stock' => 'decimal:2',
             'maximum_stock' => 'decimal:2',
@@ -113,6 +115,7 @@ class Item extends Model
             'category.name',
             'minimum_stock',
             'maximum_stock',
+            'avg_cost',
             'colors',
             'size.name',
             'purchase_price',
@@ -213,19 +216,6 @@ class Item extends Model
         ->where('store_id', $storeId)
         ->sum('quantity');
     }
-
-    public function avgCost()
-    {
-        return  $this->stockBalances()->avg('average_cost');
-    }
-    // public function inRecords()
-    // {
-    //     return $this->hasMany(Stock::class);
-    // }
-    // public function outRecords()
-    // {
-    //     return $this->hasMany(StockOut::class);
-    // }
 
     /**
      * Get relationships configuration for dependency checking

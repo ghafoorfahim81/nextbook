@@ -91,7 +91,7 @@ class ItemResource extends JsonResource
      
             'branch_id' => $this->branch_id,
             'on_hand' => number_format($this->onHand(), 2),
-            'avg_cost' => number_format($this->avgCost(), 2),
+            'avg_cost' => number_format($this->avg_cost, 2),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
             'openings' => StockMovementResource::collection($this->whenLoaded('openings')),

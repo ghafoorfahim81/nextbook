@@ -41,6 +41,87 @@ class ItemController extends Controller
 
     public function index(Request $request)
     {
+        // Update each item's avg_cost based on all IN-type stock movements, considering multi-unit
+
+        // Get all items with at least one stock movement (IN type)
+        // Item::chunk(500, function ($items) {
+        //     foreach ($items as $item) {
+        //         // Get all IN-type stock movements for this item
+        //         $movements = StockMovement::where('item_id', $item->id)
+        //             ->where('movement_type', StockMovementType::IN->value)
+        //             ->get();
+
+        //         $totalBaseQty = 0.0;
+        //         $totalCost = 0.0;
+        //         foreach ($movements as $movement) {
+        //             // Get item's base unit (unit_measure_id)
+        //             $itemUnitId = $item->unit_measure_id;
+        //             $movementUnitId = $movement->unit_measure_id;
+
+        //             // Calculate conversion factor between movement's unit and item's base unit
+        //             if ($itemUnitId == $movementUnitId || !$movementUnitId) {
+        //                 $factor = 1;
+        //             } else {
+        //                 // fetch UnitMeasure for conversion
+        //                 $itemUnit = \App\Models\Administration\UnitMeasure::find($itemUnitId);
+        //                 $movementUnit = \App\Models\Administration\UnitMeasure::find($movementUnitId);
+
+        //                 $itemBase = $itemUnit?->unit ?: 1;
+        //                 $movementBase = $movementUnit?->unit ?: 1;
+
+        //                 // Avoid division by zero
+        //                 $factor = ($itemBase != 0) ? ($movementBase / $itemBase) : 1;
+        //             }
+
+        //             // Convert movement quantity to item's base unit
+        //             $qtyInBaseUnit = $movement->quantity * $factor;
+        //             $lineCost = $movement->unit_cost * $movement->quantity;
+
+        //             $totalBaseQty += $qtyInBaseUnit;
+        //             $totalCost += $lineCost;
+        //         }
+
+        //         $avgCost = $totalBaseQty > 0 ? $totalCost / $totalBaseQty : 0;
+
+        //         // Only update if there's a difference, to avoid unnecessary writes
+        //         if ((float) $item->avg_cost !== (float) $avgCost) {
+        //             $item->avg_cost = $avgCost;
+        //             $item->save();
+        //         }
+        //     }
+        // });
+
+            // dd($mappedMovements->toArray());
+
+        //     $avgCosts = StockMovement::query()
+        //     ->selectRaw('item_id, SUM(quantity) as total_quantity, SUM(unit_cost * quantity) as total_cost')
+        //     ->where('movement_type', StockMovementType::IN->value)
+        //     ->groupBy('item_id')
+        //     ->get()
+        //     ->mapWithKeys(function ($itemMovement) {
+        //         // Avoid division by zero just in case
+        //         $avgCost = ($itemMovement->total_quantity != 0)
+        //             ? $itemMovement->total_cost / $itemMovement->total_quantity
+        //             : 0;
+        //         return [$itemMovement->item_id => $avgCost];
+        //     })
+        //     ->toArray();
+
+        // // Handle in batches to avoid memory/timeout issues on large data sets
+        // foreach (array_chunk($avgCosts, 1000, true) as $batch) {
+        //     // Build a single CASE WHEN SQL expression for batch update
+        //     $ids = array_keys($batch);
+        //     $caseSql = "CASE id ";
+        //     foreach ($batch as $itemId => $avgCost) {
+        //         $caseSql .= "WHEN '" . addslashes($itemId) . "' THEN " . (float)$avgCost . " ";
+        //     }
+        //     $caseSql .= "END";
+        //     // Run a single update query for this batch
+        //     Item::whereIn('id', $ids)->update([
+        //         'avg_cost' => DB::raw($caseSql),
+        //     ]);
+        // }
+
         $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'id');
         $sortDirection = $request->input('sortDirection', 'desc');
