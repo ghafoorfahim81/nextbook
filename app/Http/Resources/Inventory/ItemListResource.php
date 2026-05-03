@@ -28,7 +28,7 @@ class ItemListResource extends JsonResource
             'category' => $this->category?->name, 
             'cost' => $this->cost, 
             'on_hand' => number_format($this->onHand(), 2),
-            'avg_cost' => number_format($this->avgCost(), 2), 
+            'avg_cost' => number_format($this->avg_cost, 2), 
         ];
     }
 

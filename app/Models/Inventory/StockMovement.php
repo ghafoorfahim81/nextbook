@@ -108,7 +108,7 @@ class StockMovement extends Model
         $reference = $this->reference;
 
         if (!$reference) {
-            return 'Unknown';
+            return '-';
         }
 
         return match ($this->reference_type) {

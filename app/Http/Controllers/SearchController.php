@@ -303,6 +303,7 @@ class SearchController extends Controller
                 'id', 'name', 'code', 'generic_name', 'packing', 'barcode',
                 'unit_measure_id', 'brand_id', 'category_id', 'colors', 'size_id',
                 'purchase_price', 'sale_price', 'margin_percentage', 'rate_a', 'rate_b', 'rate_c', 'rack_no', 'fast_search',
+                'avg_cost',
             ])
             ->with(['unitMeasure', 'brand', 'category', 'size'])
             ->when($searchTerm, function ($query) use ($searchTerm, $searchableFields) {
@@ -350,7 +351,7 @@ class SearchController extends Controller
         $itemIds = $items->pluck('id')->all();
 
         $stockBalances = StockBalance::query()
-            ->select(['item_id', 'warehouse_id', 'batch', 'expire_date', 'quantity', 'average_cost'])
+            ->select(['item_id', 'warehouse_id', 'batch', 'expire_date', 'quantity'])
             ->where('warehouse_id', $warehouseId)
             ->whereIn('item_id', $itemIds)
             ->get();
@@ -378,7 +379,7 @@ class SearchController extends Controller
                     'batch' => $batchKey,
                     'expire_date' => $balance->expire_date,
                     'on_hand' => ($batchSummaries[$batchKey]['on_hand'] ?? 0) + $available,
-                    'average_cost' => $balance->average_cost,
+                    'avg_cost' => $balance->avg_cost,
                 ];
             } elseif ($balance->expire_date) {
                 $hasExpiry = true;
@@ -386,7 +387,7 @@ class SearchController extends Controller
                 $expirySummaries[$expiryKey] = [
                     'expire_date' => $balance->expire_date,
                     'on_hand' => ($expirySummaries[$expiryKey]['on_hand'] ?? 0) + $available,
-                    'average_cost' => $balance->average_cost,
+                    'avg_cost' => $balance->avg_cost,
                 ];
             } else {
                 $nonBatchOnHand += $available;
@@ -398,7 +399,7 @@ class SearchController extends Controller
                 'batch' => $batch['batch'],
                 'expire_date' => $batch['expire_date'],
                 'on_hand' => round($batch['on_hand'] ?? 0, 2),
-                'average_cost' => $batch['average_cost'],
+                'avg_cost' => $batch['avg_cost'],
             ];
         }, $batchSummaries);
 
@@ -406,7 +407,7 @@ class SearchController extends Controller
             return [
                 'expire_date' => $expiry['expire_date'],
                 'on_hand' => round($expiry['on_hand'] ?? 0, 2),
-                'average_cost' => $expiry['average_cost'],
+                'avg_cost' => $expiry['avg_cost'],
             ];
         }, $expirySummaries);
 
@@ -447,7 +448,7 @@ class SearchController extends Controller
             'batches' => array_values($batches ?? []),
             'expiry_batches' => array_values($expiryBatches ?? []),
             'on_hand' => $totalOnHand,
-            'avg_cost' => $item->avgCost(),
+            'avg_cost' => $item->avg_cost,
             'has_batch' => $hasBatch,
             'has_expiry' => $hasExpiry,
         ];
