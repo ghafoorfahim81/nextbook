@@ -78,7 +78,7 @@ onBeforeUnmount(() => {
 <template>
     <DropdownMenu v-model:open="isOpen">
         <DropdownMenuTrigger as-child>
-            <Button variant="ghost" size="icon" class="relative rounded-full">
+            <Button variant="ghost" size="icon" class="relative rounded-full ">
                 <Bell class="size-5" />
                 <span
                     v-if="unreadCount > 0"
@@ -92,7 +92,7 @@ onBeforeUnmount(() => {
 
         <DropdownMenuContent align="end" class="w-[360px] rounded-xl p-0">
             <div class="border-b px-4 py-3">
-                <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center justify-between gap-3 rtl:flex-row-reverse">
                     <div>
                         <div class="font-semibold">{{ t('notifications.latest') }}</div>
                         <div class="text-xs text-muted-foreground">
