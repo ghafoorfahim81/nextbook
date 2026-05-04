@@ -62,7 +62,7 @@ class ItemResource extends JsonResource
             // Calculate total in quantity in item's base unit
             // Only provide stock_count and stock_out_count if 'stocks' relation is loaded
             'stock_count' => $this->whenLoaded('stocks', function () {
-                return $this->stocks
+                $sum = $this->stocks
                     ->where('movement_type', StockMovementType::IN->value)
                     ->sum(function ($stock) {
                         // If unit_measure_id differs (e.g. sale in box, item in each), normalize to item unit
@@ -74,9 +74,10 @@ class ItemResource extends JsonResource
                         if ($itemUnit == 0) $itemUnit = 1; // avoid div 0
                         return $stock->quantity * ($stockUnit / $itemUnit);
                     });
+                return number_format($sum, 2);
             }),
             'stock_out_count' => $this->whenLoaded('stocks', function () {
-                return $this->stocks
+                $sum = $this->stocks
                     ->where('movement_type', StockMovementType::OUT->value)
                     ->sum(function ($stock) {
                         if ((string)$stock->unit_measure_id === (string)$this->unit_measure_id || !$stock->unit_measure_id) {
@@ -87,11 +88,12 @@ class ItemResource extends JsonResource
                         if ($itemUnit == 0) $itemUnit = 1;
                         return $stock->quantity * ($stockUnit / $itemUnit);
                     });
+                return number_format($sum, 2);
             }),
-     
             'branch_id' => $this->branch_id,
             'on_hand' => number_format($this->onHand(), 2),
             'avg_cost' => number_format($this->avg_cost, 2),
+            'stock_value' => number_format($this->onHand() * $this->avg_cost, 2),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
             'openings' => StockMovementResource::collection($this->whenLoaded('openings')),

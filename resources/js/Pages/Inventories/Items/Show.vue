@@ -8,7 +8,7 @@ import { Button } from '@/Components/ui/button';
 import {
     Package, Hash, Pill, Box, Tag, Layers, TrendingUp, TrendingDown,
     DollarSign, Palette, Ruler, MapPin, Barcode, Search,
-    Building, Target, User, Download, ArrowLeft, SquarePen,
+    Building, Target, User, Download, ArrowLeft, SquarePen, HandCoins
 } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import JsBarcode from 'jsbarcode';
@@ -162,13 +162,7 @@ onMounted(() => {
                         <p class="text-xs text-muted-foreground">{{ itemData.code }}</p>
                     </div>
                 </div>
-            </div>
-            2027-03-09
-            01kp0knz6q0d8jwn8fnx273dzh
-            01kp0jq1nmpy9nm2d6vw2jmn2q
-            01kny81q1v6jj3b9bjexp18k2j
-            SELECT * FROM public.stock_balances
-where "expire_date" = '2027-03-09'
+            </div> 
 
             <!-- Info section -->
             <div class="rounded-xl border border-border bg-muted/40 p-5">
@@ -207,8 +201,8 @@ where "expire_date" = '2027-03-09'
                         <div><p class="text-xs text-muted-foreground">{{ t('item.out_records') }}</p><p class="text-sm font-medium text-foreground">{{ itemData.stock_out_count ?? '—' }}</p></div>
                     </div>
                     <div class="flex items-start gap-2">
-                        <div class="bg-violet-500 text-white p-1.5 rounded"><TrendingUp class="w-4 h-4" /></div>
-                        <div><p class="text-xs text-muted-foreground">{{ t('item.stock_value') }}</p><p class="text-sm font-medium text-foreground">{{ itemData.on_hand * itemData.avg_cost ?? '—' }}</p></div>
+                        <div class="bg-violet-500 text-white p-1.5 rounded"><HandCoins class="w-4 h-4" /></div>
+                        <div><p class="text-xs text-muted-foreground">{{ t('item.stock_value') }}</p><p class="text-sm font-medium text-foreground">{{ itemData.stock_value ?? '—' }}</p></div>
                     </div>
                 </div>
             </div>
