@@ -118,10 +118,7 @@ class PurchaseController extends Controller
                 // else{
                 //     $unitCost = $unitPrice;
                 // } 
-                $totalCost = $unitPrice * $quantity;
-
-                // dd($unitCost, $totalCost);
-
+                $totalCost = $unitPrice * $quantity; 
                 $stock = $stockService->post([
                     'item_id'         => $item['item_id'],
                     'movement_type'   => StockMovementType::IN->value,

@@ -79,7 +79,8 @@ import {
     FileText,
     Search,
     X,
-    FileChartLine
+    FileChartLine,
+    SlidersHorizontal
 } from 'lucide-vue-next'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -588,7 +589,7 @@ const navMain = computed(() => [
         key: 'administration',
         title: t('sidebar.main.administration'),
         url: '#',
-        icon: Cog,
+        icon: SlidersHorizontal,
         items: [
             { title: t('sidebar.administration.category'), url: '/categories', permission: 'categories.view_any' },
             { title: t('sidebar.administration.currency'), url: '/currencies', permission: 'currencies.view_any' },
