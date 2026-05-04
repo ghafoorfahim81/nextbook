@@ -28,6 +28,8 @@
     "rate_b": "Rate B",
     "rate_c": "Rate C",
     "barcode": "Barcode",
+    "in": "In",
+    "out": "Out",
     "print_barcode": "Print Barcode",
     "print_barcode_description": "Select items, set quantities, preview barcode labels, and print them.",
     "add_product": "Add Product",

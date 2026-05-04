@@ -48,7 +48,7 @@ final class LookupShared
             CacheKey::forCompanyBranchLocale($request, 'categories'),
             $cacheDuration,
             fn() => CategoryResource::collection(
-                Category::query()->orderBy('id')->limit(10)->get()
+                Category::query()->orderBy('created_at','desc')->limit(10)->get()
             )
         );
 
@@ -56,7 +56,7 @@ final class LookupShared
             CacheKey::forCompanyBranchLocale($request, 'branches'),
             $cacheDuration,
             fn() => BranchResource::collection(
-                Branch::query()->orderBy('id')->limit(10)->get()
+                Branch::query()->orderBy('created_at','desc')->limit(10)->get()
             )
         );
 
@@ -64,7 +64,7 @@ final class LookupShared
             CacheKey::forCompanyBranchLocale($request, 'currencies'),
             $cacheDuration,
             fn() => CurrencyResource::collection(
-                Currency::query()->orderBy('id')->get()
+                Currency::query()->orderBy('created_at','desc')->get()
             )
         );
 
@@ -72,7 +72,7 @@ final class LookupShared
             CacheKey::forCompanyBranchLocale($request, 'warehouses'),
             $cacheDuration,
             fn() => WarehouseResource::collection(
-                Warehouse::query()->orderBy('id')->limit(10)->get()
+                Warehouse::query()->orderBy('created_at','desc')->limit(10)->get()
             )
         );
 
@@ -80,7 +80,7 @@ final class LookupShared
             CacheKey::forCompanyBranchLocale($request, 'brands'),
             $cacheDuration,
             fn() => BrandResource::collection(
-                Brand::query()->orderBy('id')->limit(10)->get()
+                Brand::query()->orderBy('created_at','desc')->limit(10)->get()
             )
         );
 
@@ -88,7 +88,7 @@ final class LookupShared
             CacheKey::forCompanyBranchLocale($request, 'unit_measures'),
             $cacheDuration,
             fn() => UnitMeasureResource::collection(
-                UnitMeasure::query()->orderBy('id')->limit(1000)->get()
+                UnitMeasure::query()->orderBy('created_at','desc')->limit(1000)->get()
             )
         );
 
@@ -96,7 +96,7 @@ final class LookupShared
             CacheKey::forCompanyBranchLocale($request, 'sizes'),
             $cacheDuration,
             fn() => SizeResource::collection(
-                Size::query()->orderBy('id')->limit(10)->get()
+                Size::query()->orderBy('created_at','desc')->limit(10)->get()
             )
         );
 

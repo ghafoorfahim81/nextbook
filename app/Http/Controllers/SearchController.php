@@ -379,7 +379,7 @@ class SearchController extends Controller
                     'batch' => $batchKey,
                     'expire_date' => $balance->expire_date,
                     'on_hand' => ($batchSummaries[$batchKey]['on_hand'] ?? 0) + $available,
-                    'avg_cost' => $balance->avg_cost,
+                    'avg_cost' => $item->avg_cost,
                 ];
             } elseif ($balance->expire_date) {
                 $hasExpiry = true;
@@ -387,7 +387,7 @@ class SearchController extends Controller
                 $expirySummaries[$expiryKey] = [
                     'expire_date' => $balance->expire_date,
                     'on_hand' => ($expirySummaries[$expiryKey]['on_hand'] ?? 0) + $available,
-                    'avg_cost' => $balance->avg_cost,
+                    'avg_cost' => $item->avg_cost,
                 ];
             } else {
                 $nonBatchOnHand += $available;

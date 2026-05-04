@@ -83,7 +83,7 @@ class TransactionService
             // 4️⃣ Double-entry enforcement
             // -----------------------------
             if (round($totalDebit, 4) !== round($totalCredit, 4)) {
-                throw new Exception('Transaction is not balanced');
+                throw new Exception('Transaction is not balanced: ' . $totalDebit . ' != ' . $totalCredit);
             }
 
             return $transaction;
