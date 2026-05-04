@@ -600,7 +600,7 @@ class ReportService
 
         $summaryRow = (clone $query)
             ->selectRaw('COALESCE(SUM(sb.quantity), 0) as total_quantity')
-            ->selectRaw('COALESCE(SUM(sb.quantity * COALESCE(sb.average_cost, 0)), 0) as total_value')
+            ->selectRaw('COALESCE(SUM(sb.quantity * COALESCE(i.avg_cost, 0)), 0) as total_value')
             ->first();
 
         $query
@@ -610,8 +610,8 @@ class ReportService
             ->selectRaw('i.name as item')
             ->selectRaw('w.name as warehouse')
             ->selectRaw('COALESCE(SUM(sb.quantity), 0) as quantity')
-            ->selectRaw('COALESCE(SUM(sb.quantity * COALESCE(sb.average_cost, 0)) / NULLIF(SUM(sb.quantity), 0), 0) as average_cost')
-            ->selectRaw('COALESCE(SUM(sb.quantity * COALESCE(sb.average_cost, 0)), 0) as total_value');
+            ->selectRaw('COALESCE(SUM(sb.quantity * COALESCE(i.avg_cost, 0)) / NULLIF(SUM(sb.quantity), 0), 0) as average_cost')
+            ->selectRaw('COALESCE(SUM(sb.quantity * COALESCE(i.avg_cost, 0)), 0) as total_value');
 
         return $this->paginateReport(
             $query,
@@ -785,7 +785,7 @@ class ReportService
 
         $summaryRow = (clone $query)
             ->selectRaw('COALESCE(SUM(sb.quantity), 0) as total_quantity')
-            ->selectRaw('COALESCE(SUM(sb.quantity * COALESCE(sb.average_cost, 0)), 0) as total_value')
+            ->selectRaw('COALESCE(SUM(sb.quantity * COALESCE(i.avg_cost, 0)), 0) as total_value')
             ->first();
 
         $query
@@ -793,8 +793,8 @@ class ReportService
             ->orderBy('i.name')
             ->selectRaw('i.name as item')
             ->selectRaw('COALESCE(SUM(sb.quantity), 0) as quantity')
-            ->selectRaw('COALESCE(SUM(sb.quantity * COALESCE(sb.average_cost, 0)) / NULLIF(SUM(sb.quantity), 0), 0) as average_cost')
-            ->selectRaw('COALESCE(SUM(sb.quantity * COALESCE(sb.average_cost, 0)), 0) as total_value');
+            ->selectRaw('COALESCE(SUM(sb.quantity * COALESCE(i.avg_cost, 0)) / NULLIF(SUM(sb.quantity), 0), 0) as average_cost')
+            ->selectRaw('COALESCE(SUM(sb.quantity * COALESCE(i.avg_cost, 0)), 0) as total_value');
 
         return $this->paginateReport(
             $query,

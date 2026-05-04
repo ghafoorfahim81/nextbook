@@ -163,6 +163,12 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
+            2027-03-09
+            01kp0knz6q0d8jwn8fnx273dzh
+            01kp0jq1nmpy9nm2d6vw2jmn2q
+            01kny81q1v6jj3b9bjexp18k2j
+            SELECT * FROM public.stock_balances
+where "expire_date" = '2027-03-09'
 
             <!-- Info section -->
             <div class="rounded-xl border border-border bg-muted/40 p-5">

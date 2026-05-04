@@ -163,7 +163,7 @@ class StockService
             ...$movementData,
             'date' => $this->normalizeDate($movementData['date']),
             'expire_date' => $movementData['expire_date'] ? $this->normalizeDate($movementData['expire_date']) : null,
-            'unit_cost' => $this->convertToSelectedUnitCost((float) $balance->average_cost, $conversionFactor),
+            'unit_cost' => $this->convertToSelectedUnitCost((float) $item->avg_cost, $conversionFactor),
             'qty_remaining' => null,
         ]);
     }

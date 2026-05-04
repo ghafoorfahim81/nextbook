@@ -682,9 +682,6 @@ class SaleController extends Controller
                 'expire_date' => $bucket['expire_date'],
                 'status' => $bucket['status'],
                 'quantity' => $bucket['quantity'],
-                'average_cost' => $bucket['in_quantity'] > 0
-                    ? $bucket['in_value'] / $bucket['in_quantity']
-                    : 0,
             ]);
         }
 
@@ -771,11 +768,9 @@ class SaleController extends Controller
             ->keyBy('id')
             ->all();
 
-        $averageCostsByItemId = StockBalance::query()
-            ->selectRaw('item_id, AVG(average_cost) as avg_cost')
-            ->whereIn('item_id', $itemIds)
-            ->groupBy('item_id')
-            ->pluck('avg_cost', 'item_id')
+        $averageCostsByItemId = Item::query()
+            ->whereIn('id', $itemIds)
+            ->pluck('avg_cost', 'id')
             ->map(fn ($value) => (float) $value)
             ->all();
 

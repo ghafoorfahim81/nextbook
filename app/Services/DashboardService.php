@@ -90,7 +90,7 @@ class DashboardService
                 'purchases' => $this->moneyValue($purchases[$date] ?? 0),
             ];
             $cursor->addDay();
-        } 
+        }
 
         return [
             'period' => [
@@ -107,8 +107,9 @@ class DashboardService
         $stockTotalsSubquery = $this->stockTotalsSubquery($branchId);
 
         $totalInventory = (array) $stockBalances
-            ->selectRaw('COALESCE(SUM(quantity), 0) as total_quantity')
-            ->selectRaw('COALESCE(SUM(quantity * COALESCE(average_cost, 0)), 0) as total_value')
+            ->join('items as i', 'i.id', '=', 'stock_balances.item_id')
+            ->selectRaw('COALESCE(SUM(stock_balances.quantity), 0) as total_quantity')
+            ->selectRaw('COALESCE(SUM(stock_balances.quantity * COALESCE(i.avg_cost, 0)), 0) as total_value')
             ->first();
 
         $lowStockItems = DB::table('items as i')

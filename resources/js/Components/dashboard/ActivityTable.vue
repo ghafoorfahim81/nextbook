@@ -43,6 +43,8 @@ function quantityValue(row) {
             <TableHead class="text-muted-foreground">{{ rowType === 'stock' ? t('dashboard.table.location') : t('dashboard.table.party') }}</TableHead>
             <TableHead class="text-muted-foreground">{{ rowType === 'stock' ? t('dashboard.table.movement') : t('dashboard.table.status') }}</TableHead>
             <TableHead class="text-muted-foreground">{{ t('dashboard.table.date') }}</TableHead>
+            <TableHead class="text-muted-foreground" v-if="rowType === 'stock'">{{ t('item.batch') }}</TableHead>
+            <TableHead class="text-muted-foreground" v-if="rowType === 'stock'">{{ t('item.expire_date') }}</TableHead>
             <TableHead class="text-right text-muted-foreground">{{ rowType === 'stock' ? t('dashboard.table.quantity') : t('dashboard.table.amount') }}</TableHead>
           </TableRow>
         </TableHeader>
@@ -60,9 +62,11 @@ function quantityValue(row) {
               {{ rowType === 'stock' ? row.warehouse_name : row.party_name }}
             </TableCell>
             <TableCell>
-              <Badge variant="outline" class="capitalize border-border text-foreground">{{ rowType === 'stock' ? row.movement_type : row.status }}</Badge>
+              <Badge variant="outline" class="capitalize border-border text-foreground">{{ rowType === 'stock' ? (row.movement_type === 'in' ? t('item.in') : t('item.out')) : row.status }}</Badge>
             </TableCell>
             <TableCell class="text-muted-foreground">{{ row.date }}</TableCell>
+            <TableCell class="text-muted-foreground" v-if="rowType === 'stock'">{{ row.batch }}</TableCell>
+            <TableCell class="text-muted-foreground" v-if="rowType === 'stock'">{{ row.expire_date }}</TableCell>
             <TableCell class="text-right font-medium text-card-foreground">
               {{ rowType === 'stock' ? quantityValue(row) : amountValue(row) }}
             </TableCell>

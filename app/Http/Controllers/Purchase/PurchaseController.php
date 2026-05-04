@@ -108,17 +108,19 @@ class PurchaseController extends Controller
                 $itemDiscount = isset($item['discount']) ? (float) $item['discount'] : 0;
                 $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
                 
-                if($item['unit_measure_id'] != $itemModel->unit_measure_id) {
-                    $selectedUnit = (float) \App\Models\Administration\UnitMeasure::query()->findOrFail($item['unit_measure_id'])->unit;
-                    $itemUnit = (float) $itemModel->unitMeasure->unit;
-                    // $qty = ($quantity * $selectedUnit) / $itemUnit;
-                    $unitCost = ($selectedUnit * $unitPrice) / $itemUnit;
-                    $totalCost = $unitCost * $quantity;
-                }
-                else{
-                    $unitCost = $unitPrice;
-                    $totalCost = $unitPrice * $quantity;
-                } 
+                // if($item['unit_measure_id'] != $itemModel->unit_measure_id) {
+                //     $selectedUnit = (float) \App\Models\Administration\UnitMeasure::query()->findOrFail($item['unit_measure_id'])->unit;
+                //     $itemUnit = (float) $itemModel->unitMeasure->unit;
+                //     // $qty = ($quantity * $selectedUnit) / $itemUnit;
+                //     $unitCost = ($selectedUnit * $unitPrice) / $itemUnit;
+                //     $totalCost = $unitCost * $quantity;
+                // }
+                // else{
+                //     $unitCost = $unitPrice;
+                // } 
+                $totalCost = $unitPrice * $quantity;
+
+                // dd($unitCost, $totalCost);
 
                 $stock = $stockService->post([
                     'item_id'         => $item['item_id'],
@@ -138,7 +140,7 @@ class PurchaseController extends Controller
                     'reference_id'    => $purchase->id,
                 ]);
                 $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
-                $accountId = $itemModel->asset_account_id ?? $itemModel->cost_account_id;
+                $accountId = $itemModel->asset_account_id;
                 $lines[] = [
                     'account_id' => $accountId,
                     'ledger_id'  => null,
@@ -146,8 +148,7 @@ class PurchaseController extends Controller
                     'credit'     => 0,
                     'remark'     => 'Purchase item: '.$itemModel->name,
                 ];
-
-                // $stockService->addStock($item, $validated['warehouse_id'], Purchase::class, $purchase->id, $validated['date']);
+ 
             }
             $glAccounts = Cache::get('gl_accounts');
             $discountTotal = $request->input('discount_total', 0);
@@ -549,9 +550,6 @@ class PurchaseController extends Controller
                 'expire_date' => $bucket['expire_date'],
                 'status' => $bucket['status'],
                 'quantity' => $bucket['quantity'],
-                'average_cost' => $bucket['in_quantity'] > 0
-                    ? $bucket['in_value'] / $bucket['in_quantity']
-                    : 0,
             ]);
         }
 
