@@ -43,7 +43,7 @@ class OwnerResource extends JsonResource
         //             : null,
         //     ];
         // };
-
+        $locale = app()->getLocale();
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -55,10 +55,13 @@ class OwnerResource extends JsonResource
             'share_percentage' => $this->share_percentage,
             'ownership_percentage' => $this->share_percentage,
             'is_active' => $this->is_active, 
+            'is_active_label' => $this->is_active ? __('general.active') : __('general.inactive'),
             'capital_account_id' => $this->capital_account_id,
             'drawing_account_id' => $this->drawing_account_id,
             'capital_account' => $this->whenLoaded('capitalAccount'),
+            'capital_account_name' => $locale === 'en' ? $this->capitalAccount?->name : $this->capitalAccount?->local_name,
             'drawing_account' => $this->whenLoaded('drawingAccount'),
+            'drawing_account_name' => $locale === 'en' ? $this->drawingAccount?->name : $this->drawingAccount?->local_name,
             'bank_account_transaction' => $this->transaction?->lines?->first(),
             'capital_account_transaction' => $this->transaction?->lines?->last(),
             'amount' => $this->transaction?->lines?->first()?->debit ?? $this->transaction?->lines?->first()?->credit,
@@ -67,6 +70,7 @@ class OwnerResource extends JsonResource
             'opening_currency' => $this->transaction?->currency,
             'bank_account_id' => $this->transaction?->lines?->first()?->account_id, 
             'bank_account' => $this->transaction?->lines?->first()?->account,
+            'bank_account_name' => $locale === 'en' ? $this->transaction?->lines?->first()?->account?->name : $this->transaction?->lines?->first()?->account?->local_name,
         ];
     }
 }

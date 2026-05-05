@@ -123,11 +123,17 @@ class ExpenseController extends Controller
                         'account_id' => $validated['expense_account_id'],
                         'debit' => $total,
                         'credit' => 0,
+                        'remark' => 'Expense for ' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
+                        'remark_fa' => 'مصرف بابت' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
+                        'remark_ps' => 'د'. ' '. $expense->category->name.' '.'  مصرف ',
                     ],
                     [
                         'account_id' => $validated['bank_account_id'],
                         'debit' => 0,
                         'credit' => $total,
+                        'remark' => 'Expense: ' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
+                        'remark_fa' => 'مصرف بابت' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
+                        'remark_ps' => 'د'. ' '. $expense->category->name.' '.' مصرف ',
                     ],
                 ],
             );
@@ -252,18 +258,24 @@ class ExpenseController extends Controller
                     'date' => $date,
                     'reference_type' => Expense::class,
                     'reference_id' => $expense->id,
-                    'remark' => 'Expense: ' . $expense->category->name . ' - ' . $expense->remarks,
+                    'remark' => 'Expense for ' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
                 ],
                 lines: [
                     [
                         'account_id' => $validated['expense_account_id'],
                         'debit' => $total,
                         'credit' => 0,
+                        'remark' => 'Expense for ' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
+                        'remark_fa' => 'مصرف بابت' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
+                        'remark_ps' => 'د'. ' '. $expense->category->name.' '.'  مصرف ',
                     ],
                     [
                         'account_id' => $validated['bank_account_id'],
                         'debit' => 0,
                         'credit' => $total,
+                        'remark' => 'Expense for ' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
+                        'remark_fa' => 'مصرف بابت' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
+                        'remark_ps' => 'د'. ' '. $expense->category->name.' '.' مصرف ',
                     ],
                 ],
             );

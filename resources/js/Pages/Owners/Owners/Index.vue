@@ -24,7 +24,7 @@ const columns = computed(() => ([
     { key: 'nic', label: t('owner.nic') },
     { key: 'phone_number', label: t('owner.phone_number') },
     { key: 'ownership_percentage', label: t('owner.ownership_percentage') },
-    { key: 'is_active', label: t('general.status') },
+    { key: 'is_active_label', label: t('general.status') },
     { key: 'actions', label: t('general.action') },
 ]));
 
