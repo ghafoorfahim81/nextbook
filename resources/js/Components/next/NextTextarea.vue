@@ -1,26 +1,29 @@
 <template>
     <div class="relative">
-        <label :for="name"
-        class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-3 scale-68 top-1 z-10 origin-[0] bg-white
-        dark:bg-gray-900 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100
-        peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-3
-         start-1 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
-
-        >{{ label }}</label>
-
         <textarea
             ref="textareaRef"
-            id="message"
+            :id="id"
             rows="4"
             :name="name"
-            :placeholder="placeholder??t('general.enter', { text: label })"
+            :placeholder="placeholder ?? t('general.enter', { text: label })"
             :value="modelValue"
             @input="e => emit('update:modelValue', e.target.value)"
             :readonly="readonly ?? false"
-            class="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background
-             placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
-             focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            class="peer block min-h-[96px] w-full rounded-md border border-border bg-background px-3 pb-2 pt-5 text-sm shadow-sm
+            placeholder:text-transparent focus:placeholder:text-muted-foreground focus:outline-none
+            disabled:cursor-not-allowed disabled:opacity-50"
         />
+
+        <label
+            :for="id"
+            class="pointer-events-none absolute start-3 top-2 z-10 rounded bg-background px-1 text-xs
+         text-muted-foreground transition-all duration-150
+         peer-focus:top-1 peer-focus:text-xs peer-focus:text-foreground
+         peer-focus:opacity-100
+         peer-[:not(:placeholder-shown)]:top-1
+         peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:opacity-100">
+            {{ label }}
+        </label>
     </div>
 </template>
 
@@ -35,6 +38,7 @@ const props = defineProps({
     modelValue: { type: String, default: '' },
     name: String,
     label: String,
+    id: { type: String, default: () => `ta-${Math.random().toString(36).slice(2, 9)}` },
     readonly: Boolean,
     placeholder: String,
 });
@@ -61,3 +65,12 @@ defineExpose({
     focus: () => textareaRef.value?.focus?.(),
 })
 </script>
+
+<style scoped>
+/* Match focus style with NextInput */
+:deep(textarea:focus),
+:deep(textarea:focus-visible) {
+    border-color: rgb(99 102 241);
+    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.25);
+}
+</style>

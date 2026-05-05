@@ -81,7 +81,9 @@ import {
     X,
     FileChartLine,
     SlidersHorizontal,
-    Tag
+    Tag,
+    Trash2,
+    History,
 } from 'lucide-vue-next'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -604,11 +606,26 @@ const navMain = computed(() => [
             { title: t('sidebar.administration.company'), url: '/company', permission: 'companies.view_any' },
         ],
     },
+
+    {
+        key: 'system',
+        title: t('sidebar.main.system'),
+        url: '#',
+        icon: Trash2,
+        items: [
+            { title: t('sidebar.main.deleted_records'), url: '/deleted-records', permission: 'deleted_records.view_any' },
+        ],
+    },
+
     {
         key: 'reports',
         title: t('sidebar.main.reports'),
-        url: '/reports',
+        url: '#',
         icon: FileChartLine,
+        items: [
+            { title: t('sidebar.reports.report'), url: '/reports' },
+            { title: t('sidebar.reports.activity_logs'), url: '/activity-logs', icon: History },
+        ],
     },
 ])
 

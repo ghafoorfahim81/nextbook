@@ -2,6 +2,7 @@
 
 use App\Jobs\RunExpiryCheckJob;
 use App\Jobs\RunLowBalanceCheckJob;
+use App\Jobs\RunDeletedRecordsCleanupJob;
 use App\Jobs\RunLowStockCheckJob;
 use App\Jobs\RunOverdueChecksJob;
 use App\Jobs\RunPaidPurchaseCheckJob;
@@ -19,6 +20,10 @@ Artisan::command('inspire', function () {
 Schedule::call(fn () => app()->call([app(RunLowBalanceCheckJob::class), 'handle']))
     ->name('notifications:low-balance')
     ->dailyAt('07:00');
+
+Schedule::call(fn () => app()->call([app(RunDeletedRecordsCleanupJob::class), 'handle']))
+    ->name('records:deleted-cleanup')
+    ->dailyAt('00:00');
 
 Schedule::call(fn () => app()->call([app(RunLowStockCheckJob::class), 'handle']))
     ->name('notifications:low-stock')

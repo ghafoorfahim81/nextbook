@@ -176,4 +176,12 @@ class UnitMeasureController extends Controller
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'unit_measures'));
         return redirect()->route('unit-measures.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.unit_measure')]));
     }
+
+    public function forceDelete(Request $request, UnitMeasure $unitMeasure)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('unit_measures', (string) $unitMeasure->id);
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'unit_measures'));
+
+        return redirect()->route('unit-measures.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.unit_measure')]));
+    }
 }

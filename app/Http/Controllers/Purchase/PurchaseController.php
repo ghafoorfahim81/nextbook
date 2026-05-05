@@ -28,6 +28,7 @@ use App\Models\Inventory\StockMovement;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use App\Services\DateConversionService;
+use App\Services\ActivityLogService;
 class PurchaseController extends Controller
 {
     private $dateConversionService;
@@ -83,16 +84,21 @@ class PurchaseController extends Controller
         ]);
     }
 
-    public function store(PurchaseStoreRequest $request, TransactionService $transactionService, StockService $stockService)
+    public function store(
+        PurchaseStoreRequest $request,
+        TransactionService $transactionService,
+        StockService $stockService,
+        ActivityLogService $activityLogService
+    )
     {
         $validated = $request->validated();
-        $purchase = DB::transaction(function () use ($request, $transactionService, $stockService) {
+        $purchase = DB::transaction(function () use ($request, $transactionService, $stockService, $activityLogService) {
             // Create purchase
             $validated = $request->validated();
 
             $validated['type']  = $validated['purchase_type'] ?? 'cash';
             $validated['status'] = TransactionStatus::POSTED->value;
- 
+
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $purchase = Purchase::create($validated);
             $validated['item_list'] = array_map(function ($item) use ($validated) {
@@ -107,7 +113,7 @@ class PurchaseController extends Controller
                 $unitPrice = (float) $item['unit_price'];
                 $itemDiscount = isset($item['discount']) ? (float) $item['discount'] : 0;
                 $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
-                
+
                 // if($item['unit_measure_id'] != $itemModel->unit_measure_id) {
                 //     $selectedUnit = (float) \App\Models\Administration\UnitMeasure::query()->findOrFail($item['unit_measure_id'])->unit;
                 //     $itemUnit = (float) $itemModel->unitMeasure->unit;
@@ -117,8 +123,8 @@ class PurchaseController extends Controller
                 // }
                 // else{
                 //     $unitCost = $unitPrice;
-                // } 
-                $totalCost = $unitPrice * $quantity; 
+                // }
+                $totalCost = $unitPrice * $quantity;
                 $stock = $stockService->post([
                     'item_id'         => $item['item_id'],
                     'movement_type'   => StockMovementType::IN->value,
@@ -145,7 +151,7 @@ class PurchaseController extends Controller
                     'credit'     => 0,
                     'remark'     => 'Purchase item: '.$itemModel->name,
                 ];
- 
+
             }
             $glAccounts = Cache::get('gl_accounts');
             $discountTotal = $request->input('discount_total', 0);
@@ -203,9 +209,9 @@ class PurchaseController extends Controller
                         'remark' => 'Payment for purchase #' . $purchase->number,
                     ];
                 }
-            } 
+            }
 
-            $transactionService->post(
+            $transaction = $transactionService->post(
                 header: [
                     'currency_id'   => $validated['currency_id'],
                     'rate'          => $validated['rate'],
@@ -219,6 +225,27 @@ class PurchaseController extends Controller
             );
 
             app(BillAllocationService::class)->recalculatePurchasePaymentStatuses([$purchase->id]);
+            $activityLogService->logCreate(
+                reference: $purchase,
+                module: 'purchase',
+                description: "Purchase #{$purchase->number} created.",
+                newValues: [
+                    'number' => $purchase->number,
+                    'supplier_id' => $purchase->supplier_id,
+                    'date' => $purchase->date?->toDateString(),
+                    'status' => $purchase->status,
+                    'branch_id' => $purchase->branch_id,
+                    'warehouse_id' => $validated['warehouse_id'],
+                    'currency_id' => $validated['currency_id'],
+                    'item_count' => count($validated['item_list']),
+                    'transaction_total' => (float) $validated['transaction_total'],
+                ],
+                metadata: [
+                    'action' => 'purchase_store',
+                    'purchase_type' => $validated['type'],
+                    'transaction_id' => $transaction->id,
+                ],
+            );
 
 
             // Create accounting transactions
@@ -271,15 +298,33 @@ class PurchaseController extends Controller
         ]);
     }
 
-    public function update(PurchaseUpdateRequest $request, Purchase $purchase, TransactionService $transactionService, StockService $stockService)
+    public function update(
+        PurchaseUpdateRequest $request,
+        Purchase $purchase,
+        TransactionService $transactionService,
+        StockService $stockService,
+        ActivityLogService $activityLogService
+    )
     {
         if ($this->purchaseHasPostedStock($purchase)) {
             throw ValidationException::withMessages([
                 'purchase' => 'This purchase contains posted stock and can no longer be edited.',
             ]);
         }
+        $beforeState = [
+            'number' => $purchase->number,
+            'supplier_id' => $purchase->supplier_id,
+            'date' => $purchase->date?->toDateString(),
+            'status' => $purchase->status,
+            'branch_id' => $purchase->branch_id,
+            'warehouse_id' => $purchase->warehouse_id,
+            'currency_id' => $purchase->transaction?->currency_id,
+            'rate' => $purchase->transaction?->rate,
+            'item_count' => $purchase->items()->count(),
+            'transaction_total' => (float) ($purchase->transaction_total ?? 0),
+        ];
 
-        $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $stockService) {
+        $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $stockService, $activityLogService, $beforeState) {
             $validated = $request->validated();
             $validated['type'] = $validated['purchase_type'] ?? $purchase->type ?? 'cash';
             $validated['status'] = TransactionStatus::POSTED->value;
@@ -430,7 +475,7 @@ class PurchaseController extends Controller
                 }
             }
 
-            $transactionService->post(
+            $transaction = $transactionService->post(
                 header: [
                     'currency_id'    => $validated['currency_id'],
                     'rate'           => $validated['rate'],
@@ -444,9 +489,35 @@ class PurchaseController extends Controller
             );
 
             app(BillAllocationService::class)->recalculatePurchasePaymentStatuses([$purchase->id]);
+            $afterState = [
+                'number' => $purchase->number,
+                'supplier_id' => $purchase->supplier_id,
+                'date' => $purchase->date?->toDateString(),
+                'status' => $purchase->status,
+                'branch_id' => $purchase->branch_id,
+                'warehouse_id' => $validated['warehouse_id'],
+                'currency_id' => $validated['currency_id'],
+                'rate' => (float) $validated['rate'],
+                'item_count' => count($validated['item_list']),
+                'transaction_total' => (float) $validated['transaction_total'],
+            ];
+
+            $activityLogService->logUpdate(
+                reference: $purchase,
+                before: $beforeState,
+                after: $afterState,
+                module: 'purchase',
+                description: "Purchase #{$purchase->number} updated.",
+                metadata: [
+                    'action' => 'purchase_update',
+                    'purchase_type' => $validated['type'],
+                    'transaction_id' => $transaction->id,
+                ],
+            );
 
             return $purchase;
         });
+
 
         return redirect()->route('purchases.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.purchase')]));
     }
@@ -574,7 +645,7 @@ class PurchaseController extends Controller
         return $status instanceof StockStatus ? $status->value : (string) $status;
     }
 
-    public function destroy(Request $request, Purchase $purchase)
+    public function destroy(Request $request, Purchase $purchase, ActivityLogService $activityLogService)
     {
         DB::transaction(function () use ($purchase) {
             $affectedCombos = $purchase->items()
@@ -621,10 +692,37 @@ class PurchaseController extends Controller
             ]);
         });
 
+        $oldValues = [
+            'number' => $purchase->number,
+            'supplier_id' => $purchase->supplier_id,
+            'date' => $purchase->date?->toDateString(),
+            'status' => $purchase->status,
+            'branch_id' => $purchase->branch_id,
+            'warehouse_id' => $purchase->warehouse_id,
+            'currency_id' => $purchase->transaction?->currency_id,
+            'rate' => $purchase->transaction?->rate,
+            'item_count' => $purchase->items()->count(),
+            'transaction_total' => (float) ($purchase->transaction_total ?? 0),
+        ];
+
+        $purchase->items()->delete();
+        $purchase->stocks()->delete();
+        $purchase->transaction()->delete();
+        $purchase->delete();
+
+        $activityLogService->logDelete(
+            reference: $purchase,
+            module: 'purchase',
+            description: "Purchase #{$purchase->number} deleted.",
+            oldValues: $oldValues,
+            metadata: [
+                'action' => 'purchase_delete',
+            ],
+        );
+
         return redirect()->route('purchases.index')->with('success', __('general.purchase_deleted_successfully'));
     }
-
-    public function restore(Request $request, Purchase $purchase)
+    public function restore(Request $request, Purchase $purchase, ActivityLogService $activityLogService)
     {
         DB::transaction(function () use ($purchase) {
             $purchase->restore();
@@ -658,12 +756,54 @@ class PurchaseController extends Controller
             $this->rebuildStockStateForCombos($affectedCombos);
         });
 
+        $purchase->restore();
+        $purchase->items()->restore();
+        $purchase->stocks()->restore();
+        $purchase->transaction()->restore();
+
+        $activityLogService->logAction(
+            eventType: 'restored',
+            reference: $purchase,
+            module: 'purchase',
+            description: "Purchase #{$purchase->number} restored.",
+            newValues: [
+                'number' => $purchase->number,
+                'status' => $purchase->status,
+            ],
+            metadata: [
+                'action' => 'purchase_restore',
+            ],
+        );
+
         return redirect()->route('purchases.index')->with('success', __('general.purchase_restored_successfully'));
     }
 
-    public function updatePurchaseStatus(Request $request, Purchase $purchase)
+    public function forceDelete(Request $request, Purchase $purchase)
     {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('purchases', (string) $purchase->id);
+
+        return redirect()->route('purchases.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.purchase')]));
+    }
+
+    public function updatePurchaseStatus(Request $request, Purchase $purchase, ActivityLogService $activityLogService)
+    {
+        $oldStatus = $purchase->status;
         $purchase->update(['status' => $request->status]);
+
+        $activityLogService->logAction(
+            eventType: in_array($request->status, ['posted', 'unposted', 'approved', 'rejected', 'cancelled', 'completed'], true)
+                ? $request->status
+                : 'status_changed',
+            reference: $purchase,
+            module: 'purchase',
+            description: "Purchase #{$purchase->number} status changed from {$oldStatus} to {$request->status}.",
+            oldValues: ['status' => $oldStatus],
+            newValues: ['status' => $purchase->status],
+            metadata: [
+                'action' => 'purchase_status_update',
+            ],
+        );
+
         return back()->with('success', __('general.purchase_status_updated_successfully'));
     }
 
