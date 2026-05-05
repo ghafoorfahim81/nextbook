@@ -77,4 +77,12 @@ class SizeController extends Controller
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'sizes'));
         return redirect()->route('sizes.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.size')]));
     }
+
+    public function forceDelete(Request $request, Size $size)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('sizes', (string) $size->id);
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'sizes'));
+
+        return redirect()->route('sizes.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.size')]));
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\ReportService;
 use App\Services\SpreadsheetExportService;
+use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -59,5 +60,18 @@ class ReportController extends Controller
         $export = $this->reportService->getExportData($request->user(), $filters);
 
         return $spreadsheetExportService->download($export);
+                app(ActivityLogService::class)->logAction(
+            eventType: 'export',
+            reference: null,
+            module: 'report',
+            description: 'Report export generated.',
+            metadata: [
+                'action' => 'report_export',
+                'report' => $filters['report'] ?? null,
+                'filename' => $export['filename'],
+                'filters' => $filters,
+                'row_count' => count($export['rows']),
+            ],
+        );
     }
 }

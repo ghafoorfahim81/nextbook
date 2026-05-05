@@ -70,5 +70,11 @@ class ExpenseCategoryController extends Controller
         $expenseCategory->restore();
         return back()->with('success', __('general.restored_successfully', ['resource' => __('general.resource.expense_category')]));
     }
-}
 
+    public function forceDelete(Request $request, ExpenseCategory $expenseCategory)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('expense_categories', (string) $expenseCategory->id);
+
+        return back()->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.expense_category')]));
+    }
+}

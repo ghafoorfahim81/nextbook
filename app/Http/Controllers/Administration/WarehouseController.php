@@ -101,5 +101,15 @@ class WarehouseController extends Controller
             ->route('warehouses.index')
             ->with('success', __('general.restored_successfully', ['resource' => __('general.resource.warehouse')]));
     }
-}
 
+    public function forceDelete(Request $request, Warehouse $warehouse)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('warehouses', (string) $warehouse->id);
+
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'warehouses'));
+
+        return redirect()
+            ->route('warehouses.index')
+            ->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.warehouse')]));
+    }
+}

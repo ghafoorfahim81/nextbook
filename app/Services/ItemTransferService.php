@@ -13,14 +13,14 @@ use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
 use App\Services\DateConversionService;
+
 class ItemTransferService
 {
     private $dateConversionService;
     public function __construct(
         private StockService $stockService,
-    ) {
-        $this->dateConversionService = app(DateConversionService::class);
-    }
+        private ActivityLogService $activityLogService,
+    ) {}
 
     /**
      * Create a new item transfer
@@ -54,7 +54,26 @@ class ItemTransferService
                 ]);
             }
 
-            return $transfer->load('items');
+            $transfer->load('items');
+
+            $this->activityLogService->logCreate(
+                reference: $transfer,
+                module: 'item_transfer',
+                description: "Item transfer #{$transfer->id} created.",
+                newValues: [
+                    'date' => $transfer->date?->toDateString(),
+                    'status' => $transfer->status?->value ?? $transfer->status,
+                    'from_warehouse_id' => $transfer->from_warehouse_id,
+                    'to_warehouse_id' => $transfer->to_warehouse_id,
+                    'transfer_cost' => (float) ($transfer->transfer_cost ?? 0),
+                    'item_count' => $transfer->items->count(),
+                ],
+                metadata: [
+                    'action' => 'item_transfer_create',
+                ],
+            );
+
+            return $transfer;
         });
     }
 
@@ -64,6 +83,15 @@ class ItemTransferService
     public function updateTransfer(ItemTransfer $transfer, array $data): ItemTransfer
     {
         return DB::transaction(function () use ($transfer, $data) {
+            $beforeState = [
+                'date' => $transfer->date?->toDateString(),
+                'status' => $transfer->status?->value ?? $transfer->status,
+                'from_warehouse_id' => $transfer->from_warehouse_id,
+                'to_warehouse_id' => $transfer->to_warehouse_id,
+                'transfer_cost' => (float) ($transfer->transfer_cost ?? 0),
+                'item_count' => $transfer->items()->count(),
+            ];
+
             // If transfer is completed, cannot update
             if ($transfer->status === TransferStatus::COMPLETED) {
                 throw ValidationException::withMessages([
@@ -102,7 +130,27 @@ class ItemTransferService
                 }
             }
 
-            return $transfer->load('items');
+            $transfer->load('items');
+
+            $this->activityLogService->logUpdate(
+                reference: $transfer,
+                before: $beforeState,
+                after: [
+                    'date' => $transfer->date?->toDateString(),
+                    'status' => $transfer->status?->value ?? $transfer->status,
+                    'from_warehouse_id' => $transfer->from_warehouse_id,
+                    'to_warehouse_id' => $transfer->to_warehouse_id,
+                    'transfer_cost' => (float) ($transfer->transfer_cost ?? 0),
+                    'item_count' => $transfer->items->count(),
+                ],
+                module: 'item_transfer',
+                description: "Item transfer #{$transfer->id} updated.",
+                metadata: [
+                    'action' => 'item_transfer_update',
+                ],
+            );
+
+            return $transfer;
         });
     }
 
@@ -199,9 +247,25 @@ class ItemTransferService
             }
 
             // Update transfer status
+            $oldStatus = $transfer->status?->value ?? $transfer->status;
             $transfer->update(['status' => TransferStatus::COMPLETED]);
 
-            return $transfer->load('items');
+            $transfer->load('items');
+
+            $this->activityLogService->logAction(
+                eventType: 'completed',
+                reference: $transfer,
+                module: 'item_transfer',
+                description: "Item transfer #{$transfer->id} completed.",
+                oldValues: ['status' => $oldStatus],
+                newValues: ['status' => $transfer->status?->value ?? $transfer->status],
+                metadata: [
+                    'action' => 'item_transfer_complete',
+                    'item_count' => $transfer->items->count(),
+                ],
+            );
+
+            return $transfer;
         });
     }
 
@@ -238,9 +302,25 @@ class ItemTransferService
             }
 
             // Update transfer status
+            $oldStatus = $transfer->status?->value ?? $transfer->status;
             $transfer->update(['status' => TransferStatus::CANCELLED]);
 
-            return $transfer->load('items');
+            $transfer->load('items');
+
+            $this->activityLogService->logAction(
+                eventType: 'cancelled',
+                reference: $transfer,
+                module: 'item_transfer',
+                description: "Item transfer #{$transfer->id} cancelled.",
+                oldValues: ['status' => $oldStatus],
+                newValues: ['status' => $transfer->status?->value ?? $transfer->status],
+                metadata: [
+                    'action' => 'item_transfer_cancel',
+                    'item_count' => $transfer->items->count(),
+                ],
+            );
+
+            return $transfer;
         });
     }
 

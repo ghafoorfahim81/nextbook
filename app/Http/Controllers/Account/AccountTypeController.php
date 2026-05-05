@@ -78,4 +78,11 @@ class AccountTypeController extends Controller
         $accountType->restore();
         return redirect()->route('account-types.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.account_type')]));
     }
+
+    public function forceDelete(Request $request, AccountType $accountType)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('account_types', (string) $accountType->id);
+
+        return redirect()->route('account-types.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.account_type')]));
+    }
 }

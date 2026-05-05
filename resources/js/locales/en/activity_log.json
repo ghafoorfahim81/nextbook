@@ -1,0 +1,21 @@
+{
+  "activity_log": "Activity Log",
+  "activity_logs": "Activity Logs",
+  "event_type": "Event Type",
+  "module": "Module",
+  "reference_type": "Reference Type",
+  "reference_id": "Reference ID",
+  "old_values": "Old Values",
+  "new_values": "New Values",
+  "metadata": "Metadata",
+  "request_context": "Request Context",
+  "ip_address": "IP Address",
+  "user_agent": "User Agent",
+  "view_log": "View Log",
+  "view_details": "View Details",
+  "no_old_values": "No old values were recorded.",
+  "no_new_values": "No new values were recorded.",
+  "no_metadata": "No metadata was recorded.",
+  "empty_state": "No activity logs found for the selected filters.",
+  "filters": "Filters"
+}

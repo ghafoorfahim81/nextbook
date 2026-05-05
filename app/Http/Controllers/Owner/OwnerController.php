@@ -14,10 +14,9 @@ use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Response;
-use App\Models\Transaction\Transaction;
-use App\Models\Transaction\TransactionLine;
 use App\Models\User;
 use Carbon\Carbon;
+use App\Services\ActivityLogService;
 class OwnerController extends Controller
 {
     public function __construct()
@@ -67,11 +66,24 @@ class OwnerController extends Controller
         ]);
     }
 
-    public function store(OwnerStoreRequest $request, TransactionService $transactionService)
+    public function store(
+        OwnerStoreRequest $request,
+        TransactionService $transactionService,
+        ActivityLogService $activityLogService
+    )
     {
         $validated = $request->validated();
-        // dd($validated);
-        DB::transaction(function () use ($validated, $transactionService) {
+        $sharePercentage = (float) ($validated['share_percentage']
+            ?? $validated['ownership_percentage']
+            ?? 100);
+        $owner = null;
+        $transaction = null;
+
+        DB::transaction(function () use (&$owner, &$transaction, $validated, $transactionService, $activityLogService) {
+            $sharePercentage = (float) ($validated['share_percentage']
+                ?? $validated['ownership_percentage']
+                ?? 100);
+
             $owner = Owner::create([
                 'name' => $validated['name'],
                 'father_name' => $validated['father_name'],
@@ -79,7 +91,7 @@ class OwnerController extends Controller
                 'email' => $validated['email'] ?? null,
                 'address' => $validated['address'] ?? null,
                 'phone_number' => $validated['phone_number'] ?? null,
-                'share_percentage' => $validated['share_percentage'] ?? 100,
+                'share_percentage' => $sharePercentage,
                 'profit_share_percentage' => $validated['profit_share_percentage'] ?? 100,
                 'is_active' => $validated['is_active'] ?? true,
                 'capital_account_id' => $validated['capital_account_id'],
@@ -89,7 +101,7 @@ class OwnerController extends Controller
             // Create financial transactions
             $amount = (float) $validated['amount'];
             $currencyId = $validated['opening_currency_id'];
-            $rate = (float) $validated['rate']; 
+            $rate = (float) $validated['rate'];
 
             // Credit owner's capital account (capital contribution)
             if($amount > 0 && $currencyId && $rate) {
@@ -115,6 +127,33 @@ class OwnerController extends Controller
                    ],
                );
             }
+
+            $activityLogService->logCreate(
+                reference: $owner,
+                module: 'owner',
+                description: "Owner {$owner->name} created.",
+                newValues: [
+                    'name' => $owner->name,
+                    'father_name' => $owner->father_name,
+                    'nic' => $owner->nic,
+                    'email' => $owner->email,
+                    'address' => $owner->address,
+                    'phone_number' => $owner->phone_number,
+                    'ownership_percentage' => $owner->share_percentage,
+                    'profit_share_percentage' => $owner->profit_share_percentage,
+                    'is_active' => $owner->is_active,
+                    'capital_account_id' => $owner->capital_account_id,
+                    'drawing_account_id' => $owner->drawing_account_id,
+                    'amount' => $amount,
+                    'currency_id' => $currencyId,
+                    'rate' => $rate,
+                    'bank_account_id' => $validated['bank_account_id'] ?? null,
+                ],
+                metadata: [
+                    'action' => 'owner_create',
+                    'transaction_id' => $transaction?->id,
+                ],
+            );
         });
 
         if ($request->boolean('create_and_new')) {
@@ -151,13 +190,49 @@ class OwnerController extends Controller
         ]);
     }
 
-    public function update(OwnerUpdateRequest $request, Owner $owner)
-    { 
-        $validated = $request->validated(); 
-        DB::transaction(function () use ($owner, $validated) {
-            $amount = (float) ($validated['amount'] ?? 0);
-            $currencyId = $validated['currency_id'] ?? $owner->transaction?->currency_id;
-            $rate = (float) ($validated['rate'] ?? $owner->transaction?->rate ?? 1);
+    public function update(OwnerUpdateRequest $request, Owner $owner, ActivityLogService $activityLogService)
+    {
+        $validated = $request->validated();
+        $sharePercentage = (float) ($validated['share_percentage']
+            ?? $validated['ownership_percentage']
+            ?? $owner->share_percentage
+            ?? 100);
+        $currentTransaction = $owner->transaction()->with('lines', 'currency')->first();
+        $amount = (float) ($validated['amount'] ?? 0);
+        $currencyId = $validated['currency_id']
+            ?? $request->input('opening_currency_id')
+            ?? $currentTransaction?->currency_id;
+        $rate = (float) ($validated['rate'] ?? $currentTransaction?->rate ?? 1);
+
+        $beforeState = [
+            'name' => $owner->name,
+            'father_name' => $owner->father_name,
+            'nic' => $owner->nic,
+            'email' => $owner->email,
+            'address' => $owner->address,
+            'phone_number' => $owner->phone_number,
+            'ownership_percentage' => $owner->share_percentage,
+            'profit_share_percentage' => $owner->profit_share_percentage,
+            'is_active' => $owner->is_active,
+            'capital_account_id' => $owner->capital_account_id,
+            'drawing_account_id' => $owner->drawing_account_id,
+            'amount' => $currentTransaction?->lines?->first()?->debit
+                ?? $currentTransaction?->lines?->first()?->credit,
+            'currency_id' => $currentTransaction?->currency_id,
+            'rate' => $currentTransaction?->rate,
+            'bank_account_id' => $currentTransaction?->lines?->first()?->account_id,
+        ];
+
+        $transaction = null;
+
+        DB::transaction(function () use (
+            &$transaction,
+            $owner,
+            $validated,
+            $amount,
+            $currencyId,
+            $rate,
+        ) {
             $transaction = $owner->transaction()->with('lines')->first();
 
             $owner->update([
@@ -167,7 +242,7 @@ class OwnerController extends Controller
                 'email' => $validated['email'] ?? null,
                 'address' => $validated['address'] ?? null,
                 'phone_number' => $validated['phone_number'] ?? null,
-                'share_percentage' => $validated['share_percentage'] ?? 100,
+                'share_percentage' => $sharePercentage,
                 'profit_share_percentage' => $validated['profit_share_percentage'] ?? 100,
                 'is_active' => $validated['is_active'] ?? true,
                 'capital_account_id' => $validated['capital_account_id'] ?? null,
@@ -175,12 +250,12 @@ class OwnerController extends Controller
             ]);
 
             if ($transaction) {
-                TransactionLine::where('transaction_id', $transaction->id)->forceDelete();
-                $transaction->forceDelete();
+                $transaction->lines()->delete();
+                $transaction->delete();
             }
 
             if ($amount > 0 && $currencyId && $rate) {
-                app(TransactionService::class)->post(
+                $transaction = app(TransactionService::class)->post(
                     header: [
                         'currency_id' => $currencyId,
                         'rate' => $rate,
@@ -204,29 +279,123 @@ class OwnerController extends Controller
                 );
             }
         });
+
+        $activityLogService->logUpdate(
+            reference: $owner,
+            before: $beforeState,
+            after: [
+                'name' => $owner->name,
+                'father_name' => $owner->father_name,
+                'nic' => $owner->nic,
+                'email' => $owner->email,
+                'address' => $owner->address,
+                'phone_number' => $owner->phone_number,
+                'ownership_percentage' => $owner->share_percentage,
+                'profit_share_percentage' => $owner->profit_share_percentage,
+                'is_active' => $owner->is_active,
+                'capital_account_id' => $owner->capital_account_id,
+                'drawing_account_id' => $owner->drawing_account_id,
+                'amount' =>  $amount,
+                'currency_id' => $transaction?->currency_id ?? $currencyId,
+                'rate' => $transaction?->rate ?? $rate,
+                'bank_account_id' => $transaction?->lines?->first()?->account_id
+                    ?? ($validated['bank_account_id'] ?? $currentTransaction?->lines?->first()?->account_id),
+            ],
+            module: 'owner',
+            description: "Owner {$owner->name} updated.",
+            metadata: [
+                'action' => 'owner_update',
+                'transaction_id' => $transaction?->id,
+            ],
+        );
+
         return redirect()->route('owners.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.owner')]));
     }
 
-    public function destroy(Request $request, Owner $owner)
+    public function destroy(Request $request, Owner $owner, ActivityLogService $activityLogService)
     {
-        $owner->load(['transaction']);
+        $transaction = $owner->transaction()->with('lines', 'currency')->first();
 
-        if ($owner->transaction) {
-            $owner->transaction->lines()->delete();
-            $owner->transaction->delete();
-        }
-        $owner->delete();
+        $oldValues = [
+            'name' => $owner->name,
+            'father_name' => $owner->father_name,
+            'nic' => $owner->nic,
+            'email' => $owner->email,
+            'address' => $owner->address,
+            'phone_number' => $owner->phone_number,
+            'ownership_percentage' => $owner->share_percentage,
+            'profit_share_percentage' => $owner->profit_share_percentage,
+            'is_active' => $owner->is_active,
+            'capital_account_id' => $owner->capital_account_id,
+            'drawing_account_id' => $owner->drawing_account_id,
+            'amount' => $transaction?->lines?->first()?->debit
+                ?? $transaction?->lines?->first()?->credit,
+            'currency_id' => $transaction?->currency_id,
+            'rate' => $transaction?->rate,
+            'bank_account_id' => $transaction?->lines?->first()?->account_id,
+        ];
+
+        DB::transaction(function () use ($owner, &$transaction): void {
+            if ($transaction) {
+                $transaction->lines()->delete();
+                $transaction->delete();
+            }
+
+            $owner->delete();
+        });
+
+        $activityLogService->logDelete(
+            reference: $owner,
+            module: 'owner',
+            description: "Owner {$owner->name} deleted.",
+            oldValues: $oldValues,
+            metadata: [
+                'action' => 'owner_delete',
+                'transaction_id' => $transaction?->id,
+            ],
+        );
         return redirect()->route('owners.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.owner')]));
     }
 
-    public function restore(Request $request, Owner $owner)
+    public function restore(Request $request, Owner $owner, ActivityLogService $activityLogService)
     {
-        $owner->restore();
-        $transaction = $owner->transaction()->withTrashed()->first();
-        if ($transaction) {
-            $transaction->restore();
-            $transaction->lines()->withTrashed()->restore();
-        }
+        $transaction = null;
+
+        DB::transaction(function () use ($owner, &$transaction): void {
+            $owner->restore();
+
+            $transaction = $owner->transaction()->withTrashed()->with('lines')->first();
+            if ($transaction) {
+                $transaction->restore();
+                $transaction->lines()->withTrashed()->restore();
+            }
+        });
+
+        $activityLogService->logAction(
+            eventType: 'restored',
+            reference: $owner,
+            module: 'owner',
+            description: "Owner {$owner->name} restored.",
+            newValues: [
+            'name' => $owner->name,
+            'father_name' => $owner->father_name,
+            'phone_number' => $owner->phone_number,
+            'ownership_percentage' => $owner->share_percentage,
+            'capital_account_id' => $owner->capital_account_id,
+            'drawing_account_id' => $owner->drawing_account_id,
+        ],
+            metadata: [
+                'action' => 'owner_restore',
+                'transaction_id' => $transaction?->id,
+            ],
+        );
         return redirect()->route('owners.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.owner')]));
+    }
+
+    public function forceDelete(Request $request, Owner $owner)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('owners', (string) $owner->id);
+
+        return redirect()->route('owners.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.owner')]));
     }
 }

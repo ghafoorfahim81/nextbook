@@ -422,6 +422,10 @@
     "reports.delete": "Delete Reports",
     "reports.import": "Import Reports",
     "reports.export": "Export Reports",
+    "deleted_records.view_any": "View Any Deleted Records",
+    "deleted_records.view": "View Deleted Record Details",
+    "deleted_records.restore": "Restore Deleted Records",
+    "deleted_records.force_delete": "Force Delete Deleted Records",
 
     "stock_transfer.view_any": "View Any Stock Transfers",
     "stock_transfer.view": "View Stock Transfers",

@@ -79,6 +79,7 @@ class User extends Authenticatable
                 'payment',
                 'transfer',
                 'user_management',
+                'system',
                 'reports',
                 'preferences',
             ],

@@ -17,8 +17,9 @@
     "expense": "Expense",
     "user_management": "User Management",
     "preferences": "Preferences",
-    "reports": "Reports"
-
+    "reports": "Reports",
+    "system": "System",
+    "deleted_records": "Deleted Records"
   },
   "expense": {
     "expense": "Expense",
@@ -50,7 +51,7 @@
   },
   "journal_entry": {
     "journal_entry": "Journal Entry",
-    "journal_entries": "Journal Entries", 
+    "journal_entries": "Journal Entries",
     "journal_class": "Journal Class",
     "journal_classes": "Journal Classes"
   },
@@ -81,6 +82,11 @@
   },
   "reports": {
     "reports": "Reports",
-    "report": "Report"
+    "report": "Report",
+    "activity_logs": "User Activity"
+  },
+  "system": {
+    "deleted_records": "Deleted Records",
+    "activity_logs": "Activity Logs"
   }
 }

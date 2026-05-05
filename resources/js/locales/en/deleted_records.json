@@ -1,0 +1,57 @@
+{
+  "title": "Deleted Records",
+  "badge": "Trash / Recycle Bin",
+  "subtitle": "Review soft-deleted records across the system, restore them when needed, or permanently remove them before the 30-day cleanup runs.",
+  "summary": {
+    "total": "Deleted records",
+    "modules": "Modules represented",
+    "expiring_soon": "Expiring within 7 days"
+  },
+  "filters": {
+    "search": "Search",
+    "search_placeholder": "Search by title, id, or module",
+    "module": "Module",
+    "module_placeholder": "All modules",
+    "per_page": "Rows per page",
+    "clear": "Clear filters"
+  },
+  "columns": {
+    "module": "Module",
+    "record_id": "Record ID",
+    "title": "Title / Name",
+    "deleted_by": "Deleted By",
+    "deleted_at": "Deleted At",
+    "days_remaining": "Days Remaining",
+    "actions": "Actions"
+  },
+  "detail": {
+    "metadata": "Metadata",
+    "original_fields": "Original Fields"
+  },
+  "actions": {
+    "close": "Close",
+    "restore": "Restore",
+    "restored": "Record restored successfully.",
+    "restore_failed": "Unable to restore the selected record.",
+    "force_delete": "Force Delete",
+    "force_deleted": "Record permanently deleted.",
+    "force_delete_failed": "Unable to permanently delete the selected record.",
+    "cancel": "Cancel"
+  },
+  "restore_title": "Restore this record?",
+  "restore_description": "This will move {name} back to active records and may affect related data.",
+  "force_delete_title": "Permanently delete this record?",
+  "force_delete_description": "This will permanently delete {name} and cannot be undone.",
+  "pagination": {
+    "showing": "Showing {from}-{to} of {total}",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "boolean": {
+    "yes": "Yes",
+    "no": "No"
+  },
+  "days": "days",
+  "empty": "No deleted records were found for the selected filters.",
+  "system": "System"
+}

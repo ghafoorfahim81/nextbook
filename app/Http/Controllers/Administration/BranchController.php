@@ -206,4 +206,12 @@ class BranchController extends Controller
         $branch->restore();
         return redirect()->route('branches.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.branch')]));
     }
+
+    public function forceDelete(Request $request, Branch $branch)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('branches', (string) $branch->id);
+        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'branches'));
+
+        return redirect()->route('branches.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.branch')]));
+    }
 }

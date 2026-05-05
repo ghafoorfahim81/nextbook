@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Models\Transaction\Transaction;
 use App\Observers\TransactionObserver;
+use App\Observers\ModelActivityObserver;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Eloquent\Relations\Relation;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -46,5 +48,11 @@ class AppServiceProvider extends ServiceProvider
             'journal_entry' => 'App\Models\JournalEntry\JournalEntry',
 
         ]);
+
+        foreach (config('activity_log.observer.models', []) as $modelClass) {
+            if (class_exists($modelClass)) {
+                $modelClass::observe(ModelActivityObserver::class);
+            }
+        }
     }
 }

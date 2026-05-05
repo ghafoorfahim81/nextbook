@@ -68,4 +68,11 @@ class LedgerController extends Controller
         $ledger->restore();
         return redirect()->route('ledgers.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.ledger')]));
     }
+
+    public function forceDelete(Request $request, Ledger $ledger)
+    {
+        app(\App\Services\DeletedRecordService::class)->forceDelete('ledgers', (string) $ledger->id);
+
+        return redirect()->route('ledgers.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.ledger')]));
+    }
 }

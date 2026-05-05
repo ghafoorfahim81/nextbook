@@ -1,0 +1,21 @@
+{
+  "activity_log": "د فعالیت لاګ",
+  "activity_logs": "د فعالیت لاګونه",
+  "event_type": "د پېښې ډول",
+  "module": "ماډیول",
+  "reference_type": "د مرجع ډول",
+  "reference_id": "د مرجع پېژند",
+  "old_values": "پخواني ارزښتونه",
+  "new_values": "نوي ارزښتونه",
+  "metadata": "میټاډاټا",
+  "request_context": "د غوښتنې معلومات",
+  "ip_address": "IP پته",
+  "user_agent": "کارن اجنټ",
+  "view_log": "لاګ وګورئ",
+  "view_details": "جزییات وګورئ",
+  "no_old_values": "هیڅ پخواني ارزښتونه ثبت شوي نه دي.",
+  "no_new_values": "هیڅ نوي ارزښتونه ثبت شوي نه دي.",
+  "no_metadata": "هیڅ میټاډاټا ثبت شوې نه ده.",
+  "empty_state": "د ټاکل شویو فلټرونو لپاره هیڅ لاګ ونه موندل شو.",
+  "filters": "فلټرونه"
+}
