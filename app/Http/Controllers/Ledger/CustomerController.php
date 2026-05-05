@@ -109,8 +109,15 @@ class CustomerController extends Controller
                     'remark' => 'Opening balance for customer ' . $ledger->name,
                 ],
                 lines: [
-                ['account_id' => $arId, 'ledger_id' => $ledger->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for customer ' . $ledger->name],
-                ['account_id' => $equityId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $ledger->name],
+                ['account_id' => $arId, 'ledger_id' => $ledger->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 
+                'remark' => 'Opening balance for customer ' . $ledger->name,
+                'remark_fa' => 'موجودی اولیه برای مشتری ' . $ledger->name,
+                'remark_ps' =>'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
+            ],
+                ['account_id' => $equityId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $ledger->name,
+                'remark_fa' => 'موجودی اولیه برای مشتری ' . $ledger->name,
+                'remark_ps' =>'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
+                ],
             ]);
             $transaction->opening()->create([
                 'ledgerable_id' => $ledger->id,
@@ -340,8 +347,15 @@ class CustomerController extends Controller
                     'remark' => 'Opening balance for customer ' . $customer->name,
                 ],
                 lines: [
-                ['account_id' => $arId, 'ledger_id' => $customer->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for customer ' . $customer->name],
-                ['account_id' => $equityId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $customer->name],
+                ['account_id' => $arId, 'ledger_id' => $customer->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 
+                'remark' => 'Opening balance for customer ' . $customer->name,
+                'remark_fa' => 'موجودی اولیه برای مشتری ' . $customer->name,
+                'remark_ps' =>'د'. ' '. $customer->name.' '.'د پرانیستلو بیلانس ',
+                ],
+                ['account_id' => $equityId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $customer->name,
+                'remark_fa' => 'موجودی اولیه برای مشتری ' . $customer->name,
+                'remark_ps' =>'د'. ' '. $customer->name.' '.'د پرانیستلو بیلانس ',
+                ],
             ]);
 
             $transaction->opening()->create([

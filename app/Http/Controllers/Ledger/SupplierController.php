@@ -113,8 +113,14 @@ class SupplierController extends Controller
                     'remark' => 'Opening balance for supplier ' . $ledger->name,
                 ],
                 lines: [
-                ['account_id' => $equityId, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for supplier ' . $ledger->name],
-                ['account_id' => $apId, 'ledger_id' => $ledger->id, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for supplier ' . $ledger->name],
+                ['account_id' => $equityId, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for supplier ' . $ledger->name,
+                'remark_fa' => 'موجودی اولیه برای تامین کننده ' . $ledger->name,
+                'remark_ps' =>'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
+                ],
+                ['account_id' => $apId, 'ledger_id' => $ledger->id, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for supplier ' . $ledger->name,
+                'remark_fa' => 'موجودی اولیه برای تامین کننده ' . $ledger->name,
+                'remark_ps' =>'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
+                ],
             ]);
             $transaction->opening()->create([
                 'ledgerable_id' => $ledger->id,
@@ -342,8 +348,14 @@ class SupplierController extends Controller
                     'remark' => 'Opening balance for supplier ' . $supplier->name,
                 ],
                 lines: [
-                ['account_id' => $equityId, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for supplier ' . $supplier->name],
-                ['account_id' => $apId, 'debit' => 0, 'ledger_id' => $supplier->id, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for supplier ' . $supplier->name],
+                    ['account_id' => $equityId, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for supplier ' . $supplier->name,
+                'remark_fa' => 'موجودی اولیه برای تامین کننده ' . $supplier->name,
+                'remark_ps' =>'د'. ' '. $supplier->name.' '.'د پرانیستلو بیلانس ',
+                ],
+                ['account_id' => $apId, 'debit' => 0, 'ledger_id' => $supplier->id, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for supplier ' . $supplier->name,
+                'remark_fa' => 'موجودی اولیه برای تامین کننده ' . $supplier->name,
+                'remark_ps' =>'د'. ' '. $supplier->name.' '.'د پرانیستلو بیلانس ',
+                ],
             ]);
 
             $transaction->opening()->create([
