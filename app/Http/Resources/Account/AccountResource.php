@@ -43,7 +43,7 @@ class AccountResource extends JsonResource
             'remark' => $this->remark,
             'transactions' => $this->whenLoaded('transactionLines', function () {
                 return TransactionLineResource::collection($this->transactionLines);
-            }),  // Return the transaction lines
+            }),   
             'opening' => $this->relationLoaded('opening') && $this->opening
                 ? new LedgerOpeningResource($this->opening)
                 : null,

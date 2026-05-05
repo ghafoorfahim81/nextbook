@@ -37,9 +37,6 @@ Route::apiResource('quantities', App\Http\Controllers\Administration\QuantityCon
 Route::delete('/quantities/{quantity}/force-delete', [App\Http\Controllers\Administration\QuantityController::class, 'forceDelete'])
     ->name('quantities.force-delete')
     ->withTrashed();
-
-Route::apiResource('purchase-payments', App\Http\Controllers\Purchase\PurchasePaymentController::class);
+ 
 Route::apiResource('sale-receives', App\Http\Controllers\Sale\SaleReceiveController::class);
-Route::delete('/purchase-payments/{purchasePayment}/force-delete', [App\Http\Controllers\Purchase\PurchasePaymentController::class, 'forceDelete'])
-    ->name('purchase-payments.force-delete')
-    ->withTrashed();
+ 
