@@ -84,6 +84,14 @@ class PreferencesController extends Controller
         $currentPreferences = $user->preferences ?? User::DEFAULT_PREFERENCES;
         $newPreferences = array_replace_recursive($currentPreferences, $validated);
 
+        if (array_key_exists('sidebar_menus', $validated['appearance'] ?? [])) {
+            data_set(
+                $newPreferences,
+                'appearance.sidebar_menus',
+                array_values(array_unique($validated['appearance']['sidebar_menus']))
+            );
+        }
+
         $user->update(['preferences' => $newPreferences]);
         app(ActivityLogService::class)->logUpdate(
             reference: $user,
@@ -272,7 +280,7 @@ class PreferencesController extends Controller
             ['value' => 'payment', 'label' => 'sidebar.main.payment'],
             ['value' => 'transfer', 'label' => 'sidebar.main.transfer'],
             ['value' => 'user_management', 'label' => 'sidebar.main.user_management'],
-            ['value' => 'system', 'label' => 'sidebar.main.system'],
+            ['value' => 'trash', 'label' => 'sidebar.main.trash'],
             ['value' => 'reports', 'label' => 'sidebar.main.reports'],
             ['value' => 'preferences', 'label' => 'sidebar.main.preferences'],
         ];

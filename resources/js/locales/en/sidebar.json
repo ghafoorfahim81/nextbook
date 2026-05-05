@@ -19,7 +19,8 @@
     "preferences": "Preferences",
     "reports": "Reports",
     "system": "System",
-    "deleted_records": "Deleted Records"
+    "deleted_records": "Deleted Records",
+    "trash": "Trash"
   },
   "expense": {
     "expense": "Expense",

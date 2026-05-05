@@ -608,15 +608,12 @@ const navMain = computed(() => [
     },
 
     {
-        key: 'system',
-        title: t('sidebar.main.system'),
-        url: '#',
+        key: 'trash',
+        title: t('sidebar.main.trash'),
+        url: '/deleted-records',
         icon: Trash2,
-        items: [
-            { title: t('sidebar.main.deleted_records'), url: '/deleted-records', permission: 'deleted_records.view_any' },
-        ],
-    },
-
+        permission: 'deleted_records.view_any',
+    }, 
     {
         key: 'reports',
         title: t('sidebar.main.reports'),
