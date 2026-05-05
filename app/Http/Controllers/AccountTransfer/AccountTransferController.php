@@ -179,8 +179,7 @@ class AccountTransferController extends Controller
     }
 
     public function update(AccountTransferUpdateRequest $request, AccountTransfer $accountTransfer, ActivityLogService $activityLogService)
-    {
-        // dd($request->all());
+    { 
         $before = $this->transferSnapshot($accountTransfer->loadMissing('transaction.lines.account', 'transaction.currency'));
 
         DB::transaction(function () use ($request, $accountTransfer, $activityLogService, $before) {

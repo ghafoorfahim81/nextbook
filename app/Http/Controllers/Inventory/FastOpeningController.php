@@ -79,11 +79,17 @@ class FastOpeningController extends Controller
                                 'account_id' => Item::find($itemData['item_id'])->asset_account_id,
                                 'debit' => $itemData['cost']*$itemData['quantity'],
                                 'credit' => 0,
+                                'remark' => 'Opening balance for item ' . ' ' . Item::find($itemData['item_id'])->name,
+                                'remark_fa' => 'موجودی اولیه برای جنس ' . ' ' . Item::find($itemData['item_id'])->name,
+                                'remark_ps' =>'د'. ' '. Item::find($itemData['item_id'])->name.' '.'د پرانیستلو بیلانس ',
                             ],
                             [
                                 'account_id' => $glAccounts['opening-balance-equity'],
                                 'debit' => 0,
                                 'credit' => $itemData['cost']*$itemData['quantity'],
+                                'remark' => 'Opening balance for item ' . ' ' . Item::find($itemData['item_id'])->name,
+                                'remark_fa' => 'موجودی اولیه برای جنس ' . ' ' . Item::find($itemData['item_id'])->name,
+                                'remark_ps' =>'د'. ' '. Item::find($itemData['item_id'])->name.' '.'د پرانیستلو بیلانس ',
                             ]
                         ]
                     );

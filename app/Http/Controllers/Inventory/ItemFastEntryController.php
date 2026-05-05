@@ -98,11 +98,17 @@ class ItemFastEntryController extends Controller
                                 'account_id' => $glAccounts['inventory-stock'],
                                 'debit' => $cost*$quantity,
                                 'credit' => 0,
+                                'remark' => 'Opening balance for item ' . ' ' . $item->name,
+                                'remark_fa' => 'موجودی اولیه برای جنس ' . ' ' . $item->name,
+                                'remark_ps' =>'د'. ' '. $item->name.' '.'د پرانیستلو بیلانس ',
                             ],
                             [
                                 'account_id' => $glAccounts['opening-balance-equity'],
                                 'debit' => 0,
                                 'credit' => $cost*$quantity,
+                                'remark' => 'Opening balance for item ' . ' ' . $item->name,
+                                'remark_fa' => 'موجودی اولیه برای جنس ' . ' ' . $item->name,
+                                'remark_ps' =>'د'. ' '. $item->name.' '.'د پرانیستلو بیلانس ',
                             ]
                         ]
                     );
