@@ -239,14 +239,20 @@ class ItemController extends Controller
                         lines: [
                           ['account_id' => $inventoryAccount,   'debit' => $openings->sum(function ($o) {
                             return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
-                        }), 'credit' => 0],
-                          ['account_id' => $openingBalanceAccount, 'debit' => 0,    'credit' => $openings->sum(function ($o) {
+                        }), 'credit' => 0,
+                        'remark' => 'Opening balance for item ' . ' ' . $item->name,
+                        'remark_fa' => 'موجودی اولیه برای جنس ' . ' ' . $item->name,
+                         'remark_ps' =>'د'. ' '. $item->name.' '.'د پرانیستلو بیلانس ',
+                        ],
+                          ['account_id' => $openingBalanceAccount, 'debit' => 0,'credit' => $openings->sum(function ($o) {
                             return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
-                        })],
+                        }), 'remark' => 'Opening balance for item ' . ' ' . $item->name,
+                        'remark_fa' => 'موجودی اولیه برای جنس ' . ' ' . $item->name,
+                        'remark_ps' =>'د'. ' '. $item->name.' '.'د پرانیستلو بیلانس ',
+                        ],
                         ]
                       );
-                }
-
+                } 
         });
         if ((bool) $request->input('stay') || (bool) $request->input('create_and_new')) {
             return redirect()->route('items.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.item')]));
