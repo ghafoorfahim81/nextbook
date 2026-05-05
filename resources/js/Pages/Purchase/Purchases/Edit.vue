@@ -365,7 +365,7 @@ const notifyIfDuplicate = (index) => {
         const expiryText = item.expire_date ? `Expiry: ${item.expire_date}` : 'No expiry';
         disabled.value = true;
         toast({
-            title: 'Duplicate item detected',
+            title: t('purchase.duplicate_item_detected'),
             description: `Same item with ${batchText} and ${expiryText} already exists.`,
             variant: 'destructive',
             class: 'bg-pink-600 text-white',
@@ -527,8 +527,8 @@ const handleSubmit = () => {
     if (!selectedItems.length) {
         notifySound('error');
         toast({
-            title: 'Please add items',
-            description: 'Please add at least one item to update the purchase',
+            title: t('purchase.please_add_items'),
+            description: t('purchase.please_add_at_least_one_item_to_update_purchase'),
             variant: 'destructive',
             class: 'bg-yellow-600 text-white',
         });
@@ -553,8 +553,8 @@ const handleSubmit = () => {
         onSuccess: () => {
             notifySound('success');
             toast({
-                title: 'Success',
-                description: 'Purchase updated successfully',
+                title: t('purchase.purchase_updated_successfully_variant'),
+                description: t('purchase.purchase_updated_successfully'),
                 variant: 'success',
                 class: 'bg-green-600 text-white',
             });
@@ -562,8 +562,8 @@ const handleSubmit = () => {
         onError: () => {
             notifySound('error');
             toast({
-                title: 'Error updating purchase',
-                description: 'Error updating purchase',
+                title: t('purchase.error_updating_purchase_variant'),
+                description: t('purchase.error_updating_purchase_description'),
                 variant: 'destructive',
                 class: 'bg-pink-600 text-white',
             });
