@@ -20,7 +20,8 @@
     "item_transfer": "انتقال جنس",
     "reports": "گزارشات",
     "system": "سیستم",
-    "deleted_records": "رکوردهای حذف شده"
+    "deleted_records": "رکوردهای حذف شده",
+    "trash": "سطل زباله"
   },
   "expense": {
     "expense": "مصارف",

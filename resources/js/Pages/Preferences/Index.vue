@@ -78,7 +78,7 @@ const tabSearchTerms = {
         'with nature',
         'light',
         'dark',
-        'system',
+        'trash',
         'cyan',
         'violet',
     ],
@@ -710,6 +710,7 @@ const receiptPaymentFields = [
                                             @update:checked="(checked) => {
                                                 if (!form.appearance.sidebar_menus) form.appearance.sidebar_menus = []
                                                 if (checked) {
+                                                    if (form.appearance.sidebar_menus.includes(menu.value)) return
                                                     form.appearance.sidebar_menus.push(menu.value)
                                                 } else {
                                                     form.appearance.sidebar_menus = form.appearance.sidebar_menus.filter(m => m !== menu.value)
