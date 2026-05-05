@@ -82,5 +82,7 @@ return [
     'total_cost_of_goods_sold' => 'Total Cost of Goods Sold',
     'total_expenses' => 'Total Expenses',
     'current_period_profit_loss' => 'Current Period Profit / Loss',
+    'active' => 'Active',
+    'inactive' => 'Inactive',
 ];
 

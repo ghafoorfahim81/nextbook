@@ -139,14 +139,14 @@ function closeDialog() {
                 <Landmark class="h-4 w-4" />
                 {{ t('owner.capital_account') || 'Capital Account' }}
               </div>
-              <div class="text-sm font-medium text-foreground">{{ owner.capital_account?.name || '-' }}</div>
+              <div class="text-sm font-medium text-foreground">{{ owner.capital_account_name || '-' }}</div>
             </div>
             <div class="rounded-xl border border-border bg-card p-4 shadow-sm">
               <div class="mb-3 flex items-center gap-2 text-sm font-semibold text-violet-500">
                 <Wallet class="h-4 w-4" />
                 {{ t('owner.drawing_account') || 'Drawing Account' }}
               </div>
-              <div class="text-sm font-medium text-foreground">{{ owner.drawing_account?.name || '-' }}</div>
+              <div class="text-sm font-medium text-foreground">{{ owner.drawing_account_name || '-' }}</div>
             </div>
           </div>
 
@@ -168,7 +168,7 @@ function closeDialog() {
                 <div class="text-muted-foreground">{{ t('general.rate') || 'Rate' }}</div>
                 <div class="font-medium text-foreground">{{ owner.rate }}</div>
                 <div class="text-muted-foreground">{{ t('general.account') || 'Account' }}</div>
-                <div class="font-medium text-foreground">{{ owner.capital_account_transaction.account?.name || '-' }}</div>
+                <div class="font-medium text-foreground">{{ owner.capital_account_name || '-' }}</div>
               </div>
               <div v-else class="text-sm text-muted-foreground">-</div>
             </div>
@@ -190,7 +190,7 @@ function closeDialog() {
                 <div class="text-muted-foreground">{{ t('general.rate') || 'Rate' }}</div>
                 <div class="font-medium text-foreground">{{ owner.rate }}</div>
                 <div class="text-muted-foreground">{{ t('general.account') || 'Account' }}</div>
-                <div class="font-medium text-foreground">{{ owner.bank_account?.name || '-' }}</div>
+                <div class="font-medium text-foreground">{{ owner.bank_account_name || '-' }}</div>
               </div>
               <div v-else class="text-sm text-muted-foreground">-</div>
             </div>
