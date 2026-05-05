@@ -4,5 +4,22 @@
     "purchase_number": "Purchase Number",
     "purchase_date": "Purchase Date",
     "purchase_type": "Purchase Type",
-    "purchase_status": "Purchase Status"
+    "purchase_status": "Purchase Status",
+    "please_add_items": "Please add items",
+    "please_add_at_least_one_item_to_create_purchase": "Please add at least one item to create a purchase",
+    "purchase_created_successfully": "Purchase created successfully",
+    "purchase_created_successfully_variant": "Success",
+    "error_creating_purchase": "Error creating purchase",
+    "error_creating_purchase_description": "Error creating purchase",
+    "error_creating_purchase_variant": "Error",
+    "error_creating_purchase_class": "bg-pink-600 text-white",
+    "error_creating_purchase_title": "Error",
+    "duplicate_item_detected": "Duplicate item detected",
+    "please_add_at_least_one_item_to_update_purchase": "Please add at least one item to update the purchase",
+    "purchase_updated_successfully": "Purchase updated successfully",
+    "purchase_updated_successfully_variant": "Success",
+    "error_updating_purchase": "Error updating purchase",
+    "error_updating_purchase_description": "Error updating purchase",
+    "error_updating_purchase_variant": "Error", 
+    "error_updating_purchase_title": "Error"
 }

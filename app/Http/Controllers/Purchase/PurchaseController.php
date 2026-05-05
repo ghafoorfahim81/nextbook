@@ -149,12 +149,15 @@ class PurchaseController extends Controller
                     'ledger_id'  => null,
                     'debit'      => $totalCost,
                     'credit'     => 0,
-                    'remark'     => 'Purchase item: '.$itemModel->name,
+                    'remark'     => 'Purchase for '. ' '. $itemModel->name.' #'.$purchase->number,
+                    'remark_fa' => 'خرید بابت '. ' '. $itemModel->name.' #'.$purchase->number,
+                    'remark_ps' => 'د'. ' '. $itemModel->name.' #'.$purchase->number,
                 ];
 
             }
             $glAccounts = Cache::get('gl_accounts');
             $discountTotal = $request->input('discount_total', 0);
+
             if($discountTotal > 0) {
                 $lines[] = [
                     'account_id' => $glAccounts['discount-from-supplier'],
@@ -162,6 +165,8 @@ class PurchaseController extends Controller
                     'debit' => 0,
                     'credit' => $discountTotal,
                     'remark' => 'Discount for purchase #' . $purchase->number,
+                    'remark_fa' => 'تخفیف برای خرید #' . $purchase->number,
+                    'remark_ps' => 'د'. ' '. $purchase->number.' '.'تخفیف اخیستل',
                 ];
             }
             if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
@@ -172,6 +177,8 @@ class PurchaseController extends Controller
                     'debit'      => 0,
                     'credit'     => $validated['transaction_total'],
                     'remark'     => 'Payment for purchase #' . $purchase->number,
+                    'remark_fa' => 'پرداخت برای خرید #' . $purchase->number,
+                    'remark_ps' => 'د'. '#'. $purchase->number.' '.'پرداخت اخیستل',
                 ];
             }
             if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
@@ -180,7 +187,9 @@ class PurchaseController extends Controller
                     'ledger_id'  => $validated['supplier_id'],
                     'debit'      => 0,
                     'credit'     => $validated['transaction_total'],
-                    'remark'     => 'Payment for purchase #' . $purchase->number,
+                    'remark'     => 'Purchase on loan for #' . $purchase->number,
+                    'remark_fa' => ' بابت خرید قرض #' . $purchase->number,
+                    'remark_ps' => 'د'. '#'. $purchase->number.' '.'د پور اخیستلو په اړه',
                 ];
             }
 
@@ -191,13 +200,18 @@ class PurchaseController extends Controller
                         'account_id' => $validated['payment']['account_id'],
                         'debit' => 0,
                         'credit' => $amount,
+                        'remark' => 'Partial payment for purchase #' . $purchase->number,
+                        'remark_fa' => 'پرداخت جزئی برای خرید #' . $purchase->number,
+                        'remark_ps' => 'د'. '#'. $purchase->number.' '.'جزوی تادیه',
                     ];
                     $lines[] = [
                         'account_id' => $glAccounts['account-payable'],
                         'ledger_id' => $validated['supplier_id'],
                         'debit' => 0,
                         'credit' => $validated['transaction_total'] - $amount,
-                        'remark' => 'Payment for purchase #' . $purchase->number,
+                        'remark'     => 'Purchase on loan for #' . $purchase->number,
+                        'remark_fa' => ' بابت خرید قرض #' . $purchase->number,
+                        'remark_ps' => 'د'. '#'. $purchase->number.' '.'د پور اخیستلو په اړه',
                     ];
                 }
                 else{
@@ -206,10 +220,12 @@ class PurchaseController extends Controller
                         'ledger_id' => $validated['supplier_id'],
                         'debit' => 0,
                         'credit' => $validated['transaction_total'],
-                        'remark' => 'Payment for purchase #' . $purchase->number,
+                        'remark' => 'Purchase for #' . $purchase->number,
+                        'remark_fa' => 'خرید #' . $purchase->number,
+                        'remark_ps' => 'د'. '#'. $purchase->number.' '.'لخوا اخیستل',
                     ];
                 }
-            }
+            } 
 
             $transaction = $transactionService->post(
                 header: [
@@ -407,70 +423,77 @@ class PurchaseController extends Controller
                     'ledger_id'  => null,
                     'debit'      => $quantity * $unitPrice,
                     'credit'     => 0,
-                    'remark'     => 'Purchase item: ' . $itemModel->name,
+                    'remark'     => 'Purchase for '. ' '. $itemModel->name.' #'.$purchase->number,
+                    'remark_fa' => 'خرید بابت '. ' '. $itemModel->name.' #'.$purchase->number,
+                    'remark_ps' => 'د'. ' '. $itemModel->name.' #'.$purchase->number,
                 ];
             }
 
-            if ($discountTotal > 0) {
+            if($discountTotal > 0) {
                 $lines[] = [
                     'account_id' => $glAccounts['discount-from-supplier'],
-                    'ledger_id'  => null,
-                    'debit'      => 0,
-                    'credit'     => $discountTotal,
-                    'remark'     => 'Discount for purchase #' . $purchase->number,
+                    'ledger_id' => null,
+                    'debit' => 0,
+                    'credit' => $discountTotal,
+                    'remark' => 'Discount for purchase #' . $purchase->number,
+                    'remark_fa' => 'تخفیف برای خرید #' . $purchase->number,
+                    'remark_ps' => 'د'. ' '. $purchase->number.' '.'تخفیف اخیستل',
                 ];
             }
-
             if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
+
                 $lines[] = [
-                    'account_id' => $validated['bank_account_id'],
+                    'account_id' => $validated['bank_account_id'], // cash/bank
                     'ledger_id'  => null,
                     'debit'      => 0,
                     'credit'     => $validated['transaction_total'],
                     'remark'     => 'Payment for purchase #' . $purchase->number,
+                    'remark_fa' => 'پرداخت برای خرید #' . $purchase->number,
+                    'remark_ps' => 'د'. '#'. $purchase->number.' '.'پرداخت اخیستل',
                 ];
             }
-
             if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
                 $lines[] = [
-                    'account_id' => $glAccounts['account-payable'],
+                    'account_id' => $glAccounts['account-payable'], // cash/bank
                     'ledger_id'  => $validated['supplier_id'],
                     'debit'      => 0,
                     'credit'     => $validated['transaction_total'],
-                    'remark'     => 'Payment for purchase #' . $purchase->number,
+                    'remark'     => 'Purchase on loan for #' . $purchase->number,
+                    'remark_fa' => ' بابت خرید قرض #' . $purchase->number,
+                    'remark_ps' => 'د'. '#'. $purchase->number.' '.'د پور اخیستلو په اړه',
                 ];
             }
 
-            if ($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
-                $paidAmount = (float) ($validated['payment']['amount'] ?? 0);
-
-                if ($paidAmount > 0) {
+            if($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
+                if($validated['payment']['amount'] > 0) {
+                    $amount = (float) $validated['payment']['amount'];
                     $lines[] = [
                         'account_id' => $validated['payment']['account_id'],
-                        'ledger_id'  => null,
-                        'debit'      => 0,
-                        'credit'     => $paidAmount,
-                        'remark'     => 'Partial payment for purchase #' . $purchase->number,
+                        'debit' => 0,
+                        'credit' => $amount,
+                        'remark' => 'Partial payment for purchase #' . $purchase->number,
+                        'remark_fa' => 'پرداخت جزئی برای خرید #' . $purchase->number,
+                        'remark_ps' => 'د'. '#'. $purchase->number.' '.'جزوی تادیه',
                     ];
-
-                    $remaining = $validated['transaction_total'] - $paidAmount;
-
-                    if ($remaining > 0) {
-                        $lines[] = [
-                            'account_id' => $glAccounts['account-payable'],
-                            'ledger_id'  => $validated['supplier_id'],
-                            'debit'      => 0,
-                            'credit'     => $remaining,
-                            'remark'     => 'Remaining payable for purchase #' . $purchase->number,
-                        ];
-                    }
-                } else {
                     $lines[] = [
                         'account_id' => $glAccounts['account-payable'],
-                        'ledger_id'  => $validated['supplier_id'],
-                        'debit'      => 0,
-                        'credit'     => $validated['transaction_total'],
-                        'remark'     => 'Payable for purchase #' . $purchase->number,
+                        'ledger_id' => $validated['supplier_id'],
+                        'debit' => 0,
+                        'credit' => $validated['transaction_total'] - $amount,
+                        'remark'     => 'Purchase on loan for #' . $purchase->number,
+                        'remark_fa' => ' بابت خرید قرض #' . $purchase->number,
+                        'remark_ps' => 'د'. '#'. $purchase->number.' '.'د پور اخیستلو په اړه',
+                    ];
+                }
+                else{
+                    $lines[] = [
+                        'account_id' => $glAccounts['account-payable'],
+                        'ledger_id' => $validated['supplier_id'],
+                        'debit' => 0,
+                        'credit' => $validated['transaction_total'],
+                        'remark' => 'Purchase for #' . $purchase->number,
+                        'remark_fa' => 'خرید #' . $purchase->number,
+                        'remark_ps' => 'د'. '#'. $purchase->number.' '.'لخوا اخیستل',
                     ];
                 }
             }

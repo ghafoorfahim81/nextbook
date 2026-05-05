@@ -4,5 +4,21 @@
     "purchase_number": "شماره خرید",
     "purchase_date": "تاریخ خرید",
     "purchase_type": "نوع خرید",
-    "purchase_status": "وضعیت خرید"
+    "purchase_status": "وضعیت خرید",
+    "please_add_items": "لطفاً مواد را اضافه کنید",
+    "please_add_at_least_one_item_to_create_purchase": "لطفاً حداقل یک ماده برای ایجاد یک خرید اضافه کنید",
+    "purchase_created_successfully": "خرید با موفقیت ایجاد شد",
+    "purchase_created_successfully_variant": "موفقیت",
+    "error_creating_purchase": "خطا در ایجاد خرید",
+    "error_creating_purchase_description": "خطا در ایجاد خرید",
+    "error_creating_purchase_variant": "خطا", 
+    "error_creating_purchase_title": "خطا",
+    "duplicate_item_detected": "مورد تکراری شناسایی شد",
+    "please_add_at_least_one_item_to_update_purchase": "لطفاً حداقل یک ماده برای به روز رسانی خرید اضافه کنید",
+    "purchase_updated_successfully": "خرید با موفقیت به روز رسانی شد",
+    "purchase_updated_successfully_variant": "موفقیت",
+    "error_updating_purchase": "خطا در به روز رسانی خرید",
+    "error_updating_purchase_description": "خطا در به روز رسانی خرید",
+    "error_updating_purchase_variant": "خطا", 
+    "error_updating_purchase_title": "خطا"
 }

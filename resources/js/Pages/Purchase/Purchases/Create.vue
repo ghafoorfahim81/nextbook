@@ -281,8 +281,8 @@ function handleSubmit(createAndNew = false) {
     if(form.items[0]?.selected_item === '' || form.items[0]?.selected_item === null) {
         notifySound('error');
         toast({
-            title: 'Please add items',
-            description: 'Please add at least one item to create a purchase',
+            title: t('purchase.please_add_items'),
+            description: t('purchase.please_add_at_least_one_item_to_create_purchase'),
             variant: 'destructive',
             class:'bg-yellow-600 text-white',
         })
@@ -306,8 +306,8 @@ function handleSubmit(createAndNew = false) {
                 const nextNumber = isNaN(currentNumber) ? 0 : currentNumber + 1;
                 resetFormForCreate({ number: nextNumber });
                 toast({
-                    title: 'Success',
-                    description: 'Purchase created successfully',
+                    title: t('purchase.purchase_created_successfully_variant'),
+                    description: t('purchase.purchase_created_successfully'),
                     variant: 'success',
                     class:'bg-green-600 text-white',
                 })
@@ -315,8 +315,8 @@ function handleSubmit(createAndNew = false) {
             onError: () => {
                 notifySound('error');
                 toast({
-                    title: 'Error creating purchase',
-                    description: 'Error creating purchase',
+                    title: t('purchase.error_creating_purchase_variant'),
+                    description: t('purchase.error_creating_purchase_description'),
                     variant: 'destructive',
                     class:'bg-pink-600 text-white',
                 })
@@ -328,8 +328,8 @@ function handleSubmit(createAndNew = false) {
                 notifySound('success');
 
                 toast({
-                    title: 'Purchase created successfully',
-                    description: 'Purchase created successfully',
+                    title: t('purchase.purchase_created_successfully_variant'),
+                    description: t('purchase.purchase_created_successfully'),
                     variant: 'success',
                     class:'bg-green-600 text-white',
                 })
@@ -337,8 +337,8 @@ function handleSubmit(createAndNew = false) {
             onError: () => {
                 notifySound('error');
                 toast({
-                    title: 'Error creating purchase',
-                    description: 'Error creating purchase',
+                    title: t('purchase.error_creating_purchase_variant'),
+                    description: t('purchase.error_creating_purchase_description'),
                     variant: 'destructive',
                     class:'bg-pink-600 text-white',
                 })
