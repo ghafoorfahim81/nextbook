@@ -96,6 +96,8 @@ Route::middleware([
 
     Route::resource('/items', \App\Http\Controllers\Inventory\ItemController::class);
     Route::patch('/items/{item}/restore', [\App\Http\Controllers\Inventory\ItemController::class, 'restore'])->name('items.restore')->withTrashed();
+    Route::get('/item-pricing', [\App\Http\Controllers\Inventory\ItemPricingController::class, 'index'])->name('item-pricing.index');
+    Route::patch('/item-pricing/{item}', [\App\Http\Controllers\Inventory\ItemPricingController::class, 'update'])->name('item-pricing.update');
     Route::resource('/ledgers', \App\Http\Controllers\Ledger\LedgerController::class);
     Route::patch('/ledgers/{ledger}/restore', [\App\Http\Controllers\Ledger\LedgerController::class, 'restore'])->name('ledgers.restore')->withTrashed();
     Route::resource('/suppliers', \App\Http\Controllers\Ledger\SupplierController::class);

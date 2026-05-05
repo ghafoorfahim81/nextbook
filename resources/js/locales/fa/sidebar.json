@@ -41,7 +41,8 @@
     "fast_entry": "ثبت سریع",
     "fast_opening": "افتتاحیه سریع",
     "barcode_print": "چاپ بارکد",
-    "item_transfer": "انتقال جنس"
+    "item_transfer": "انتقال جنس",
+    "pricing": "بررسی قیمت‌ها"
   },
   "account": {
     "chart_of_account": "چارت حساب",

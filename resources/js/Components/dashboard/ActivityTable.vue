@@ -53,7 +53,7 @@ function quantityValue(row) {
             <TableCell colspan="5" class="py-8 text-center text-sm text-muted-foreground">
               {{ t('dashboard.table.no_records') }}
             </TableCell>
-          </TableRow>
+          </TableRow>    
           <TableRow v-for="row in rows" :key="row.id" class="border-border">
             <TableCell class="font-medium text-card-foreground">
               {{ rowType === 'stock' ? row.item_name : `#${row.number}` }}
