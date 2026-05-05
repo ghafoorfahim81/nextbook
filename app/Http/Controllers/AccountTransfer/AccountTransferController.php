@@ -109,17 +109,25 @@ class AccountTransferController extends Controller
                 'currency_id' => $currencyId,
                 'rate' => $rate,
                 'date' => $transfer->date,
+                'reference_type' => AccountTransfer::class,
+                'reference_id' => $transfer->id,
                 'remark' => "Transfer #{$transfer->number}.from {$fromAccount->name} to {$toAccount->name}",
             ], [
                 [
                     'account_id' => $map['debit'],
                     'debit' => $amount,
                     'credit' => 0,
+                    'remark' => "Transfer from ". ' ' .$fromAccount->name,
+                    'remark_fa' => "انتقال از حساب ". ' ' . $fromAccount->local_name,
+                    'remark_ps' => "لېږد له حساب ". ' ' . $fromAccount->local_name,
                 ],
                 [
                     'account_id' => $map['credit'],
                     'debit' => 0,
                     'credit' => $amount,
+                    'remark' => "Transfer to ". ' ' . $toAccount->name,
+                    'remark_fa' => "انتقال به حساب ". ' ' . $toAccount->local_name,
+                    'remark_ps' => "لېږد ته حساب ". ' ' . $toAccount->local_name,
                 ],
             ]);
 
@@ -210,18 +218,26 @@ class AccountTransferController extends Controller
                 'currency_id' => $currencyId,
                 'rate' => $rate,
                 'date' => $date,
-                'remark' => "Transfer #{$accountTransfer->number}",
+                'remark' => "Transfer #{$accountTransfer->number} from {$fromAccount->local_name} to {$toAccount->local_name}",
+                'reference_type' => AccountTransfer::class,
+                'reference_id' => $accountTransfer->id,
             ],
             lines: [
                 [
                     'account_id' => $map['debit'],
                     'debit' => $amount,
                     'credit' => 0,
+                    'remark' => "Transfer from ". ' ' . $fromAccount->name,
+                    'remark_fa' => "انتقال از حساب ". ' ' . $fromAccount->local_name,
+                    'remark_ps' => "لېږد له حساب ". ' ' . $fromAccount->local_name,
                 ],
                 [
                     'account_id' => $map['credit'],
                     'debit' => 0,
                     'credit' => $amount,
+                    'remark' => "Transfer to ". ' ' . $toAccount->name,
+                    'remark_fa' => "انتقال به حساب ". ' ' . $toAccount->local_name,
+                    'remark_ps' => "لېږد ته حساب ". ' ' . $toAccount->local_name,
                 ],
             ]);
             $accountTransfer->update([
