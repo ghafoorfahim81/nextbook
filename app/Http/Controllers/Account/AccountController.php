@@ -107,8 +107,16 @@ class AccountController extends Controller
                     'remark' => 'Opening balance for account ' . $account->name,
                 ],
                 lines: [
-                    ['account_id' => $account->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for account ' . $account->name],
-                    ['account_id' => $glAccounts['opening-balance-equity'], 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for account ' . $account->name],
+                    ['account_id' => $account->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 
+                    'remark' => 'Opening balance',
+                    'remark_fa' => 'موجودی اولیه',
+                    'remark_ps' => 'د پرانیستلو بیلانس',
+                    ],
+                    ['account_id' => $glAccounts['opening-balance-equity'], 'debit' => 0, 'credit' => (float) $validated['amount'], 
+                    'remark' => 'Opening balance for account ' . $account->name,
+                    'remark_fa' => 'موجودی اولیه برای حساب ' . $account->local_name,
+                    'remark_ps' =>'د'. ' '. $account->local_name.' '.'د پرانیستلو بیلانس ',
+                    ],
                 ],
             );
             $account->opening()->create(['transaction_id' => $transaction->id]);
@@ -306,8 +314,16 @@ class AccountController extends Controller
                     'remark' => 'Opening balance for account ' . $chart_of_account->name,
                 ],
                 lines: [
-                    ['account_id' => $chart_of_account->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for account ' . $chart_of_account->name],
-                    ['account_id' => $glAccounts['opening-balance-equity'], 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for account ' . $chart_of_account->name],
+                    ['account_id' => $chart_of_account->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 
+                    'remark' => 'Opening balance',
+                    'remark_fa' => 'موجودی اولیه',
+                    'remark_ps' => 'د پرانیستلو بیلانس',
+                    ],
+                    ['account_id' => $glAccounts['opening-balance-equity'], 'debit' => 0, 'credit' => (float) $validated['amount'], 
+                    'remark' => 'Opening balance for account ' . $chart_of_account->name,
+                    'remark_fa' => 'موجودی اولیه برای حساب ' . $chart_of_account->local_name,
+                    'remark_ps' =>'د'. ' '. $chart_of_account->local_name.' '.'د پرانیستلو بیلانس ',
+                    ],
                 ],
             );
             $chart_of_account->opening()->create(['transaction_id' => $transaction->id]);

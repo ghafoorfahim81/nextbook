@@ -159,6 +159,8 @@
   "total_cost": "ټول لګښت",
   "total_profit": "ټوله ګټه / زیان",
   "unit_cost": "د واحد لګښت",
-  "line_profit": "ګټه / زیان"
+  "line_profit": "ګټه / زیان",
+  "reference_number": "شماره مرجع",
+  "english_name": "نام انگلیسی"
 }
 

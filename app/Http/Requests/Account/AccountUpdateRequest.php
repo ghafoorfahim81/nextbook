@@ -24,27 +24,11 @@ class AccountUpdateRequest extends FormRequest
         $chartOfAccount = $this->route('chart_of_account');
 
         return [
-            'name' => [
-                'required',
-                'string',
-                Rule::unique('accounts', 'name')->ignore($chartOfAccount),
-            ],
-            'local_name' => [
-                'nullable',
-                'string',
-                Rule::unique('accounts', 'local_name')->ignore($chartOfAccount),
-            ],
-            'number' => [
-                'required',
-                'string',
-                Rule::unique('accounts', 'number')->ignore($chartOfAccount),
-            ],
+            'name' => ['required', 'string', 'max:256', Rule::unique('accounts')->ignore($chartOfAccount->id)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
+            'local_name' => ['nullable', 'string', 'max:256', Rule::unique('accounts')->ignore($chartOfAccount->id)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
+            'number' => ['required', 'string', 'max:256', Rule::unique('accounts')->ignore($chartOfAccount->id)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
             'account_type_id' => ['required', 'string', 'exists:account_types,id'],
-            'slug' => [
-                'nullable',
-                'string',
-                Rule::unique('accounts', 'slug')->ignore($chartOfAccount),
-            ],
+            'slug' => ['nullable', 'string', 'max:256', Rule::unique('accounts')->ignore($chartOfAccount->id)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
             'remark' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
             'is_main' => ['nullable', 'boolean'],

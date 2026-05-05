@@ -75,6 +75,8 @@ class TransactionService
                     'credit'     => $credit,
                     'branch_id'  => $transaction->branch_id,
                     'remark'     => $line['remark'] ?? null,
+                    'remark_fa'  => $line['remark_fa'] ?? null,
+                    'remark_ps'  => $line['remark_ps'] ?? null,
                     'created_by' => Auth::id(),
                 ]);
             }
@@ -124,6 +126,8 @@ class TransactionService
                 'lines.*.credit'       => 'nullable|numeric|min:0',
                 'lines.*.journal_class_id' => 'nullable|exists:journal_classes,id',
                 'lines.*.remark'       => 'nullable|string',
+                'lines.*.remark_fa'    => 'nullable|string',
+                'lines.*.remark_ps'    => 'nullable|string',
             ]
         )->validate();
     }
@@ -159,6 +163,8 @@ class TransactionService
                     'debit'      => $line->credit,
                     'credit'     => $line->debit,
                     'remark'     => 'Reversal',
+                    'remark_fa'  => 'Reversal',
+                    'remark_ps'  => 'Reversal',
                     'created_by' => Auth::id(),
                 ]);
             }
