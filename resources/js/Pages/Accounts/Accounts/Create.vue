@@ -100,7 +100,7 @@ const handleSelectChange = (field, value) => {
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextInput
-                        :label="t('general.name')"
+                        :label="t('general.english_name')"
                         v-model="form.name"
                         :error="form.errors?.name"
                         :placeholder="t('general.enter', { text: t('general.name') })"

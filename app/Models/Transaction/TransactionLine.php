@@ -25,6 +25,8 @@ class TransactionLine extends Model
         'debit',
         'credit',
         'remark',
+        'remark_fa',
+        'remark_ps',
         'deleted_by',
     ];
 
@@ -37,7 +39,7 @@ class TransactionLine extends Model
             'ledger_id' => 'string',
             'journal_class_id' => 'string',
             'debit' => 'float',
-            'credit' => 'float',
+            'credit' => 'float', 
         ];
     }
 

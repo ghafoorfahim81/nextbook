@@ -14,9 +14,9 @@ const props = defineProps({
 });
 const { t } = useI18n();
 const columns = computed(() => ([
-    { key: 'number', label: t('general.number') },
+    { key: 'number', label: t('general.number'), sortable: true },
     { key: 'english_name', label: t('general.name') },
-    { key: 'local_name', label: t('account.local_name') },
+    { key: 'local_name', label: t('account.local_name'), sortable: true },
     { key: 'balance', label: t('general.balance') },
     // { key: 'remark', label: t('general.remark') },
     { key: 'parent.name', label: t('account.parent') },

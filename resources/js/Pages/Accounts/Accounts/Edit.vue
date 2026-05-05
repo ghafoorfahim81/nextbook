@@ -21,6 +21,7 @@ useLazyProps(page.props, ['accounts'])
 
 const form = useForm({
     ...account.value,
+    name: account.value.english_name,
     account_type_id: account.value.account_type_id,
     parent_id: account.value.parent_id,
     selected_parent_account: account.value.parent,
@@ -72,7 +73,7 @@ const handleSelectChange = (field, value) => {
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextInput
-                        :label="t('general.name')"
+                        :label="t('general.english_name')"
                         v-model="form.name"
                         :error="form.errors?.name"
                         :placeholder="t('general.enter', { text: t('general.name') })"

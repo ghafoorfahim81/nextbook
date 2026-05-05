@@ -222,5 +222,6 @@
   "total_profit": "Total Profit / Loss",
   "unit_cost": "Unit Cost",
   "line_profit": "Profit / Loss",
-  "reference_number": "Reference Number"
+  "reference_number": "Reference Number",
+  "english_name": "English Name"
 }

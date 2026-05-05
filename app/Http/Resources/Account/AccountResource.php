@@ -17,8 +17,7 @@ class AccountResource extends JsonResource
         $locale = app()->getLocale();
         $displayName = $locale === 'en'
             ? $this->name
-            : ($this->local_name ?? $this->name);
-
+            : ($this->local_name ?? $this->name); 
         return [
             'id' => $this->id,
             'name' => $displayName,
