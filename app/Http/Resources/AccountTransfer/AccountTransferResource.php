@@ -14,6 +14,7 @@ class AccountTransferResource extends JsonResource
         $dateConversionService = app(\App\Services\DateConversionService::class);
         $fromAccount = $this->getFromAccountAttribute();
         $toAccount = $this->getToAccountAttribute();
+        $locale = app()->getLocale();
         return [
             'id' => $this->id,
             'number' => $this->number,
@@ -21,8 +22,8 @@ class AccountTransferResource extends JsonResource
             'remark' => $this->remark,
             'transaction' => new TransactionResource($this->whenLoaded('transaction')),
             // Convenience derived fields for Index
-            'from_account_name' => $fromAccount?->name,
-            'to_account_name' => $toAccount?->name,
+            'from_account_name' => $locale === 'en' ? $fromAccount?->name : $fromAccount?->local_name,
+            'to_account_name' => $locale === 'en' ? $toAccount?->name : $toAccount?->local_name,
             'from_account_id' => $fromAccount?->id,
             'to_account_id' => $toAccount?->id,
             'from_account' => new AccountResource($fromAccount),

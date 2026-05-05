@@ -294,7 +294,7 @@ class Account extends Model
             ],
             [
                 'name' => 'Cash in Safe',
-                'local_name' => 'نقد در گاوصندوق',
+                'local_name' => 'نقد در گاو صندوق',
                 'number' => '1020',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'cash-or-bank')->first()->id,
                 'account_type_slug' => 'cash-or-bank',
