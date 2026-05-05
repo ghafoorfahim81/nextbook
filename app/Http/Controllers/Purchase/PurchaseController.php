@@ -492,8 +492,8 @@ class PurchaseController extends Controller
                         'debit' => 0,
                         'credit' => $validated['transaction_total'],
                         'remark' => 'Purchase for #' . $purchase->number,
-                        'remark_fa' => 'خرید #' . $purchase->number,
-                        'remark_ps' => 'د'. '#'. $purchase->number.' '.'لخوا اخیستل',
+                        'remark_fa' => 'خرید قرضی بابت #' . $purchase->number,
+                        'remark_ps' => 'د'. '#'. $purchase->number.' '.'د پور اخیستلو په اړه',
                     ];
                 }
             }

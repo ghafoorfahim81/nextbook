@@ -200,7 +200,9 @@ class SaleController extends Controller
                     'ledger_id'  => null,
                     'debit'      => 0,
                     'credit'     => $lineGrossTotal,
-                    'remark'     => 'Sale income for item: ' . $itemModel->name . ' for sale number: ' . $sale->number,
+                    'remark'     => 'Sale income for item ' . $itemModel->name . '  #' . $sale->number,
+                    'remark_fa' => 'عاید فروش '. ' '. $itemModel->name.' #'.$sale->number,
+                    'remark_ps' => 'د'. ' '. $itemModel->name.' '.'خرڅلاو څخه عاید د#'.$sale->number,
                 ];
 
                 // Cost of goods sold
@@ -209,7 +211,9 @@ class SaleController extends Controller
                     'ledger_id'  => null,
                     'debit'      => $totalCost,
                     'credit'     => 0,
-                    'remark'     => 'COGS for item: ' . $itemModel->name . ' for sale number: ' . $sale->number,
+                    'remark'     => 'COGS for item ' . $itemModel->name . ' #' . $sale->number,
+                    'remark_fa' => 'هزینه محصول فروخته شد بابت '. ' '. $itemModel->name.' #'.$sale->number,
+                    'remark_ps' => 'د'. ' '. $itemModel->name.' '.'د پلورل شوي توکو لګښت#'.$sale->number,
                 ];
 
                 // Inventory reduction
@@ -218,7 +222,9 @@ class SaleController extends Controller
                     'ledger_id'  => null,
                     'debit'      => 0,
                     'credit'     => $totalCost,
-                    'remark'     => 'Inventory out for item: ' . $itemModel->name . ' for sale number: ' . $sale->number,
+                    'remark'     => 'Inventory out for item ' . $itemModel->name . ' #' . $sale->number,
+                    'remark_fa'  => 'فروش جنس'. ' '. $itemModel->name.' #'.$sale->number,
+                    'remark_ps'  => 'د'. ' '. $itemModel->name.' '.'د خرڅلاو #'.$sale->number,
                 ];
             }
 
@@ -230,6 +236,8 @@ class SaleController extends Controller
                     'debit'      => $totalDiscount,
                     'credit'     => 0,
                     'remark'     => 'Sales discount for sale #' . $sale->number,
+                    'remark_fa' => 'تخفیف فروش'. ' '. $sale->number,
+                    'remark_ps' => 'د'. ' '. $sale->number.' '.'تخفیف خرڅلاو د',
                 ];
             }
 
@@ -239,7 +247,9 @@ class SaleController extends Controller
                     'ledger_id'  => null,
                     'debit'      => $validated['transaction_total'],
                     'credit'     => 0,
-                    'remark'     => 'Cash received for sale #' . $sale->number,
+                    'remark'     => 'Cash received from sale #' . $sale->number,
+                    'remark_fa'  => 'دریافت نقدی بابت فروش #' . $sale->number,
+                    'remark_ps'  => 'د'. '#'. $sale->number.' '.'د نغدي اخیستلو په اړه فروش د',
                 ];
             }
 
@@ -249,7 +259,9 @@ class SaleController extends Controller
                     'ledger_id'  => $validated['customer_id'],
                     'debit'      => $validated['transaction_total'],
                     'credit'     => 0,
-                    'remark'     => 'Receivable for sale #' . $sale->number,
+                    'remark'     => 'Sale on loan for #' . $sale->number,
+                    'remark_fa' => 'فروش قرضی بابت #' . $sale->number,
+                    'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو د',
                 ];
             }
 
@@ -263,6 +275,8 @@ class SaleController extends Controller
                         'debit'      => $paidAmount,
                         'credit'     => 0,
                         'remark'     => 'Partial payment for sale #' . $sale->number,
+                        'remark_fa' => 'پرداخت جزئی برای فروش #' . $sale->number,
+                        'remark_ps' => 'د'. '#'. $sale->number.' '.'جزوی تادیه خرڅلاو د',
                     ];
 
                     $remaining = $validated['transaction_total'] - $paidAmount;
@@ -274,6 +288,8 @@ class SaleController extends Controller
                             'debit'      => $remaining,
                             'credit'     => 0,
                             'remark'     => 'Remaining receivable for sale #' . $sale->number,
+                            'remark_fa' => ' فروش قرض #' . $sale->number,
+                            'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو د',
                         ];
                     }
                 } else {
@@ -282,7 +298,9 @@ class SaleController extends Controller
                         'ledger_id'  => $validated['customer_id'],
                         'debit'      => $validated['transaction_total'],
                         'credit'     => 0,
-                        'remark'     => 'Receivable for sale #' . $sale->number,
+                        'remark'     => 'Cash received from sale #' . $sale->number,
+                        'remark_fa' => 'دریافت نقدی بابت فروش#' . $sale->number,
+                        'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو د',
                     ];
                 }
             }
@@ -518,33 +536,44 @@ class SaleController extends Controller
                     'ledger_id'  => null,
                     'debit'      => 0,
                     'credit'     => $lineGrossTotal,
-                    'remark'     => 'Sale income for item: ' . $itemModel->name . ' for sale number: ' . $sale->number,
+                    'remark'     => 'Sale income for item ' . $itemModel->name . '  #' . $sale->number,
+                    'remark_fa' => 'عاید فروش '. ' '. $itemModel->name.' #'.$sale->number,
+                    'remark_ps' => 'د'. ' '. $itemModel->name.' '.'خرڅلاو څخه عاید د#'.$sale->number,
                 ];
 
+                // Cost of goods sold
                 $lines[] = [
                     'account_id' => $itemModel->cost_account_id,
                     'ledger_id'  => null,
                     'debit'      => $totalCost,
                     'credit'     => 0,
-                    'remark'     => 'COGS for item: ' . $itemModel->name . ' for sale number: ' . $sale->number,
+                    'remark'     => 'COGS for item ' . $itemModel->name . ' #' . $sale->number,
+                    'remark_fa' => 'هزینه محصول فروخته شد بابت '. ' '. $itemModel->name.' #'.$sale->number,
+                    'remark_ps' => 'د'. ' '. $itemModel->name.' '.'د پلورل شوي توکو لګښت#'.$sale->number,
                 ];
 
+                // Inventory reduction
                 $lines[] = [
                     'account_id' => $itemModel->asset_account_id,
                     'ledger_id'  => null,
                     'debit'      => 0,
                     'credit'     => $totalCost,
-                    'remark'     => 'Inventory out for item: ' . $itemModel->name . ' for sale number: ' . $sale->number,
+                    'remark'     => 'Inventory out for item ' . $itemModel->name . ' #' . $sale->number,
+                    'remark_fa'  => 'فروش جنس'. ' '. $itemModel->name.' #'.$sale->number,
+                    'remark_ps'  => 'د'. ' '. $itemModel->name.' '.'د خرڅلاو #'.$sale->number,
                 ];
             }
 
+            // Sales discount line
             if ($totalDiscount > 0) {
                 $lines[] = [
-                    'account_id' => $glAccounts['discount-to-customer'],
+                    'account_id' => $glAccounts['discount-to-customer'], // must exist in your cache/accounts setup
                     'ledger_id'  => null,
                     'debit'      => $totalDiscount,
                     'credit'     => 0,
                     'remark'     => 'Sales discount for sale #' . $sale->number,
+                    'remark_fa' => 'تخفیف فروش'. ' '. $sale->number,
+                    'remark_ps' => 'د'. ' '. $sale->number.' '.'تخفیف خرڅلاو د',
                 ];
             }
 
@@ -554,7 +583,9 @@ class SaleController extends Controller
                     'ledger_id'  => null,
                     'debit'      => $validated['transaction_total'],
                     'credit'     => 0,
-                    'remark'     => 'Cash received for sale #' . $sale->number,
+                    'remark'     => 'Cash received from sale #' . $sale->number,
+                    'remark_fa'  => 'دریافت نقدی بابت فروش #' . $sale->number,
+                    'remark_ps'  => 'د'. '#'. $sale->number.' '.'د نغدي اخیستلو په اړه فروش د',
                 ];
             }
 
@@ -564,7 +595,9 @@ class SaleController extends Controller
                     'ledger_id'  => $validated['customer_id'],
                     'debit'      => $validated['transaction_total'],
                     'credit'     => 0,
-                    'remark'     => 'Receivable for sale #' . $sale->number,
+                    'remark'     => 'Sale on loan for #' . $sale->number,
+                    'remark_fa' => 'فروش قرضی بابت #' . $sale->number,
+                    'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو د',
                 ];
             }
 
@@ -578,6 +611,8 @@ class SaleController extends Controller
                         'debit'      => $paidAmount,
                         'credit'     => 0,
                         'remark'     => 'Partial payment for sale #' . $sale->number,
+                        'remark_fa' => 'پرداخت جزئی برای فروش #' . $sale->number,
+                        'remark_ps' => 'د'. '#'. $sale->number.' '.'جزوی تادیه خرڅلاو د',
                     ];
 
                     $remaining = $validated['transaction_total'] - $paidAmount;
@@ -589,6 +624,8 @@ class SaleController extends Controller
                             'debit'      => $remaining,
                             'credit'     => 0,
                             'remark'     => 'Remaining receivable for sale #' . $sale->number,
+                            'remark_fa' => ' فروش قرض #' . $sale->number,
+                            'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو د',
                         ];
                     }
                 } else {
@@ -597,7 +634,9 @@ class SaleController extends Controller
                         'ledger_id'  => $validated['customer_id'],
                         'debit'      => $validated['transaction_total'],
                         'credit'     => 0,
-                        'remark'     => 'Receivable for sale #' . $sale->number,
+                        'remark'     => 'Cash received from sale #' . $sale->number,
+                        'remark_fa' => 'دریافت نقدی بابت فروش#' . $sale->number,
+                        'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو د',
                     ];
                 }
             }
