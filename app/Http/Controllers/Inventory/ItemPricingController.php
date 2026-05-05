@@ -20,6 +20,12 @@ class ItemPricingController extends Controller
                 $q->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
                         ->orWhere('code', 'like', "%{$search}%")
+                        ->orWhere('fast_search', 'like', "%{$search}%")
+                        ->orWhere('generic_name', 'like', "%{$search}%")
+                        ->orWhere('packing', 'like', "%{$search}%")
+                        ->orWhere('sku', 'like', "%{$search}%") 
+                        ->orWhere('colors', 'like', "%{$search}%")
+                        ->orWhere('rack_no', 'like', "%{$search}%")
                         ->orWhere('barcode', 'like', "%{$search}%");
                 });
             })

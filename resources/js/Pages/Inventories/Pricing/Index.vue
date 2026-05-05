@@ -119,15 +119,15 @@ function formatNumber(val) {
             <div class="rounded-md border">
                 <Table>
                     <TableHeader>
-                        <TableRow>
-                            <TableHead>{{ t('general.name') }}</TableHead>
-                            <TableHead>{{ t('item.code') }}</TableHead>
-                            <TableHead class="text-end">{{ t('general.on_hand') }}</TableHead>
-                            <TableHead class="text-end">{{ t('item.sale_price') }}</TableHead>
-                            <TableHead class="text-end">{{ t('item.purchase_price') }}</TableHead>
-                            <TableHead class="text-end">{{ t('item.cost') }}</TableHead>
-                            <TableHead>{{ t('item.expiry_status') }}</TableHead>
-                            <TableHead v-if="can('items.update')" class="w-28">{{ t('general.actions') }}</TableHead>
+                        <TableRow class="border-border bg-primary hover:bg-purple-500 h-8 text-black">
+                            <TableHead class="rtl:text-right text-white">{{ t('general.name') }}</TableHead>
+                            <TableHead class="rtl:text-right text-white">{{ t('item.code') }}</TableHead>
+                            <TableHead class="rtl:text-right text-white">{{ t('general.on_hand') }}</TableHead>
+                            <TableHead class="rtl:text-right text-white">{{ t('item.sale_price') }}</TableHead>
+                            <TableHead class="rtl:text-right text-white">{{ t('item.purchase_price') }}</TableHead>
+                            <TableHead class="rtl:text-right text-white">{{ t('item.cost') }}</TableHead>
+                            <TableHead class="rtl:text-right text-white">{{ t('item.expiry_status') }}</TableHead>
+                            <TableHead v-if="can('items.update')" class="w-28 rtl:text-right text-white">{{ t('general.actions') }}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -137,19 +137,19 @@ function formatNumber(val) {
 
                         <TableRow v-for="item in items?.data" :key="item.id">
                             <!-- Name -->
-                            <TableCell class="font-medium">
+                            <TableCell class="font-medium rtl:text-right">
                                 <div>{{ item.name }}</div>
-                                <div v-if="item.barcode" class="text-xs text-muted-foreground">{{ item.barcode }}</div>
+                                <!-- <div v-if="item.barcode" class="text-xs text-muted-foreground">{{ item.barcode }}</div> -->
                             </TableCell>
 
                             <!-- Code -->
-                            <TableCell class="text-muted-foreground">{{ item.code || '-' }}</TableCell>
+                            <TableCell class="text-muted-foreground rtl:text-right">{{ item.code || '-' }}</TableCell>
 
                             <!-- On Hand -->
-                            <TableCell class="text-end tabular-nums">{{ formatNumber(item.on_hand) }}</TableCell>
+                            <TableCell class="rtl:text-right tabular-nums">{{ formatNumber(item.on_hand) }}</TableCell>
 
                             <!-- Sale Price (inline edit) -->
-                            <TableCell class="text-end">
+                            <TableCell class="rtl:text-right">
                                 <div v-if="editingId === item.id" class="flex items-center justify-end gap-1">
                                     <input
                                         v-model="editingPrice"
@@ -171,13 +171,13 @@ function formatNumber(val) {
                             </TableCell>
 
                             <!-- Purchase Price -->
-                            <TableCell class="text-end tabular-nums">{{ formatNumber(item.purchase_price) }}</TableCell>
+                            <TableCell class="rtl:text-right tabular-nums">{{ formatNumber(item.purchase_price) }}</TableCell>
 
                             <!-- Avg Cost -->
-                            <TableCell class="text-end tabular-nums">{{ formatNumber(item.avg_cost) }}</TableCell>
+                            <TableCell class="rtl:text-right tabular-nums">{{ formatNumber(item.avg_cost) }}</TableCell>
 
                             <!-- Expiry Status -->
-                            <TableCell>
+                            <TableCell class="rtl:text-right">
                                 <template v-if="!item.is_expiry_tracked">
                                     <span class="text-muted-foreground text-xs">-</span>
                                 </template>
