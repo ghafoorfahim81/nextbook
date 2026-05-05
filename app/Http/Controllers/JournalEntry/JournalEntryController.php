@@ -98,6 +98,8 @@ class JournalEntryController extends Controller
                     'debit'       => $line['debit'] ?? 0,
                     'credit'      => $line['credit'] ?? 0,
                     'remark'      => $line['remark'] ?? null,
+                    'remark_fa'   => $line['remark'] ?? null,
+                    'remark_ps'   => $line['remark'] ?? null,
                     'journal_class_id' => $line['journal_class_id'] ?? null,
                 ])
                 ->toArray();
@@ -223,6 +225,8 @@ class JournalEntryController extends Controller
                 'debit'       => $line['debit'] ?? 0,
                 'credit'      => $line['credit'] ?? 0,
                 'remark'      => $line['remark'] ?? null,
+                'remark_fa'   => $line['remark'] ?? null,
+                'remark_ps'   => $line['remark'] ?? null,
                 'journal_class_id' => $line['journal_class_id'] ?? null,
             ])
             ->toArray();
