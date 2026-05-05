@@ -130,12 +130,19 @@ class PaymentController extends Controller
                         'account_id' => $bankAccountId,
                         'debit' => 0,
                         'credit' => $amount,
+                        'remark' => 'Payment #' . $payment->number. ' to '.$ledger->name,
+                        'remark_fa' => 'پرداخت نقدی #' . $payment->number. ' به '.$ledger->name,
+                        'remark_ps' => $ledger->name . ' ته د #' . $payment->number . ' ورکړه',
+                   
                     ],
                     [
                         'account_id' => $apAccountId,
                         'ledger_id' => $ledger->id,
                         'debit' => $amount,
                         'credit' => 0,
+                        'remark' => 'Payment #' . $payment->number. ' to '.$ledger->name,
+                        'remark_fa' => 'پرداخت نقدی #' . $payment->number. ' به '.$ledger->name,
+                        'remark_ps' => $ledger->name . ' ته د #' . $payment->number . ' ورکړه',
                     ],
 
                 ],
@@ -284,12 +291,19 @@ class PaymentController extends Controller
                         'account_id' => $bankAccountId,
                         'debit' => 0,
                         'credit' => $amount,
+                        'remark' => 'Payment #' . $payment->number. ' to '.$ledger->name,
+                        'remark_fa' => 'پرداخت نقدی #' . $payment->number. ' به '.$ledger->name,
+                        'remark_ps' => $ledger->name . ' ته د #' . $payment->number . ' ورکړه',
+                   
                     ],
                     [
                         'account_id' => $apAccountId,
-                        'debit' => $amount,
                         'ledger_id' => $ledger->id,
+                        'debit' => $amount,
                         'credit' => 0,
+                        'remark' => 'Payment #' . $payment->number. ' to '.$ledger->name,
+                        'remark_fa' => 'پرداخت نقدی #' . $payment->number. ' به '.$ledger->name,
+                        'remark_ps' => $ledger->name . ' ته د #' . $payment->number . ' ورکړه',
                     ],
                 ],
             );
