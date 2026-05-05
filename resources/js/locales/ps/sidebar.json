@@ -33,7 +33,8 @@
     "fast_entry": "چټک ثبت",
     "fast_opening": "چټک افتتاح",
     "barcode_print": "بارکوډ چاپ",
-    "item_transfer": "جنس لېږد"
+    "item_transfer": "جنس لېږد",
+    "pricing": "د قیمتونو کتنه"
   },
   "account": {
     "chart_of_account": "حسابونو جدول",

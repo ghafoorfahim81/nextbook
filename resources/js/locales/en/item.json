@@ -92,12 +92,18 @@
     }, 
     "batch_warning": "If you enable batch tracking, you can't edit it once it is created.",
     "expiry_warning": "If you enable expiry tracking, you can't edit it once it is created.",
-    "opening_key_points":{ 
+    "opening_key_points":{
         "1": "Be careful to enter real opening quantities.",
         "2": "If you enter wrong quantities, you can't edit them after they are used.",
         "3": "Be careful to select the correct warehouse.",
         "4": "You can't edit the unit measure once the opening is posted.",
         "5": "If you enable batch tracking, you can't edit it once it is created.",
         "6": "If you enable expiry tracking, you can't edit it once it is created."
-    }
+    },
+    "expired": "Expired",
+    "expiring_soon": "Expiring Soon",
+    "expiry_status": "Expiry Status",
+    "update_price": "Update Price",
+    "pricing_search_placeholder": "Search by name, code or barcode...",
+    "showing_results": "Showing {from}–{to} of {total}"
 }
