@@ -742,7 +742,7 @@ const spec_text = item_management?.spec_text ?? 'batch'
                             <th class="px-1 py-1 w-16" v-if="item_columns.tax">{{ t('general.tax') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.total') }}</th>
                             <th class="px-1 py-1 w-10  ">
-                                <Trash2 class="w-4 h-4 text-fuchsia-700 inline" />
+                                <Trash2 class="w-4 h-4 inline text-destructive" />
                             </th>
                         </tr>
                     </thead>
@@ -851,7 +851,7 @@ const spec_text = item_management?.spec_text ?? 'batch'
                                  {{ rowTotal(index) }} {{ item.selected_item?transactionSummary?.currencySymbol:'' }}
                             </td>
                             <td class="w-10 text-center">
-                                <Trash2 class="w-4 h-4 cursor-pointer text-fuchsia-500 inline" @click="deleteRow(index)" />
+                                <Trash2 class="w-4 h-4 cursor-pointer inline text-destructive" @click="deleteRow(index)" />
                             </td>
                         </tr>
                     </tbody>

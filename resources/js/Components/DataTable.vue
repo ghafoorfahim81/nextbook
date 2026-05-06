@@ -13,7 +13,8 @@
                         @input="debouncedSearch"
                         type="text"
                         :placeholder="`${t('datatable.search')} ${props.title ? props.title : ''}`"
-                        :class="isRTL ? 'pl-8 w-full pr-10 border-1 text-primary' : 'pl-8 w-full pr-20 text-primary focus:text-primary/80'"
+                        :class="isRTL ? 'pl-8 w-full pr-10 border-1 text-primary rounded-md border-primary focus:border-none focus:ring-2 focus:ring-ring' :
+                        'pl-8 w-full pr-20 text-primary rounded-md border-primary focus:border-none focus:ring-1 focus:ring-ring'"
                     />
                     <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
                         <Search class="size-4 text-primary hover:text-primary/80" />

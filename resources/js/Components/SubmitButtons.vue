@@ -30,7 +30,8 @@ const saveAndPrintText = computed(() => (props.saveAndPrintLoading ? props.creat
     <div class="flex items-center gap-2 [--radius:1.1rem] mt-2">
         <button
             type="submit"
-            class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white disabled:bg-gray-300"
+            variant="secondary"
+            class="btn btn-primary px-4 py-2 rounded-sm bg-primary text-white disabled:bg-gray-300"
             :disabled="isDisabled"
             size="sm"
         >
@@ -40,6 +41,7 @@ const saveAndPrintText = computed(() => (props.saveAndPrintLoading ? props.creat
         <button
             v-if="showCreateAndNew"
             type="button"
+            variant="secondary"
             class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white disabled:bg-gray-300"
             :disabled="isDisabled"
             @click="$emit('create-and-new')"
@@ -50,6 +52,7 @@ const saveAndPrintText = computed(() => (props.saveAndPrintLoading ? props.creat
         <button
             v-if="showSaveAndPrint"
             type="button"
+            variant="secondary"
             class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white disabled:bg-gray-300"
             :disabled="isDisabled"
             @click="$emit('save-and-print')"
@@ -60,6 +63,7 @@ const saveAndPrintText = computed(() => (props.saveAndPrintLoading ? props.creat
         <button
             v-if="showCancel"
             type="button"
+            variant="secondary"
             class="btn px-4 py-2 rounded-md border"
             :disabled="isDisabled"
             @click="$emit('cancel')"

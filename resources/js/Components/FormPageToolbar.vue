@@ -32,17 +32,17 @@ function goBack() {
 
 <template>
     <div
-        class="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-primary/60 px-3 py-2 shadow-sm backdrop-blur-sm justify-between"
+        class="mb-2 flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 backdrop-blur-sm justify-between"
     >
         <div class="flex items-center gap-2">
             <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                class="h-8 gap-1.5 bg-background"
+                class="h-8 gap-1.5 bg-background border-primary/60 hover:bg-primary/40 hover:text-balck"
                 @click="goBack"
             >
-                <ArrowLeft class="h-4 w-4 rtl:rotate-180" />
+                <ArrowLeft class="h-4 w-4 rtl:rotate-180 text-primary" />
                 {{ t('general.back') }}
             </Button>
         </div>

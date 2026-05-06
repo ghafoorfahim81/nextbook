@@ -175,10 +175,10 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
     <!-- ── Header trigger button ──────────────────────────────────────────── -->
     <button
         @click="openSearch"
-        class="hidden md:flex items-center gap-2 h-8 w-[260px] lg:w-[360px] rounded-md border border-input bg-background/60 px-3 text-xs text-muted-foreground hover:bg-primary hover:text-foreground transition-colors shrink-0"
+        class="hidden md:flex items-center gap-2 h-8 w-[260px] lg:w-[360px] rounded-md border border-primary bg-background/60 px-3 text-xs text-muted-foreground hover:border-primary hover:text-foreground transition-colors shrink-0"
         :aria-label="t('global_search.open_aria')"
     >
-        <Search class="size-3.5 shrink-0 opacity-60" />
+        <Search class="size-3.5 shrink-0 opacity-60 text-primary" />
         <span class="flex-1 text-start">{{ t('global_search.trigger') }}</span>
         <kbd dir="ltr" class="hidden sm:inline-flex h-5 select-none items-center gap-0.5 rounded border border-border bg-muted px-1.5 font-mono text-[10px] opacity-60">
             <span class="text-xs">⌘</span>K
@@ -227,13 +227,13 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
                     >
                         <!-- Input row -->
                         <div class="flex items-center gap-2.5 border-b border-border px-4 py-3">
-                            <Search class="size-4 shrink-0 text-muted-foreground" />
+                            <Search class="size-4 shrink-0 text-primary" />
                             <input
                                 ref="inputRef"
                                 v-model="query"
                                 type="text"
                                 :placeholder="t('global_search.placeholder')"
-                                class="flex-1 bg-transparent text-start text-sm text-foreground placeholder:text-muted-foreground outline-none"
+                                class="flex-1 bg-transparent text-start text-sm text-foreground placeholder:text-muted-foreground outline-none rounded-md border-primary focus:border-none focus:ring-2 focus:ring-ring"
                                 autocomplete="off"
                                 spellcheck="false"
                                 @keydown="onInputKey"
