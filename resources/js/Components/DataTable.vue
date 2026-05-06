@@ -1,7 +1,7 @@
 <template>
-    <div class="space-y-4">
+    <div class="flex min-h-0 flex-1 flex-col gap-4">
         <!-- Search and Per Page -->
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div class="shrink-0 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
                 <div class="flex justify-items-start">
                     <h1 :class="isRTL ? 'text-lg font-semibold ml-2 text-nowrap mt-1 text-primary' : 'text-lg font-semibold mr-2 text-nowrap mt-1 text-primary'">{{ props.title }}</h1>
@@ -76,9 +76,9 @@
         </div>
 
         <!-- Table -->
-        <div class="overflow-x-auto rounded-md border border-primary">
+        <div class="min-h-0 flex-1 rounded-md border border-primary overflow-hidden [&>div]:h-full [&>div]:overflow-auto">
             <Table class="min-w-[720px]">
-                <TableHeader class="bg-violet-500">
+                <TableHeader class="sticky top-0 z-10 bg-primary">
                     <TableRow class="bg-primary hover:bg-purple-500 h-8 text-white">
                         <TableHead v-for="column in derivedColumns" :key="column.key" class="h-8 py-1 px-3">
                             <div :class="isRTL ? 'flex items-center space-x-reverse space-x-1 text-white' : 'flex items-center space-x-1 text-white text-nowrap'">
@@ -161,7 +161,7 @@
         </div>
 
         <!-- Pagination -->
-        <div class="flex flex-col gap-2 border-t pt-2 sm:flex-row sm:items-center sm:justify-between">
+        <div class="shrink-0 flex flex-col gap-2 border-t pt-2 sm:flex-row sm:items-center sm:justify-between">
             <!-- Left: Showing X - Y of Z [title] -->
             <div class="text-xs text-muted-foreground">
                 {{ t('datatable.showing', { from: items.meta.from, to: items.meta.to, total: items.total }) }}
