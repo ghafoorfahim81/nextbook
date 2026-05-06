@@ -7,15 +7,15 @@ use App\Http\Requests\Inventory\ItemStoreRequest;
 use App\Http\Requests\Inventory\ItemUpdateRequest;
 use App\Http\Resources\Inventory\ItemResource;
 use App\Http\Resources\Inventory\ItemListResource;
-use App\Models\Inventory\Item; 
+use App\Models\Inventory\Item;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
-use Illuminate\Http\Request; 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Cache; 
-use App\Models\Account\Account; 
+use Illuminate\Support\Facades\Cache;
+use App\Models\Account\Account;
 use App\Enums\ItemType;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Administration\Category;
@@ -44,52 +44,52 @@ class ItemController extends Controller
         // Update each item's avg_cost based on all IN-type stock movements, considering multi-unit
 
         // Get all items with at least one stock movement (IN type)
-        // Item::chunk(500, function ($items) {
-        //     foreach ($items as $item) {
-        //         // Get all IN-type stock movements for this item
-        //         $movements = StockMovement::where('item_id', $item->id)
-        //             ->where('movement_type', StockMovementType::IN->value)
-        //             ->get();
+        Item::chunk(500, function ($items) {
+            foreach ($items as $item) {
+                // Get all IN-type stock movements for this item
+                $movements = StockMovement::where('item_id', $item->id)
+                    ->where('movement_type', StockMovementType::IN->value)
+                    ->get();
 
-        //         $totalBaseQty = 0.0;
-        //         $totalCost = 0.0;
-        //         foreach ($movements as $movement) {
-        //             // Get item's base unit (unit_measure_id)
-        //             $itemUnitId = $item->unit_measure_id;
-        //             $movementUnitId = $movement->unit_measure_id;
+                $totalBaseQty = 0.0;
+                $totalCost = 0.0;
+                foreach ($movements as $movement) {
+                    // Get item's base unit (unit_measure_id)
+                    $itemUnitId = $item->unit_measure_id;
+                    $movementUnitId = $movement->unit_measure_id;
 
-        //             // Calculate conversion factor between movement's unit and item's base unit
-        //             if ($itemUnitId == $movementUnitId || !$movementUnitId) {
-        //                 $factor = 1;
-        //             } else {
-        //                 // fetch UnitMeasure for conversion
-        //                 $itemUnit = \App\Models\Administration\UnitMeasure::find($itemUnitId);
-        //                 $movementUnit = \App\Models\Administration\UnitMeasure::find($movementUnitId);
+                    // Calculate conversion factor between movement's unit and item's base unit
+                    if ($itemUnitId == $movementUnitId || !$movementUnitId) {
+                        $factor = 1;
+                    } else {
+                        // fetch UnitMeasure for conversion
+                        $itemUnit = \App\Models\Administration\UnitMeasure::find($itemUnitId);
+                        $movementUnit = \App\Models\Administration\UnitMeasure::find($movementUnitId);
 
-        //                 $itemBase = $itemUnit?->unit ?: 1;
-        //                 $movementBase = $movementUnit?->unit ?: 1;
+                        $itemBase = $itemUnit?->unit ?: 1;
+                        $movementBase = $movementUnit?->unit ?: 1;
 
-        //                 // Avoid division by zero
-        //                 $factor = ($itemBase != 0) ? ($movementBase / $itemBase) : 1;
-        //             }
+                        // Avoid division by zero
+                        $factor = ($itemBase != 0) ? ($movementBase / $itemBase) : 1;
+                    }
 
-        //             // Convert movement quantity to item's base unit
-        //             $qtyInBaseUnit = $movement->quantity * $factor;
-        //             $lineCost = $movement->unit_cost * $movement->quantity;
+                    // Convert movement quantity to item's base unit
+                    $qtyInBaseUnit = $movement->quantity * $factor;
+                    $lineCost = $movement->unit_cost * $movement->quantity;
 
-        //             $totalBaseQty += $qtyInBaseUnit;
-        //             $totalCost += $lineCost;
-        //         }
+                    $totalBaseQty += $qtyInBaseUnit;
+                    $totalCost += $lineCost;
+                }
 
-        //         $avgCost = $totalBaseQty > 0 ? $totalCost / $totalBaseQty : 0;
+                $avgCost = $totalBaseQty > 0 ? $totalCost / $totalBaseQty : 0;
 
-        //         // Only update if there's a difference, to avoid unnecessary writes
-        //         if ((float) $item->avg_cost !== (float) $avgCost) {
-        //             $item->avg_cost = $avgCost;
-        //             $item->save();
-        //         }
-        //     }
-        // });
+                // Only update if there's a difference, to avoid unnecessary writes
+                if ((float) $item->avg_cost !== (float) $avgCost) {
+                    $item->avg_cost = $avgCost;
+                    $item->save();
+                }
+            }
+        });
 
             // dd($mappedMovements->toArray());
 
@@ -252,7 +252,7 @@ class ItemController extends Controller
                         ],
                         ]
                       );
-                } 
+                }
         });
         if ((bool) $request->input('stay') || (bool) $request->input('create_and_new')) {
             return redirect()->route('items.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.item')]));
