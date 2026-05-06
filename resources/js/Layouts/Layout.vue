@@ -613,7 +613,7 @@ const navMain = computed(() => [
         url: '/deleted-records',
         icon: Trash2,
         permission: 'deleted_records.view_any',
-    }, 
+    },
     {
         key: 'reports',
         title: t('sidebar.main.reports'),
@@ -1152,13 +1152,13 @@ function logout() {
                     </div>
                     <NotificationDropdown />
                     <LanguageSwitcher />
-                    <!-- <button
+                    <button
                         @click="toggleColorMode"
                         class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                     >
                         <Moon v-if="isDarkModeActive" class="size-5 text-gray-800 dark:text-gray-200" />
                         <Sun v-else class="size-5 text-gray-800 dark:text-gray-200" />
-                    </button> -->
+                    </button>
                 </div>
 <!--                </div>-->
             </header>
