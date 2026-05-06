@@ -925,7 +925,7 @@ class SaleController extends Controller
 
     public function destroy(Request $request, Sale $sale, ActivityLogService $activityLogService)
     {
-        DB::transaction(function () use ($sale) {
+        DB::transaction(function () use ($sale, $activityLogService) {
               $oldValues = [
             'number' => $sale->number,
             'customer_id' => $sale->customer_id,
@@ -999,7 +999,7 @@ class SaleController extends Controller
 
     public function restore(Request $request, Sale $sale, ActivityLogService $activityLogService)
     {
-        DB::transaction(function () use ($sale) {
+        DB::transaction(function () use ($sale, $activityLogService) {
             $sale->restore();
             $sale->items()->withTrashed()->restore();
 
@@ -1086,7 +1086,7 @@ class SaleController extends Controller
             'data' => $ledgerId ? $billAllocationService->openSalesForCustomer($ledgerId, $excludeReceiptId ?: null) : [],
         ]);
     }
- 
+
     public function print(Request $request, Sale $sale, ActivityLogService $activityLogService)
     {
         $company = auth()->user()?->company;
