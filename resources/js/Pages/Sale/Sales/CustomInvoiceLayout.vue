@@ -22,15 +22,14 @@ const salePrefs      = computed(() => preferences.value?.sale ?? {})
 // ---------- format config with safe defaults ----------
 const fmt = computed(() => props.customFormat ?? {})
 
-const hdr  = computed(() => fmt.value.header_config   ?? {})
-const cols = computed(() => fmt.value.item_columns     ?? {})
+const hdr  = computed(() => fmt.value.header_config    ?? {})
+const cols = computed(() => fmt.value.item_columns      ?? {})
 const sec  = computed(() => fmt.value.optional_sections ?? {})
-const app  = computed(() => fmt.value.appearance       ?? {})
-const mar  = computed(() => fmt.value.margins          ?? { top: 10, right: 10, bottom: 10, left: 10 })
+const app  = computed(() => fmt.value.appearance        ?? {})
+const mar  = computed(() => fmt.value.margins           ?? { top: 10, right: 10, bottom: 10, left: 10 })
 
-const direction  = computed(() => fmt.value.direction ?? 'ltr')
-const isRTL      = computed(() => direction.value === 'rtl')
-const numLocale  = computed(() => {
+const direction = computed(() => fmt.value.direction ?? 'ltr')
+const numLocale = computed(() => {
   const lang = fmt.value.language ?? locale.value
   return lang === 'fa' ? 'fa-IR' : lang === 'ps' ? 'fa-AF' : 'en-US'
 })
@@ -74,20 +73,19 @@ const storeName     = computed(() => props.invoice?.warehouse?.name ?? '')
 const notesText     = computed(() => props.invoice?.description ?? '')
 const termsText     = computed(() => salePrefs.value?.terms ?? '')
 
-// ---------- rows ----------
+// ---------- columns ----------
 const COLUMN_DEFS = [
   { key: 'row',        label: '#' },
-  { key: 'code',       label: computed(() => t('invoice.code', 'Code')) },
-  { key: 'name',       label: computed(() => t('invoice.item', 'Item')) },
-  { key: 'unit',       label: computed(() => t('invoice.unit', 'Unit')) },
+  { key: 'code',       label: computed(() => t('invoice.code',     'Code')) },
+  { key: 'name',       label: computed(() => t('invoice.item',     'Item')) },
+  { key: 'unit',       label: computed(() => t('invoice.unit',     'Unit')) },
   { key: 'quantity',   label: computed(() => t('invoice.quantity', 'Qty')) },
-  { key: 'unit_price', label: computed(() => t('invoice.rate', 'Rate')) },
+  { key: 'unit_price', label: computed(() => t('invoice.rate',     'Rate')) },
   { key: 'discount',   label: computed(() => t('invoice.discount', 'Discount')) },
-  { key: 'tax',        label: computed(() => t('invoice.tax', 'Tax')) },
-  { key: 'total',      label: computed(() => t('invoice.amount', 'Amount')) },
+  { key: 'tax',        label: computed(() => t('invoice.tax',      'Tax')) },
+  { key: 'total',      label: computed(() => t('invoice.Total',   'Total')) },
 ]
 
-// When tax_display = 'grouped', hide per-item tax column even if selected
 const taxIsGrouped = computed(() => sec.value.tax_display === 'grouped')
 
 const visibleCols = computed(() => {
@@ -98,6 +96,11 @@ const visibleCols = computed(() => {
   })
 })
 
+const colLabel = (col) =>
+  cols.value.column_labels?.[col.key] ??
+  (typeof col.label === 'object' ? col.label.value : col.label)
+
+// ---------- rows ----------
 const rows = computed(() => (props.invoice?.items ?? []).map((item, index) => {
   const quantity  = toNumber(item.quantity)
   const unitPrice = toNumber(item.unit_price)
@@ -118,15 +121,28 @@ const rows = computed(() => (props.invoice?.items ?? []).map((item, index) => {
   }
 }))
 
-// Pagination — split rows into pages
-const itemsPerPage = computed(() => toNumber(sec.value.items_per_page) || 0)
+// ---------- smart pagination ----------
+// Safe defaults per paper size (portrait). Landscape gets ~50% more rows.
+const DEFAULT_ROWS_PORTRAIT = { a4: 16, a5: 8, letter: 14, thermal_80mm: 10 }
+
+const effectiveItemsPerPage = computed(() => {
+  const explicit = toNumber(sec.value.items_per_page)
+  if (explicit > 0) return explicit
+  const paper       = fmt.value.paper_size        ?? 'a4'
+  const isLandscape = (fmt.value.paper_orientation ?? 'portrait') === 'landscape'
+  const base        = DEFAULT_ROWS_PORTRAIT[paper] ?? 16
+  return isLandscape ? Math.ceil(base * 1.5) : base
+})
+
 const pages = computed(() => {
-  if (!itemsPerPage.value) return [rows.value]
-  const chunks = []
-  for (let i = 0; i < rows.value.length; i += itemsPerPage.value) {
-    chunks.push(rows.value.slice(i, i + itemsPerPage.value))
+  const allRows = rows.value
+  if (!allRows.length) return [[]]
+  const per = effectiveItemsPerPage.value
+  const result = []
+  for (let i = 0; i < allRows.length; i += per) {
+    result.push(allRows.slice(i, i + per))
   }
-  return chunks.length ? chunks : [[]]
+  return result
 })
 
 // ---------- totals ----------
@@ -136,15 +152,13 @@ const billDiscRaw       = computed(() => toNumber(props.invoice?.discount))
 const billDiscAmt       = computed(() => props.invoice?.discount_type === 'percentage' ? subtotal.value * (billDiscRaw.value / 100) : billDiscRaw.value)
 const totalDiscount     = computed(() => itemDiscountTotal.value + billDiscAmt.value)
 const taxTotal          = computed(() => rows.value.reduce((s, r) => s + r.tax, 0))
-const grandTotal        = computed(() => subtotal.value - totalDiscount.value)
-const remaining         = computed(() => toNumber(props.invoice?.remaining_amount ?? props.invoice?.receivable_amount))
-const oldBalance        = computed(() => toNumber(props.invoice?.old_balance))
+const grandTotal = computed(() => subtotal.value - totalDiscount.value)
+const oldBalance = computed(() => toNumber(props.invoice?.old_balance))
 
 const summaryRows = computed(() => {
   const items = []
-  if (sec.value.show_summary_subtotal !== false) items.push({ label: t('invoice.subtotal', 'Subtotal'), value: formatNum(subtotal.value) })
-  if (sec.value.show_summary_discount !== false) items.push({ label: t('invoice.discount', 'Discount'), value: formatNum(totalDiscount.value) })
-  // Show tax: either when explicitly enabled, or when tax_display=grouped (always show then)
+  if (sec.value.show_summary_subtotal !== false) items.push({ label: t('invoice.subtotal',   'Subtotal'), value: formatNum(subtotal.value) })
+  if (sec.value.show_summary_discount !== false) items.push({ label: t('invoice.discount',    'Discount'), value: formatNum(totalDiscount.value) })
   if (sec.value.show_summary_tax || taxIsGrouped.value) {
     items.push({ label: t('invoice.tax', 'Tax'), value: formatNum(taxTotal.value) })
   }
@@ -153,36 +167,33 @@ const summaryRows = computed(() => {
   return items
 })
 
-// ---------- CSS variables from format config ----------
+// ---------- CSS variables ----------
 const borderValue = computed(() => {
   if (app.value.border_show === false) return 'none'
   return `${app.value.border_width || 1}px solid ${app.value.border_color || '#cbd5e1'}`
 })
 
 const cssVars = computed(() => ({
-  '--inv-bg':           app.value.bg_color       || '#ffffff',
-  '--inv-font':         app.value.font_family     || 'sans-serif',
-  '--inv-font-size':    `${app.value.font_size    || 14}px`,
-  '--inv-font-color':   app.value.font_color      || '#0f172a',
-  // Outer table border (controlled by appearance.border_show)
-  '--inv-border':       borderValue.value,
-  // Per-cell borders (controlled by item_columns.show_borders)
-  '--inv-cell-border':  cols.value.show_borders !== false ? borderValue.value : 'none',
-  '--inv-th-bg':        cols.value.header_bg_color   || '#1e293b',
-  '--inv-th-color':     cols.value.header_text_color || '#ffffff',
-  '--inv-th-fs':        `${cols.value.header_font_size || 13}px`,
-  '--inv-td-fs':        `${cols.value.row_font_size   || 13}px`,
-  '--inv-sum-bg':       app.value.summary_bg_color    || '#f1f5f9',
-  '--inv-sum-color':    app.value.summary_text_color  || '#0f172a',
-  '--inv-mt':           `${mar.value.top    || 10}mm`,
-  '--inv-mr':           `${mar.value.right  || 10}mm`,
-  '--inv-mb':           `${mar.value.bottom || 10}mm`,
-  '--inv-ml':           `${mar.value.left   || 10}mm`,
+  '--inv-bg':          app.value.bg_color          || '#ffffff',
+  '--inv-font':        app.value.font_family        || 'sans-serif',
+  '--inv-font-size':   `${app.value.font_size       || 14}px`,
+  '--inv-font-color':  app.value.font_color         || '#0f172a',
+  '--inv-border':      borderValue.value,
+  '--inv-cell-border': cols.value.show_borders !== false ? borderValue.value : 'none',
+  '--inv-th-bg':       cols.value.header_bg_color   || '#1e293b',
+  '--inv-th-color':    cols.value.header_text_color || '#ffffff',
+  '--inv-th-fs':       `${cols.value.header_font_size || 13}px`,
+  '--inv-td-fs':       `${cols.value.row_font_size    || 13}px`,
+  '--inv-sum-bg':      app.value.summary_bg_color   || '#f1f5f9',
+  '--inv-sum-color':   app.value.summary_text_color || '#0f172a',
+  '--inv-mt':          `${mar.value.top    || 10}mm`,
+  '--inv-mr':          `${mar.value.right  || 10}mm`,
+  '--inv-mb':          `${mar.value.bottom || 10}mm`,
+  '--inv-ml':          `${mar.value.left   || 10}mm`,
 }))
 
 const stripeColor = computed(() => cols.value.stripe_color || '#f8fafc')
-
-const titleText = computed(() => hdr.value.title_text || t('invoice.sale_invoice', 'INVOICE'))
+const titleText   = computed(() => hdr.value.title_text || t('invoice.sale_invoice', 'INVOICE'))
 </script>
 
 <template>
@@ -197,10 +208,12 @@ const titleText = computed(() => hdr.value.title_text || t('invoice.sale_invoice
     <template v-for="(pageRows, pageIdx) in pages" :key="`page-${pageIdx}`">
       <section
         class="ci-page"
+        :class="{ 'ci-page-last': pageIdx === pages.length - 1 }"
         :style="pageIdx < pages.length - 1 ? 'break-after: page; page-break-after: always;' : ''"
       >
-        <!-- ── HEADER ── -->
-        <header class="ci-header">
+
+        <!-- ══ PAGE 1: Full header ══ -->
+        <header v-if="pageIdx === 0" class="ci-header">
           <div class="ci-header-top">
             <!-- Logo + Company -->
             <div class="ci-company">
@@ -257,13 +270,19 @@ const titleText = computed(() => hdr.value.title_text || t('invoice.sale_invoice
           </div>
         </header>
 
-        <!-- ── ITEM TABLE ── -->
-        <table class="ci-table">
+        <!-- ══ PAGE 2+: Simplified header (customer ↔ invoice #) ══ -->
+        <header v-else class="ci-simple-header">
+          <span class="ci-simple-customer">{{ customerName }}</span>
+          <span class="ci-simple-invoice" dir="ltr">{{ invoiceNumber }}</span>
+        </header>
+
+        <!-- ══ ITEM TABLE ══ -->
+        <!-- flex-grow fills space between header and footer on every page.
+             Filler rows on the last page give visual numbered rows inside that space. -->
+        <table class="ci-table ci-table-grow">
           <thead>
             <tr>
-              <th v-for="col in visibleCols" :key="col.key">
-                {{ cols.column_labels?.[col.key] ?? (typeof col.label === 'object' ? col.label.value : col.label) }}
-              </th>
+              <th v-for="col in visibleCols" :key="col.key">{{ colLabel(col) }}</th>
             </tr>
           </thead>
           <tbody>
@@ -280,26 +299,42 @@ const titleText = computed(() => hdr.value.title_text || t('invoice.sale_invoice
                 <template v-else>{{ formatNum(row[col.key]) }}</template>
               </td>
             </tr>
+            <!-- Filler rows on last page — same height as data rows, sequential row numbers -->
+            <template v-if="pageIdx === pages.length - 1">
+              <tr
+                v-for="i in Math.max(0, effectiveItemsPerPage - pageRows.length)"
+                :key="`empty-${i}`"
+                class="ci-empty-row"
+              >
+                <td v-for="col in visibleCols" :key="col.key">
+                  <template v-if="col.key === 'row'">{{ (pageRows[pageRows.length - 1]?.row ?? 0) + i }}</template>
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
 
-        <!-- ── SUMMARY (last page only) ── -->
+        <!-- ══ SUMMARY + FOOTER: last page only ══ -->
         <div v-if="pageIdx === pages.length - 1" class="ci-footer-area">
           <div class="ci-summary">
-            <div v-for="row in summaryRows" :key="row.label" class="ci-summary-row" :class="{ 'ci-summary-bold': row.bold }">
+            <div
+              v-for="row in summaryRows"
+              :key="row.label"
+              class="ci-summary-row"
+              :class="{ 'ci-summary-bold': row.bold }"
+            >
               <span>{{ row.label }}</span>
               <span dir="ltr">{{ row.value }}</span>
             </div>
           </div>
 
-          <!-- Optional sections -->
           <div v-if="sec.show_notes && notesText" class="ci-section">
             <p class="ci-section-label">{{ t('invoice.notes', 'Notes') }}</p>
             <p class="ci-section-body">{{ notesText }}</p>
           </div>
 
           <div v-if="sec.show_terms && termsText" class="ci-section">
-            <p class="ci-section-label">{{ t('invoice.terms', 'Terms & Conditions') }}</p>
+            <p class="ci-section-label">{{ t('invoice.terms_conditions', 'Terms & Conditions') }}</p>
             <p class="ci-section-body">{{ termsText }}</p>
           </div>
 
@@ -321,6 +356,7 @@ const titleText = computed(() => hdr.value.title_text || t('invoice.sale_invoice
             {{ fmt.footer_text }}
           </div>
         </div>
+
       </section>
     </template>
   </div>
@@ -336,6 +372,7 @@ const titleText = computed(() => hdr.value.title_text || t('invoice.sale_invoice
   position: relative;
 }
 
+/* Each <section> = one printed page */
 .ci-page {
   padding: var(--inv-mt) var(--inv-mr) var(--inv-mb) var(--inv-ml);
   min-height: 270mm;
@@ -343,6 +380,11 @@ const titleText = computed(() => hdr.value.title_text || t('invoice.sale_invoice
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* Last page: same min-height so footer lands at physical bottom */
+.ci-page-last {
+  min-height: 270mm;
 }
 
 /* ── Watermark ── */
@@ -360,7 +402,7 @@ const titleText = computed(() => hdr.value.title_text || t('invoice.sale_invoice
   letter-spacing: 0.1em;
 }
 
-/* ── Header ── */
+/* ── Full header (page 1) ── */
 .ci-header {
   display: flex;
   flex-direction: column;
@@ -473,11 +515,36 @@ const titleText = computed(() => hdr.value.title_text || t('invoice.sale_invoice
   opacity: 0.75;
 }
 
+/* ── Simplified header (page 2+) ── */
+.ci-simple-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid currentColor;
+  opacity: 0.75;
+  font-size: 0.9em;
+}
+
+.ci-simple-customer {
+  font-weight: 600;
+}
+
+.ci-simple-invoice {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
 /* ── Table ── */
 .ci-table {
   width: 100%;
   border-collapse: collapse;
   border: var(--inv-border);
+}
+
+/* Intermediate pages: stretch table to fill remaining page height */
+.ci-table-grow {
   flex: 1;
 }
 
@@ -499,18 +566,21 @@ const titleText = computed(() => hdr.value.title_text || t('invoice.sale_invoice
   font-size: var(--inv-td-fs);
   border: var(--inv-cell-border);
   vertical-align: middle;
+  height: 28px; /* uniform row height for both data and filler rows */
+  box-sizing: border-box;
 }
 
 .ci-td-name {
   font-weight: 500;
 }
 
-/* ── Footer area ── */
+/* ── Footer area (last page) ── */
 .ci-footer-area {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  margin-top: auto;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .ci-summary {
@@ -594,12 +664,9 @@ const titleText = computed(() => hdr.value.title_text || t('invoice.sale_invoice
   white-space: pre-wrap;
 }
 
-/* ── RTL tweaks ──
-   dir="rtl" already makes flex rows flow right-to-left, so no flex-direction
-   reversal is needed. Only adjust alignment for elements that need to anchor
-   to the physical start (right) side in RTL.                                */
-[dir="rtl"] .ci-summary   { align-self: flex-start; }   /* anchor summary to right */
-[dir="rtl"] .ci-signature { align-items: flex-start; }  /* anchor signature to right */
+/* ── RTL tweaks ── */
+[dir="rtl"] .ci-summary   { align-self: flex-start; }
+[dir="rtl"] .ci-signature { align-items: flex-start; }
 
 /* ── Print overrides ── */
 @media print {
