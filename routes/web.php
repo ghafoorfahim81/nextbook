@@ -262,6 +262,14 @@ Route::middleware([
     Route::post('/preferences/import', [\App\Http\Controllers\Preferences\PreferencesController::class, 'importPreferences'])->name('preferences.import');
     Route::put('/preferences/install-plugins', [\App\Http\Controllers\Preferences\PreferencesController::class, 'updateInstallPlugins'])->name('preferences.install-plugins.update');
 
+    // Invoice Formats (custom designer)
+    Route::get('/invoice-formats', [\App\Http\Controllers\Sale\InvoiceFormatController::class, 'index'])->name('invoice-formats.index');
+    Route::post('/invoice-formats', [\App\Http\Controllers\Sale\InvoiceFormatController::class, 'store'])->name('invoice-formats.store');
+    Route::put('/invoice-formats/{invoiceFormat}', [\App\Http\Controllers\Sale\InvoiceFormatController::class, 'update'])->name('invoice-formats.update');
+    Route::delete('/invoice-formats/{invoiceFormat}', [\App\Http\Controllers\Sale\InvoiceFormatController::class, 'destroy'])->name('invoice-formats.destroy');
+    Route::patch('/invoice-formats/{invoiceFormat}/set-default', [\App\Http\Controllers\Sale\InvoiceFormatController::class, 'setDefault'])->name('invoice-formats.set-default');
+    Route::post('/invoice-formats/{invoiceFormat}/clone', [\App\Http\Controllers\Sale\InvoiceFormatController::class, 'clone'])->name('invoice-formats.clone');
+
     // Expense Categories
     Route::resource('/expense-categories', \App\Http\Controllers\Expense\ExpenseCategoryController::class);
     Route::patch('/expense-categories/{expenseCategory}/restore', [\App\Http\Controllers\Expense\ExpenseCategoryController::class, 'restore'])->name('expense-categories.restore')->withTrashed();

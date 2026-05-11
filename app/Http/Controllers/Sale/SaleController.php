@@ -28,6 +28,7 @@ use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
 use App\Support\Preferences\InvoiceThemeOptions;
+use App\Models\Sale\InvoiceFormat;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Inventory\Item;
@@ -1109,10 +1110,26 @@ class SaleController extends Controller
             ],
         );
 
+        $invoiceTheme = user_preference('sale.invoice_theme', InvoiceThemeOptions::DEFAULT);
+        $customFormat = null;
+
+        // If the selected theme is not a built-in format, treat it as a custom InvoiceFormat ULID
+        if (!in_array($invoiceTheme, InvoiceThemeOptions::ids()) && $company) {
+            $customFormat = InvoiceFormat::where('id', $invoiceTheme)
+                ->where('company_id', $company->id)
+                ->first();
+
+            // Fall back to default built-in if the custom format doesn't exist
+            if (!$customFormat) {
+                $invoiceTheme = InvoiceThemeOptions::DEFAULT;
+            }
+        }
+
         return inertia('Sale/Sales/Print', [
             'invoice' => new SaleResource($sale),
             'company' => $company,
-            'invoiceTheme' => user_preference('sale.invoice_theme', InvoiceThemeOptions::DEFAULT),
+            'invoiceTheme' => $invoiceTheme,
+            'customFormat' => $customFormat,
         ]);
 
         // dd('hiiii');
