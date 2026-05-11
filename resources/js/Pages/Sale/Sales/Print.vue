@@ -1,6 +1,17 @@
 <template>
   <div class="print-page" :data-invoice-theme="props.invoiceTheme">
-    <InvoiceLayout :invoice="props.invoice.data" :company="props.company" :invoice-theme="props.invoiceTheme" />
+    <CustomInvoiceLayout
+      v-if="props.customFormat"
+      :invoice="props.invoice.data"
+      :company="props.company"
+      :custom-format="props.customFormat"
+    />
+    <InvoiceLayout
+      v-else
+      :invoice="props.invoice.data"
+      :company="props.company"
+      :invoice-theme="props.invoiceTheme"
+    />
   </div>
 </template>
 
@@ -8,8 +19,9 @@
 import { onBeforeUnmount, onMounted } from 'vue'
 import '../../../../css/print/invoice.css'
 import InvoiceLayout from './InvoiceLayout.vue'
+import CustomInvoiceLayout from './CustomInvoiceLayout.vue'
 
-const props = defineProps({ invoice: Object, company: Object, invoiceTheme: String })
+const props = defineProps({ invoice: Object, company: Object, invoiceTheme: String, customFormat: { type: Object, default: null } })
 
 let hasPrinted = false
 let printTimer = null

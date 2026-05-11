@@ -19,8 +19,9 @@ import { toast } from 'vue-sonner';
 import {
     Palette, Package, ShoppingCart, ShoppingBag, CreditCard, Calculator,
     Bell, Shield, Database, Globe, Monitor, RotateCcw, Download, Upload,
-    Save, Plug, Eye, SlidersHorizontal as preferencesIcon, Search, CircleX
+    Save, Plug, Eye, SlidersHorizontal as preferencesIcon, Search, CircleX, FileText
 } from 'lucide-vue-next'
+import InvoiceDesigner from '@/Pages/Preferences/InvoiceDesigner.vue'
 
 const props = defineProps({
     preferences: Object,
@@ -34,7 +35,9 @@ const props = defineProps({
     sizes: { type: [Array, Object], required: true },
     currencies: { type: [Array, Object], required: true },
     ledgers: { type: [Array, Object], required: true },
-    invoiceThemes: { type: Array, required: true },
+    invoiceThemes:         { type: Array,  required: true },
+    invoiceFormats:        { type: Array,  default: () => [] },
+    invoiceFormatDefaults: { type: Object, default: () => ({}) },
 })
 
 const { t, locale } = useI18n()
@@ -63,6 +66,7 @@ const tabs = [
     { id: 'backup', label: 'preferences.tabs.backup', icon: Database },
     { id: 'localization', label: 'preferences.tabs.localization', icon: Globe },
     { id: 'display', label: 'preferences.tabs.display', icon: Monitor },
+    { id: 'invoice_designer', label: 'preferences.tabs.invoice_designer', icon: FileText },
 ]
 
 const tabSearchTerms = {
@@ -1845,6 +1849,24 @@ const receiptPaymentFields = [
                             </div>
                         </CardContent>
                     </Card>
+
+                    <!-- Invoice Designer -->
+                    <Card v-show="activeTab === 'invoice_designer'" class="animate-in fade-in duration-200">
+                        <CardHeader>
+                            <CardTitle>{{ t('preferences.tabs.invoice_designer') }}</CardTitle>
+                            <CardDescription>{{ t('preferences.invoice_designer.select_help') }}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <InvoiceDesigner
+                                :invoice-themes="invoiceThemes"
+                                :invoice-formats="invoiceFormats"
+                                :invoice-format-defaults="invoiceFormatDefaults"
+                                :current-theme="form.sale?.invoice_theme ?? 'format1'"
+                                @select-theme="(id) => { selectInvoiceTheme(id); save() }"
+                            />
+                        </CardContent>
+                    </Card>
+
                 </div>
             </div>
         </div>

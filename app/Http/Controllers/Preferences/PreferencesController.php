@@ -25,6 +25,7 @@ use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Http\Resources\Ledger\LedgerResource;
 use App\Support\Preferences\InvoiceThemeOptions;
 use App\Services\ActivityLogService;
+use App\Models\Sale\InvoiceFormat;
 
 class PreferencesController extends Controller
 {
@@ -32,6 +33,7 @@ class PreferencesController extends Controller
     {
         $user = $request->user();
         $preferences = $user->getAllPreferences();
+        $company = $user->company;
 
         // Get accounts for default cash account dropdown
         $cashAccounts = Account::select('id', 'name')
@@ -59,6 +61,13 @@ class PreferencesController extends Controller
                 ->get()
         );
 
+        $invoiceFormats = $company
+            ? InvoiceFormat::where('company_id', $company->id)
+                ->orderByDesc('is_default')
+                ->orderBy('name')
+                ->get()
+            : collect();
+
         return Inertia::render('Preferences/Index', [
             'preferences' => $preferences,
             'defaultPreferences' => User::DEFAULT_PREFERENCES,
@@ -72,6 +81,8 @@ class PreferencesController extends Controller
             'currencies' => $currencies,
             'ledgers' => $ledgers,
             'invoiceThemes' => InvoiceThemeOptions::all(),
+            'invoiceFormats' => $invoiceFormats,
+            'invoiceFormatDefaults' => InvoiceFormat::defaultConfig(),
         ]);
     }
 
