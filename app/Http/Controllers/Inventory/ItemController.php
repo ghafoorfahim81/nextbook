@@ -132,6 +132,8 @@ class ItemController extends Controller
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
+
+
         return inertia('Inventories/Items/Index', [
             'items' => ItemListResource::collection($items),
             'filterOptions' => [

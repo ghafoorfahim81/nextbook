@@ -14,14 +14,14 @@ const props = defineProps({
 })
 
 const columns = computed(() => ([
-  { key: 'name', label: t('general.name') },
-  { key: 'code', label: t('admin.currency.code') },
+  { key: 'name', label: t('general.name'),sortable:true },
+  { key: 'code', label: t('admin.currency.code'),sortable:true },
   { key: 'category', label: t('admin.category.category') },
   { key: 'measure', label: t('admin.unit_measure.unit_measure') },
   { key: 'brand_name', label: t('admin.brand.brand') },
-  { key: 'avg_cost', label: t('item.cost') },
+  { key: 'avg_cost', label: t('item.cost'),sortable:true },
   { key: 'on_hand', label: t('general.on_hand') },
-  { key: 'sale_price', label: t('item.sale_price') },
+  { key: 'sale_price', label: t('item.sale_price'),sortable:true },
   { key: 'actions', label: t('general.actions') },
 ]))
 
