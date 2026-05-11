@@ -162,7 +162,7 @@ onMounted(() => {
                         <p class="text-xs text-muted-foreground">{{ itemData.code }}</p>
                     </div>
                 </div>
-            </div> 
+            </div>
 
             <!-- Info section -->
             <div class="rounded-xl border border-border bg-muted/40 p-5">
@@ -188,10 +188,7 @@ onMounted(() => {
 
                 <hr class="my-4 border-border" />
                 <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-4">
-                    <div class="flex items-start gap-2">
-                        <div class="bg-violet-500 text-white p-1.5 rounded"><Target class="w-4 h-4" /></div>
-                        <div><p class="text-xs text-muted-foreground">{{ t('general.on_hand') }}</p><p class="text-sm font-medium text-foreground">{{ itemData.on_hand ?? '—' }}</p></div>
-                    </div>
+
                     <div class="flex items-start gap-2">
                         <div class="bg-violet-500 text-white p-1.5 rounded"><TrendingDown class="w-4 h-4" /></div>
                         <div><p class="text-xs text-muted-foreground font-bold">{{ t('item.in_records') }}</p><p class="text-sm font-medium text-foreground">{{ itemData.stock_count ?? '—' }}</p></div>
@@ -199,6 +196,10 @@ onMounted(() => {
                     <div class="flex items-start gap-2">
                         <div class="bg-violet-500 text-white p-1.5 rounded"><TrendingUp class="w-4 h-4" /></div>
                         <div><p class="text-xs text-muted-foreground">{{ t('item.out_records') }}</p><p class="text-sm font-medium text-foreground">{{ itemData.stock_out_count ?? '—' }}</p></div>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <div class="bg-violet-500 text-white p-1.5 rounded"><Target class="w-4 h-4" /></div>
+                        <div><p class="text-xs text-muted-foreground">{{ t('general.on_hand') }}</p><p class="text-sm font-medium text-foreground">{{ itemData.on_hand ?? '—' }}</p></div>
                     </div>
                     <div class="flex items-start gap-2">
                         <div class="bg-violet-500 text-white p-1.5 rounded"><HandCoins class="w-4 h-4" /></div>
@@ -240,13 +241,14 @@ onMounted(() => {
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">#</th>
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.ledger') }}</th>
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.bill_number') }}</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.date') }}</th>
                                 <th class="py-3 px-3 text-center whitespace-nowrap rtl:text-right">{{ t('general.quantity') }}</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.unit_price') }}</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.total') }}</th>
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.source') }}</th>
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('admin.unit_measure.unit_measure') }}</th>
-                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.date') }}</th>
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.batch') }}</th>
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.expire_date') }}</th>
-                                <th class="py-3 px-3 text-right whitespace-nowrap rtl:text-right">{{ t('general.unit_price') }}</th>
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('admin.warehouse.warehouse') }}</th>
                             </tr>
                         </thead>
@@ -256,13 +258,14 @@ onMounted(() => {
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ index + 1 }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap font-medium rtl:text-right">{{ row.ledger_name || '—' }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap font-semibold rtl:text-right">{{ row.bill_number || '—' }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.date }}</td>
                                 <td class="py-3 px-3 text-center whitespace-nowrap font-semibold rtl:text-right">{{ row.quantity }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.unit_price }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ (Number(row.quantity || 0) * Number(row.unit_price || 0)).toFixed(2) }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.source }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.unit_measure_name }}</td>
-                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.date }}</td>
-                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.batch || '—' }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.id || '—' }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.expire_date || '—' }}</td>
-                                <td class="py-3 px-3 text-right whitespace-nowrap font-semibold rtl:text-right">{{ row.unit_cost }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.warehouse_name }}</td>
                             </tr>
                             <tr v-if="!loading && currentRecords.length === 0">

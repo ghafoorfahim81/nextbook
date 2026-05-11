@@ -1,6 +1,7 @@
 <script setup>
 import { computed, useSlots } from 'vue'
 import { useI18n } from 'vue-i18n'
+
 import { Download, ArrowUpDown } from 'lucide-vue-next'
 import { Button } from '@/Components/ui/button'
 import { Input } from '@/Components/ui/input'
@@ -22,7 +23,8 @@ const props = defineProps({
   title: { type: String, default: '' },
 })
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+
 const slots = useSlots()
 
 const {
@@ -38,6 +40,8 @@ const {
   defaultSortDirection: props.defaultSortDirection,
   perPage: props.perPage,
 })
+
+const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value))
 
 const sortOptions = computed(() => (props.columns || [])
   .filter((column) => column.key && column.key !== 'actions')
@@ -81,7 +85,8 @@ const exportTable = () => {
       <Input
         v-model="search"
         :placeholder="searchLabel"
-        class="bg-background"
+        :class="isRTL ? 'pl-8 w-full pr-10 border-1 text-primary rounded-md border-primary focus:border-none focus:ring-2 focus:ring-ring' :
+                        'pl-8 w-full pr-20 text-primary rounded-md border-primary focus:border-none focus:ring-1 focus:ring-ring'"
       />
 
       <select
