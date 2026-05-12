@@ -27,6 +27,7 @@ use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
+use App\Models\Administration\UnitMeasure;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
 class PurchaseController extends Controller
@@ -563,6 +564,61 @@ class PurchaseController extends Controller
                 itemId: $combo['item_id'],
             );
         }
+
+        $uniqueCombos->pluck('item_id')->unique()->each(
+            fn ($itemId) => $this->recalculateItemAvgCost($itemId)
+        );
+    }
+
+    private function recalculateItemAvgCost(string $itemId): void
+    {
+        $item = Item::lockForUpdate()->find($itemId);
+        if (!$item) {
+            return;
+        }
+
+        $movements = StockMovement::query()
+            ->where('item_id', $itemId)
+            ->orderBy('date')
+            ->orderBy('created_at')
+            ->orderBy('id')
+            ->get(['movement_type', 'quantity', 'unit_cost', 'unit_measure_id']);
+
+        $avgCost = 0.0;
+        $totalQty = 0.0;
+        $unitFactors = [];
+
+        foreach ($movements as $movement) {
+            $key = $movement->unit_measure_id;
+            if (!array_key_exists($key, $unitFactors)) {
+                if ($key === $item->unit_measure_id) {
+                    $unitFactors[$key] = 1.0;
+                } else {
+                    $movUnit = UnitMeasure::find($key);
+                    $itemUnit = UnitMeasure::find($item->unit_measure_id);
+                    $unitFactors[$key] = ($movUnit && $itemUnit && (float) $itemUnit->unit > 0)
+                        ? (float) $movUnit->unit / (float) $itemUnit->unit
+                        : 1.0;
+                }
+            }
+            $factor = $unitFactors[$key];
+            $qty = (float) $movement->quantity * $factor;
+            $costBase = $factor > 0 ? (float) $movement->unit_cost / $factor : (float) $movement->unit_cost;
+
+            if ($movement->movement_type === StockMovementType::IN) {
+                if ($totalQty <= 0) {
+                    $avgCost = $costBase;
+                } else {
+                    $avgCost = ($totalQty * $avgCost + $qty * $costBase) / ($totalQty + $qty);
+                }
+                $totalQty += $qty;
+            } else {
+                $totalQty = max(0.0, $totalQty - $qty);
+            }
+        }
+
+        $item->avg_cost = $avgCost;
+        $item->save();
     }
 
     private function rebuildStockStateForItemWarehouse(string $branchId, string $warehouseId, string $itemId): void
