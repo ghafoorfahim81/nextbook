@@ -109,7 +109,7 @@ class CustomerController extends Controller
                     'remark' => 'Opening balance for customer ' . $ledger->name,
                 ],
                 lines: [
-                ['account_id' => $arId, 'ledger_id' => $ledger->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 
+                ['account_id' => $arId, 'ledger_id' => $ledger->id, 'debit' => (float) $validated['amount'], 'credit' => 0,
                 'remark' => 'Opening balance for customer ' . $ledger->name,
                 'remark_fa' => 'موجودی اولیه برای مشتری ' . $ledger->name,
                 'remark_ps' =>'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
@@ -151,7 +151,7 @@ class CustomerController extends Controller
             'transactionLines.transaction.currency',
         ]);
 
-        $sales = $customer->sales->load('transaction.currency');
+        $sales = $customer->sales->load('transaction.currency','items');
         $receipts = $customer->receipts->load('transaction.currency');
         $payments = $customer->payments->load('transaction.currency');
         if ($request->expectsJson()) {
@@ -347,7 +347,7 @@ class CustomerController extends Controller
                     'remark' => 'Opening balance for customer ' . $customer->name,
                 ],
                 lines: [
-                ['account_id' => $arId, 'ledger_id' => $customer->id, 'debit' => (float) $validated['amount'], 'credit' => 0, 
+                ['account_id' => $arId, 'ledger_id' => $customer->id, 'debit' => (float) $validated['amount'], 'credit' => 0,
                 'remark' => 'Opening balance for customer ' . $customer->name,
                 'remark_fa' => 'موجودی اولیه برای مشتری ' . $customer->name,
                 'remark_ps' =>'د'. ' '. $customer->name.' '.'د پرانیستلو بیلانس ',
