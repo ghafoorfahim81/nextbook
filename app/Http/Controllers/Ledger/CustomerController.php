@@ -151,7 +151,7 @@ class CustomerController extends Controller
             'transactionLines.transaction.currency',
         ]);
 
-        $sales = $customer->sales->load('transaction.currency');
+        $sales = $customer->sales->load('transaction.currency', 'items');
         $receipts = $customer->receipts->load('transaction.currency');
         $payments = $customer->payments->load('transaction.currency');
         if ($request->expectsJson()) {
