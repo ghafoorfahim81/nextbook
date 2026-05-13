@@ -302,9 +302,7 @@ function handleSubmit(createAndNew = false) {
         form.transform((data) => ({ ...data, create_and_new: true })).post(route('purchases.store'), {
             onSuccess: () => {
                 notifySound('success');
-                const currentNumber = Number(form.number ?? props.purchaseNumber ?? 0);
-                const nextNumber = isNaN(currentNumber) ? 0 : currentNumber + 1;
-                resetFormForCreate({ number: nextNumber });
+                resetFormForCreate();
                 toast({
                     title: t('purchase.purchase_created_successfully_variant'),
                     description: t('purchase.purchase_created_successfully'),
