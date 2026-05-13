@@ -138,7 +138,7 @@ onMounted(() => {
     <AppLayout :title="`${t('item.item')} - ${itemData.name || ''}`">
         <div class="space-y-6">
             <!-- Page header -->
-            <div class="flex flex-wrap items-center gap-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <Button variant="outline" size="sm" @click="router.visit(route('items.index'))">
                     <ArrowLeft class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
                     {{ t('general.back') }}
@@ -153,24 +153,16 @@ onMounted(() => {
                     <SquarePen class="h-4 w-4" />
                     {{ t('datatable.edit') }}
                 </Button>
-                <div class="flex items-center gap-3">
-                    <div class="bg-violet-500 text-white p-2 rounded-lg">
-                        <Package class="w-5 h-5" />
-                    </div>
-                    <div>
-                        <h1 class="text-xl font-bold text-foreground">{{ itemData.name }}</h1>
-                        <p class="text-xs text-muted-foreground">{{ itemData.code }}</p>
-                    </div>
-                </div>
             </div>
 
             <!-- Info section -->
-            <div class="rounded-xl border border-border bg-muted/40 p-5">
+            <fieldset class="rounded-xl border border-border bg-muted/40 px-5 pb-5 pt-3">
+                <legend class="px-2 text-sm font-semibold text-violet-500">{{ itemData.name }}</legend>
                 <div class="flex items-center gap-2 mb-4">
                     <div class="bg-violet-500 text-white p-1.5 rounded">
                         <Layers class="w-4 h-4" />
                     </div>
-                    <h3 class="text-sm font-semibold text-foreground">{{ t('general.info') }}</h3>
+                    <h3 class="text-sm font-semibold text-foreground">{{ t('general.details') }}</h3>
                 </div>
                 <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
                     <div v-for="detail in itemDetails" :key="detail.label" class="flex items-start gap-2">
@@ -206,7 +198,7 @@ onMounted(() => {
                         <div><p class="text-xs text-muted-foreground">{{ t('item.stock_value') }}</p><p class="text-sm font-medium text-foreground">{{ itemData.stock_value ?? '—' }}</p></div>
                     </div>
                 </div>
-            </div>
+            </fieldset>
 
             <!-- Records table -->
             <div class="rounded-xl border border-border bg-card overflow-hidden">

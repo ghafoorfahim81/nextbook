@@ -189,6 +189,8 @@ Route::middleware([
         ->withTrashed();
     Route::get('/item-with-batches', [NextController::class, 'getItemWithBatches'])->name('item.with.batches');
     Route::get('/sales/{sale}/print', [\App\Http\Controllers\Sale\SaleController::class, 'print'])->name('sales.print');
+    Route::get('/sales/{sale}/export', [\App\Http\Controllers\Sale\SaleController::class, 'exportDetail'])->name('sales.export');
+    Route::get('/purchases/{purchase}/export', [\App\Http\Controllers\Purchase\PurchaseController::class, 'exportDetail'])->name('purchases.export');
 
 
     // Company routes

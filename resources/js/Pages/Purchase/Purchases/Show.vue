@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n';
 import { router, useForm } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import { Package2, FileText, User, Calendar, DollarSign, FileCheck, CheckCircle2, XCircle, ArrowLeft, SquarePen } from 'lucide-vue-next';
+import { Package2, FileText, User, Calendar, DollarSign, FileCheck, CheckCircle2, XCircle, ArrowLeft, SquarePen, Download } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/Components/ui/toast/use-toast';
 
@@ -95,11 +95,25 @@ const updateStatus = (status) => {
         <div class="space-y-6">
             <!-- Page header -->
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <div class="flex flex-wrap items-center gap-3">
-                    <Button variant="outline" size="sm" @click="router.visit(route('purchases.index'))">
-                        <ArrowLeft class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                        {{ t('general.back') }}
-                    </Button>
+                <Button variant="outline" size="sm" @click="router.visit(route('purchases.index'))">
+                    <ArrowLeft class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                    {{ t('general.back') }}
+                </Button>
+                <div class="flex items-center gap-2">
+                    <template v-if="purchaseData.status === 'pending'">
+                        <Button variant="destructive" size="sm" :disabled="form.processing" @click="updateStatus('rejected')">
+                            <XCircle class="h-4 w-4 ltr:mr-1 rtl:ml-1" />{{ t('general.reject') }}
+                        </Button>
+                        <Button size="sm" class="bg-green-600 text-white hover:bg-green-700" :disabled="form.processing" @click="updateStatus('approved')">
+                            <CheckCircle2 class="h-4 w-4 ltr:mr-1 rtl:ml-1" />{{ t('general.approve') }}
+                        </Button>
+                    </template>
+                    <a :href="route('purchases.export', purchaseData.id)" target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline" size="sm">
+                            <Download class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                            {{ t('report.export_excel') }}
+                        </Button>
+                    </a>
                     <Button
                         v-if="can('purchases.update') && purchaseData.id"
                         variant="default"
@@ -110,31 +124,18 @@ const updateStatus = (status) => {
                         <SquarePen class="h-4 w-4" />
                         {{ t('datatable.edit') }}
                     </Button>
-                    <div class="flex items-center gap-2">
-                        <Package2 class="h-6 w-6 text-violet-500" />
-                        <h1 class="text-xl font-semibold text-foreground">
-                            {{ t('purchase.purchase') }} #{{ purchaseData.number }}
-                        </h1>
-                    </div>
-                    <Badge :class="statusBadgeClasses">
-                        {{ getStatusLabel(purchaseData.status) }}
-                    </Badge>
-                </div>
-                <div v-if="purchaseData.status === 'pending'" class="flex gap-2">
-                    <Button variant="destructive" size="sm" :disabled="form.processing" @click="updateStatus('rejected')">
-                        <XCircle class="h-4 w-4 ltr:mr-1 rtl:ml-1" />{{ t('general.reject') }}
-                    </Button>
-                    <Button size="sm" class="bg-green-600 text-white hover:bg-green-700" :disabled="form.processing" @click="updateStatus('approved')">
-                        <CheckCircle2 class="h-4 w-4 ltr:mr-1 rtl:ml-1" />{{ t('general.approve') }}
-                    </Button>
                 </div>
             </div>
 
             <!-- Info card -->
-            <div class="rounded-xl border border-border bg-card p-5 text-card-foreground shadow-sm">
+            <fieldset class="rounded-xl border border-border bg-card px-5 pb-5 pt-3 text-card-foreground shadow-sm">
+                <legend class="px-2 flex items-center gap-1.5">
+                    <span class="text-sm font-semibold text-violet-500">{{ t('purchase.purchase') }} #{{ purchaseData.number }}</span>
+                    <Badge :class="statusBadgeClasses">{{ getStatusLabel(purchaseData.status) }}</Badge>
+                </legend>
                 <div class="mb-4 flex items-center gap-2">
                     <FileText class="h-5 w-5 text-violet-500" />
-                    <h3 class="text-base font-semibold text-foreground">{{ t('general.info') }}</h3>
+                    <h3 class="text-base font-semibold text-foreground">{{ t('general.details') }}</h3>
                 </div>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <div class="space-y-1.5">
@@ -174,7 +175,7 @@ const updateStatus = (status) => {
                         <div class="text-sm font-medium text-foreground">{{ currencySymbol }} {{ purchaseData.payable_amount }}</div>
                     </div>
                 </div>
-            </div>
+            </fieldset>
 
             <!-- Items table -->
             <div class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">

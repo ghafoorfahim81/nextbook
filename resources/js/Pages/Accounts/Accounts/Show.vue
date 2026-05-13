@@ -116,26 +116,20 @@ const exportUrl = computed(() =>
         <div class="space-y-4">
             <!-- Back + edit -->
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <div class="flex flex-wrap items-center gap-3">
-                    <Button variant="outline" size="sm" @click="router.visit(route('chart-of-accounts.index'))">
-                        <ArrowLeft class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                        {{ t('general.back') }}
-                    </Button>
-                    <Button
-                        v-if="can('accounts.update') && accountData.id"
-                        variant="default"
-                        size="sm"
-                        class="gap-1.5 bg-primary text-primary-foreground"
-                        @click="router.visit(route('chart-of-accounts.edit', accountData.id))"
-                    >
-                        <SquarePen class="h-4 w-4" />
-                        {{ t('datatable.edit') }}
-                    </Button>
-                    <h1 class="text-xl font-semibold text-foreground">
-                        {{ t('account.account') }}
-                        <span v-if="accountData.local_name"> - {{ accountData.local_name }}</span>
-                    </h1>
-                </div>
+                <Button variant="outline" size="sm" @click="router.visit(route('chart-of-accounts.index'))">
+                    <ArrowLeft class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                    {{ t('general.back') }}
+                </Button>
+                <Button
+                    v-if="can('accounts.update') && accountData.id"
+                    variant="default"
+                    size="sm"
+                    class="gap-1.5 bg-primary text-primary-foreground"
+                    @click="router.visit(route('chart-of-accounts.edit', accountData.id))"
+                >
+                    <SquarePen class="h-4 w-4" />
+                    {{ t('datatable.edit') }}
+                </Button>
             </div>
 
             <!-- Tabs -->

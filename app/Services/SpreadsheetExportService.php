@@ -61,6 +61,7 @@ class SpreadsheetExportService
         $sheetName = $this->sanitizeSheetName((string) ($payload['sheet_name'] ?? 'Sheet1'));
         $columns = array_values($payload['columns'] ?? []);
         $rows = array_values($payload['rows'] ?? []);
+        $summaryFields = array_values($payload['summary_fields'] ?? []);
         $includeRowNumber = (bool) ($payload['include_row_number'] ?? true);
 
         if ($includeRowNumber) {
@@ -74,7 +75,8 @@ class SpreadsheetExportService
 
         $columnCount = max(1, count($columns));
         $lastColumn = $this->columnLetter($columnCount);
-        $headerRowIndex = 5;
+        $summaryRowCount = count($summaryFields);
+        $headerRowIndex = $summaryRowCount > 0 ? 5 + $summaryRowCount + 1 : 5;
         $firstDataRowIndex = $headerRowIndex + 1;
         $rtl = (bool) ($payload['rtl'] ?? false);
         $title = (string) ($payload['title'] ?? 'Export');
@@ -96,6 +98,7 @@ class SpreadsheetExportService
             'sheet_title' => $sheetTitle,
             'rows' => $rows,
             'columns' => $columns,
+            'summary_fields' => $summaryFields,
             'header_row_index' => $headerRowIndex,
             'first_data_row_index' => $firstDataRowIndex,
             'last_column' => $lastColumn,
@@ -127,6 +130,18 @@ class SpreadsheetExportService
             ['value' => $this->reportTranslation('exported_on', 'Exported on') . ': ' . ($payload['exported_on'] ?? Carbon::now()->format('Y m d')), 'style' => 2, 'type' => 'inlineStr'],
         ], $lastColumn);
         $rowsXml[] = $this->sheetRow(4, [], $lastColumn);
+
+        $summaryFields = array_values($payload['summary_fields'] ?? []);
+        foreach ($summaryFields as $i => $field) {
+            $rowsXml[] = $this->sheetRow(5 + $i, [
+                ['value' => (string) ($field['label'] ?? ''), 'style' => 2, 'type' => 'inlineStr', 'column_index' => 1],
+                ['value' => (string) ($field['value'] ?? ''), 'style' => 0, 'type' => 'inlineStr', 'column_index' => 2],
+            ], $lastColumn);
+        }
+
+        if (!empty($summaryFields)) {
+            $rowsXml[] = $this->sheetRow($headerRowIndex - 1, [], $lastColumn);
+        }
 
         $headerCells = [];
         foreach ($columns as $columnIndex => $column) {

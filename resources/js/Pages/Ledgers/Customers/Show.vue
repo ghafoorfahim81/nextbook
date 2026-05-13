@@ -94,7 +94,7 @@ const customerMovementColumns = computed(() => [
 <template>
     <AppLayout :title="`${t('ledger.customer.customer')} - ${customerData.name || ''}`">
         <div class="space-y-4">
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
                 <Button variant="outline" size="sm" @click="router.visit(route('customers.index'))">
                     <ArrowLeft class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
                     {{ t('general.back') }}
