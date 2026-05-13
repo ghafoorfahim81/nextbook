@@ -29,6 +29,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
+use App\Services\SpreadsheetExportService;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class PurchaseController extends Controller
 {
     private $dateConversionService;
@@ -828,6 +830,99 @@ class PurchaseController extends Controller
         );
 
         return back()->with('success', __('general.purchase_status_updated_successfully'));
+    }
+
+    public function exportDetail(Request $request, Purchase $purchase, SpreadsheetExportService $exporter): BinaryFileResponse
+    {
+        $this->authorize('view', $purchase);
+
+        $purchase->load(['supplier', 'items.item', 'items.unitMeasure', 'transaction.currency', 'createdBy', 'updatedBy']);
+
+        $rtl = in_array(app()->getLocale(), ['fa', 'ps'], true);
+        $company = $request->user()?->company;
+        $companyName = match (app()->getLocale()) {
+            'fa'    => $company?->name_fa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            'ps'    => $company?->name_pa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            default => $company?->name_en ?: $company?->abbreviation ?: $company?->name_fa ?: $company?->name_pa ?: config('app.name'),
+        };
+        $currencySymbol = $purchase->transaction?->currency?->symbol ?? '';
+        $t = fn (string $group, string $key, string $fallback = '') => $exporter->localeTranslation($group, $key, $fallback);
+
+        $title = $t('purchase', 'purchase', 'Purchase') . ' #' . $purchase->number;
+
+        $purchaseTotal = $purchase->items->sum(function ($item) use ($purchase) {
+            $rowTotal     = (float) $item->quantity * (float) $item->unit_price;
+            $itemDiscount = (float) ($item->discount ?? 0);
+            $saleDiscount = $purchase->discount_type === 'percentage'
+                ? $rowTotal * ((float) $purchase->discount / 100)
+                : (float) ($purchase->discount ?? 0);
+            return $rowTotal - $itemDiscount - $saleDiscount;
+        });
+
+        $typeStr   = $purchase->type   instanceof \BackedEnum ? $purchase->type->value   : (string) ($purchase->type   ?? '-');
+        $statusStr = $purchase->status instanceof \BackedEnum ? $purchase->status->value : (string) ($purchase->status ?? '-');
+
+        $summaryFields = [
+            ['label' => $t('general',  'date',       'Date'),       'value' => $purchase->date?->format('Y-m-d') ?? '-'],
+            ['label' => $t('general',  'supplier',   'Supplier'),   'value' => $purchase->supplier?->name ?? '-'],
+            ['label' => $t('general',  'type',        'Type'),       'value' => ucfirst($typeStr)],
+            ['label' => $t('general',  'status',      'Status'),     'value' => ucfirst($statusStr)],
+            ['label' => $t('general',  'amount',      'Amount'),     'value' => trim($currencySymbol . ' ' . number_format($purchaseTotal, 2))],
+            ['label' => $t('general',  'created_by',  'Created By'), 'value' => $purchase->createdBy?->name ?? '-'],
+            ['label' => $t('general',  'updated_by',  'Updated By'), 'value' => $purchase->updatedBy?->name ?? '-'],
+        ];
+
+        $rows = $purchase->items->map(function ($item) {
+            $qty      = (float) $item->quantity;
+            $price    = (float) $item->unit_price;
+            $discount = (float) ($item->discount ?? 0);
+            $free     = (float) ($item->free ?? 0);
+            $tax      = (float) ($item->tax ?? 0);
+            $subtotal = ($qty * $price) - $discount + $tax;
+
+            return [
+                'item_name'         => $item->item?->name ?? '-',
+                'item_code'         => $item->item?->code ?? '-',
+                'batch'             => $item->batch ?? '-',
+                'expire_date'       => $item->expire_date?->format('Y-m-d') ?? '-',
+                'quantity'          => $qty,
+                'unit_measure_name' => $item->unitMeasure?->name ?? '-',
+                'unit_price'        => $price,
+                'discount'          => $discount,
+                'free'              => $free,
+                'tax'               => $tax,
+                'subtotal'          => $subtotal,
+            ];
+        })->all();
+
+        $columns = [
+            ['key' => 'item_name',         'label' => $t('item',    'item',        'Item')],
+            ['key' => 'item_code',         'label' => $t('item',    'code',        'Code')],
+            ['key' => 'batch',             'label' => $t('general', 'batch',       'Batch')],
+            ['key' => 'expire_date',       'label' => $t('general', 'expire_date', 'Expiry')],
+            ['key' => 'quantity',          'label' => $t('general', 'qty',         'Qty'),      'type' => 'number', 'align' => 'right'],
+            ['key' => 'unit_measure_name', 'label' => $t('general', 'unit',        'Unit')],
+            ['key' => 'unit_price',        'label' => $t('general', 'price',       'Price'),    'type' => 'money',  'align' => 'right'],
+            ['key' => 'discount',          'label' => $t('general', 'discount',    'Discount'), 'type' => 'money',  'align' => 'right'],
+            ['key' => 'free',              'label' => $t('general', 'free',        'Free'),     'type' => 'number', 'align' => 'right'],
+            ['key' => 'tax',               'label' => $t('general', 'tax',         'Tax'),      'type' => 'money',  'align' => 'right'],
+            ['key' => 'subtotal',          'label' => $t('general', 'total',       'Total'),    'type' => 'money',  'align' => 'right'],
+        ];
+
+        return $exporter->download([
+            'filename'           => 'purchase-' . $purchase->number . '-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name'         => $title,
+            'sheet_title'        => $title,
+            'title'              => $title,
+            'company_name'       => $companyName,
+            'exported_on'        => now()->format('Y m d'),
+            'rtl'                => $rtl,
+            'include_row_number' => true,
+            'row_number_label'   => $t('report', 'columns.no', '#'),
+            'summary_fields'     => $summaryFields,
+            'columns'            => $columns,
+            'rows'               => $rows,
+        ]);
     }
 
     public function openBills(Request $request, BillAllocationService $billAllocationService)
