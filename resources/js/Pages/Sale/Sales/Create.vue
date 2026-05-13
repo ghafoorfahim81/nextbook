@@ -375,9 +375,7 @@ function handleSubmit({ createAndNew = false, createAndPrint = false } = {}) {
         form.transform((data) => ({ ...data, ...payload })).post(route('sales.store'), {
             onSuccess: () => {
                 notifySound('success');
-                const currentNumber = Number(form.number ?? props.saleNumber ?? 0);
-                const nextNumber = isNaN(currentNumber) ? 0 : currentNumber + 1;
-                resetFormForCreate({ number: nextNumber });
+                resetFormForCreate();
                 toast({
                     title: 'Success',
                     description: 'Sale created successfully',
