@@ -44,6 +44,7 @@ const formattedTotalDiscount = computed(() => totalDiscount.value.toFixed(2));
 const formattedTotalTax = computed(() => totalTax.value.toFixed(2));
 const formattedGrandTotal = computed(() => grandTotal.value.toFixed(2));
 const formattedTotalProfit = computed(() => totalProfit.value.toFixed(2));
+const formattedTotalCost = computed(() => saleData.value.items?.reduce((s, i) => s + (parseFloat(i.unit_cost || 0) * parseFloat(i.quantity || 0)), 0).toFixed(2));
 const formatLineValue = (value) => Number(value || 0).toFixed(2);
 
 const statusBadgeClasses = computed(() => {
@@ -219,7 +220,7 @@ const currencySymbol = computed(() => saleData.value.transaction?.currency?.symb
                             <div><div class="text-xs text-muted-foreground">{{ t('general.discount') }}</div><div class="font-medium text-foreground">{{ formatLineValue(item.discount) }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.free') }}</div><div class="font-medium text-foreground">{{ formatLineValue(item.free) }}</div></div>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.tax') }}</div><div class="font-medium text-foreground">{{ formatLineValue(item.tax) }}</div></div>
-                            
+
                             <div>
                                 <div class="text-xs text-muted-foreground">{{ t('general.line_profit') }}</div>
                                 <div class="font-medium" :class="Number(item.line_profit || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
@@ -303,6 +304,10 @@ const currencySymbol = computed(() => saleData.value.transaction?.currency?.symb
                                 <td class="px-3 py-4 text-right text-sm font-semibold text-foreground">{{ saleData.items?.reduce((s, i) => s + parseFloat(i.free || 0), 0) }}</td>
                                 <td class="px-3 py-4 text-right text-sm font-semibold text-foreground">{{ formattedTotalTax }}</td>
                                 <td class="px-3 py-4 text-right text-lg font-bold text-violet-600 dark:text-violet-400">{{ currencySymbol }} {{ formattedGrandTotal }}</td>
+                                <!-- Added total cost column here -->
+                                <td class="px-3 py-4 text-right text-lg font-bold text-blue-700 dark:text-blue-300">
+                                    {{ currencySymbol }} {{ formattedTotalCost }}
+                                </td>
                                 <td class="px-3 py-4 text-right text-lg font-bold"
                                     :class="isProfitable ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'">
                                     {{ currencySymbol }} {{ formattedTotalProfit }}
