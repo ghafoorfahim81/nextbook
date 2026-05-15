@@ -31,7 +31,7 @@ class StockMovementResource extends JsonResource
             'unit_measure' => UnitMeasureResource::make($this->whenLoaded('unitMeasure')),
             'unit_measure_name' => $this->unitMeasure?->name ?? null,
             'expire_date' => $this->expire_date ? $dateConversionService->toDisplay($this->expire_date) : null,
-            'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
+            'date' => $this->date ? $dateConversionService->toDisplay($this->date).' '.$this->created_at->format('H:i:s') : null,
             'bill_number' => $this->reference?->number ?? null,
             'ledger_name' => $this->ledgerName(),
         ];

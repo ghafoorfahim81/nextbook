@@ -179,6 +179,7 @@ class SaleController extends Controller
                     itemUnitMeasureId: $itemModel->unit_measure_id,
                     unitValuesById: $unitValuesById,
                 );
+                // dd($avgCost);
                 $totalCost = $unitCost * $quantity;
                 $stockService->post([
                     'item_id'         => $item['item_id'],

@@ -2,6 +2,7 @@
     "item": "Item",
     "items": "Items",
     "cost": "Cost",
+    "average_cost": "Average Cost",
     "quantity": "Quantity",
     "purchase_price": "Purchase Price",
     "sale_price": "Sale Price",
@@ -89,7 +90,7 @@
     "opening_warning":{
         "title": "Opening Warning",
         "description": "Be careful to enter real opening quantities. If you enter wrong quantities, you can't edit them after they are used."
-    }, 
+    },
     "batch_warning": "If you enable batch tracking, you can't edit it once it is created.",
     "expiry_warning": "If you enable expiry tracking, you can't edit it once it is created.",
     "opening_key_points":{
