@@ -295,7 +295,8 @@ class ItemController extends Controller
     public function outRecords(Request $request, Item $item)
     {
         $stockOuts = $this->stockMovementQuery($item, StockMovementType::OUT->value)
-            ->paginate($request->input('per_page', 10));
+            // ->paginate($request->input('per_page', 100));
+            ->paginate( 1000);
 
         return response()->json([
             'data' => StockMovementResource::collection($stockOuts),
