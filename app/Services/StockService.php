@@ -124,7 +124,8 @@ class StockService
                 'quantity' => $this->convertFromItemUnit($deductQty, $conversionFactor),
                 'date' => $this->normalizeDate($movementData['date']),
                 'expire_date' => $this->normalizeDate($movement->expire_date),
-                'unit_cost' => $this->convertMovementCostToSelectedUnit($movement, $item, $conversionFactor),
+                'unit_cost' => $movementData['unit_cost'],
+                // 'unit_cost' => $this->convertMovementCostToSelectedUnit($movement, $item, $conversionFactor),
                 'qty_remaining' => null,
             ]);
 
@@ -172,7 +173,7 @@ class StockService
      * Increase Balance
      */
     protected function increaseBalance(Item $item, array $data): void
-    { 
+    {
         $balance = StockBalance::firstOrCreate(
             [
                 'branch_id' => $data['branch_id'],
@@ -249,9 +250,9 @@ class StockService
                     ->orderBy('created_at')
                     ->orderBy('id')
                     ->get();
-                // dd($allocation['expire_date'], $balances);
 
                 $this->decrementBalances($balances, (float) $allocation['quantity'], $allocation);
+
                 $this->markBalancesAsPosted($balances);
             }
 
@@ -431,7 +432,6 @@ class StockService
     {
         $sourceConversionFactor = $this->resolveConversionFactor($item->unit_measure_id, $movement->unit_measure_id);
         $itemUnitCost = (float) $movement->unit_cost / $sourceConversionFactor;
-
         return $this->convertToSelectedUnitCost($itemUnitCost, $conversionFactor);
     }
 

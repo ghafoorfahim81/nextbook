@@ -53,7 +53,7 @@ const itemDetails = computed(() => [
     { label: t('item.colors'), value: itemData.value?.colors, icon: Palette },
     { label: t('item.size'), value: itemData.value?.size?.name, icon: Ruler },
     { label: t('item.purchase_price'), value: itemData.value?.purchase_price, icon: DollarSign },
-    { label: t('item.cost'), value: itemData.value?.avg_cost, icon: DollarSign },
+    { label: t('item.average_cost'), value: itemData.value?.avg_cost, icon: DollarSign },
     { label: t('item.sale_price'), value: itemData.value?.sale_price, icon: DollarSign },
     { label: t('item.margin_percentage'), value: itemData.value?.margin_percentage, icon: DollarSign },
     { label: t('item.rate_a'), value: itemData.value?.rate_a, icon: DollarSign },
@@ -253,7 +253,7 @@ onMounted(() => {
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.date }}</td>
                                 <td class="py-3 px-3 text-center whitespace-nowrap font-semibold rtl:text-right">{{ row.quantity }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.unit_price }}</td>
-                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ (Number(row.quantity || 0) * Number(row.unit_price || 0)).toFixed(2) }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ (Number(row.quantity || 0) * Number(row.unit_price || 0)).toFixed(4) }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.source }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.unit_measure_name }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.id || '—' }}</td>
