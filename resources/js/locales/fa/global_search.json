@@ -7,6 +7,7 @@
   "loading_index": "در حال بارگذاری فهرست جستجو...",
   "no_results_for": "نتیجه‌ای برای \"{query}\" یافت نشد",
   "navigate": "حرکت",
+  "open_new_tab": "باز کردن در تب جدید",
   "tabs": {
     "all": "همه",
     "items": "اجناس",

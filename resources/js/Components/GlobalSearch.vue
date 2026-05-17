@@ -83,7 +83,7 @@ const flatLen = computed(() =>
 function onInputKey(e: KeyboardEvent) {
     if (e.key === 'ArrowDown')  { e.preventDefault(); activeIdx.value = Math.min(activeIdx.value + 1, flatLen.value - 1); scrollToActive() }
     if (e.key === 'ArrowUp')    { e.preventDefault(); activeIdx.value = Math.max(activeIdx.value - 1, -1); scrollToActive() }
-    if (e.key === 'Enter')      { e.preventDefault(); openActive() }
+    if (e.key === 'Enter')      { e.preventDefault(); openActive(e) }
     if (e.key === 'Escape')     { closeSearch() }
 }
 
@@ -93,14 +93,19 @@ function scrollToActive() {
     nextTick(() => itemEls.value[activeIdx.value]?.scrollIntoView({ block: 'nearest' }))
 }
 
-function openActive() {
+function openActive(event?: KeyboardEvent) {
     for (const g of displayGroups.value) {
         const match = g.items.find(r => r._idx === activeIdx.value)
-        if (match) { navigate(match.item); return }
+        if (match) { navigate(match.item, event); return }
     }
 }
 
-function navigate(item: any) {
+function navigate(item: any, event?: MouseEvent | KeyboardEvent) {
+    if (event && ('ctrlKey' in event) && (event.ctrlKey || event.metaKey)) {
+        window.open(item.url, '_blank')
+        closeSearch()
+        return
+    }
     router.visit(item.url)
     closeSearch()
 }
@@ -120,7 +125,7 @@ function esc(s: string) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
 }
 
-function highlight(result: any, key = 'name'): string {
+function highlight(result: any, key = 'name', isActive = false): string {
     const useLocalReportName = key === 'name'
         && result?.item?.type === 'report'
         && isRtlLocale.value
@@ -130,10 +135,14 @@ function highlight(result: any, key = 'name'): string {
     const match = result.matches?.find((m: any) => m.key === displayKey)
     if (!match?.indices?.length) return esc(text)
 
+    const markCls = isActive
+        ? 'bg-white/30 text-white font-bold rounded-[2px] not-italic'
+        : 'bg-primary/25 text-primary rounded-[2px] not-italic font-medium'
+
     let out = '', last = 0
     for (const [s, e] of match.indices as [number, number][]) {
         out += esc(text.slice(last, s))
-        out += `<mark class="bg-primary/25 text-primary rounded-[2px] not-italic font-medium">${esc(text.slice(s, e + 1))}</mark>`
+        out += `<mark class="${markCls}">${esc(text.slice(s, e + 1))}</mark>`
         last = e + 1
     }
     return out + esc(text.slice(last))
@@ -154,6 +163,26 @@ const AVATAR_BG: Record<string, string> = {
     payment:  'bg-purple-500', expense:  'bg-rose-500',
     account:  'bg-slate-500',  report:   'bg-cyan-600',
 }
+const TYPE_BADGE_CLS: Record<string, string> = {
+    customer: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+    supplier: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+    owner:    'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300',
+    user:     'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
+    item:     'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
+    sale:     'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+    purchase: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+    receipt:  'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
+    payment:  'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+    expense:  'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
+    account:  'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    report:   'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300',
+}
+const TYPE_LABELS: Record<string, string> = {
+    customer: 'Customer', supplier: 'Supplier', owner: 'Owner', user: 'User',
+    item: 'Product', sale: 'Invoice', purchase: 'Purchase',
+    receipt: 'Receipt', payment: 'Payment', expense: 'Expense',
+    account: 'Account', report: 'Report',
+}
 const STATUS_CLS: Record<string, string> = {
     active:          'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
     inactive:        'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
@@ -165,6 +194,8 @@ const STATUS_CLS: Record<string, string> = {
 }
 
 const avatarBg   = (t: string) => AVATAR_BG[t]  ?? 'bg-gray-500'
+const typeBadgeCls = (t: string) => TYPE_BADGE_CLS[t] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+const typeLabel  = (t: string) => TYPE_LABELS[t] ?? t
 const statusCls  = (s: string | null) => STATUS_CLS[s ?? ''] ?? 'bg-gray-100 text-gray-500 dark:bg-gray-800'
 const typeIcon   = (t: string) => ICON_MAP[t] ?? null
 const isPerson   = (t: string) => PERSON_TYPES.has(t)
@@ -310,13 +341,13 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
                                             v-for="result in group.items"
                                             :key="result.item.id"
                                             :ref="(el) => { if (el) itemEls[result._idx] = el as HTMLElement }"
-                                            @click="navigate(result.item)"
+                                            @click="(e) => navigate(result.item, e)"
                                             @mouseenter="activeIdx = result._idx"
                                             :class="[
                                                 'w-full flex items-center gap-3 px-4 py-2.5 text-start transition-colors',
                                                 result._idx === activeIdx
-                                                    ? 'bg-primary text-accent-foreground'
-                                                    : 'hover:bg-primary/60',
+                                                    ? 'bg-primary'
+                                                    : 'hover:bg-primary/15',
                                             ]"
                                         >
                                             <!-- Avatar / Icon -->
@@ -331,14 +362,33 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
 
                                             <!-- Name + subtitle -->
                                             <div class="flex-1 min-w-0">
-                                                <div class="text-sm font-medium leading-tight text-foreground truncate" v-html="highlight(result, 'name')" />
-                                                <div class="text-[11px] text-muted-foreground truncate mt-0.5">{{ result.item.subtitle }}</div>
+                                                <div class="flex items-center gap-1.5 min-w-0">
+                                                    <div
+                                                        :class="['text-sm font-medium leading-tight truncate', result._idx === activeIdx ? 'text-white' : 'text-foreground']"
+                                                        v-html="highlight(result, 'name', result._idx === activeIdx)"
+                                                    />
+                                                    <!-- Type badge -->
+                                                    <span :class="[
+                                                        'shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide leading-none',
+                                                        result._idx === activeIdx
+                                                            ? 'bg-white/20 text-white'
+                                                            : typeBadgeCls(result.item.type)
+                                                    ]">{{ typeLabel(result.item.type) }}</span>
+                                                </div>
+                                                <div :class="['text-[11px] truncate mt-0.5', result._idx === activeIdx ? 'text-white/70' : 'text-muted-foreground']">
+                                                    {{ result.item.subtitle }}
+                                                </div>
                                             </div>
 
                                             <!-- Status badge -->
                                             <span
                                                 v-if="result.item.status_label"
-                                                :class="['shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium', statusCls(result.item.status)]"
+                                                :class="[
+                                                    'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium',
+                                                    result._idx === activeIdx
+                                                        ? 'bg-white/20 text-white'
+                                                        : statusCls(result.item.status)
+                                                ]"
                                             >{{ result.item.status_label }}</span>
                                         </button>
                                     </div>
@@ -356,6 +406,12 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
                             <span class="flex items-center gap-1">
                                 <kbd dir="ltr" class="inline-flex h-4 items-center rounded border border-border/80 bg-muted px-1 font-mono text-[9px]">↵</kbd>
                                 {{ t('general.open') }}
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <kbd dir="ltr" class="inline-flex h-4 items-center rounded border border-border/80 bg-muted px-1 font-mono text-[9px]">Ctrl</kbd>
+                                <span>+</span>
+                                <kbd dir="ltr" class="inline-flex h-4 items-center rounded border border-border/80 bg-muted px-1 font-mono text-[9px]">↵</kbd>
+                                {{ t('global_search.open_new_tab') }}
                             </span>
                             <span class="flex items-center gap-1">
                                 <kbd dir="ltr" class="inline-flex h-4 items-center rounded border border-border/80 bg-muted px-1 font-mono text-[9px]">Esc</kbd>
