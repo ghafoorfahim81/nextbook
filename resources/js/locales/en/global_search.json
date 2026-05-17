@@ -7,6 +7,7 @@
   "loading_index": "Loading index...",
   "no_results_for": "No results for \"{query}\"",
   "navigate": "navigate",
+  "open_new_tab": "open in new tab",
   "tabs": {
     "all": "All",
     "items": "Items",
