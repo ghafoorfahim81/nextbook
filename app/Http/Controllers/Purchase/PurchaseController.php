@@ -565,6 +565,51 @@ class PurchaseController extends Controller
                 itemId: $combo['item_id'],
             );
         }
+
+        // Recalculate avg_cost per item by replaying all remaining movements in
+        // chronological order. Must run after all warehouse rebuilds since avg_cost
+        // is item-wide (not per warehouse).
+        $uniqueItemIds = $uniqueCombos->pluck('item_id')->unique()->values();
+
+        foreach ($uniqueItemIds as $itemId) {
+            $this->recalculateAvgCostForItem($itemId);
+        }
+    }
+
+    private function recalculateAvgCostForItem(string $itemId): void
+    {
+        $item = Item::find($itemId);
+
+        if (!$item) {
+            return;
+        }
+
+        $movements = StockMovement::query()
+            ->where('item_id', $itemId)
+            ->orderBy('date')
+            ->orderBy('id')
+            ->get(['movement_type', 'quantity', 'unit_cost']);
+
+        $avgCost = 0.0;
+        $runningQty = 0.0;
+
+        foreach ($movements as $movement) {
+            $qty = (float) $movement->quantity;
+            if ($movement->movement_type === StockMovementType::IN) {
+                $cost = (float) $movement->unit_cost;
+                if ($runningQty + $qty > 0) {
+                    $avgCost = (($runningQty * $avgCost) + ($qty * $cost)) / ($runningQty + $qty);
+                }
+                $runningQty += $qty;
+            } else {
+                $runningQty = max(0.0, $runningQty - $qty);
+            }
+        }
+
+        if ($runningQty > 0) {
+            $item->avg_cost = $avgCost;
+            $item->save();
+        }
     }
 
     private function rebuildStockStateForItemWarehouse(string $branchId, string $warehouseId, string $itemId): void
