@@ -44,6 +44,7 @@ return [
         'credit' => 'Credit',
     ],
     'transaction_status' => [
+        'draft' => 'مسوده',
         'posted' => 'Posted',
         'approved' => 'Approved',
         'rejected' => 'Rejected',

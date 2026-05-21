@@ -9,13 +9,6 @@ use Exception;
 
 class TransactionService
 {
-    private $dateConversionService;
-
-    public function __construct(DateConversionService $dateConversionService)
-    {
-        $this->dateConversionService = $dateConversionService;
-    }
-
     /**
      * Core posting method
      *
@@ -136,36 +129,45 @@ class TransactionService
     // 🔁 REVERSAL (AUDIT-SAFE)
     // ======================================================
 
-    public function reverse(Transaction $original, string $reason = null): Transaction
+    public function reverse(Transaction $original, ?string $reason = null): Transaction
     {
         return DB::transaction(function () use ($original, $reason) {
 
-            if ($original->status !== 'posted') {
+            $statusValue = $original->status instanceof \BackedEnum
+                ? $original->status->value
+                : (string) $original->status;
+
+            if ($statusValue !== 'posted') {
                 throw new Exception('Only posted transactions can be reversed');
             }
+
+            $original->loadMissing('lines');
 
             $reversal = Transaction::create([
                 'branch_id'      => $original->branch_id,
                 'currency_id'    => $original->currency_id,
                 'rate'           => $original->rate,
                 'date'           => now()->toDateString(),
+                'voucher_number' => $original->voucher_number,
                 'reference_type' => 'reversal',
                 'reference_id'   => $original->id,
-                'remark'         => $reason ?? 'Reversal of transaction ' . $original->id,
+                'remark'         => $reason ?? 'Reversal of ' . ($original->voucher_number ?? $original->id),
                 'status'         => 'posted',
                 'created_by'     => Auth::id(),
             ]);
 
             foreach ($original->lines as $line) {
                 $reversal->lines()->create([
-                    'account_id' => $line->account_id,
+                    'account_id'       => $line->account_id,
+                    'ledger_id'        => $line->ledger_id,
                     'journal_class_id' => $line->journal_class_id,
-                    'debit'      => $line->credit,
-                    'credit'     => $line->debit,
-                    'remark'     => 'Reversal',
-                    'remark_fa'  => 'Reversal',
-                    'remark_ps'  => 'Reversal',
-                    'created_by' => Auth::id(),
+                    'debit'            => $line->credit,
+                    'credit'           => $line->debit,
+                    'branch_id'        => $reversal->branch_id,
+                    'remark'           => 'Reversal: ' . ($line->remark ?? ''),
+                    'remark_fa'        => 'معکوس: ' . ($line->remark_fa ?? ''),
+                    'remark_ps'        => 'بیرته: ' . ($line->remark_ps ?? ''),
+                    'created_by'       => Auth::id(),
                 ]);
             }
 

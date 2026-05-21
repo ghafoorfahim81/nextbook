@@ -49,6 +49,7 @@ return [
         'credit' => 'طلبکار',
     ],
     'transaction_status' => [
+        'draft' => 'پیش‌نویس',
         'posted' => 'ثبت شده',
         'approved' => 'تأیید شده',
         'rejected' => 'رد شده',
