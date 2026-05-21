@@ -33,7 +33,7 @@ use App\Services\SpreadsheetExportService;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 class PurchaseController extends Controller
 {
-    private $dateConversionService;
+    private DateConversionService $dateConversionService;
     public function __construct(DateConversionService $dateConversionService)
     {
         $this->authorizeResource(Purchase::class, 'purchase');
@@ -88,196 +88,304 @@ class PurchaseController extends Controller
 
     public function store(
         PurchaseStoreRequest $request,
-        TransactionService $transactionService,
         StockService $stockService,
         ActivityLogService $activityLogService
-    )
-    {
-        $validated = $request->validated();
-        $purchase = DB::transaction(function () use ($request, $transactionService, $stockService, $activityLogService) {
-            // Create purchase
+    ) {
+        $purchase = DB::transaction(function () use ($request, $stockService, $activityLogService) {
             $validated = $request->validated();
+            $validated['type']   = $validated['purchase_type'] ?? 'cash';
+            $validated['status'] = TransactionStatus::DRAFT->value;
+            $validated['date']   = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
 
-            $validated['type']  = $validated['purchase_type'] ?? 'cash';
-            $validated['status'] = TransactionStatus::POSTED->value;
+            // Store financial metadata on the purchase so post() can use it later
+            $validated['currency_id'] = $validated['currency_id'] ?? null;
+            $validated['rate']        = $validated['rate'] ?? 1;
 
-            $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+            // For credit purchases store the initial partial payment so post() can build the line
+            $initialPaymentAmount    = (float) ($validated['payment']['amount'] ?? 0);
+            $initialPaymentAccountId = $validated['payment']['account_id'] ?? null;
+            $validated['initial_payment_amount']     = $initialPaymentAmount;
+            $validated['initial_payment_account_id'] = $initialPaymentAccountId;
+
             $purchase = Purchase::create($validated);
+
             $validated['item_list'] = array_map(function ($item) use ($validated) {
-                $item['discount'] = $item['item_discount'] ? $item['item_discount'] : 0;
+                $item['discount']    = $item['item_discount'] ?? 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
                 return $item;
             }, $validated['item_list']);
-            $purchase->items()->createMany($validated['item_list']);
-            $lines = [];
-            foreach ($validated['item_list'] as $item) {
-                $quantity = (float) $item['quantity'];
-                $unitPrice = (float) $item['unit_price'];
-                $itemDiscount = isset($item['discount']) ? (float) $item['discount'] : 0;
-                $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
 
-                // if($item['unit_measure_id'] != $itemModel->unit_measure_id) {
-                //     $selectedUnit = (float) \App\Models\Administration\UnitMeasure::query()->findOrFail($item['unit_measure_id'])->unit;
-                //     $itemUnit = (float) $itemModel->unitMeasure->unit;
-                //     // $qty = ($quantity * $selectedUnit) / $itemUnit;
-                //     $unitCost = ($selectedUnit * $unitPrice) / $itemUnit;
-                //     $totalCost = $unitCost * $quantity;
-                // }
-                // else{
-                //     $unitCost = $unitPrice;
-                // }
-                $totalCost = $unitPrice * $quantity;
-                $stock = $stockService->post([
+            $purchase->items()->createMany($validated['item_list']);
+
+            // Create DRAFT stock movements — ledger posting happens in post()
+            foreach ($validated['item_list'] as $item) {
+                $stockService->post([
                     'item_id'         => $item['item_id'],
                     'movement_type'   => StockMovementType::IN->value,
-                    'unit_measure_id' => $item['unit_measure_id'], // from item form
-                    'quantity'        => $quantity,
+                    'unit_measure_id' => $item['unit_measure_id'],
+                    'quantity'        => (float) $item['quantity'],
                     'source'          => StockSourceType::PURCHASE->value,
                     'unit_cost'       => (float) $item['unit_price'],
                     'status'          => StockStatus::DRAFT->value,
                     'batch'           => $item['batch'] ?? null,
                     'date'            => $validated['date'],
-                    'expire_date'     => $item['expire_date'],
+                    'expire_date'     => $item['expire_date'] ?? null,
                     'size_id'         => $validated['size_id'] ?? null,
                     'warehouse_id'    => $validated['warehouse_id'],
                     'branch_id'       => $purchase->branch_id,
                     'reference_type'  => Purchase::class,
                     'reference_id'    => $purchase->id,
                 ]);
-                $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
-                $accountId = $itemModel->asset_account_id;
-                $lines[] = [
-                    'account_id' => $accountId,
-                    'ledger_id'  => null,
-                    'debit'      => $totalCost,
-                    'credit'     => 0,
-                    'remark'     => 'Purchase for '. ' '. $itemModel->name.' #'.$purchase->number,
-                    'remark_fa' => 'خرید بابت '. ' '. $itemModel->name.' #'.$purchase->number,
-                    'remark_ps' => 'د'. ' '. $itemModel->name.' #'.$purchase->number,
-                ];
-
-            }
-            $glAccounts = Cache::get('gl_accounts');
-            $discountTotal = $request->input('discount_total', 0);
-
-            if($discountTotal > 0) {
-                $lines[] = [
-                    'account_id' => $glAccounts['discount-from-supplier'],
-                    'ledger_id' => null,
-                    'debit' => 0,
-                    'credit' => $discountTotal,
-                    'remark' => 'Discount for purchase #' . $purchase->number,
-                    'remark_fa' => 'تخفیف برای خرید #' . $purchase->number,
-                    'remark_ps' => 'د'. ' '. $purchase->number.' '.'تخفیف اخیستل',
-                ];
-            }
-            if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
-
-                $lines[] = [
-                    'account_id' => $validated['bank_account_id'], // cash/bank
-                    'ledger_id'  => null,
-                    'debit'      => 0,
-                    'credit'     => $validated['transaction_total'],
-                    'remark'     => 'Payment for purchase #' . $purchase->number,
-                    'remark_fa' => 'پرداخت برای خرید #' . $purchase->number,
-                    'remark_ps' => 'د'. '#'. $purchase->number.' '.'پرداخت اخیستل',
-                ];
-            }
-            if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
-                $lines[] = [
-                    'account_id' => $glAccounts['account-payable'], // cash/bank
-                    'ledger_id'  => $validated['supplier_id'],
-                    'debit'      => 0,
-                    'credit'     => $validated['transaction_total'],
-                    'remark'     => 'Purchase on loan for #' . $purchase->number,
-                    'remark_fa' => ' بابت خرید قرض #' . $purchase->number,
-                    'remark_ps' => 'د'. '#'. $purchase->number.' '.'د پور اخیستلو په اړه',
-                ];
             }
 
-            if($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
-                if($validated['payment']['amount'] > 0) {
-                    $amount = (float) $validated['payment']['amount'];
-                    $lines[] = [
-                        'account_id' => $validated['payment']['account_id'],
-                        'debit' => 0,
-                        'credit' => $amount,
-                        'remark' => 'Partial payment for purchase #' . $purchase->number,
-                        'remark_fa' => 'پرداخت جزئی برای خرید #' . $purchase->number,
-                        'remark_ps' => 'د'. '#'. $purchase->number.' '.'جزوی تادیه',
-                    ];
-                    $lines[] = [
-                        'account_id' => $glAccounts['account-payable'],
-                        'ledger_id' => $validated['supplier_id'],
-                        'debit' => 0,
-                        'credit' => $validated['transaction_total'] - $amount,
-                        'remark'     => 'Purchase on loan for #' . $purchase->number,
-                        'remark_fa' => ' بابت خرید قرض #' . $purchase->number,
-                        'remark_ps' => 'د'. '#'. $purchase->number.' '.'د پور اخیستلو په اړه',
-                    ];
-                }
-                else{
-                    $lines[] = [
-                        'account_id' => $glAccounts['account-payable'],
-                        'ledger_id' => $validated['supplier_id'],
-                        'debit' => 0,
-                        'credit' => $validated['transaction_total'],
-                        'remark' => 'Purchase for #' . $purchase->number,
-                        'remark_fa' => 'خرید #' . $purchase->number,
-                        'remark_ps' => 'د'. '#'. $purchase->number.' '.'لخوا اخیستل',
-                    ];
-                }
-            } 
-
-            $transaction = $transactionService->post(
-                header: [
-                    'currency_id'   => $validated['currency_id'],
-                    'rate'          => $validated['rate'],
-                    'date'          => $validated['date'],
-                    'remark'        => 'Purchase #' . $purchase->number,
-                    'status'        => TransactionStatus::POSTED->value,
-                    'reference_type'=> Purchase::class,
-                    'reference_id'  => $purchase->id,
-                ],
-                lines: $lines
-            );
-
-            app(BillAllocationService::class)->recalculatePurchasePaymentStatuses([$purchase->id]);
             $activityLogService->logCreate(
                 reference: $purchase,
                 module: 'purchase',
-                description: "Purchase #{$purchase->number} created.",
+                description: "Purchase #{$purchase->number} created as draft.",
                 newValues: [
-                    'number' => $purchase->number,
-                    'supplier_id' => $purchase->supplier_id,
-                    'date' => $purchase->date?->toDateString(),
-                    'status' => $purchase->status,
-                    'branch_id' => $purchase->branch_id,
-                    'warehouse_id' => $validated['warehouse_id'],
-                    'currency_id' => $validated['currency_id'],
-                    'item_count' => count($validated['item_list']),
-                    'transaction_total' => (float) $validated['transaction_total'],
+                    'number'            => $purchase->number,
+                    'supplier_id'       => $purchase->supplier_id,
+                    'date'              => $purchase->date?->toDateString(),
+                    'status'            => TransactionStatus::DRAFT->value,
+                    'branch_id'         => $purchase->branch_id,
+                    'warehouse_id'      => $validated['warehouse_id'],
+                    'currency_id'       => $validated['currency_id'],
+                    'item_count'        => count($validated['item_list']),
+                    'transaction_total' => (float) ($validated['transaction_total'] ?? 0),
                 ],
-                metadata: [
-                    'action' => 'purchase_store',
-                    'purchase_type' => $validated['type'],
-                    'transaction_id' => $transaction->id,
-                ],
+                metadata: ['action' => 'purchase_store'],
             );
-
-
-            // Create accounting transactions
-
 
             return $purchase;
         });
 
         if ((bool) $request->create_and_new) {
-            // Stay on the same page; frontend will reset form and increment number
             return redirect()->back()->with('success', __('general.created_successfully', ['resource' => __('general.resource.purchase')]));
         }
 
-        return redirect()->route('purchases.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.purchase')]));
+        return redirect()->route('purchases.show', $purchase->id)->with('success', __('general.created_successfully', ['resource' => __('general.resource.purchase')]));
+    }
+
+    public function post(
+        Purchase $purchase,
+        TransactionService $transactionService,
+        ActivityLogService $activityLogService
+    ) {
+        $this->authorize('update', $purchase);
+
+        $statusValue = $purchase->status instanceof \BackedEnum
+            ? $purchase->status->value
+            : (string) $purchase->status;
+
+        if ($statusValue !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('general.only_draft_can_be_posted'));
+        }
+
+        DB::transaction(function () use ($purchase, $transactionService) {
+            $purchase->load('items.item');
+            $glAccounts  = Cache::get('gl_accounts');
+            $lines       = [];
+            $typeValue   = $purchase->type instanceof \BackedEnum ? $purchase->type->value : (string) $purchase->type;
+            $date        = $purchase->date?->toDateString();
+
+            foreach ($purchase->items as $item) {
+                $quantity  = (float) $item->quantity;
+                $unitPrice = (float) $item->unit_price;
+                $itemModel = $item->item;
+                $accountId = $itemModel->asset_account_id ?? $itemModel->cost_account_id;
+
+                $lines[] = [
+                    'account_id' => $accountId,
+                    'ledger_id'  => null,
+                    'debit'      => $quantity * $unitPrice,
+                    'credit'     => 0,
+                    'remark'    => 'Purchase for ' . $itemModel->name . ' #' . $purchase->number,
+                    'remark_fa' => 'خرید بابت ' . $itemModel->name . ' #' . $purchase->number,
+                    'remark_ps' => 'د ' . $itemModel->name . ' #' . $purchase->number,
+                ];
+            }
+
+            // Compute transaction total from items (gross - item discounts)
+            $transactionTotal = $purchase->items->sum(function ($item) {
+                return (float) $item->quantity * (float) $item->unit_price - (float) ($item->discount ?? 0);
+            });
+
+            // Purchase-level discount
+            $discountTotal = 0;
+            if ($purchase->discount > 0) {
+                $discountTotal = $purchase->discount_type === 'percentage'
+                    ? $transactionTotal * ($purchase->discount / 100)
+                    : (float) $purchase->discount;
+                $transactionTotal -= $discountTotal;
+            }
+
+            if ($discountTotal > 0) {
+                $lines[] = [
+                    'account_id' => $glAccounts['discount-from-supplier'],
+                    'ledger_id'  => null,
+                    'debit'      => 0,
+                    'credit'     => $discountTotal,
+                    'remark'    => 'Discount for purchase #' . $purchase->number,
+                    'remark_fa' => 'تخفیف برای خرید #' . $purchase->number,
+                    'remark_ps' => 'د ' . $purchase->number . ' تخفیف اخیستل',
+                ];
+            }
+
+            if ($typeValue === \App\Enums\SalePurchaseType::Cash->value) {
+                $lines[] = [
+                    'account_id' => $purchase->bank_account_id,
+                    'ledger_id'  => null,
+                    'debit'      => 0,
+                    'credit'     => $transactionTotal,
+                    'remark'    => 'Payment for purchase #' . $purchase->number,
+                    'remark_fa' => 'پرداخت برای خرید #' . $purchase->number,
+                    'remark_ps' => 'د #' . $purchase->number . ' پرداخت اخیستل',
+                ];
+            } elseif ($typeValue === \App\Enums\SalePurchaseType::OnLoan->value) {
+                $lines[] = [
+                    'account_id' => $glAccounts['account-payable'],
+                    'ledger_id'  => $purchase->supplier_id,
+                    'debit'      => 0,
+                    'credit'     => $transactionTotal,
+                    'remark'    => 'Purchase on loan #' . $purchase->number,
+                    'remark_fa' => 'بابت خرید قرض #' . $purchase->number,
+                    'remark_ps' => 'د #' . $purchase->number . ' د پور اخیستلو په اړه',
+                ];
+            } elseif ($typeValue === \App\Enums\SalePurchaseType::Credit->value) {
+                $initialAmount    = (float) ($purchase->initial_payment_amount ?? 0);
+                $initialAccountId = $purchase->initial_payment_account_id;
+
+                if ($initialAmount > 0 && $initialAccountId) {
+                    $lines[] = [
+                        'account_id' => $initialAccountId,
+                        'ledger_id'  => null,
+                        'debit'      => 0,
+                        'credit'     => $initialAmount,
+                        'remark'    => 'Partial payment for purchase #' . $purchase->number,
+                        'remark_fa' => 'پرداخت جزئی برای خرید #' . $purchase->number,
+                        'remark_ps' => 'د #' . $purchase->number . ' جزوی تادیه',
+                    ];
+                    $lines[] = [
+                        'account_id' => $glAccounts['account-payable'],
+                        'ledger_id'  => $purchase->supplier_id,
+                        'debit'      => 0,
+                        'credit'     => $transactionTotal - $initialAmount,
+                        'remark'    => 'Purchase on loan #' . $purchase->number,
+                        'remark_fa' => 'بابت خرید قرض #' . $purchase->number,
+                        'remark_ps' => 'د #' . $purchase->number . ' د پور اخیستلو په اړه',
+                    ];
+                } else {
+                    $lines[] = [
+                        'account_id' => $glAccounts['account-payable'],
+                        'ledger_id'  => $purchase->supplier_id,
+                        'debit'      => 0,
+                        'credit'     => $transactionTotal,
+                        'remark'    => 'Purchase #' . $purchase->number,
+                        'remark_fa' => 'خرید #' . $purchase->number,
+                        'remark_ps' => 'د #' . $purchase->number . ' لخوا اخیستل',
+                    ];
+                }
+            }
+
+            $transactionService->post(
+                header: [
+                    'currency_id'    => $purchase->currency_id,
+                    'rate'           => $purchase->rate ?? 1,
+                    'date'           => $date,
+                    'remark'         => 'Purchase #' . $purchase->number,
+                    'status'         => TransactionStatus::POSTED->value,
+                    'reference_type' => Purchase::class,
+                    'reference_id'   => $purchase->id,
+                ],
+                lines: $lines
+            );
+
+            // Promote stock movements to POSTED
+            StockMovement::query()
+                ->where('reference_type', Purchase::class)
+                ->where('reference_id', $purchase->id)
+                ->update(['status' => StockStatus::POSTED->value]);
+
+            $purchase->update([
+                'status'    => TransactionStatus::POSTED->value,
+                'posted_at' => now(),
+                'posted_by' => \Illuminate\Support\Facades\Auth::id(),
+            ]);
+
+            app(BillAllocationService::class)->recalculatePurchasePaymentStatuses([$purchase->id]);
+        });
+
+        $activityLogService->logAction(
+            eventType: 'posted',
+            reference: $purchase,
+            module: 'purchase',
+            description: "Purchase #{$purchase->number} posted.",
+            newValues: ['status' => TransactionStatus::POSTED->value],
+            metadata: ['action' => 'purchase_post'],
+        );
+
+        return back()->with('success', __('general.posted_successfully', ['resource' => __('general.resource.purchase')]));
+    }
+
+    public function reverse(
+        Request $request,
+        Purchase $purchase,
+        TransactionService $transactionService,
+        ActivityLogService $activityLogService
+    ) {
+        $this->authorize('update', $purchase);
+
+        $statusValue = $purchase->status instanceof \BackedEnum
+            ? $purchase->status->value
+            : (string) $purchase->status;
+
+        if ($statusValue !== TransactionStatus::POSTED->value) {
+            return back()->with('error', __('general.only_posted_can_be_reversed'));
+        }
+
+        DB::transaction(function () use ($purchase, $transactionService, $request) {
+            $transaction = Transaction::query()
+                ->where('reference_type', Purchase::class)
+                ->where('reference_id', $purchase->id)
+                ->firstOrFail();
+
+            $transactionService->reverse($transaction, $request->input('reason'));
+
+            $affectedCombos = StockMovement::query()
+                ->where('reference_type', Purchase::class)
+                ->where('reference_id', $purchase->id)
+                ->get(['item_id', 'warehouse_id', 'branch_id'])
+                ->map(fn ($m) => [
+                    'item_id'      => $m->item_id,
+                    'warehouse_id' => $m->warehouse_id,
+                    'branch_id'    => $m->branch_id,
+                ])->all();
+
+            StockMovement::query()
+                ->where('reference_type', Purchase::class)
+                ->where('reference_id', $purchase->id)
+                ->update(['status' => StockStatus::VOIDED->value]);
+
+            $this->rebuildStockStateForCombos($affectedCombos);
+
+            $purchase->update([
+                'status'      => TransactionStatus::REVERSED->value,
+                'reversed_at' => now(),
+            ]);
+
+            app(BillAllocationService::class)->recalculatePurchasePaymentStatuses([$purchase->id]);
+        });
+
+        $activityLogService->logAction(
+            eventType: 'reversed',
+            reference: $purchase,
+            module: 'purchase',
+            description: "Purchase #{$purchase->number} reversed.",
+            newValues: ['status' => TransactionStatus::REVERSED->value],
+            metadata: ['action' => 'purchase_reverse'],
+        );
+
+        return back()->with('success', __('general.reversed_successfully', ['resource' => __('general.resource.purchase')]));
     }
 
 

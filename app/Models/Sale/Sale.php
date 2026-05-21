@@ -34,11 +34,19 @@ class Sale extends Model
         'date',
         'discount',
         'discount_type',
+        'currency_id',
+        'rate',
+        'initial_receipt_amount',
+        'initial_receipt_account_id',
         'type',
         'due_date',
         'description',
         'status',
         'payment_status',
+        'posted_by',
+        'posted_at',
+        'reversal_of_id',
+        'reversed_at',
         'created_by',
         'updated_by',
     ];
@@ -54,11 +62,20 @@ class Sale extends Model
             'customer_id' => 'string',
             'date' => 'date',
             'discount' => 'float',
+            'currency_id' => 'string',
+            'rate' => 'float',
+            'initial_receipt_amount' => 'float',
+            'initial_receipt_account_id' => 'string',
+            'status' => \App\Enums\TransactionStatus::class,
+            'payment_status' => PaymentStatus::class,
+            'posted_at' => 'datetime',
+            'reversed_at' => 'datetime',
+            'posted_by' => 'string',
+            'reversal_of_id' => 'string',
             'created_by' => 'string',
             'updated_by' => 'string',
-        'due_date' => 'date',
-        'payment_status' => PaymentStatus::class,
-    ];
+            'due_date' => 'date',
+        ];
     }
 
     protected static function searchableColumns(): array
