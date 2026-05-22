@@ -9,7 +9,10 @@ const props = defineProps({
 const { t } = useI18n()
 const width = 720
 const height = 260
-const padding = 24
+const paddingLeft = 72
+const paddingRight = 16
+const paddingTop = 16
+const paddingBottom = 24
 
 const maxValue = computed(() => {
   const values = props.series.flatMap((point) => [Number(point.sales || 0), Number(point.purchases || 0)])
@@ -19,14 +22,14 @@ const maxValue = computed(() => {
 function buildPath(key) {
   if (!props.series.length) return ''
 
-  const innerWidth = width - padding * 2
-  const innerHeight = height - padding * 2
+  const innerWidth = width - paddingLeft - paddingRight
+  const innerHeight = height - paddingTop - paddingBottom
   const divisor = Math.max(maxValue.value, 1)
 
   return props.series
     .map((point, index) => {
-      const x = padding + (innerWidth * index) / Math.max(props.series.length - 1, 1)
-      const y = padding + innerHeight - (Number(point[key] || 0) / divisor) * innerHeight
+      const x = paddingLeft + (innerWidth * index) / Math.max(props.series.length - 1, 1)
+      const y = paddingTop + innerHeight - (Number(point[key] || 0) / divisor) * innerHeight
       return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
     })
     .join(' ')
@@ -36,10 +39,10 @@ const salesPath = computed(() => buildPath('sales'))
 const purchasesPath = computed(() => buildPath('purchases'))
 
 const ticks = computed(() => {
-  const innerHeight = height - padding * 2
+  const innerHeight = height - paddingTop - paddingBottom
 
   return [0, 0.25, 0.5, 0.75, 1].map((ratio) => ({
-    y: padding + innerHeight - innerHeight * ratio,
+    y: paddingTop + innerHeight - innerHeight * ratio,
     value: (maxValue.value * ratio).toLocaleString(undefined, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
@@ -49,7 +52,7 @@ const ticks = computed(() => {
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="flex h-full flex-col gap-4">
     <div class="flex flex-wrap items-center justify-end gap-4 text-sm text-muted-foreground">
       <div class="flex items-center gap-2 rounded-full bg-muted/60 px-3 py-1">
         <span class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.45)]" />
@@ -61,13 +64,13 @@ const ticks = computed(() => {
       </div>
     </div>
 
-    <div v-if="series.length" class="overflow-x-auto rounded-2xl border border-border bg-gradient-to-b from-background to-muted/35 p-4 shadow-inner">
-      <svg :viewBox="`0 0 ${width} ${height}`" class="min-w-[680px]">
+    <div v-if="series.length" class="min-h-0 flex-1 overflow-x-auto rounded-2xl border border-border bg-gradient-to-b from-background to-muted/35 p-4 shadow-inner">
+      <svg :viewBox="`0 0 ${width} ${height}`" preserveAspectRatio="none" class="h-full min-w-[680px] w-full">
         <rect
-          :x="padding"
-          :y="padding"
-          :width="width - padding * 2"
-          :height="height - padding * 2"
+          :x="paddingLeft"
+          :y="paddingTop"
+          :width="width - paddingLeft - paddingRight"
+          :height="height - paddingTop - paddingBottom"
           rx="16"
           class="fill-muted/35"
         />
@@ -75,8 +78,8 @@ const ticks = computed(() => {
         <line
           v-for="tick in ticks"
           :key="tick.y"
-          :x1="padding"
-          :x2="width - padding"
+          :x1="paddingLeft"
+          :x2="width - paddingRight"
           :y1="tick.y"
           :y2="tick.y"
           stroke="currentColor"
@@ -87,7 +90,7 @@ const ticks = computed(() => {
         <text
           v-for="tick in ticks"
           :key="`label-${tick.y}`"
-          :x="padding - 8"
+          :x="paddingLeft - 8"
           :y="tick.y + 4"
           text-anchor="end"
           class="fill-muted-foreground text-[10px]"
