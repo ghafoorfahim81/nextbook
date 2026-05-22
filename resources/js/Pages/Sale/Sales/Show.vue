@@ -1,15 +1,17 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { router } from '@inertiajs/vue3';
+import { router, useForm } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp, ArrowLeft, Printer, SquarePen, Download } from 'lucide-vue-next';
+import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp, ArrowLeft, Printer, SquarePen, Download, Send, RotateCcw } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
+import { useToast } from '@/Components/ui/toast/use-toast';
 
 const { t } = useI18n();
 const { can } = useAuth();
+const { toast } = useToast();
 
 const props = defineProps({
     sale: { type: Object, required: true },
@@ -49,23 +51,35 @@ const formatLineValue = (value) => Number(value || 0).toFixed(2);
 
 const statusBadgeClasses = computed(() => {
     switch (saleData.value.status) {
-        case 'approved': return 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300';
-        case 'rejected': return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300';
-        case 'pending': return 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300';
-        default: return 'border-border bg-muted text-foreground';
+        case 'posted':   return 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300';
+        case 'reversed': return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300';
+        case 'draft':    return 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300';
+        default:         return 'border-border bg-muted text-foreground';
     }
 });
 
-const getStatusLabel = (status) => {
-    switch (status) {
-        case 'approved': return t('general.approve');
-        case 'rejected': return t('general.reject');
-        case 'pending': return 'Pending';
-        default: return status;
-    }
+const currencySymbol = computed(() => saleData.value.transaction?.currency?.symbol || '');
+
+// Post action
+const postForm = useForm({});
+const postSale = () => {
+    if (!confirm(t('general.confirm_post'))) return;
+    postForm.post(route('sales.post', saleData.value.id), {
+        onError: () => toast({ title: t('general.error'), variant: 'destructive' }),
+    });
 };
 
-const currencySymbol = computed(() => saleData.value.transaction?.currency?.symbol || '');
+// Reverse action
+const showReverseDialog = ref(false);
+const reverseReason = ref('');
+const reverseForm = useForm({ reason: '' });
+const reverseSale = () => {
+    reverseForm.reason = reverseReason.value;
+    reverseForm.post(route('sales.reverse', saleData.value.id), {
+        onSuccess: () => { showReverseDialog.value = false; reverseReason.value = ''; },
+        onError: () => toast({ title: t('general.error'), variant: 'destructive' }),
+    });
+};
 </script>
 
 <template>
@@ -78,6 +92,30 @@ const currencySymbol = computed(() => saleData.value.transaction?.currency?.symb
                     {{ t('general.back') }}
                 </Button>
                 <div class="flex items-center gap-2">
+                    <!-- Post button: only for DRAFT -->
+                    <Button
+                        v-if="can('sales.update') && saleData.status === 'draft'"
+                        size="sm"
+                        class="gap-1.5 bg-green-600 text-white hover:bg-green-700"
+                        :disabled="postForm.processing"
+                        @click="postSale"
+                    >
+                        <Send class="h-4 w-4" />
+                        {{ t('general.post') }}
+                    </Button>
+
+                    <!-- Reverse button: only for POSTED -->
+                    <Button
+                        v-if="can('sales.update') && saleData.status === 'posted'"
+                        variant="destructive"
+                        size="sm"
+                        class="gap-1.5"
+                        @click="showReverseDialog = true"
+                    >
+                        <RotateCcw class="h-4 w-4" />
+                        {{ t('general.reverse') }}
+                    </Button>
+
                     <a :href="route('sales.export', saleData.id)" target="_blank" rel="noopener noreferrer">
                         <Button variant="outline" size="sm">
                             <Download class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
@@ -90,8 +128,9 @@ const currencySymbol = computed(() => saleData.value.transaction?.currency?.symb
                             {{ t('general.print') }}
                         </Button>
                     </a>
+                    <!-- Edit button: only for DRAFT -->
                     <Button
-                        v-if="can('sales.update') && saleData.id"
+                        v-if="can('sales.update') && saleData.id && saleData.status === 'draft'"
                         variant="default"
                         size="sm"
                         class="gap-1.5 bg-primary text-primary-foreground"
@@ -103,11 +142,34 @@ const currencySymbol = computed(() => saleData.value.transaction?.currency?.symb
                 </div>
             </div>
 
+            <!-- Reverse confirmation dialog -->
+            <div v-if="showReverseDialog" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                <div class="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-lg">
+                    <h3 class="mb-2 text-base font-semibold text-foreground">{{ t('general.reverse_confirmation') }}</h3>
+                    <p class="mb-4 text-sm text-muted-foreground">{{ t('general.reverse_confirmation_desc') }}</p>
+                    <textarea
+                        v-model="reverseReason"
+                        rows="3"
+                        :placeholder="t('general.reverse_reason_placeholder')"
+                        class="mb-4 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <div class="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" @click="showReverseDialog = false; reverseReason = ''">
+                            {{ t('general.cancel') }}
+                        </Button>
+                        <Button variant="destructive" size="sm" :disabled="reverseForm.processing" @click="reverseSale">
+                            <RotateCcw class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                            {{ t('general.reverse') }}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Info card -->
             <fieldset class="rounded-xl border border-border bg-card px-5 pb-5 pt-3 text-card-foreground shadow-sm">
                 <legend class="px-2 flex items-center gap-1.5">
                     <span class="text-sm font-semibold text-violet-500">{{ t('sale.sale') }} #{{ saleData.number }}</span>
-                    <Badge :class="statusBadgeClasses">{{ getStatusLabel(saleData.status) }}</Badge>
+                    <Badge :class="statusBadgeClasses">{{ saleData.status }}</Badge>
                 </legend>
                 <div class="mb-4 flex items-center gap-2">
                     <FileText class="h-5 w-5 text-violet-500" />

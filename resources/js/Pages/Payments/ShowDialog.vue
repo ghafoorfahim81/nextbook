@@ -1,14 +1,18 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import axios from 'axios'
 import { useI18n } from 'vue-i18n'
+import { useForm } from '@inertiajs/vue3'
 import {
     Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/Components/ui/dialog'
 import { Button } from '@/Components/ui/button'
-import { Calendar, User, DollarSign, Receipt as ReceiptIcon, FileText } from 'lucide-vue-next'
+import { Badge } from '@/Components/ui/badge'
+import { Calendar, User, DollarSign, Receipt as ReceiptIcon, FileText, Send, RotateCcw } from 'lucide-vue-next'
+import { useAuth } from '@/composables/useAuth'
 
 const { t } = useI18n()
+const { can } = useAuth()
 
 const props = defineProps({
     open: Boolean,
@@ -22,6 +26,8 @@ const loading = ref(false)
 watch(() => props.open, async (isOpen) => {
     if (isOpen && props.paymentId) {
         loading.value = true
+        showReverseForm.value = false
+        reverseReason.value = ''
         try {
             const { data } = await axios.get(`/payments/${props.paymentId}`)
             payment.value = data?.data || null
@@ -34,6 +40,33 @@ watch(() => props.open, async (isOpen) => {
 function closeDialog() {
     emit('update:open', false)
     payment.value = null
+    showReverseForm.value = false
+    reverseReason.value = ''
+}
+
+const statusBadgeClasses = computed(() => {
+    switch (payment.value?.status) {
+        case 'posted':   return 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300';
+        case 'reversed': return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300';
+        case 'draft':    return 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300';
+        default:         return 'border-border bg-muted text-foreground';
+    }
+})
+
+const postForm = useForm({})
+const postPayment = () => {
+    if (!confirm(t('general.confirm_post'))) return
+    postForm.post(route('payments.post', payment.value.id))
+}
+
+const showReverseForm = ref(false)
+const reverseReason = ref('')
+const reverseForm = useForm({ reason: '' })
+const reversePayment = () => {
+    reverseForm.reason = reverseReason.value
+    reverseForm.post(route('payments.reverse', payment.value.id), {
+        onSuccess: () => closeDialog(),
+    })
 }
 </script>
 
@@ -44,8 +77,9 @@ function closeDialog() {
                 <div class="flex items-center gap-3">
                     <ReceiptIcon class="w-6 h-6 text-violet-500" />
                     <DialogTitle class="text-xl">
-                        {{ 'Payment' }} <span v-if="payment">#{{ payment.number }}</span>
+                        {{ t('payment.payment') }} <span v-if="payment">#{{ payment.number }}</span>
                     </DialogTitle>
+                    <Badge v-if="payment" :class="statusBadgeClasses">{{ payment.status }}</Badge>
                 </div>
                 <DialogDescription class="text-xs text-muted-foreground" v-if="payment?.narration">
                     {{ payment.narration }}
@@ -172,10 +206,50 @@ function closeDialog() {
                 </div>
             </div>
 
-            <DialogFooter>
-                <Button variant="outline" @click="closeDialog">
-                    {{ t('general.close') }}
-                </Button>
+            <DialogFooter class="flex-col gap-2 sm:flex-row">
+                <!-- Reverse reason form (shown inline when reversing) -->
+                <div v-if="showReverseForm" class="w-full space-y-2">
+                    <textarea
+                        v-model="reverseReason"
+                        rows="2"
+                        :placeholder="t('general.reverse_reason_placeholder')"
+                        class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <div class="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" @click="showReverseForm = false; reverseReason = ''">
+                            {{ t('general.cancel') }}
+                        </Button>
+                        <Button variant="destructive" size="sm" :disabled="reverseForm.processing" @click="reversePayment">
+                            <RotateCcw class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                            {{ t('general.reverse') }}
+                        </Button>
+                    </div>
+                </div>
+                <template v-else>
+                    <Button
+                        v-if="payment && can('payments.update') && payment.status === 'draft'"
+                        size="sm"
+                        class="gap-1.5 bg-green-600 text-white hover:bg-green-700"
+                        :disabled="postForm.processing"
+                        @click="postPayment"
+                    >
+                        <Send class="h-4 w-4" />
+                        {{ t('general.post') }}
+                    </Button>
+                    <Button
+                        v-if="payment && can('payments.update') && payment.status === 'posted'"
+                        variant="destructive"
+                        size="sm"
+                        class="gap-1.5"
+                        @click="showReverseForm = true"
+                    >
+                        <RotateCcw class="h-4 w-4" />
+                        {{ t('general.reverse') }}
+                    </Button>
+                    <Button variant="outline" @click="closeDialog">
+                        {{ t('general.close') }}
+                    </Button>
+                </template>
             </DialogFooter>
         </DialogContent>
     </Dialog>

@@ -22,6 +22,8 @@ use App\Models\Administration\Currency;
 use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
+use App\Enums\TransactionStatus;
+use Illuminate\Support\Facades\Auth;
 class PaymentController extends Controller
 {
     private $dateConversionService;
@@ -94,82 +96,84 @@ class PaymentController extends Controller
         $payment = DB::transaction(function () use ($request, $transactionService, $activityLogService) {
             $validated = $request->validated();
 
-            $ledger = Ledger::findOrFail($validated['ledger_id']);
-            $amount = (float) $validated['amount'];
-            $currencyId = $validated['currency_id'];
-            $rate = (float) $validated['rate'];
+            $ledger        = Ledger::findOrFail($validated['ledger_id']);
+            $amount        = (float) $validated['amount'];
+            $currencyId    = $validated['currency_id'];
+            $rate          = (float) $validated['rate'];
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $bankAccountId = $validated['bank_account_id'];
-            $paymentMode = $validated['payment_mode'] ?? PaymentMode::OnAccount->value;
-            $bankAccount = Account::find($bankAccountId);
+            $paymentMode   = $validated['payment_mode'] ?? PaymentMode::OnAccount->value;
+            $bankAccount   = Account::find($bankAccountId);
+
             $payment = Payment::create([
-                'number' => $validated['number'],
-                'date' => $validated['date'],
-                'ledger_id' => $ledger->id,
+                'number'       => $validated['number'],
+                'date'         => $validated['date'],
+                'ledger_id'    => $ledger->id,
                 'payment_mode' => $paymentMode,
-                'cheque_no' => $validated['cheque_no'] ?? null,
-                'narration' => $validated['narration'] ?? null,
+                'cheque_no'    => $validated['cheque_no'] ?? null,
+                'narration'    => $validated['narration'] ?? null,
+                'status'       => TransactionStatus::DRAFT->value,
             ]);
 
-            // Debit Accounts Payable for selected ledger (reduce liability)
-            $glAccounts = Cache::get('gl_accounts');
+            $glAccounts  = Cache::get('gl_accounts');
             $apAccountId = $glAccounts['account-payable'];
             $debitRemark = "Payment #{$payment->number} to {$ledger->name}";
 
+            // Create the GL transaction as DRAFT — it becomes effective only after post()
             $transaction = $transactionService->post(
                 header: [
-                    'currency_id' => $currencyId,
-                    'rate' => $rate,
-                    'date' => $validated['date'],
+                    'currency_id'    => $currencyId,
+                    'rate'           => $rate,
+                    'date'           => $validated['date'],
                     'reference_type' => Payment::class,
-                    'reference_id' => $payment->id,
-                    'remark' => $debitRemark,
+                    'reference_id'   => $payment->id,
+                    'remark'         => $debitRemark,
+                    'status'         => TransactionStatus::DRAFT->value,
                 ],
                 lines: [
                     [
                         'account_id' => $bankAccountId,
-                        'debit' => 0,
-                        'credit' => $amount,
-                        'remark' => 'Payment #' . $payment->number. ' to '.$ledger->name,
-                        'remark_fa' => 'پرداخت نقدی #' . $payment->number. ' به '.$ledger->name,
-                        'remark_ps' => $ledger->name . ' ته د #' . $payment->number . ' ورکړه',
-                   
+                        'debit'      => 0,
+                        'credit'     => $amount,
+                        'remark'     => 'Payment #' . $payment->number . ' to ' . $ledger->name,
+                        'remark_fa'  => 'پرداخت نقدی #' . $payment->number . ' به ' . $ledger->name,
+                        'remark_ps'  => $ledger->name . ' ته د #' . $payment->number . ' ورکړه',
                     ],
                     [
                         'account_id' => $apAccountId,
-                        'ledger_id' => $ledger->id,
-                        'debit' => $amount,
-                        'credit' => 0,
-                        'remark' => 'Payment #' . $payment->number. ' to '.$ledger->name,
-                        'remark_fa' => 'پرداخت نقدی #' . $payment->number. ' به '.$ledger->name,
-                        'remark_ps' => $ledger->name . ' ته د #' . $payment->number . ' ورکړه',
+                        'ledger_id'  => $ledger->id,
+                        'debit'      => $amount,
+                        'credit'     => 0,
+                        'remark'     => 'Payment #' . $payment->number . ' to ' . $ledger->name,
+                        'remark_fa'  => 'پرداخت نقدی #' . $payment->number . ' به ' . $ledger->name,
+                        'remark_ps'  => $ledger->name . ' ته د #' . $payment->number . ' ورکړه',
                     ],
-
                 ],
             );
 
             app(BillAllocationService::class)->syncPaymentAllocations($payment, $amount, $validated['allocations'] ?? []);
+
             $activityLogService->logCreate(
                 reference: $payment,
                 module: 'payment',
-                description: "Payment #{$payment->number} created.",
+                description: "Payment #{$payment->number} created as draft.",
                 newValues: [
-                    'number' => $payment->number,
-                    'date' => $payment->date?->toDateString(),
-                    'supplier_name' => $ledger->name,
+                    'number'         => $payment->number,
+                    'date'           => $payment->date?->toDateString(),
+                    'supplier_name'  => $ledger->name,
                     'payment_method' => $bankAccount?->name,
-                    'amount' => $amount,
-                    'currency_id' => $currencyId,
-                    'rate' => $rate,
+                    'amount'         => $amount,
+                    'currency_id'    => $currencyId,
+                    'rate'           => $rate,
+                    'status'         => TransactionStatus::DRAFT->value,
                 ],
                 metadata: [
-                    'action' => 'payment_store',
+                    'action'         => 'payment_store',
                     'transaction_id' => $transaction->id,
                 ],
             );
 
             return $payment;
-
         });
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
@@ -178,13 +182,95 @@ class PaymentController extends Controller
             return redirect()->route('payments.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.payment')]));
         }
 
-        $redirect = redirect()->route('payments.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.payment')]));
+        return redirect()->route('payments.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.payment')]));
+    }
 
-        if ($request->boolean('create_and_print')) {
-            $redirect->with('print_url', route('payments.print', $payment));
+    public function post(
+        Payment $payment,
+        ActivityLogService $activityLogService
+    ) {
+        $this->authorize('update', $payment);
+
+        $statusValue = $payment->status instanceof \BackedEnum
+            ? $payment->status->value
+            : (string) $payment->status;
+
+        if ($statusValue !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('general.only_draft_can_be_posted'));
         }
 
-        return $redirect;
+        DB::transaction(function () use ($payment) {
+            $transaction = $payment->transaction()->firstOrFail();
+            $transaction->update(['status' => TransactionStatus::POSTED->value]);
+
+            $payment->update([
+                'status'    => TransactionStatus::POSTED->value,
+                'posted_at' => now(),
+                'posted_by' => Auth::id(),
+            ]);
+
+            app(BillAllocationService::class)->recalculatePurchasePaymentStatuses(
+                $payment->purchasePayments()->pluck('purchase_id')->all()
+            );
+        });
+
+        $activityLogService->logAction(
+            eventType: 'posted',
+            reference: $payment,
+            module: 'payment',
+            description: "Payment #{$payment->number} posted.",
+            newValues: ['status' => TransactionStatus::POSTED->value],
+            metadata: ['action' => 'payment_post'],
+        );
+
+        Cache::forget(CacheKey::forCompanyBranchLocale(request(), 'ledgers'));
+
+        return back()->with('success', __('general.posted_successfully', ['resource' => __('general.resource.payment')]));
+    }
+
+    public function reverse(
+        Request $request,
+        Payment $payment,
+        TransactionService $transactionService,
+        ActivityLogService $activityLogService
+    ) {
+        $this->authorize('update', $payment);
+
+        $statusValue = $payment->status instanceof \BackedEnum
+            ? $payment->status->value
+            : (string) $payment->status;
+
+        if ($statusValue !== TransactionStatus::POSTED->value) {
+            return back()->with('error', __('general.only_posted_can_be_reversed'));
+        }
+
+        DB::transaction(function () use ($payment, $transactionService, $request) {
+            $transaction = $payment->transaction()->firstOrFail();
+            $transactionService->reverse($transaction, $request->input('reason'));
+
+            $allocatedPurchaseIds = $payment->purchasePayments()->pluck('purchase_id')->all();
+            $payment->purchasePayments()->delete();
+
+            $payment->update([
+                'status'      => TransactionStatus::REVERSED->value,
+                'reversed_at' => now(),
+            ]);
+
+            app(BillAllocationService::class)->recalculatePurchasePaymentStatuses($allocatedPurchaseIds);
+        });
+
+        $activityLogService->logAction(
+            eventType: 'reversed',
+            reference: $payment,
+            module: 'payment',
+            description: "Payment #{$payment->number} reversed.",
+            newValues: ['status' => TransactionStatus::REVERSED->value],
+            metadata: ['action' => 'payment_reverse'],
+        );
+
+        Cache::forget(CacheKey::forCompanyBranchLocale(request(), 'ledgers'));
+
+        return back()->with('success', __('general.reversed_successfully', ['resource' => __('general.resource.payment')]));
     }
 
     public function show(Request $request, Payment $payment)
@@ -240,6 +326,11 @@ class PaymentController extends Controller
 
     public function update(PaymentUpdateRequest $request, Payment $payment, ActivityLogService $activityLogService)
     {
+        $statusValue = $payment->status instanceof \BackedEnum ? $payment->status->value : (string) $payment->status;
+        if ($statusValue !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('general.only_draft_can_be_edited'));
+        }
+
         $beforeState = [
             'number' => $payment->number,
             'date' => $payment->date?->toDateString(),
@@ -343,6 +434,11 @@ class PaymentController extends Controller
 
     public function destroy(Request $request, Payment $payment, ActivityLogService $activityLogService)
     {
+        $statusValue = $payment->status instanceof \BackedEnum ? $payment->status->value : (string) $payment->status;
+        if ($statusValue !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('general.only_draft_can_be_deleted'));
+        }
+
         $oldValues = [
             'number' => $payment->number,
             'date' => $payment->date?->toDateString(),

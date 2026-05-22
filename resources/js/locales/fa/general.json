@@ -226,6 +226,12 @@
   "unit_cost": "هزینه واحد",
   "line_profit": "سود / ضرر",
   "reference_number": "شماره مرجع",
-  "english_name": "نام انگلیسی"
+  "english_name": "نام انگلیسی",
+  "post": "ثبت",
+  "reverse": "معکوس",
+  "confirm_post": "آیا مطمئن هستید که می‌خواهید این رکورد را ثبت کنید؟ این عمل قابل بازگشت نیست.",
+  "reverse_confirmation": "تأیید معکوس",
+  "reverse_confirmation_desc": "این عمل یک ورودی جبرانی برای ابطال این رکورد ایجاد می‌کند. لطفاً دلیل را وارد کنید.",
+  "reverse_reason_placeholder": "دلیل معکوس را وارد کنید..."
 }
 
