@@ -16,7 +16,7 @@ use App\Models\Administration\UnitMeasure;
 use App\Models\Administration\Warehouse;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
+use Illuminate\Http\Request; 
 use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
 use App\Models\Account\Account;
@@ -134,217 +134,52 @@ class SaleController extends Controller
 
     public function store(
         SaleStoreRequest $request,
-        TransactionService $transactionService,
         StockService $stockService,
         ActivityLogService $activityLogService
     )
     {
-        $validated = $request->validated();
-        $sale = DB::transaction(function () use ($request, $transactionService, $stockService, $validated, $activityLogService) {
+        $sale = DB::transaction(function () use ($request, $activityLogService) {
             $validated = $request->validated();
 
-            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
-            $validated['type'] = $validated['sale_type'] ?? 'cash';
-            $validated['status'] = TransactionStatus::POSTED->value;
+            $validated['type']   = $validated['sale_type'] ?? 'cash';
+            $validated['status'] = TransactionStatus::DRAFT->value;
+            $validated['date']   = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+
+            $validated['currency_id']               = $validated['currency_id'] ?? null;
+            $validated['rate']                       = $validated['rate'] ?? 1;
+            $validated['bank_account_id']            = $validated['bank_account_id'] ?? null;
+
+            $initialReceiptAmount    = (float) ($validated['payment']['amount'] ?? 0);
+            $initialReceiptAccountId = $validated['payment']['account_id'] ?? null;
+            $validated['initial_receipt_amount']     = $initialReceiptAmount;
+            $validated['initial_receipt_account_id'] = $initialReceiptAccountId;
 
             $sale = Sale::create($validated);
-            $totalDiscount = $request->input('discount_total', 0);
+
             $validated['item_list'] = array_map(function ($item) use ($validated) {
+                $item['discount']    = $item['item_discount'] ?? 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
                 return $item;
             }, $validated['item_list']);
 
             $sale->items()->createMany($validated['item_list']);
 
-            $lines = [];
-            $glAccounts = Cache::get('gl_accounts');
-            [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
-            // dd($itemModelsById, $averageCostsByItemId, $unitValuesById);
-            foreach ($validated['item_list'] as $item) {
-                $quantity = (float) $item['quantity'];
-                $unitPrice = (float) $item['unit_price'];
-
-                // Assumption:
-                // item_discount is the TOTAL discount for this line, not per-unit discount.
-                $lineGrossTotal = $quantity * $unitPrice;
-                $itemModel = $itemModelsById[$item['item_id']] ?? null;
-                if (!$itemModel) {
-                    throw (new \Illuminate\Database\Eloquent\ModelNotFoundException())->setModel(Item::class, [$item['item_id']]);
-                }
-
-                $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0);
-                $unitCost = $this->resolveUnitCost(
-                    avgCost: $avgCost,
-                    selectedUnitMeasureId: $item['unit_measure_id'],
-                    itemUnitMeasureId: $itemModel->unit_measure_id,
-                    unitValuesById: $unitValuesById,
-                );
-                // dd($avgCost);
-                $totalCost = $unitCost * $quantity;
-                $stockService->post([
-                    'item_id'         => $item['item_id'],
-                    'movement_type'   => StockMovementType::OUT->value,
-                    'unit_measure_id' => $item['unit_measure_id'],
-                    'quantity'        => $quantity,
-                    'source'          => StockSourceType::SALE->value,
-                    'unit_cost'       => $unitCost,
-                    'status'          => StockStatus::POSTED->value,
-                    'batch'           => $item['batch'] ?? null,
-                    'date'            => $validated['date'],
-                    'expire_date'     => $item['expire_date'] ?? null,
-                    'size_id'         => $validated['size_id'] ?? null,
-                    'warehouse_id'    => $validated['warehouse_id'],
-                    'branch_id'       => $sale->branch_id,
-                    'reference_type'  => Sale::class,
-                    'reference_id'    => $sale->id,
-                ]);
-
-                // Revenue at gross amount
-                $lines[] = [
-                    'account_id' => $itemModel->income_account_id,
-                    'ledger_id'  => null,
-                    'debit'      => 0,
-                    'credit'     => $lineGrossTotal,
-                    'remark'     => 'Sale income for item:' . $itemModel->name . '  #' . $sale->number,
-                    'remark_fa' => ':عاید فروش '. ' '. $itemModel->name.' #'.$sale->number,
-                    'remark_ps' => 'د'. ' '. $itemModel->name.' '.'خرڅلاو څخه عاید د#'.$sale->number,
-                ];
-
-                // Cost of goods sold
-                $lines[] = [
-                    'account_id' => $itemModel->cost_account_id,
-                    'ledger_id'  => null,
-                    'debit'      => $totalCost,
-                    'credit'     => 0,
-                    'remark'     => 'COGS for item: ' . $itemModel->name . ' #' . $sale->number,
-                    'remark_fa' => ':هزینه محصول فروخته شد بابت '. ' '. $itemModel->name.' #'.$sale->number,
-                    'remark_ps' => 'د'. ' '. $itemModel->name.' '.'د پلورل شوي توکو لګښت#'.$sale->number,
-                ];
-
-                // Inventory reduction
-                $lines[] = [
-                    'account_id' => $itemModel->asset_account_id,
-                    'ledger_id'  => null,
-                    'debit'      => 0,
-                    'credit'     => $totalCost,
-                    'remark'     => 'Inventory out for item: ' . $itemModel->name . ' #' . $sale->number,
-                    'remark_fa'  => ':فروش جنس'. ' '. $itemModel->name.' #'.$sale->number,
-                    'remark_ps'  => 'د'. ' '. $itemModel->name.' '.'د خرڅلاو #'.$sale->number,
-                ];
-            }
-
-            // Sales discount line
-            if ($totalDiscount > 0) {
-                $lines[] = [
-                    'account_id' => $glAccounts['discount-to-customer'], // must exist in your cache/accounts setup
-                    'ledger_id'  => null,
-                    'debit'      => $totalDiscount,
-                    'credit'     => 0,
-                    'remark'     => 'Sales discount for sale: #' . $sale->number,
-                    'remark_fa' => 'تخفیف فروش'. ' '. $sale->number,
-                    'remark_ps' => 'د'. ' '. $sale->number.' '.'تخفیف خرڅلاو د',
-                ];
-            }
-
-            if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
-                $lines[] = [
-                    'account_id' => $validated['bank_account_id'],
-                    'ledger_id'  => null,
-                    'debit'      => $validated['transaction_total'],
-                    'credit'     => 0,
-                    'remark'     => 'Cash received from sale #' . $sale->number,
-                    'remark_fa'  => 'دریافت نقدی بابت فروش #' . $sale->number,
-                    'remark_ps'  => 'د'. '#'. $sale->number.' '.'د نغدي اخیستلو په اړه فروش د',
-                ];
-            }
-
-            if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
-                $lines[] = [
-                    'account_id' => $glAccounts['account-receivable'],
-                    'ledger_id'  => $validated['customer_id'],
-                    'debit'      => $validated['transaction_total'],
-                    'credit'     => 0,
-                    'remark'     => 'Sale on loan for #' . $sale->number,
-                    'remark_fa' => 'فروش قرضی بابت #' . $sale->number,
-                    'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو د',
-                ];
-            }
-
-            if ($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
-                $paidAmount = (float) ($validated['payment']['amount'] ?? 0);
-
-                if ($paidAmount > 0) {
-                    $lines[] = [
-                        'account_id' => $validated['payment']['account_id'],
-                        'ledger_id'  => null,
-                        'debit'      => $paidAmount,
-                        'credit'     => 0,
-                        'remark'     => 'Partial payment for sale #' . $sale->number,
-                        'remark_fa' => 'پرداخت جزئی برای فروش #' . $sale->number,
-                        'remark_ps' => 'د'. '#'. $sale->number.' '.'جزوی تادیه خرڅلاو د',
-                    ];
-
-                    $remaining = $validated['transaction_total'] - $paidAmount;
-
-                    if ($remaining > 0) {
-                        $lines[] = [
-                            'account_id' => $glAccounts['account-receivable'],
-                            'ledger_id'  => $validated['customer_id'],
-                            'debit'      => $remaining,
-                            'credit'     => 0,
-                            'remark'     => 'Remaining receivable for sale #' . $sale->number,
-                            'remark_fa' => ' فروش قرض #' . $sale->number,
-                            'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو د',
-                        ];
-                    }
-                } else {
-                    $lines[] = [
-                        'account_id' => $glAccounts['account-receivable'],
-                        'ledger_id'  => $validated['customer_id'],
-                        'debit'      => $validated['transaction_total'],
-                        'credit'     => 0,
-                        'remark'     => 'Cash received from sale #' . $sale->number,
-                        'remark_fa' => 'دریافت نقدی بابت فروش#' . $sale->number,
-                        'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو د',
-                    ];
-                }
-            }
-
-            $transaction = $transactionService->post(
-                header: [
-                    'currency_id'    => $validated['currency_id'],
-                    'rate'           => $validated['rate'],
-                    'date'           => $validated['date'],
-                    'voucher_number' => $sale->number,
-                    'remark'         => 'Sale for sale number: ' . $sale->number,
-                    'status'         => TransactionStatus::POSTED->value,
-                    'reference_type' => Sale::class,
-                    'reference_id'   => $sale->id,
-                ],
-                lines: $lines
-            );
-
-            app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
             $activityLogService->logCreate(
                 reference: $sale,
                 module: 'sale',
-                description: "Sale #{$sale->number} created and posted.",
+                description: "Sale #{$sale->number} created as draft.",
                 newValues: [
-                    'number' => $sale->number,
-                    'customer_id' => $sale->customer_id,
-                    'date' => $sale->date?->toDateString(),
-                    'status' => $sale->status,
-                    'branch_id' => $sale->branch_id,
-                    'warehouse_id' => $validated['warehouse_id'],
-                    'currency_id' => $validated['currency_id'],
-                    'item_count' => count($validated['item_list']),
-                    'transaction_total' => (float) $validated['transaction_total'],
+                    'number'            => $sale->number,
+                    'customer_id'       => $sale->customer_id,
+                    'date'              => $sale->date?->toDateString(),
+                    'status'            => TransactionStatus::DRAFT->value,
+                    'branch_id'         => $sale->branch_id,
+                    'warehouse_id'      => $validated['warehouse_id'],
+                    'currency_id'       => $validated['currency_id'],
+                    'item_count'        => count($validated['item_list']),
+                    'transaction_total' => (float) ($validated['transaction_total'] ?? 0),
                 ],
-                metadata: [
-                    'action' => 'sale_store',
-                    'sale_type' => $validated['type'],
-                    'transaction_id' => $transaction->id,
-                ],
+                metadata: ['action' => 'sale_store'],
             );
 
             return $sale;
@@ -357,16 +192,280 @@ class SaleController extends Controller
             );
         }
 
-        $redirect = redirect()->route('sales.index')->with(
+        return redirect()->route('sales.show', $sale->id)->with(
             'success',
             __('general.created_successfully', ['resource' => __('general.resource.sale')])
         );
+    }
 
-        if ((bool) $request->create_and_print) {
-            $redirect->with('print_url', route('sales.print', $sale));
+    public function post(
+        Sale $sale,
+        TransactionService $transactionService,
+        StockService $stockService,
+        ActivityLogService $activityLogService
+    ) {
+        $this->authorize('update', $sale);
+
+        $statusValue = $sale->status instanceof \BackedEnum
+            ? $sale->status->value
+            : (string) $sale->status;
+
+        if ($statusValue !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('general.only_draft_can_be_posted'));
         }
 
-        return $redirect;
+        DB::transaction(function () use ($sale, $transactionService, $stockService) {
+            $sale->load('items.item');
+            $glAccounts  = Cache::get('gl_accounts');
+            $lines       = [];
+            $typeValue   = $sale->type instanceof \BackedEnum ? $sale->type->value : (string) $sale->type;
+            $date        = $sale->date?->toDateString();
+
+            [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup(
+                $sale->items->map(fn ($i) => ['item_id' => $i->item_id, 'unit_measure_id' => $i->unit_measure_id])->all()
+            );
+
+            foreach ($sale->items as $item) {
+                $quantity       = (float) $item->quantity;
+                $unitPrice      = (float) $item->unit_price;
+                $lineGrossTotal = $quantity * $unitPrice;
+
+                $itemModel = $itemModelsById[$item->item_id] ?? null;
+                if (!$itemModel) {
+                    throw (new \Illuminate\Database\Eloquent\ModelNotFoundException())->setModel(Item::class, [$item->item_id]);
+                }
+
+                $avgCost  = (float) ($averageCostsByItemId[$item->item_id] ?? 0);
+                $unitCost = $this->resolveUnitCost(
+                    avgCost: $avgCost,
+                    selectedUnitMeasureId: $item->unit_measure_id,
+                    itemUnitMeasureId: $itemModel->unit_measure_id,
+                    unitValuesById: $unitValuesById,
+                );
+                $totalCost = $unitCost * $quantity;
+
+                $stockService->post([
+                    'item_id'         => $item->item_id,
+                    'movement_type'   => StockMovementType::OUT->value,
+                    'unit_measure_id' => $item->unit_measure_id,
+                    'quantity'        => $quantity,
+                    'source'          => StockSourceType::SALE->value,
+                    'unit_cost'       => $unitCost,
+                    'status'          => StockStatus::POSTED->value,
+                    'batch'           => $item->batch ?? null,
+                    'date'            => $date,
+                    'expire_date'     => $item->expire_date ?? null,
+                    'size_id'         => $sale->size_id ?? null,
+                    'warehouse_id'    => $item->warehouse_id ?? $sale->warehouse_id,
+                    'branch_id'       => $sale->branch_id,
+                    'reference_type'  => Sale::class,
+                    'reference_id'    => $sale->id,
+                ]);
+
+                $lines[] = [
+                    'account_id' => $itemModel->income_account_id,
+                    'ledger_id'  => null,
+                    'debit'      => 0,
+                    'credit'     => $lineGrossTotal,
+                    'remark'     => 'Sale income for item: ' . $itemModel->name . ' #' . $sale->number,
+                    'remark_fa'  => 'عاید فروش ' . $itemModel->name . ' #' . $sale->number,
+                    'remark_ps'  => 'د ' . $itemModel->name . ' خرڅلاو څخه عاید د#' . $sale->number,
+                ];
+                $lines[] = [
+                    'account_id' => $itemModel->cost_account_id,
+                    'ledger_id'  => null,
+                    'debit'      => $totalCost,
+                    'credit'     => 0,
+                    'remark'     => 'COGS for item: ' . $itemModel->name . ' #' . $sale->number,
+                    'remark_fa'  => 'هزینه محصول فروخته شد ' . $itemModel->name . ' #' . $sale->number,
+                    'remark_ps'  => 'د ' . $itemModel->name . ' د پلورل شوي توکو لګښت#' . $sale->number,
+                ];
+                $lines[] = [
+                    'account_id' => $itemModel->asset_account_id,
+                    'ledger_id'  => null,
+                    'debit'      => 0,
+                    'credit'     => $totalCost,
+                    'remark'     => 'Inventory out for item: ' . $itemModel->name . ' #' . $sale->number,
+                    'remark_fa'  => 'فروش جنس ' . $itemModel->name . ' #' . $sale->number,
+                    'remark_ps'  => 'د ' . $itemModel->name . ' د خرڅلاو #' . $sale->number,
+                ];
+            }
+
+            $transactionTotal = $sale->items->sum(function ($item) use ($sale) {
+                $rowTotal     = (float) $item->quantity * (float) $item->unit_price;
+                $itemDiscount = (float) ($item->discount ?? 0);
+                return $rowTotal - $itemDiscount;
+            });
+            $discountTotal = 0;
+            if ($sale->discount > 0) {
+                $discountTotal = $sale->discount_type === 'percentage'
+                    ? $transactionTotal * ($sale->discount / 100)
+                    : (float) $sale->discount;
+                $transactionTotal -= $discountTotal;
+            }
+
+            if ($discountTotal > 0) {
+                $lines[] = [
+                    'account_id' => $glAccounts['discount-to-customer'],
+                    'ledger_id'  => null,
+                    'debit'      => $discountTotal,
+                    'credit'     => 0,
+                    'remark'     => 'Sales discount for sale #' . $sale->number,
+                    'remark_fa'  => 'تخفیف فروش ' . $sale->number,
+                    'remark_ps'  => 'د ' . $sale->number . ' تخفیف خرڅلاو د',
+                ];
+            }
+
+            if ($typeValue === \App\Enums\SalePurchaseType::Cash->value) {
+                $lines[] = [
+                    'account_id' => $sale->bank_account_id,
+                    'ledger_id'  => null,
+                    'debit'      => $transactionTotal,
+                    'credit'     => 0,
+                    'remark'     => 'Cash received from sale #' . $sale->number,
+                    'remark_fa'  => 'دریافت نقدی بابت فروش #' . $sale->number,
+                    'remark_ps'  => 'د #' . $sale->number . ' د نغدي اخیستلو',
+                ];
+            } elseif ($typeValue === \App\Enums\SalePurchaseType::OnLoan->value) {
+                $lines[] = [
+                    'account_id' => $glAccounts['account-receivable'],
+                    'ledger_id'  => $sale->customer_id,
+                    'debit'      => $transactionTotal,
+                    'credit'     => 0,
+                    'remark'     => 'Sale on loan #' . $sale->number,
+                    'remark_fa'  => 'فروش قرضی بابت #' . $sale->number,
+                    'remark_ps'  => 'د #' . $sale->number . ' د پور خرڅلاو',
+                ];
+            } elseif ($typeValue === \App\Enums\SalePurchaseType::Credit->value) {
+                $initialAmount    = (float) ($sale->initial_receipt_amount ?? 0);
+                $initialAccountId = $sale->initial_receipt_account_id;
+
+                if ($initialAmount > 0 && $initialAccountId) {
+                    $lines[] = [
+                        'account_id' => $initialAccountId,
+                        'ledger_id'  => null,
+                        'debit'      => $initialAmount,
+                        'credit'     => 0,
+                        'remark'     => 'Partial receipt for sale #' . $sale->number,
+                        'remark_fa'  => 'دریافت جزئی بابت فروش #' . $sale->number,
+                        'remark_ps'  => 'د #' . $sale->number . ' جزوی دریافت',
+                    ];
+                    $lines[] = [
+                        'account_id' => $glAccounts['account-receivable'],
+                        'ledger_id'  => $sale->customer_id,
+                        'debit'      => $transactionTotal - $initialAmount,
+                        'credit'     => 0,
+                        'remark'     => 'Remaining receivable for sale #' . $sale->number,
+                        'remark_fa'  => 'فروش قرض #' . $sale->number,
+                        'remark_ps'  => 'د #' . $sale->number . ' د پور خرڅلاو',
+                    ];
+                } else {
+                    $lines[] = [
+                        'account_id' => $glAccounts['account-receivable'],
+                        'ledger_id'  => $sale->customer_id,
+                        'debit'      => $transactionTotal,
+                        'credit'     => 0,
+                        'remark'     => 'Sale on credit #' . $sale->number,
+                        'remark_fa'  => 'فروش قرضی بابت #' . $sale->number,
+                        'remark_ps'  => 'د #' . $sale->number . ' د پور خرڅلاو',
+                    ];
+                }
+            }
+
+            $transactionService->post(
+                header: [
+                    'currency_id'    => $sale->currency_id,
+                    'rate'           => $sale->rate ?? 1,
+                    'date'           => $date,
+                    'voucher_number' => $sale->number,
+                    'remark'         => 'Sale #' . $sale->number,
+                    'status'         => TransactionStatus::POSTED->value,
+                    'reference_type' => Sale::class,
+                    'reference_id'   => $sale->id,
+                ],
+                lines: $lines
+            );
+
+            $sale->update([
+                'status'    => TransactionStatus::POSTED->value,
+                'posted_at' => now(),
+                'posted_by' => \Illuminate\Support\Facades\Auth::id(),
+            ]);
+
+            app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
+        });
+
+        $activityLogService->logAction(
+            eventType: 'posted',
+            reference: $sale,
+            module: 'sale',
+            description: "Sale #{$sale->number} posted.",
+            newValues: ['status' => TransactionStatus::POSTED->value],
+            metadata: ['action' => 'sale_post'],
+        );
+
+        return back()->with('success', __('general.posted_successfully', ['resource' => __('general.resource.sale')]));
+    }
+
+    public function reverse(
+        \Illuminate\Http\Request $request,
+        Sale $sale,
+        TransactionService $transactionService,
+        ActivityLogService $activityLogService
+    ) {
+        $this->authorize('update', $sale);
+
+        $statusValue = $sale->status instanceof \BackedEnum
+            ? $sale->status->value
+            : (string) $sale->status;
+
+        if ($statusValue !== TransactionStatus::POSTED->value) {
+            return back()->with('error', __('general.only_posted_can_be_reversed'));
+        }
+
+        DB::transaction(function () use ($sale, $transactionService, $request) {
+            $transaction = Transaction::query()
+                ->where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->firstOrFail();
+
+            $transactionService->reverse($transaction, $request->input('reason'));
+
+            $affectedCombos = StockMovement::query()
+                ->where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->get(['item_id', 'warehouse_id', 'branch_id'])
+                ->map(fn ($m) => [
+                    'item_id'      => $m->item_id,
+                    'warehouse_id' => $m->warehouse_id,
+                    'branch_id'    => $m->branch_id,
+                ])->all();
+
+            StockMovement::query()
+                ->where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->update(['status' => StockStatus::VOIDED->value]);
+
+            $this->rebuildStockStateForCombos($affectedCombos);
+
+            $sale->update([
+                'status'      => TransactionStatus::REVERSED->value,
+                'reversed_at' => now(),
+            ]);
+
+            app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
+        });
+
+        $activityLogService->logAction(
+            eventType: 'reversed',
+            reference: $sale,
+            module: 'sale',
+            description: "Sale #{$sale->number} reversed.",
+            newValues: ['status' => TransactionStatus::REVERSED->value],
+            metadata: ['action' => 'sale_reverse'],
+        );
+
+        return back()->with('success', __('general.reversed_successfully', ['resource' => __('general.resource.sale')]));
     }
 
 
@@ -427,251 +526,59 @@ class SaleController extends Controller
     public function update(
         SaleUpdateRequest $request,
         Sale $sale,
-        TransactionService $transactionService,
-        StockService $stockService,
         ActivityLogService $activityLogService
     )
     {
+        $statusValue = $sale->status instanceof \BackedEnum ? $sale->status->value : (string) $sale->status;
+        if ($statusValue !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('general.only_draft_can_be_edited'));
+        }
+
         $beforeState = [
-            'number' => $sale->number,
-            'customer_id' => $sale->customer_id,
-            'date' => $sale->date?->toDateString(),
-            'status' => $sale->status,
-            'branch_id' => $sale->branch_id,
-            'warehouse_id' => $sale->warehouse_id,
-            'currency_id' => $sale->transaction?->currency_id,
-            'rate' => $sale->transaction?->rate,
-            'item_count' => $sale->items()->count(),
-            'transaction_total' => (float) ($sale->transaction_total ?? 0),
+            'number'            => $sale->number,
+            'customer_id'       => $sale->customer_id,
+            'date'              => $sale->date?->toDateString(),
+            'status'            => $sale->status,
+            'branch_id'         => $sale->branch_id,
+            'warehouse_id'      => $sale->warehouse_id,
+            'currency_id'       => $sale->currency_id,
+            'rate'              => $sale->rate,
+            'item_count'        => $sale->items()->count(),
         ];
 
-        $sale = DB::transaction(function () use ($request, $sale, $transactionService, $stockService, $activityLogService, $beforeState) {
+        $sale = DB::transaction(function () use ($request, $sale, $activityLogService, $beforeState) {
             $validated = $request->validated();
-            $validated['type'] = $validated['sale_type'] ?? $sale->type ?? 'cash';
-            $validated['status'] = TransactionStatus::POSTED->value;
+            $validated['type']   = $validated['sale_type'] ?? $sale->type ?? 'cash';
+            $validated['status'] = TransactionStatus::DRAFT->value;
+            $validated['date']   = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $sale->date;
 
-            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $sale->date;
-            $affectedCombos = $sale->items()
-                ->get(['item_id', 'warehouse_id', 'branch_id'])
-                ->map(fn ($item) => [
-                    'item_id' => $item->item_id,
-                    'warehouse_id' => $item->warehouse_id,
-                    'branch_id' => $item->branch_id ?? $sale->branch_id,
-                ])
-                ->all();
+            $validated['bank_account_id']            = $validated['bank_account_id'] ?? $sale->bank_account_id;
+            $validated['currency_id']                = $validated['currency_id'] ?? $sale->currency_id;
+            $validated['rate']                       = $validated['rate'] ?? $sale->rate ?? 1;
+            $validated['initial_receipt_amount']     = (float) ($validated['payment']['amount'] ?? $sale->initial_receipt_amount ?? 0);
+            $validated['initial_receipt_account_id'] = $validated['payment']['account_id'] ?? $sale->initial_receipt_account_id;
 
-            $validated['item_list'] = array_map(function ($item) use ($validated, $sale, &$affectedCombos) {
-                $item['discount'] = $item['item_discount'] ?? 0;
+            $validated['item_list'] = array_map(function ($item) use ($validated) {
+                $item['discount']     = $item['item_discount'] ?? 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
-
-                $affectedCombos[] = [
-                    'item_id' => $item['item_id'],
-                    'warehouse_id' => $validated['warehouse_id'],
-                    'branch_id' => $sale->branch_id,
-                ];
-
                 return $item;
             }, $validated['item_list']);
 
             $sale->update($validated);
-
             $sale->items()->forceDelete();
-
-            StockMovement::query()
-                ->where('reference_type', Sale::class)
-                ->where('reference_id', $sale->id)
-                ->forceDelete();
-
-            $this->rebuildStockStateForCombos($affectedCombos);
-
             $sale->items()->createMany($validated['item_list']);
 
-            $transaction = Transaction::query()
-                ->where('reference_type', Sale::class)
-                ->where('reference_id', $sale->id)
-                ->first();
-
-            if ($transaction) {
-                $transaction->lines()->forceDelete();
-                $transaction->forceDelete();
-            }
-
-            $lines = [];
-            $totalDiscount = (float) $request->input('discount_total', 0);
-            $glAccounts = Cache::get('gl_accounts');
-            [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
-
-            foreach ($validated['item_list'] as $item) {
-                $quantity = (float) $item['quantity'];
-                $unitPrice = (float) $item['unit_price'];
-                $lineGrossTotal = $quantity * $unitPrice;
-
-                $itemModel = $itemModelsById[$item['item_id']] ?? null;
-                if (!$itemModel) {
-                    throw (new \Illuminate\Database\Eloquent\ModelNotFoundException())->setModel(Item::class, [$item['item_id']]);
-                }
-                $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0);
-                $unitCost = $this->resolveUnitCost(
-                    avgCost: $avgCost,
-                    selectedUnitMeasureId: $item['unit_measure_id'],
-                    itemUnitMeasureId: $itemModel->unit_measure_id,
-                    unitValuesById: $unitValuesById,
-                );
-                $totalCost = $unitCost * $quantity;
-                $stockService->post([
-                    'item_id'         => $item['item_id'],
-                    'movement_type'   => StockMovementType::OUT->value,
-                    'unit_measure_id' => $item['unit_measure_id'],
-                    'quantity'        => $quantity,
-                    'source'          => StockSourceType::SALE->value,
-                    'unit_cost'       => $unitCost,
-                    'status'          => StockStatus::POSTED->value,
-                    'batch'           => $item['batch'] ?? null,
-                    'date'            => $date,
-                    'expire_date'     => $item['expire_date'] ?? null,
-                    'size_id'         => $validated['size_id'] ?? null,
-                    'warehouse_id'    => $validated['warehouse_id'],
-                    'branch_id'       => $sale->branch_id,
-                    'reference_type'  => Sale::class,
-                    'reference_id'    => $sale->id,
-                ]);
-
-                $lines[] = [
-                    'account_id' => $itemModel->income_account_id,
-                    'ledger_id'  => null,
-                    'debit'      => 0,
-                    'credit'     => $lineGrossTotal,
-                    'remark'     => 'Sale income for item ' . $itemModel->name . '  #' . $sale->number,
-                    'remark_fa' => 'عاید فروش '. ' '. $itemModel->name.' #'.$sale->number,
-                    'remark_ps' => 'د'. ' '. $itemModel->name.' '.'خرڅلاو څخه عاید د#'.$sale->number,
-                ];
-
-                // Cost of goods sold
-                $lines[] = [
-                    'account_id' => $itemModel->cost_account_id,
-                    'ledger_id'  => null,
-                    'debit'      => $totalCost,
-                    'credit'     => 0,
-                    'remark'     => 'COGS for item ' . $itemModel->name . ' #' . $sale->number,
-                    'remark_fa' => 'هزینه محصول فروخته شد بابت '. ' '. $itemModel->name.' #'.$sale->number,
-                    'remark_ps' => 'د'. ' '. $itemModel->name.' '.'د پلورل شوي توکو لګښت#'.$sale->number,
-                ];
-
-                // Inventory reduction
-                $lines[] = [
-                    'account_id' => $itemModel->asset_account_id,
-                    'ledger_id'  => null,
-                    'debit'      => 0,
-                    'credit'     => $totalCost,
-                    'remark'     => 'Inventory out for item ' . $itemModel->name . ' #' . $sale->number,
-                    'remark_fa'  => 'فروش جنس'. ' '. $itemModel->name.' #'.$sale->number,
-                    'remark_ps'  => 'د'. ' '. $itemModel->name.' '.'د خرڅلاو #'.$sale->number,
-                ];
-            }
-
-            // Sales discount line
-            if ($totalDiscount > 0) {
-                $lines[] = [
-                    'account_id' => $glAccounts['discount-to-customer'], // must exist in your cache/accounts setup
-                    'ledger_id'  => null,
-                    'debit'      => $totalDiscount,
-                    'credit'     => 0,
-                    'remark'     => 'Sales discount for sale #' . $sale->number,
-                    'remark_fa' => 'تخفیف فروش'. ' '. $sale->number,
-                    'remark_ps' => 'د'. ' '. $sale->number.' '.'تخفیف خرڅلاو د',
-                ];
-            }
-
-            if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
-                $lines[] = [
-                    'account_id' => $validated['bank_account_id'],
-                    'ledger_id'  => null,
-                    'debit'      => $validated['transaction_total'],
-                    'credit'     => 0,
-                    'remark'     => 'Cash received from sale: #' . $sale->number,
-                    'remark_fa'  => ':دریافت نقدی بابت فروش #' . $sale->number,
-                    'remark_ps'  => 'د'. '#'. $sale->number.' '.'د نغدي اخیستلو په اړه فروش: د',
-                ];
-            }
-
-            if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
-                $lines[] = [
-                    'account_id' => $glAccounts['account-receivable'],
-                    'ledger_id'  => $validated['customer_id'],
-                    'debit'      => $validated['transaction_total'],
-                    'credit'     => 0,
-                    'remark'     => 'Sale on loan for: #' . $sale->number,
-                    'remark_fa' => ':فروش قرضی بابت #' . $sale->number,
-                    'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو: د',
-                ];
-            }
-
-            if ($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
-                $paidAmount = (float) ($validated['payment']['amount'] ?? 0);
-
-                if ($paidAmount > 0) {
-                    $lines[] = [
-                        'account_id' => $validated['payment']['account_id'],
-                        'ledger_id'  => null,
-                        'debit'      => $paidAmount,
-                        'credit'     => 0,
-                        'remark'     => 'Partial payment for sale: #' . $sale->number,
-                        'remark_fa' => ':پرداخت جزئی برای فروش #' . $sale->number,
-                        'remark_ps' => 'د'. '#'. $sale->number.' '.'جزوی تادیه خرڅلاو: د',
-                    ];
-
-                    $remaining = $validated['transaction_total'] - $paidAmount;
-
-                    if ($remaining > 0) {
-                        $lines[] = [
-                            'account_id' => $glAccounts['account-receivable'],
-                            'ledger_id'  => $validated['customer_id'],
-                            'debit'      => $remaining,
-                            'credit'     => 0,
-                            'remark'     => 'Remaining receivable for sale: #' . $sale->number,
-                            'remark_fa' => ': فروش قرض #' . $sale->number,
-                            'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو: د',
-                        ];
-                    }
-                } else {
-                    $lines[] = [
-                        'account_id' => $glAccounts['account-receivable'],
-                        'ledger_id'  => $validated['customer_id'],
-                        'debit'      => $validated['transaction_total'],
-                        'credit'     => 0,
-                        'remark'     => 'Cash received from sale: #' . $sale->number,
-                        'remark_fa' => ':دریافت نقدی بابت فروش#' . $sale->number,
-                        'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو د',
-                    ];
-                }
-            }
-
-            $transaction = $transactionService->post(
-                header: [
-                    'currency_id'    => $validated['currency_id'],
-                    'rate'           => $validated['rate'],
-                    'date'           => $date,
-                    'voucher_number' => $sale->number,
-                    'remark'         => 'Sale for sale number: ' . $sale->number,
-                    'status'         => TransactionStatus::POSTED->value,
-                    'reference_type' => Sale::class,
-                    'reference_id'   => $sale->id,
-                ],
-                lines: $lines
-            );
-
-            app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
             $afterState = [
-                'number' => $sale->number,
-                'customer_id' => $sale->customer_id,
-                'date' => $sale->date?->toDateString(),
-                'status' => $sale->status,
-                'branch_id' => $sale->branch_id,
-                'warehouse_id' => $validated['warehouse_id'],
-                'currency_id' => $validated['currency_id'],
-                'rate' => (float) $validated['rate'],
-                'item_count' => count($validated['item_list']),
-                'transaction_total' => (float) $validated['transaction_total'],
+                'number'            => $sale->number,
+                'customer_id'       => $sale->customer_id,
+                'date'              => $sale->date?->toDateString(),
+                'status'            => $sale->status,
+                'branch_id'         => $sale->branch_id,
+                'warehouse_id'      => $validated['warehouse_id'],
+                'currency_id'       => $validated['currency_id'],
+                'rate'              => (float) $validated['rate'],
+                'item_count'        => count($validated['item_list']),
+                'transaction_total' => (float) ($validated['transaction_total'] ?? 0),
             ];
 
             $activityLogService->logUpdate(
@@ -680,23 +587,13 @@ class SaleController extends Controller
                 after: $afterState,
                 module: 'sale',
                 description: "Sale #{$sale->number} updated.",
-                metadata: [
-                    'action' => 'sale_update',
-                    'sale_type' => $validated['type'],
-                    'transaction_id' => $transaction->id,
-                ],
+                metadata: ['action' => 'sale_update'],
             );
 
             return $sale;
         });
 
-        $redirect = redirect()->route('sales.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.sale')]));
-
-        if ($request->boolean('save_and_print')) {
-            $redirect->with('print_url', route('sales.print', $sale));
-        }
-
-        return $redirect;
+        return redirect()->route('sales.show', $sale->id)->with('success', __('general.updated_successfully', ['resource' => __('general.resource.sale')]));
     }
 
     private function rebuildStockStateForCombos(array $combos): void
@@ -930,6 +827,11 @@ class SaleController extends Controller
 
     public function destroy(Request $request, Sale $sale, ActivityLogService $activityLogService)
     {
+        $statusValue = $sale->status instanceof \BackedEnum ? $sale->status->value : (string) $sale->status;
+        if ($statusValue !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('general.only_draft_can_be_deleted'));
+        }
+
         DB::transaction(function () use ($sale, $activityLogService) {
               $oldValues = [
             'number' => $sale->number,

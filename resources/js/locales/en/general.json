@@ -223,5 +223,11 @@
   "unit_cost": "Unit Cost",
   "line_profit": "Profit / Loss",
   "reference_number": "Reference Number",
-  "english_name": "English Name"
+  "english_name": "English Name",
+  "post": "Post",
+  "reverse": "Reverse",
+  "confirm_post": "Are you sure you want to post this record? This cannot be undone.",
+  "reverse_confirmation": "Reverse Confirmation",
+  "reverse_confirmation_desc": "This will create an offsetting entry to void this record. Please provide a reason.",
+  "reverse_reason_placeholder": "Enter reason for reversal..."
 }

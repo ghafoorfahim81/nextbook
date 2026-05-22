@@ -18,6 +18,9 @@ class PaymentResource extends JsonResource
         return [
             'id' => $this->id,
             'number' => $this->number,
+            'status' => $this->status instanceof \App\Enums\TransactionStatus
+                ? $this->status->value
+                : $this->status,
             'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
             'ledger_id' => $this->ledger_id,
             'payment_mode' => $this->payment_mode instanceof PaymentMode

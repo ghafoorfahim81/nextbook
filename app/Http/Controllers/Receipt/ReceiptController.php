@@ -22,6 +22,8 @@ use App\Models\Administration\Currency;
 use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
+use App\Enums\TransactionStatus;
+use Illuminate\Support\Facades\Auth;
 class ReceiptController extends Controller
 {
     private $dateConversionService;
@@ -85,96 +87,182 @@ class ReceiptController extends Controller
     )
     {
         $receipt = DB::transaction(function () use ($request, $transactionService, $activityLogService) {
-            $validated = $request->validated();
-
-            $ledger = Ledger::findOrFail($validated['ledger_id']);
-            $amount = (float) $validated['amount'];
-            $currencyId = $validated['currency_id'];
-            $rate = (float) $validated['rate'];
-            $bankAccountId = $validated['bank_account_id'];
+            $validated      = $request->validated();
+            $ledger         = Ledger::findOrFail($validated['ledger_id']);
+            $amount         = (float) $validated['amount'];
+            $currencyId     = $validated['currency_id'];
+            $rate           = (float) $validated['rate'];
+            $bankAccountId  = $validated['bank_account_id'];
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
-            $paymentMode = $validated['payment_mode'] ?? PaymentMode::OnAccount->value;
-            $bankAccount = Account::find($bankAccountId);
-            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
-            $receipt = Receipt::create([
-                'number' => $validated['number'],
-                'date' => $validated['date'],
-                'ledger_id' => $ledger->id,
-                'payment_mode' => $paymentMode,
-                'cheque_no' => $validated['cheque_no'] ?? null,
-                'narration' => $validated['narration'] ?? null,
-            ]);
-            $glAccounts = Cache::get('gl_accounts');
-            // Credit Accounts Receivable for selected ledger
-            $arAccountId = $glAccounts['account-receivable'];
+            $paymentMode    = $validated['payment_mode'] ?? PaymentMode::OnAccount->value;
+            $bankAccount    = Account::find($bankAccountId);
 
+            $receipt = Receipt::create([
+                'number'       => $validated['number'],
+                'date'         => $validated['date'],
+                'ledger_id'    => $ledger->id,
+                'payment_mode' => $paymentMode,
+                'cheque_no'    => $validated['cheque_no'] ?? null,
+                'narration'    => $validated['narration'] ?? null, 
+                'status'       => TransactionStatus::DRAFT->value,
+            ]);
+
+            $glAccounts  = Cache::get('gl_accounts');
+            $arAccountId = $glAccounts['account-receivable'];
             $creditRemark = "Receipt #{$receipt->number} from {$ledger->name}";
 
+            // Create the GL transaction as DRAFT — it becomes effective only after post()
             $transaction = $transactionService->post(
                 header: [
-                    'currency_id' => $currencyId,
-                    'rate' => $rate,
-                    'date' => $validated['date'],
+                    'currency_id'    => $currencyId,
+                    'rate'           => $rate,
+                    'date'           => $validated['date'],
                     'reference_type' => Receipt::class,
-                    'reference_id' => $receipt->id,
-                    'remark' => $creditRemark,
+                    'reference_id'   => $receipt->id,
+                    'remark'         => $creditRemark,
+                    'status'         => TransactionStatus::DRAFT->value,
                 ],
                 lines: [
                     [
                         'account_id' => $bankAccountId,
-                        'debit' => $amount,
-                        'credit' => 0,
-                        'remark' => 'Cash received #' . $receipt->number. ' from '.$ledger->name,
-                        'remark_fa' => 'دریافت نقدی رسید #' . $receipt->number. ' از '.$ledger->name,
-                        'remark_ps' => 'د'. '#'. $receipt->number.' '.'د نغدي اخیستلو په اړه رسید له  '.$ledger->name,
+                        'debit'      => $amount,
+                        'credit'     => 0,
+                        'remark'     => 'Cash received #' . $receipt->number . ' from ' . $ledger->name,
+                        'remark_fa'  => 'دریافت نقدی رسید #' . $receipt->number . ' از ' . $ledger->name,
+                        'remark_ps'  => 'د #' . $receipt->number . ' د نغدي اخیستلو رسید له ' . $ledger->name,
                     ],
                     [
                         'account_id' => $arAccountId,
-                        'debit' => 0,
-                        'ledger_id' => $ledger->id,
-                        'credit' => $amount,
-                        'remark' => 'Payment by '.$ledger->name.' #' . $receipt->number,
-                        'remark_fa' => 'پرداخت توسط '.$ledger->name.' #' . $receipt->number,
-                        'remark_ps' => 'د ' . $ledger->name . ' لخوا تادیه #' . $receipt->number,
+                        'ledger_id'  => $ledger->id,
+                        'debit'      => 0,
+                        'credit'     => $amount,
+                        'remark'     => 'Payment by ' . $ledger->name . ' #' . $receipt->number,
+                        'remark_fa'  => 'پرداخت توسط ' . $ledger->name . ' #' . $receipt->number,
+                        'remark_ps'  => 'د ' . $ledger->name . ' لخوا تادیه #' . $receipt->number,
                     ],
                 ],
             );
 
             app(BillAllocationService::class)->syncReceiptAllocations($receipt, $amount, $validated['allocations'] ?? []);
+
             $activityLogService->logCreate(
                 reference: $receipt,
                 module: 'receipt',
-                description: "Receipt #{$receipt->number} created.",
+                description: "Receipt #{$receipt->number} created as draft.",
                 newValues: [
-                    'number' => $receipt->number,
-                    'date' => $receipt->date?->toDateString(),
-                    'customer_name' => $ledger->name,
+                    'number'         => $receipt->number,
+                    'date'           => $receipt->date?->toDateString(),
+                    'customer_name'  => $ledger->name,
                     'payment_method' => $bankAccount?->name,
-                    'amount' => $amount,
-                    'currency_id' => $currencyId,
-                    'rate' => $rate,
+                    'amount'         => $amount,
+                    'currency_id'    => $currencyId,
+                    'rate'           => $rate,
+                    'status'         => TransactionStatus::DRAFT->value,
                 ],
                 metadata: [
-                    'action' => 'receipt_store',
+                    'action'         => 'receipt_store',
                     'transaction_id' => $transaction->id,
                 ],
             );
 
             return $receipt;
         });
+
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
         if ($request->input('create_and_new')) {
             return redirect()->route('receipts.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.receipt')]));
         }
 
-        $redirect = redirect()->route('receipts.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.receipt')]));
+        return redirect()->route('receipts.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.receipt')]));
+    }
 
-        if ($request->boolean('create_and_print')) {
-            $redirect->with('print_url', route('receipts.print', $receipt));
+    public function post(
+        Receipt $receipt,
+        ActivityLogService $activityLogService
+    ) {
+        $this->authorize('update', $receipt);
+
+        $statusValue = $receipt->status instanceof \BackedEnum
+            ? $receipt->status->value
+            : (string) $receipt->status;
+
+        if ($statusValue !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('general.only_draft_can_be_posted'));
         }
 
-        return $redirect;
+        DB::transaction(function () use ($receipt) {
+            $transaction = $receipt->transaction()->firstOrFail();
+            $transaction->update(['status' => TransactionStatus::POSTED->value]);
+
+            $receipt->update([
+                'status'    => TransactionStatus::POSTED->value,
+                'posted_at' => now(),
+                'posted_by' => Auth::id(),
+            ]);
+
+            app(BillAllocationService::class)->recalculateSalePaymentStatuses(
+                $receipt->saleReceives()->pluck('sale_id')->all()
+            );
+        });
+
+        $activityLogService->logAction(
+            eventType: 'posted',
+            reference: $receipt,
+            module: 'receipt',
+            description: "Receipt #{$receipt->number} posted.",
+            newValues: ['status' => TransactionStatus::POSTED->value],
+            metadata: ['action' => 'receipt_post'],
+        );
+
+        Cache::forget(CacheKey::forCompanyBranchLocale(request(), 'ledgers'));
+
+        return back()->with('success', __('general.posted_successfully', ['resource' => __('general.resource.receipt')]));
+    }
+
+    public function reverse(
+        Request $request,
+        Receipt $receipt,
+        TransactionService $transactionService,
+        ActivityLogService $activityLogService
+    ) {
+        $this->authorize('update', $receipt);
+
+        $statusValue = $receipt->status instanceof \BackedEnum
+            ? $receipt->status->value
+            : (string) $receipt->status;
+
+        if ($statusValue !== TransactionStatus::POSTED->value) {
+            return back()->with('error', __('general.only_posted_can_be_reversed'));
+        }
+
+        DB::transaction(function () use ($receipt, $transactionService, $request) {
+            $transaction = $receipt->transaction()->firstOrFail();
+            $transactionService->reverse($transaction, $request->input('reason'));
+
+            $allocatedSaleIds = $receipt->saleReceives()->pluck('sale_id')->all();
+            $receipt->saleReceives()->delete();
+
+            $receipt->update([
+                'status'      => TransactionStatus::REVERSED->value,
+                'reversed_at' => now(),
+            ]);
+
+            app(BillAllocationService::class)->recalculateSalePaymentStatuses($allocatedSaleIds);
+        });
+
+        $activityLogService->logAction(
+            eventType: 'reversed',
+            reference: $receipt,
+            module: 'receipt',
+            description: "Receipt #{$receipt->number} reversed.",
+            newValues: ['status' => TransactionStatus::REVERSED->value],
+            metadata: ['action' => 'receipt_reverse'],
+        );
+
+        Cache::forget(CacheKey::forCompanyBranchLocale(request(), 'ledgers'));
+
+        return back()->with('success', __('general.reversed_successfully', ['resource' => __('general.resource.receipt')]));
     }
 
     public function show(Request $request, Receipt $receipt)
@@ -231,6 +319,11 @@ class ReceiptController extends Controller
 
     public function update(ReceiptUpdateRequest $request, Receipt $receipt, ActivityLogService $activityLogService)
     {
+        $statusValue = $receipt->status instanceof \BackedEnum ? $receipt->status->value : (string) $receipt->status;
+        if ($statusValue !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('general.only_draft_can_be_edited'));
+        }
+
         $beforeState = [
             'number' => $receipt->number,
             'date' => $receipt->date?->toDateString(),
@@ -332,6 +425,11 @@ class ReceiptController extends Controller
 
     public function destroy(Request $request, Receipt $receipt, ActivityLogService $activityLogService)
     {
+        $statusValue = $receipt->status instanceof \BackedEnum ? $receipt->status->value : (string) $receipt->status;
+        if ($statusValue !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', __('general.only_draft_can_be_deleted'));
+        }
+
         $oldValues = [
             'number' => $receipt->number,
             'date' => $receipt->date?->toDateString(),

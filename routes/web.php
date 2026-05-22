@@ -172,6 +172,8 @@ Route::middleware([
 
     Route::get('/purchases/open-bills', [\App\Http\Controllers\Purchase\PurchaseController::class, 'openBills'])->name('purchases.open-bills');
     Route::resource('/purchases', \App\Http\Controllers\Purchase\PurchaseController::class);
+    Route::post('/purchases/{purchase}/post', [\App\Http\Controllers\Purchase\PurchaseController::class, 'post'])->name('purchases.post');
+    Route::post('/purchases/{purchase}/reverse', [\App\Http\Controllers\Purchase\PurchaseController::class, 'reverse'])->name('purchases.reverse');
     Route::patch('/update-purchase-status/{purchase}/status', [\App\Http\Controllers\Purchase\PurchaseController::class, 'updatePurchaseStatus'])->name('purchases.update-purchase-status');
     Route::patch('/purchases/{purchase}/restore', [\App\Http\Controllers\Purchase\PurchaseController::class, 'restore'])->name('purchases.restore')->withTrashed();
     Route::delete('/purchases/{purchase}/force-delete', [\App\Http\Controllers\Purchase\PurchaseController::class, 'forceDelete'])
@@ -182,6 +184,8 @@ Route::middleware([
 
     Route::get('/sales/open-bills', [\App\Http\Controllers\Sale\SaleController::class, 'openBills'])->name('sales.open-bills');
     Route::resource('/sales', \App\Http\Controllers\Sale\SaleController::class);
+    Route::post('/sales/{sale}/post', [\App\Http\Controllers\Sale\SaleController::class, 'post'])->name('sales.post');
+    Route::post('/sales/{sale}/reverse', [\App\Http\Controllers\Sale\SaleController::class, 'reverse'])->name('sales.reverse');
     Route::patch('/update-sale-status/{sale}/status', [\App\Http\Controllers\Sale\SaleController::class, 'updateSaleStatus'])->name('sales.update-sale-status');
     Route::patch('/sales/{sale}/restore', [\App\Http\Controllers\Sale\SaleController::class, 'restore'])->name('sales.restore')->withTrashed();
     Route::delete('/sales/{sale}/force-delete', [\App\Http\Controllers\Sale\SaleController::class, 'forceDelete'])
@@ -208,6 +212,8 @@ Route::middleware([
 
     // Receipts
     Route::resource('/receipts', \App\Http\Controllers\Receipt\ReceiptController::class);
+    Route::post('/receipts/{receipt}/post', [\App\Http\Controllers\Receipt\ReceiptController::class, 'post'])->name('receipts.post');
+    Route::post('/receipts/{receipt}/reverse', [\App\Http\Controllers\Receipt\ReceiptController::class, 'reverse'])->name('receipts.reverse');
     Route::patch('/receipts/{receipt}/restore', [\App\Http\Controllers\Receipt\ReceiptController::class, 'restore'])->name('receipts.restore')->withTrashed();
     Route::delete('/receipts/{receipt}/force-delete', [\App\Http\Controllers\Receipt\ReceiptController::class, 'forceDelete'])
         ->name('receipts.force-delete')
@@ -216,6 +222,8 @@ Route::middleware([
 
     // Payments
     Route::resource('/payments', \App\Http\Controllers\Payment\PaymentController::class);
+    Route::post('/payments/{payment}/post', [\App\Http\Controllers\Payment\PaymentController::class, 'post'])->name('payments.post');
+    Route::post('/payments/{payment}/reverse', [\App\Http\Controllers\Payment\PaymentController::class, 'reverse'])->name('payments.reverse');
     Route::patch('/payments/{payment}/restore', [\App\Http\Controllers\Payment\PaymentController::class, 'restore'])->name('payments.restore')->withTrashed();
     Route::delete('/payments/{payment}/force-delete', [\App\Http\Controllers\Payment\PaymentController::class, 'forceDelete'])
         ->name('payments.force-delete')

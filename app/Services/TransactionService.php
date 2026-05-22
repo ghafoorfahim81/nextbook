@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\TransactionStatus;
 use App\Models\Transaction\Transaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -37,7 +38,7 @@ class TransactionService
                 'reference_type' => $header['reference_type'] ?? null,
                 'reference_id'   => $header['reference_id'] ?? null,
                 'remark'         => $header['remark'] ?? null,
-                'status'         => $header['status'] ?? 'posted',
+                'status'         => $header['status'] ?? 'draft',
                 'created_by'     => Auth::id(),
             ]);
 
@@ -152,7 +153,7 @@ class TransactionService
                 'reference_type' => 'reversal',
                 'reference_id'   => $original->id,
                 'remark'         => $reason ?? 'Reversal of ' . ($original->voucher_number ?? $original->id),
-                'status'         => 'posted',
+                'status'         => TransactionStatus::REVERSED->value,
                 'created_by'     => Auth::id(),
             ]);
 

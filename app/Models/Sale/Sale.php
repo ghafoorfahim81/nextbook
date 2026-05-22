@@ -34,6 +34,7 @@ class Sale extends Model
         'date',
         'discount',
         'discount_type',
+        'bank_account_id',
         'currency_id',
         'rate',
         'initial_receipt_amount',
@@ -60,6 +61,7 @@ class Sale extends Model
     {
         return [
             'customer_id' => 'string',
+            'bank_account_id' => 'string',
             'date' => 'date',
             'discount' => 'float',
             'currency_id' => 'string',

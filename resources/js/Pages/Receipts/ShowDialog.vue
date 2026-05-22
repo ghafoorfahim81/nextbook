@@ -1,7 +1,8 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import axios from 'axios'
 import { useI18n } from 'vue-i18n'
+import { useForm } from '@inertiajs/vue3'
 import {
     Dialog,
     DialogContent,
@@ -11,9 +12,12 @@ import {
     DialogTitle,
 } from '@/Components/ui/dialog'
 import { Button } from '@/Components/ui/button'
-import { FileText, Calendar, User, DollarSign, Receipt as ReceiptIcon } from 'lucide-vue-next'
+import { Badge } from '@/Components/ui/badge'
+import { FileText, Calendar, User, DollarSign, Receipt as ReceiptIcon, Send, RotateCcw } from 'lucide-vue-next'
+import { useAuth } from '@/composables/useAuth'
 
 const { t } = useI18n()
+const { can } = useAuth()
 
 const props = defineProps({
     open: Boolean,
@@ -27,6 +31,8 @@ const loading = ref(false)
 watch(() => props.open, async (isOpen) => {
     if (isOpen && props.receiptId) {
         loading.value = true
+        showReverseForm.value = false
+        reverseReason.value = ''
         try {
             const { data } = await axios.get(`/receipts/${props.receiptId}`)
             receipt.value = data?.data || null
@@ -39,6 +45,33 @@ watch(() => props.open, async (isOpen) => {
 function closeDialog() {
     emit('update:open', false)
     receipt.value = null
+    showReverseForm.value = false
+    reverseReason.value = ''
+}
+
+const statusBadgeClasses = computed(() => {
+    switch (receipt.value?.status) {
+        case 'posted':   return 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300';
+        case 'reversed': return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300';
+        case 'draft':    return 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300';
+        default:         return 'border-border bg-muted text-foreground';
+    }
+})
+
+const postForm = useForm({})
+const postReceipt = () => {
+    if (!confirm(t('general.confirm_post'))) return
+    postForm.post(route('receipts.post', receipt.value.id))
+}
+
+const showReverseForm = ref(false)
+const reverseReason = ref('')
+const reverseForm = useForm({ reason: '' })
+const reverseReceipt = () => {
+    reverseForm.reason = reverseReason.value
+    reverseForm.post(route('receipts.reverse', receipt.value.id), {
+        onSuccess: () => closeDialog(),
+    })
 }
 </script>
 
@@ -51,6 +84,7 @@ function closeDialog() {
                     <DialogTitle class="text-xl">
                         {{ t('receipt.receipt') }} <span v-if="receipt">#{{ receipt.number }}</span>
                     </DialogTitle>
+                    <Badge v-if="receipt" :class="statusBadgeClasses">{{ receipt.status }}</Badge>
                 </div>
                 <DialogDescription class="text-xs text-muted-foreground" v-if="receipt?.narration">
                     {{ receipt.narration }}
@@ -188,10 +222,50 @@ function closeDialog() {
                 </div>
             </div>
 
-            <DialogFooter>
-                <Button variant="outline" @click="closeDialog">
-                    {{ t('general.close') || 'Close' }}
-                </Button>
+            <DialogFooter class="flex-col gap-2 sm:flex-row">
+                <!-- Reverse reason form (shown inline when reversing) -->
+                <div v-if="showReverseForm" class="w-full space-y-2">
+                    <textarea
+                        v-model="reverseReason"
+                        rows="2"
+                        :placeholder="t('general.reverse_reason_placeholder')"
+                        class="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <div class="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" @click="showReverseForm = false; reverseReason = ''">
+                            {{ t('general.cancel') }}
+                        </Button>
+                        <Button variant="destructive" size="sm" :disabled="reverseForm.processing" @click="reverseReceipt">
+                            <RotateCcw class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                            {{ t('general.reverse') }}
+                        </Button>
+                    </div>
+                </div>
+                <template v-else>
+                    <Button
+                        v-if="receipt && can('receipts.update') && receipt.status === 'draft'"
+                        size="sm"
+                        class="gap-1.5 bg-green-600 text-white hover:bg-green-700"
+                        :disabled="postForm.processing"
+                        @click="postReceipt"
+                    >
+                        <Send class="h-4 w-4" />
+                        {{ t('general.post') }}
+                    </Button>
+                    <Button
+                        v-if="receipt && can('receipts.update') && receipt.status === 'posted'"
+                        variant="destructive"
+                        size="sm"
+                        class="gap-1.5"
+                        @click="showReverseForm = true"
+                    >
+                        <RotateCcw class="h-4 w-4" />
+                        {{ t('general.reverse') }}
+                    </Button>
+                    <Button variant="outline" @click="closeDialog">
+                        {{ t('general.close') }}
+                    </Button>
+                </template>
             </DialogFooter>
         </DialogContent>
     </Dialog>

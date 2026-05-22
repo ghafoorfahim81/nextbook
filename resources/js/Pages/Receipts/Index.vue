@@ -43,6 +43,7 @@ const columns = computed(() => ([
     { key: 'amount', label: t('general.amount'), sortable: true },
     { key: 'currency_code', label: t('admin.currency.currency') },
     { key: 'date', label: t('general.date'), sortable: true },
+    { key: 'status', label: t('general.status') },
     {
         key: 'created_by.name',
         label: t('general.created_by'),
