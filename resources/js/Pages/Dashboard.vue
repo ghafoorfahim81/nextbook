@@ -143,38 +143,40 @@ const generatedAt = computed(() => {
     <Head :title="t('dashboard.dashboard')" />
 
     <div class="space-y-5 text-foreground">
-      <section class="relative overflow-hidden rounded-[32px] border border-border bg-gradient-to-br from-primary to-primary/70 via-secondary/35 to-primary/10 shadow-sm dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 dark:text-white dark:shadow-lg">
-        <div class="absolute inset-y-0 start-0 hidden w-56 bg-[radial-gradient(circle_at_center,hsl(var(--primary)/0.18),transparent_72%)] lg:block dark:bg-[radial-gradient(circle_at_center,hsl(var(--primary)/0.22),transparent_70%)]" />
-        <div class="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-        <div class="flex flex-col gap-4 px-6 py-7 lg:flex-row lg:items-center lg:justify-between lg:px-10">
-          <div class="space-y-3 lg:max-w-3xl">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-primary dark:text-cyan-300">{{ t('dashboard.operational_overview') }}</p>
-            <h1 class="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl dark:text-white">{{ t('dashboard.branch_dashboard') }}</h1>
-            <p class="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base dark:text-slate-300">
-              {{ t('dashboard.hero_description') }}
-            </p>
-          </div>
-          <div class="max-w-xs rounded-2xl border border-white/60 bg-primary/10 dark:bg-gray-800 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/10 lg:shrink-0">
-            <div class="text-sm text-muted-foreground dark:text-slate-300">{{ t('dashboard.generated') }}</div>
-            <div class="mt-1 text-lg font-semibold text-foreground dark:text-white">{{ generatedAt }}</div>
-            <div class="mt-4 text-sm text-muted-foreground dark:text-slate-300">{{ t('dashboard.today') }}</div>
-            <div class="mt-1 text-lg font-semibold text-foreground dark:text-white">{{ state.meta?.today }}</div>
-            <div class="mt-5 flex items-center gap-3">
-              <Button
-                variant="secondary"
-                class="gap-2 border border-border bg-background/90 text-foreground hover:bg-background dark:border-0 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
-                :disabled="refreshing"
-                @click="refreshDashboard"
-              >
-                <RefreshCw class="h-4 w-4" :class="refreshing ? 'animate-spin' : ''" />
-                {{ t('dashboard.refresh_data') }}
-              </Button>
+      <section class="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-primary via-primary/80 to-primary/50 shadow-sm dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
+        <div class="absolute inset-y-0 start-0 w-40 bg-[radial-gradient(circle_at_center,hsl(var(--primary)/0.2),transparent_70%)]" />
+        <div class="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-3.5">
+          <div class="flex items-center gap-4">
+            <div>
+              <p class="text-[10px] font-semibold uppercase tracking-[0.28em] text-primary-foreground/60 dark:text-cyan-300/70">{{ t('dashboard.operational_overview') }}</p>
+              <h1 class="text-lg font-semibold tracking-tight text-primary-foreground dark:text-white">{{ t('dashboard.branch_dashboard') }}</h1>
             </div>
-            <p v-if="refreshError" class="mt-3 text-sm text-destructive dark:text-rose-300">
-              {{ refreshError }}
-            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-4">
+            <div class="flex items-center gap-5 rounded-xl border border-white/20 bg-white/10 px-4 py-2 backdrop-blur dark:border-white/10 dark:bg-white/5">
+              <div>
+                <p class="text-[10px] text-primary-foreground/60 dark:text-slate-400">{{ t('dashboard.today') }}</p>
+                <p class="text-sm font-semibold text-primary-foreground dark:text-white">{{ state.meta?.today }}</p>
+              </div>
+              <div class="h-6 w-px bg-white/20" />
+              <div>
+                <p class="text-[10px] text-primary-foreground/60 dark:text-slate-400">{{ t('dashboard.generated') }}</p>
+                <p class="text-sm font-semibold text-primary-foreground dark:text-white">{{ generatedAt }}</p>
+              </div>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              class="gap-1.5 border border-white/20 bg-white/10 text-primary-foreground backdrop-blur hover:bg-white/20 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+              :disabled="refreshing"
+              @click="refreshDashboard"
+            >
+              <RefreshCw class="h-3.5 w-3.5" :class="refreshing ? 'animate-spin' : ''" />
+              {{ t('dashboard.refresh_data') }}
+            </Button>
           </div>
         </div>
+        <p v-if="refreshError" class="px-6 pb-2 text-xs text-rose-200 dark:text-rose-300">{{ refreshError }}</p>
       </section>
 
       <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -188,14 +190,14 @@ const generatedAt = computed(() => {
       </section>
 
       <section class="grid gap-4 xl:grid-cols-[1.7fr_1fr]">
-        <Card class="overflow-hidden border-border bg-gradient-to-b from-card via-card to-muted/20 shadow-sm">
+        <Card class="flex flex-col overflow-hidden border-border bg-gradient-to-b from-card via-card to-muted/20 shadow-sm">
           <CardHeader class="relative border-b border-border/70">
             <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-primary via-primary/80 to-primary/45" />
             <CardTitle class="text-card-foreground">{{ t('dashboard.sales_vs_purchases') }}</CardTitle>
             <CardDescription class="text-muted-foreground">{{ t('dashboard.daily_posted_last_30_days') }}</CardDescription>
           </CardHeader>
-          <CardContent>
-            <TrendChart :series="state.sales_purchase_chart?.series || []" />
+          <CardContent class="flex flex-1 flex-col">
+            <TrendChart :series="state.sales_purchase_chart?.series || []" class="flex-1" />
           </CardContent>
         </Card>
 

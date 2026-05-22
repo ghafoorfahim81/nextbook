@@ -35,17 +35,17 @@ function quantityValue(row) {
       <div v-if="description" class="text-sm text-muted-foreground">{{ description }}</div>
     </div>
 
-    <div class="overflow-x-auto p-2">
+    <div class="max-h-72 overflow-auto p-2">
       <Table>
         <TableHeader>
           <TableRow class="border-border">
-            <TableHead class="text-muted-foreground">{{ rowType === 'stock' ? t('dashboard.table.item') : t('dashboard.table.reference') }}</TableHead>
-            <TableHead class="text-muted-foreground">{{ rowType === 'stock' ? t('dashboard.table.location') : t('dashboard.table.party') }}</TableHead>
-            <TableHead class="text-muted-foreground">{{ rowType === 'stock' ? t('dashboard.table.movement') : t('dashboard.table.status') }}</TableHead>
-            <TableHead class="text-muted-foreground">{{ t('dashboard.table.date') }}</TableHead>
-            <TableHead class="text-muted-foreground" v-if="rowType === 'stock'">{{ t('item.batch') }}</TableHead>
-            <TableHead class="text-muted-foreground" v-if="rowType === 'stock'">{{ t('item.expire_date') }}</TableHead>
-            <TableHead class="text-right text-muted-foreground">{{ rowType === 'stock' ? t('dashboard.table.quantity') : t('dashboard.table.amount') }}</TableHead>
+            <TableHead class="sticky top-0 bg-card text-muted-foreground">{{ rowType === 'stock' ? t('dashboard.table.item') : t('dashboard.table.reference') }}</TableHead>
+            <TableHead class="sticky top-0 bg-card text-muted-foreground">{{ rowType === 'stock' ? t('dashboard.table.location') : t('dashboard.table.party') }}</TableHead>
+            <TableHead class="sticky top-0 bg-card text-muted-foreground">{{ rowType === 'stock' ? t('dashboard.table.movement') : t('dashboard.table.status') }}</TableHead>
+            <TableHead class="sticky top-0 bg-card text-muted-foreground">{{ t('dashboard.table.date') }}</TableHead>
+            <TableHead class="sticky top-0 bg-card text-muted-foreground" v-if="rowType === 'stock'">{{ t('item.batch') }}</TableHead>
+            <TableHead class="sticky top-0 bg-card text-muted-foreground" v-if="rowType === 'stock'">{{ t('item.expire_date') }}</TableHead>
+            <TableHead class="sticky top-0 bg-card text-right text-muted-foreground">{{ rowType === 'stock' ? t('dashboard.table.quantity') : t('dashboard.table.amount') }}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
