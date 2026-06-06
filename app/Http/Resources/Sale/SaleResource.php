@@ -35,16 +35,7 @@ class SaleResource extends JsonResource
         $remainingAmount = abs((float) $ledgerEffect);
         $oldNetBalance = (float) data_get($customerStatement, 'net_balance', 0) - (float) $ledgerEffect;
         $items = $this->relationLoaded('items') ? $this->items : collect();
-        // `transactions` has no `amount` column — always compute from items when loaded.
-        $saleAmount = $items->sum(function ($item) {
-            $row_total = (float) $item->quantity * (float) $item->unit_price;
-            $item_discount = (float) ($item->discount ?? 0);
-            $sale_discount = $this->discount_type === 'percentage'
-                ? $row_total * ((float) $this->discount / 100)
-                : (float) ($this->discount ?? 0);
-
-            return $row_total - $item_discount - $sale_discount;
-        });
+        // `transactions` has no `amount` column — always compute from items when loaded. 
         $warehouse = $this->relationLoaded('items') ? $this->warehouse() : null;
 
         // Resolve stock movements: use pre-loaded collection if passed via ->additional(),
@@ -87,7 +78,7 @@ class SaleResource extends JsonResource
             'due_date' => $dateConversionService->toDisplay($this->due_date),
             'updated_at' => $dateConversionService->toDisplay($this->updated_at?->toDateString()),
             'transaction_id' => $this->transaction_id,
-            'amount' => $saleAmount,
+            'amount' => $this->saleTotal(),
             'discount' => $this->discount,
             'discount_type' => $this->discount_type,
             'type' => ($this->type instanceof SalePurchaseType)
@@ -109,7 +100,7 @@ class SaleResource extends JsonResource
             'payment_status_label' => $this->payment_status instanceof PaymentStatus
                 ? $this->payment_status->getLabel()
                 : (PaymentStatus::tryFrom((string) $this->payment_status)?->getLabel() ?? $this->payment_status),
-            'transaction_total' => $saleAmount,
+            'transaction_total' => $this->saleTotal(),
             'transaction' => new TransactionResource($this->whenLoaded('transaction', $this->transaction)),
             'warehouse' => $warehouse,
             'warehouse_id' => $warehouse?->id,

@@ -431,6 +431,14 @@ class PurchaseController extends Controller
                 ];
             }
 
+            // Re-recalculate avg_cost after all new movements are posted, because increaseBalance
+            // inside stockService->post() uses current stock quantities (mid-rebuild state) which
+            // gives a wrong weighted average when sales have already consumed some of the stock.
+            $newItemIds = collect($validated['item_list'])->pluck('item_id')->unique()->values();
+            foreach ($newItemIds as $newItemId) {
+                $this->recalculateAvgCostForItem($newItemId);
+            }
+
             if($discountTotal > 0) {
                 $lines[] = [
                     'account_id' => $glAccounts['discount-from-supplier'],

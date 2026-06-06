@@ -134,4 +134,29 @@ class Sale extends Model
     {
         return $this->items?->first()?->warehouse;
     }
+
+    public function branch()
+    {
+        return $this->belongsTo(\App\Models\Administration\Branch::class, 'branch_id');
+    }
+
+    public function saleTotal()
+    {
+        $saleAmount = $this->items->sum(function ($item) {
+            $row_total = (float) $item->quantity * (float) $item->unit_price;
+            $item_discount = (float) ($item->discount ?? 0);
+            $sale_discount = $this->discount_type === 'percentage'
+                ? $row_total * ((float) $this->discount / 100)
+                : (float) ($this->discount ?? 0);
+
+            return $row_total - $item_discount - $sale_discount;
+        });
+        return $saleAmount;
+    }
+
+
+    public function currency()
+    {
+        return $this->transaction?->currency;
+    }
 }
