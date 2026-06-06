@@ -206,7 +206,7 @@ class SaleController extends Controller
                     'debit'      => 0,
                     'credit'     => $lineGrossTotal,
                     'remark'     => 'Sale income for item:' . $itemModel->name . '  #' . $sale->number,
-                    'remark_fa' => ':عاید فروش '. ' '. $itemModel->name.' #'.$sale->number,
+                    'remark_fa' => 'عاید فروش '. ' '. $itemModel->name.' #'.$sale->number,
                     'remark_ps' => 'د'. ' '. $itemModel->name.' '.'خرڅلاو څخه عاید د#'.$sale->number,
                 ];
 
@@ -217,7 +217,7 @@ class SaleController extends Controller
                     'debit'      => $totalCost,
                     'credit'     => 0,
                     'remark'     => 'COGS for item: ' . $itemModel->name . ' #' . $sale->number,
-                    'remark_fa' => ':هزینه محصول فروخته شد بابت '. ' '. $itemModel->name.' #'.$sale->number,
+                    'remark_fa' => 'هزینه محصول فروخته شد بابت '. ' '. $itemModel->name.' #'.$sale->number,
                     'remark_ps' => 'د'. ' '. $itemModel->name.' '.'د پلورل شوي توکو لګښت#'.$sale->number,
                 ];
 
@@ -228,7 +228,7 @@ class SaleController extends Controller
                     'debit'      => 0,
                     'credit'     => $totalCost,
                     'remark'     => 'Inventory out for item: ' . $itemModel->name . ' #' . $sale->number,
-                    'remark_fa'  => ':فروش جنس'. ' '. $itemModel->name.' #'.$sale->number,
+                    'remark_fa'  => 'فروش جنس'. ' '. $itemModel->name.' #'.$sale->number,
                     'remark_ps'  => 'د'. ' '. $itemModel->name.' '.'د خرڅلاو #'.$sale->number,
                 ];
             }
@@ -717,6 +717,51 @@ class SaleController extends Controller
                 itemId: $combo['item_id'],
             );
         }
+
+        // Recalculate avg_cost per item after rebuilding. Deleting a sale (OUT) doesn't
+        // directly change avg_cost, but it changes the running qty at the time of every
+        // subsequent purchase (IN), so those purchases' weighted averages shift. Replaying
+        // all movements from scratch gives the correct value.
+        $uniqueItemIds = $uniqueCombos->pluck('item_id')->unique()->values();
+        foreach ($uniqueItemIds as $itemId) {
+            $this->recalculateAvgCostForItem($itemId);
+        }
+    }
+
+    private function recalculateAvgCostForItem(string $itemId): void
+    {
+        $item = Item::find($itemId);
+
+        if (!$item) {
+            return;
+        }
+
+        $movements = StockMovement::query()
+            ->where('item_id', $itemId)
+            ->orderBy('date')
+            ->orderBy('id')
+            ->get(['movement_type', 'quantity', 'unit_cost']);
+
+        $avgCost = 0.0;
+        $runningQty = 0.0;
+
+        foreach ($movements as $movement) {
+            $qty = (float) $movement->quantity;
+            if ($movement->movement_type === StockMovementType::IN) {
+                $cost = (float) $movement->unit_cost;
+                if ($runningQty + $qty > 0) {
+                    $avgCost = (($runningQty * $avgCost) + ($qty * $cost)) / ($runningQty + $qty);
+                }
+                $runningQty += $qty;
+            } else {
+                $runningQty = max(0.0, $runningQty - $qty);
+            }
+        }
+
+        if ($runningQty > 0) {
+            $item->avg_cost = $avgCost;
+            $item->save();
+        }
     }
 
     private function rebuildStockStateForItemWarehouse(string $branchId, string $warehouseId, string $itemId): void
@@ -933,12 +978,12 @@ class SaleController extends Controller
         DB::transaction(function () use ($sale, $activityLogService) {
               $oldValues = [
             'number' => $sale->number,
-            'customer_id' => $sale->customer_id,
+            'customer' => $sale->customer?->name,
             'date' => $sale->date?->toDateString(),
             'status' => $sale->status,
-            'branch_id' => $sale->branch_id,
-            'warehouse_id' => $sale->warehouse_id,
-            'currency_id' => $sale->transaction?->currency_id,
+            'branch' => $sale->branch?->name,
+            'warehouse' => $sale->warehouse()?->name,
+            'currency' => $sale->transaction?->currency?->name,
             'rate' => $sale->transaction?->rate,
             'item_count' => $sale->items()->count(),
             'transaction_total' => (float) ($sale->transaction_total ?? 0),
