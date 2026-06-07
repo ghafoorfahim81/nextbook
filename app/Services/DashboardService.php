@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\StockMovementType;
 use App\Enums\StockStatus;
 use App\Enums\TransactionStatus;
 use App\Models\Administration\Branch;
@@ -106,11 +107,37 @@ class DashboardService
         $stockBalances = $this->activeStockBalances($branchId);
         $stockTotalsSubquery = $this->stockTotalsSubquery($branchId);
 
-        $totalInventory = (array) $stockBalances
-            ->join('items as i', 'i.id', '=', 'stock_balances.item_id')
-            ->selectRaw('COALESCE(SUM(stock_balances.quantity), 0) as total_quantity')
-            ->selectRaw('COALESCE(SUM(stock_balances.quantity * COALESCE(i.avg_cost, 0)), 0) as total_value')
-            ->first();
+        $inValue  = StockMovementType::IN->value;
+        $voided   = StockStatus::VOIDED->value;
+        $cancelled = StockStatus::CANCELLED->value;
+
+        $totalQty = (clone $stockBalances)->sum('quantity');
+
+        // Only include (item, warehouse) pairs that currently have positive stock,
+        // then sum their movement net values — mirrors the GL and matches the inventory-stock report.
+        $positiveStockPairs = DB::table('stock_balances as sb')
+            ->where('sb.branch_id', $branchId)
+            ->whereNull('sb.deleted_at')
+            ->whereNotIn('sb.status', [$voided, $cancelled])
+            ->groupBy('sb.item_id', 'sb.warehouse_id')
+            ->havingRaw('SUM(sb.quantity) > 0')
+            ->selectRaw('sb.item_id, sb.warehouse_id');
+
+        $totalValue = DB::table('stock_movements as sm')
+            ->joinSub($positiveStockPairs, 'ps', function ($join) {
+                $join->on('sm.item_id', '=', 'ps.item_id')
+                    ->on('sm.warehouse_id', '=', 'ps.warehouse_id');
+            })
+            ->where('sm.branch_id', $branchId)
+            ->whereNull('sm.deleted_at')
+            ->whereNotIn('sm.status', [$voided, $cancelled])
+            ->selectRaw(
+                "COALESCE(SUM(CASE WHEN sm.movement_type = ? THEN sm.quantity * sm.unit_cost ELSE -(sm.quantity * sm.unit_cost) END), 0) as total_value",
+                [$inValue]
+            )
+            ->value('total_value');
+
+        $totalInventory = ['total_quantity' => $totalQty, 'total_value' => $totalValue];
 
         $lowStockItems = DB::table('items as i')
             ->leftJoinSub($stockTotalsSubquery, 'stock_totals', fn ($join) => $join->on('stock_totals.item_id', '=', 'i.id'))
