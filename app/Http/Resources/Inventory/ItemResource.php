@@ -9,7 +9,9 @@ use App\Enums\ItemType;
 use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\UserManagement\UserSimpleResource;
 use App\Enums\StockMovementType;
+use App\Enums\StockStatus;
 use App\Http\Resources\Inventory\StockMovementResource;
+use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Administration\BrandResource;
 use App\Http\Resources\Administration\SizeResource;
 class ItemResource extends JsonResource
@@ -94,7 +96,22 @@ class ItemResource extends JsonResource
             'on_hand' => number_format($this->onHand(), 2),
             'avg_cost' => $this->avg_cost,
             // 'avg_cost' => number_format($this->avg_cost, 2),
-            'stock_value' => number_format($this->onHand() * $this->avg_cost, 2),
+            'stock_value' => (function () {
+                $inValue   = StockMovementType::IN->value;
+                $voided    = StockStatus::VOIDED->value;
+                $cancelled = StockStatus::CANCELLED->value;
+                $value = DB::table('stock_movements as sm')
+                    ->where('sm.item_id', $this->id)
+                    ->where('sm.branch_id', $this->branch_id)
+                    ->whereNull('sm.deleted_at')
+                    ->whereNotIn('sm.status', [$voided, $cancelled])
+                    ->selectRaw(
+                        "COALESCE(SUM(CASE WHEN sm.movement_type = ? THEN sm.quantity * sm.unit_cost ELSE -(sm.quantity * sm.unit_cost) END), 0) as total_value",
+                        [$inValue]
+                    )
+                    ->value('total_value');
+                return number_format(max(0, (float) $value), 2);
+            })(),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
             'openings' => StockMovementResource::collection($this->whenLoaded('openings')),
