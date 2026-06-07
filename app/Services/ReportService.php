@@ -641,14 +641,33 @@ class ReportService
             ->selectRaw('COALESCE(mv.net_value / NULLIF(bq.total_qty, 0), 0) as average_cost')
             ->selectRaw('COALESCE(mv.net_value, 0) as total_value');
 
-        $totalQty = DB::table('stock_balances as sb')
+        // Only aggregate over (item, warehouse) pairs that actually have positive stock.
+        // This keeps the totals consistent with what is shown in the detail rows.
+        $positiveStockPairs = DB::table('stock_balances as sb')
             ->where('sb.branch_id', $branchId)
             ->whereNull('sb.deleted_at')
             ->whereNotIn('sb.status', [$voided, $cancelled])
             ->when($itemId, fn ($q, $id) => $q->where('sb.item_id', $id))
-            ->sum('sb.quantity');
+            ->groupBy('sb.item_id', 'sb.warehouse_id')
+            ->havingRaw('SUM(sb.quantity) > 0')
+            ->selectRaw('sb.item_id, sb.warehouse_id');
+
+        $totalQty = DB::query()
+            ->fromSub($positiveStockPairs, 'ps')
+            ->join('stock_balances as sb2', function ($join) use ($branchId, $voided, $cancelled) {
+                $join->on('sb2.item_id', '=', 'ps.item_id')
+                    ->on('sb2.warehouse_id', '=', 'ps.warehouse_id')
+                    ->where('sb2.branch_id', $branchId)
+                    ->whereNull('sb2.deleted_at')
+                    ->whereNotIn('sb2.status', [$voided, $cancelled]);
+            })
+            ->sum('sb2.quantity');
 
         $totalValue = DB::table('stock_movements as sm')
+            ->joinSub($positiveStockPairs, 'ps', function ($join) {
+                $join->on('sm.item_id', '=', 'ps.item_id')
+                    ->on('sm.warehouse_id', '=', 'ps.warehouse_id');
+            })
             ->where('sm.branch_id', $branchId)
             ->whereNull('sm.deleted_at')
             ->whereNotIn('sm.status', [$voided, $cancelled])
