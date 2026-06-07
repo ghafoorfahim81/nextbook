@@ -585,33 +585,79 @@ class ReportService
 
     public function getInventoryStock(array $filters): array
     {
-        $query = $this->activeStockBalanceQuery($filters)
-            ->join('items as i', function ($join) use ($filters) {
-                $join->on('i.id', '=', 'sb.item_id')
-                    ->where('i.branch_id', '=', $filters['branch_id'])
+        $branchId  = $filters['branch_id'];
+        $itemId    = $filters['item_id'] ?? null;
+        $inValue   = StockMovementType::IN->value;
+        $voided    = StockStatus::VOIDED->value;
+        $cancelled = StockStatus::CANCELLED->value;
+
+        // Quantity per (item, warehouse) from stock_balances — already normalized to item units.
+        $balanceQty = DB::table('stock_balances as sb')
+            ->where('sb.branch_id', $branchId)
+            ->whereNull('sb.deleted_at')
+            ->whereNotIn('sb.status', [$voided, $cancelled])
+            ->when($itemId, fn ($q, $id) => $q->where('sb.item_id', $id))
+            ->groupBy('sb.item_id', 'sb.warehouse_id')
+            ->selectRaw('sb.item_id, sb.warehouse_id, SUM(sb.quantity) as total_qty');
+
+        // Net monetary value per (item, warehouse) from stock_movements.
+        // Each movement's (quantity × unit_cost) mirrors the amount posted to the GL,
+        // so this always matches the inventory-stock account balance in the balance sheet —
+        // even after retroactive purchase updates that don't re-cost existing sales.
+        $movementValues = DB::table('stock_movements as sm')
+            ->where('sm.branch_id', $branchId)
+            ->whereNull('sm.deleted_at')
+            ->whereNotIn('sm.status', [$voided, $cancelled])
+            ->when($itemId, fn ($q, $id) => $q->where('sm.item_id', $id))
+            ->groupBy('sm.item_id', 'sm.warehouse_id')
+            ->selectRaw('sm.item_id, sm.warehouse_id')
+            ->selectRaw(
+                "COALESCE(SUM(CASE WHEN sm.movement_type = ? THEN sm.quantity * sm.unit_cost ELSE -(sm.quantity * sm.unit_cost) END), 0) as net_value",
+                [$inValue]
+            );
+
+        $query = DB::query()
+            ->fromSub($balanceQty, 'bq')
+            ->join('items as i', function ($join) use ($branchId) {
+                $join->on('i.id', '=', 'bq.item_id')
+                    ->where('i.branch_id', '=', $branchId)
                     ->whereNull('i.deleted_at');
             })
-            ->join('warehouses as w', function ($join) use ($filters) {
-                $join->on('w.id', '=', 'sb.warehouse_id')
-                    ->where('w.branch_id', '=', $filters['branch_id'])
+            ->join('warehouses as w', function ($join) use ($branchId) {
+                $join->on('w.id', '=', 'bq.warehouse_id')
+                    ->where('w.branch_id', '=', $branchId)
                     ->whereNull('w.deleted_at');
             })
-            ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('sb.item_id', $itemId));
-
-        $summaryRow = (clone $query)
-            ->selectRaw('COALESCE(SUM(sb.quantity), 0) as total_quantity')
-            ->selectRaw('COALESCE(SUM(sb.quantity * COALESCE(i.avg_cost, 0)), 0) as total_value')
-            ->first();
-
-        $query
-            ->groupBy('i.id', 'i.name', 'w.id', 'w.name')
+            ->leftJoinSub($movementValues, 'mv', function ($join) {
+                $join->on('mv.item_id', '=', 'bq.item_id')
+                    ->on('mv.warehouse_id', '=', 'bq.warehouse_id');
+            })
+            ->where('bq.total_qty', '>', 0)
             ->orderBy('i.name')
             ->orderBy('w.name')
             ->selectRaw('i.name as item')
             ->selectRaw('w.name as warehouse')
-            ->selectRaw('COALESCE(SUM(sb.quantity), 0) as quantity')
-            ->selectRaw('COALESCE(SUM(sb.quantity * COALESCE(i.avg_cost, 0)) / NULLIF(SUM(sb.quantity), 0), 0) as average_cost')
-            ->selectRaw('COALESCE(SUM(sb.quantity * COALESCE(i.avg_cost, 0)), 0) as total_value');
+            ->selectRaw('bq.total_qty as quantity')
+            ->selectRaw('COALESCE(mv.net_value / NULLIF(bq.total_qty, 0), 0) as average_cost')
+            ->selectRaw('COALESCE(mv.net_value, 0) as total_value');
+
+        $totalQty = DB::table('stock_balances as sb')
+            ->where('sb.branch_id', $branchId)
+            ->whereNull('sb.deleted_at')
+            ->whereNotIn('sb.status', [$voided, $cancelled])
+            ->when($itemId, fn ($q, $id) => $q->where('sb.item_id', $id))
+            ->sum('sb.quantity');
+
+        $totalValue = DB::table('stock_movements as sm')
+            ->where('sm.branch_id', $branchId)
+            ->whereNull('sm.deleted_at')
+            ->whereNotIn('sm.status', [$voided, $cancelled])
+            ->when($itemId, fn ($q, $id) => $q->where('sm.item_id', $id))
+            ->selectRaw(
+                "COALESCE(SUM(CASE WHEN sm.movement_type = ? THEN sm.quantity * sm.unit_cost ELSE -(sm.quantity * sm.unit_cost) END), 0) as total_value",
+                [$inValue]
+            )
+            ->value('total_value');
 
         return $this->paginateReport(
             $query,
@@ -624,8 +670,8 @@ class ReportService
                 'total_value' => $this->moneyValue($row->total_value),
             ],
             [
-                'total_quantity' => $this->quantityValue($summaryRow?->total_quantity),
-                'total_value' => $this->moneyValue($summaryRow?->total_value),
+                'total_quantity' => $this->quantityValue($totalQty),
+                'total_value' => $this->moneyValue($totalValue),
             ],
         );
     }
