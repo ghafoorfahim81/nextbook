@@ -748,10 +748,10 @@ class SaleController extends Controller
         // directly change avg_cost, but it changes the running qty at the time of every
         // subsequent purchase (IN), so those purchases' weighted averages shift. Replaying
         // all movements from scratch gives the correct value.
-        // $uniqueItemIds = $uniqueCombos->pluck('item_id')->unique()->values();
-        // foreach ($uniqueItemIds as $itemId) {
-        //     $this->recalculateAvgCostForItem($itemId);
-        // }
+        $uniqueItemIds = $uniqueCombos->pluck('item_id')->unique()->values();
+        foreach ($uniqueItemIds as $itemId) {
+            $this->recalculateAvgCostForItem($itemId);
+        }
     }
 
     private function recalculateAvgCostForItem(string $itemId): void
