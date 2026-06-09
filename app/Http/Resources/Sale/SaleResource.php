@@ -8,8 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Enums\SalePurchaseType;
 use App\Enums\PaymentStatus;
-use App\Enums\StockMovementType;
-use App\Models\Inventory\StockMovement;
 
 class SaleResource extends JsonResource
 {
@@ -38,22 +36,15 @@ class SaleResource extends JsonResource
         // `transactions` has no `amount` column — always compute from items when loaded. 
         $warehouse = $this->relationLoaded('items') ? $this->warehouse() : null;
 
-        // Resolve stock movements: use pre-loaded collection if passed via ->additional(),
-        // otherwise fetch once from DB (e.g. for the show/print endpoints).
-        $stockMovements = $this->additional['stockMovements'] ?? null;
-        if ($stockMovements === null && !$isListing && $this->relationLoaded('items')) {
-            $stockMovements = StockMovement::where('reference_id', $this->id)
-                ->where('reference_type', \App\Models\Sale\Sale::class)
-                ->where('movement_type', StockMovementType::OUT)
-                ->get(['item_id', 'unit_cost', 'quantity'])
-                ->keyBy('item_id');
-        }
-
-        // Compute total cost and profit from the already-resolved movements (no extra query).
+        // Compute total cost and profit directly from net_unit_cost stored on each sale item.
+        // net_unit_cost captures the avg_cost in the sale's selected unit at the moment of posting,
+        // so this always matches the per-line profit shown in SaleItemResource.
         $totalCostValue = null;
         $totalProfitValue = null;
-        if (!$isListing && $stockMovements !== null) {
-            $totalCostValue = $stockMovements->sum(fn ($m) => (float) $m->unit_cost * (float) $m->quantity);
+        if (!$isListing && $items->isNotEmpty()) {
+            $totalCostValue = $items->sum(
+                fn ($item) => (float) ($item->net_unit_cost ?? 0) * (float) $item->quantity
+            );
 
             $totalRevenue = $items->sum(function ($item) {
                 return (float) $item->quantity * (float) $item->unit_price
@@ -108,8 +99,7 @@ class SaleResource extends JsonResource
             'rate' => $this->transaction?->rate,
             'items' => $this->whenLoaded('items', fn () =>
                 SaleItemResource::collection($this->items)->additional([
-                    'stockMovements' => $stockMovements ?? collect(),
-                    'saleNumber'     => $this->number,
+                    'saleNumber' => $this->number,
                 ])
             ),
             'item_list' => $this->whenLoaded('items', $this->items->map(function ($item) use ($dateConversionService) {

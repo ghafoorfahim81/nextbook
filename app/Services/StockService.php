@@ -28,12 +28,12 @@ class StockService
     {
         return DB::transaction(function () use ($data) {
             $item = Item::lockForUpdate()->findOrFail($data['item_id']);
-            [$movementData, $balanceData, $conversionFactor] = $this->prepareStockPayloads($item, $data);
+            [$movementData, $balanceData, $conversionFactor, $unitCostOverride] = $this->prepareStockPayloads($item, $data);
 
             if ($data['movement_type'] === StockMovementType::IN->value) {
                 return $this->handleIn($item, $movementData, $balanceData);
             } else {
-                return $this->handleOut($item, $movementData, $balanceData, $conversionFactor);
+                return $this->handleOut($item, $movementData, $balanceData, $conversionFactor, $unitCostOverride);
             }
         });
     }
@@ -59,7 +59,7 @@ class StockService
     /**
      * Handle Stock OUT
      */
-    protected function handleOut(Item $item, array $movementData, array $balanceData, float $conversionFactor): array
+    protected function handleOut(Item $item, array $movementData, array $balanceData, float $conversionFactor, ?float $unitCostOverride = null): array
     {
         $this->validateStockAvailability($balanceData);
         $method = $this->getCostingMethod($movementData['branch_id']);
@@ -70,7 +70,7 @@ class StockService
 
             return $allocations;
         } else {
-            $movement = $this->deductWeightedAverage($item, $movementData, $balanceData, $conversionFactor);
+            $movement = $this->deductWeightedAverage($item, $movementData, $balanceData, $conversionFactor, $unitCostOverride);
         }
 
         $this->decreaseBalance($balanceData);
@@ -151,7 +151,7 @@ class StockService
     /**
      * Weighted Average Deduction
      */
-    protected function deductWeightedAverage(Item $item, array $movementData, array $balanceData, float $conversionFactor): StockMovement
+    protected function deductWeightedAverage(Item $item, array $movementData, array $balanceData, float $conversionFactor, ?float $unitCostOverride = null): StockMovement
     {
         $balance = StockBalance::query()
             ->where('branch_id', $balanceData['branch_id'])
@@ -164,7 +164,7 @@ class StockService
             ...$movementData,
             'date' => $this->normalizeDate($movementData['date']),
             'expire_date' => $movementData['expire_date'] ? $this->normalizeDate($movementData['expire_date']) : null,
-            'unit_cost' => $this->convertToSelectedUnitCost((float) $item->avg_cost, $conversionFactor),
+            'unit_cost' => $unitCostOverride ?? $this->convertToSelectedUnitCost((float) $item->avg_cost, $conversionFactor),
             'qty_remaining' => null,
         ]);
     }
@@ -390,8 +390,12 @@ class StockService
 
     protected function prepareStockPayloads(Item $item, array $data): array
     {
-        $movementData = $data;
-        $balanceData = $data;
+        $unitCostOverride = isset($data['unit_cost_override']) ? (float) $data['unit_cost_override'] : null;
+
+        // Strip caller-only keys so they never reach StockMovement::create.
+        $movementData = array_diff_key($data, ['unit_cost_override' => null]);
+        $balanceData  = $movementData;
+
         $conversionFactor = $this->resolveConversionFactor($item->unit_measure_id, $data['unit_measure_id']);
 
         if ($conversionFactor !== 1.0) {
@@ -399,7 +403,7 @@ class StockService
             $balanceData['quantity'] = (float) $data['quantity'] * $conversionFactor;
         }
 
-        return [$movementData, $balanceData, $conversionFactor];
+        return [$movementData, $balanceData, $conversionFactor, $unitCostOverride];
     }
 
     protected function resolveConversionFactor(string $itemUnitMeasureId, string $selectedUnitMeasureId): float
