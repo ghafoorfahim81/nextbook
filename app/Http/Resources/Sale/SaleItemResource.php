@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources\Sale;
 
-use App\Enums\StockMovementType;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -19,21 +18,8 @@ class SaleItemResource extends JsonResource
     {
         $dateConversionService = app(\App\Services\DateConversionService::class);
 
-        // Use the pre-loaded movements map passed from SaleResource (keyed by item_id).
-        // Fall back to a single DB query only when used standalone (e.g. direct API calls).
-        $stockMovements = $this->additional['stockMovements'] ?? null;
-        if ($stockMovements !== null) {
-            $movement = $stockMovements->get($this->item_id);
-            $unitCost = $movement ? (float) $movement->unit_cost : 0.0;
-        } else {
-            $movement = \App\Models\Inventory\StockMovement::where('reference_id', $this->sale_id)
-                ->where('reference_type', \App\Models\Sale\Sale::class)
-                ->where('item_id', $this->item_id)
-                ->where('movement_type', StockMovementType::OUT)
-                ->value('unit_cost');
-            $unitCost = $movement ? (float) $movement : 0.0;
-        }
-        // dd($unitCost);
+        // net_unit_cost stores the avg_cost (in the sale's selected unit) captured at sale time.
+        $unitCost = (float) ($this->net_unit_cost ?? 0.0);
         // Use the sale number passed from SaleResource to avoid lazy-loading $this->sale.
         $saleNumber = $this->additional['saleNumber'] ?? $this->sale_id;
 

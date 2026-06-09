@@ -149,8 +149,20 @@ class SaleController extends Controller
 
             $sale = Sale::create($validated);
             $totalDiscount = $request->input('discount_total', 0);
-            $validated['item_list'] = array_map(function ($item) use ($validated) {
+            // Build cost lookup before createMany so net_unit_cost captures the avg_cost
+            // at the moment of this sale (before any stock deductions change state).
+            [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
+
+            $validated['item_list'] = array_map(function ($item) use ($validated, $itemModelsById, $averageCostsByItemId, $unitValuesById) {
                 $item['warehouse_id'] = $validated['warehouse_id'];
+                $itemModel = $itemModelsById[$item['item_id']] ?? null;
+                $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0);
+                $item['net_unit_cost'] = $itemModel ? $this->resolveUnitCost(
+                    avgCost: $avgCost,
+                    selectedUnitMeasureId: $item['unit_measure_id'],
+                    itemUnitMeasureId: $itemModel->unit_measure_id,
+                    unitValuesById: $unitValuesById,
+                ) : 0.0;
                 return $item;
             }, $validated['item_list']);
 
@@ -158,8 +170,6 @@ class SaleController extends Controller
 
             $lines = [];
             $glAccounts = Cache::get('gl_accounts');
-            [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
-            // dd($itemModelsById, $averageCostsByItemId, $unitValuesById);
             foreach ($validated['item_list'] as $item) {
                 $quantity = (float) $item['quantity'];
                 $unitPrice = (float) $item['unit_price'];
@@ -172,31 +182,25 @@ class SaleController extends Controller
                     throw (new \Illuminate\Database\Eloquent\ModelNotFoundException())->setModel(Item::class, [$item['item_id']]);
                 }
 
-                $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0);
-                $unitCost = $this->resolveUnitCost(
-                    avgCost: $avgCost,
-                    selectedUnitMeasureId: $item['unit_measure_id'],
-                    itemUnitMeasureId: $itemModel->unit_measure_id,
-                    unitValuesById: $unitValuesById,
-                );
-                // dd($avgCost);
+                $unitCost = (float) $item['net_unit_cost'];
                 $totalCost = $unitCost * $quantity;
                 $stockService->post([
-                    'item_id'         => $item['item_id'],
-                    'movement_type'   => StockMovementType::OUT->value,
-                    'unit_measure_id' => $item['unit_measure_id'],
-                    'quantity'        => $quantity,
-                    'source'          => StockSourceType::SALE->value,
-                    'unit_cost'       => $unitCost,
-                    'status'          => StockStatus::POSTED->value,
-                    'batch'           => $item['batch'] ?? null,
-                    'date'            => $validated['date'],
-                    'expire_date'     => $item['expire_date'] ?? null,
-                    'size_id'         => $validated['size_id'] ?? null,
-                    'warehouse_id'    => $validated['warehouse_id'],
-                    'branch_id'       => $sale->branch_id,
-                    'reference_type'  => Sale::class,
-                    'reference_id'    => $sale->id,
+                    'item_id'              => $item['item_id'],
+                    'movement_type'        => StockMovementType::OUT->value,
+                    'unit_measure_id'      => $item['unit_measure_id'],
+                    'quantity'             => $quantity,
+                    'source'               => StockSourceType::SALE->value,
+                    'unit_cost'            => $unitCost,
+                    'unit_cost_override'   => $unitCost,
+                    'status'               => StockStatus::POSTED->value,
+                    'batch'                => $item['batch'] ?? null,
+                    'date'                 => $validated['date'],
+                    'expire_date'          => $item['expire_date'] ?? null,
+                    'size_id'              => $validated['size_id'] ?? null,
+                    'warehouse_id'         => $validated['warehouse_id'],
+                    'branch_id'            => $sale->branch_id,
+                    'reference_type'       => Sale::class,
+                    'reference_id'         => $sale->id,
                 ]);
 
                 // Revenue at gross amount
@@ -374,13 +378,7 @@ class SaleController extends Controller
     {
         $sale->load(['items.item', 'items.unitMeasure', 'customer', 'transaction.currency', 'createdBy', 'updatedBy']);
 
-        $stockMovements = StockMovement::where('reference_id', $sale->id)
-            ->where('reference_type', Sale::class)
-            ->where('movement_type', StockMovementType::OUT)
-            ->get(['item_id', 'unit_cost', 'quantity'])
-            ->keyBy('item_id');
-
-        $resource = (new SaleResource($sale))->additional(['stockMovements' => $stockMovements]);
+        $resource = new SaleResource($sale);
 
         if ($request->expectsJson()) {
             return response()->json(['data' => $resource]);
@@ -410,16 +408,8 @@ class SaleController extends Controller
             'transaction.lines:id,transaction_id,account_id,ledger_id,debit,credit',
         ]);
 
-        // Pre-load all stock movements for this sale in one query and attach to the resource
-        // so SaleItemResource doesn't fire N individual queries.
-        $stockMovements = StockMovement::where('reference_id', $sale->id)
-            ->where('reference_type', Sale::class)
-            ->where('movement_type', StockMovementType::OUT)
-            ->get(['item_id', 'unit_cost', 'quantity'])
-            ->keyBy('item_id');
-
         return inertia('Sale/Sales/Edit', [
-            'sale' => (new SaleResource($sale))->additional(['stockMovements' => $stockMovements]),
+            'sale' => new SaleResource($sale),
             'bankAccounts' => $bankAccounts,
         ]);
     }
@@ -475,6 +465,17 @@ class SaleController extends Controller
 
             $sale->update($validated);
 
+            // Snapshot original net_unit_cost per (item, unit) BEFORE deleting.
+            // A sale edit should never retroactively re-cost goods that were already
+            // sold at a known price (e.g. a later purchase raised avg_cost).
+            $originalNetUnitCosts = $sale->items()
+                ->whereNotNull('net_unit_cost')
+                ->get(['item_id', 'unit_measure_id', 'net_unit_cost'])
+                ->mapWithKeys(fn ($i) => [
+                    $i->item_id . '_' . $i->unit_measure_id => (float) $i->net_unit_cost
+                ])
+                ->all();
+
             $sale->items()->forceDelete();
 
             StockMovement::query()
@@ -483,6 +484,23 @@ class SaleController extends Controller
                 ->forceDelete();
 
             $this->rebuildStockStateForCombos($affectedCombos);
+
+            // Build cost lookup after rebuild so avg_cost reflects post-rebuild state.
+            [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
+
+            $validated['item_list'] = array_map(function ($item) use ($itemModelsById, $averageCostsByItemId, $unitValuesById, $originalNetUnitCosts) {
+                $itemModel = $itemModelsById[$item['item_id']] ?? null;
+                $key = $item['item_id'] . '_' . $item['unit_measure_id'];
+                // Preserve original cost for unchanged (item, unit) combinations.
+                // Only calculate fresh for newly added items or unit-measure changes.
+                $item['net_unit_cost'] = $originalNetUnitCosts[$key] ?? ($itemModel ? $this->resolveUnitCost(
+                    avgCost: (float) ($averageCostsByItemId[$item['item_id']] ?? 0),
+                    selectedUnitMeasureId: $item['unit_measure_id'],
+                    itemUnitMeasureId: $itemModel->unit_measure_id,
+                    unitValuesById: $unitValuesById,
+                ) : 0.0);
+                return $item;
+            }, $validated['item_list']);
 
             $sale->items()->createMany($validated['item_list']);
 
@@ -499,7 +517,6 @@ class SaleController extends Controller
             $lines = [];
             $totalDiscount = (float) $request->input('discount_total', 0);
             $glAccounts = Cache::get('gl_accounts');
-            [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
 
             foreach ($validated['item_list'] as $item) {
                 $quantity = (float) $item['quantity'];
@@ -510,30 +527,25 @@ class SaleController extends Controller
                 if (!$itemModel) {
                     throw (new \Illuminate\Database\Eloquent\ModelNotFoundException())->setModel(Item::class, [$item['item_id']]);
                 }
-                $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0);
-                $unitCost = $this->resolveUnitCost(
-                    avgCost: $avgCost,
-                    selectedUnitMeasureId: $item['unit_measure_id'],
-                    itemUnitMeasureId: $itemModel->unit_measure_id,
-                    unitValuesById: $unitValuesById,
-                );
+                $unitCost = (float) $item['net_unit_cost'];
                 $totalCost = $unitCost * $quantity;
                 $stockService->post([
-                    'item_id'         => $item['item_id'],
-                    'movement_type'   => StockMovementType::OUT->value,
-                    'unit_measure_id' => $item['unit_measure_id'],
-                    'quantity'        => $quantity,
-                    'source'          => StockSourceType::SALE->value,
-                    'unit_cost'       => $unitCost,
-                    'status'          => StockStatus::POSTED->value,
-                    'batch'           => $item['batch'] ?? null,
-                    'date'            => $date,
-                    'expire_date'     => $item['expire_date'] ?? null,
-                    'size_id'         => $validated['size_id'] ?? null,
-                    'warehouse_id'    => $validated['warehouse_id'],
-                    'branch_id'       => $sale->branch_id,
-                    'reference_type'  => Sale::class,
-                    'reference_id'    => $sale->id,
+                    'item_id'              => $item['item_id'],
+                    'movement_type'        => StockMovementType::OUT->value,
+                    'unit_measure_id'      => $item['unit_measure_id'],
+                    'quantity'             => $quantity,
+                    'source'               => StockSourceType::SALE->value,
+                    'unit_cost'            => $unitCost,
+                    'unit_cost_override'   => $unitCost,
+                    'status'               => StockStatus::POSTED->value,
+                    'batch'                => $item['batch'] ?? null,
+                    'date'                 => $date,
+                    'expire_date'          => $item['expire_date'] ?? null,
+                    'size_id'              => $validated['size_id'] ?? null,
+                    'warehouse_id'         => $validated['warehouse_id'],
+                    'branch_id'            => $sale->branch_id,
+                    'reference_type'       => Sale::class,
+                    'reference_id'         => $sale->id,
                 ]);
 
                 $lines[] = [
