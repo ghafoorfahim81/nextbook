@@ -638,7 +638,7 @@ class ReportService
             ->selectRaw('i.name as item')
             ->selectRaw('w.name as warehouse')
             ->selectRaw('bq.total_qty as quantity')
-            ->selectRaw('i.avg_cost as average_cost')
+            ->selectRaw('COALESCE(mv.net_value / NULLIF(bq.total_qty, 0), 0) as average_cost')
             ->selectRaw('COALESCE(mv.net_value, 0) as total_value');
 
         // Only aggregate over (item, warehouse) pairs that actually have positive stock.
