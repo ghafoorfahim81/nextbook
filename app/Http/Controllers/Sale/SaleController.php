@@ -465,14 +465,25 @@ class SaleController extends Controller
 
             $sale->update($validated);
 
-            // Snapshot original net_unit_cost per (item, unit) BEFORE deleting.
-            // A sale edit should never retroactively re-cost goods that were already
-            // sold at a known price (e.g. a later purchase raised avg_cost).
+            // Snapshot the unit cost for each (item, unit) line BEFORE deleting anything.
+            // Priority: net_unit_cost on the sale item (most reliable, set at sale time).
+            // Fallback: unit_cost from the stock movement (covers historical data where
+            // net_unit_cost was NULL). This ensures a sale update NEVER re-costs at the
+            // current avg_cost — the original COGS is always preserved.
             $originalNetUnitCosts = $sale->items()
                 ->whereNotNull('net_unit_cost')
                 ->get(['item_id', 'unit_measure_id', 'net_unit_cost'])
                 ->mapWithKeys(fn ($i) => [
                     $i->item_id . '_' . $i->unit_measure_id => (float) $i->net_unit_cost
+                ])
+                ->all();
+
+            $originalMovementCosts = StockMovement::query()
+                ->where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->get(['item_id', 'unit_measure_id', 'unit_cost'])
+                ->mapWithKeys(fn ($m) => [
+                    $m->item_id . '_' . $m->unit_measure_id => (float) $m->unit_cost
                 ])
                 ->all();
 
@@ -488,17 +499,20 @@ class SaleController extends Controller
             // Build cost lookup after rebuild so avg_cost reflects post-rebuild state.
             [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
 
-            $validated['item_list'] = array_map(function ($item) use ($itemModelsById, $averageCostsByItemId, $unitValuesById, $originalNetUnitCosts) {
+            $validated['item_list'] = array_map(function ($item) use ($itemModelsById, $averageCostsByItemId, $unitValuesById, $originalNetUnitCosts, $originalMovementCosts) {
                 $itemModel = $itemModelsById[$item['item_id']] ?? null;
                 $key = $item['item_id'] . '_' . $item['unit_measure_id'];
-                // Preserve original cost for unchanged (item, unit) combinations.
-                // Only calculate fresh for newly added items or unit-measure changes.
-                $item['net_unit_cost'] = $originalNetUnitCosts[$key] ?? ($itemModel ? $this->resolveUnitCost(
-                    avgCost: (float) ($averageCostsByItemId[$item['item_id']] ?? 0),
-                    selectedUnitMeasureId: $item['unit_measure_id'],
-                    itemUnitMeasureId: $itemModel->unit_measure_id,
-                    unitValuesById: $unitValuesById,
-                ) : 0.0);
+                // 1. net_unit_cost on the sale item — most authoritative (set at sale creation).
+                // 2. unit_cost from the stock movement — covers historical rows with NULL net_unit_cost.
+                // 3. Current avg_cost — only for items newly added in this edit.
+                $item['net_unit_cost'] = $originalNetUnitCosts[$key]
+                    ?? $originalMovementCosts[$key]
+                    ?? ($itemModel ? $this->resolveUnitCost(
+                        avgCost: (float) ($averageCostsByItemId[$item['item_id']] ?? 0),
+                        selectedUnitMeasureId: $item['unit_measure_id'],
+                        itemUnitMeasureId: $itemModel->unit_measure_id,
+                        unitValuesById: $unitValuesById,
+                    ) : 0.0);
                 return $item;
             }, $validated['item_list']);
 
