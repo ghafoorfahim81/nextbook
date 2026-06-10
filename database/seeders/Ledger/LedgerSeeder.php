@@ -24,7 +24,7 @@ class LedgerSeeder extends Seeder
                 'type' => 'customer',
                 'is_active' => true,
                 'branch_id' => Branch::withoutGlobalScopes()->where('is_main', true)->first()->id,
-                'created_by' => User::withoutGlobalScopes()->where('email', 'admin@nextbook.com')->first()->id,
+                'created_by' => User::withoutGlobalScopes()->where('email', 'admin@nextbook.af')->first()->id,
             ],
         ];
         Ledger::insert($ledgers);

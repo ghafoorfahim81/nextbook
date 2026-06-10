@@ -10,7 +10,7 @@ trait HasUserAuditable
     public static function bootHasUserAuditable()
     {
         $resolveUser = static fn () => Auth::user()
-            ?? User::withoutGlobalScopes()->where('email', 'admin@nextbook.com')->first();
+            ?? User::withoutGlobalScopes()->where('email', 'admin@nextbook.af')->first();
 
         static::creating(function ($model) use ($resolveUser) {
             $user = $resolveUser();

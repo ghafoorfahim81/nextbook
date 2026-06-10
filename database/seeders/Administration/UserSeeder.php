@@ -21,7 +21,7 @@ class UserSeeder extends Seeder
             $userData = [
                 'id' => (string) new Ulid(),
                 'name' => 'admin',
-                'email' => 'admin@nextbook.com',
+                'email' => 'admin@nextbook.af',
                 'password' => bcrypt('password'),
                 'preferences' => User::DEFAULT_PREFERENCES,
             ];

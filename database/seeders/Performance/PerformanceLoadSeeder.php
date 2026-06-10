@@ -366,7 +366,7 @@ class PerformanceLoadSeeder extends Seeder
 
     private function getAdminUserId(): string
     {
-        $adminId = User::withoutGlobalScopes()->where('email', 'admin@nextbook.com')->value('id');
+        $adminId = User::withoutGlobalScopes()->where('email', 'admin@nextbook.af')->value('id');
            
 
         if (!$adminId) {

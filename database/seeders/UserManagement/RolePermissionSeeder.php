@@ -239,7 +239,7 @@ class RolePermissionSeeder extends Seeder
         | 6. Assign Super Admin Role to Default User (optional)
         |--------------------------------------------------------------------------
         */
-        $superAdminUser = User::where('email', 'admin@nextbook.com')->first();
+        $superAdminUser = User::where('email', 'admin@nextbook.af')->first();
 
         if ($superAdminUser) {
             $superAdminUser->syncRoles(['super-admin']);
