@@ -33,24 +33,24 @@ class DashboardController extends Controller
 
     public function index(Request $request): Response
     {
-        AccountTransfer::query()->forceDelete();
-        JournalClass::query()->forceDelete();
-        ExpenseDetail::query()->forceDelete();
-        Expense::query()->forceDelete();
-        PurchaseItem::query()->forceDelete();
-        Purchase::query()->forceDelete();
-        SaleItem::query()->forceDelete();
-        Sale::query()->forceDelete();
-        TransactionLine::query()->forceDelete();
-        Transaction::query()->forceDelete();
-        Receipt::query()->forceDelete();
-        Payment::query()->forceDelete();
-        ActivityLog::query()->forceDelete();
-        StockBalance::query()->forceDelete();
-        StockMovement::query()->forceDelete();
-        Item::query()->update([
-            'avg_cost' => 0,
-        ]); 
+        // AccountTransfer::query()->forceDelete();
+        // JournalClass::query()->forceDelete();
+        // ExpenseDetail::query()->forceDelete();
+        // Expense::query()->forceDelete();
+        // PurchaseItem::query()->forceDelete();
+        // Purchase::query()->forceDelete();
+        // SaleItem::query()->forceDelete();
+        // Sale::query()->forceDelete();
+        // TransactionLine::query()->forceDelete();
+        // Transaction::query()->forceDelete();
+        // Receipt::query()->forceDelete();
+        // Payment::query()->forceDelete();
+        // ActivityLog::query()->forceDelete();
+        // StockBalance::query()->forceDelete();
+        // StockMovement::query()->forceDelete();
+        // Item::query()->update([
+        //     'avg_cost' => 0,
+        // ]); 
         return Inertia::render('Dashboard', [
             'dashboard' => $this->dashboardService->getDashboardData($request->user()),
             'dashboardDataUrl' => route('dashboard.data'),
