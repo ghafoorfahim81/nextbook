@@ -1100,6 +1100,7 @@ function logout() {
                 <div class="flex shrink-0 items-center gap-2">
                     <SidebarTrigger class="-ml-1"/>
                     <Separator orientation="vertical" class="mr-2 hidden h-4 sm:block" />
+                    <QuickLinks />
                 </div>
 
                 <!-- Center: connection status + global search side by side (no overlap) -->
@@ -1125,7 +1126,6 @@ function logout() {
                 <!-- Right: actions -->
                 <div class="flex shrink-0 items-center gap-2 sm:gap-3 sm:pr-4">
 
-                    <QuickLinks />
                     <div v-if="isSuperAdmin" class="hidden items-center max-start gap-2 sm:flex">
                         <!-- <label class="hidden text-xs text-muted-foreground md:block" for="branch-switcher">
                             {{ t('layout.branch') || 'Branch' }}

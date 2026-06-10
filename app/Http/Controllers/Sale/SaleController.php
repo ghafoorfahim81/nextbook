@@ -450,6 +450,9 @@ class SaleController extends Controller
                 ])
                 ->all();
 
+            // Capture item IDs from the OLD sale before merging new items in.
+            $oldItemIds = collect($affectedCombos)->pluck('item_id')->unique()->values()->all();
+
             $validated['item_list'] = array_map(function ($item) use ($validated, $sale, &$affectedCombos) {
                 $item['discount'] = $item['item_discount'] ?? 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
@@ -485,6 +488,27 @@ class SaleController extends Controller
                 ->mapWithKeys(fn ($m) => [
                     $m->item_id . '_' . $m->unit_measure_id => (float) $m->unit_cost
                 ])
+                ->all();
+
+            // Snapshot avg_cost and stock qty per item BEFORE any changes.
+            // Used by the direct-formula avg recalculation for quantity-reduced items.
+            $preUpdateAvgCosts = Item::whereIn('id', $oldItemIds)
+                ->pluck('avg_cost', 'id')
+                ->map(fn ($c) => (float) $c)
+                ->all();
+
+            $preUpdateStockQty = StockBalance::query()
+                ->where('branch_id', $sale->branch_id)
+                ->whereIn('item_id', $oldItemIds)
+                ->groupBy('item_id')
+                ->selectRaw('item_id, SUM(quantity) as total_qty')
+                ->pluck('total_qty', 'item_id')
+                ->map(fn ($q) => (float) $q)
+                ->all();
+
+            $oldSaleItemsByKey = $sale->items()
+                ->get(['item_id', 'quantity', 'unit_measure_id'])
+                ->mapWithKeys(fn ($i) => [$i->item_id . '_' . $i->unit_measure_id => (float) $i->quantity])
                 ->all();
 
             $sale->items()->forceDelete();
@@ -593,6 +617,53 @@ class SaleController extends Controller
                     'remark_fa'  => 'فروش جنس'. ' '. $itemModel->name.' #'.$sale->number,
                     'remark_ps'  => 'د'. ' '. $itemModel->name.' '.'د خرڅلاو #'.$sale->number,
                 ];
+            }
+
+            // Recalculate avg_cost for items affected by qty changes:
+            // - REMOVED: no OUTs left → replay is safe.
+            // - REDUCED: units returned to stock → direct formula (avoids ULID date-tie issue).
+            // - UNCHANGED / INCREASED: avg_cost stays the same (OUTs never affect avg).
+            $newItemsByKey = collect($validated['item_list'])
+                ->mapWithKeys(fn ($i) => [$i['item_id'] . '_' . $i['unit_measure_id'] => (float) $i['quantity']])
+                ->all();
+            $newItemIdSet = collect($validated['item_list'])->pluck('item_id')->flip()->all();
+
+            foreach ($oldItemIds as $itemId) {
+                if (!isset($newItemIdSet[$itemId])) {
+                    // Item completely removed — replay is safe (no OUTs remain).
+                    $this->recalculateAvgCostForItem($itemId);
+                    continue;
+                }
+
+                // Find matching old/new qty by item+unit key.
+                $reducedQty = 0.0;
+                $returnCost = 0.0;
+                foreach ($oldSaleItemsByKey as $key => $oldQty) {
+                    if (!str_starts_with($key, $itemId . '_')) {
+                        continue;
+                    }
+                    $newQty = $newItemsByKey[$key] ?? 0.0;
+                    $diff = $oldQty - $newQty;
+                    if ($diff > 0) {
+                        $reducedQty += $diff;
+                        $returnCost = $originalNetUnitCosts[$key] ?? $originalMovementCosts[$key] ?? 0.0;
+                    }
+                }
+
+                if ($reducedQty <= 0) {
+                    continue; // qty unchanged or increased — no avg change
+                }
+
+                // Direct WAC formula: returned units come back at historical cost.
+                // stock_qty_before_return is the stock as it stood WITH the original sale in effect.
+                $stockQtyBefore = $preUpdateStockQty[$itemId] ?? 0.0;
+                $currentAvg    = $preUpdateAvgCosts[$itemId] ?? 0.0;
+                $denominator   = $stockQtyBefore + $reducedQty;
+
+                if ($denominator > 0 && $returnCost > 0) {
+                    $newAvg = ($stockQtyBefore * $currentAvg + $reducedQty * $returnCost) / $denominator;
+                    Item::where('id', $itemId)->update(['avg_cost' => $newAvg]);
+                }
             }
 
             // Sales discount line
@@ -744,14 +815,11 @@ class SaleController extends Controller
             );
         }
 
-        // Recalculate avg_cost per item after rebuilding. Deleting a sale (OUT) doesn't
-        // directly change avg_cost, but it changes the running qty at the time of every
-        // subsequent purchase (IN), so those purchases' weighted averages shift. Replaying
-        // all movements from scratch gives the correct value.
-        $uniqueItemIds = $uniqueCombos->pluck('item_id')->unique()->values();
-        foreach ($uniqueItemIds as $itemId) {
-            $this->recalculateAvgCostForItem($itemId);
-        }
+        // avg_cost is intentionally NOT recalculated here.
+        // rebuildStockStateForCombos is called mid-transaction (after old OUT movements are
+        // deleted, before new ones are posted), so any replay at this point would see only
+        // IN movements and produce a wrong avg_cost for items that are still in the sale.
+        // Callers (update / destroy) recalculate only for items that were actually removed.
     }
 
     private function recalculateAvgCostForItem(string $itemId): void
@@ -1058,6 +1126,16 @@ class SaleController extends Controller
                 ...$stockMovementCombos,
             ]);
 
+            // Recalculate avg_cost for all items in the deleted sale.
+            // rebuildStockStateForCombos no longer handles this; and since the OUTs are
+            // soft-deleted, the replay correctly excludes them, giving the right avg_cost.
+            $deletedItemIds = collect([...$affectedCombos, ...$stockMovementCombos])
+                ->pluck('item_id')
+                ->unique();
+            foreach ($deletedItemIds as $deletedItemId) {
+                $this->recalculateAvgCostForItem($deletedItemId);
+            }
+
              $activityLogService->logDelete(
             reference: $sale,
             module: 'sale',
@@ -1207,44 +1285,6 @@ class SaleController extends Controller
             'customFormat' => $customFormat,
         ]);
 
-        // dd('hiiii');
-        // $sale->load([
-        //     'items.item',
-        //     'items.unitMeasure',
-        //     'customer',
-        //     'transaction.currency',
-        //     'stockOuts.store',
-        // ]);
-
-        // $company = auth()->user()?->company;
-
-        // $html = view('sales.print', [
-        //     'sale' => $sale,
-        //     'company' => $company,
-        // ])->render();
-
-        // $tempDir = storage_path('app/mpdf-temp');
-        // if (!is_dir($tempDir)) {
-        //     mkdir($tempDir, 0775, true);
-        // }
-
-        // $mpdf = new Mpdf([
-        //     'default_font_size' => 10,
-        //     'default_font' => 'dejavusans',
-        //     'tempDir' => $tempDir,
-        //     'margin_top' => 15,
-        //     'margin_bottom' => 15,
-        //     'margin_left' => 10,
-        //     'margin_right' => 10,
-        // ]);
-
-        // $mpdf->SetTitle('Sale #' . $sale->number);
-        // $mpdf->WriteHTML($html);
-
-        // return response($mpdf->Output('sale-'.$sale->number.'.pdf', 'S'), 200, [
-        //     'Content-Type' => 'application/pdf',
-        //     'Content-Disposition' => 'inline; filename="sale-'.$sale->number.'.pdf"',
-        // ]);
     }
 
     public function exportDetail(Request $request, Sale $sale, SpreadsheetExportService $exporter): BinaryFileResponse
