@@ -676,19 +676,7 @@ onUnmounted(() => {
                             :label="t('general.rate')"
                         />
                     </div>
-                    <NextSelect
-                        :options="bankAccounts"
-                        v-model="form.selected_bank_account"
-                        @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
-                        label-key="name"
-                        :searchable="true"
-                        :floating-text="t('general.bank_account')"
-                        :error="form.errors?.bank_account_id"
-                        resource-type="accounts"
-                        :search-fields="['name', 'number', 'slug']"
-                        value-key="id"
-                        :reduce="(bankAccount) => bankAccount"
-                    />
+
                     <div class="grid grid-cols-1 gap-2" v-if="general_fields.type">
                         <NextSelect
                             :options="salePurchaseTypes"
@@ -702,6 +690,20 @@ onUnmounted(() => {
                             :error="form.errors?.purchase_type"
                         />
                     </div>
+                    <NextSelect
+                        v-if="form.purchase_type === 'cash'"
+                        :options="bankAccounts"
+                        v-model="form.selected_bank_account"
+                        @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
+                        label-key="name"
+                        :searchable="true"
+                        :floating-text="t('general.bank_account')"
+                        :error="form.errors?.bank_account_id"
+                        resource-type="accounts"
+                        :search-fields="['name', 'number', 'slug']"
+                        value-key="id"
+                        :reduce="(bankAccount) => bankAccount"
+                    />
                     <NextSelect
                         v-if="general_fields.warehouse"
                         :options="warehouses.data"
