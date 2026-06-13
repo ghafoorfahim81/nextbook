@@ -105,6 +105,8 @@ const { t } = useI18n()
 const { locale } = useI18n()
 const { user } = useAuth()
 // This is sample data.
+const profilePhotoUrl = computed(() => (page.props.auth?.user as any)?.profile_photo_url || null)
+
 const data = {
     user: {
         name: user.value?.name || '',
@@ -1031,7 +1033,7 @@ function logout() {
                                     class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                                 >
                                     <Avatar class="h-8 w-8 rounded-lg bg-primary text-primary-foreground">
-                                        <AvatarImage :src="data.user.avatar" :alt="data.user.name" />
+                                        <AvatarImage :src="profilePhotoUrl" :alt="data.user.name" />
                                         <AvatarFallback class="rounded-lg">
                                             {{ user?.name?.charAt(0) || 'NB' }}
                                         </AvatarFallback>
@@ -1047,7 +1049,7 @@ function logout() {
                                 <DropdownMenuLabel class="p-0 font-normal">
                                     <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                                         <Avatar class="h-8 w-8 rounded-lg bg-primary text-primary-foreground">
-                                            <AvatarImage :src="data.user.avatar" :alt="data.user.name" />
+                                            <AvatarImage :src="profilePhotoUrl" :alt="data.user.name" />
                                             <AvatarFallback class="rounded-lg">
                                                 {{ user?.name?.charAt(0) || 'NB' }}
                                             </AvatarFallback>
@@ -1067,9 +1069,11 @@ function logout() {
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
-                                    <DropdownMenuItem>
-                                        <BadgeCheck class="text-primary hover:text-white" />
-                                        {{ t('layout.account') }}
+                                    <DropdownMenuItem as-child>
+                                        <Link href="/profile" class="flex w-full items-center">
+                                            <BadgeCheck class="text-primary hover:text-white" />
+                                            {{ t('layout.account') }}
+                                        </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem>
                                         <CreditCard class="text-primary hover:text-white" />

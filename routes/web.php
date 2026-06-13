@@ -23,6 +23,7 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\QuickCreateController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\ProfileController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -48,6 +49,8 @@ Route::middleware([
     CheckCompany::class,
 ])->group(function () {
     // Home page (default after login)
+    Route::get('/profile', [ProfileController::class, 'show'])->name('user.profile');
+
     Route::get('/home', [HomeController::class, 'index'])->name('home');
     Route::post('/home/exchange', [HomeController::class, 'exchange'])->name('home.exchange');
     Route::post('/home/unit-convert', [HomeController::class, 'unitConvert'])->name('home.unit-convert');

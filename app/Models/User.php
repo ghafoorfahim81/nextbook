@@ -10,6 +10,7 @@ use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Jetstream\HasProfilePhoto;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
@@ -22,7 +23,7 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, HasUlids, HasSorting, HasUserAuditable, HasDependencyCheck, SoftDeletes, HasRoles;
 
-    use TwoFactorAuthenticatable;
+    use TwoFactorAuthenticatable, HasProfilePhoto;
 
 
     /**
@@ -39,6 +40,7 @@ class User extends Authenticatable
         'branch_id',
         'company_id',
         'preferences',
+        'profile_photo_path',
     ];
 
     protected $keyType = 'string';
@@ -403,9 +405,9 @@ class User extends Authenticatable
      *
      * @var array<int, string>
      */
-    // protected $appends = [
-    //     'profile_photo_url',
-    // ];
+    protected $appends = [
+        'profile_photo_url',
+    ];
 
     /**
      * Get the attributes that should be cast.

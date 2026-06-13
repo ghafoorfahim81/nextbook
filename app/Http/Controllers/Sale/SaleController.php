@@ -628,6 +628,22 @@ class SaleController extends Controller
                 ->all();
             $newItemIdSet = collect($validated['item_list'])->pluck('item_id')->flip()->all();
 
+            // Ensure unit measure values for old sale UOMs are available for conversion.
+            $missingUomIds = collect($oldSaleItemsByKey)
+                ->keys()
+                ->map(fn ($key) => explode('_', $key, 2)[1] ?? '')
+                ->unique()
+                ->filter(fn ($id) => $id !== '' && !isset($unitValuesById[$id]))
+                ->values()
+                ->all();
+            if (!empty($missingUomIds)) {
+                $extra = UnitMeasure::whereIn('id', $missingUomIds)
+                    ->pluck('unit', 'id')
+                    ->map(fn ($v) => (float) $v)
+                    ->all();
+                $unitValuesById = array_merge($unitValuesById, $extra);
+            }
+
             foreach ($oldItemIds as $itemId) {
                 if (!isset($newItemIdSet[$itemId])) {
                     // Item completely removed — replay is safe (no OUTs remain).
@@ -635,33 +651,51 @@ class SaleController extends Controller
                     continue;
                 }
 
-                // Find matching old/new qty by item+unit key.
-                $reducedQty = 0.0;
-                $returnCost = 0.0;
+                // Resolve item base unit value for qty/cost conversion.
+                $itemModel   = $itemModelsById[$itemId] ?? null;
+                $itemUomId   = $itemModel?->unit_measure_id ?? '';
+                $itemUomVal  = (float) ($unitValuesById[$itemUomId] ?? 1.0) ?: 1.0;
+
+                // Accumulate returned qty and value in item base units across all sale-line keys.
+                $returnQtyItemUnit   = 0.0;
+                $returnValueItemUnit = 0.0;
+
                 foreach ($oldSaleItemsByKey as $key => $oldQty) {
                     if (!str_starts_with($key, $itemId . '_')) {
                         continue;
                     }
                     $newQty = $newItemsByKey[$key] ?? 0.0;
-                    $diff = $oldQty - $newQty;
-                    if ($diff > 0) {
-                        $reducedQty += $diff;
-                        $returnCost = $originalNetUnitCosts[$key] ?? $originalMovementCosts[$key] ?? 0.0;
+                    $diff   = $oldQty - $newQty;
+                    if ($diff <= 0) {
+                        continue;
                     }
+
+                    // conversionFactor = saleUnit / itemUnit  (e.g. 1/24 for دانه vs بسته24دانه)
+                    $saleUomId    = explode('_', $key, 2)[1] ?? '';
+                    $saleUomVal   = (float) ($unitValuesById[$saleUomId] ?? 1.0) ?: 1.0;
+                    $convFactor   = $saleUomVal / $itemUomVal;
+
+                    $saleNetCost = $originalNetUnitCosts[$key] ?? $originalMovementCosts[$key] ?? 0.0;
+
+                    $diffInItemUnits    = $diff * $convFactor;
+                    $costPerItemUnit     = $convFactor > 0 ? $saleNetCost / $convFactor : $saleNetCost;
+
+                    $returnQtyItemUnit   += $diffInItemUnits;
+                    $returnValueItemUnit += $diffInItemUnits * $costPerItemUnit;
                 }
 
-                if ($reducedQty <= 0) {
+                if ($returnQtyItemUnit <= 0) {
                     continue; // qty unchanged or increased — no avg change
                 }
 
                 // Direct WAC formula: returned units come back at historical cost.
-                // stock_qty_before_return is the stock as it stood WITH the original sale in effect.
+                // All quantities are in the item's base unit (e.g. packages, not دانه).
                 $stockQtyBefore = $preUpdateStockQty[$itemId] ?? 0.0;
                 $currentAvg    = $preUpdateAvgCosts[$itemId] ?? 0.0;
-                $denominator   = $stockQtyBefore + $reducedQty;
+                $denominator   = $stockQtyBefore + $returnQtyItemUnit;
 
-                if ($denominator > 0 && $returnCost > 0) {
-                    $newAvg = ($stockQtyBefore * $currentAvg + $reducedQty * $returnCost) / $denominator;
+                if ($denominator > 0 && $returnValueItemUnit > 0) {
+                    $newAvg = ($stockQtyBefore * $currentAvg + $returnValueItemUnit) / $denominator;
                     Item::where('id', $itemId)->update(['avg_cost' => $newAvg]);
                 }
             }
