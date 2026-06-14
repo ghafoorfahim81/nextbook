@@ -54,6 +54,7 @@ class User extends Authenticatable
     public const DEFAULT_PREFERENCES = [
         'appearance' => [
             'theme' => 'system',
+            'accent_color' => 'system',
             'sidebar_font_size' => 14,
             'heading_font_size' =>14,
             'table_header_font_size' => 16,

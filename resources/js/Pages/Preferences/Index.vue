@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue'
 import { ref, computed, watch } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
+import { useColorMode } from '@vueuse/core'
 import { Button } from '@/Components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card'
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
@@ -22,6 +23,7 @@ import {
     Save, Plug, Eye, SlidersHorizontal as preferencesIcon, Search, CircleX, FileText
 } from 'lucide-vue-next'
 import InvoiceDesigner from '@/Pages/Preferences/InvoiceDesigner.vue'
+import { applyAppearanceTheme, resolveAccentColor, resolveColorPalette, resolveDisplayColorMode } from '@/lib/theme'
 
 const props = defineProps({
     preferences: Object,
@@ -73,7 +75,9 @@ const tabSearchTerms = {
     appearance: [
         'appearance',
         'font size',
-        'theme',
+        'color palette',
+        'color mode',
+        'accent color',
         'decimal places',
         'sidebar menus',
         'records per page',
@@ -85,6 +89,10 @@ const tabSearchTerms = {
         'trash',
         'cyan',
         'violet',
+        'indigo',
+        'emerald',
+        'rose',
+        'slate',
     ],
     item_management: [
         'item management',
@@ -302,6 +310,72 @@ const visibleTabs = computed(() => {
 const isPreferencesLoading = computed(() => form.processing || pluginForm.processing || importLoading.value || Boolean(resettingCategory.value))
 
 const form = useForm({ ...props.preferences })
+const previewColorMode = useColorMode({
+    emitAuto: true,
+    modes: {
+        contrast: 'dark contrast',
+        cafe: 'cafe',
+    },
+})
+if (!form.appearance) form.appearance = {}
+if (!form.display) form.display = {}
+
+const legacyColorModes = ['light', 'dark', 'system']
+const colorOptions = [
+    'red',
+    'orange',
+    'amber',
+    'yellow',
+    'lime',
+    'green',
+    'emerald',
+    'teal',
+    'cyan',
+    'sky',
+    'blue',
+    'indigo',
+    'violet',
+    'purple',
+    'fuchsia',
+    'pink',
+    'rose',
+    'slate',
+    'gray',
+    'zinc',
+    'neutral',
+    'stone',
+    'taupe',
+    'mauve',
+    'mist',
+    'olive',
+]
+const paletteOptions = ['system', ...colorOptions]
+const accentColorOptions = ['system', ...colorOptions]
+
+const legacyAppearanceTheme = form.appearance.theme
+if (['light', 'dark'].includes(legacyAppearanceTheme)) {
+    form.display.theme = form.display.theme || legacyAppearanceTheme
+    form.appearance.theme = 'system'
+}
+if (form.appearance.theme === 'violet-900') {
+    form.appearance.theme = 'violet'
+}
+form.appearance.theme = paletteOptions.includes(form.appearance.theme)
+    ? form.appearance.theme
+    : resolveColorPalette(props.preferences)
+form.display.theme = legacyColorModes.includes(form.display.theme) ? form.display.theme : 'system'
+form.appearance.accent_color = accentColorOptions.includes(form.appearance.accent_color)
+    ? form.appearance.accent_color
+    : resolveAccentColor(props.preferences)
+
+watch(
+    () => [form.appearance?.theme, form.appearance?.accent_color, form.display?.theme],
+    () => {
+        applyAppearanceTheme(form)
+        previewColorMode.value = resolveDisplayColorMode(form)
+    },
+    { immediate: true },
+)
 
 const allUnitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
 const allCategories = computed(() => props.categories?.data ?? props.categories ?? [])
@@ -436,17 +510,6 @@ const activeSaleType = ref('sale')
 const activePurchaseType = ref('purchase')
 const previewInvoiceTheme = ref(null)
 const invoiceThemePreviewOpen = ref(false)
-
-watch(
-    () => form.appearance?.theme,
-    (theme) => {
-        if (['light', 'dark', 'system'].includes(theme)) {
-            if (!form.display) form.display = {}
-            form.display.theme = theme
-        }
-    },
-    { immediate: true },
-)
 
 const selectedInvoiceTheme = computed(() => {
     return invoiceThemes.value.find(theme => theme.id === form.sale?.invoice_theme) ?? invoiceThemes.value[0] ?? null
@@ -624,17 +687,51 @@ const receiptPaymentFields = [
                                     <Input v-model.number="form.appearance.font_size" type="number" min="10" max="24" />
                                 </div>
                                 <div class="space-y-2">
-                                        <Label>{{ t('preferences.appearance.theme') }}</Label>
+                                    <Label>{{ t('preferences.appearance.color_palette') }}</Label>
                                     <Select v-model="form.appearance.theme">
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="light">{{ t('preferences.appearance.light') }}</SelectItem>
-                                                <SelectItem value="dark">{{ t('preferences.appearance.dark') }}</SelectItem>
                                             <SelectItem value="system">{{ t('preferences.appearance.system') }}</SelectItem>
-                                            <SelectItem value="cyan">{{ t('preferences.appearance.cyan') }}</SelectItem>
-                                            <SelectItem value="violet-900">{{ t('preferences.appearance.violet_900') }}</SelectItem>
+                                            <SelectItem
+                                                v-for="color in colorOptions"
+                                                :key="`palette-${color}`"
+                                                :value="color"
+                                            >
+                                                {{ t(`preferences.appearance.${color}`) }}
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.color_mode') }}</Label>
+                                    <Select v-model="form.display.theme">
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="light">{{ t('preferences.appearance.light') }}</SelectItem>
+                                            <SelectItem value="dark">{{ t('preferences.appearance.dark') }}</SelectItem>
+                                            <SelectItem value="system">{{ t('preferences.appearance.system') }}</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.appearance.accent_color') }}</Label>
+                                    <Select v-model="form.appearance.accent_color">
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="system">{{ t('preferences.appearance.system') }}</SelectItem>
+                                            <SelectItem
+                                                v-for="color in colorOptions"
+                                                :key="`accent-${color}`"
+                                                :value="color"
+                                            >
+                                                {{ t(`preferences.appearance.${color}`) }}
+                                            </SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

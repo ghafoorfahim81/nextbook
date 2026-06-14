@@ -19,7 +19,9 @@ use Illuminate\Validation\Rule;
             // Appearance
             'appearance' => 'sometimes|array',
             'appearance.font_size' => 'sometimes|integer|min:10|max:24',
-            'appearance.theme' => 'sometimes|in:dark,light,system,cyan,violet-900',
+            'appearance.theme' => 'sometimes|in:system,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,violet-900,purple,fuchsia,pink,rose,slate,gray,zinc,neutral,stone,taupe,mauve,mist,olive',
+            'appearance.color_palette' => 'sometimes|in:system,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,violet-900,purple,fuchsia,pink,rose,slate,gray,zinc,neutral,stone,taupe,mauve,mist,olive',
+            'appearance.accent_color' => 'sometimes|in:system,red,orange,amber,yellow,lime,green,emerald,teal,cyan,sky,blue,indigo,violet,purple,fuchsia,pink,rose,slate,gray,zinc,neutral,stone,taupe,mauve,mist,olive',
             'appearance.decimal_places' => 'sometimes|integer|in:0,2,3',
             'appearance.records_per_page' => 'sometimes|integer|min:1|max:100',
             'appearance.sidebar_font_size' => 'sometimes|integer|min:10|max:24',

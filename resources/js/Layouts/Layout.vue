@@ -1099,7 +1099,7 @@ function logout() {
             <SidebarRail />
         </Sidebar>
         <SidebarInset class="flex h-svh min-h-0 flex-col overflow-hidden">
-            <header class="relative z-20 flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-background/90 px-3 py-2 transition-[width,height] ease-linear supports-[backdrop-filter]:bg-background/70 sm:h-16 sm:flex-nowrap sm:px-4 sm:py-0 rtl:pr-3 sm:rtl:pr-4 group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+            <header class="relative z-20 flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-2 border-b bg-[hsl(var(--app-chrome-background))] text-[hsl(var(--app-chrome-foreground))] px-3 py-2 transition-[width,height] ease-linear sm:h-16 sm:flex-nowrap sm:px-4 sm:py-0 rtl:pr-3 sm:rtl:pr-4 group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
                 <!-- Left: Sidebar trigger -->
                 <div class="flex shrink-0 items-center gap-2">
                     <SidebarTrigger class="-ml-1"/>
@@ -1169,7 +1169,7 @@ function logout() {
             <div class="flex flex-1 min-h-0 flex-col gap-4 overflow-y-auto p-4 pt-4 min-w-0">
                 <slot/>
             </div>
-            <footer class="border-t border-border/60 px-4 py-2 text-center text-[11px] text-muted-foreground/80">
+            <footer class="border-t border-border/60 bg-[hsl(var(--app-chrome-background))] px-4 py-2 text-center text-[11px] text-[hsl(var(--app-chrome-foreground))]">
                 {{ t('layout.footer_copyright') || 'Copyright © 2026 App Forest. All rights reserved. Nextbook v1' }}
             </footer>
         </SidebarInset>
