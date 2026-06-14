@@ -121,6 +121,7 @@ class PaymentController extends Controller
                     'currency_id' => $currencyId,
                     'rate' => $rate,
                     'date' => $validated['date'],
+                    'voucher_number' => $validated['cheque_no'] ?? 'Payment #' . $payment->number,
                     'reference_type' => Payment::class,
                     'reference_id' => $payment->id,
                     'remark' => $debitRemark,
@@ -133,7 +134,7 @@ class PaymentController extends Controller
                         'remark' => 'Payment #' . $payment->number. ' to '.$ledger->name,
                         'remark_fa' => 'پرداخت نقدی #' . $payment->number. ' به '.$ledger->name,
                         'remark_ps' => $ledger->name . ' ته د #' . $payment->number . ' ورکړه',
-                   
+
                     ],
                     [
                         'account_id' => $apAccountId,
@@ -285,6 +286,8 @@ class PaymentController extends Controller
                     'date' => $validated['date'],
                     'reference_type' => Payment::class,
                     'reference_id' => $payment->id,
+                    'remark' => "Payment #{$payment->number} to {$ledger->name}",
+                    'voucher_number' => $validated['cheque_no'] ?? 'Payment #' . $payment->number,
                 ],
                 lines: [
                     [
@@ -294,7 +297,7 @@ class PaymentController extends Controller
                         'remark' => 'Payment #' . $payment->number. ' to '.$ledger->name,
                         'remark_fa' => 'پرداخت نقدی #' . $payment->number. ' به '.$ledger->name,
                         'remark_ps' => $ledger->name . ' ته د #' . $payment->number . ' ورکړه',
-                   
+
                     ],
                     [
                         'account_id' => $apAccountId,

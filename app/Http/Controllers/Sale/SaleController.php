@@ -31,6 +31,7 @@ use App\Support\Preferences\InvoiceThemeOptions;
 use App\Models\Sale\InvoiceFormat;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use App\Enums\CostingMethod;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
@@ -153,15 +154,19 @@ class SaleController extends Controller
             // at the moment of this sale (before any stock deductions change state).
             [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
 
-            $validated['item_list'] = array_map(function ($item) use ($validated, $itemModelsById, $averageCostsByItemId, $unitValuesById) {
+            $validated['item_list'] = array_map(function ($item) use ($validated, $sale, $itemModelsById, $averageCostsByItemId, $unitValuesById) {
                 $item['warehouse_id'] = $validated['warehouse_id'];
                 $itemModel = $itemModelsById[$item['item_id']] ?? null;
                 $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0);
-                $item['net_unit_cost'] = $itemModel ? $this->resolveUnitCost(
+                $item['net_unit_cost'] = $itemModel ? $this->resolveItemCostByMethod(
                     avgCost: $avgCost,
                     selectedUnitMeasureId: $item['unit_measure_id'],
                     itemUnitMeasureId: $itemModel->unit_measure_id,
                     unitValuesById: $unitValuesById,
+                    itemId: $item['item_id'],
+                    warehouseId: $validated['warehouse_id'],
+                    branchId: $sale->branch_id,
+                    quantity: (float) $item['quantity'],
                 ) : 0.0;
                 return $item;
             }, $validated['item_list']);
@@ -318,8 +323,8 @@ class SaleController extends Controller
                 header: [
                     'currency_id'    => $validated['currency_id'],
                     'rate'           => $validated['rate'],
+                    'voucher_number' => 'Sale #' . $sale->number,
                     'date'           => $validated['date'],
-                    'voucher_number' => $sale->number,
                     'remark'         => 'Sale for sale number: ' . $sale->number,
                     'status'         => TransactionStatus::POSTED->value,
                     'reference_type' => Sale::class,
@@ -531,11 +536,15 @@ class SaleController extends Controller
                 // 3. Current avg_cost — only for items newly added in this edit.
                 $item['net_unit_cost'] = $originalNetUnitCosts[$key]
                     ?? $originalMovementCosts[$key]
-                    ?? ($itemModel ? $this->resolveUnitCost(
+                    ?? ($itemModel ? $this->resolveItemCostByMethod(
                         avgCost: (float) ($averageCostsByItemId[$item['item_id']] ?? 0),
                         selectedUnitMeasureId: $item['unit_measure_id'],
                         itemUnitMeasureId: $itemModel->unit_measure_id,
                         unitValuesById: $unitValuesById,
+                        itemId: $item['item_id'],
+                        warehouseId: $validated['warehouse_id'],
+                        branchId: $sale->branch_id,
+                        quantity: (float) $item['quantity'],
                     ) : 0.0);
                 return $item;
             }, $validated['item_list']);
@@ -782,8 +791,8 @@ class SaleController extends Controller
                     'currency_id'    => $validated['currency_id'],
                     'rate'           => $validated['rate'],
                     'date'           => $date,
-                    'voucher_number' => $sale->number,
-                    'remark'         => 'Sale for sale number: ' . $sale->number,
+                    'voucher_number' => 'Sale #' . $sale->number,
+                    'remark'         => 'Sale number: ' . $sale->number,
                     'status'         => TransactionStatus::POSTED->value,
                     'reference_type' => Sale::class,
                     'reference_id'   => $sale->id,
@@ -1056,7 +1065,6 @@ class SaleController extends Controller
             ->get(['id', 'name', 'unit_measure_id', 'income_account_id', 'cost_account_id', 'asset_account_id'])
             ->keyBy('id')
             ->all();
-
         $averageCostsByItemId = Item::query()
             ->whereIn('id', $itemIds)
             ->pluck('avg_cost', 'id')
@@ -1080,6 +1088,91 @@ class SaleController extends Controller
             ->all();
 
         return [$itemModelsById, $averageCostsByItemId, $unitValuesById];
+    }
+
+    private function resolveItemCostByMethod(
+        float $avgCost,
+        string $selectedUnitMeasureId,
+        string $itemUnitMeasureId,
+        array $unitValuesById,
+        string $itemId,
+        string $warehouseId,
+        string $branchId,
+        float $quantity,
+    ): float {
+        $method = \Illuminate\Support\Facades\Cache::get('costing_method', CostingMethod::WEIGHTED_AVERAGE->value);
+
+        if ($method !== CostingMethod::FIFO->value && $method !== CostingMethod::LIFO->value) {
+            return $this->resolveUnitCost($avgCost, $selectedUnitMeasureId, $itemUnitMeasureId, $unitValuesById);
+        }
+
+        $order = $method === CostingMethod::FIFO->value ? 'asc' : 'desc';
+
+        // Convert requested quantity to item base units for layer peeking
+        $selectedUomVal = (float) ($unitValuesById[$selectedUnitMeasureId] ?? 1.0) ?: 1.0;
+        $itemUomVal     = (float) ($unitValuesById[$itemUnitMeasureId] ?? 1.0) ?: 1.0;
+        $convFactor     = $selectedUomVal / $itemUomVal; // selectedUnit / itemUnit
+        $qtyInItemUnits = $quantity * $convFactor;
+
+        // For FIFO: mirror the exact ordering used by StockService::deductFIFO()
+        // — non-null expiry first, then nearest expiry, then oldest receipt date.
+        // For LIFO: reverse only the receipt-date axes; expiry preference stays the same
+        // (near-expiry stock should still be moved before distant-expiry stock).
+        $layers = StockMovement::query()
+            ->where('item_id', $itemId)
+            ->where('warehouse_id', $warehouseId)
+            ->where('branch_id', $branchId)
+            ->where('movement_type', StockMovementType::IN->value)
+            ->where('qty_remaining', '>', 0)
+            ->orderByRaw('CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('expire_date', 'asc')
+            ->orderBy('date', $order)
+            ->orderBy('created_at', $order)
+            ->orderBy('id', $order)
+            ->get(['qty_remaining', 'unit_cost', 'unit_measure_id']);
+
+        if ($layers->isEmpty()) {
+            return $this->resolveUnitCost($avgCost, $selectedUnitMeasureId, $itemUnitMeasureId, $unitValuesById);
+        }
+
+        // Preload any unit measure values not already in the lookup
+        $missingUomIds = $layers->pluck('unit_measure_id')->unique()->filter()
+            ->filter(fn ($id) => !isset($unitValuesById[$id]))->values()->all();
+        if (!empty($missingUomIds)) {
+            $extra = UnitMeasure::whereIn('id', $missingUomIds)->pluck('unit', 'id')
+                ->map(fn ($v) => (float) $v)->all();
+            $unitValuesById = array_merge($unitValuesById, $extra);
+        }
+
+        $remaining           = $qtyInItemUnits;
+        $totalCostItemUnit   = 0.0;
+        $totalQtyConsumed    = 0.0;
+
+        foreach ($layers as $layer) {
+            if ($remaining <= 0) {
+                break;
+            }
+            $chunk = min((float) $layer->qty_remaining, $remaining);
+
+            // layer.unit_cost is stored in the layer's purchase unit; convert to item base unit
+            $layerUomVal      = (float) ($unitValuesById[$layer->unit_measure_id] ?? 1.0) ?: 1.0;
+            $layerConvFactor  = $layerUomVal / $itemUomVal; // purchaseUnit / itemUnit
+            $costPerItemUnit  = $layerConvFactor > 0
+                ? (float) $layer->unit_cost / $layerConvFactor
+                : (float) $layer->unit_cost;
+
+            $totalCostItemUnit += $chunk * $costPerItemUnit;
+            $totalQtyConsumed  += $chunk;
+            $remaining         -= $chunk;
+        }
+
+        if ($totalQtyConsumed <= 0) {
+            return $this->resolveUnitCost($avgCost, $selectedUnitMeasureId, $itemUnitMeasureId, $unitValuesById);
+        }
+
+        $costPerItemUnit = $totalCostItemUnit / $totalQtyConsumed;
+
+        return $this->resolveUnitCost($costPerItemUnit, $selectedUnitMeasureId, $itemUnitMeasureId, $unitValuesById);
     }
 
     private function resolveUnitCost(

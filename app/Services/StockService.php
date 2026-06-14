@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\CostingMethod;
 use App\Enums\StockMovementType;
 use App\Enums\StockStatus;
 use App\Models\Administration\UnitMeasure;
@@ -64,17 +65,20 @@ class StockService
         $this->validateStockAvailability($balanceData);
         $method = $this->getCostingMethod($movementData['branch_id']);
 
-        if ($method === 'fifo') {
+        if ($method === CostingMethod::FIFO->value) {
             $allocations = $this->deductFIFO($item, $movementData, $balanceData, $conversionFactor);
             $this->decreaseBalance($balanceData, $allocations);
-
             return $allocations;
-        } else {
-            $movement = $this->deductWeightedAverage($item, $movementData, $balanceData, $conversionFactor, $unitCostOverride);
         }
 
-        $this->decreaseBalance($balanceData);
+        if ($method === CostingMethod::LIFO->value) {
+            $allocations = $this->deductLIFO($item, $movementData, $balanceData, $conversionFactor);
+            $this->decreaseBalance($balanceData, $allocations);
+            return $allocations;
+        }
 
+        $movement = $this->deductWeightedAverage($item, $movementData, $balanceData, $conversionFactor, $unitCostOverride);
+        $this->decreaseBalance($balanceData);
         return [$movement];
     }
 
@@ -142,6 +146,76 @@ class StockService
         if ($remaining > 0) {
             throw ValidationException::withMessages([
                 'stock' => 'Insufficient stock for FIFO deduction.'
+            ]);
+        }
+
+        return $allocations;
+    }
+
+    /**
+     * LIFO Deduction
+     */
+    protected function deductLIFO(Item $item, array $movementData, array $balanceData, float $conversionFactor): array
+    {
+        $remaining = $balanceData['quantity'];
+        $query = StockMovement::query()
+            ->where('branch_id', $balanceData['branch_id'])
+            ->where('item_id', $balanceData['item_id'])
+            ->where('warehouse_id', $balanceData['warehouse_id'])
+            ->where('movement_type', StockMovementType::IN->value)
+            ->where('qty_remaining', '>', 0);
+
+        if ($item->is_batch_tracked && !empty($balanceData['batch'])) {
+            $query->where('batch', $balanceData['batch']);
+        }
+
+        if (!empty($balanceData['expire_date'])) {
+            $query->whereDate('expire_date', $this->normalizeDate($balanceData['expire_date']));
+        }
+
+        $inMovements = $query
+            ->orderByRaw('CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('expire_date', 'asc')
+            ->orderBy('date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
+            ->lockForUpdate()
+            ->get();
+
+        $allocations = [];
+        foreach ($inMovements as $movement) {
+            if ($remaining <= 0) {
+                break;
+            }
+            $deductQty = min($movement->qty_remaining, $remaining);
+            $movement->qty_remaining = (float) $movement->qty_remaining - $deductQty;
+            $movement->status = StockStatus::POSTED->value;
+            $movement->save();
+
+            $outMovement = StockMovement::create([
+                ...$movementData,
+                'batch'        => $movement->batch,
+                'quantity'     => $this->convertFromItemUnit($deductQty, $conversionFactor),
+                'date'         => $this->normalizeDate($movementData['date']),
+                'expire_date'  => $this->normalizeDate($movement->expire_date),
+                'unit_cost'    => $movementData['unit_cost'],
+                'qty_remaining' => null,
+            ]);
+
+            $allocations[] = [
+                'quantity'       => $deductQty,
+                'batch'          => $movement->batch,
+                'expire_date'    => $movement->expire_date?->toDateString(),
+                'status'         => $this->stockStatusValue($movement->status),
+                'movement_id'    => $movement->id,
+                'out_movement_id' => $outMovement->id,
+            ];
+            $remaining -= $deductQty;
+        }
+
+        if ($remaining > 0) {
+            throw ValidationException::withMessages([
+                'stock' => 'Insufficient stock for LIFO deduction.'
             ]);
         }
 
@@ -322,7 +396,9 @@ class StockService
      */
     protected function getCostingMethod(string $branchId): string
     {
-        return Auth::user()?->company?->costing_method?->value ?? 'fifo';
+        return \Illuminate\Support\Facades\Cache::get('costing_method')
+            ?? Auth::user()?->company?->costing_method?->value
+            ?? 'fifo';
     }
 
     public function getStockLevel(string $itemId, string $warehouseId, ?string $batch = null, ?string $expireDate = null): array

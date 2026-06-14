@@ -42,7 +42,7 @@ const transactionRows = computed(() => {
                 type, amount,
                 rate: txn?.rate || 1,
                 date: txn?.date,
-                transaction_number: txn?.voucher_number || txn?.id,
+                transaction_number: txn?.voucher_number,
                 description: line?.remark || txn?.remark || '-',
                 currency: txn?.currency?.code || '',
                 remark: line?.remark ?? txn?.remark ?? '',
@@ -57,7 +57,7 @@ const transactionTableRows = computed(() =>
         return {
             id: row.id,
             date: row.date,
-            transaction_number: row.transaction_number || row.id,
+            reference_number: row.transaction_number,
             description: row.description || row.remark || '-',
             debit: Number(row.type === 'debit' ? row.amount * rate : 0),
             credit: Number(row.type === 'credit' ? row.amount * rate : 0),
@@ -69,7 +69,7 @@ const transactionTableRows = computed(() =>
 
 const transactionColumns = computed(() => [
     { key: 'date', label: t('general.date') },
-    { key: 'id', label: t('general.reference_number') },
+    { key: 'reference_number', label: t('general.reference_number') },
     { key: 'description', label: t('general.description') },
     { key: 'currency', label: t('admin.currency.currency') },
     { key: 'rate', label: t('general.rate'), type: 'money', align: 'right' },

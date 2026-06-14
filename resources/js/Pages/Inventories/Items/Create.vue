@@ -294,10 +294,6 @@ const resetFormForCreate = ({ code = formatCode(props.maxCode) } = {}) => {
     form.reset()
     form.clearErrors()
     assetAccountUserSet.value = false
-    attachmentPreview.value = null
-    if (fileInput.value) {
-        fileInput.value.value = ''
-    }
     applyItemDefaults({ code })
     nextTick(() => {
         focusNameField()
@@ -356,9 +352,7 @@ const handleSubmitAction = (createAndNew = false) => {
                 class: 'bg-green-600',
             });
             if (isCreateAndNew) {
-                const currentCode = Number(form.code || props.maxCode || 0)
-                const nextCode = formatCode((Number.isNaN(currentCode) ? Number(props.maxCode || 0) : currentCode) + 1)
-                resetFormForCreate({ code: nextCode })
+                resetFormForCreate({ code: formatCode(Number(props.maxCode || 0)) })
                 form.transform((d) => d); // Reset transform to identity
             }
         },

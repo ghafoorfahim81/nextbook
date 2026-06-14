@@ -118,6 +118,7 @@ class ReceiptController extends Controller
                     'reference_type' => Receipt::class,
                     'reference_id' => $receipt->id,
                     'remark' => $creditRemark,
+                    'voucher_number' => $validated['cheque_no'] ?? 'Receipt #' . $receipt->number,
                 ],
                 lines: [
                     [
@@ -148,6 +149,7 @@ class ReceiptController extends Controller
                 newValues: [
                     'number' => $receipt->number,
                     'date' => $receipt->date?->toDateString(),
+                    'voucher_number' => $validated['cheque_no'] ?? 'Receipt #' . $receipt->number,
                     'customer_name' => $ledger->name,
                     'payment_method' => $bankAccount?->name,
                     'amount' => $amount,
@@ -272,8 +274,10 @@ class ReceiptController extends Controller
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
+                    'voucher_number' => $validated['cheque_no'] ?? 'Receipt #' . $receipt->number,
                     'date' => $validated['date'],
                     'reference_type' => Receipt::class,
+                    'remark'    => $validated['narration'] ?? "Receipt #{$receipt->number} from {$ledger->name}",   
                     'reference_id' => $receipt->id,
                 ],
                 lines: [
