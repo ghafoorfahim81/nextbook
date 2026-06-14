@@ -130,6 +130,10 @@ final class LookupShared
             ])->pluck('id', 'slug')
         );
         Cache::put('gl_accounts', $glAccounts);
+
+        $costingMethod = $request->user()?->company?->costing_method?->value ?? CostingMethod::FIFO->value;
+        Cache::put('costing_method', $costingMethod);
+
         return [
             'mainBranch' => $mainBranch,
             'categories' => $categories,

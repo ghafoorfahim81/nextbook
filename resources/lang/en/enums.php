@@ -92,6 +92,7 @@ return [
     'costing_method' => [
         'fifo' => 'FIFO',
         'lifo' => 'LIFO',
+        'weighted_average' => 'Weighted Average',
     ],
     'payment_mode' => [
         'bill_by_bill' => 'Bill by bill',

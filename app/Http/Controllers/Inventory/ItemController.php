@@ -233,6 +233,7 @@ class ItemController extends Controller
                         header: [
                           'currency_id' => $homeCurrency->id,
                           'rate' => 1,
+                          'voucher_number' => 'Opening Balance ' .$item->name. ' #' . $item->code,
                           'date' => Carbon::now(),
                           'reference_type' => Item::class,
                           'reference_id' => $item->id,

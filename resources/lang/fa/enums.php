@@ -93,6 +93,7 @@ return [
     'costing_method' => [
         'fifo' => 'اولین ورود اولین خروج',
         'lifo' => 'آخرین ورود اولین خروج',
+        'weighted_average' => 'میانگین وزنی',
     ],
     'payment_mode' => [
         'bill_by_bill' => 'بر اساس فاکتور',

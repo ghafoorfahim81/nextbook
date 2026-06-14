@@ -27,6 +27,7 @@ use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
+use Carbon\Carbon;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
 use App\Services\SpreadsheetExportService;
@@ -227,12 +228,13 @@ class PurchaseController extends Controller
                         'remark_ps' => 'د'. '#'. $purchase->number.' '.'لخوا اخیستل',
                     ];
                 }
-            } 
+            }
 
             $transaction = $transactionService->post(
                 header: [
                     'currency_id'   => $validated['currency_id'],
                     'rate'          => $validated['rate'],
+                    'voucher_number' => 'Purchase #' . $purchase->number,
                     'date'          => $validated['date'],
                     'remark'        => 'Purchase #' . $purchase->number,
                     'status'        => TransactionStatus::POSTED->value,
@@ -512,6 +514,7 @@ class PurchaseController extends Controller
                 header: [
                     'currency_id'    => $validated['currency_id'],
                     'rate'           => $validated['rate'],
+                    'voucher_number' => 'Purchase #' . $purchase->number,
                     'date'           => $validated['date'],
                     'remark'         => 'Purchase #' . $purchase->number,
                     'status'         => TransactionStatus::POSTED->value,
@@ -699,14 +702,72 @@ class PurchaseController extends Controller
             ]);
         }
 
+        $unitFactors = [];
+
         $inMovements = $movements
             ->filter(fn (StockMovement $movement) => $movement->movement_type === StockMovementType::IN)
             ->values();
 
+        // Reset qty_remaining to item-base-unit quantity (mirrors what StockService::handleIn stores)
         foreach ($inMovements as $movement) {
-            $movement->qty_remaining = (float) $movement->quantity;
+            $movement->qty_remaining = $this->convertMovementQuantityToItemUnit($movement, $item, $unitFactors);
             $movement->save();
         }
+
+        // Deduct OUT movements from IN layers so FIFO/LIFO qty_remaining is accurate
+        $outMovements = $movements
+            ->filter(fn (StockMovement $movement) => $movement->movement_type === StockMovementType::OUT)
+            ->values();
+
+        foreach ($outMovements as $outMovement) {
+            $remaining = $this->convertMovementQuantityToItemUnit($outMovement, $item, $unitFactors);
+
+            foreach ($inMovements as $inMovement) {
+                if ($remaining <= 0) {
+                    break;
+                }
+
+                if ($item->is_batch_tracked && ($inMovement->batch ?? null) !== ($outMovement->batch ?? null)) {
+                    continue;
+                }
+
+                $inExpireDate  = $inMovement->expire_date  ? Carbon::parse($inMovement->expire_date)->toDateString()  : null;
+                $outExpireDate = $outMovement->expire_date ? Carbon::parse($outMovement->expire_date)->toDateString() : null;
+                if ($outExpireDate && $inExpireDate !== $outExpireDate) {
+                    continue;
+                }
+
+                $available = (float) ($inMovement->qty_remaining ?? 0);
+                if ($available <= 0) {
+                    continue;
+                }
+
+                $deduct = min($available, $remaining);
+                $inMovement->qty_remaining = $available - $deduct;
+                $inMovement->save();
+                $remaining -= $deduct;
+            }
+        }
+    }
+
+    private function convertMovementQuantityToItemUnit(StockMovement $movement, Item $item, array &$unitFactors): float
+    {
+        if ($movement->unit_measure_id === $item->unit_measure_id) {
+            return (float) $movement->quantity;
+        }
+
+        if (!array_key_exists($movement->unit_measure_id, $unitFactors)) {
+            $movementUnit = \App\Models\Administration\UnitMeasure::query()->find($movement->unit_measure_id);
+            $itemUnit     = \App\Models\Administration\UnitMeasure::query()->find($item->unit_measure_id);
+
+            if (!$movementUnit || !$itemUnit || (float) $itemUnit->unit === 0.0) {
+                $unitFactors[$movement->unit_measure_id] = 1.0;
+            } else {
+                $unitFactors[$movement->unit_measure_id] = (float) $movementUnit->unit / (float) $itemUnit->unit;
+            }
+        }
+
+        return (float) $movement->quantity * $unitFactors[$movement->unit_measure_id];
     }
 
     private function purchaseHasPostedStock(Purchase $purchase): bool
