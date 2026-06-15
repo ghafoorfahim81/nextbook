@@ -22,6 +22,8 @@ use App\Models\Administration\Currency;
 use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
+use App\Enums\TransactionStatus;
+
 class PaymentController extends Controller
 {
     private $dateConversionService;
@@ -102,6 +104,8 @@ class PaymentController extends Controller
             $bankAccountId = $validated['bank_account_id'];
             $paymentMode = $validated['payment_mode'] ?? PaymentMode::OnAccount->value;
             $bankAccount = Account::find($bankAccountId);
+            $postImmediately = (bool) user_preference('transaction.payment_post_immediately', true);
+            $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
             $payment = Payment::create([
                 'number' => $validated['number'],
                 'date' => $validated['date'],
@@ -109,6 +113,7 @@ class PaymentController extends Controller
                 'payment_mode' => $paymentMode,
                 'cheque_no' => $validated['cheque_no'] ?? null,
                 'narration' => $validated['narration'] ?? null,
+                'status' => $documentStatus,
             ]);
 
             // Debit Accounts Payable for selected ledger (reduce liability)
@@ -125,6 +130,11 @@ class PaymentController extends Controller
                     'reference_type' => Payment::class,
                     'reference_id' => $payment->id,
                     'remark' => $debitRemark,
+                    'status' => $documentStatus,
+                    'posting_payload' => [
+                        'allocations' => $validated['allocations'] ?? [],
+                        'amount' => $amount,
+                    ],
                 ],
                 lines: [
                     [
@@ -149,7 +159,9 @@ class PaymentController extends Controller
                 ],
             );
 
-            app(BillAllocationService::class)->syncPaymentAllocations($payment, $amount, $validated['allocations'] ?? []);
+            if ($postImmediately) {
+                app(BillAllocationService::class)->syncPaymentAllocations($payment, $amount, $validated['allocations'] ?? []);
+            }
             $activityLogService->logCreate(
                 reference: $payment,
                 module: 'payment',
@@ -190,10 +202,53 @@ class PaymentController extends Controller
 
     public function show(Request $request, Payment $payment)
     {
-        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'purchasePayments.purchase', 'createdBy', 'updatedBy']);
+        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'purchasePayments.purchase', 'createdBy', 'updatedBy']);
         return response()->json([
             'data' => new PaymentResource($payment),
         ]);
+    }
+
+    public function post(Payment $payment, TransactionService $transactionService)
+    {
+        $this->authorize('update', $payment);
+
+        if ($payment->status !== TransactionStatus::DRAFT->value) {
+            abort(422, 'Only draft documents can be posted.');
+        }
+
+        DB::transaction(function () use ($payment, $transactionService) {
+            $transaction = $payment->transaction()->firstOrFail();
+            $transactionService->postDraft($transaction);
+            app(BillAllocationService::class)->syncPaymentAllocations(
+                $payment,
+                (float) data_get($transaction->posting_payload, 'amount', 0),
+                (array) data_get($transaction->posting_payload, 'allocations', [])
+            );
+            $payment->update(['status' => TransactionStatus::POSTED->value]);
+        });
+
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.payment')]));
+    }
+
+    public function reverse(Request $request, Payment $payment, TransactionService $transactionService)
+    {
+        $this->authorize('update', $payment);
+
+        $validated = $request->validate(['reason' => ['required', 'string', 'max:255']]);
+
+        if ($payment->status !== TransactionStatus::POSTED->value) {
+            abort(422, 'Only posted documents can be reversed.');
+        }
+
+        DB::transaction(function () use ($payment, $transactionService, $validated) {
+            $purchaseIds = $payment->purchasePayments()->pluck('purchase_id')->all();
+            $transactionService->reverse($payment->transaction()->firstOrFail(), $validated['reason']);
+            $payment->purchasePayments()->delete();
+            app(BillAllocationService::class)->recalculatePurchasePaymentStatuses($purchaseIds);
+            $payment->update(['status' => TransactionStatus::REVERSED->value]);
+        });
+
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.payment')]));
     }
 
     public function print(Request $request, Payment $payment, ActivityLogService $activityLogService)
@@ -241,6 +296,10 @@ class PaymentController extends Controller
 
     public function update(PaymentUpdateRequest $request, Payment $payment, ActivityLogService $activityLogService)
     {
+        if ($payment->status !== TransactionStatus::DRAFT->value) {
+            abort(403, 'Only draft documents can be edited.');
+        }
+
         $beforeState = [
             'number' => $payment->number,
             'date' => $payment->date?->toDateString(),
@@ -279,7 +338,7 @@ class PaymentController extends Controller
             TransactionLine::where('transaction_id', $payment->transaction->id)->forceDelete();
             Transaction::where('id', $payment->transaction->id)->forceDelete();
             $transactionService = app(TransactionService::class);
-            $transactionService->post(
+            $transaction = $transactionService->post(
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -288,6 +347,11 @@ class PaymentController extends Controller
                     'reference_id' => $payment->id,
                     'remark' => "Payment #{$payment->number} to {$ledger->name}",
                     'voucher_number' => $validated['cheque_no'] ?? 'Payment #' . $payment->number,
+                    'status' => TransactionStatus::DRAFT->value,
+                    'posting_payload' => [
+                        'allocations' => $validated['allocations'] ?? [],
+                        'amount' => $amount,
+                    ],
                 ],
                 lines: [
                     [
@@ -311,7 +375,7 @@ class PaymentController extends Controller
                 ],
             );
 
-            app(BillAllocationService::class)->syncPaymentAllocations($payment, $amount, $validated['allocations'] ?? []);
+            $payment->purchasePayments()->delete();
             $activityLogService->logUpdate(
                 reference: $payment,
                 before: $beforeState,
@@ -346,6 +410,10 @@ class PaymentController extends Controller
 
     public function destroy(Request $request, Payment $payment, ActivityLogService $activityLogService)
     {
+        if ($payment->status !== TransactionStatus::DRAFT->value) {
+            abort(403, 'Only draft documents can be deleted.');
+        }
+
         $oldValues = [
             'number' => $payment->number,
             'date' => $payment->date?->toDateString(),

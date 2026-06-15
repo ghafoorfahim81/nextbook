@@ -146,7 +146,9 @@ class SaleController extends Controller
 
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $validated['type'] = $validated['sale_type'] ?? 'cash';
-            $validated['status'] = TransactionStatus::POSTED->value;
+            $postImmediately = (bool) user_preference('transaction.sale_post_immediately', true);
+            $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
+            $validated['status'] = $documentStatus;
 
             $sale = Sale::create($validated);
             $totalDiscount = $request->input('discount_total', 0);
@@ -174,6 +176,7 @@ class SaleController extends Controller
             $sale->items()->createMany($validated['item_list']);
 
             $lines = [];
+            $stockPayloads = [];
             $glAccounts = Cache::get('gl_accounts');
             foreach ($validated['item_list'] as $item) {
                 $quantity = (float) $item['quantity'];
@@ -189,7 +192,7 @@ class SaleController extends Controller
 
                 $unitCost = (float) $item['net_unit_cost'];
                 $totalCost = $unitCost * $quantity;
-                $stockService->post([
+                $stockPayloads[] = [
                     'item_id'              => $item['item_id'],
                     'movement_type'        => StockMovementType::OUT->value,
                     'unit_measure_id'      => $item['unit_measure_id'],
@@ -206,7 +209,11 @@ class SaleController extends Controller
                     'branch_id'            => $sale->branch_id,
                     'reference_type'       => Sale::class,
                     'reference_id'         => $sale->id,
-                ]);
+                ];
+
+                if ($postImmediately) {
+                    $stockService->post($stockPayloads[array_key_last($stockPayloads)]);
+                }
 
                 // Revenue at gross amount
                 $lines[] = [
@@ -326,9 +333,12 @@ class SaleController extends Controller
                     'voucher_number' => 'Sale #' . $sale->number,
                     'date'           => $validated['date'],
                     'remark'         => 'Sale for sale number: ' . $sale->number,
-                    'status'         => TransactionStatus::POSTED->value,
+                    'status'         => $documentStatus,
                     'reference_type' => Sale::class,
                     'reference_id'   => $sale->id,
+                    'posting_payload' => [
+                        'stock_movements' => $stockPayloads,
+                    ],
                 ],
                 lines: $lines
             );
@@ -381,7 +391,16 @@ class SaleController extends Controller
 
     public function show(Request $request, Sale $sale)
     {
-        $sale->load(['items.item', 'items.unitMeasure', 'customer', 'transaction.currency', 'createdBy', 'updatedBy']);
+        $sale->load([
+            'items.item',
+            'items.unitMeasure',
+            'customer',
+            'transaction.currency',
+            'transaction.originalTransaction',
+            'transaction.reversalTransaction',
+            'createdBy',
+            'updatedBy',
+        ]);
 
         $resource = new SaleResource($sale);
 
@@ -391,6 +410,8 @@ class SaleController extends Controller
 
         return inertia('Sale/Sales/Show', [
             'sale' => $resource,
+            'reversal' => $sale->transaction?->reversalTransaction,
+            'originalDoc' => $sale->transaction?->originalTransaction,
         ]);
     }
 
@@ -427,6 +448,10 @@ class SaleController extends Controller
         ActivityLogService $activityLogService
     )
     {
+        if ($sale->status !== TransactionStatus::DRAFT->value) {
+            abort(403, 'Only draft documents can be edited.');
+        }
+
         $beforeState = [
             'number' => $sale->number,
             'customer_id' => $sale->customer_id,
@@ -443,7 +468,7 @@ class SaleController extends Controller
         $sale = DB::transaction(function () use ($request, $sale, $transactionService, $stockService, $activityLogService, $beforeState) {
             $validated = $request->validated();
             $validated['type'] = $validated['sale_type'] ?? $sale->type ?? 'cash';
-            $validated['status'] = TransactionStatus::POSTED->value;
+            $validated['status'] = TransactionStatus::DRAFT->value;
 
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $sale->date;
             $affectedCombos = $sale->items()
@@ -528,7 +553,7 @@ class SaleController extends Controller
             // Build cost lookup after rebuild so avg_cost reflects post-rebuild state.
             [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
 
-            $validated['item_list'] = array_map(function ($item) use ($itemModelsById, $averageCostsByItemId, $unitValuesById, $originalNetUnitCosts, $originalMovementCosts) {
+            $validated['item_list'] = array_map(function ($item) use ($validated, $sale, $itemModelsById, $averageCostsByItemId, $unitValuesById, $originalNetUnitCosts, $originalMovementCosts) {
                 $itemModel = $itemModelsById[$item['item_id']] ?? null;
                 $key = $item['item_id'] . '_' . $item['unit_measure_id'];
                 // 1. net_unit_cost on the sale item — most authoritative (set at sale creation).
@@ -562,6 +587,7 @@ class SaleController extends Controller
             }
 
             $lines = [];
+            $stockPayloads = [];
             $totalDiscount = (float) $request->input('discount_total', 0);
             $glAccounts = Cache::get('gl_accounts');
 
@@ -576,7 +602,7 @@ class SaleController extends Controller
                 }
                 $unitCost = (float) $item['net_unit_cost'];
                 $totalCost = $unitCost * $quantity;
-                $stockService->post([
+                $stockPayloads[] = [
                     'item_id'              => $item['item_id'],
                     'movement_type'        => StockMovementType::OUT->value,
                     'unit_measure_id'      => $item['unit_measure_id'],
@@ -593,7 +619,7 @@ class SaleController extends Controller
                     'branch_id'            => $sale->branch_id,
                     'reference_type'       => Sale::class,
                     'reference_id'         => $sale->id,
-                ]);
+                ];
 
                 $lines[] = [
                     'account_id' => $itemModel->income_account_id,
@@ -793,9 +819,12 @@ class SaleController extends Controller
                     'date'           => $date,
                     'voucher_number' => 'Sale #' . $sale->number,
                     'remark'         => 'Sale number: ' . $sale->number,
-                    'status'         => TransactionStatus::POSTED->value,
+                    'status'         => TransactionStatus::DRAFT->value,
                     'reference_type' => Sale::class,
                     'reference_id'   => $sale->id,
+                    'posting_payload' => [
+                        'stock_movements' => $stockPayloads,
+                    ],
                 ],
                 lines: $lines
             );
@@ -1194,8 +1223,62 @@ class SaleController extends Controller
         return ($selectedUnit * $avgCost) / $itemUnit;
     }
 
+    public function post(Sale $sale, TransactionService $transactionService, StockService $stockService)
+    {
+        $this->authorize('update', $sale);
+
+        if ($sale->status !== TransactionStatus::DRAFT->value) {
+            abort(422, 'Only draft documents can be posted.');
+        }
+
+        DB::transaction(function () use ($sale, $transactionService, $stockService) {
+            $transaction = $sale->transaction()->firstOrFail();
+
+            foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $payload) {
+                $stockService->post($payload);
+            }
+
+            $transactionService->postDraft($transaction);
+            $sale->update([
+                'status' => TransactionStatus::POSTED->value,
+                'updated_by' => Auth::id(),
+            ]);
+        });
+
+        return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.sale')]));
+    }
+
+    public function reverse(Request $request, Sale $sale, TransactionService $transactionService)
+    {
+        $this->authorize('update', $sale);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+
+        if ($sale->status !== TransactionStatus::POSTED->value) {
+            abort(422, 'Only posted documents can be reversed.');
+        }
+
+        DB::transaction(function () use ($sale, $transactionService, $validated) {
+            $transaction = $sale->transaction()->firstOrFail();
+            $transactionService->reverse($transaction, $validated['reason']);
+
+            $sale->update([
+                'status' => TransactionStatus::REVERSED->value,
+                'updated_by' => Auth::id(),
+            ]);
+        });
+
+        return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.sale')]));
+    }
+
     public function destroy(Request $request, Sale $sale, ActivityLogService $activityLogService)
     {
+        if ($sale->status !== TransactionStatus::DRAFT->value) {
+            abort(403, 'Only draft documents can be deleted.');
+        }
+
         DB::transaction(function () use ($sale, $activityLogService) {
               $oldValues = [
             'number' => $sale->number,

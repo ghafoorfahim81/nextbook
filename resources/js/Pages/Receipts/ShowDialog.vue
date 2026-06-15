@@ -12,6 +12,8 @@ import {
 } from '@/Components/ui/dialog'
 import { Button } from '@/Components/ui/button'
 import { FileText, Calendar, User, DollarSign, Receipt as ReceiptIcon } from 'lucide-vue-next'
+import { router } from '@inertiajs/vue3'
+import TransactionActionDialog from '@/Components/TransactionActionDialog.vue'
 
 const { t } = useI18n()
 
@@ -23,6 +25,8 @@ const emit = defineEmits(['update:open'])
 
 const receipt = ref(null)
 const loading = ref(false)
+const postDialogOpen = ref(false)
+const reverseDialogOpen = ref(false)
 
 watch(() => props.open, async (isOpen) => {
     if (isOpen && props.receiptId) {
@@ -40,6 +44,28 @@ function closeDialog() {
     emit('update:open', false)
     receipt.value = null
 }
+
+function postReceipt() {
+    if (!props.receiptId) return
+    router.post(route('receipts.post', props.receiptId), {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            postDialogOpen.value = false
+            closeDialog()
+        },
+    })
+}
+
+function reverseReceipt(reason) {
+    if (!props.receiptId) return
+    router.post(route('receipts.reverse', props.receiptId), { reason }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            reverseDialogOpen.value = false
+            closeDialog()
+        },
+    })
+}
 </script>
 
 <template>
@@ -55,7 +81,27 @@ function closeDialog() {
                 <DialogDescription class="text-xs text-muted-foreground" v-if="receipt?.narration">
                     {{ receipt.narration }}
                 </DialogDescription>
+                <div v-if="receipt" class="flex items-center gap-2 pt-2">
+                    <span class="rounded-full border px-2 py-0.5 text-xs font-medium capitalize">{{ receipt.status }}</span>
+                    <Button v-if="receipt.status === 'draft'" size="sm" class="bg-green-600 text-white hover:bg-green-700" @click="postDialogOpen = true">Post</Button>
+                    <Button v-if="receipt.status === 'posted'" size="sm" variant="destructive" @click="reverseDialogOpen = true">Reverse</Button>
+                </div>
             </DialogHeader>
+
+            <TransactionActionDialog
+                v-model:open="postDialogOpen"
+                type="post"
+                title="Post receipt"
+                description="This will write accounting entries and apply bill allocations."
+                @confirm="postReceipt"
+            />
+            <TransactionActionDialog
+                v-model:open="reverseDialogOpen"
+                type="reverse"
+                title="Reverse receipt"
+                description="Enter a reason to reverse this receipt and remove its allocations."
+                @confirm="reverseReceipt"
+            />
 
             <div v-if="loading" class="py-6 text-center text-muted-foreground">
                 {{ t('general.loading') || 'Loading' }}...
@@ -138,7 +184,7 @@ function closeDialog() {
                         <div v-if="receipt.transaction" class="grid grid-cols-2 gap-2 text-sm">
                             <div class="text-muted-foreground">{{ t('general.amount') }}</div>
                             <div class="font-medium">
-                                {{ receipt.transaction.currency?.symbol || '' }} {{ receipt.transaction.lines[0].debit }}
+                                {{ receipt.transaction.currency?.symbol || '' }} {{ receipt.transaction.lines?.[0]?.debit || receipt.amount || 0 }}
                             </div>
                             <div class="text-muted-foreground">{{ t('admin.currency.currency') }}</div>
                             <div class="font-medium">
@@ -153,7 +199,7 @@ function closeDialog() {
                         <div v-if="receipt.transaction" class="grid grid-cols-2 gap-2 text-sm">
                             <div class="text-muted-foreground">{{ t('general.amount') }}</div>
                             <div class="font-medium">
-                                {{ receipt.transaction.currency?.symbol || '' }} {{ receipt.transaction.lines[0].debit }}
+                                {{ receipt.transaction.currency?.symbol || '' }} {{ receipt.transaction.lines?.[0]?.debit || receipt.amount || 0 }}
                             </div>
                             <div class="text-muted-foreground">{{ t('admin.currency.currency') }}</div>
                             <div class="font-medium">

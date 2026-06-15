@@ -21,6 +21,7 @@
         "sale": "Sale",
         "purchase": "Purchase",
         "receipt_payment": "Receipt & Payment",
+        "transaction": "Transaction",
         "tax_currency": "Tax & Currency",
         "notifications": "Notifications",
         "security": "Security",
@@ -323,6 +324,22 @@
         "late_fee_percentage": "Late Fee %",
         "show_ledger_transactions": "Show Ledger Latest Transactions",
         "show_item_transactions": "Show Item Latest Transactions"
+    },
+    "transaction": {
+        "description": "Control whether each document posts accounting and stock entries immediately or is saved as a draft.",
+        "post_immediately": "Post Immediately",
+        "post_immediately_help": "Uncheck to save as Draft for review before posting",
+        "modules": {
+            "sale": "Sale",
+            "purchase": "Purchase",
+            "expense": "Expense",
+            "journal_entry": "Journal Entry",
+            "receipt": "Receipt",
+            "payment": "Payment",
+            "account_transfer": "Account Transfer",
+            "item_transfer": "Item Transfer",
+            "drawing": "Drawing"
+        }
     },
     "receipt_payment": {
         "description": "Configure receipt and payment preferences",

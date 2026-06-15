@@ -34,6 +34,7 @@ class JournalEntry extends Model
         'posted_by',
         'reversal_of_id',
         'reversed_at',
+        'reversal_reason',
         'post_blocked_reason',
         'description',
         'branch_id',

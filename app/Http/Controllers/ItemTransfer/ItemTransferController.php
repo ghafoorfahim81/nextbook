@@ -82,6 +82,9 @@ class ItemTransferController extends Controller
             }, $validated['items']);
         }
         $transfer = $this->transferService->createTransfer($validated);
+        if ((bool) user_preference('transaction.item_transfer_post_immediately', true)) {
+            $transfer = $this->transferService->completeTransfer($transfer);
+        }
         if ((bool) $request->create_and_new) {
             return redirect()->back()->with('success', __('general.created_successfully', ['resource' => __('general.resource.item_transfer')]));
         }
@@ -121,6 +124,10 @@ class ItemTransferController extends Controller
      */
     public function update(ItemTransferUpdateRequest $request, ItemTransfer $itemTransfer)
     {
+        if ($itemTransfer->status !== TransferStatus::PENDING) {
+            abort(403, 'Only draft documents can be edited.');
+        }
+
         $validated = $request->validated();
 
         // Convert item expire dates if items are being updated
@@ -209,6 +216,18 @@ class ItemTransferController extends Controller
         $transfer = $this->transferService->completeTransfer($itemTransfer);
 
         return redirect()->back()->with('success', __('general.completed_successfully', ['resource' => __('general.resource.item_transfer')]));
+    }
+
+    public function post(Request $request, ItemTransfer $itemTransfer)
+    {
+        return $this->complete($request, $itemTransfer);
+    }
+
+    public function reverse(Request $request, ItemTransfer $itemTransfer)
+    {
+        $request->validate(['reason' => ['nullable', 'string', 'max:255']]);
+
+        return $this->cancel($request, $itemTransfer);
     }
 
     /**

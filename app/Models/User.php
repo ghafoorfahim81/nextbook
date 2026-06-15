@@ -243,6 +243,17 @@ class User extends Authenticatable
             'show_ledger_transactions' => true,
             'show_item_transactions' => true,
         ],
+        'transaction' => [
+            'sale_post_immediately' => true,
+            'purchase_post_immediately' => true,
+            'expense_post_immediately' => true,
+            'journal_entry_post_immediately' => true,
+            'receipt_post_immediately' => true,
+            'payment_post_immediately' => true,
+            'account_transfer_post_immediately' => true,
+            'item_transfer_post_immediately' => true,
+            'drawing_post_immediately' => true,
+        ],
         'purchase_order' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
             'item_columns' => [

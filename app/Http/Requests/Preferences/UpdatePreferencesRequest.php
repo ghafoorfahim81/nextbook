@@ -130,6 +130,18 @@ use Illuminate\Validation\Rule;
             'receipt_payment.require_approval' => 'sometimes|boolean',
             'receipt_payment.lock_after_days' => 'sometimes|integer|min:0|max:365',
 
+            // Transaction Posting
+            'transaction' => 'sometimes|array',
+            'transaction.sale_post_immediately' => 'sometimes|boolean',
+            'transaction.purchase_post_immediately' => 'sometimes|boolean',
+            'transaction.expense_post_immediately' => 'sometimes|boolean',
+            'transaction.journal_entry_post_immediately' => 'sometimes|boolean',
+            'transaction.receipt_post_immediately' => 'sometimes|boolean',
+            'transaction.payment_post_immediately' => 'sometimes|boolean',
+            'transaction.account_transfer_post_immediately' => 'sometimes|boolean',
+            'transaction.item_transfer_post_immediately' => 'sometimes|boolean',
+            'transaction.drawing_post_immediately' => 'sometimes|boolean',
+
             // Tax & Currency Preferences
             'tax_currency' => 'sometimes|array',
             'tax_currency.tax_plus' => 'sometimes|boolean',

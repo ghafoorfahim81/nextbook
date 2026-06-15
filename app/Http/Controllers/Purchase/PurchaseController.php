@@ -100,7 +100,9 @@ class PurchaseController extends Controller
             $validated = $request->validated();
 
             $validated['type']  = $validated['purchase_type'] ?? 'cash';
-            $validated['status'] = TransactionStatus::POSTED->value;
+            $postImmediately = (bool) user_preference('transaction.purchase_post_immediately', true);
+            $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
+            $validated['status'] = $documentStatus;
 
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $purchase = Purchase::create($validated);
@@ -111,6 +113,7 @@ class PurchaseController extends Controller
             }, $validated['item_list']);
             $purchase->items()->createMany($validated['item_list']);
             $lines = [];
+            $stockPayloads = [];
             foreach ($validated['item_list'] as $item) {
                 $quantity = (float) $item['quantity'];
                 $unitPrice = (float) $item['unit_price'];
@@ -128,14 +131,14 @@ class PurchaseController extends Controller
                 //     $unitCost = $unitPrice;
                 // }
                 $totalCost = $unitPrice * $quantity;
-                $stock = $stockService->post([
+                $stockPayloads[] = [
                     'item_id'         => $item['item_id'],
                     'movement_type'   => StockMovementType::IN->value,
                     'unit_measure_id' => $item['unit_measure_id'], // from item form
                     'quantity'        => $quantity,
                     'source'          => StockSourceType::PURCHASE->value,
                     'unit_cost'       => (float) $item['unit_price'],
-                    'status'          => StockStatus::DRAFT->value,
+                    'status'          => StockStatus::POSTED->value,
                     'batch'           => $item['batch'] ?? null,
                     'date'            => $validated['date'],
                     'expire_date'     => $item['expire_date'],
@@ -144,7 +147,11 @@ class PurchaseController extends Controller
                     'branch_id'       => $purchase->branch_id,
                     'reference_type'  => Purchase::class,
                     'reference_id'    => $purchase->id,
-                ]);
+                ];
+
+                if ($postImmediately) {
+                    $stockService->post($stockPayloads[array_key_last($stockPayloads)]);
+                }
                 $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
                 $accountId = $itemModel->asset_account_id;
                 $lines[] = [
@@ -237,9 +244,12 @@ class PurchaseController extends Controller
                     'voucher_number' => 'Purchase #' . $purchase->number,
                     'date'          => $validated['date'],
                     'remark'        => 'Purchase #' . $purchase->number,
-                    'status'        => TransactionStatus::POSTED->value,
+                    'status'        => $documentStatus,
                     'reference_type'=> Purchase::class,
                     'reference_id'  => $purchase->id,
+                    'posting_payload' => [
+                        'stock_movements' => $stockPayloads,
+                    ],
                 ],
                 lines: $lines
             );
@@ -285,7 +295,16 @@ class PurchaseController extends Controller
 
     public function show(Request $request, Purchase $purchase)
     {
-        $purchase->load(['items.item', 'items.unitMeasure', 'supplier', 'transaction.currency', 'createdBy', 'updatedBy']);
+        $purchase->load([
+            'items.item',
+            'items.unitMeasure',
+            'supplier',
+            'transaction.currency',
+            'transaction.originalTransaction',
+            'transaction.reversalTransaction',
+            'createdBy',
+            'updatedBy',
+        ]);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -295,6 +314,8 @@ class PurchaseController extends Controller
 
         return inertia('Purchase/Purchases/Show', [
             'purchase' => new PurchaseResource($purchase),
+            'reversal' => $purchase->transaction?->reversalTransaction,
+            'originalDoc' => $purchase->transaction?->originalTransaction,
         ]);
     }
 
@@ -326,6 +347,10 @@ class PurchaseController extends Controller
         ActivityLogService $activityLogService
     )
     {
+        if ($purchase->status !== TransactionStatus::DRAFT->value) {
+            abort(403, 'Only draft documents can be edited.');
+        }
+
         if ($this->purchaseHasPostedStock($purchase)) {
             throw ValidationException::withMessages([
                 'purchase' => 'This purchase contains posted stock and can no longer be edited.',
@@ -347,7 +372,7 @@ class PurchaseController extends Controller
         $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $stockService, $activityLogService, $beforeState) {
             $validated = $request->validated();
             $validated['type'] = $validated['purchase_type'] ?? $purchase->type ?? 'cash';
-            $validated['status'] = TransactionStatus::POSTED->value;
+            $validated['status'] = TransactionStatus::DRAFT->value;
 
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $purchase->date;
             $affectedCombos = $purchase->items()
@@ -397,6 +422,7 @@ class PurchaseController extends Controller
             $lines = [];
             $glAccounts = Cache::get('gl_accounts');
             $discountTotal = (float) $request->input('discount_total', 0);
+            $stockPayloads = [];
 
             foreach ($validated['item_list'] as $item) {
                 $quantity = (float) $item['quantity'];
@@ -404,7 +430,7 @@ class PurchaseController extends Controller
                 $itemModel = Item::findOrFail($item['item_id']);
                 $accountId = $itemModel->asset_account_id ?? $itemModel->cost_account_id;
 
-                $stockService->post([
+                $stockPayloads[] = [
                     'item_id'         => $item['item_id'],
                     'movement_type'   => StockMovementType::IN->value,
                     'unit_measure_id' => $item['unit_measure_id'],
@@ -420,7 +446,7 @@ class PurchaseController extends Controller
                     'branch_id'       => $purchase->branch_id,
                     'reference_type'  => Purchase::class,
                     'reference_id'    => $purchase->id,
-                ]);
+                ];
 
                 $lines[] = [
                     'account_id' => $accountId,
@@ -517,9 +543,12 @@ class PurchaseController extends Controller
                     'voucher_number' => 'Purchase #' . $purchase->number,
                     'date'           => $validated['date'],
                     'remark'         => 'Purchase #' . $purchase->number,
-                    'status'         => TransactionStatus::POSTED->value,
+                    'status'         => TransactionStatus::DRAFT->value,
                     'reference_type' => Purchase::class,
                     'reference_id'   => $purchase->id,
+                    'posting_payload' => [
+                        'stock_movements' => $stockPayloads,
+                    ],
                 ],
                 lines: $lines
             );
@@ -784,8 +813,62 @@ class PurchaseController extends Controller
         return $status instanceof StockStatus ? $status->value : (string) $status;
     }
 
+    public function post(Purchase $purchase, TransactionService $transactionService, StockService $stockService)
+    {
+        $this->authorize('update', $purchase);
+
+        if ($purchase->status !== TransactionStatus::DRAFT->value) {
+            abort(422, 'Only draft documents can be posted.');
+        }
+
+        DB::transaction(function () use ($purchase, $transactionService, $stockService) {
+            $transaction = $purchase->transaction()->firstOrFail();
+
+            foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $payload) {
+                $stockService->post($payload);
+            }
+
+            $transactionService->postDraft($transaction);
+            $purchase->update([
+                'status' => TransactionStatus::POSTED->value,
+                'updated_by' => auth()->id(),
+            ]);
+        });
+
+        return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.purchase')]));
+    }
+
+    public function reverse(Request $request, Purchase $purchase, TransactionService $transactionService)
+    {
+        $this->authorize('update', $purchase);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+
+        if ($purchase->status !== TransactionStatus::POSTED->value) {
+            abort(422, 'Only posted documents can be reversed.');
+        }
+
+        DB::transaction(function () use ($purchase, $transactionService, $validated) {
+            $transaction = $purchase->transaction()->firstOrFail();
+            $transactionService->reverse($transaction, $validated['reason']);
+
+            $purchase->update([
+                'status' => TransactionStatus::REVERSED->value,
+                'updated_by' => auth()->id(),
+            ]);
+        });
+
+        return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.purchase')]));
+    }
+
     public function destroy(Request $request, Purchase $purchase, ActivityLogService $activityLogService)
     {
+        if ($purchase->status !== TransactionStatus::DRAFT->value) {
+            abort(403, 'Only draft documents can be deleted.');
+        }
+
         DB::transaction(function () use ($purchase) {
             $affectedCombos = $purchase->items()
                 ->get(['item_id', 'warehouse_id', 'branch_id'])

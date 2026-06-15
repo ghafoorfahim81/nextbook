@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import {
     Dialog,
     DialogContent,
@@ -9,6 +9,8 @@ import {
 import { Badge } from '@/Components/ui/badge';
 import { Separator } from '@/Components/ui/separator';
 import { useI18n } from 'vue-i18n';
+import { router } from '@inertiajs/vue3';
+import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
 
 const { t } = useI18n();
 
@@ -18,6 +20,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['update:open']);
+const postDialogOpen = ref(false);
+const reverseDialogOpen = ref(false);
 
 const total = computed(() => {
     if (!props.expense?.details) return 0;
@@ -27,18 +31,65 @@ const total = computed(() => {
 const baseTotal = computed(() => {
     return total.value * (props.expense?.rate || 1);
 });
+
+const postExpense = () => {
+    if (!props.expense?.id) return;
+    router.post(route('expenses.post', props.expense.id), {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            postDialogOpen.value = false;
+            emit('update:open', false);
+        },
+    });
+};
+
+const reverseExpense = (reason) => {
+    if (!props.expense?.id) return;
+    router.post(route('expenses.reverse', props.expense.id), { reason }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            reverseDialogOpen.value = false;
+            emit('update:open', false);
+        },
+    });
+};
 </script>
 
 <template>
     <Dialog :open="open" @update:open="emit('update:open', $event)">
         <DialogContent class="max-w-2xl">
             <DialogHeader>
-                <DialogTitle class="text-xl font-semibold text-violet-600">
-                    {{ t('expense.expense_details') }}
-                </DialogTitle>
+                <div class="flex items-center justify-between gap-3">
+                    <DialogTitle class="text-xl font-semibold text-violet-600">
+                        {{ t('expense.expense_details') }}
+                    </DialogTitle>
+                    <Badge v-if="expense" class="capitalize">{{ expense.status }}</Badge>
+                </div>
             </DialogHeader>
 
             <div v-if="expense" class="space-y-6">
+                <div class="flex justify-end gap-2">
+                    <button v-if="expense.status === 'draft'" class="rounded-md bg-green-600 px-3 py-1.5 text-sm text-white" @click="postDialogOpen = true">
+                        Post
+                    </button>
+                    <button v-if="expense.status === 'posted'" class="rounded-md bg-red-600 px-3 py-1.5 text-sm text-white" @click="reverseDialogOpen = true">
+                        Reverse
+                    </button>
+                </div>
+                <TransactionActionDialog
+                    v-model:open="postDialogOpen"
+                    type="post"
+                    title="Post expense"
+                    description="This will write the accounting entries. Posted documents cannot be edited or deleted."
+                    @confirm="postExpense"
+                />
+                <TransactionActionDialog
+                    v-model:open="reverseDialogOpen"
+                    type="reverse"
+                    title="Reverse expense"
+                    description="Enter a reason to create the reversal transaction."
+                    @confirm="reverseExpense"
+                />
                 <!-- General Info -->
                 <div class="grid grid-cols-2 gap-4 text-sm">
                     <div>

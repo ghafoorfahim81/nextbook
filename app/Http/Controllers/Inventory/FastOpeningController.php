@@ -77,7 +77,7 @@ class FastOpeningController extends Controller
                         lines: [
                             [
                                 'account_id' => Item::find($itemData['item_id'])->asset_account_id,
-                                'debit' => $itemData['cost']*$itemData['quantity'],
+                                'debit' => round((float)$itemData['quantity'], 4) * (float)$itemData['cost'],
                                 'credit' => 0,
                                 'remark' => 'Opening balance for item ' . ' ' . Item::find($itemData['item_id'])->name,
                                 'remark_fa' => 'موجودی اولیه برای جنس ' . ' ' . Item::find($itemData['item_id'])->name,
@@ -86,7 +86,7 @@ class FastOpeningController extends Controller
                             [
                                 'account_id' => $glAccounts['opening-balance-equity'],
                                 'debit' => 0,
-                                'credit' => $itemData['cost']*$itemData['quantity'],
+                                'credit' => round((float)$itemData['quantity'], 4) * (float)$itemData['cost'],
                                 'remark' => 'Opening balance for item ' . ' ' . Item::find($itemData['item_id'])->name,
                                 'remark_fa' => 'موجودی اولیه برای جنس ' . ' ' . Item::find($itemData['item_id'])->name,
                                 'remark_ps' =>'د'. ' '. Item::find($itemData['item_id'])->name.' '.'د پرانیستلو بیلانس ',

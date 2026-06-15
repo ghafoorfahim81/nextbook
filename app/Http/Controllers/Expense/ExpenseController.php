@@ -19,6 +19,7 @@ use App\Models\User;
 use App\Services\DateConversionService;
 use App\Http\Resources\Account\AccountResource;
 use App\Services\ActivityLogService;
+use App\Enums\TransactionStatus;
 
 class ExpenseController extends Controller
 {
@@ -95,12 +96,15 @@ class ExpenseController extends Controller
             //         ->store('expenses', 'public');
             // }
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+            $postImmediately = (bool) user_preference('transaction.expense_post_immediately', true);
+            $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
 
             // Create expense record
             $expense = Expense::create([
                 'date' => $date,
                 'remarks' => $validated['remarks'] ?? null,
                 'category_id' => $validated['category_id'],
+                'status' => $documentStatus,
             ]);
 
             // Create expense details
@@ -117,6 +121,7 @@ class ExpenseController extends Controller
                     'reference_type' => Expense::class,
                     'reference_id' => $expense->id,
                     'remark' => 'Expense: ' . $expense->category->name . ' - ' . $expense->remarks,
+                    'status' => $documentStatus,
                 ],
                 lines: [
                     [
@@ -175,11 +180,49 @@ class ExpenseController extends Controller
             'details',
             'transaction.currency',
             'transaction.lines.account',
+            'transaction.originalTransaction',
+            'transaction.reversalTransaction',
         ]);
 
         return response()->json([
             'data' => new ExpenseResource($expense),
         ]);
+    }
+
+    public function post(Expense $expense, TransactionService $transactionService)
+    {
+        $this->authorize('update', $expense);
+
+        if ($expense->status !== TransactionStatus::DRAFT->value) {
+            abort(422, 'Only draft documents can be posted.');
+        }
+
+        DB::transaction(function () use ($expense, $transactionService) {
+            $transactionService->postDraft($expense->transaction()->firstOrFail());
+            $expense->update(['status' => TransactionStatus::POSTED->value]);
+        });
+
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.expense')]));
+    }
+
+    public function reverse(Request $request, Expense $expense, TransactionService $transactionService)
+    {
+        $this->authorize('update', $expense);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+
+        if ($expense->status !== TransactionStatus::POSTED->value) {
+            abort(422, 'Only posted documents can be reversed.');
+        }
+
+        DB::transaction(function () use ($expense, $transactionService, $validated) {
+            $transactionService->reverse($expense->transaction()->firstOrFail(), $validated['reason']);
+            $expense->update(['status' => TransactionStatus::REVERSED->value]);
+        });
+
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.expense')]));
     }
 
     public function edit(Request $request, Expense $expense)
@@ -208,6 +251,10 @@ class ExpenseController extends Controller
         ActivityLogService $activityLogService
     )
     {
+        if ($expense->status !== TransactionStatus::DRAFT->value) {
+            abort(403, 'Only draft documents can be edited.');
+        }
+
         $beforeState = [
             'date' => $expense->date?->toDateString(),
             'category_id' => $expense->category_id,
@@ -236,6 +283,7 @@ class ExpenseController extends Controller
                 'date' => $date,
                 'remarks' => $validated['remarks'] ?? null,
                 'category_id' => $validated['category_id'],
+                'status' => TransactionStatus::DRAFT->value,
             ]);
 
             // Update details
@@ -259,6 +307,7 @@ class ExpenseController extends Controller
                     'reference_type' => Expense::class,
                     'reference_id' => $expense->id,
                     'remark' => 'Expense for ' . ' ' . $expense->category->name . ' - ' . $expense->remarks,
+                    'status' => TransactionStatus::DRAFT->value,
                 ],
                 lines: [
                     [
@@ -306,6 +355,10 @@ class ExpenseController extends Controller
     }
     public function destroy(Request $request, Expense $expense, ActivityLogService $activityLogService)
     {
+        if ($expense->status !== TransactionStatus::DRAFT->value) {
+            abort(403, 'Only draft documents can be deleted.');
+        }
+
         $oldValues = [
             'date' => $expense->date?->toDateString(),
             'category_id' => $expense->category_id,

@@ -61,6 +61,7 @@ const tabs = [
     { id: 'sale', label: 'preferences.tabs.sale', icon: ShoppingCart },
     { id: 'purchase', label: 'preferences.tabs.purchase', icon: ShoppingBag },
     { id: 'receipt_payment', label: 'preferences.tabs.receipt_payment', icon: CreditCard },
+    { id: 'transaction', label: 'preferences.tabs.transaction', icon: FileText },
     { id: 'tax_currency', label: 'preferences.tabs.tax_currency', icon: Calculator },
     { id: 'notifications', label: 'preferences.tabs.notifications', icon: Bell },
     { id: 'security', label: 'preferences.tabs.security', icon: Shield },
@@ -210,6 +211,20 @@ const tabSearchTerms = {
         'lock after days',
         'auto sequence',
         'require approval',
+    ],
+    transaction: [
+        'transaction',
+        'post immediately',
+        'draft',
+        'sale',
+        'purchase',
+        'expense',
+        'journal entry',
+        'receipt',
+        'payment',
+        'account transfer',
+        'item transfer',
+        'drawing',
     ],
     tax_currency: [
         'tax currency',
@@ -582,6 +597,18 @@ const receiptPaymentFields = [
     { key: 'cheque_number', label: 'preferences.receipt_fields.cheque_number' },
     { key: 'debit_account', label: 'preferences.receipt_fields.debit_account' },
     { key: 'ledger_old_balance', label: 'preferences.receipt_fields.ledger_old_balance' },
+]
+
+const transactionPostModules = [
+    { key: 'sale_post_immediately', label: 'preferences.transaction.modules.sale' },
+    { key: 'purchase_post_immediately', label: 'preferences.transaction.modules.purchase' },
+    { key: 'expense_post_immediately', label: 'preferences.transaction.modules.expense' },
+    { key: 'journal_entry_post_immediately', label: 'preferences.transaction.modules.journal_entry' },
+    { key: 'receipt_post_immediately', label: 'preferences.transaction.modules.receipt' },
+    { key: 'payment_post_immediately', label: 'preferences.transaction.modules.payment' },
+    { key: 'account_transfer_post_immediately', label: 'preferences.transaction.modules.account_transfer' },
+    { key: 'item_transfer_post_immediately', label: 'preferences.transaction.modules.item_transfer' },
+    { key: 'drawing_post_immediately', label: 'preferences.transaction.modules.drawing' },
 ]
 </script>
 
@@ -1251,6 +1278,46 @@ const receiptPaymentFields = [
                                         @update:model-value="(v) => form.receipt_payment.require_approval = v"
                                     />
                                     <Label>{{ t('preferences.receipt_payment.require_approval') }}</Label>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <!-- Transaction posting preferences -->
+                    <Card v-show="activeTab === 'transaction'" class="animate-in fade-in duration-200">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <CardTitle>{{ t('preferences.tabs.transaction') }}</CardTitle>
+                                <CardDescription>{{ t('preferences.transaction.description') }}</CardDescription>
+                            </div>
+                            <Button variant="ghost" size="sm" @click="resetCategory('transaction')">
+                                <RotateCcw class="w-4 h-4 mr-2" />
+                                {{ t('preferences.reset') }}
+                            </Button>
+                        </CardHeader>
+                        <CardContent class="space-y-4">
+                            <div
+                                v-for="module in transactionPostModules"
+                                :key="module.key"
+                                class="rounded-lg border border-border bg-background/70 p-4"
+                            >
+                                <div class="flex items-start gap-3">
+                                    <Checkbox
+                                        :id="`transaction-${module.key}`"
+                                        :checked="form.transaction?.[module.key] ?? true"
+                                        @update:checked="(checked) => {
+                                            if (!form.transaction) form.transaction = {}
+                                            form.transaction[module.key] = checked
+                                        }"
+                                    />
+                                    <div class="space-y-1">
+                                        <Label :for="`transaction-${module.key}`" class="cursor-pointer font-medium">
+                                            {{ t(module.label) }} - {{ t('preferences.transaction.post_immediately') }}
+                                        </Label>
+                                        <p class="text-sm text-muted-foreground">
+                                            {{ t('preferences.transaction.post_immediately_help') }}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>

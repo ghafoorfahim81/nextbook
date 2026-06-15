@@ -147,6 +147,14 @@
                             <template v-else-if="column.render">
                                 {{ column.render(item) }}
                             </template>
+                            <template v-else-if="isStatusColumn(column.key)">
+                                <span
+                                    class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize"
+                                    :class="statusBadgeClass(getNestedValue(item, column.key) || item.status)"
+                                >
+                                    {{ getNestedValue(item, column.key) || item.status || '-' }}
+                                </span>
+                            </template>
                             <template v-else-if="isBalanceColumn(column.key)">
                                 <span dir="ltr" class="inline-block text-left tabular-nums">
                                     {{ getNestedValue(item, column.key) }}
@@ -343,6 +351,26 @@ const getNestedValue = (obj, path) => {
 const isBalanceColumn = (key) => {
     if (!key) return false
     return key === 'balance' || key.endsWith('_balance') || key.includes('.balance') || key.includes('amount')
+}
+
+const isStatusColumn = (key) => key === 'status' || key === 'status_label'
+
+const statusBadgeClass = (status) => {
+    switch (String(status || '').toLowerCase()) {
+        case 'draft':
+        case 'pending':
+            return 'border-gray-500/30 bg-gray-500/10 text-gray-700 dark:text-gray-300'
+        case 'posted':
+        case 'completed':
+        case 'approved':
+            return 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300'
+        case 'reversed':
+        case 'cancelled':
+        case 'rejected':
+            return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300'
+        default:
+            return 'border-border bg-muted text-foreground'
+    }
 }
 
 // Search handling

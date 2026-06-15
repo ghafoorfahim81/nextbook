@@ -23,6 +23,9 @@ use App\Models\JournalEntry\JournalClass;
 use App\Http\Resources\JournalEntry\JournalClassResource;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
+use App\Enums\TransactionStatus;
+use Illuminate\Support\Facades\Auth;
+
 class JournalEntryController extends Controller
 {
     /**
@@ -82,10 +85,14 @@ class JournalEntryController extends Controller
     {
         DB::transaction(function () use ($request, $activityLogService) {
             $validated = $request->validated();
+            $postImmediately = (bool) user_preference('transaction.journal_entry_post_immediately', true);
+            $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
             $journalEntry = JournalEntry::create([
                 'number' => $validated['number'],
                 'date' => $validated['date'],
-                'status' => 'posted',
+                'status' => $documentStatus,
+                'posted_at' => $postImmediately ? now() : null,
+                'posted_by' => $postImmediately ? Auth::id() : null,
                 'currency_id' => $validated['currency_id'],
                 'rate' => $validated['rate'],
                 'remarks' => $validated['remarks'],
@@ -114,7 +121,7 @@ class JournalEntryController extends Controller
                     'remark' => $validated['remarks'],
                     'reference_type' => JournalEntry::class,
                     'reference_id' => $journalEntry->id,
-                    'status' => 'posted',
+                    'status' => $documentStatus,
                 ],
                 lines: $lines,
             );
@@ -183,6 +190,10 @@ class JournalEntryController extends Controller
         ActivityLogService $activityLogService
     )
     {
+        if ($journalEntry->status !== TransactionStatus::DRAFT->value) {
+            abort(403, 'Only draft documents can be edited.');
+        }
+
         $validated = $request->validated();
         $beforeState = [
             'number' => $journalEntry->number,
@@ -201,7 +212,7 @@ class JournalEntryController extends Controller
             $journalEntry->update([
                 'number' => $validated['number'],
                 'date' => $date,
-                'status' => 'posted',
+                'status' => TransactionStatus::DRAFT->value,
                 'currency_id' => $validated['currency_id'],
                 'rate' => $validated['rate'],
                 'remarks' => $validated['remarks'],
@@ -240,7 +251,7 @@ class JournalEntryController extends Controller
                     'remark' => $validated['remarks'],
                     'reference_type' => JournalEntry::class,
                     'reference_id' => $journalEntry->id,
-                    'status' => 'posted',
+                    'status' => TransactionStatus::DRAFT->value,
                 ],
                 lines: $lines,
             );
@@ -275,6 +286,10 @@ class JournalEntryController extends Controller
      */
     public function destroy(Request $request, JournalEntry $journalEntry, ActivityLogService $activityLogService)
     {
+        if ($journalEntry->status !== TransactionStatus::DRAFT->value) {
+            abort(403, 'Only draft documents can be deleted.');
+        }
+
         $oldValues = [
             'number' => $journalEntry->number,
             'date' => $journalEntry->date?->toDateString(),
@@ -304,6 +319,54 @@ class JournalEntryController extends Controller
         });
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         return redirect()->route('journal-entries.index')->with('success', __('general.deleted_successfully', ['resource' => __('general.resource.journal_entry')]));
+    }
+
+    public function post(JournalEntry $journalEntry, TransactionService $transactionService)
+    {
+        $this->authorize('update', $journalEntry);
+
+        if ($journalEntry->status !== TransactionStatus::DRAFT->value) {
+            abort(422, 'Only draft documents can be posted.');
+        }
+
+        DB::transaction(function () use ($journalEntry, $transactionService) {
+            $transaction = $journalEntry->transaction()->firstOrFail();
+            $transactionService->postDraft($transaction);
+
+            $journalEntry->update([
+                'status' => TransactionStatus::POSTED->value,
+                'posted_at' => now(),
+                'posted_by' => Auth::id(),
+            ]);
+        });
+
+        return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.journal_entry')]));
+    }
+
+    public function reverse(Request $request, JournalEntry $journalEntry, TransactionService $transactionService)
+    {
+        $this->authorize('update', $journalEntry);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+
+        if ($journalEntry->status !== TransactionStatus::POSTED->value) {
+            abort(422, 'Only posted documents can be reversed.');
+        }
+
+        DB::transaction(function () use ($journalEntry, $transactionService, $validated) {
+            $transaction = $journalEntry->transaction()->firstOrFail();
+            $transactionService->reverse($transaction, $validated['reason']);
+
+            $journalEntry->update([
+                'status' => TransactionStatus::REVERSED->value,
+                'reversed_at' => now(),
+                'reversal_reason' => $validated['reason'],
+            ]);
+        });
+
+        return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.journal_entry')]));
     }
 
     public function restore(Request $request, JournalEntry $journalEntry, ActivityLogService $activityLogService)
