@@ -8,6 +8,7 @@ use App\Models\ItemTransfer\ItemTransferItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Cache;
+use App\Models\Inventory\StockMovement;
 use App\Models\Transaction\Transaction;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
@@ -16,10 +17,10 @@ use App\Services\DateConversionService;
 
 class ItemTransferService
 {
-    private $dateConversionService;
     public function __construct(
         private StockService $stockService,
         private ActivityLogService $activityLogService,
+        private DateConversionService $dateConversionService,
     ) {}
 
     /**
@@ -287,18 +288,41 @@ class ItemTransferService
                 // Reverse transaction for transfer cost
                 if($transfer->transfer_cost>0){
                     $transactionService = app(TransactionService::class);
-                    $transactionService->reverse( Transaction::where('reference_type', ItemTransfer::class)
-                    ->where('reference_id', $transfer->id)
-                    ->first());
-                }
-                // Find and delete stock records related to this transfer
-                \App\Models\Inventory\Stock::where('source_type', ItemTransfer::class)
-                    ->where('source_id', $transfer->id)
-                    ->delete();
+                    $transaction = Transaction::query()
+                        ->where('reference_type', ItemTransfer::class)
+                        ->where('reference_id', $transfer->id)
+                        ->first();
 
-                \App\Models\Inventory\StockOut::where('source_type', ItemTransfer::class)
-                    ->where('source_id', $transfer->id)
-                    ->delete();
+                    if ($transaction) {
+                        $transactionService->reverse($transaction, 'Item transfer reversal');
+                    }
+                }
+                StockMovement::query()
+                    ->where('reference_type', ItemTransfer::class)
+                    ->where('reference_id', $transfer->id)
+                    ->get()
+                    ->each(function (StockMovement $movement) use ($transfer) {
+                        $this->stockService->post([
+                            'item_id' => $movement->item_id,
+                            'movement_type' => $movement->movement_type === StockMovementType::IN
+                                ? StockMovementType::OUT->value
+                                : StockMovementType::IN->value,
+                            'unit_measure_id' => $movement->unit_measure_id,
+                            'quantity' => (float) $movement->quantity,
+                            'source' => StockSourceType::ITEM_TRANSFER->value,
+                            'unit_cost' => (float) $movement->unit_cost,
+                            'unit_cost_override' => (float) $movement->unit_cost,
+                            'status' => StockStatus::POSTED->value,
+                            'batch' => $movement->batch,
+                            'date' => now()->toDateString(),
+                            'expire_date' => $movement->expire_date,
+                            'size_id' => $movement->size_id,
+                            'warehouse_id' => $movement->warehouse_id,
+                            'branch_id' => $transfer->branch_id,
+                            'reference_type' => ItemTransfer::class,
+                            'reference_id' => $transfer->id,
+                        ]);
+                    });
             }
 
             // Update transfer status

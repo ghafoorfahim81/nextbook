@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
+use App\Enums\TransactionStatus;
+
 class AccountTransferController extends Controller
 {
     private $dateConversionService;
@@ -79,6 +81,8 @@ class AccountTransferController extends Controller
             $amount = (float) $validated['amount'];
             $currencyId = $validated['currency_id'];
             $rate = (float) $validated['rate'];
+            $postImmediately = (bool) user_preference('transaction.account_transfer_post_immediately', true);
+            $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
 
             // Use any existing ledger to fulfill the non-null FK constraint on transactions table.
             // Since this is an internal transfer, we associate both transactions with the same placeholder ledger.
@@ -104,6 +108,7 @@ class AccountTransferController extends Controller
                 'number' => $validated['number'] ?? null,
                 'date' => $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null,
                 'remark' => $validated['remark'] ?? null,
+                'status' => $documentStatus,
             ]);
             $transaction = $transactionService->post([
                 'currency_id' => $currencyId,
@@ -112,6 +117,10 @@ class AccountTransferController extends Controller
                 'reference_type' => AccountTransfer::class,
                 'reference_id' => $transfer->id,
                 'remark' => "Transfer #{$transfer->number}.from {$fromAccount->name} to {$toAccount->name}",
+                'status' => $documentStatus,
+                'posting_payload' => [
+                    'amount' => $amount,
+                ],
             ], [
                 [
                     'account_id' => $map['debit'],
@@ -164,10 +173,44 @@ class AccountTransferController extends Controller
 
     public function show(Request $request, AccountTransfer $accountTransfer)
     {
-        $accountTransfer->load(['transaction.lines.account', 'transaction.currency', 'createdBy', 'updatedBy']);
+        $accountTransfer->load(['transaction.lines.account', 'transaction.currency', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'createdBy', 'updatedBy']);
         return response()->json([
             'data' => new AccountTransferResource($accountTransfer),
         ]);
+    }
+
+    public function post(AccountTransfer $accountTransfer, TransactionService $transactionService)
+    {
+        $this->authorize('update', $accountTransfer);
+
+        if ($accountTransfer->status !== TransactionStatus::DRAFT->value) {
+            abort(422, 'Only draft documents can be posted.');
+        }
+
+        DB::transaction(function () use ($accountTransfer, $transactionService) {
+            $transactionService->postDraft($accountTransfer->transaction()->firstOrFail());
+            $accountTransfer->update(['status' => TransactionStatus::POSTED->value]);
+        });
+
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.account_transfer')]));
+    }
+
+    public function reverse(Request $request, AccountTransfer $accountTransfer, TransactionService $transactionService)
+    {
+        $this->authorize('update', $accountTransfer);
+
+        $validated = $request->validate(['reason' => ['required', 'string', 'max:255']]);
+
+        if ($accountTransfer->status !== TransactionStatus::POSTED->value) {
+            abort(422, 'Only posted documents can be reversed.');
+        }
+
+        DB::transaction(function () use ($accountTransfer, $transactionService, $validated) {
+            $transactionService->reverse($accountTransfer->transaction()->firstOrFail(), $validated['reason']);
+            $accountTransfer->update(['status' => TransactionStatus::REVERSED->value]);
+        });
+
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.account_transfer')]));
     }
 
     public function edit(Request $request, AccountTransfer $accountTransfer)
@@ -180,6 +223,10 @@ class AccountTransferController extends Controller
 
     public function update(AccountTransferUpdateRequest $request, AccountTransfer $accountTransfer, ActivityLogService $activityLogService)
     { 
+        if ($accountTransfer->status !== TransactionStatus::DRAFT->value) {
+            abort(403, 'Only draft documents can be edited.');
+        }
+
         $before = $this->transferSnapshot($accountTransfer->loadMissing('transaction.lines.account', 'transaction.currency'));
 
         DB::transaction(function () use ($request, $accountTransfer, $activityLogService, $before) {
@@ -189,6 +236,7 @@ class AccountTransferController extends Controller
                 'number' => $validated['number'] ?? $accountTransfer->number,
                 'date' => $validated['date'] ?? $accountTransfer->date,
                 'remark' => $validated['remark'] ?? $accountTransfer->remark,
+                'status' => TransactionStatus::DRAFT->value,
             ]);
 
             $amount = isset($validated['amount']) ? (float) $validated['amount'] : ($accountTransfer->transaction?->lines?->first()?->debit ?? $accountTransfer->transaction?->lines?->first()?->credit);
@@ -220,6 +268,10 @@ class AccountTransferController extends Controller
                 'remark' => "Transfer #{$accountTransfer->number} from {$fromAccount->local_name} to {$toAccount->local_name}",
                 'reference_type' => AccountTransfer::class,
                 'reference_id' => $accountTransfer->id,
+                'status' => TransactionStatus::DRAFT->value,
+                'posting_payload' => [
+                    'amount' => $amount,
+                ],
             ],
             lines: [
                 [
@@ -271,6 +323,10 @@ class AccountTransferController extends Controller
 
     public function destroy(AccountTransfer $accountTransfer, ActivityLogService $activityLogService)
     {
+        if ($accountTransfer->status !== TransactionStatus::DRAFT->value) {
+            abort(403, 'Only draft documents can be deleted.');
+        }
+
         $oldValues = $this->transferSnapshot($accountTransfer->loadMissing('transaction.lines.account', 'transaction.currency'));
 
         DB::transaction(function () use ($accountTransfer) {

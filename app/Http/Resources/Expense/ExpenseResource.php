@@ -16,6 +16,7 @@ class ExpenseResource extends JsonResource
             'id' => $this->id,
             'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
             'remarks' => $this->remarks,
+            'status' => $this->status ?? $this->transaction?->status,
             'category_id' => $this->category_id,
             'category' => $this->whenLoaded('category', fn() => [
                 'id' => $this->category->id,

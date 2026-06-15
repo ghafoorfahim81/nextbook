@@ -1,18 +1,21 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp, ArrowLeft, Printer, SquarePen, Download } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
+import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
 
 const { t } = useI18n();
 const { can } = useAuth();
 
 const props = defineProps({
     sale: { type: Object, required: true },
+    reversal: { type: Object, default: null },
+    originalDoc: { type: Object, default: null },
 });
 
 const saleData = computed(() => props.sale?.data ?? props.sale ?? {});
@@ -49,6 +52,9 @@ const formatLineValue = (value) => Number(value || 0).toFixed(2);
 
 const statusBadgeClasses = computed(() => {
     switch (saleData.value.status) {
+        case 'draft': return 'border-gray-500/30 bg-gray-500/10 text-gray-700 dark:text-gray-300';
+        case 'posted': return 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300';
+        case 'reversed': return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300';
         case 'approved': return 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300';
         case 'rejected': return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300';
         case 'pending': return 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300';
@@ -58,6 +64,9 @@ const statusBadgeClasses = computed(() => {
 
 const getStatusLabel = (status) => {
     switch (status) {
+        case 'draft': return 'Draft';
+        case 'posted': return 'Posted';
+        case 'reversed': return 'Reversed';
         case 'approved': return t('general.approve');
         case 'rejected': return t('general.reject');
         case 'pending': return 'Pending';
@@ -66,6 +75,22 @@ const getStatusLabel = (status) => {
 };
 
 const currencySymbol = computed(() => saleData.value.transaction?.currency?.symbol || '');
+const postDialogOpen = ref(false);
+const reverseDialogOpen = ref(false);
+
+const postSale = () => {
+    router.post(route('sales.post', saleData.value.id), {}, {
+        preserveScroll: true,
+        onSuccess: () => { postDialogOpen.value = false },
+    });
+};
+
+const reverseSale = (reason) => {
+    router.post(route('sales.reverse', saleData.value.id), { reason }, {
+        preserveScroll: true,
+        onSuccess: () => { reverseDialogOpen.value = false },
+    });
+};
 </script>
 
 <template>
@@ -78,6 +103,23 @@ const currencySymbol = computed(() => saleData.value.transaction?.currency?.symb
                     {{ t('general.back') }}
                 </Button>
                 <div class="flex items-center gap-2">
+                    <Button
+                        v-if="saleData.status === 'draft'"
+                        variant="default"
+                        size="sm"
+                        class="bg-green-600 text-white hover:bg-green-700"
+                        @click="postDialogOpen = true"
+                    >
+                        Post
+                    </Button>
+                    <Button
+                        v-if="saleData.status === 'posted'"
+                        variant="destructive"
+                        size="sm"
+                        @click="reverseDialogOpen = true"
+                    >
+                        Reverse
+                    </Button>
                     <a :href="route('sales.export', saleData.id)" target="_blank" rel="noopener noreferrer">
                         <Button variant="outline" size="sm">
                             <Download class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
@@ -91,7 +133,7 @@ const currencySymbol = computed(() => saleData.value.transaction?.currency?.symb
                         </Button>
                     </a>
                     <Button
-                        v-if="can('sales.update') && saleData.id"
+                        v-if="can('sales.update') && saleData.id && saleData.status === 'draft'"
                         variant="default"
                         size="sm"
                         class="gap-1.5 bg-primary text-primary-foreground"
@@ -101,6 +143,28 @@ const currencySymbol = computed(() => saleData.value.transaction?.currency?.symb
                         {{ t('datatable.edit') }}
                     </Button>
                 </div>
+            </div>
+
+            <TransactionActionDialog
+                v-model:open="postDialogOpen"
+                type="post"
+                title="Post sale"
+                description="This will write the accounting and stock entries. Posted documents cannot be edited or deleted."
+                @confirm="postSale"
+            />
+            <TransactionActionDialog
+                v-model:open="reverseDialogOpen"
+                type="reverse"
+                title="Reverse sale"
+                description="This creates a counter transaction and counter stock movement, then marks the original sale as reversed."
+                @confirm="reverseSale"
+            />
+
+            <div v-if="originalDoc" class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+                This is a reversal of transaction {{ originalDoc.voucher_number || originalDoc.id }}.
+            </div>
+            <div v-if="saleData.status === 'reversed' && reversal" class="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+                This document has been reversed by transaction {{ reversal.voucher_number || reversal.id }}.
             </div>
 
             <!-- Info card -->

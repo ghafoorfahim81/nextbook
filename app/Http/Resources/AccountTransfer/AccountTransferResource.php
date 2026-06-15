@@ -19,6 +19,7 @@ class AccountTransferResource extends JsonResource
             'id' => $this->id,
             'number' => $this->number,
             'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
+            'status' => $this->status ?? $this->transaction?->status,
             'remark' => $this->remark,
             'transaction' => new TransactionResource($this->whenLoaded('transaction')),
             // Convenience derived fields for Index
@@ -28,7 +29,9 @@ class AccountTransferResource extends JsonResource
             'to_account_id' => $toAccount?->id,
             'from_account' => new AccountResource($fromAccount),
             'to_account' => new AccountResource($toAccount),
-            'amount' => $this->transaction?->lines?->first()?->debit>0?$this->transaction?->lines?->first()?->debit: $this->transaction?->lines?->first()?->credit,
+            'amount' => $this->transaction?->lines?->first()
+                ? ((float) $this->transaction->lines->first()->debit > 0 ? $this->transaction->lines->first()->debit : $this->transaction->lines->first()->credit)
+                : (float) data_get($this->transaction?->posting_payload, 'amount', 0),
             'currency_code' => $this->transaction?->currency?->code,
             'currency_id' => $this->transaction?->currency?->id,
             'rate' => $this->transaction?->rate,

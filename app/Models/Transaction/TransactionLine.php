@@ -27,6 +27,9 @@ class TransactionLine extends Model
         'remark',
         'remark_fa',
         'remark_ps',
+        'branch_id',
+        'created_by',
+        'updated_by',
         'deleted_by',
     ];
 
@@ -38,6 +41,9 @@ class TransactionLine extends Model
             'account_id' => 'string',
             'ledger_id' => 'string',
             'journal_class_id' => 'string',
+            'branch_id' => 'string',
+            'created_by' => 'string',
+            'updated_by' => 'string',
             'debit' => 'float',
             'credit' => 'float', 
         ];

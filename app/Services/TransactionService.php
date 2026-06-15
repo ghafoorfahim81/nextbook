@@ -2,7 +2,12 @@
 
 namespace App\Services;
 
+use App\Enums\StockMovementType;
+use App\Enums\TransactionStatus;
+use App\Exceptions\InvalidStatusTransitionException;
+use App\Models\Inventory\StockMovement;
 use App\Models\Transaction\Transaction;
+use App\Support\TransactionStateMachine;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Exception;
@@ -11,7 +16,7 @@ class TransactionService
 {
     private $dateConversionService;
 
-    public function __construct(DateConversionService $dateConversionService)
+    public function __construct(DateConversionService $dateConversionService, private StockService $stockService)
     {
         $this->dateConversionService = $dateConversionService;
     }
@@ -32,6 +37,8 @@ class TransactionService
             // -----------------------------
             $this->validateHeader($header);
             $this->validateLines($lines);
+            $status = TransactionStatus::tryFrom($header['status'] ?? TransactionStatus::POSTED->value)
+                ?? TransactionStatus::POSTED;
 
             // -----------------------------
             // 2️⃣ Create transaction (header)
@@ -44,51 +51,53 @@ class TransactionService
                 'reference_type' => $header['reference_type'] ?? null,
                 'reference_id'   => $header['reference_id'] ?? null,
                 'remark'         => $header['remark'] ?? null,
-                'status'         => $header['status'] ?? 'posted',
+                'status'         => $status->value,
+                'posted_at'      => $status === TransactionStatus::POSTED ? now() : null,
+                'posted_by'      => $status === TransactionStatus::POSTED ? Auth::id() : null,
+                'posting_payload' => $status === TransactionStatus::DRAFT
+                    ? array_merge($header['posting_payload'] ?? [], ['lines' => $lines])
+                    : ($header['posting_payload'] ?? null),
                 'created_by'     => Auth::id(),
             ]);
+
+            if ($status === TransactionStatus::DRAFT) {
+                return $transaction;
+            }
 
             // -----------------------------
             // 3️⃣ Insert lines + enforce balance
             // -----------------------------
-            $totalDebit  = 0;
-            $totalCredit = 0;
-
-            foreach ($lines as $line) {
-
-                $debit  = $line['debit']  ?? 0;
-                $credit = $line['credit'] ?? 0;
-
-                // XOR rule
-                if (($debit > 0 && $credit > 0) || ($debit == 0 && $credit == 0)) {
-                    throw new Exception('Each transaction line must have either debit OR credit');
-                }
-
-                $totalDebit  += $debit;
-                $totalCredit += $credit;
-
-                $transaction->lines()->create([
-                    'account_id' => $line['account_id'],
-                    'ledger_id' => $line['ledger_id'] ?? null,
-                    'journal_class_id' => $line['journal_class_id'] ?? null,
-                    'debit'      => $debit,
-                    'credit'     => $credit,
-                    'branch_id'  => $transaction->branch_id,
-                    'remark'     => $line['remark'] ?? null,
-                    'remark_fa'  => $line['remark_fa'] ?? null,
-                    'remark_ps'  => $line['remark_ps'] ?? null,
-                    'created_by' => Auth::id(),
-                ]);
-            }
-
-            // -----------------------------
-            // 4️⃣ Double-entry enforcement
-            // -----------------------------
-            if (round($totalDebit, 4) !== round($totalCredit, 4)) {
-                throw new Exception('Transaction is not balanced: ' . $totalDebit . ' != ' . $totalCredit);
-            }
+            $this->createLines($transaction, $lines);
 
             return $transaction;
+        });
+    }
+
+    public function postDraft(Transaction $draft, array $lines = []): Transaction
+    {
+        return DB::transaction(function () use ($draft, $lines) {
+            $from = TransactionStatus::tryFrom((string) $draft->status);
+
+            if ($from !== TransactionStatus::DRAFT) {
+                throw InvalidStatusTransitionException::for($from ?? TransactionStatus::POSTED, TransactionStatus::POSTED);
+            }
+
+            if (!TransactionStateMachine::canTransition($from, TransactionStatus::POSTED)) {
+                throw InvalidStatusTransitionException::for($from, TransactionStatus::POSTED);
+            }
+
+            $lines = $lines ?: (array) data_get($draft->posting_payload, 'lines', []);
+            $this->validateLines($lines);
+            $this->createLines($draft, $lines);
+
+            $draft->update([
+                'status' => TransactionStatus::POSTED->value,
+                'posted_at' => now(),
+                'posted_by' => Auth::id(),
+                'updated_by' => Auth::id(),
+            ]);
+
+            return $draft->refresh();
         });
     }
 
@@ -132,17 +141,56 @@ class TransactionService
         )->validate();
     }
 
+    protected function createLines(Transaction $transaction, array $lines): void
+    {
+        $totalDebit  = 0;
+        $totalCredit = 0;
+
+        foreach ($lines as $line) {
+            $debit  = $line['debit']  ?? 0;
+            $credit = $line['credit'] ?? 0;
+
+            // XOR rule
+            if (($debit > 0 && $credit > 0) || ($debit == 0 && $credit == 0)) {
+                throw new Exception('Each transaction line must have either debit OR credit');
+            }
+
+            $totalDebit  += $debit;
+            $totalCredit += $credit;
+
+            $transaction->lines()->create([
+                'account_id' => $line['account_id'],
+                'ledger_id' => $line['ledger_id'] ?? null,
+                'journal_class_id' => $line['journal_class_id'] ?? null,
+                'debit'      => $debit,
+                'credit'     => $credit,
+                // 'branch_id'  => $transaction->branch_id,
+                'remark'     => $line['remark'] ?? null,
+                'remark_fa'  => $line['remark_fa'] ?? null,
+                'remark_ps'  => $line['remark_ps'] ?? null,
+                // 'created_by' => Auth::id(),
+            ]);
+        }
+
+        if (round($totalDebit, 4) !== round($totalCredit, 4)) {
+            throw new Exception('Transaction is not balanced: ' . $totalDebit . ' != ' . $totalCredit);
+        }
+    }
+
     // ======================================================
     // 🔁 REVERSAL (AUDIT-SAFE)
     // ======================================================
 
-    public function reverse(Transaction $original, string $reason = null): Transaction
+    public function reverse(Transaction $original, ?string $reason = null): Transaction
     {
         return DB::transaction(function () use ($original, $reason) {
+            $from = TransactionStatus::tryFrom((string) $original->status);
 
-            if ($original->status !== 'posted') {
-                throw new Exception('Only posted transactions can be reversed');
+            if ($from !== TransactionStatus::POSTED || !TransactionStateMachine::canTransition($from, TransactionStatus::REVERSED)) {
+                throw InvalidStatusTransitionException::for($from ?? TransactionStatus::DRAFT, TransactionStatus::REVERSED);
             }
+
+            $original->loadMissing('lines');
 
             $reversal = Transaction::create([
                 'branch_id'      => $original->branch_id,
@@ -152,24 +200,61 @@ class TransactionService
                 'reference_type' => 'reversal',
                 'reference_id'   => $original->id,
                 'remark'         => $reason ?? 'Reversal of transaction ' . $original->id,
-                'status'         => 'posted',
+                'status'         => TransactionStatus::POSTED->value,
+                'reversal_of_id' => $original->id,
+                'posted_at'      => now(),
+                'posted_by'      => Auth::id(),
                 'created_by'     => Auth::id(),
             ]);
 
             foreach ($original->lines as $line) {
                 $reversal->lines()->create([
                     'account_id' => $line->account_id,
+                    'ledger_id' => $line->ledger_id,
                     'journal_class_id' => $line->journal_class_id,
                     'debit'      => $line->credit,
                     'credit'     => $line->debit,
+                    // 'branch_id'  => $original->branch_id,
                     'remark'     => 'Reversal',
                     'remark_fa'  => 'Reversal',
                     'remark_ps'  => 'Reversal',
-                    'created_by' => Auth::id(),
+                    // 'created_by' => Auth::id(),
                 ]);
             }
 
-            $original->update(['status' => 'reversed']);
+            StockMovement::query()
+                ->where('reference_type', $original->reference_type)
+                ->where('reference_id', $original->reference_id)
+                ->get()
+                ->each(function (StockMovement $movement) use ($reversal) {
+                    $this->stockService->post([
+                        'branch_id' => $movement->branch_id,
+                        'item_id' => $movement->item_id,
+                        'warehouse_id' => $movement->warehouse_id,
+                        'unit_measure_id' => $movement->unit_measure_id,
+                        'size_id' => $movement->size_id,
+                        'movement_type' => $movement->movement_type === StockMovementType::IN
+                            ? StockMovementType::OUT->value
+                            : StockMovementType::IN->value,
+                        'source' => $movement->source,
+                        'reference_type' => Transaction::class,
+                        'reference_id' => $reversal->id,
+                        'quantity' => (float) $movement->quantity,
+                        'unit_cost' => $movement->unit_cost,
+                        'unit_cost_override' => (float) $movement->unit_cost,
+                        'batch' => $movement->batch,
+                        'expire_date' => $movement->expire_date,
+                        'date' => now()->toDateString(),
+                        'status' => $movement->status,
+                    ]);
+                });
+
+            $original->update([
+                'status' => TransactionStatus::REVERSED->value,
+                'reversed_at' => now(),
+                'reversal_reason' => $reason,
+                'updated_by' => Auth::id(),
+            ]);
 
             return $reversal;
         });

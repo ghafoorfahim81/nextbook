@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
 use Laravel\Scout\Searchable;
@@ -33,11 +34,20 @@ class JournalEntry extends Model
         'date',
         'remark',
         'status',
-        'branch_id'
+        'posted_at',
+        'posted_by',
+        'reversal_of_id',
+        'reversed_at',
+        'reversal_reason',
+        'branch_id',
     ];
     protected $casts = [
         'id' => 'string',
         'date' => 'date',
+        'posted_at' => 'datetime',
+        'reversed_at' => 'datetime',
+        'posted_by' => 'string',
+        'reversal_of_id' => 'string',
     ];
 
     protected static function searchableColumns(): array
@@ -73,6 +83,16 @@ class JournalEntry extends Model
     public function transaction(): HasOne
     {
         return $this->hasOne(Transaction::class, 'reference_id');
+    }
+
+    public function originalEntry(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reversal_of_id');
+    }
+
+    public function reversalEntry(): HasOne
+    {
+        return $this->hasOne(self::class, 'reversal_of_id');
     }
 
     /**

@@ -241,14 +241,14 @@ class ItemController extends Controller
                         ],
                         lines: [
                           ['account_id' => $inventoryAccount,   'debit' => $openings->sum(function ($o) {
-                            return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
+                            return round((float)($o['quantity'] ?? 0), 4) * (float)($o['unit_price'] ?? 0);
                         }), 'credit' => 0,
                         'remark' => 'Opening balance for item ' . ' ' . $item->name,
                         'remark_fa' => 'موجودی اولیه برای جنس ' . ' ' . $item->name,
                          'remark_ps' =>'د'. ' '. $item->name.' '.'د پرانیستلو بیلانس ',
                         ],
                           ['account_id' => $openingBalanceAccount, 'debit' => 0,'credit' => $openings->sum(function ($o) {
-                            return (float)($o['quantity'] ?? 0) * (float)($o['unit_price'] ?? 0);
+                            return round((float)($o['quantity'] ?? 0), 4) * (float)($o['unit_price'] ?? 0);
                         }), 'remark' => 'Opening balance for item ' . ' ' . $item->name,
                         'remark_fa' => 'موجودی اولیه برای جنس ' . ' ' . $item->name,
                         'remark_ps' =>'د'. ' '. $item->name.' '.'د پرانیستلو بیلانس ',

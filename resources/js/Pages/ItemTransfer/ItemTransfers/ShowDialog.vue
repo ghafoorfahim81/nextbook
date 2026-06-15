@@ -15,6 +15,7 @@ import { Badge } from '@/Components/ui/badge'
 import { ArrowLeftRight, Calendar, Store, DollarSign, FileText, User } from 'lucide-vue-next'
 import { router } from '@inertiajs/vue3'
 import { useToast } from '@/Components/ui/toast/use-toast'
+import TransactionActionDialog from '@/Components/TransactionActionDialog.vue'
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -29,6 +30,8 @@ const emit = defineEmits(['update:open'])
 const transfer = ref(null)
 const loading = ref(false)
 const actionLoading = ref(false)
+const postDialogOpen = ref(false)
+const reverseDialogOpen = ref(false)
 
 const statusBadgeClasses = computed(() => {
   if (!transfer.value) return 'bg-muted text-foreground border-border'
@@ -73,13 +76,14 @@ watch(() => props.open, async (isOpen) => {
   }
 })
 
-function completeTransfer() {
+function postTransfer() {
   if (!props.transferId || actionLoading.value) return
   actionLoading.value = true
-  router.patch(route('item-transfers.complete', props.transferId), {}, {
+  router.post(route('item-transfers.post', props.transferId), {}, {
     preserveScroll: true,
     preserveState: true,
     onSuccess: async () => {
+      postDialogOpen.value = false
       await fetchTransfer()
       toast({
         title: t('general.success'),
@@ -94,13 +98,14 @@ function completeTransfer() {
   })
 }
 
-function cancelTransfer() {
+function reverseTransfer(reason) {
   if (!props.transferId || actionLoading.value) return
   actionLoading.value = true
-  router.patch(route('item-transfers.cancel', props.transferId), {}, {
+  router.post(route('item-transfers.reverse', props.transferId), { reason }, {
     preserveScroll: true,
     preserveState: true,
     onSuccess: async () => {
+      reverseDialogOpen.value = false
       await fetchTransfer()
       toast({
         title: t('general.success'),
@@ -262,16 +267,16 @@ function closeDialog() {
               variant="destructive"
               class="flex items-center gap-2"
               :disabled="actionLoading"
-              @click="cancelTransfer"
+              @click="reverseDialogOpen = true"
             >
-              {{ t('item_transfer.cancel_transfer') }}
+              Reverse
             </Button> 
             <Button
               class="flex items-center gap-2 bg-green-600 hover:bg-green-700"
               :disabled="actionLoading"
-              @click="completeTransfer"
+              @click="postDialogOpen = true"
             >
-              {{ t('item_transfer.complete_transfer') }}
+              Post
             </Button>
           </div>
 
@@ -280,6 +285,22 @@ function closeDialog() {
           </Button>
         </div>
       </DialogFooter>
+      <TransactionActionDialog
+        v-model:open="postDialogOpen"
+        type="post"
+        title="Post item transfer"
+        description="This will move stock between warehouses and mark the transfer as completed."
+        :processing="actionLoading"
+        @confirm="postTransfer"
+      />
+      <TransactionActionDialog
+        v-model:open="reverseDialogOpen"
+        type="reverse"
+        title="Reverse item transfer"
+        description="Enter a reason to create counter stock movements and cancel this transfer."
+        :processing="actionLoading"
+        @confirm="reverseTransfer"
+      />
     </DialogContent>
   </Dialog>
 </template>

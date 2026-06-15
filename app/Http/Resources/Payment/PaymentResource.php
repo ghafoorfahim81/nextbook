@@ -15,11 +15,13 @@ class PaymentResource extends JsonResource
     public function toArray(Request $request): array
     {
         $dateConversionService = app(\App\Services\DateConversionService::class);
+        $firstLine = $this->transaction?->lines?->first();
         return [
             'id' => $this->id,
             'number' => $this->number,
             'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
             'ledger_id' => $this->ledger_id,
+            'status' => $this->status ?? $this->transaction?->status,
             'payment_mode' => $this->payment_mode instanceof PaymentMode
                 ? $this->payment_mode->value
                 : $this->payment_mode,
@@ -29,12 +31,12 @@ class PaymentResource extends JsonResource
             'ledger' => $this->whenLoaded('ledger'),
             'ledger_name' => $this->ledger?->name,
             // derive from bank/payment transactions
-            'amount' => $this->transaction?->lines[0]->debit>0?$this->transaction?->lines[0]->debit: $this->transaction?->lines[0]->credit,
+            'amount' => $firstLine ? ((float) $firstLine->debit > 0 ? $firstLine->debit : $firstLine->credit) : (float) data_get($this->transaction?->posting_payload, 'amount', 0),
             'currency_id' => $this->transaction?->currency_id,
             'currency_code' => $this->transaction?->currency?->code,
             'rate' => $this->transaction?->rate,
-            'bank_account_id' => $this->transaction?->lines[0]->account_id,
-            'bank_account' => new AccountResource($this->transaction?->lines[0]->account),
+            'bank_account_id' => $firstLine?->account_id,
+            'bank_account' => new AccountResource($firstLine?->account),
             'cheque_no' => $this->cheque_no,
             'narration' => $this->narration,
             'description' => $this->narration,

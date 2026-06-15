@@ -7,6 +7,8 @@ import {
 } from '@/Components/ui/dialog'
 import { Button } from '@/Components/ui/button'
 import { Calendar, DollarSign, ReceiptText, FileText } from 'lucide-vue-next'
+import { router } from '@inertiajs/vue3'
+import TransactionActionDialog from '@/Components/TransactionActionDialog.vue'
 
 const { t } = useI18n()
 
@@ -18,6 +20,8 @@ const emit = defineEmits(['update:open'])
 
 const journalEntry = ref(null)
 const loading = ref(false)
+const postDialogOpen = ref(false)
+const reverseDialogOpen = ref(false)
 
 watch(() => [props.open, props.journalEntryId], async ([isOpen, id]) => {
     if (isOpen && id) {
@@ -47,6 +51,28 @@ function closeDialog() {
     emit('update:open', false)
     journalEntry.value = null
 }
+
+function postJournalEntry() {
+    if (!props.journalEntryId) return
+    router.post(route('journal-entries.post', props.journalEntryId), {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            postDialogOpen.value = false
+            closeDialog()
+        },
+    })
+}
+
+function reverseJournalEntry(reason) {
+    if (!props.journalEntryId) return
+    router.post(route('journal-entries.reverse', props.journalEntryId), { reason }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            reverseDialogOpen.value = false
+            closeDialog()
+        },
+    })
+}
 </script>
 
 <template>
@@ -62,7 +88,27 @@ function closeDialog() {
                 <DialogDescription class="text-xs text-muted-foreground" v-if="journalEntry?.remark">
                     {{ journalEntry.remark }}
                 </DialogDescription>
+                <div v-if="journalEntry" class="flex items-center gap-2 pt-2">
+                    <span class="rounded-full border px-2 py-0.5 text-xs font-medium capitalize">{{ journalEntry.status }}</span>
+                    <Button v-if="journalEntry.status === 'draft'" size="sm" class="bg-green-600 text-white hover:bg-green-700" @click="postDialogOpen = true">Post</Button>
+                    <Button v-if="journalEntry.status === 'posted'" size="sm" variant="destructive" @click="reverseDialogOpen = true">Reverse</Button>
+                </div>
             </DialogHeader>
+
+            <TransactionActionDialog
+                v-model:open="postDialogOpen"
+                type="post"
+                title="Post journal entry"
+                description="This will write the journal entry lines to the general ledger."
+                @confirm="postJournalEntry"
+            />
+            <TransactionActionDialog
+                v-model:open="reverseDialogOpen"
+                type="reverse"
+                title="Reverse journal entry"
+                description="Enter a reason to create the reversal journal transaction."
+                @confirm="reverseJournalEntry"
+            />
 
             <div v-if="loading" class="py-6 text-center text-muted-foreground">
                 {{ t('general.loading') }}...

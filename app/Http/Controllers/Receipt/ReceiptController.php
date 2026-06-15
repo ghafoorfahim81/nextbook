@@ -22,6 +22,8 @@ use App\Models\Administration\Currency;
 use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
+use App\Enums\TransactionStatus;
+
 class ReceiptController extends Controller
 {
     private $dateConversionService;
@@ -96,6 +98,8 @@ class ReceiptController extends Controller
             $paymentMode = $validated['payment_mode'] ?? PaymentMode::OnAccount->value;
             $bankAccount = Account::find($bankAccountId);
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+            $postImmediately = (bool) user_preference('transaction.receipt_post_immediately', true);
+            $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
             $receipt = Receipt::create([
                 'number' => $validated['number'],
                 'date' => $validated['date'],
@@ -103,6 +107,7 @@ class ReceiptController extends Controller
                 'payment_mode' => $paymentMode,
                 'cheque_no' => $validated['cheque_no'] ?? null,
                 'narration' => $validated['narration'] ?? null,
+                'status' => $documentStatus,
             ]);
             $glAccounts = Cache::get('gl_accounts');
             // Credit Accounts Receivable for selected ledger
@@ -119,6 +124,11 @@ class ReceiptController extends Controller
                     'reference_id' => $receipt->id,
                     'remark' => $creditRemark,
                     'voucher_number' => $validated['cheque_no'] ?? 'Receipt #' . $receipt->number,
+                    'status' => $documentStatus,
+                    'posting_payload' => [
+                        'allocations' => $validated['allocations'] ?? [],
+                        'amount' => $amount,
+                    ],
                 ],
                 lines: [
                     [
@@ -141,7 +151,9 @@ class ReceiptController extends Controller
                 ],
             );
 
-            app(BillAllocationService::class)->syncReceiptAllocations($receipt, $amount, $validated['allocations'] ?? []);
+            if ($postImmediately) {
+                app(BillAllocationService::class)->syncReceiptAllocations($receipt, $amount, $validated['allocations'] ?? []);
+            }
             $activityLogService->logCreate(
                 reference: $receipt,
                 module: 'receipt',
@@ -181,10 +193,53 @@ class ReceiptController extends Controller
 
     public function show(Request $request, Receipt $receipt)
     {
-        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'saleReceives.sale', 'createdBy', 'updatedBy']);
+        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'saleReceives.sale', 'createdBy', 'updatedBy']);
         return response()->json([
             'data' => new ReceiptResource($receipt),
         ]);
+    }
+
+    public function post(Receipt $receipt, TransactionService $transactionService)
+    {
+        $this->authorize('update', $receipt);
+
+        if ($receipt->status !== TransactionStatus::DRAFT->value) {
+            abort(422, 'Only draft documents can be posted.');
+        }
+
+        DB::transaction(function () use ($receipt, $transactionService) {
+            $transaction = $receipt->transaction()->firstOrFail();
+            $transactionService->postDraft($transaction);
+            app(BillAllocationService::class)->syncReceiptAllocations(
+                $receipt,
+                (float) data_get($transaction->posting_payload, 'amount', 0),
+                (array) data_get($transaction->posting_payload, 'allocations', [])
+            );
+            $receipt->update(['status' => TransactionStatus::POSTED->value]);
+        });
+
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.receipt')]));
+    }
+
+    public function reverse(Request $request, Receipt $receipt, TransactionService $transactionService)
+    {
+        $this->authorize('update', $receipt);
+
+        $validated = $request->validate(['reason' => ['required', 'string', 'max:255']]);
+
+        if ($receipt->status !== TransactionStatus::POSTED->value) {
+            abort(422, 'Only posted documents can be reversed.');
+        }
+
+        DB::transaction(function () use ($receipt, $transactionService, $validated) {
+            $saleIds = $receipt->saleReceives()->pluck('sale_id')->all();
+            $transactionService->reverse($receipt->transaction()->firstOrFail(), $validated['reason']);
+            $receipt->saleReceives()->delete();
+            app(BillAllocationService::class)->recalculateSalePaymentStatuses($saleIds);
+            $receipt->update(['status' => TransactionStatus::REVERSED->value]);
+        });
+
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.receipt')]));
     }
 
     public function print(Request $request, Receipt $receipt, ActivityLogService $activityLogService)
@@ -233,6 +288,10 @@ class ReceiptController extends Controller
 
     public function update(ReceiptUpdateRequest $request, Receipt $receipt, ActivityLogService $activityLogService)
     {
+        if ($receipt->status !== TransactionStatus::DRAFT->value) {
+            abort(403, 'Only draft documents can be edited.');
+        }
+
         $beforeState = [
             'number' => $receipt->number,
             'date' => $receipt->date?->toDateString(),
@@ -270,7 +329,7 @@ class ReceiptController extends Controller
             TransactionLine::where('transaction_id', $receipt->transaction->id)->forceDelete();
              Transaction::where('id', $receipt->transaction->id)->forceDelete();
              $transactionService = app(TransactionService::class);
-            $transactionService->post(
+            $transaction = $transactionService->post(
                 header: [
                     'currency_id' => $currencyId,
                     'rate' => $rate,
@@ -279,6 +338,11 @@ class ReceiptController extends Controller
                     'reference_type' => Receipt::class,
                     'remark'    => $validated['narration'] ?? "Receipt #{$receipt->number} from {$ledger->name}",   
                     'reference_id' => $receipt->id,
+                    'status' => TransactionStatus::DRAFT->value,
+                    'posting_payload' => [
+                        'allocations' => $validated['allocations'] ?? [],
+                        'amount' => $amount,
+                    ],
                 ],
                 lines: [
                     [
@@ -300,7 +364,7 @@ class ReceiptController extends Controller
                     ],
                 ],
             );
-            app(BillAllocationService::class)->syncReceiptAllocations($receipt, $amount, $validated['allocations'] ?? []);
+            $receipt->saleReceives()->delete();
             Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
             $activityLogService->logUpdate(
@@ -336,6 +400,10 @@ class ReceiptController extends Controller
 
     public function destroy(Request $request, Receipt $receipt, ActivityLogService $activityLogService)
     {
+        if ($receipt->status !== TransactionStatus::DRAFT->value) {
+            abort(403, 'Only draft documents can be deleted.');
+        }
+
         $oldValues = [
             'number' => $receipt->number,
             'date' => $receipt->date?->toDateString(),

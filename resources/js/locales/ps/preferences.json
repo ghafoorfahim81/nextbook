@@ -21,6 +21,7 @@
         "sales": "پلورنه",
         "purchases": "اخیستنه",
         "receipt_payment": "رسید او تادیه",
+        "transaction": "معامله",
         "tax_currency": "مالیه او اسعار",
         "notifications": "خبرتیاوې",
         "security": "امنیت",
@@ -329,6 +330,22 @@
         "late_fee_percentage": "د ناوخته جریمې فیصدي",
         "show_ledger_transactions": "وروستۍ دفتري معاملې وښایاست",
         "show_item_transactions": "وروستۍ توکو معاملې وښایاست"
+    },
+    "transaction": {
+        "description": "کنټرول کړئ چې هر سند سملاسي حسابداري او سټاک ته پوسټ شي او که د بیاکتنې لپاره مسوده وساتل شي.",
+        "post_immediately": "سملاسي پوسټ",
+        "post_immediately_help": "د پوسټ کولو مخکې د بیاکتنې لپاره د مسودې په توګه د ساتلو لپاره نښه لرې کړئ",
+        "modules": {
+            "sale": "خرڅلاو",
+            "purchase": "پېرود",
+            "expense": "لګښت",
+            "journal_entry": "ژورنال سند",
+            "receipt": "رسید",
+            "payment": "تادیه",
+            "account_transfer": "د حساب انتقال",
+            "item_transfer": "د جنس انتقال",
+            "drawing": "برداشت"
+        }
     },
     "receipt_payment": {
         "description": "د رسید او تادیې ترتیبات تنظیم کړئ",

@@ -17,11 +17,13 @@ class ReceiptResource extends JsonResource
     public function toArray(Request $request): array
     {
         $dateConversionService = app(\App\Services\DateConversionService::class);
+        $firstLine = $this->transaction?->lines?->first();
         return [
             'id' => $this->id,
             'number' => $this->number,
             'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
             'ledger_id' => $this->ledger_id,
+            'status' => $this->status ?? $this->transaction?->status,
             'payment_mode' => $this->payment_mode instanceof PaymentMode
                 ? $this->payment_mode->value
                 : $this->payment_mode,
@@ -30,15 +32,15 @@ class ReceiptResource extends JsonResource
                 : (PaymentMode::tryFrom((string) $this->payment_mode)?->getLabel() ?? $this->payment_mode),
             'ledger' => $this->whenLoaded('ledger'),
             'ledger_name' => $this->ledger?->name,
-            'amount' => $this->transaction?->lines[0]->debit>0?$this->transaction?->lines[0]->debit: $this->transaction?->lines[0]->credit,
+            'amount' => $firstLine ? ((float) $firstLine->debit > 0 ? $firstLine->debit : $firstLine->credit) : (float) data_get($this->transaction?->posting_payload, 'amount', 0),
             'currency_id' => $this->transaction?->currency_id,
             'currency_code' => $this->transaction?->currency?->code,
             'rate' => $this->transaction?->rate,
             'cheque_no' => $this->cheque_no,
             'narration' => $this->narration,
             'transaction_id' => $this->transaction_id,
-            'bank_account_id' => $this->transaction?->lines[0]->account_id,
-            'bank_account' => new AccountResource($this->transaction?->lines[0]->account),
+            'bank_account_id' => $firstLine?->account_id,
+            'bank_account' => new AccountResource($firstLine?->account),
             'transaction' => new TransactionResource($this->transaction),
             'sale_receives' => SaleReceiveResource::collection($this->whenLoaded('saleReceives')),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
