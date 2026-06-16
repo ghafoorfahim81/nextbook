@@ -86,6 +86,11 @@ class Receipt extends Model
     }
 
 
+    public function bankAccount()
+    {
+        return $this->transaction?->lines?->where('debit', '>', 0)->first()?->account;
+    }
+
     protected function getRelationships(): array
     {
         return [

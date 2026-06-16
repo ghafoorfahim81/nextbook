@@ -15,6 +15,7 @@ class PaymentResource extends JsonResource
     public function toArray(Request $request): array
     {
         $dateConversionService = app(\App\Services\DateConversionService::class);
+        $locale = app()->getLocale();
         return [
             'id' => $this->id,
             'number' => $this->number,
@@ -33,8 +34,9 @@ class PaymentResource extends JsonResource
             'currency_id' => $this->transaction?->currency_id,
             'currency_code' => $this->transaction?->currency?->code,
             'rate' => $this->transaction?->rate,
-            'bank_account_id' => $this->transaction?->lines[0]->account_id,
-            'bank_account' => new AccountResource($this->transaction?->lines[0]->account),
+            'bank_account' => new AccountResource($this->bankAccount()),
+            'bank_account_id' => $this->bankAccount()?->id ?? null,
+            'bank_account_name' => $locale === 'en' ? $this->bankAccount()?->name : $this->bankAccount()?->local_name ?? null,
             'cheque_no' => $this->cheque_no,
             'narration' => $this->narration,
             'description' => $this->narration,

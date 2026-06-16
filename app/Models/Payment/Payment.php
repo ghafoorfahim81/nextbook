@@ -79,6 +79,11 @@ class Payment extends Model
         return $this->hasMany(\App\Models\Purchase\PurchasePayment::class);
     }
 
+    public function bankAccount()
+    {
+        return $this->transaction?->lines?->where('credit', '>', 0)->first()?->account;
+    }
+
     protected function getRelationships(): array
     {
         return [

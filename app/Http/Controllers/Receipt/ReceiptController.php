@@ -319,7 +319,7 @@ class ReceiptController extends Controller
                 description: "Receipt #{$receipt->number} updated.",
                 metadata: [
                     'action' => 'receipt_update',
-                    'transaction_id' => $transaction->id,
+                    'transaction_id' => $receipt->transaction->id,
                 ],
             );
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));

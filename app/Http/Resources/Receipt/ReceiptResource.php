@@ -17,6 +17,7 @@ class ReceiptResource extends JsonResource
     public function toArray(Request $request): array
     {
         $dateConversionService = app(\App\Services\DateConversionService::class);
+        $locale = app()->getLocale();
         return [
             'id' => $this->id,
             'number' => $this->number,
@@ -37,8 +38,9 @@ class ReceiptResource extends JsonResource
             'cheque_no' => $this->cheque_no,
             'narration' => $this->narration,
             'transaction_id' => $this->transaction_id,
-            'bank_account_id' => $this->transaction?->lines[0]->account_id,
-            'bank_account' => new AccountResource($this->transaction?->lines[0]->account),
+            'bank_account_id' => $this->bankAccount()?->id ?? null,
+            'bank_account_name' => $locale === 'en' ? $this->bankAccount()?->name : $this->bankAccount()?->local_name ?? null,
+            'bank_account' => new AccountResource($this->bankAccount()),
             'transaction' => new TransactionResource($this->transaction),
             'sale_receives' => SaleReceiveResource::collection($this->whenLoaded('saleReceives')),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
