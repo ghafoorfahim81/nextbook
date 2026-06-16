@@ -276,6 +276,73 @@ class DrawingController extends Controller
         return redirect()->route('drawings.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.drawing')]));
     }
 
+    public function export(Request $request, \App\Services\SpreadsheetExportService $exporter)
+    {
+        $this->authorize('viewAny', Drawing::class);
+
+        $sortField = $request->input('sortField', 'date');
+        $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
+
+        $drawings = Drawing::query()
+            ->with(['owner', 'transaction.lines.account'])
+            ->search($request->query('search'))
+            ->filter($filters)
+            ->orderBy($sortField, $sortDirection)
+            ->get();
+
+        $rtl = in_array(app()->getLocale(), ['fa', 'ps'], true);
+        $company = $request->user()?->company;
+        $companyName = match (app()->getLocale()) {
+            'fa'    => $company?->name_fa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            'ps'    => $company?->name_pa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            default => $company?->name_en ?: $company?->abbreviation ?: $company?->name_fa ?: $company?->name_pa ?: config('app.name'),
+        };
+        $t = fn (string $group, string $key, string $fallback = '') => $exporter->localeTranslation($group, $key, $fallback);
+        $dateService = app(\App\Services\DateConversionService::class);
+
+        $rows = $drawings->map(function ($d) use ($dateService, $t) {
+            $lines = $d->transaction?->lines ?? collect();
+            $debitLine  = $lines->firstWhere(fn ($l) => (float) $l->debit > 0);
+            $creditLine = $lines->firstWhere(fn ($l) => (float) $l->credit > 0);
+            $amount = $creditLine
+                ? ((float) $creditLine->credit > 0 ? $creditLine->credit : $creditLine->debit)
+                : ($debitLine ? ($debitLine->debit ?: $debitLine->credit) : 0);
+
+            return [
+                'date'            => $d->date ? $dateService->toDisplay($d->date) : '-',
+                'owner'           => $d->owner?->name ?? '-',
+                'bank_account'    => $creditLine?->account?->name ?? '-',
+                'drawing_account' => $debitLine?->account?->name ?? '-',
+                'amount'          => (float) $amount,
+                'narration'       => $d->narration ?? '-',
+            ];
+        })->all();
+
+        $label = $t('sidebar', 'owners.drawing', 'Drawings');
+
+        return $exporter->download([
+            'filename'           => 'drawings-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name'         => $label,
+            'sheet_title'        => $label,
+            'title'              => $label,
+            'company_name'       => $companyName,
+            'exported_on'        => now()->format('Y m d'),
+            'rtl'                => $rtl,
+            'include_row_number' => true,
+            'row_number_label'   => $t('report', 'columns.no', 'No.'),
+            'columns' => [
+                ['key' => 'date',            'label' => $t('general', 'date', 'Date'), 'width' => 12],
+                ['key' => 'owner',           'label' => $t('owner', 'owner', 'Owner'), 'width' => 18],
+                ['key' => 'bank_account',    'label' => $t('general', 'bank_account', 'Bank Account'), 'width' => 18],
+                ['key' => 'drawing_account', 'label' => $t('owner', 'drawing_account', 'Drawing Account'), 'width' => 18],
+                ['key' => 'amount',          'label' => $t('general', 'amount', 'Amount'), 'type' => 'money', 'align' => 'right', 'width' => 14],
+                ['key' => 'narration',       'label' => $t('general', 'remarks', 'Remarks'), 'width' => 20],
+            ],
+            'rows' => $rows,
+        ]);
+    }
+
     /**
      * @return array{0:string,1:float}
      */

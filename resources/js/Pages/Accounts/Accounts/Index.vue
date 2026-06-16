@@ -72,6 +72,7 @@ const deleteItem = (id) => {
             :title="t('account.chart_of_accounts')"
             :url="`chart-of-accounts.index`"
             :hasShow="true"
+            exportRoute="chart-of-accounts.export"
             :showAddButton="true"
             :addTitle="t('account.account')"
             :addAction="'redirect'"

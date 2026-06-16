@@ -112,6 +112,7 @@ const filterFields = computed(() => ([
       @delete="deleteItem"
       :title="t('resources.drawings')"
       :url="'drawings.index'"
+      exportRoute="drawings.export"
       :showAddButton="true"
       :addTitle="t('sidebar.owners.drawing')"
       :addAction="'redirect'"

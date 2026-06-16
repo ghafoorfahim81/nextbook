@@ -76,6 +76,7 @@ const filterFields = computed(() => ([
             :addTitle="t('sidebar.journal_entry.journal_entry')"
             :addAction="'redirect'"
             :addRoute="'journal-entries.create'"
+            exportRoute="journal-entries.export"
         />
         <JournalEntryShowDialog
             :open="showDialog"

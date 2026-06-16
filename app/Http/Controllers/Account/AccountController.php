@@ -383,4 +383,54 @@ class AccountController extends Controller
 
         return redirect()->route('chart-of-accounts.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.account')]));
     }
+
+    public function exportList(Request $request, SpreadsheetExportService $exporter)
+    {
+        $this->authorize('viewAny', Account::class);
+
+        $sortField = $request->input('sortField', 'created_at');
+        $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
+
+        $accounts = Account::with(['accountType', 'parent'])
+            ->withSum('transactionLines as total_debit', 'debit')
+            ->withSum('transactionLines as total_credit', 'credit')
+            ->search($request->query('search'))
+            ->filter($filters)
+            ->orderBy($sortField, $sortDirection)
+            ->get();
+
+        $t = fn (string $group, string $key, string $fallback = '') => $exporter->localeTranslation($group, $key, $fallback);
+        $label = $t('account', 'chart_of_accounts', 'Chart of Accounts');
+
+        $rows = $accounts->map(fn ($a) => [
+            'number'       => $a->number,
+            'name'         => $a->name,
+            'local_name'   => $a->local_name ?? '-',
+            'account_type' => $a->accountType?->name ?? '-',
+            'parent'       => $a->parent?->name ?? '-',
+            'balance'      => round((float) ($a->total_debit ?? 0) - (float) ($a->total_credit ?? 0), 2),
+        ])->all();
+
+        return $exporter->download([
+            'filename'           => 'chart-of-accounts-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name'         => $label,
+            'sheet_title'        => $label,
+            'title'              => $label,
+            'company_name'       => $this->exportCompanyName($request),
+            'exported_on'        => now()->format('Y m d'),
+            'rtl'                => in_array(app()->getLocale(), ['fa', 'ps'], true),
+            'include_row_number' => true,
+            'row_number_label'   => $t('report', 'columns.no', 'No.'),
+            'columns' => [
+                ['key' => 'number',       'label' => $t('general', 'number', 'Number'), 'width' => 10],
+                ['key' => 'name',         'label' => $t('general', 'name', 'Name'), 'width' => 22],
+                ['key' => 'local_name',   'label' => $t('account', 'local_name', 'Local Name'), 'width' => 22],
+                ['key' => 'account_type', 'label' => $t('account', 'account_type', 'Account Type'), 'width' => 18],
+                ['key' => 'parent',       'label' => $t('account', 'parent', 'Parent'), 'width' => 22],
+                ['key' => 'balance',      'label' => $t('general', 'balance', 'Balance'), 'type' => 'money', 'align' => 'right', 'width' => 16],
+            ],
+            'rows' => $rows,
+        ]);
+    }
 }

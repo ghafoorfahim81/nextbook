@@ -106,6 +106,7 @@ const filterFields = computed(() => ([
             :addTitle="t('payment.payment')"
             :addAction="'redirect'"
             :addRoute="'payments.create'"
+            exportRoute="payments.export"
         />
         <PaymentShowDialog
             :open="showDialog"

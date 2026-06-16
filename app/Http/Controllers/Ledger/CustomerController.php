@@ -438,4 +438,54 @@ class CustomerController extends Controller
 
         return redirect()->route('customers.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.customer')]));
     }
+
+    public function exportList(Request $request, SpreadsheetExportService $spreadsheetExportService)
+    {
+        $this->authorize('viewAny', Ledger::class);
+
+        $sortField = $request->input('sortField', 'name');
+        $sortDirection = $request->input('sortDirection', 'asc');
+        $filters = (array) $request->input('filters', []);
+
+        $customers = Ledger::search($request->query('search'))
+            ->where('type', 'customer')
+            ->filter($filters)
+            ->orderBy($sortField, $sortDirection)
+            ->get();
+
+        $rtl = in_array(app()->getLocale(), ['fa', 'ps'], true);
+        $t = fn (string $group, string $key, string $fallback = '') => $spreadsheetExportService->localeTranslation($group, $key, $fallback);
+
+        $rows = $customers->map(fn ($c) => [
+            'name'           => $c->name ?? '-',
+            'code'           => $c->code ?? '-',
+            'contact_person' => $c->contact_person ?? '-',
+            'phone_no'       => $c->phone_no ?? '-',
+            'email'          => $c->email ?? '-',
+            'is_active'      => $c->is_active ? $t('general', 'active', 'Active') : $t('general', 'inactive', 'Inactive'),
+        ])->all();
+
+        $label = $t('ledger', 'customer.customers', 'Customers');
+
+        return $spreadsheetExportService->download([
+            'filename'           => 'customers-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name'         => $label,
+            'sheet_title'        => $label,
+            'title'              => $label,
+            'company_name'       => $this->exportCompanyName($request),
+            'exported_on'        => now()->format('Y m d'),
+            'rtl'                => $rtl,
+            'include_row_number' => true,
+            'row_number_label'   => $t('report', 'columns.no', 'No.'),
+            'columns' => [
+                ['key' => 'name',           'label' => $t('general', 'name', 'Name'), 'width' => 22],
+                ['key' => 'code',           'label' => $t('general', 'code', 'Code'), 'width' => 12],
+                ['key' => 'contact_person', 'label' => $t('ledger', 'contact_person', 'Contact Person'), 'width' => 18],
+                ['key' => 'phone_no',       'label' => $t('general', 'phone', 'Phone'), 'width' => 14],
+                ['key' => 'email',          'label' => $t('general', 'email', 'Email'), 'width' => 20],
+                ['key' => 'is_active',      'label' => $t('general', 'status', 'Status'), 'width' => 10],
+            ],
+            'rows' => $rows,
+        ]);
+    }
 }

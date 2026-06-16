@@ -101,6 +101,7 @@ const filterFields = computed(() => ([
       :addTitle="t('general.account_transfer')"
       :addAction="'redirect'"
       :addRoute="'account-transfers.create'"
+      exportRoute="account-transfers.export"
     />
     <ShowDialog
       :open="showDialog"

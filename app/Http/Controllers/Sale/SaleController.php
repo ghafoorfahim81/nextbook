@@ -1608,4 +1608,89 @@ class SaleController extends Controller
     {
         return $status instanceof StockStatus ? $status->value : (string) $status;
     }
+
+    public function exportList(Request $request, SpreadsheetExportService $exporter)
+    {
+        $this->authorize('viewAny', Sale::class);
+
+        $sortField = $request->input('sortField', 'id');
+        $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
+
+        $itemGrossTotal = SaleItem::query()
+            ->selectRaw('COALESCE(SUM(quantity * unit_price), 0)')
+            ->whereColumn('sale_items.sale_id', 'sales.id')
+            ->whereNull('sale_items.deleted_at');
+        $itemDiscountTotal = SaleItem::query()
+            ->selectRaw('COALESCE(SUM(discount), 0)')
+            ->whereColumn('sale_items.sale_id', 'sales.id')
+            ->whereNull('sale_items.deleted_at');
+        $itemTaxTotal = SaleItem::query()
+            ->selectRaw('COALESCE(SUM(tax), 0)')
+            ->whereColumn('sale_items.sale_id', 'sales.id')
+            ->whereNull('sale_items.deleted_at');
+
+        $sales = Sale::query()
+            ->select(['sales.id', 'sales.number', 'sales.customer_id', 'sales.date',
+                'sales.discount', 'sales.discount_type', 'sales.type', 'sales.status', 'sales.payment_status'])
+            ->selectSub($itemGrossTotal, 'items_gross_total')
+            ->selectSub($itemDiscountTotal, 'items_discount_total')
+            ->selectSub($itemTaxTotal, 'items_tax_total')
+            ->with(['customer:id,name'])
+            ->search($request->query('search'))
+            ->filter($filters)
+            ->orderBy($sortField, $sortDirection)
+            ->get();
+
+        $rtl = in_array(app()->getLocale(), ['fa', 'ps'], true);
+        $company = $request->user()?->company;
+        $companyName = match (app()->getLocale()) {
+            'fa'    => $company?->name_fa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            'ps'    => $company?->name_pa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            default => $company?->name_en ?: $company?->abbreviation ?: $company?->name_fa ?: $company?->name_pa ?: config('app.name'),
+        };
+        $t = fn (string $group, string $key, string $fallback = '') => $exporter->localeTranslation($group, $key, $fallback);
+
+        $rows = $sales->map(function ($s) {
+            $gross = (float) ($s->items_gross_total ?? 0);
+            $itemDiscount = (float) ($s->items_discount_total ?? 0);
+            $tax = (float) ($s->items_tax_total ?? 0);
+            $billDiscount = $s->discount_type === 'percentage'
+                ? $gross * ((float) $s->discount / 100)
+                : (float) ($s->discount ?? 0);
+            return [
+                'number'         => $s->number,
+                'customer_name'  => $s->customer?->name ?? '-',
+                'payment_status' => \App\Enums\PaymentStatus::tryFrom((string) $s->payment_status)?->getLabel() ?? (string) $s->payment_status,
+                'amount'         => $gross - $itemDiscount - $billDiscount + $tax,
+                'date'           => $s->date ? app(\App\Services\DateConversionService::class)->toDisplay($s->date) : '-',
+                'type'           => \App\Enums\SalePurchaseType::tryFrom((string) $s->type)?->getLabel() ?? (string) $s->type,
+                'status'         => (string) $s->status,
+            ];
+        })->all();
+
+        $label = $t('sale', 'sales', 'Sales');
+
+        return $exporter->download([
+            'filename'           => 'sales-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name'         => $label,
+            'sheet_title'        => $label,
+            'title'              => $label,
+            'company_name'       => $companyName,
+            'exported_on'        => now()->format('Y m d'),
+            'rtl'                => $rtl,
+            'include_row_number' => true,
+            'row_number_label'   => $t('report', 'columns.no', 'No.'),
+            'columns' => [
+                ['key' => 'number',         'label' => $t('general', 'number', 'Number'), 'width' => 10],
+                ['key' => 'customer_name',  'label' => $t('ledger', 'customer.customer', 'Customer'), 'width' => 20],
+                ['key' => 'payment_status', 'label' => $t('general', 'payment_status', 'Payment Status'), 'width' => 16],
+                ['key' => 'amount',         'label' => $t('general', 'amount', 'Amount'), 'type' => 'money', 'align' => 'right', 'width' => 14],
+                ['key' => 'date',           'label' => $t('general', 'date', 'Date'), 'width' => 14],
+                ['key' => 'type',           'label' => $t('general', 'type', 'Type'), 'width' => 10],
+                ['key' => 'status',         'label' => $t('general', 'status', 'Status'), 'width' => 12],
+            ],
+            'rows' => $rows,
+        ]);
+    }
 }
