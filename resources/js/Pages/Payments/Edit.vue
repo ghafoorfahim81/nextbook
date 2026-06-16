@@ -74,10 +74,8 @@ onMounted(async () => {
   }))
   form.selected_ledger = ledgers.value.find(l => l.id === r.ledger_id) || r.ledger || null
   form.selected_currency = currencies.value.find(c => c.id === r.currency_id) || null
-  const bankId = r?.transaction?.lines[0]?.account_id || r.transaction_id
-  form.bank_account_id = bankId
-  form.selected_bank_account = r.transaction?.lines[0]?.account || null
-  form.bank_account_id = r.transaction?.lines[0]?.account_id || null
+  form.bank_account_id = r.bank_account_id || null
+  form.selected_bank_account = r.bank_account || null
   oldBalanceText();
   initialized.value = true
 })
