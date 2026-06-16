@@ -319,7 +319,7 @@ class DrawingController extends Controller
             ];
         })->all();
 
-        $label = $t('owner', 'drawing.drawings', 'Drawings');
+        $label = $t('sidebar', 'owners.drawing', 'Drawings');
 
         return $exporter->download([
             'filename'           => 'drawings-' . now()->format('Ymd-His') . '.xlsx',
@@ -335,7 +335,7 @@ class DrawingController extends Controller
                 ['key' => 'date',            'label' => $t('general', 'date', 'Date'), 'width' => 12],
                 ['key' => 'owner',           'label' => $t('owner', 'owner', 'Owner'), 'width' => 18],
                 ['key' => 'bank_account',    'label' => $t('general', 'bank_account', 'Bank Account'), 'width' => 18],
-                ['key' => 'drawing_account', 'label' => $t('owner', 'drawing.drawing_account', 'Drawing Account'), 'width' => 18],
+                ['key' => 'drawing_account', 'label' => $t('owner', 'drawing_account', 'Drawing Account'), 'width' => 18],
                 ['key' => 'amount',          'label' => $t('general', 'amount', 'Amount'), 'type' => 'money', 'align' => 'right', 'width' => 14],
                 ['key' => 'narration',       'label' => $t('general', 'remarks', 'Remarks'), 'width' => 20],
             ],

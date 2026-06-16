@@ -108,5 +108,7 @@
     "pricing_search_placeholder": "Search by name, code or barcode...",
     "showing_results": "Showing {from}–{to} of {total}",
     "total_in": "Total In",
-    "total_out": "Total Out"
+    "total_out": "Total Out",
+    "opening_balance": "Opening Balance",
+    "avg_cost": "Avg Cost"
 }
