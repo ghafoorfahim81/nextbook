@@ -297,7 +297,7 @@ class PaymentController extends Controller
     public function update(PaymentUpdateRequest $request, Payment $payment, ActivityLogService $activityLogService)
     {
         if ($payment->status !== TransactionStatus::DRAFT->value) {
-            abort(403, 'Only draft documents can be edited.');
+            return back()->with('error', 'Only draft documents can be edited.');
         }
 
         $beforeState = [
@@ -411,7 +411,7 @@ class PaymentController extends Controller
     public function destroy(Request $request, Payment $payment, ActivityLogService $activityLogService)
     {
         if ($payment->status !== TransactionStatus::DRAFT->value) {
-            abort(403, 'Only draft documents can be deleted.');
+            return back()->with('error', 'Only draft documents can be deleted.');
         }
 
         $oldValues = [

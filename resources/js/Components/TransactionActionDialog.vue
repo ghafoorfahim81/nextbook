@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   Dialog,
   DialogContent,
@@ -10,6 +11,8 @@ import {
 } from '@/Components/ui/dialog'
 import { Button } from '@/Components/ui/button'
 import { Textarea } from '@/Components/ui/textarea'
+
+const { t } = useI18n()
 
 const props = defineProps({
   open: Boolean,
@@ -33,7 +36,7 @@ watch(() => props.open, (isOpen) => {
 
 const submit = () => {
   if (props.type === 'reverse' && !reason.value.trim()) {
-    reasonError.value = 'Reason for reversal is required.'
+    reasonError.value = t('general.reason_for_reversal') + ' ' + t('general.is_required')
     return
   }
 
@@ -52,11 +55,11 @@ const submit = () => {
       </DialogHeader>
 
       <div v-if="type === 'reverse'" class="space-y-2">
-        <label class="text-sm font-medium text-foreground">Reason for reversal</label>
+        <label class="text-sm font-medium text-foreground">{{ t('general.reason_for_reversal') }}</label>
         <Textarea
           v-model="reason"
           rows="3"
-          placeholder="Enter a short reason..."
+          :placeholder="t('general.reversal_placeholder')"
           @input="reasonError = ''"
         />
         <p v-if="reasonError" class="text-xs text-red-600">{{ reasonError }}</p>
@@ -64,14 +67,14 @@ const submit = () => {
 
       <DialogFooter class="gap-2">
         <Button variant="outline" :disabled="processing" @click="emit('update:open', false)">
-          Cancel
+          {{ t('general.cancel') }}
         </Button>
         <Button
           :variant="type === 'reverse' ? 'destructive' : 'default'"
           :disabled="processing"
           @click="submit"
         >
-          {{ type === 'reverse' ? 'Submit reversal' : 'Post document' }}
+          {{ type === 'reverse' ? t('general.submit_reversal') : t('general.post_document') }}
         </Button>
       </DialogFooter>
     </DialogContent>

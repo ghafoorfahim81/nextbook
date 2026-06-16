@@ -36,14 +36,11 @@ const reverseDialogOpen = ref(false)
 const statusBadgeClasses = computed(() => {
   if (!transfer.value) return 'bg-muted text-foreground border-border'
   switch (transfer.value.status) {
-    case 'completed':
-      return 'bg-green-500/15 text-green-700 border-green-500/30 dark:text-green-300'
-    case 'cancelled':
-      return 'bg-red-500/15 text-red-700 border-red-500/30 dark:text-red-300'
-    case 'pending':
-      return 'bg-yellow-500/15 text-yellow-700 border-yellow-500/30 dark:text-yellow-300'
-    default:
-      return 'bg-muted text-foreground border-border'
+    case 'completed': return 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700'
+    case 'cancelled': return 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700'
+    case 'pending':   return 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700'
+    case 'reversed':  return 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700'
+    default:          return 'bg-muted text-foreground border border-border'
   }
 })
 
@@ -269,14 +266,14 @@ function closeDialog() {
               :disabled="actionLoading"
               @click="reverseDialogOpen = true"
             >
-              Reverse
-            </Button> 
+              {{ t('general.reverse') }}
+            </Button>
             <Button
               class="flex items-center gap-2 bg-green-600 hover:bg-green-700"
               :disabled="actionLoading"
               @click="postDialogOpen = true"
             >
-              Post
+              {{ t('general.post') }}
             </Button>
           </div>
 
@@ -288,16 +285,16 @@ function closeDialog() {
       <TransactionActionDialog
         v-model:open="postDialogOpen"
         type="post"
-        title="Post item transfer"
-        description="This will move stock between warehouses and mark the transfer as completed."
+        :title="t('general.post') + ' ' + t('item_transfer.item_transfer')"
+        :description="t('general.post_document_desc')"
         :processing="actionLoading"
         @confirm="postTransfer"
       />
       <TransactionActionDialog
         v-model:open="reverseDialogOpen"
         type="reverse"
-        title="Reverse item transfer"
-        description="Enter a reason to create counter stock movements and cancel this transfer."
+        :title="t('general.reverse') + ' ' + t('item_transfer.item_transfer')"
+        :description="t('general.reverse_description')"
         :processing="actionLoading"
         @confirm="reverseTransfer"
       />

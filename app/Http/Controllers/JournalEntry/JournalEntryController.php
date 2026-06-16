@@ -191,7 +191,7 @@ class JournalEntryController extends Controller
     )
     {
         if ($journalEntry->status !== TransactionStatus::DRAFT->value) {
-            abort(403, 'Only draft documents can be edited.');
+            return back()->with('error', 'Only draft documents can be edited.');
         }
 
         $validated = $request->validated();
@@ -287,7 +287,7 @@ class JournalEntryController extends Controller
     public function destroy(Request $request, JournalEntry $journalEntry, ActivityLogService $activityLogService)
     {
         if ($journalEntry->status !== TransactionStatus::DRAFT->value) {
-            abort(403, 'Only draft documents can be deleted.');
+            return back()->with('error', 'Only draft documents can be deleted.');
         }
 
         $oldValues = [
