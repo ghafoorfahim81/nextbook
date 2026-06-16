@@ -61,9 +61,20 @@
                 </div>
             </div>
 
-            <!-- Right actions (Add New) -->
-            <div class="flex items-center gap-2 lg:ml-4" v-if="props.showAddButton && can(`${props.can}.create`)">
+            <!-- Right actions (Export + Add New) -->
+            <div v-if="props.exportRoute || (props.showAddButton && can(`${props.can}.create`))" class="flex items-center gap-2 lg:ml-4">
+                <Button
+                    v-if="props.exportRoute"
+                    variant="outline"
+                    size="sm"
+                    @click="exportToExcel"
+                    class="h-9 border-primary text-primary hover:bg-primary hover:text-white"
+                >
+                    <FileDown class="h-4 w-4" />
+                    <span class="ml-1">{{ t('general.excel') }}</span>
+                </Button>
                 <AddNewButton
+                    v-if="props.showAddButton && can(`${props.can}.create`)"
                     :title="addTitle"
                     :action="addAction"
                     :route="addRoute"
@@ -264,8 +275,7 @@ import {
 import {
     Search, CircleX, ChevronUp, ChevronDown, SlidersHorizontal, Ellipsis, SquarePen, Trash,
     Trash2, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, FileX,
-    Eye,
-    Printer,
+    Eye, Printer, FileDown,
 } from 'lucide-vue-next'
 import {
     DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
@@ -293,6 +303,7 @@ const props = defineProps({
     addRouteParams: { type: Object, default: () => ({}) },
     // Controls for empty state and rows
     emptyRowsCount: { type: Number, default: 10 },
+    exportRoute: { type: String, default: null },
 })
 
 const { t, locale } = useI18n()
@@ -427,6 +438,17 @@ const getRowNumber = (rowIndex) => {
     const current = props.items?.meta?.current_page ?? 1
     const per = props.items?.meta?.per_page ?? (perPage.value || 10)
     return (current - 1) * per + rowIndex + 1
+}
+
+const exportToExcel = () => {
+    const params = {
+        search: search.value || undefined,
+        sortField: sortField.value,
+        sortDirection: sortDirection.value,
+        filters: Object.keys(advancedFilters.value || {}).length ? advancedFilters.value : undefined,
+    }
+    const url = route(props.exportRoute, params)
+    window.location.href = url
 }
 
 </script>

@@ -345,4 +345,61 @@ class JournalEntryController extends Controller
 
         return redirect()->route('journal-entries.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.journal_entry')]));
     }
+
+    public function export(Request $request, \App\Services\SpreadsheetExportService $exporter)
+    {
+        $this->authorize('viewAny', JournalEntry::class);
+
+        $sortField = $request->input('sortField', 'created_at');
+        $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
+
+        $entries = JournalEntry::with(['transaction', 'transaction.lines'])
+            ->search($request->query('search'))
+            ->filter($filters)
+            ->orderBy($sortField, $sortDirection)
+            ->get();
+
+        $rtl = in_array(app()->getLocale(), ['fa', 'ps'], true);
+        $company = $request->user()?->company;
+        $companyName = match (app()->getLocale()) {
+            'fa'    => $company?->name_fa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            'ps'    => $company?->name_pa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            default => $company?->name_en ?: $company?->abbreviation ?: $company?->name_fa ?: $company?->name_pa ?: config('app.name'),
+        };
+        $t = fn (string $group, string $key, string $fallback = '') => $exporter->localeTranslation($group, $key, $fallback);
+        $dateService = app(\App\Services\DateConversionService::class);
+
+        $rows = $entries->map(fn ($e) => [
+            'number' => $e->number,
+            'remark' => $e->remark ?? '-',
+            'amount' => (float) ($e->transaction?->lines->sum('debit') > 0
+                ? $e->transaction->lines->sum('debit')
+                : $e->transaction?->lines->sum('credit') ?? 0),
+            'date'   => $e->date ? $dateService->toDisplay($e->date) : '-',
+            'status' => (string) $e->status,
+        ])->all();
+
+        $label = $t('sidebar', 'journal_entry.journal_entries', 'Journal Entries');
+
+        return $exporter->download([
+            'filename'           => 'journal-entries-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name'         => $label,
+            'sheet_title'        => $label,
+            'title'              => $label,
+            'company_name'       => $companyName,
+            'exported_on'        => now()->format('Y m d'),
+            'rtl'                => $rtl,
+            'include_row_number' => true,
+            'row_number_label'   => $t('report', 'columns.no', 'No.'),
+            'columns' => [
+                ['key' => 'number', 'label' => $t('general', 'number', 'Number'), 'width' => 10],
+                ['key' => 'remark', 'label' => $t('general', 'remark', 'Remark'), 'width' => 24],
+                ['key' => 'amount', 'label' => $t('general', 'amount', 'Amount'), 'type' => 'money', 'align' => 'right', 'width' => 14],
+                ['key' => 'date',   'label' => $t('general', 'date', 'Date'), 'width' => 14],
+                ['key' => 'status', 'label' => $t('general', 'status', 'Status'), 'width' => 12],
+            ],
+            'rows' => $rows,
+        ]);
+    }
 }

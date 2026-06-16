@@ -334,6 +334,60 @@ class ItemController extends Controller
         );
     }
 
+    public function export(Request $request, SpreadsheetExportService $spreadsheetExportService)
+    {
+        $this->authorize('viewAny', Item::class);
+
+        $sortField = $request->input('sortField', 'id');
+        $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
+
+        $items = Item::with(['unitMeasure'])
+            ->withSum(['stocks as total_in' => fn ($q) => $q->where('movement_type', StockMovementType::IN->value)], 'quantity')
+            ->withSum(['stocks as total_out' => fn ($q) => $q->where('movement_type', StockMovementType::OUT->value)], 'quantity')
+            ->withSum('stockBalances as on_hand', 'quantity')
+            ->search($request->query('search'))
+            ->filter($filters)
+            ->orderBy($sortField, $sortDirection)
+            ->get();
+
+        $rows = $items->map(fn ($item) => [
+            'name' => $item->name ?? '-',
+            'code' => $item->code ?? '-',
+            'unit_measure' => $item->unitMeasure?->name ?? '-',
+            'on_hand' => (float) ($item->on_hand ?? 0),
+            'purchase_price' => (float) ($item->purchase_price ?? 0),
+            'sale_price' => (float) ($item->sale_price ?? 0),
+            'total_in' => (float) ($item->total_in ?? 0),
+            'total_out' => (float) ($item->total_out ?? 0),
+        ])->all();
+
+        $label = $spreadsheetExportService->localeTranslation('item', 'items', 'Items');
+
+        return $spreadsheetExportService->download([
+            'filename' => 'items-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name' => $label,
+            'sheet_title' => $label,
+            'title' => $label,
+            'company_name' => $this->exportCompanyName($request),
+            'exported_on' => now()->format('Y m d'),
+            'rtl' => in_array(app()->getLocale(), ['fa', 'ps'], true),
+            'include_row_number' => true,
+            'row_number_label' => $spreadsheetExportService->localeTranslation('report', 'columns.no', 'No.'),
+            'columns' => [
+                ['key' => 'name', 'label' => $spreadsheetExportService->localeTranslation('general', 'name', 'Name'), 'width' => 22],
+                ['key' => 'code', 'label' => $spreadsheetExportService->localeTranslation('admin', 'currency.code', 'Code'), 'width' => 10],
+                ['key' => 'unit_measure', 'label' => $spreadsheetExportService->localeTranslation('admin', 'unit_measure.unit_measure', 'Unit Measure'), 'width' => 14],
+                ['key' => 'on_hand', 'label' => $spreadsheetExportService->localeTranslation('general', 'on_hand', 'On Hand'), 'type' => 'quantity', 'align' => 'right', 'width' => 12],
+                ['key' => 'purchase_price', 'label' => $spreadsheetExportService->localeTranslation('item', 'purchase_price', 'Purchase Price'), 'type' => 'money', 'align' => 'right', 'width' => 14],
+                ['key' => 'sale_price', 'label' => $spreadsheetExportService->localeTranslation('item', 'sale_price', 'Sale Price'), 'type' => 'money', 'align' => 'right', 'width' => 14],
+                ['key' => 'total_in', 'label' => $spreadsheetExportService->localeTranslation('item', 'total_in', 'Total In'), 'type' => 'quantity', 'align' => 'right', 'width' => 12],
+                ['key' => 'total_out', 'label' => $spreadsheetExportService->localeTranslation('item', 'total_out', 'Total Out'), 'type' => 'quantity', 'align' => 'right', 'width' => 12],
+            ],
+            'rows' => $rows,
+        ]);
+    }
+
     public function edit(Request $request, Item $item)
     {
         $item = Item::with('unitMeasure', 'brand', 'category', 'size', 'assetAccount', 'incomeAccount', 'costAccount', 'openings.warehouse')->find($item->id);

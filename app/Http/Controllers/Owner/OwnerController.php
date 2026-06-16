@@ -410,4 +410,60 @@ class OwnerController extends Controller
 
         return redirect()->route('owners.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.owner')]));
     }
+
+    public function export(Request $request, \App\Services\SpreadsheetExportService $exporter)
+    {
+        $this->authorize('viewAny', Owner::class);
+
+        $sortField = $request->input('sortField', 'name');
+        $sortDirection = $request->input('sortDirection', 'asc');
+        $filters = (array) $request->input('filters', []);
+
+        $owners = Owner::query()
+            ->search($request->query('search'))
+            ->filter($filters)
+            ->orderBy($sortField, $sortDirection)
+            ->get();
+
+        $rtl = in_array(app()->getLocale(), ['fa', 'ps'], true);
+        $company = $request->user()?->company;
+        $companyName = match (app()->getLocale()) {
+            'fa'    => $company?->name_fa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            'ps'    => $company?->name_pa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            default => $company?->name_en ?: $company?->abbreviation ?: $company?->name_fa ?: $company?->name_pa ?: config('app.name'),
+        };
+        $t = fn (string $group, string $key, string $fallback = '') => $exporter->localeTranslation($group, $key, $fallback);
+
+        $rows = $owners->map(fn ($o) => [
+            'name'                 => $o->name ?? '-',
+            'father_name'          => $o->father_name ?? '-',
+            'nic'                  => $o->nic ?? '-',
+            'phone_number'         => $o->phone_number ?? '-',
+            'ownership_percentage' => (float) ($o->share_percentage ?? 0),
+            'is_active'            => $o->is_active ? $t('general', 'active', 'Active') : $t('general', 'inactive', 'Inactive'),
+        ])->all();
+
+        $label = $t('owner', 'owners', 'Owners');
+
+        return $exporter->download([
+            'filename'           => 'owners-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name'         => $label,
+            'sheet_title'        => $label,
+            'title'              => $label,
+            'company_name'       => $companyName,
+            'exported_on'        => now()->format('Y m d'),
+            'rtl'                => $rtl,
+            'include_row_number' => true,
+            'row_number_label'   => $t('report', 'columns.no', 'No.'),
+            'columns' => [
+                ['key' => 'name',                 'label' => $t('general', 'name', 'Name'), 'width' => 20],
+                ['key' => 'father_name',          'label' => $t('owner', 'father_name', 'Father Name'), 'width' => 18],
+                ['key' => 'nic',                  'label' => $t('owner', 'nic', 'NIC'), 'width' => 14],
+                ['key' => 'phone_number',         'label' => $t('owner', 'phone_number', 'Phone Number'), 'width' => 14],
+                ['key' => 'ownership_percentage', 'label' => $t('owner', 'ownership_percentage', 'Ownership %'), 'type' => 'money', 'align' => 'right', 'width' => 14],
+                ['key' => 'is_active',            'label' => $t('general', 'status', 'Status'), 'width' => 10],
+            ],
+            'rows' => $rows,
+        ]);
+    }
 }
