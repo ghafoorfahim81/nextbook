@@ -392,7 +392,9 @@ class SpreadsheetExportService
                 $path = resource_path("js/locales/en/{$group}.json");
             }
 
-            $this->localeCache[$cacheKey] = json_decode((string) file_get_contents($path), true) ?: [];
+            $content = (string) file_get_contents($path);
+            $content = str_replace("\xEF\xBB\xBF", '', $content); // strip UTF-8 BOM
+            $this->localeCache[$cacheKey] = json_decode($content, true) ?: [];
         }
 
         return $this->localeCache[$cacheKey];

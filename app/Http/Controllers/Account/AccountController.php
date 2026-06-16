@@ -393,13 +393,15 @@ class AccountController extends Controller
         $filters = (array) $request->input('filters', []);
 
         $accounts = Account::with(['accountType', 'parent'])
+            ->withSum('transactionLines as total_debit', 'debit')
+            ->withSum('transactionLines as total_credit', 'credit')
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->get();
 
         $t = fn (string $group, string $key, string $fallback = '') => $exporter->localeTranslation($group, $key, $fallback);
-        $label = $t('account', 'account', 'Chart of Accounts');
+        $label = $t('account', 'chart_of_accounts', 'Chart of Accounts');
 
         $rows = $accounts->map(fn ($a) => [
             'number'       => $a->number,
@@ -407,6 +409,7 @@ class AccountController extends Controller
             'local_name'   => $a->local_name ?? '-',
             'account_type' => $a->accountType?->name ?? '-',
             'parent'       => $a->parent?->name ?? '-',
+            'balance'      => round((float) ($a->total_debit ?? 0) - (float) ($a->total_credit ?? 0), 2),
         ])->all();
 
         return $exporter->download([
@@ -425,6 +428,7 @@ class AccountController extends Controller
                 ['key' => 'local_name',   'label' => $t('account', 'local_name', 'Local Name'), 'width' => 22],
                 ['key' => 'account_type', 'label' => $t('account', 'account_type', 'Account Type'), 'width' => 18],
                 ['key' => 'parent',       'label' => $t('account', 'parent', 'Parent'), 'width' => 22],
+                ['key' => 'balance',      'label' => $t('general', 'balance', 'Balance'), 'type' => 'money', 'align' => 'right', 'width' => 16],
             ],
             'rows' => $rows,
         ]);

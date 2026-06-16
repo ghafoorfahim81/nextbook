@@ -79,8 +79,8 @@
                     :action="addAction"
                     :route="addRoute"
                     :routeParams="addRouteParams"
-                    variant="default"
-                    class="bg-primary text-white"
+                    variant="outline"
+                    class="h-9 border-primary text-primary hover:bg-primary hover:text-white"
                     @modal-open="$emit('add')"
                     @redirect="$emit('add')"
                 />

@@ -346,15 +346,23 @@ class ItemController extends Controller
             ->withSum(['stocks as total_in' => fn ($q) => $q->where('movement_type', StockMovementType::IN->value)], 'quantity')
             ->withSum(['stocks as total_out' => fn ($q) => $q->where('movement_type', StockMovementType::OUT->value)], 'quantity')
             ->withSum('stockBalances as on_hand', 'quantity')
+            ->withSum([
+                'stocks as opening_balance' => function ($q) {
+                    $q->where('source', \App\Enums\StockSourceType::OPENING->value);
+                }
+            ], 'quantity')
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->get();
+       
 
         $rows = $items->map(fn ($item) => [
             'name' => $item->name ?? '-',
             'code' => $item->code ?? '-',
             'unit_measure' => $item->unitMeasure?->name ?? '-',
+            'opening_balance' => (float) ($item->opening_balance ?? 0),
+            'avg_cost' => (float) ($item->avg_cost ?? 0),
             'on_hand' => (float) ($item->on_hand ?? 0),
             'purchase_price' => (float) ($item->purchase_price ?? 0),
             'sale_price' => (float) ($item->sale_price ?? 0),
@@ -378,6 +386,8 @@ class ItemController extends Controller
                 ['key' => 'name', 'label' => $spreadsheetExportService->localeTranslation('general', 'name', 'Name'), 'width' => 22],
                 ['key' => 'code', 'label' => $spreadsheetExportService->localeTranslation('admin', 'currency.code', 'Code'), 'width' => 10],
                 ['key' => 'unit_measure', 'label' => $spreadsheetExportService->localeTranslation('admin', 'unit_measure.unit_measure', 'Unit Measure'), 'width' => 14],
+                ['key' => 'opening_balance', 'label' => $spreadsheetExportService->localeTranslation('item', 'opening_balance', 'Opening Balance'), 'type' => 'quantity', 'align' => 'right', 'width' => 12],
+                ['key' => 'avg_cost', 'label' => $spreadsheetExportService->localeTranslation('item', 'avg_cost', 'Avg Cost'), 'type' => 'money', 'align' => 'right', 'width' => 14],
                 ['key' => 'on_hand', 'label' => $spreadsheetExportService->localeTranslation('general', 'on_hand', 'On Hand'), 'type' => 'quantity', 'align' => 'right', 'width' => 12],
                 ['key' => 'purchase_price', 'label' => $spreadsheetExportService->localeTranslation('item', 'purchase_price', 'Purchase Price'), 'type' => 'money', 'align' => 'right', 'width' => 14],
                 ['key' => 'sale_price', 'label' => $spreadsheetExportService->localeTranslation('item', 'sale_price', 'Sale Price'), 'type' => 'money', 'align' => 'right', 'width' => 14],
