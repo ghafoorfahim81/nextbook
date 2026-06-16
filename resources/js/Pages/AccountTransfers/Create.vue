@@ -17,9 +17,9 @@ const { t } = useI18n()
 const page = usePage()
 const accounts = computed(() => page.props.accounts?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
-console.log('this is currencies', page.props);
-
-useLazyProps(page.props, ['accounts'])
+const bankAccounts = computed(() => page.props.bankAccounts || [])
+console.log('Bank Accounts:', bankAccounts.value)
+// useLazyProps(page.props, ['accounts'])
 
 const form = useForm({
   number: page.props.latestNumber ?? '',
@@ -124,7 +124,7 @@ const handleSubmitAction = (createAndNew = false) => {
           <NextInput placeholder="Rate" :error="form.errors?.rate" :disabled="form?.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
 
           <NextSelect
-            :options="accounts"
+            :options="bankAccounts"
             v-model="form.selected_from_account"
             @update:modelValue="(v) => handleSelectChange('from_account_id', v.id)"
             label-key="name"
@@ -132,12 +132,11 @@ const handleSubmitAction = (createAndNew = false) => {
             :reduce="acc => acc"
             :floating-text="t('general.from_account')"
             :error="form.errors?.from_account_id"
-            :searchable="true"
             resource-type="accounts"
             :search-fields="['name', 'number', 'slug']"
           />
           <NextSelect
-            :options="accounts"
+            :options="bankAccounts"
             v-model="form.selected_to_account"
             @update:modelValue="(v) => handleSelectChange('to_account_id', v.id)"
             label-key="name"
@@ -145,7 +144,6 @@ const handleSubmitAction = (createAndNew = false) => {
             :reduce="acc => acc"
             :floating-text="t('general.to_account')"
             :error="form.errors?.to_account_id"
-            :searchable="true"
             resource-type="accounts"
             :search-fields="['name', 'number', 'slug']"
           />
