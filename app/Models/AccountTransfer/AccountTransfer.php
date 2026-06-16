@@ -2,6 +2,7 @@
 
 namespace App\Models\AccountTransfer;
 
+use App\Models\Account\Account;
 use App\Models\Transaction\Transaction;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,6 +28,8 @@ class AccountTransfer extends Model
         'number',
         'date',
         'transaction_id',
+        'from_account_id',
+        'to_account_id',
         'status',
         'remark',
         'branch_id',
@@ -39,6 +42,8 @@ class AccountTransfer extends Model
         'id' => 'string',
         'date' => 'date',
         'transaction_id' => 'string',
+        'from_account_id' => 'string',
+        'to_account_id' => 'string',
         'status' => 'string',
         'branch_id' => 'string',
         'created_by' => 'string',
@@ -67,14 +72,10 @@ class AccountTransfer extends Model
     {
         return [
             'from_account_id' => function (Builder $query, mixed $value): void {
-                $query->whereHas('transaction.lines', function (Builder $q) use ($value) {
-                    $q->where('account_id', $value);
-                });
+                $query->where('from_account_id', $value);
             },
             'to_account_id' => function (Builder $query, mixed $value): void {
-                $query->whereHas('transaction.lines', function (Builder $q) use ($value) {
-                    $q->where('account_id', $value);
-                });
+                $query->where('to_account_id', $value);
             },
             'amount_min' => function (Builder $query, mixed $value): void {
                 if (!is_numeric($value)) {
@@ -102,6 +103,16 @@ class AccountTransfer extends Model
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class, 'transaction_id');
+    }
+
+    public function fromAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'from_account_id');
+    }
+
+    public function toAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'to_account_id');
     }
 
 }

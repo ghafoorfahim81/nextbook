@@ -409,7 +409,7 @@ class AccountController extends Controller
             'local_name'   => $a->local_name ?? '-',
             'account_type' => $a->accountType?->name ?? '-',
             'parent'       => $a->parent?->name ?? '-',
-            'balance'      => round((float) ($a->total_debit ?? 0) - (float) ($a->total_credit ?? 0), 2),
+            'balance'      => $a->statement['balance'],
         ])->all();
 
         return $exporter->download([

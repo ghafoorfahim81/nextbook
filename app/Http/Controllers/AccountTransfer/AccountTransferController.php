@@ -39,6 +39,8 @@ class AccountTransferController extends Controller
         $transfers = AccountTransfer::with([
                 'transaction.lines.account.accountType',
                 'transaction.currency',
+                'fromAccount',
+                'toAccount',
                 'createdBy',
                 'updatedBy',
             ])
@@ -46,7 +48,7 @@ class AccountTransferController extends Controller
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
-
+            // dd(AccountTransferResource::collection($transfers)->toArray(request()));
         return inertia('AccountTransfers/Index', [
             'transfers' => AccountTransferResource::collection($transfers),
             'filterOptions' => [
@@ -66,7 +68,12 @@ class AccountTransferController extends Controller
 
     public function create(Request $request)
     {
-        return inertia('AccountTransfers/Create');
+        $bankAccounts = Account::whereHas('accountType', function ($query) {
+            $query->where('slug', 'cash-or-bank');
+        })->orderBy('name')->get(['id', 'name', 'local_name']);
+        return inertia('AccountTransfers/Create', [
+            'bankAccounts' => $bankAccounts,
+        ]);
     }
 
 
@@ -93,20 +100,22 @@ class AccountTransferController extends Controller
 
             $fromAccount = Account::findOrFail($fromAccountId);
             $toAccount = Account::findOrFail($toAccountId);
-            $nature = $fromAccount->accountType->nature ?? 'asset';
+            // $nature = $fromAccount->accountType->nature ?? 'asset';
 
-            $mappings = [
-                'asset'    => ['debit' => $toAccount->id, 'credit' => $fromAccount->id],
-                'liability'=> ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
-                'equity'   => ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
-                'income'   => ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
-                'expense'  => ['debit' => $toAccount->id, 'credit' => $fromAccount->id],
-            ];
-            $map = $mappings[$nature] ?? $mappings['asset'];
+            // $mappings = [
+            //     'asset'    => ['debit' => $toAccount->id, 'credit' => $fromAccount->id],
+            //     'liability'=> ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
+            //     'equity'   => ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
+            //     'income'   => ['debit' => $fromAccount->id, 'credit' => $toAccount->id],
+            //     'expense'  => ['debit' => $toAccount->id, 'credit' => $fromAccount->id],
+            // ];
+            // $map = $mappings[$nature] ?? $mappings['asset'];
 
             $transfer = AccountTransfer::create([
                 'number' => $validated['number'] ?? null,
                 'date' => $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null,
+                'from_account_id' => $fromAccountId,
+                'to_account_id' => $toAccountId,
                 'remark' => $validated['remark'] ?? null,
                 'status' => $documentStatus,
             ]);
@@ -121,20 +130,22 @@ class AccountTransferController extends Controller
                 'status' => $documentStatus,
                 'posting_payload' => [
                     'amount' => $amount,
+                    'from_account_id' => $fromAccountId,
+                    'to_account_id' => $toAccountId,
                 ],
             ], [
                 [
-                    'account_id' => $map['debit'],
-                    'debit' => $amount,
-                    'credit' => 0,
+                    'account_id' => $fromAccount->id,
+                    'debit' => 0,
+                    'credit' => $amount,
                     'remark' => "Transfer from ". ' ' .$fromAccount->name,
                     'remark_fa' => "انتقال از حساب ". ' ' . $fromAccount->local_name,
                     'remark_ps' => "لېږد له حساب ". ' ' . $fromAccount->local_name,
                 ],
                 [
-                    'account_id' => $map['credit'],
-                    'debit' => 0,
-                    'credit' => $amount,
+                    'account_id' => $toAccount->id,
+                    'debit' => $amount,
+                    'credit' => 0,
                     'remark' => "Transfer to ". ' ' . $toAccount->name,
                     'remark_fa' => "انتقال به حساب ". ' ' . $toAccount->local_name,
                     'remark_ps' => "لېږد ته حساب ". ' ' . $toAccount->local_name,
@@ -174,7 +185,7 @@ class AccountTransferController extends Controller
 
     public function show(Request $request, AccountTransfer $accountTransfer)
     {
-        $accountTransfer->load(['transaction.lines.account.accountType', 'transaction.currency', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'createdBy', 'updatedBy']);
+        $accountTransfer->load(['transaction.lines.account.accountType', 'transaction.currency', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'fromAccount', 'toAccount', 'createdBy', 'updatedBy']);
         return response()->json([
             'data' => new AccountTransferResource($accountTransfer),
         ]);
@@ -216,7 +227,7 @@ class AccountTransferController extends Controller
 
     public function edit(Request $request, AccountTransfer $accountTransfer)
     {
-        $accountTransfer->load(['transaction.lines.account.accountType', 'transaction.currency', 'createdBy', 'updatedBy']);
+        $accountTransfer->load(['transaction.lines.account.accountType', 'transaction.currency', 'fromAccount', 'toAccount', 'createdBy', 'updatedBy']);
         return inertia('AccountTransfers/Edit', [
             'data' => new AccountTransferResource($accountTransfer),
         ]);
@@ -236,6 +247,8 @@ class AccountTransferController extends Controller
             $accountTransfer->update([
                 'number' => $validated['number'] ?? $accountTransfer->number,
                 'date' => $validated['date'] ?? $accountTransfer->date,
+                'from_account_id' => $validated['from_account_id'] ?? $accountTransfer->from_account_id,
+                'to_account_id' => $validated['to_account_id'] ?? $accountTransfer->to_account_id,
                 'remark' => $validated['remark'] ?? $accountTransfer->remark,
                 'status' => TransactionStatus::DRAFT->value,
             ]);
@@ -273,6 +286,8 @@ class AccountTransferController extends Controller
                 'status' => TransactionStatus::DRAFT->value,
                 'posting_payload' => [
                     'amount' => $amount,
+                    'from_account_id' => $fromAccountId,
+                    'to_account_id' => $toAccountId,
                 ],
             ],
             lines: [
