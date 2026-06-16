@@ -78,6 +78,7 @@ import { router } from '@inertiajs/vue3'
             :title="t('ledger.customer.customers')"
             :url="`customers.index`"
             :hasShow="true"
+            exportRoute="customers.list-export"
             :showAddButton="true"
             :addTitle="t('ledger.customer.customer')"
             :addAction="'redirect'"

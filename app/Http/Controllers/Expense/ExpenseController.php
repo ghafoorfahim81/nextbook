@@ -379,4 +379,60 @@ class ExpenseController extends Controller
         return redirect()->route('expenses.index')
             ->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.expense')]));
     }
+
+    public function export(Request $request, \App\Services\SpreadsheetExportService $exporter)
+    {
+        $this->authorize('viewAny', Expense::class);
+
+        $sortField = $request->input('sortField', 'id');
+        $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
+
+        $expenses = Expense::with(['category', 'details', 'transaction.lines.account'])
+            ->search($request->query('search'))
+            ->filter($filters)
+            ->orderBy($sortField, $sortDirection)
+            ->get();
+
+        $rtl = in_array(app()->getLocale(), ['fa', 'ps'], true);
+        $company = $request->user()?->company;
+        $companyName = match (app()->getLocale()) {
+            'fa'    => $company?->name_fa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            'ps'    => $company?->name_pa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            default => $company?->name_en ?: $company?->abbreviation ?: $company?->name_fa ?: $company?->name_pa ?: config('app.name'),
+        };
+        $t = fn (string $group, string $key, string $fallback = '') => $exporter->localeTranslation($group, $key, $fallback);
+
+        $rows = $expenses->map(fn ($e) => [
+            'date'             => $e->date ? $this->dateConversionService->toDisplay($e->date) : '-',
+            'category'         => $e->category?->name ?? '-',
+            'expense_account'  => $e->transaction?->lines?->firstWhere(fn ($l) => $l->debit > 0)?->account?->name ?? '-',
+            'bank_account'     => $e->transaction?->lines?->firstWhere(fn ($l) => $l->credit > 0)?->account?->name ?? '-',
+            'total'            => (float) ($e->details?->sum('amount') ?? 0),
+            'remarks'          => $e->remarks ?? '-',
+        ])->all();
+
+        $label = $t('expense', 'expenses', 'Expenses');
+
+        return $exporter->download([
+            'filename'           => 'expenses-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name'         => $label,
+            'sheet_title'        => $label,
+            'title'              => $label,
+            'company_name'       => $companyName,
+            'exported_on'        => now()->format('Y m d'),
+            'rtl'                => $rtl,
+            'include_row_number' => true,
+            'row_number_label'   => $t('report', 'columns.no', 'No.'),
+            'columns' => [
+                ['key' => 'date',            'label' => $t('general', 'date', 'Date'), 'width' => 14],
+                ['key' => 'category',        'label' => $t('admin', 'category.category', 'Category'), 'width' => 18],
+                ['key' => 'expense_account', 'label' => $t('expense', 'expense_account', 'Expense Account'), 'width' => 20],
+                ['key' => 'bank_account',    'label' => $t('expense', 'bank_account', 'Bank/Cash Account'), 'width' => 20],
+                ['key' => 'total',           'label' => $t('general', 'total', 'Total'), 'type' => 'money', 'align' => 'right', 'width' => 14],
+                ['key' => 'remarks',         'label' => $t('general', 'remarks', 'Remarks'), 'width' => 24],
+            ],
+            'rows' => $rows,
+        ]);
+    }
 }

@@ -105,6 +105,7 @@ const filterFields = computed(() => ([
             :addTitle="t('receipt.receipt')"
             :addAction="'redirect'"
             :addRoute="'receipts.create'"
+            exportRoute="receipts.export"
         />
         <ReceiptShowDialog
             :open="showDialog"

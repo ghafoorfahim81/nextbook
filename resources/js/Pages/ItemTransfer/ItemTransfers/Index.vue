@@ -113,6 +113,7 @@ const filterFields = computed(() => ([
       :filterFields="filterFields"
       :title="t('item_transfer.item_transfers')"
       :url="`item-transfers.index`"
+      exportRoute="item-transfers.export"
       :showAddButton="true"
       :hasShow="true"
       @edit="editItem"
