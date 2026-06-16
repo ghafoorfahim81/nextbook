@@ -113,6 +113,7 @@ Route::middleware([
     Route::delete('/account-types/{accountType}/force-delete', [\App\Http\Controllers\Account\AccountTypeController::class, 'forceDelete'])
         ->name('account-types.force-delete')
         ->withTrashed();
+    Route::get('/chart-of-accounts/export', [\App\Http\Controllers\Account\AccountController::class, 'exportList'])->name('chart-of-accounts.export');
     Route::resource('chart-of-accounts', \App\Http\Controllers\Account\AccountController::class);
     Route::patch('/chart-of-accounts/{chart_of_account}/restore', [\App\Http\Controllers\Account\AccountController::class, 'restore'])->name('chart-of-accounts.restore')->withTrashed();
     Route::get('/chart-of-accounts/{chart_of_account}/export-transactions', [\App\Http\Controllers\Account\AccountController::class, 'exportTransactions'])->name('chart-of-accounts.export-transactions');
@@ -137,6 +138,7 @@ Route::middleware([
         ->name('sizes.force-delete')
         ->withTrashed();
 
+    Route::get('/items/export', [\App\Http\Controllers\Inventory\ItemController::class, 'export'])->name('items.export');
     Route::resource('/items', \App\Http\Controllers\Inventory\ItemController::class);
     Route::patch('/items/{item}/restore', [\App\Http\Controllers\Inventory\ItemController::class, 'restore'])->name('items.restore')->withTrashed();
     Route::get('/item-pricing', [\App\Http\Controllers\Inventory\ItemPricingController::class, 'index'])->name('item-pricing.index');
@@ -149,9 +151,11 @@ Route::middleware([
     Route::delete('/ledgers/{ledger}/force-delete', [\App\Http\Controllers\Ledger\LedgerController::class, 'forceDelete'])
         ->name('ledgers.force-delete')
         ->withTrashed();
+    Route::get('/suppliers/list-export', [\App\Http\Controllers\Ledger\SupplierController::class, 'exportList'])->name('suppliers.list-export');
     Route::resource('/suppliers', \App\Http\Controllers\Ledger\SupplierController::class);
     Route::patch('/suppliers/{supplier}/restore', [\App\Http\Controllers\Ledger\SupplierController::class, 'restore'])->name('suppliers.restore')->withTrashed();
     Route::get('/suppliers/{supplier}/export', [\App\Http\Controllers\Ledger\SupplierController::class, 'export'])->name('suppliers.export');
+    Route::get('/customers/list-export', [\App\Http\Controllers\Ledger\CustomerController::class, 'exportList'])->name('customers.list-export');
     Route::resource('/customers', \App\Http\Controllers\Ledger\CustomerController::class);
     Route::patch('/customers/{customer}/restore', [\App\Http\Controllers\Ledger\CustomerController::class, 'restore'])->name('customers.restore')->withTrashed();
     Route::get('/customers/{customer}/export', [\App\Http\Controllers\Ledger\CustomerController::class, 'export'])->name('customers.export');
@@ -174,6 +178,7 @@ Route::middleware([
         ->name('item.barcode.print');
 
     Route::get('/purchases/open-bills', [\App\Http\Controllers\Purchase\PurchaseController::class, 'openBills'])->name('purchases.open-bills');
+    Route::get('/purchases/list-export', [\App\Http\Controllers\Purchase\PurchaseController::class, 'exportList'])->name('purchases.list-export');
     Route::resource('/purchases', \App\Http\Controllers\Purchase\PurchaseController::class);
     Route::post('/purchases/{purchase}/post', [\App\Http\Controllers\Purchase\PurchaseController::class, 'post'])->name('purchases.post');
     Route::post('/purchases/{purchase}/reverse', [\App\Http\Controllers\Purchase\PurchaseController::class, 'reverse'])->name('purchases.reverse');
@@ -186,6 +191,7 @@ Route::middleware([
     Route::get('/purchase-item-change', [NextController::class, 'purchaseItemChange'])->name('purchase.item.change');
 
     Route::get('/sales/open-bills', [\App\Http\Controllers\Sale\SaleController::class, 'openBills'])->name('sales.open-bills');
+    Route::get('/sales/list-export', [\App\Http\Controllers\Sale\SaleController::class, 'exportList'])->name('sales.list-export');
     Route::resource('/sales', \App\Http\Controllers\Sale\SaleController::class);
     Route::post('/sales/{sale}/post', [\App\Http\Controllers\Sale\SaleController::class, 'post'])->name('sales.post');
     Route::post('/sales/{sale}/reverse', [\App\Http\Controllers\Sale\SaleController::class, 'reverse'])->name('sales.reverse');
@@ -214,6 +220,7 @@ Route::middleware([
     Route::post('/quick-create/{resourceType}', [QuickCreateController::class, 'store'])->name('quick-create.store');
 
     // Receipts
+    Route::get('/receipts/export', [\App\Http\Controllers\Receipt\ReceiptController::class, 'export'])->name('receipts.export');
     Route::resource('/receipts', \App\Http\Controllers\Receipt\ReceiptController::class);
     Route::post('/receipts/{receipt}/post', [\App\Http\Controllers\Receipt\ReceiptController::class, 'post'])->name('receipts.post');
     Route::post('/receipts/{receipt}/reverse', [\App\Http\Controllers\Receipt\ReceiptController::class, 'reverse'])->name('receipts.reverse');
@@ -224,6 +231,7 @@ Route::middleware([
     Route::get('/receipts/{receipt}/print', [\App\Http\Controllers\Receipt\ReceiptController::class, 'print'])->name('receipts.print');
 
     // Payments
+    Route::get('/payments/export', [\App\Http\Controllers\Payment\PaymentController::class, 'export'])->name('payments.export');
     Route::resource('/payments', \App\Http\Controllers\Payment\PaymentController::class);
     Route::post('/payments/{payment}/post', [\App\Http\Controllers\Payment\PaymentController::class, 'post'])->name('payments.post');
     Route::post('/payments/{payment}/reverse', [\App\Http\Controllers\Payment\PaymentController::class, 'reverse'])->name('payments.reverse');
@@ -234,6 +242,7 @@ Route::middleware([
     Route::get('/payments/{payment}/print', [\App\Http\Controllers\Payment\PaymentController::class, 'print'])->name('payments.print');
 
     // Account Transfers
+    Route::get('/account-transfers/export', [\App\Http\Controllers\AccountTransfer\AccountTransferController::class, 'export'])->name('account-transfers.export');
     Route::resource('/account-transfers', \App\Http\Controllers\AccountTransfer\AccountTransferController::class);
     Route::post('/account-transfers/{accountTransfer}/post', [\App\Http\Controllers\AccountTransfer\AccountTransferController::class, 'post'])->name('account-transfers.post');
     Route::post('/account-transfers/{accountTransfer}/reverse', [\App\Http\Controllers\AccountTransfer\AccountTransferController::class, 'reverse'])->name('account-transfers.reverse');
@@ -249,11 +258,13 @@ Route::middleware([
     Route::get('/items/{item}/out-records/export', [\App\Http\Controllers\Inventory\ItemController::class, 'exportOutRecords'])->name('items.out-records.export');
 
     // Owners
+    Route::get('/owners/export', [\App\Http\Controllers\Owner\OwnerController::class, 'export'])->name('owners.export');
     Route::resource('/owners', \App\Http\Controllers\Owner\OwnerController::class);
     Route::patch('/owners/{owner}/restore', [\App\Http\Controllers\Owner\OwnerController::class, 'restore'])->name('owners.restore')->withTrashed();
     Route::delete('/owners/{owner}/force-delete', [\App\Http\Controllers\Owner\OwnerController::class, 'forceDelete'])
         ->name('owners.force-delete')
         ->withTrashed();
+    Route::get('/drawings/export', [\App\Http\Controllers\Owner\DrawingController::class, 'export'])->name('drawings.export');
     Route::resource('/drawings', \App\Http\Controllers\Owner\DrawingController::class);
     Route::patch('/drawings/{drawing}/restore', [\App\Http\Controllers\Owner\DrawingController::class, 'restore'])->name('drawings.restore')->withTrashed();
     Route::delete('/drawings/{drawing}/force-delete', [\App\Http\Controllers\Owner\DrawingController::class, 'forceDelete'])
@@ -293,6 +304,7 @@ Route::middleware([
         ->withTrashed();
 
     // Expenses
+    Route::get('/expenses/export', [\App\Http\Controllers\Expense\ExpenseController::class, 'export'])->name('expenses.export');
     Route::resource('/expenses', \App\Http\Controllers\Expense\ExpenseController::class);
     Route::post('/expenses/{expense}/post', [\App\Http\Controllers\Expense\ExpenseController::class, 'post'])->name('expenses.post');
     Route::post('/expenses/{expense}/reverse', [\App\Http\Controllers\Expense\ExpenseController::class, 'reverse'])->name('expenses.reverse');
@@ -302,6 +314,7 @@ Route::middleware([
         ->withTrashed();
 
     // Item Transfers
+    Route::get('/item-transfers/export', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'export'])->name('item-transfers.export');
     Route::resource('/item-transfers', \App\Http\Controllers\ItemTransfer\ItemTransferController::class);
     Route::post('/item-transfers/{itemTransfer}/post', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'post'])->name('item-transfers.post');
     Route::post('/item-transfers/{itemTransfer}/reverse', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'reverse'])->name('item-transfers.reverse');
@@ -312,6 +325,7 @@ Route::middleware([
     Route::patch('/item-transfers/{itemTransfer}/complete', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'complete'])->name('item-transfers.complete');
     Route::patch('/item-transfers/{itemTransfer}/cancel', [\App\Http\Controllers\ItemTransfer\ItemTransferController::class, 'cancel'])->name('item-transfers.cancel');
     // Journal Entries
+    Route::get('/journal-entries/export', [\App\Http\Controllers\JournalEntry\JournalEntryController::class, 'export'])->name('journal-entries.export');
     Route::resource('/journal-entries', \App\Http\Controllers\JournalEntry\JournalEntryController::class);
     Route::post('/journal-entries/{journalEntry}/post', [\App\Http\Controllers\JournalEntry\JournalEntryController::class, 'post'])->name('journal-entries.post');
     Route::post('/journal-entries/{journalEntry}/reverse', [\App\Http\Controllers\JournalEntry\JournalEntryController::class, 'reverse'])->name('journal-entries.reverse');

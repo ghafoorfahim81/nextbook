@@ -239,4 +239,59 @@ class ItemTransferController extends Controller
 
         return redirect()->back()->with('success', __('general.cancelled_successfully', ['resource' => __('general.resource.item_transfer')]));
     }
+
+    public function export(Request $request, \App\Services\SpreadsheetExportService $exporter)
+    {
+        $this->authorize('viewAny', ItemTransfer::class);
+
+        $sortField = $request->input('sortField', 'date');
+        $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
+
+        $transfers = ItemTransfer::with(['fromWarehouse', 'toWarehouse'])
+            ->search($request->query('search'))
+            ->filter($filters)
+            ->orderBy($sortField, $sortDirection)
+            ->get();
+
+        $rtl = in_array(app()->getLocale(), ['fa', 'ps'], true);
+        $company = $request->user()?->company;
+        $companyName = match (app()->getLocale()) {
+            'fa'    => $company?->name_fa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            'ps'    => $company?->name_pa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            default => $company?->name_en ?: $company?->abbreviation ?: $company?->name_fa ?: $company?->name_pa ?: config('app.name'),
+        };
+        $t = fn (string $group, string $key, string $fallback = '') => $exporter->localeTranslation($group, $key, $fallback);
+        $dateService = app(\App\Services\DateConversionService::class);
+
+        $rows = $transfers->map(fn ($tr) => [
+            'date'          => $tr->date ? $dateService->toDisplay($tr->date) : '-',
+            'from_warehouse'=> $tr->fromWarehouse?->name ?? '-',
+            'to_warehouse'  => $tr->toWarehouse?->name ?? '-',
+            'status'        => $tr->status instanceof \App\Enums\TransferStatus ? $tr->status->getLabel() : (string) $tr->status,
+            'transfer_cost' => (float) ($tr->transfer_cost ?? 0),
+        ])->all();
+
+        $label = $t('item_transfer', 'item_transfers', 'Item Transfers');
+
+        return $exporter->download([
+            'filename'           => 'item-transfers-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name'         => $label,
+            'sheet_title'        => $label,
+            'title'              => $label,
+            'company_name'       => $companyName,
+            'exported_on'        => now()->format('Y m d'),
+            'rtl'                => $rtl,
+            'include_row_number' => true,
+            'row_number_label'   => $t('report', 'columns.no', 'No.'),
+            'columns' => [
+                ['key' => 'date',           'label' => $t('general', 'date', 'Date'), 'width' => 14],
+                ['key' => 'from_warehouse', 'label' => $t('item_transfer', 'from_warehouse', 'From Warehouse'), 'width' => 20],
+                ['key' => 'to_warehouse',   'label' => $t('item_transfer', 'to_warehouse', 'To Warehouse'), 'width' => 20],
+                ['key' => 'status',         'label' => $t('general', 'status', 'Status'), 'width' => 14],
+                ['key' => 'transfer_cost',  'label' => $t('item_transfer', 'transfer_cost', 'Transfer Cost'), 'type' => 'money', 'align' => 'right', 'width' => 14],
+            ],
+            'rows' => $rows,
+        ]);
+    }
 }

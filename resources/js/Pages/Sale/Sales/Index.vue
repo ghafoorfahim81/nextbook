@@ -100,6 +100,7 @@ const filterFields = computed(() => ([
             :addTitle="t('sale.sale')"
             :addAction="'redirect'"
             :addRoute="'sales.create'"
+            exportRoute="sales.list-export"
             />
     </AppLayout>
 </template>

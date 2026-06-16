@@ -423,4 +423,67 @@ class AccountTransferController extends Controller
             metadata: $metadata,
         );
     }
+
+    public function export(Request $request, \App\Services\SpreadsheetExportService $exporter)
+    {
+        $this->authorize('viewAny', AccountTransfer::class);
+
+        $sortField = $request->input('sortField', 'date');
+        $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
+
+        $transfers = AccountTransfer::with(['transaction.lines.account', 'transaction.currency'])
+            ->filter($filters)
+            ->orderBy($sortField, $sortDirection)
+            ->get();
+
+        $rtl = in_array(app()->getLocale(), ['fa', 'ps'], true);
+        $locale = app()->getLocale();
+        $company = $request->user()?->company;
+        $companyName = match ($locale) {
+            'fa'    => $company?->name_fa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            'ps'    => $company?->name_pa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            default => $company?->name_en ?: $company?->abbreviation ?: $company?->name_fa ?: $company?->name_pa ?: config('app.name'),
+        };
+        $t = fn (string $group, string $key, string $fallback = '') => $exporter->localeTranslation($group, $key, $fallback);
+
+        $rows = $transfers->map(function ($tr) use ($locale) {
+            $firstLine = $tr->transaction?->lines?->first();
+            $lastLine = $tr->transaction?->lines?->last();
+            $isAssetOrExpense = in_array($firstLine?->account?->accountType?->nature, ['asset', 'expense']);
+            $fromAccount = $isAssetOrExpense ? $firstLine?->account : $lastLine?->account;
+            $toAccount   = $isAssetOrExpense ? $lastLine?->account  : $firstLine?->account;
+            return [
+                'number'           => $tr->number,
+                'from_account'     => $locale === 'en' ? ($fromAccount?->name ?? '-') : ($fromAccount?->local_name ?? $fromAccount?->name ?? '-'),
+                'to_account'       => $locale === 'en' ? ($toAccount?->name ?? '-')   : ($toAccount?->local_name   ?? $toAccount?->name   ?? '-'),
+                'amount'           => (float) ($firstLine?->debit > 0 ? $firstLine->debit : $firstLine?->credit ?? 0),
+                'currency'         => $tr->transaction?->currency?->code ?? '-',
+                'date'             => $tr->date ? $this->dateConversionService->toDisplay($tr->date) : '-',
+            ];
+        })->all();
+
+        $label = $t('general', 'account_transfers', 'Account Transfers');
+
+        return $exporter->download([
+            'filename'           => 'account-transfers-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name'         => $label,
+            'sheet_title'        => $label,
+            'title'              => $label,
+            'company_name'       => $companyName,
+            'exported_on'        => now()->format('Y m d'),
+            'rtl'                => $rtl,
+            'include_row_number' => true,
+            'row_number_label'   => $t('report', 'columns.no', 'No.'),
+            'columns' => [
+                ['key' => 'number',       'label' => $t('general', 'number', 'Number'), 'width' => 10],
+                ['key' => 'from_account', 'label' => $t('general', 'from_account', 'From Account'), 'width' => 20],
+                ['key' => 'to_account',   'label' => $t('general', 'to_account', 'To Account'), 'width' => 20],
+                ['key' => 'amount',       'label' => $t('general', 'amount', 'Amount'), 'type' => 'money', 'align' => 'right', 'width' => 14],
+                ['key' => 'currency',     'label' => $t('admin', 'currency.currency', 'Currency'), 'width' => 10],
+                ['key' => 'date',         'label' => $t('general', 'date', 'Date'), 'width' => 14],
+            ],
+            'rows' => $rows,
+        ]);
+    }
 }

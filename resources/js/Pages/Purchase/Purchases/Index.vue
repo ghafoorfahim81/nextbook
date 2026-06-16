@@ -94,6 +94,7 @@ const filterFields = computed(() => ([
          :addTitle="t('purchase.purchase')"
          :addAction="'redirect'"
          :addRoute="'purchases.create'"
+         exportRoute="purchases.list-export"
          />
     </AppLayout>
 </template>

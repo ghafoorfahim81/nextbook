@@ -486,4 +486,61 @@ class ReceiptController extends Controller
         return redirect()->route('receipts.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.receipt')]));
     }
 
+    public function export(Request $request, \App\Services\SpreadsheetExportService $exporter)
+    {
+        $this->authorize('viewAny', Receipt::class);
+
+        $sortField = $request->input('sortField', 'date');
+        $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
+
+        $receipts = Receipt::with(['ledger', 'transaction.currency', 'transaction.lines'])
+            ->search($request->query('search'))
+            ->filter($filters)
+            ->orderBy($sortField, $sortDirection)
+            ->get();
+
+        $rtl = in_array(app()->getLocale(), ['fa', 'ps'], true);
+        $company = $request->user()?->company;
+        $companyName = match (app()->getLocale()) {
+            'fa'    => $company?->name_fa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            'ps'    => $company?->name_pa ?: $company?->name_en ?: $company?->abbreviation ?: config('app.name'),
+            default => $company?->name_en ?: $company?->abbreviation ?: $company?->name_fa ?: $company?->name_pa ?: config('app.name'),
+        };
+        $t = fn (string $group, string $key, string $fallback = '') => $exporter->localeTranslation($group, $key, $fallback);
+
+        $rows = $receipts->map(fn ($r) => [
+            'number'       => $r->number,
+            'ledger_name'  => $r->ledger?->name ?? '-',
+            'payment_mode' => PaymentMode::tryFrom((string) $r->payment_mode)?->getLabel() ?? (string) $r->payment_mode,
+            'amount'       => (float) ($r->transaction?->lines->first()?->debit > 0
+                ? $r->transaction->lines->first()->debit
+                : $r->transaction?->lines->first()?->credit ?? 0),
+            'currency'     => $r->transaction?->currency?->code ?? '-',
+            'date'         => $r->date ? $this->dateConversionService->toDisplay($r->date) : '-',
+        ])->all();
+
+        $label = $t('receipt', 'receipts', 'Receipts');
+
+        return $exporter->download([
+            'filename'           => 'receipts-' . now()->format('Ymd-His') . '.xlsx',
+            'sheet_name'         => $label,
+            'sheet_title'        => $label,
+            'title'              => $label,
+            'company_name'       => $companyName,
+            'exported_on'        => now()->format('Y m d'),
+            'rtl'                => $rtl,
+            'include_row_number' => true,
+            'row_number_label'   => $t('report', 'columns.no', 'No.'),
+            'columns' => [
+                ['key' => 'number',       'label' => $t('general', 'number', 'Number'), 'width' => 10],
+                ['key' => 'ledger_name',  'label' => $t('general', 'ledger', 'Ledger'), 'width' => 20],
+                ['key' => 'payment_mode', 'label' => $t('general', 'payment_mode', 'Payment Mode'), 'width' => 16],
+                ['key' => 'amount',       'label' => $t('general', 'amount', 'Amount'), 'type' => 'money', 'align' => 'right', 'width' => 14],
+                ['key' => 'currency',     'label' => $t('admin', 'currency.currency', 'Currency'), 'width' => 10],
+                ['key' => 'date',         'label' => $t('general', 'date', 'Date'), 'width' => 14],
+            ],
+            'rows' => $rows,
+        ]);
+    }
 }

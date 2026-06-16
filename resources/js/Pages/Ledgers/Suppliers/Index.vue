@@ -76,6 +76,7 @@ const filterFields = computed(() => ([
             :title="t('ledger.supplier.suppliers')"
             :url="`suppliers.index`"
             :hasShow="true"
+            exportRoute="suppliers.list-export"
             :showAddButton="true"
             :addTitle="t('ledger.supplier.supplier')"
             :addAction="'redirect'"

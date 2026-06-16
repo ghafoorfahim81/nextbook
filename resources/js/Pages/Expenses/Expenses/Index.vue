@@ -127,6 +127,7 @@ const filterFields = computed(() => ([
             :addTitle="t('expense.expense')"
             :addAction="'redirect'"
             :addRoute="'expenses.create'"
+            exportRoute="expenses.export"
         />
 
     </AppLayout>

@@ -72,6 +72,7 @@ const filterFields = computed(() => ([
             @show="showItem"
             :title="t('owner.owners')"
             :url="`owners.index`"
+            exportRoute="owners.export"
             :showAddButton="true"
             :addTitle="t('owner.owner')"
             :addAction="'redirect'"

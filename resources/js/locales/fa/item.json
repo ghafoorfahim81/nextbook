@@ -106,5 +106,9 @@
     "expiry_status": "وضعیت انقضا",
     "update_price": "به‌روزرسانی قیمت",
     "pricing_search_placeholder": "جستجو با نام، کد یا بارکد...",
-    "showing_results": "نمایش {from} تا {to} از {total}"
+    "showing_results": "نمایش {from} تا {to} از {total}",
+    "total_in": "کل ورودی",
+    "total_out": "کل خروجی",
+    "opening_balance": "موجودی اولیه",
+    "avg_cost": "میانگین هزینه"
 }
