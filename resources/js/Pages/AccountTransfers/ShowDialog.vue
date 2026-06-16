@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import axios from 'axios'
 import { useI18n } from 'vue-i18n'
 import {
@@ -32,6 +32,24 @@ watch(() => props.open, async (isOpen) => {
         } finally {
             loading.value = false
         }
+    }
+})
+
+const statusClass = computed(() => {
+    switch (transfer.value?.status) {
+        case 'draft':    return 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700'
+        case 'posted':   return 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700'
+        case 'reversed': return 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700'
+        default:         return 'bg-muted text-muted-foreground border border-border'
+    }
+})
+
+const statusLabel = computed(() => {
+    switch (transfer.value?.status) {
+        case 'draft':    return t('general.status_draft')
+        case 'posted':   return t('general.status_posted')
+        case 'reversed': return t('general.status_reversed')
+        default:         return transfer.value?.status ?? ''
     }
 })
 
@@ -77,24 +95,28 @@ function reverseTransfer(reason) {
                     {{ transfer.remark }}
                 </DialogDescription>
                 <div v-if="transfer" class="flex items-center gap-2 pt-2">
-                    <span class="rounded-full border px-2 py-0.5 text-xs font-medium capitalize">{{ transfer.status }}</span>
-                    <Button v-if="transfer.status === 'draft'" size="sm" class="bg-green-600 text-white hover:bg-green-700" @click="postDialogOpen = true">Post</Button>
-                    <Button v-if="transfer.status === 'posted'" size="sm" variant="destructive" @click="reverseDialogOpen = true">Reverse</Button>
+                    <span :class="['rounded-full px-2.5 py-0.5 text-xs font-medium', statusClass]">{{ statusLabel }}</span>
+                    <Button v-if="transfer.status === 'draft'" size="sm" class="bg-green-600 text-white hover:bg-green-700" @click="postDialogOpen = true">
+                        {{ t('general.post') }}
+                    </Button>
+                    <Button v-if="transfer.status === 'posted'" size="sm" variant="destructive" @click="reverseDialogOpen = true">
+                        {{ t('general.reverse') }}
+                    </Button>
                 </div>
             </DialogHeader>
 
             <TransactionActionDialog
                 v-model:open="postDialogOpen"
                 type="post"
-                title="Post account transfer"
-                description="This will write the accounting entries for this transfer."
+                :title="t('general.post') + ' ' + t('general.account_transfer')"
+                :description="t('general.post_document_desc')"
                 @confirm="postTransfer"
             />
             <TransactionActionDialog
                 v-model:open="reverseDialogOpen"
                 type="reverse"
-                title="Reverse account transfer"
-                description="Enter a reason to create the reversal transaction."
+                :title="t('general.reverse') + ' ' + t('general.account_transfer')"
+                :description="t('general.reverse_description')"
                 @confirm="reverseTransfer"
             />
 
@@ -155,27 +177,19 @@ function reverseTransfer(reason) {
                         <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.from_account') }}</div>
                         <div v-if="transfer.from_account" class="grid grid-cols-2 gap-2 text-sm">
                             <div class="text-muted-foreground">{{ t('general.account') }}</div>
-                            <div class="font-medium">
-                                {{ transfer.from_account?.name || '-' }}
-                            </div>
+                            <div class="font-medium">{{ transfer.from_account?.name || '-' }}</div>
                             <div class="text-muted-foreground">{{ t('general.amount') }}</div>
-                            <div class="font-medium">
-                                {{ transfer.currency?.symbol || '' }} {{ transfer.amount }}
-                            </div>
+                            <div class="font-medium">{{ transfer.currency?.symbol || '' }} {{ transfer.amount }}</div>
                         </div>
                         <div v-else class="text-sm text-muted-foreground">-</div>
                     </div>
                     <div class="border border-border rounded-lg p-4 bg-card">
-                        <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.to_account') }}  </div>
+                        <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.to_account') }}</div>
                         <div v-if="transfer.to_account" class="grid grid-cols-2 gap-2 text-sm">
                             <div class="text-muted-foreground">{{ t('general.account') }}</div>
-                            <div class="font-medium">
-                                {{ transfer.to_account?.name || '-' }}
-                            </div>
+                            <div class="font-medium">{{ transfer.to_account?.name || '-' }}</div>
                             <div class="text-muted-foreground">{{ t('general.amount') }}</div>
-                            <div class="font-medium">
-                                {{ transfer.currency?.symbol || '' }} {{ transfer.amount }}
-                            </div>
+                            <div class="font-medium">{{ transfer.currency?.symbol || '' }} {{ transfer.amount }}</div>
                         </div>
                         <div v-else class="text-sm text-muted-foreground">-</div>
                     </div>
@@ -190,6 +204,3 @@ function reverseTransfer(reason) {
         </DialogContent>
     </Dialog>
 </template>
-
-
-

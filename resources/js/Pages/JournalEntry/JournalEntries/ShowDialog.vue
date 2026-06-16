@@ -40,6 +40,24 @@ const lines = computed(() => transaction.value?.lines || [])
 const totalDebit = computed(() => lines.value.reduce((sum, l) => sum + (Number(l.debit) || 0), 0))
 const totalCredit = computed(() => lines.value.reduce((sum, l) => sum + (Number(l.credit) || 0), 0))
 
+const statusClass = computed(() => {
+    switch (journalEntry.value?.status) {
+        case 'draft':    return 'bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700'
+        case 'posted':   return 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700'
+        case 'reversed': return 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700'
+        default:         return 'bg-muted text-muted-foreground border border-border'
+    }
+})
+
+const statusLabel = computed(() => {
+    switch (journalEntry.value?.status) {
+        case 'draft':    return t('general.status_draft')
+        case 'posted':   return t('general.status_posted')
+        case 'reversed': return t('general.status_reversed')
+        default:         return journalEntry.value?.status ?? ''
+    }
+})
+
 function formatNumber(n) {
     if (n === null || n === undefined || n === '') return '-'
     const num = Number(n)
@@ -89,24 +107,28 @@ function reverseJournalEntry(reason) {
                     {{ journalEntry.remark }}
                 </DialogDescription>
                 <div v-if="journalEntry" class="flex items-center gap-2 pt-2">
-                    <span class="rounded-full border px-2 py-0.5 text-xs font-medium capitalize">{{ journalEntry.status }}</span>
-                    <Button v-if="journalEntry.status === 'draft'" size="sm" class="bg-green-600 text-white hover:bg-green-700" @click="postDialogOpen = true">Post</Button>
-                    <Button v-if="journalEntry.status === 'posted'" size="sm" variant="destructive" @click="reverseDialogOpen = true">Reverse</Button>
+                    <span :class="['rounded-full px-2.5 py-0.5 text-xs font-medium', statusClass]">{{ statusLabel }}</span>
+                    <Button v-if="journalEntry.status === 'draft'" size="sm" class="bg-green-600 text-white hover:bg-green-700" @click="postDialogOpen = true">
+                        {{ t('general.post') }}
+                    </Button>
+                    <Button v-if="journalEntry.status === 'posted'" size="sm" variant="destructive" @click="reverseDialogOpen = true">
+                        {{ t('general.reverse') }}
+                    </Button>
                 </div>
             </DialogHeader>
 
             <TransactionActionDialog
                 v-model:open="postDialogOpen"
                 type="post"
-                title="Post journal entry"
-                description="This will write the journal entry lines to the general ledger."
+                :title="t('general.post') + ' ' + t('sidebar.journal_entry.journal_entries')"
+                :description="t('general.post_document_desc')"
                 @confirm="postJournalEntry"
             />
             <TransactionActionDialog
                 v-model:open="reverseDialogOpen"
                 type="reverse"
-                title="Reverse journal entry"
-                description="Enter a reason to create the reversal journal transaction."
+                :title="t('general.reverse') + ' ' + t('sidebar.journal_entry.journal_entries')"
+                :description="t('general.reverse_description')"
                 @confirm="reverseJournalEntry"
             />
 
@@ -130,7 +152,7 @@ function reverseJournalEntry(reason) {
                                 <FileText class="w-3 h-3" />
                                 {{ t('general.status') }}
                             </div>
-                            <div class="text-sm font-medium">{{ journalEntry.status || '-' }}</div>
+                            <div class="text-sm font-medium">{{ statusLabel }}</div>
                         </div>
 
                         <div class="space-y-1">
@@ -185,24 +207,12 @@ function reverseJournalEntry(reason) {
                             <tbody>
                                 <tr v-for="(line, idx) in lines" :key="line.id || idx" class="border-t">
                                     <td class="px-4 py-2 text-center text-muted-foreground">{{ idx + 1 }}</td>
-                                    <td class="px-4 py-2">
-                                        {{ line.account?.name || line.account_id || '-' }}
-                                    </td>
-                                    <td class="px-4 py-2 text-right font-medium">
-                                        {{ formatNumber(line.debit) }}
-                                    </td>
-                                    <td class="px-4 py-2 text-right font-medium">
-                                        {{ formatNumber(line.credit) }}
-                                    </td>
-                                    <td class="px-4 py-2">
-                                        {{ line.ledger?.name || line.ledger_id || '-' }}
-                                    </td>
-                                    <td class="px-4 py-2">
-                                        {{ line.journalClass?.name || line.journal_class?.name || '-' }}
-                                    </td>
-                                    <td class="px-4 py-2">
-                                        {{ line.remark || '-' }}
-                                    </td>
+                                    <td class="px-4 py-2">{{ line.account?.name || line.account_id || '-' }}</td>
+                                    <td class="px-4 py-2 text-right font-medium">{{ formatNumber(line.debit) }}</td>
+                                    <td class="px-4 py-2 text-right font-medium">{{ formatNumber(line.credit) }}</td>
+                                    <td class="px-4 py-2">{{ line.ledger?.name || line.ledger_id || '-' }}</td>
+                                    <td class="px-4 py-2">{{ line.journalClass?.name || line.journal_class?.name || '-' }}</td>
+                                    <td class="px-4 py-2">{{ line.remark || '-' }}</td>
                                 </tr>
                                 <tr class="border-t bg-muted/20 font-semibold">
                                     <td colspan="2" class="px-4 py-2 text-right">{{ t('general.total') }}</td>
@@ -224,5 +234,3 @@ function reverseJournalEntry(reason) {
         </DialogContent>
     </Dialog>
 </template>
-
-

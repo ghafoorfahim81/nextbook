@@ -37,7 +37,7 @@ class AccountTransferController extends Controller
         $filters = (array) $request->input('filters', []);
 
         $transfers = AccountTransfer::with([
-                'transaction.lines.account',
+                'transaction.lines.account.accountType',
                 'transaction.currency',
                 'createdBy',
                 'updatedBy',
@@ -114,6 +114,7 @@ class AccountTransferController extends Controller
                 'currency_id' => $currencyId,
                 'rate' => $rate,
                 'date' => $transfer->date,
+                'voucher_number' => 'Transfer #' . $transfer->number,
                 'reference_type' => AccountTransfer::class,
                 'reference_id' => $transfer->id,
                 'remark' => "Transfer #{$transfer->number}.from {$fromAccount->name} to {$toAccount->name}",
@@ -173,7 +174,7 @@ class AccountTransferController extends Controller
 
     public function show(Request $request, AccountTransfer $accountTransfer)
     {
-        $accountTransfer->load(['transaction.lines.account', 'transaction.currency', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'createdBy', 'updatedBy']);
+        $accountTransfer->load(['transaction.lines.account.accountType', 'transaction.currency', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'createdBy', 'updatedBy']);
         return response()->json([
             'data' => new AccountTransferResource($accountTransfer),
         ]);
@@ -215,16 +216,16 @@ class AccountTransferController extends Controller
 
     public function edit(Request $request, AccountTransfer $accountTransfer)
     {
-        $accountTransfer->load(['transaction.lines.account', 'transaction.currency', 'createdBy', 'updatedBy']);
+        $accountTransfer->load(['transaction.lines.account.accountType', 'transaction.currency', 'createdBy', 'updatedBy']);
         return inertia('AccountTransfers/Edit', [
             'data' => new AccountTransferResource($accountTransfer),
         ]);
     }
 
     public function update(AccountTransferUpdateRequest $request, AccountTransfer $accountTransfer, ActivityLogService $activityLogService)
-    { 
+    {
         if ($accountTransfer->status !== TransactionStatus::DRAFT->value) {
-            abort(403, 'Only draft documents can be edited.');
+            return back()->with('error', 'Only draft documents can be edited.');
         }
 
         $before = $this->transferSnapshot($accountTransfer->loadMissing('transaction.lines.account', 'transaction.currency'));
@@ -265,6 +266,7 @@ class AccountTransferController extends Controller
                 'currency_id' => $currencyId,
                 'rate' => $rate,
                 'date' => $date,
+                'voucher_number' => 'Transfer #' . $accountTransfer->number,
                 'remark' => "Transfer #{$accountTransfer->number} from {$fromAccount->local_name} to {$toAccount->local_name}",
                 'reference_type' => AccountTransfer::class,
                 'reference_id' => $accountTransfer->id,
@@ -324,7 +326,7 @@ class AccountTransferController extends Controller
     public function destroy(AccountTransfer $accountTransfer, ActivityLogService $activityLogService)
     {
         if ($accountTransfer->status !== TransactionStatus::DRAFT->value) {
-            abort(403, 'Only draft documents can be deleted.');
+            return back()->with('error', 'Only draft documents can be deleted.');
         }
 
         $oldValues = $this->transferSnapshot($accountTransfer->loadMissing('transaction.lines.account', 'transaction.currency'));

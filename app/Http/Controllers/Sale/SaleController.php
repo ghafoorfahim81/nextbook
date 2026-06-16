@@ -449,7 +449,7 @@ class SaleController extends Controller
     )
     {
         if ($sale->status !== TransactionStatus::DRAFT->value) {
-            abort(403, 'Only draft documents can be edited.');
+            return back()->with('error', 'Only draft documents can be edited.');
         }
 
         $beforeState = [
@@ -1276,7 +1276,7 @@ class SaleController extends Controller
     public function destroy(Request $request, Sale $sale, ActivityLogService $activityLogService)
     {
         if ($sale->status !== TransactionStatus::DRAFT->value) {
-            abort(403, 'Only draft documents can be deleted.');
+            return back()->with('error', 'Only draft documents can be deleted.');
         }
 
         DB::transaction(function () use ($sale, $activityLogService) {

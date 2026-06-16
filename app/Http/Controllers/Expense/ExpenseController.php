@@ -252,7 +252,7 @@ class ExpenseController extends Controller
     )
     {
         if ($expense->status !== TransactionStatus::DRAFT->value) {
-            abort(403, 'Only draft documents can be edited.');
+            return back()->with('error', 'Only draft documents can be edited.');
         }
 
         $beforeState = [
@@ -356,7 +356,7 @@ class ExpenseController extends Controller
     public function destroy(Request $request, Expense $expense, ActivityLogService $activityLogService)
     {
         if ($expense->status !== TransactionStatus::DRAFT->value) {
-            abort(403, 'Only draft documents can be deleted.');
+            return back()->with('error', 'Only draft documents can be deleted.');
         }
 
         $oldValues = [

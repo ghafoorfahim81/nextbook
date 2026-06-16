@@ -348,7 +348,7 @@ class PurchaseController extends Controller
     )
     {
         if ($purchase->status !== TransactionStatus::DRAFT->value) {
-            abort(403, 'Only draft documents can be edited.');
+            return back()->with('error', 'Only draft documents can be edited.');
         }
 
         if ($this->purchaseHasPostedStock($purchase)) {
@@ -866,7 +866,7 @@ class PurchaseController extends Controller
     public function destroy(Request $request, Purchase $purchase, ActivityLogService $activityLogService)
     {
         if ($purchase->status !== TransactionStatus::DRAFT->value) {
-            abort(403, 'Only draft documents can be deleted.');
+            return back()->with('error', 'Only draft documents can be deleted.');
         }
 
         DB::transaction(function () use ($purchase) {
