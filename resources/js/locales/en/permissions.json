@@ -111,6 +111,16 @@
     "items.import": "Import Items",
     "items.export": "Export Items",
 
+    "landed_costs.view_any": "View Any Landed Costs",
+    "landed_costs.view": "View Landed Costs",
+    "landed_costs.create": "Create Landed Costs",
+    "landed_costs.update": "Update Landed Costs",
+    "landed_costs.delete": "Delete Landed Costs",
+    "landed_costs.import": "Import Landed Costs",
+    "landed_costs.export": "Export Landed Costs",
+    "landed_costs.allocate": "Allocate Landed Costs",
+    "landed_costs.post": "Post Landed Costs",
+
     "categories.view_any": "View Any Categories",
     "categories.view": "View Categories",
     "categories.create": "Create Categories",
