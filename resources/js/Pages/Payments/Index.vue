@@ -40,6 +40,7 @@ const columns = computed(() => ([
     { key: 'number', label: t('general.number'), sortable: true },
     { key: 'ledger_name', label: t('ledger.supplier.supplier') },
     { key: 'payment_mode_label', label: t('general.payment_mode') },
+    { key: 'bank_account_name', label: t('expense.bank_account') },
     { key: 'amount', label: t('general.amount'), sortable: true },
     { key: 'currency_code', label: t('admin.currency.currency') },
     { key: 'status', label: t('general.status'), sortable: true },

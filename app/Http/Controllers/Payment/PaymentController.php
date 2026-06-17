@@ -392,7 +392,7 @@ class PaymentController extends Controller
                 description: "Payment #{$payment->number} updated.",
                 metadata: [
                     'action' => 'payment_update',
-                    'transaction_id' => $transaction->id,
+                    'transaction_id' => $payment->transaction->id,
                 ],
             );
         });
