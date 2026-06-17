@@ -139,10 +139,16 @@ onMounted(() => {
         <div class="space-y-6">
             <!-- Page header -->
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <Button variant="outline" size="sm" @click="router.visit(route('items.index'))">
-                    <ArrowLeft class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                    {{ t('general.back') }}
-                </Button>
+                <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                class="h-8 gap-1.5 bg-background border-primary/60 hover:bg-primary/40 hover:text-balck"
+                @click="router.visit(route('items.index'))"
+            >
+                <ArrowLeft class="h-4 w-4 rtl:rotate-180 text-primary" />
+                {{ t('general.back') }}
+            </Button>
                 <Button
                     v-if="can('items.update') && itemData.id"
                     variant="default"
