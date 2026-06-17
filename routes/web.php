@@ -146,6 +146,7 @@ Route::middleware([
     Route::delete('/items/{item}/force-delete', [\App\Http\Controllers\Inventory\ItemController::class, 'forceDelete'])
         ->name('items.force-delete')
         ->withTrashed();
+    Route::resource('/landed-costs', \App\Http\Controllers\Inventory\LandedCostController::class);
     Route::resource('/ledgers', \App\Http\Controllers\Ledger\LedgerController::class);
     Route::patch('/ledgers/{ledger}/restore', [\App\Http\Controllers\Ledger\LedgerController::class, 'restore'])->name('ledgers.restore')->withTrashed();
     Route::delete('/ledgers/{ledger}/force-delete', [\App\Http\Controllers\Ledger\LedgerController::class, 'forceDelete'])
