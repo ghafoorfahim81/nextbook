@@ -104,9 +104,9 @@ class JournalEntryController extends Controller
                     'ledger_id'   => $line['ledger_id'] ?? null,
                     'debit'       => $line['debit'] ?? 0,
                     'credit'      => $line['credit'] ?? 0,
-                    'remark'      => $line['remark'] ?? null,
-                    'remark_fa'   => $line['remark'] ?? null,
-                    'remark_ps'   => $line['remark'] ?? null,
+                    'remark'      => $line['remark'] ?? $validated['remarks'],
+                    'remark_fa'   => $line['remark'] ?? $validated['remarks'],
+                    'remark_ps'   => $line['remark'] ?? $validated['remarks'],
                     'journal_class_id' => $line['journal_class_id'] ?? null,
                 ])
                 ->toArray();
@@ -235,9 +235,9 @@ class JournalEntryController extends Controller
                 'ledger_id'   => $line['ledger_id'] ?? null,
                 'debit'       => $line['debit'] ?? 0,
                 'credit'      => $line['credit'] ?? 0,
-                'remark'      => $line['remark'] ?? null,
-                'remark_fa'   => $line['remark'] ?? null,
-                'remark_ps'   => $line['remark'] ?? null,
+                'remark'      => $line['remark'] ?? $validated['remarks'],
+                'remark_fa'   => $line['remark'] ?? $validated['remarks'],
+                'remark_ps'   => $line['remark'] ?? $validated['remarks'],
                 'journal_class_id' => $line['journal_class_id'] ?? null,
             ])
             ->toArray();
@@ -363,6 +363,7 @@ class JournalEntryController extends Controller
                 'status' => TransactionStatus::REVERSED->value,
                 'reversed_at' => now(),
                 'reversal_reason' => $validated['reason'],
+                
             ]);
         });
 

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasBranch;
 use App\Traits\HasDynamicFilters;
@@ -27,7 +28,6 @@ class AccountTransfer extends Model
     protected $fillable = [
         'number',
         'date',
-        'transaction_id',
         'from_account_id',
         'to_account_id',
         'status',
@@ -41,7 +41,6 @@ class AccountTransfer extends Model
     protected $casts = [
         'id' => 'string',
         'date' => 'date',
-        'transaction_id' => 'string',
         'from_account_id' => 'string',
         'to_account_id' => 'string',
         'status' => 'string',
@@ -100,9 +99,9 @@ class AccountTransfer extends Model
         ];
     }
 
-    public function transaction(): BelongsTo
+    public function transaction(): HasOne
     {
-        return $this->belongsTo(Transaction::class, 'transaction_id');
+        return $this->hasOne(Transaction::class, 'reference_id');
     }
 
     public function fromAccount(): BelongsTo

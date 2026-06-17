@@ -10,8 +10,6 @@ use App\Models\Account\Account;
 use App\Models\AccountTransfer\AccountTransfer;
 use App\Models\Administration\Currency;
 use App\Models\Ledger\Ledger;
-use App\Models\Transaction\Transaction;
-use App\Models\Transaction\TransactionLine;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -152,10 +150,6 @@ class AccountTransferController extends Controller
                 ],
             ]);
 
-            $transfer->update([
-                'transaction_id' => $transaction->id,
-            ]);
-
             $this->logTransferActivity(
                 activityLogService: $activityLogService,
                 eventType: 'created',
@@ -260,8 +254,11 @@ class AccountTransferController extends Controller
             $fromAccountId = $validated['from_account_id'];
             $toAccountId = $validated['to_account_id'];
             $transactionService = app(TransactionService::class);
-            TransactionLine::where('transaction_id', $accountTransfer->transaction_id)->forceDelete();
-            Transaction::where('id', $accountTransfer->transaction_id)->forceDelete();
+            $oldTransaction = $accountTransfer->transaction()->first();
+            if ($oldTransaction) {
+                $oldTransaction->lines()->forceDelete();
+                $oldTransaction->forceDelete();
+            }
             $fromAccount = Account::findOrFail($fromAccountId);
             $toAccount = Account::findOrFail($toAccountId);
             $nature = $fromAccount->accountType->nature ?? 'asset';
@@ -307,9 +304,6 @@ class AccountTransferController extends Controller
                     'remark_fa' => "انتقال به حساب ". ' ' . $toAccount->local_name,
                     'remark_ps' => "لېږد ته حساب ". ' ' . $toAccount->local_name,
                 ],
-            ]);
-            $accountTransfer->update([
-                'transaction_id' => $transaction->id,
             ]);
 
             $after = [
