@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { Spinner } from '@/Components/ui/spinner'
+import { Button } from '@/Components/ui/button'
 
 const props = defineProps({
     createLabel: { type: String, required: true },
@@ -28,47 +29,47 @@ const saveAndPrintText = computed(() => (props.saveAndPrintLoading ? props.creat
 
 <template>
     <div class="flex items-center gap-2 [--radius:1.1rem] mt-2">
-        <button
+        <Button
             type="submit"
-            variant="secondary"
-            class="btn btn-primary px-4 py-2 rounded-sm bg-primary text-white disabled:bg-gray-300"
-            :disabled="isDisabled"
-            size="sm"
+            variant="outline"
+            class="  border-primary text-primary hover:bg-primary hover:text-white"
+            :disabled="isDisabled" 
+            
         >
         {{ createText }}
         <Spinner v-if="createLoading" class="ml-2 h-4 w-4" />
-        </button>
-        <button
+        </Button>
+        <Button
             v-if="showCreateAndNew"
             type="button"
-            variant="secondary"
-            class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white disabled:bg-gray-300"
+            variant="outline"
+            class=" border-primary text-primary hover:bg-primary hover:text-white"
             :disabled="isDisabled"
             @click="$emit('create-and-new')"
         >
             {{ createAndNewText }}
             <Spinner v-if="createAndNewLoading" class="ml-2 h-4 w-4" />
-        </button>
+        </Button>
         <button
             v-if="showSaveAndPrint"
             type="button"
-            variant="secondary"
-            class="btn btn-primary px-4 py-2 rounded-md bg-primary border text-white disabled:bg-gray-300"
+            variant="outline"
+            class=" border-primary text-primary hover:bg-primary hover:text-white"
             :disabled="isDisabled"
             @click="$emit('save-and-print')"
         >
             {{ saveAndPrintText }}
             <Spinner v-if="saveAndPrintLoading" class="ml-2 h-4 w-4" />
-        </button>
-        <button
+        </Button>
+        <Button
             v-if="showCancel"
             type="button"
-            variant="secondary"
-            class="btn px-4 py-2 rounded-md border"
+            variant="outline"
+            class=" border-primary text-primary hover:bg-primary hover:text-white"
             :disabled="isDisabled"
             @click="$emit('cancel')"
         >
             {{ cancelLabel }}
-        </button>
+        </Button>
     </div>
 </template>

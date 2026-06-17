@@ -70,7 +70,7 @@ class AccountTransferController extends Controller
     {
         $bankAccounts = Account::whereHas('accountType', function ($query) {
             $query->where('slug', 'cash-or-bank');
-        })->orderBy('name')->get(['id', 'name', 'local_name']);
+        })->orderBy('created_at', 'desc')->get(['id', 'name', 'local_name']);
         return inertia('AccountTransfers/Create', [
             'bankAccounts' => $bankAccounts,
         ]);
@@ -138,17 +138,17 @@ class AccountTransferController extends Controller
                     'account_id' => $fromAccount->id,
                     'debit' => 0,
                     'credit' => $amount,
-                    'remark' => "Transfer from ". ' ' .$fromAccount->name,
-                    'remark_fa' => "انتقال از حساب ". ' ' . $fromAccount->local_name,
-                    'remark_ps' => "لېږد له حساب ". ' ' . $fromAccount->local_name,
+                    'remark' => "Transfer to ". ' ' . $toAccount->name,
+                    'remark_fa' => "انتقال به حساب ". ' ' . $toAccount->local_name,
+                    'remark_ps' => "لېږد ته حساب ". ' ' . $toAccount->local_name,
                 ],
                 [
                     'account_id' => $toAccount->id,
                     'debit' => $amount,
                     'credit' => 0,
-                    'remark' => "Transfer to ". ' ' . $toAccount->name,
-                    'remark_fa' => "انتقال به حساب ". ' ' . $toAccount->local_name,
-                    'remark_ps' => "لېږد ته حساب ". ' ' . $toAccount->local_name,
+                    'remark' => "Transfer from ". ' ' .$fromAccount->name,
+                    'remark_fa' => "انتقال از حساب ". ' ' . $fromAccount->local_name,
+                    'remark_ps' => "لېږد له حساب ". ' ' . $fromAccount->local_name,
                 ],
             ]);
 
@@ -218,7 +218,7 @@ class AccountTransferController extends Controller
         }
 
         DB::transaction(function () use ($accountTransfer, $transactionService, $validated) {
-            $transactionService->reverse($accountTransfer->transaction()->firstOrFail(), $validated['reason']);
+            $transactionService->reverse($accountTransfer->transaction()->firstOrFail(), $validated['reason'], $accountTransfer->number, AccountTransfer::class);
             $accountTransfer->update(['status' => TransactionStatus::REVERSED->value]);
         });
 

@@ -181,9 +181,9 @@ class TransactionService
     // 🔁 REVERSAL (AUDIT-SAFE)
     // ======================================================
 
-    public function reverse(Transaction $original, ?string $reason = null): Transaction
+    public function reverse(Transaction $original, ?string $reason = null, ?string $number = null, ?string $referenceType = null): Transaction
     {
-        return DB::transaction(function () use ($original, $reason) {
+        return DB::transaction(function () use ($original, $reason, $number, $referenceType) {
             $from = TransactionStatus::tryFrom((string) $original->status);
 
             if ($from !== TransactionStatus::POSTED || !TransactionStateMachine::canTransition($from, TransactionStatus::REVERSED)) {
@@ -191,6 +191,7 @@ class TransactionService
             }
 
             $original->loadMissing('lines');
+            $reversalRemark = $this->getReversalRemark($original, $number, $referenceType);
 
             $reversal = Transaction::create([
                 'branch_id'      => $original->branch_id,
@@ -215,9 +216,9 @@ class TransactionService
                     'debit'      => $line->credit,
                     'credit'     => $line->debit,
                     // 'branch_id'  => $original->branch_id,
-                    'remark'     => 'Reversal',
-                    'remark_fa'  => 'Reversal',
-                    'remark_ps'  => 'Reversal',
+                    'remark' => $reversalRemark['remark'],
+                    'remark_fa' => $reversalRemark['remark_fa'] ?? null,
+                    'remark_ps' => $reversalRemark['remark_ps'] ?? null,
                     // 'created_by' => Auth::id(),
                 ]);
             }
@@ -258,5 +259,79 @@ class TransactionService
 
             return $reversal;
         });
+    }
+
+    private function getReversalRemark(Transaction $original, ?string $number = null, ?string $referenceType = null)
+    {
+        $remark = '';
+        $remark_fa = '';
+        $remark_ps = '';
+
+        // Default fallback
+        $number = $number ?? ($original->number ?? $original->id);
+        $referenceType = $referenceType ?? $original->reference_type;
+
+        // Map core transaction types to their reversal remarks
+        switch ($referenceType) {
+            case \App\Models\AccountTransfer\AccountTransfer::class:
+                $remark = "Reversal of account transfer #" . $number;
+                $remark_fa = "برگشتی انتقال حساب #" . $number;
+                $remark_ps = "د حساب لیږد بیرته راګرځول #" . $number;
+                break;
+
+            case \App\Models\Accounting\JournalEntry::class:
+                $remark = "Reversal of journal entry #" . $number;
+                $remark_fa = "برگشتی ژورنال #" . $number;
+                $remark_ps = "د ژورنال داخله بیرته راګرځول #" . $number;
+                break;
+
+            case \App\Models\Purchase\Purchase::class:
+                $remark = "Reversal of purchase #" . $number;
+                $remark_fa = "برگشتی خریداری #" . $number;
+                $remark_ps = "د پيرودنې بیرته راګرځول #" . $number;
+                break;
+
+            case \App\Models\Sale\Sale::class:
+                $remark = "Reversal of sale #" . $number;
+                $remark_fa = "برگشتی فروش #" . $number;
+                $remark_ps = "د خرڅلاو بیرته راګرځول #" . $number;
+                break;
+            
+            case \App\Models\Payment\Payment::class:
+                $remark = "Reversal of payment #" . $number;
+                $remark_fa = "برگشتی پرداخت #" . $number;
+                $remark_ps = "د تادیې بیرته راګرځول #" . $number;
+                break;
+
+            case \App\Models\Receipt\Receipt::class:
+                $remark = "Reversal of receipt #" . $number;
+                $remark_fa = "برگشتی رسید #" . $number;
+                $remark_ps = "د رسید بیرته راګرځول #" . $number;
+                break;
+
+            case \App\Models\Payment\Payment::class:
+                $remark = "Reversal of supplier payment #" . $number;
+                $remark_fa = "برگشتی پرداخت عرضه کننده #" . $number;
+                $remark_ps = "د عرضه کوونکي تادیې بیرته راګرځول #" . $number;
+                break;
+
+            case \App\Models\Receipt\Receipt::class:
+                $remark = "Reversal of customer receipt #" . $number;
+                $remark_fa = "برگشتی رسید مشتری #" . $number;
+                $remark_ps = "د پیرودونکي رسید بیرته راګرځول #" . $number;
+                break;
+
+            default:
+                $remark = "Reversal of transaction #" . $number;
+                $remark_fa = "برگشت تراکنش #" . $number;
+                $remark_ps = "د تراکنش بیرته راګرځول #" . $number;
+        }
+
+        return [
+            'remark'     => $remark,
+            'remark_fa'  => $remark_fa,
+            'remark_ps'  => $remark_ps,
+        ];
+
     }
 }

@@ -18,6 +18,7 @@ class ReceiptResource extends JsonResource
     {
         $dateConversionService = app(\App\Services\DateConversionService::class);
         $locale = app()->getLocale();
+        $firstLine = $this->transaction?->lines?->where('debit', '>', 0)->first();
         return [
             'id' => $this->id,
             'number' => $this->number,

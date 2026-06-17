@@ -118,11 +118,17 @@ const exportUrl = computed(() =>
     <AppLayout :title="`${t('account.account')} - ${accountData.local_name || accountData.name || ''}`">
         <div class="space-y-4">
             <!-- Back + edit -->
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <Button variant="outline" size="sm" @click="router.visit(route('chart-of-accounts.index'))">
-                    <ArrowLeft class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                    {{ t('general.back') }}
-                </Button>
+            <div class="flex flex-wrap items-center justify-between gap-3"> 
+                <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                class="h-8 gap-1.5 bg-background border-primary/60 hover:bg-primary/40 hover:text-balck"
+                @click="router.visit(route('chart-of-accounts.index'))"
+            >
+                <ArrowLeft class="h-4 w-4 rtl:rotate-180 text-primary" />
+                {{ t('general.back') }}
+            </Button>
                 <Button
                     v-if="can('accounts.update') && accountData.id"
                     variant="default"
@@ -150,8 +156,8 @@ const exportUrl = computed(() =>
             </div>
 
             <!-- General tab -->
-            <div v-if="activeMainTab === 'general'" class="space-y-4">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div v-if="activeMainTab === 'general'" class="space-y-3">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-2">
                     <!-- Avatar + summary -->
                     <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-4 flex flex-col items-center gap-4">
                         <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-indigo-500 to-blue-500 flex items-center justify-center text-white text-xl font-bold">
