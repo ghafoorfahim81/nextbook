@@ -160,6 +160,13 @@ function reverseReceipt(reason) {
                             </div>
                             <div class="text-sm font-medium text-foreground">{{ receipt.number }}</div>
                         </div>
+                        <div class="space-y-1" v-if="receipt.bank_account_name">
+                            <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                                <FileText class="w-3 h-3" />
+                                {{ t('expense.bank_account') }}
+                            </div>
+                            <div class="text-sm font-medium text-foreground">{{ receipt.bank_account_name }}</div>
+                        </div>
                         <div class="space-y-1">
                             <div class="flex items-center gap-2 text-xs text-muted-foreground">
                                 <FileText class="w-3 h-3" />
@@ -203,7 +210,9 @@ function reverseReceipt(reason) {
                         <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('receipt.receive_credit') }}</div>
                         <div v-if="receipt.transaction" class="grid grid-cols-2 gap-2 text-sm">
                             <div class="text-muted-foreground">{{ t('general.amount') }}</div>
-                            <div class="font-medium">{{ receipt.transaction.currency?.symbol || '' }} {{ receipt.transaction.lines?.[0]?.debit || receipt.amount || 0 }}</div>
+                            <div class="font-medium">
+                                {{ receipt.transaction.currency?.symbol || '' }} {{ receipt.amount }}
+                            </div>
                             <div class="text-muted-foreground">{{ t('admin.currency.currency') }}</div>
                             <div class="font-medium">{{ receipt.transaction.currency?.code || '-' }}</div>
                         </div>
@@ -213,7 +222,9 @@ function reverseReceipt(reason) {
                         <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('receipt.bank_debit') }}</div>
                         <div v-if="receipt.transaction" class="grid grid-cols-2 gap-2 text-sm">
                             <div class="text-muted-foreground">{{ t('general.amount') }}</div>
-                            <div class="font-medium">{{ receipt.transaction.currency?.symbol || '' }} {{ receipt.transaction.lines?.[0]?.debit || receipt.amount || 0 }}</div>
+                            <div class="font-medium">
+                                {{ receipt.transaction.currency?.symbol || '' }} {{ receipt.transaction.lines[1].debit }}
+                            </div>
                             <div class="text-muted-foreground">{{ t('admin.currency.currency') }}</div>
                             <div class="font-medium">{{ receipt.transaction.currency?.code || '-' }}</div>
                         </div>
