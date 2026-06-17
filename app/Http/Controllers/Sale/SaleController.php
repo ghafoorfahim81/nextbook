@@ -1581,8 +1581,8 @@ class SaleController extends Controller
                 'payment_status' => ($s->payment_status instanceof \App\Enums\PaymentStatus ? $s->payment_status : \App\Enums\PaymentStatus::tryFrom((string) $s->payment_status))?->getLabel() ?? (string) $s->payment_status,
                 'amount'         => $gross - $itemDiscount - $billDiscount + $tax,
                 'date'           => $s->date ? app(\App\Services\DateConversionService::class)->toDisplay($s->date) : '-',
-                'type'           => \App\Enums\SalePurchaseType::tryFrom((string) $s->type)?->getLabel() ?? (string) $s->type,
-                'status'         => (string) $s->status,
+                'type'           => ($s->type instanceof \App\Enums\SalePurchaseType ? $s->type : \App\Enums\SalePurchaseType::tryFrom((string) $s->type))?->getLabel() ?? (string) $s->type,
+                'status'         => $s->status instanceof \BackedEnum ? $s->status->value : (string) $s->status,
             ];
         })->all();
 
