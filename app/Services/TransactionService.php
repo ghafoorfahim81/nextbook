@@ -279,7 +279,7 @@ class TransactionService
                 $remark_ps = "د حساب لیږد بیرته راګرځول #" . $number;
                 break;
 
-            case \App\Models\Accounting\JournalEntry::class:
+            case \App\Models\JournalEntry\JournalEntry::class:
                 $remark = "Reversal of journal entry #" . $number;
                 $remark_fa = "برگشتی ژورنال #" . $number;
                 $remark_ps = "د ژورنال داخله بیرته راګرځول #" . $number;
