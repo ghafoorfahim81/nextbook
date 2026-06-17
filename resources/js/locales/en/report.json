@@ -33,6 +33,9 @@
     "supplier": "Supplier",
     "item": "Item",
     "account": "Cash / Bank account",
+    "warehouse": "Warehouse",
+    "currency": "Currency",
+    "type": "Transaction type",
     "per_page": "Rows",
     "apply": "Apply filters",
     "reset": "Reset"
@@ -75,6 +78,8 @@
     "max_stock_level": "Max stock level",
     "excess_quantity": "Excess quantity",
     "total_excess_quantity": "Total excess quantity",
+    "total_sales": "Total sales",
+    "total_purchases": "Total purchases",
     "total_assets": "Total assets",
     "total_liabilities": "Total liabilities",
     "total_equity": "Total equity",
@@ -146,7 +151,16 @@
     "reorder_level": "Reorder level",
     "reference_number": "Reference number",
     "expire_date": "Expire date",
-    "batch": "Batch"
+    "batch": "Batch",
+    "number": "Number",
+    "type": "Type",
+    "status": "Status",
+    "payment_status": "Payment status",
+    "amount": "Amount"
+  },
+  "view_types": {
+    "general": "General view",
+    "itemwise": "Item-wise view"
   },
   "reports": {
     "trial_balance": {
@@ -187,11 +201,11 @@
     },
     "sales_report": {
       "label": "Sales report",
-      "description": "Posted sales lines by customer and item."
+      "description": "Posted sales by customer and item. Switch between general (per invoice) and item-wise views."
     },
     "purchase_report": {
       "label": "Purchase report",
-      "description": "Posted purchase lines by supplier and item."
+      "description": "Posted purchases by supplier and item. Switch between general (per invoice) and item-wise views."
     },
     "inventory_stock": {
       "label": "Inventory stock",

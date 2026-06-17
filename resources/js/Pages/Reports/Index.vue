@@ -23,6 +23,8 @@ import {
   CalendarClock,
   PackageX,
   FileText,
+  LayoutList,
+  Layers,
 } from 'lucide-vue-next'
 import AppLayout from '@/Layouts/Layout.vue'
 import { Button } from '@/Components/ui/button'
@@ -67,10 +69,23 @@ function normalizeFilters(filters) {
     supplier_id: filters.supplier_id || '',
     item_id: filters.item_id || '',
     account_id: filters.account_id || '',
+    currency_id: filters.currency_id || '',
+    warehouse_id: filters.warehouse_id || '',
+    type: filters.type || '',
+    view_type: filters.view_type || 'itemwise',
     per_page: Number(filters.per_page || 25),
     page: Number(filters.page || 1),
   }
 }
+
+const VIEW_TYPES = [
+  { key: 'general', icon: LayoutList },
+  { key: 'itemwise', icon: Layers },
+]
+
+const isViewToggleReport = computed(() =>
+  ['sales_report', 'purchase_report'].includes(localFilters.value.report),
+)
 
 const reportDefinitions = computed(() => ({
   trial_balance: {
@@ -238,43 +253,76 @@ const reportDefinitions = computed(() => ({
   sales_report: {
     label: t('report.reports.sales_report.label'),
     description: t('report.reports.sales_report.description'),
-    filters: ['item_id'],
+    filters: localFilters.value.view_type === 'general'
+      ? ['customer_id', 'type', 'currency_id', 'warehouse_id']
+      : ['item_id', 'warehouse_id'],
     group: 'operations',
     icon: ShoppingCart,
-    summary: [
-      { key: 'total_quantity', label: t('report.summary.total_quantity'), type: 'quantity' },
-      { key: 'total_amount', label: t('report.summary.total_amount'), type: 'money' },
-    ],
-    columns: [
-      { key: 'date', label: t('report.columns.date') },
-      { key: 'sale_number', label: t('report.columns.sale_number') },
-      { key: 'customer', label: t('report.columns.customer') },
-      { key: 'item', label: t('report.columns.item') },
-      { key: 'quantity', label: t('report.columns.quantity'), type: 'quantity', align: 'right' },
-      { key: 'unit_measure', label: t('report.columns.unit_measure') },
-      { key: 'unit_price', label: t('report.columns.unit_price'), type: 'money', align: 'right' },
-      { key: 'total_amount', label: t('report.columns.total_amount'), type: 'money', align: 'right' },
-    ],
+    summary: localFilters.value.view_type === 'general'
+      ? [
+          { key: 'total_sales', label: t('report.summary.total_sales'), type: 'integer' },
+          { key: 'total_amount', label: t('report.summary.total_amount'), type: 'money' },
+        ]
+      : [
+          { key: 'total_quantity', label: t('report.summary.total_quantity'), type: 'quantity' },
+          { key: 'total_amount', label: t('report.summary.total_amount'), type: 'money' },
+        ],
+    columns: localFilters.value.view_type === 'general'
+      ? [
+          { key: 'date', label: t('report.columns.date') },
+          { key: 'number', label: t('report.columns.number') },
+          { key: 'customer', label: t('report.columns.customer') },
+          { key: 'type', label: t('report.columns.type') },
+          { key: 'status', label: t('report.columns.status') },
+          { key: 'payment_status', label: t('report.columns.payment_status') },
+          { key: 'amount', label: t('report.columns.amount'), type: 'money', align: 'right' },
+        ]
+      : [
+          { key: 'date', label: t('report.columns.date') },
+          { key: 'sale_number', label: t('report.columns.sale_number') },
+          { key: 'customer', label: t('report.columns.customer') },
+          { key: 'item', label: t('report.columns.item') },
+          { key: 'quantity', label: t('report.columns.quantity'), type: 'quantity', align: 'right' },
+          { key: 'unit_measure', label: t('report.columns.unit_measure') },
+          { key: 'unit_price', label: t('report.columns.unit_price'), type: 'money', align: 'right' },
+          { key: 'total_amount', label: t('report.columns.total_amount'), type: 'money', align: 'right' },
+        ],
   },
   purchase_report: {
     label: t('report.reports.purchase_report.label'),
     description: t('report.reports.purchase_report.description'),
-    filters: ['item_id'],
+    filters: localFilters.value.view_type === 'general'
+      ? ['supplier_id', 'type', 'currency_id', 'warehouse_id']
+      : ['item_id', 'warehouse_id'],
     group: 'operations',
     icon: ClipboardList,
-    summary: [
-      { key: 'total_quantity', label: t('report.summary.total_quantity'), type: 'quantity' },
-      { key: 'total_amount', label: t('report.summary.total_amount'), type: 'money' },
-    ],
-    columns: [
-      { key: 'date', label: t('report.columns.date') },
-      { key: 'purchase_number', label: t('report.columns.purchase_number') },
-      { key: 'supplier', label: t('report.columns.supplier') },
-      { key: 'item', label: t('report.columns.item') },
-      { key: 'quantity', label: t('report.columns.quantity'), type: 'quantity', align: 'right' },
-      { key: 'unit_price', label: t('report.columns.unit_price'), type: 'money', align: 'right' },
-      { key: 'total_amount', label: t('report.columns.total_amount'), type: 'money', align: 'right' },
-    ],
+    summary: localFilters.value.view_type === 'general'
+      ? [
+          { key: 'total_purchases', label: t('report.summary.total_purchases'), type: 'integer' },
+          { key: 'total_amount', label: t('report.summary.total_amount'), type: 'money' },
+        ]
+      : [
+          { key: 'total_quantity', label: t('report.summary.total_quantity'), type: 'quantity' },
+          { key: 'total_amount', label: t('report.summary.total_amount'), type: 'money' },
+        ],
+    columns: localFilters.value.view_type === 'general'
+      ? [
+          { key: 'date', label: t('report.columns.date') },
+          { key: 'number', label: t('report.columns.number') },
+          { key: 'supplier', label: t('report.columns.supplier') },
+          { key: 'type', label: t('report.columns.type') },
+          { key: 'status', label: t('report.columns.status') },
+          { key: 'amount', label: t('report.columns.amount'), type: 'money', align: 'right' },
+        ]
+      : [
+          { key: 'date', label: t('report.columns.date') },
+          { key: 'purchase_number', label: t('report.columns.purchase_number') },
+          { key: 'supplier', label: t('report.columns.supplier') },
+          { key: 'item', label: t('report.columns.item') },
+          { key: 'quantity', label: t('report.columns.quantity'), type: 'quantity', align: 'right' },
+          { key: 'unit_price', label: t('report.columns.unit_price'), type: 'money', align: 'right' },
+          { key: 'total_amount', label: t('report.columns.total_amount'), type: 'money', align: 'right' },
+        ],
   },
   inventory_stock: {
     label: t('report.reports.inventory_stock.label'),
@@ -663,6 +711,10 @@ function resetFilters() {
     supplier_id: '',
     item_id: '',
     account_id: '',
+    currency_id: '',
+    warehouse_id: '',
+    type: '',
+    view_type: localFilters.value.view_type,
     per_page: Number(props.filters.per_page || 25),
     page: 1,
   }
@@ -685,10 +737,29 @@ function selectReport(reportKey) {
     supplier_id: '',
     item_id: '',
     account_id: '',
+    currency_id: '',
+    warehouse_id: '',
+    type: '',
+    view_type: 'itemwise',
     page: 1,
   }
 
   visitReports({ ...localFilters.value, report: reportKey, page: 1 })
+}
+
+function switchViewType(viewType) {
+  localFilters.value = {
+    ...localFilters.value,
+    view_type: viewType,
+    customer_id: '',
+    supplier_id: '',
+    item_id: '',
+    currency_id: '',
+    warehouse_id: '',
+    type: '',
+    page: 1,
+  }
+  visitReports({ ...localFilters.value })
 }
 
 function goBackToCatalog() {
@@ -807,6 +878,21 @@ function exportReport() {
               <Download class="h-4 w-4" />
               {{ t('report.export_excel') }}
             </Button>
+          </div>
+
+          <div v-if="isViewToggleReport" class="flex items-center gap-1 rounded-xl border border-border bg-muted p-1 self-start">
+            <button
+              v-for="view in VIEW_TYPES"
+              :key="view.key"
+              class="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all"
+              :class="localFilters.view_type === view.key
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'"
+              @click="switchViewType(view.key)"
+            >
+              <component :is="view.icon" class="h-4 w-4" />
+              {{ t(`report.view_types.${view.key}`) }}
+            </button>
           </div>
 
           <ReportFilters
