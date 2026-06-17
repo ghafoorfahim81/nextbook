@@ -39,7 +39,7 @@ const form = useForm({
             credit: '',
             remark: '',
             ledger_id: '',
-            selected_ledger:null, 
+            selected_ledger:null,
             journal_class_id: '',
             selected_journal_class:null,
         },
@@ -77,7 +77,7 @@ const defaultJournalLines = () => ([
         credit: '',
         remark: '',
         ledger_id: '',
-        selected_ledger:null, 
+        selected_ledger:null,
         journal_class_id: '',
         selected_journal_class:null,
     },
@@ -308,7 +308,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <AppLayout :title="t('general.create', { name: t('expense.expense') })" :sidebar-collapsed="true">
+    <AppLayout :title="t('general.create', { name: t('expense.expense') })">
         <FormPageToolbar back-route="journal-entries.index" module="journal_entry" />
         <form @submit.prevent="handleSubmitAction(false)">
             <!-- General Section -->
@@ -485,7 +485,7 @@ onUnmounted(() => {
                                     :reduce="journalClass => journalClass"
                                     :error="form.errors?.[`line.${index}.journal_class_id`]"
                                     :searchable="true"
-                                    resource-type="journal_classes" 
+                                    resource-type="journal_classes"
                                     :search-fields="['name', 'code', 'description']"
                                 />
                             </td>

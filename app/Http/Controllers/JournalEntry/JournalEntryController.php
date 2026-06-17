@@ -34,7 +34,7 @@ class JournalEntryController extends Controller
 
     public function __construct()
     {
-        $this->authorizeResource(JournalEntry::class, 'journalEntry'); 
+        $this->authorizeResource(JournalEntry::class, 'journalEntry');
     }
     public function index( Request $request )
     {
@@ -72,8 +72,8 @@ class JournalEntryController extends Controller
     public function create()
     {
         return inertia('JournalEntry/JournalEntries/Create', [
-            'accounts' => AccountResource::collection(Account::all()),
-            'ledgers' => LedgerResource::collection(Ledger::all()),
+            'accounts' => AccountResource::collection(Account::query()->orderBy('created_at', 'desc')->get()),
+            'ledgers' => LedgerResource::collection(Ledger::query()->orderBy('created_at', 'desc')->get()),
             'journalClasses' => JournalClass::all(),
         ]);
     }
@@ -95,7 +95,7 @@ class JournalEntryController extends Controller
                 'posted_by' => $postImmediately ? Auth::id() : null,
                 'currency_id' => $validated['currency_id'],
                 'rate' => $validated['rate'],
-                'remarks' => $validated['remarks'],
+                'remark' => $validated['remarks'],
             ]);
             $transactionService = app(TransactionService::class);
             $lines = collect($validated['lines'])
@@ -357,13 +357,13 @@ class JournalEntryController extends Controller
 
         DB::transaction(function () use ($journalEntry, $transactionService, $validated) {
             $transaction = $journalEntry->transaction()->firstOrFail();
-            $transactionService->reverse($transaction, $validated['reason']);
+            $transactionService->reverse($transaction, $validated['reason'], $journalEntry->number, JournalEntry::class);
 
             $journalEntry->update([
                 'status' => TransactionStatus::REVERSED->value,
                 'reversed_at' => now(),
                 'reversal_reason' => $validated['reason'],
-                
+                'reversal_of_id' => $journalEntry->id,
             ]);
         });
 
