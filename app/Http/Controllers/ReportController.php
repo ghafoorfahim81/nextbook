@@ -30,6 +30,10 @@ class ReportController extends Controller
             'supplier_id' => ['nullable', 'string', 'exists:ledgers,id'],
             'item_id' => ['nullable', 'string', 'exists:items,id'],
             'account_id' => ['nullable', 'string', 'exists:accounts,id'],
+            'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
+            'warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
+            'type' => ['nullable', 'string'],
+            'view_type' => ['nullable', 'string', Rule::in(['general', 'itemwise'])],
             'per_page' => ['nullable', 'integer', Rule::in([15, 25, 50, 100])],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
@@ -55,12 +59,15 @@ class ReportController extends Controller
             'supplier_id' => ['nullable', 'string', 'exists:ledgers,id'],
             'item_id' => ['nullable', 'string', 'exists:items,id'],
             'account_id' => ['nullable', 'string', 'exists:accounts,id'],
+            'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
+            'warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
+            'type' => ['nullable', 'string'],
+            'view_type' => ['nullable', 'string', Rule::in(['general', 'itemwise'])],
         ]);
 
         $export = $this->reportService->getExportData($request->user(), $filters);
 
-        return $spreadsheetExportService->download($export);
-                app(ActivityLogService::class)->logAction(
+        app(ActivityLogService::class)->logAction(
             eventType: 'export',
             reference: null,
             module: 'report',
@@ -73,5 +80,7 @@ class ReportController extends Controller
                 'row_count' => count($export['rows']),
             ],
         );
+
+        return $spreadsheetExportService->download($export);
     }
 }

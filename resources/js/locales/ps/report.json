@@ -33,6 +33,9 @@
     "supplier": "عرضه کوونکی",
     "item": "توکی",
     "account": "نغدي / بانک حساب",
+    "warehouse": "ګودام",
+    "currency": "اسعار",
+    "type": "د راکړې ورکړې ډول",
     "per_page": "قطارونه",
     "apply": "فلټرونه پلي کړئ",
     "reset": "بیا تنظیم"
@@ -75,6 +78,8 @@
     "max_stock_level": "اعظمي موجودي",
     "excess_quantity": "اضافي اندازه",
     "total_excess_quantity": "ټوله اضافي اندازه",
+    "total_sales": "ټول خرڅلاوونه",
+    "total_purchases": "ټول پېرودونه",
     "total_assets": "ټولې شتمنۍ",
     "total_liabilities": "ټولې پورونه",
     "total_equity": "ټول حقوق",
@@ -145,7 +150,16 @@
     "reorder_level": "د بیا فرمایش کچه",
     "reference_number": "د مرجع شماره",
     "expire_date": "د ختمېدو نېټه",
-    "batch": "د بچ شماره"
+    "batch": "د بچ شماره",
+    "number": "شمېره",
+    "type": "ډول",
+    "status": "حالت",
+    "payment_status": "د تادیې حالت",
+    "amount": "مبلغ"
+  },
+  "view_types": {
+    "general": "عمومي لید",
+    "itemwise": "د توکو لید"
   },
   "reports": {
     "trial_balance": {
