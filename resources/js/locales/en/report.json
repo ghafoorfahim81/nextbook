@@ -17,6 +17,8 @@
     "party_description": "Customer and supplier balance movement reports.",
     "operations": "Sales and Purchase Reports",
     "operations_description": "Operational sales and purchase line reports.",
+    "expenses": "Expense Reports",
+    "expenses_description": "Expense transaction reports by category and account.",
     "inventory": "Inventory Reports",
     "inventory_description": "Current stock, valuation, and movement reports.",
     "management": "Management Reports",
@@ -36,6 +38,8 @@
     "warehouse": "Warehouse",
     "currency": "Currency",
     "type": "Transaction type",
+    "expense_category": "Expense category",
+    "expense_account": "Expense account",
     "per_page": "Rows",
     "apply": "Apply filters",
     "reset": "Reset"
@@ -88,7 +92,8 @@
     "total_cost_of_goods_sold": "Total cost of goods sold",
     "gross_profit": "Gross profit",
     "total_expenses": "Total expenses",
-    "net_profit": "Net profit"
+    "net_profit": "Net profit",
+    "expense_count": "Expenses"
   },
   "columns": {
     "no": "No.",
@@ -156,7 +161,11 @@
     "type": "Type",
     "status": "Status",
     "payment_status": "Payment status",
-    "amount": "Amount"
+    "amount": "Amount",
+    "category": "Category",
+    "expense_account": "Expense account",
+    "bank_account": "Bank / Cash account",
+    "remark": "Remark"
   },
   "view_types": {
     "general": "General view",
@@ -270,6 +279,10 @@
     "user_activity": {
       "label": "User activity",
       "description": "Logins and create, update, and delete activity by user."
+    },
+    "expense_report": {
+      "label": "Expense report",
+      "description": "Posted expenses by date, category, expense account, and bank account."
     }
   },
   "user_activity": {
