@@ -17,6 +17,8 @@
     "party_description": "گزارش گردش و مانده مشتریان و تأمین‌کنندگان.",
     "operations": "گزارشات فروش و خرید",
     "operations_description": "گزارشات عملیاتی فروش و خرید بر اساس اقلام.",
+    "expenses": "گزارشات مصارف",
+    "expenses_description": "گزارش تراکنش‌های مصارف بر اساس دسته‌بندی و حساب.",
     "inventory": "گزارشات موجودی",
     "inventory_description": "گزارش موجودی فعلی، ارزش‌گذاری و گردش کالا.",
     "management": "گزارشات مدیریتی",
@@ -36,6 +38,8 @@
     "warehouse": "انبار",
     "currency": "ارز",
     "type": "نوع معامله",
+    "expense_category": "دسته‌بندی مصرف",
+    "expense_account": "حساب مصرف",
     "per_page": "تعداد سطر",
     "apply": "اعمال فیلترها",
     "reset": "بازنشانی"
@@ -88,7 +92,8 @@
     "total_cost_of_goods_sold": "مجموع بهای تمام‌شده کالای فروش‌رفته",
     "gross_profit": "سود ناخالص",
     "total_expenses": "مجموع مصارف",
-    "net_profit": "سود خالص"
+    "net_profit": "سود خالص",
+    "expense_count": "مصارف"
   },
   "columns": {
     "no": "شماره",
@@ -156,7 +161,11 @@
     "type": "نوع",
     "status": "وضعیت",
     "payment_status": "وضعیت پرداخت",
-    "amount": "مبلغ"
+    "amount": "مبلغ",
+    "category": "دسته‌بندی",
+    "expense_account": "حساب مصرف",
+    "bank_account": "حساب بانکی / نقدی",
+    "remark": "ملاحظات"
   },
   "view_types": {
     "general": "عمومی",
@@ -270,6 +279,10 @@
     "user_activity": {
       "label": "فعالیت کاربران",
       "description": "ورودها و فعالیت‌های ایجاد، ویرایش و حذف به تفکیک کاربر."
+    },
+    "expense_report": {
+      "label": "گزارش مصارف",
+      "description": "مصارف ثبت‌شده بر اساس تاریخ، دسته‌بندی، حساب مصرف و حساب بانکی."
     }
   },
   "user_activity": {

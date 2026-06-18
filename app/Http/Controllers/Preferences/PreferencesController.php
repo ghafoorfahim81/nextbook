@@ -293,7 +293,6 @@ class PreferencesController extends Controller
             ['value' => 'user_management', 'label' => 'sidebar.main.user_management'],
             ['value' => 'trash', 'label' => 'sidebar.main.trash'],
             ['value' => 'reports', 'label' => 'sidebar.main.reports'],
-            ['value' => 'preferences', 'label' => 'sidebar.main.preferences'],
         ];
     }
 
