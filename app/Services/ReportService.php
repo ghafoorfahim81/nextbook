@@ -465,19 +465,18 @@ class ReportService
                     ->where('l.branch_id', '=', $branchId)
                     ->whereNull('l.deleted_at');
             })
-            ->where('s.branch_id', $branchId)
-            ->whereNull('s.deleted_at')
-            ->whereExists(function ($sub) use ($filters, $branchId) {
-                $sub->select(DB::raw('1'))
-                    ->from('transactions as t')
-                    ->whereColumn('t.reference_id', 's.id')
+            ->join('transactions as t', function ($join) use ($branchId) {
+                $join->on('t.reference_id', '=', 's.id')
                     ->where('t.reference_type', Sale::class)
                     ->where('t.branch_id', $branchId)
                     ->where('t.status', TransactionStatus::POSTED->value)
                     ->whereNull('t.deleted_at');
             })
+            ->where('s.branch_id', $branchId)
+            ->whereNull('s.deleted_at')
             ->when($filters['customer_id'], fn ($q, $v) => $q->where('s.customer_id', $v))
-            ->when($filters['currency_id'], fn ($q, $v) => $q->where('s.currency_id', $v))
+            // Important: filter by currency on the joined transactions table, not sales
+            ->when($filters['currency_id'], fn ($q, $v) => $q->where('t.currency_id', $v))
             ->when($filters['type'], fn ($q, $v) => $q->where('s.type', $v))
             ->when($filters['warehouse_id'], fn ($q, $v) => $q->whereExists(function ($sub) use ($v) {
                 $sub->select(DB::raw('1'))
@@ -505,6 +504,7 @@ class ReportService
             ->selectRaw('s.status')
             ->selectRaw('s.payment_status')
             ->selectRaw("$netSql as amount");
+    
 
         return $this->paginateReport(
             $query,
@@ -620,6 +620,13 @@ class ReportService
         $netSql   = "($grossSql - $discSql + $taxSql - CASE WHEN p.discount_type = 'percentage' THEN $grossSql * COALESCE(p.discount, 0) / 100 ELSE COALESCE(p.discount, 0) END)";
 
         $query = DB::table('purchases as p')
+            ->leftJoin('transactions as t', function ($join) use ($branchId) {
+                $join->on('t.reference_id', '=', 'p.id')
+                    ->where('t.reference_type', '=', Purchase::class)
+                    ->where('t.branch_id', '=', $branchId)
+                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereNull('t.deleted_at');
+            })
             ->leftJoin('ledgers as l', function ($join) use ($branchId) {
                 $join->on('l.id', '=', 'p.supplier_id')
                     ->where('l.branch_id', '=', $branchId)
@@ -627,17 +634,10 @@ class ReportService
             })
             ->where('p.branch_id', $branchId)
             ->whereNull('p.deleted_at')
-            ->whereExists(function ($sub) use ($filters, $branchId) {
-                $sub->select(DB::raw('1'))
-                    ->from('transactions as t')
-                    ->whereColumn('t.reference_id', 'p.id')
-                    ->where('t.reference_type', Purchase::class)
-                    ->where('t.branch_id', $branchId)
-                    ->where('t.status', TransactionStatus::POSTED->value)
-                    ->whereNull('t.deleted_at');
-            })
+            ->whereNotNull('t.id')
             ->when($filters['supplier_id'], fn ($q, $v) => $q->where('p.supplier_id', $v))
-            ->when($filters['currency_id'], fn ($q, $v) => $q->where('p.currency_id', $v))
+            // Change currency_id filter to use t.currency_id not p.currency_id:
+            ->when($filters['currency_id'], fn ($q, $v) => $q->where('t.currency_id', $v))
             ->when($filters['type'], fn ($q, $v) => $q->where('p.type', $v))
             ->when($filters['warehouse_id'], fn ($q, $v) => $q->whereExists(function ($sub) use ($v) {
                 $sub->select(DB::raw('1'))
@@ -653,6 +653,7 @@ class ReportService
             ->selectRaw('COUNT(DISTINCT p.id) as total_purchases')
             ->selectRaw("COALESCE(SUM($netSql), 0) as total_amount")
             ->first();
+    
 
         $query
             ->orderByDesc('p.date')
