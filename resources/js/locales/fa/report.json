@@ -33,6 +33,9 @@
     "supplier": "تأمین‌کننده",
     "item": "کالا",
     "account": "حساب نقد / بانک",
+    "warehouse": "انبار",
+    "currency": "ارز",
+    "type": "نوع معامله",
     "per_page": "تعداد سطر",
     "apply": "اعمال فیلترها",
     "reset": "بازنشانی"
@@ -75,6 +78,8 @@
     "max_stock_level": "حداکثر موجودی",
     "excess_quantity": "مقدار مازاد",
     "total_excess_quantity": "مجموع مقدار مازاد",
+    "total_sales": "مجموع فروش‌ها",
+    "total_purchases": "مجموع خریدها",
     "total_assets": "مجموع دارایی‌ها",
     "total_liabilities": "بدهی‌ها",
     "total_equity": "مجموع سرمایه",
@@ -146,7 +151,16 @@
     "reorder_level": "حد سفارش",
     "reference_number": "شماره مرجع",
     "expire_date": "تاریخ انقضا",
-    "batch": "بچ"
+    "batch": "بچ",
+    "number": "شماره",
+    "type": "نوع",
+    "status": "وضعیت",
+    "payment_status": "وضعیت پرداخت",
+    "amount": "مبلغ"
+  },
+  "view_types": {
+    "general": "عمومی",
+    "itemwise": "براساس جنس"
   },
   "reports": {
     "trial_balance": {

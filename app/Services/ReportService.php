@@ -83,7 +83,7 @@ class ReportService
         $rows = collect($result['rows'] ?? []);
         $headings = $rows->isNotEmpty()
             ? array_keys($rows->first())
-            : $this->defaultExportHeadings($filters['report']);
+            : $this->defaultExportHeadings($filters['report'], $filters);
 
         return [
             'filename' => $filters['report'] . '-' . now()->format('Ymd-His') . '.xlsx',
@@ -443,6 +443,90 @@ class ReportService
 
     public function getSalesReport(array $filters): array
     {
+        if (($filters['view_type'] ?? 'itemwise') === 'general') {
+            return $this->getSalesGeneralReport($filters);
+        }
+
+        return $this->getSalesItemwiseReport($filters);
+    }
+
+    private function getSalesGeneralReport(array $filters): array
+    {
+        $branchId = $filters['branch_id'];
+
+        $grossSql = '(SELECT COALESCE(SUM(si2.quantity * si2.unit_price), 0) FROM sale_items si2 WHERE si2.sale_id = s.id AND si2.deleted_at IS NULL)';
+        $discSql  = '(SELECT COALESCE(SUM(si2.discount), 0) FROM sale_items si2 WHERE si2.sale_id = s.id AND si2.deleted_at IS NULL)';
+        $taxSql   = '(SELECT COALESCE(SUM(si2.tax), 0) FROM sale_items si2 WHERE si2.sale_id = s.id AND si2.deleted_at IS NULL)';
+        $netSql   = "($grossSql - $discSql + $taxSql - CASE WHEN s.discount_type = 'percentage' THEN $grossSql * COALESCE(s.discount, 0) / 100 ELSE COALESCE(s.discount, 0) END)";
+
+        $query = DB::table('sales as s')
+            ->leftJoin('ledgers as l', function ($join) use ($branchId) {
+                $join->on('l.id', '=', 's.customer_id')
+                    ->where('l.branch_id', '=', $branchId)
+                    ->whereNull('l.deleted_at');
+            })
+            ->where('s.branch_id', $branchId)
+            ->whereNull('s.deleted_at')
+            ->whereExists(function ($sub) use ($filters, $branchId) {
+                $sub->select(DB::raw('1'))
+                    ->from('transactions as t')
+                    ->whereColumn('t.reference_id', 's.id')
+                    ->where('t.reference_type', Sale::class)
+                    ->where('t.branch_id', $branchId)
+                    ->where('t.status', TransactionStatus::POSTED->value)
+                    ->whereNull('t.deleted_at');
+            })
+            ->when($filters['customer_id'], fn ($q, $v) => $q->where('s.customer_id', $v))
+            ->when($filters['currency_id'], fn ($q, $v) => $q->where('s.currency_id', $v))
+            ->when($filters['type'], fn ($q, $v) => $q->where('s.type', $v))
+            ->when($filters['warehouse_id'], fn ($q, $v) => $q->whereExists(function ($sub) use ($v) {
+                $sub->select(DB::raw('1'))
+                    ->from('sale_items as si_w')
+                    ->whereColumn('si_w.sale_id', 's.id')
+                    ->where('si_w.warehouse_id', $v)
+                    ->whereNull('si_w.deleted_at');
+            }));
+
+        $this->applyDateFilter($query, 's.date', $filters);
+
+        $summaryRow = (clone $query)
+            ->selectRaw('COUNT(DISTINCT s.id) as total_sales')
+            ->selectRaw("COALESCE(SUM($netSql), 0) as total_amount")
+            ->first();
+
+        $query
+            ->orderByDesc('s.date')
+            ->orderByDesc('s.created_at')
+            ->orderByDesc('s.id')
+            ->selectRaw('s.date')
+            ->selectRaw('s.number as number')
+            ->selectRaw("COALESCE(l.name, '-') as customer")
+            ->selectRaw('s.type')
+            ->selectRaw('s.status')
+            ->selectRaw('s.payment_status')
+            ->selectRaw("$netSql as amount");
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'date'           => $this->displayDate($row->date),
+                'number'         => $row->number,
+                'customer'       => $row->customer,
+                'type'           => \App\Enums\SalePurchaseType::tryFrom((string) $row->type)?->getLabel() ?? (string) $row->type,
+                'status'         => $row->status instanceof \BackedEnum ? $row->status->value : (string) $row->status,
+                'payment_status' => \App\Enums\PaymentStatus::tryFrom((string) $row->payment_status)?->getLabel() ?? (string) $row->payment_status,
+                'amount'         => $this->moneyValue($row->amount),
+            ],
+            [
+                'total_sales'  => (int) ($summaryRow?->total_sales ?? 0),
+                'total_amount' => $this->moneyValue($summaryRow?->total_amount),
+            ],
+        );
+    }
+
+    private function getSalesItemwiseReport(array $filters): array
+    {
         $query = DB::table('sales as s')
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.reference_id', '=', 's.id')
@@ -473,7 +557,8 @@ class ReportService
             })
             ->where('s.branch_id', $filters['branch_id'])
             ->whereNull('s.deleted_at')
-            ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('si.item_id', $itemId));
+            ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('si.item_id', $itemId))
+            ->when($filters['warehouse_id'], fn ($q, $v) => $q->where('si.warehouse_id', $v));
 
         $this->applyDateFilter($query, 's.date', $filters);
 
@@ -488,7 +573,7 @@ class ReportService
             ->orderByDesc('si.id')
             ->selectRaw('s.date')
             ->selectRaw('s.number as sale_number')
-            ->selectRaw('COALESCE(l.name, \'-\') as customer')
+            ->selectRaw("COALESCE(l.name, '-') as customer")
             ->selectRaw('i.name as item')
             ->selectRaw('i.code as code')
             ->selectRaw('um.name as unit_measure')
@@ -500,23 +585,105 @@ class ReportService
             $query,
             $filters,
             fn ($row) => [
-                'date' => $this->displayDate($row->date),
-                'sale_number' => $row->sale_number,
-                'customer' => $row->customer,
-                'item' => $row->item.' - '.$row->code.'',
+                'date'         => $this->displayDate($row->date),
+                'sale_number'  => $row->sale_number,
+                'customer'     => $row->customer,
+                'item'         => $row->item.' - '.$row->code,
                 'unit_measure' => $row->unit_measure,
-                'quantity' => $this->quantityValue($row->quantity),
-                'unit_price' => $this->moneyValue($row->unit_price),
+                'quantity'     => $this->quantityValue($row->quantity),
+                'unit_price'   => $this->moneyValue($row->unit_price),
                 'total_amount' => $this->moneyValue($row->total_amount),
             ],
             [
                 'total_quantity' => $this->quantityValue($summaryRow?->total_quantity),
-                'total_amount' => $this->moneyValue($summaryRow?->total_amount),
+                'total_amount'   => $this->moneyValue($summaryRow?->total_amount),
             ],
         );
     }
 
     public function getPurchaseReport(array $filters): array
+    {
+        if (($filters['view_type'] ?? 'itemwise') === 'general') {
+            return $this->getPurchaseGeneralReport($filters);
+        }
+
+        return $this->getPurchaseItemwiseReport($filters);
+    }
+
+    private function getPurchaseGeneralReport(array $filters): array
+    {
+        $branchId = $filters['branch_id'];
+
+        $grossSql = '(SELECT COALESCE(SUM(pi2.quantity * pi2.unit_price), 0) FROM purchase_items pi2 WHERE pi2.purchase_id = p.id AND pi2.deleted_at IS NULL)';
+        $discSql  = '(SELECT COALESCE(SUM(pi2.discount), 0) FROM purchase_items pi2 WHERE pi2.purchase_id = p.id AND pi2.deleted_at IS NULL)';
+        $taxSql   = '(SELECT COALESCE(SUM(pi2.tax), 0) FROM purchase_items pi2 WHERE pi2.purchase_id = p.id AND pi2.deleted_at IS NULL)';
+        $netSql   = "($grossSql - $discSql + $taxSql - CASE WHEN p.discount_type = 'percentage' THEN $grossSql * COALESCE(p.discount, 0) / 100 ELSE COALESCE(p.discount, 0) END)";
+
+        $query = DB::table('purchases as p')
+            ->leftJoin('ledgers as l', function ($join) use ($branchId) {
+                $join->on('l.id', '=', 'p.supplier_id')
+                    ->where('l.branch_id', '=', $branchId)
+                    ->whereNull('l.deleted_at');
+            })
+            ->where('p.branch_id', $branchId)
+            ->whereNull('p.deleted_at')
+            ->whereExists(function ($sub) use ($filters, $branchId) {
+                $sub->select(DB::raw('1'))
+                    ->from('transactions as t')
+                    ->whereColumn('t.reference_id', 'p.id')
+                    ->where('t.reference_type', Purchase::class)
+                    ->where('t.branch_id', $branchId)
+                    ->where('t.status', TransactionStatus::POSTED->value)
+                    ->whereNull('t.deleted_at');
+            })
+            ->when($filters['supplier_id'], fn ($q, $v) => $q->where('p.supplier_id', $v))
+            ->when($filters['currency_id'], fn ($q, $v) => $q->where('p.currency_id', $v))
+            ->when($filters['type'], fn ($q, $v) => $q->where('p.type', $v))
+            ->when($filters['warehouse_id'], fn ($q, $v) => $q->whereExists(function ($sub) use ($v) {
+                $sub->select(DB::raw('1'))
+                    ->from('purchase_items as pi_w')
+                    ->whereColumn('pi_w.purchase_id', 'p.id')
+                    ->where('pi_w.warehouse_id', $v)
+                    ->whereNull('pi_w.deleted_at');
+            }));
+
+        $this->applyDateFilter($query, 'p.date', $filters);
+
+        $summaryRow = (clone $query)
+            ->selectRaw('COUNT(DISTINCT p.id) as total_purchases')
+            ->selectRaw("COALESCE(SUM($netSql), 0) as total_amount")
+            ->first();
+
+        $query
+            ->orderByDesc('p.date')
+            ->orderByDesc('p.created_at')
+            ->orderByDesc('p.id')
+            ->selectRaw('p.date')
+            ->selectRaw('p.number as number')
+            ->selectRaw("COALESCE(l.name, '-') as supplier")
+            ->selectRaw('p.type')
+            ->selectRaw('p.status')
+            ->selectRaw("$netSql as amount");
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'date'     => $this->displayDate($row->date),
+                'number'   => $row->number,
+                'supplier' => $row->supplier,
+                'type'     => \App\Enums\SalePurchaseType::tryFrom((string) $row->type)?->getLabel() ?? (string) $row->type,
+                'status'   => $row->status instanceof \BackedEnum ? $row->status->value : (string) $row->status,
+                'amount'   => $this->moneyValue($row->amount),
+            ],
+            [
+                'total_purchases' => (int) ($summaryRow?->total_purchases ?? 0),
+                'total_amount'    => $this->moneyValue($summaryRow?->total_amount),
+            ],
+        );
+    }
+
+    private function getPurchaseItemwiseReport(array $filters): array
     {
         $query = DB::table('purchases as p')
             ->join('transactions as t', function ($join) use ($filters) {
@@ -543,7 +710,8 @@ class ReportService
             })
             ->where('p.branch_id', $filters['branch_id'])
             ->whereNull('p.deleted_at')
-            ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('pi.item_id', $itemId));
+            ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('pi.item_id', $itemId))
+            ->when($filters['warehouse_id'], fn ($q, $v) => $q->where('pi.warehouse_id', $v));
 
         $this->applyDateFilter($query, 'p.date', $filters);
 
@@ -558,7 +726,7 @@ class ReportService
             ->orderByDesc('pi.id')
             ->selectRaw('p.date')
             ->selectRaw('p.number as purchase_number')
-            ->selectRaw('COALESCE(l.name, \'-\') as supplier')
+            ->selectRaw("COALESCE(l.name, '-') as supplier")
             ->selectRaw('i.name as item')
             ->selectRaw('pi.quantity as quantity')
             ->selectRaw('pi.unit_price as unit_price')
@@ -568,17 +736,17 @@ class ReportService
             $query,
             $filters,
             fn ($row) => [
-                'date' => $this->displayDate($row->date),
+                'date'            => $this->displayDate($row->date),
                 'purchase_number' => $row->purchase_number,
-                'supplier' => $row->supplier,
-                'item' => $row->item,
-                'quantity' => $this->quantityValue($row->quantity),
-                'unit_price' => $this->moneyValue($row->unit_price),
-                'total_amount' => $this->moneyValue($row->total_amount),
+                'supplier'        => $row->supplier,
+                'item'            => $row->item,
+                'quantity'        => $this->quantityValue($row->quantity),
+                'unit_price'      => $this->moneyValue($row->unit_price),
+                'total_amount'    => $this->moneyValue($row->total_amount),
             ],
             [
                 'total_quantity' => $this->quantityValue($summaryRow?->total_quantity),
-                'total_amount' => $this->moneyValue($summaryRow?->total_amount),
+                'total_amount'   => $this->moneyValue($summaryRow?->total_amount),
             ],
         );
     }
@@ -2373,8 +2541,10 @@ class ReportService
         return $displayDate.' '.$dateTime->format('H:i');
     }
 
-    protected function defaultExportHeadings(string $reportKey): array
+    protected function defaultExportHeadings(string $reportKey, array $filters = []): array
     {
+        $viewType = $filters['view_type'] ?? 'itemwise';
+
         return match ($reportKey) {
             'trial_balance' => ['ledger_id', 'ledger_name', 'total_debit', 'total_credit', 'balance', 'balance_label'],
             'general_ledger' => ['date', 'transaction_number', 'reference_type', 'description', 'debit', 'credit', 'running_balance', 'running_balance_label'],
@@ -2382,8 +2552,12 @@ class ReportService
             'receipt_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'amount_received'],
             'payment_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'amount_paid'],
             'cash_book' => ['date', 'reference', 'description', 'debit', 'credit', 'running_balance', 'running_balance_label'],
-            'sales_report' => ['date', 'sale_number', 'customer', 'item', 'quantity', 'unit_price', 'total_amount'],
-            'purchase_report' => ['date', 'purchase_number', 'supplier', 'item', 'quantity', 'unit_price', 'total_amount'],
+            'sales_report' => $viewType === 'general'
+                ? ['date', 'number', 'customer', 'type', 'status', 'payment_status', 'amount']
+                : ['date', 'sale_number', 'customer', 'item', 'quantity', 'unit_price', 'total_amount'],
+            'purchase_report' => $viewType === 'general'
+                ? ['date', 'number', 'supplier', 'type', 'status', 'amount']
+                : ['date', 'purchase_number', 'supplier', 'item', 'quantity', 'unit_price', 'total_amount'],
             'inventory_stock' => ['item', 'warehouse', 'quantity', 'average_cost', 'total_value'],
             'stock_movement' => ['date', 'item', 'warehouse', 'movement_type', 'quantity', 'unit_price', 'source_type', 'reference_type', 'reference_id'],
             'low_stock' => ['item', 'warehouse', 'quantity', 'reorder_level'],
@@ -2597,6 +2771,10 @@ class ReportService
             'supplier_id' => $this->nullableString($filters['supplier_id'] ?? null),
             'item_id' => $this->nullableString($filters['item_id'] ?? null),
             'account_id' => $this->nullableString($filters['account_id'] ?? null),
+            'currency_id' => $this->nullableString($filters['currency_id'] ?? null),
+            'warehouse_id' => $this->nullableString($filters['warehouse_id'] ?? null),
+            'type' => $this->nullableString($filters['type'] ?? null),
+            'view_type' => in_array($filters['view_type'] ?? '', ['general', 'itemwise'], true) ? $filters['view_type'] : 'itemwise',
             'per_page' => $perPage,
             'page' => max(1, (int) ($filters['page'] ?? 1)),
         ];
@@ -2653,6 +2831,24 @@ class ReportService
                     'name' => app()->getLocale() === 'en' ? $row->name : ($row->local_name ?? $row->name)
                 ])
                 ->all(),
+            'currencies' => DB::table('currencies')
+                ->whereNull('deleted_at')
+                ->orderBy('code')
+                ->get(['id', 'code', 'name'])
+                ->map(fn ($row) => ['id' => $row->id, 'name' => $row->code.' - '.$row->name])
+                ->all(),
+            'warehouses' => DB::table('warehouses')
+                ->where('branch_id', $branchId)
+                ->whereNull('deleted_at')
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
+                ->all(),
+            'sale_types' => [
+                ['id' => 'cash', 'name' => 'Cash'],
+                ['id' => 'credit', 'name' => 'Credit'],
+                ['id' => 'on_loan', 'name' => 'On Loan'],
+            ],
 
         ];
     }

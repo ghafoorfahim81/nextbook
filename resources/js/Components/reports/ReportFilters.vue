@@ -22,6 +22,9 @@ const showCustomer = computed(() => props.activeDefinition.filters.includes('cus
 const showSupplier = computed(() => props.activeDefinition.filters.includes('supplier_id'))
 const showItem = computed(() => props.activeDefinition.filters.includes('item_id'))
 const showAccount = computed(() => props.activeDefinition.filters.includes('account_id'))
+const showWarehouse = computed(() => props.activeDefinition.filters.includes('warehouse_id'))
+const showCurrency = computed(() => props.activeDefinition.filters.includes('currency_id'))
+const showType = computed(() => props.activeDefinition.filters.includes('type'))
 
 const perPageOptions = [
   { value: 15, label: '15' },
@@ -49,6 +52,9 @@ const customerOptions = computed(() => withPlaceholder(props.options.customers, 
 const supplierOptions = computed(() => withPlaceholder(props.options.suppliers, t('report.filters.supplier')))
 const itemOptions = computed(() => withPlaceholder(props.options.items, t('report.filters.item')))
 const accountOptions = computed(() => withPlaceholder(props.options.cash_accounts, t('report.filters.account')))
+const warehouseOptions = computed(() => withPlaceholder(props.options.warehouses, t('report.filters.warehouse')))
+const currencyOptions = computed(() => withPlaceholder(props.options.currencies, t('report.filters.currency')))
+const typeOptions = computed(() => withPlaceholder(props.options.sale_types, t('report.filters.type')))
 
 function updateFilters(next) {
   emit('update:filters', next)
@@ -170,7 +176,37 @@ function setReport(report) {
             label-key="name"
             value-key="id"
             @update:modelValue="setFilter('account_id', $event)"
-          /> 
+          />
+        </div>
+        <div v-if="showType">
+          <NextSelect
+            :floating-text="t('report.filters.type')"
+            :model-value="filters.type"
+            :options="typeOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('type', $event)"
+          />
+        </div>
+        <div v-if="showCurrency">
+          <NextSelect
+            :floating-text="t('report.filters.currency')"
+            :model-value="filters.currency_id"
+            :options="currencyOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('currency_id', $event)"
+          />
+        </div>
+        <div v-if="showWarehouse">
+          <NextSelect
+            :floating-text="t('report.filters.warehouse')"
+            :model-value="filters.warehouse_id"
+            :options="warehouseOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('warehouse_id', $event)"
+          />
         </div>
       </div>
 
