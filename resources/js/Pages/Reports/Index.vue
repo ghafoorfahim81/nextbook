@@ -25,6 +25,7 @@ import {
   FileText,
   LayoutList,
   Layers,
+  Banknote,
 } from 'lucide-vue-next'
 import AppLayout from '@/Layouts/Layout.vue'
 import { Button } from '@/Components/ui/button'
@@ -72,6 +73,8 @@ function normalizeFilters(filters) {
     currency_id: filters.currency_id || '',
     warehouse_id: filters.warehouse_id || '',
     type: filters.type || '',
+    category_id: filters.category_id || '',
+    expense_account_id: filters.expense_account_id || '',
     view_type: filters.view_type || 'itemwise',
     per_page: Number(filters.per_page || 25),
     page: Number(filters.page || 1),
@@ -323,6 +326,25 @@ const reportDefinitions = computed(() => ({
           { key: 'unit_price', label: t('report.columns.unit_price'), type: 'money', align: 'right' },
           { key: 'total_amount', label: t('report.columns.total_amount'), type: 'money', align: 'right' },
         ],
+  },
+  expense_report: {
+    label: t('report.reports.expense_report.label'),
+    description: t('report.reports.expense_report.description'),
+    filters: ['category_id', 'expense_account_id', 'account_id'],
+    group: 'expenses',
+    icon: Banknote,
+    summary: [
+      { key: 'expense_count', label: t('report.summary.expense_count'), type: 'integer' },
+      { key: 'total_amount', label: t('report.summary.total_amount'), type: 'money' },
+    ],
+    columns: [
+      { key: 'date', label: t('report.columns.date') },
+      { key: 'amount', label: t('report.columns.amount'), type: 'money', align: 'right' },
+      { key: 'category', label: t('report.columns.category') },
+      { key: 'expense_account', label: t('report.columns.expense_account') },
+      { key: 'bank_account', label: t('report.columns.bank_account') },
+      { key: 'remark', label: t('report.columns.remark') },
+    ],
   },
   inventory_stock: {
     label: t('report.reports.inventory_stock.label'),
@@ -639,6 +661,7 @@ const catalogBlueprint = computed(() => ([
   { key: 'cash_flow', label: t('report.groups.cash_flow'), description: t('report.groups.cash_flow_description') },
   { key: 'party', label: t('report.groups.party'), description: t('report.groups.party_description') },
   { key: 'operations', label: t('report.groups.operations'), description: t('report.groups.operations_description') },
+  { key: 'expenses', label: t('report.groups.expenses'), description: t('report.groups.expenses_description') },
   { key: 'inventory', label: t('report.groups.inventory'), description: t('report.groups.inventory_description') },
   { key: 'management', label: t('report.groups.management'), description: t('report.groups.management_description') },
 ]))
@@ -714,6 +737,8 @@ function resetFilters() {
     currency_id: '',
     warehouse_id: '',
     type: '',
+    category_id: '',
+    expense_account_id: '',
     view_type: localFilters.value.view_type,
     per_page: Number(props.filters.per_page || 25),
     page: 1,
@@ -740,6 +765,8 @@ function selectReport(reportKey) {
     currency_id: '',
     warehouse_id: '',
     type: '',
+    category_id: '',
+    expense_account_id: '',
     view_type: 'itemwise',
     page: 1,
   }

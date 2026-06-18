@@ -17,6 +17,8 @@
     "party_description": "د پېرېدونکو او عرضه کوونکو د حرکت او بیلانس راپورونه.",
     "operations": "د خرڅلاو او پېرود راپورونه",
     "operations_description": "د خرڅلاو او پېرود عملياتي راپورونه د توکو پر بنسټ.",
+    "expenses": "د لګښتونو راپورونه",
+    "expenses_description": "د لګښت راکړې ورکړې راپورونه د کټګورۍ او حساب پر بنسټ.",
     "inventory": "د ګدام راپورونه",
     "inventory_description": "اوسنی سټاک، ارزښت او د توکو حرکت.",
     "management": "مديريتي راپورونه",
@@ -36,6 +38,8 @@
     "warehouse": "ګودام",
     "currency": "اسعار",
     "type": "د راکړې ورکړې ډول",
+    "expense_category": "د لګښت کټګوري",
+    "expense_account": "د لګښت حساب",
     "per_page": "قطارونه",
     "apply": "فلټرونه پلي کړئ",
     "reset": "بیا تنظیم"
@@ -88,7 +92,8 @@
     "total_cost_of_goods_sold": "د خرڅ شويو توکو ټول لګښت",
     "gross_profit": "ناخالصه ګټه",
     "total_expenses": "ټول لګښتونه",
-    "net_profit": "خالصه ګټه"
+    "net_profit": "خالصه ګټه",
+    "expense_count": "لګښتونه"
   },
   "columns": {
     "no": "شماره",
@@ -155,7 +160,11 @@
     "type": "ډول",
     "status": "حالت",
     "payment_status": "د تادیې حالت",
-    "amount": "مبلغ"
+    "amount": "مبلغ",
+    "category": "کټګوري",
+    "expense_account": "د لګښت حساب",
+    "bank_account": "د بانک / نغدي حساب",
+    "remark": "یادښت"
   },
   "view_types": {
     "general": "عمومي لید",
@@ -269,6 +278,10 @@
     "user_activity": {
       "label": "د کاروونکو فعالیت",
       "description": "د هر کاروونکي له مخې د ننوتلو او جوړولو، سمولو او حذف فعالیتونه."
+    },
+    "expense_report": {
+      "label": "د لګښتونو راپور",
+      "description": "ثبت شوي لګښتونه د نېټې، کټګورۍ، د لګښت حساب او د بانک حساب له مخې."
     }
   },
   "user_activity": {

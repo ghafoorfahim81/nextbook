@@ -25,6 +25,8 @@ const showAccount = computed(() => props.activeDefinition.filters.includes('acco
 const showWarehouse = computed(() => props.activeDefinition.filters.includes('warehouse_id'))
 const showCurrency = computed(() => props.activeDefinition.filters.includes('currency_id'))
 const showType = computed(() => props.activeDefinition.filters.includes('type'))
+const showExpenseCategory = computed(() => props.activeDefinition.filters.includes('category_id'))
+const showExpenseAccount = computed(() => props.activeDefinition.filters.includes('expense_account_id'))
 
 const perPageOptions = [
   { value: 15, label: '15' },
@@ -55,6 +57,8 @@ const accountOptions = computed(() => withPlaceholder(props.options.cash_account
 const warehouseOptions = computed(() => withPlaceholder(props.options.warehouses, t('report.filters.warehouse')))
 const currencyOptions = computed(() => withPlaceholder(props.options.currencies, t('report.filters.currency')))
 const typeOptions = computed(() => withPlaceholder(props.options.sale_types, t('report.filters.type')))
+const expenseCategoryOptions = computed(() => withPlaceholder(props.options.expense_categories, t('report.filters.expense_category')))
+const expenseAccountOptions = computed(() => withPlaceholder(props.options.expense_accounts, t('report.filters.expense_account')))
 
 function updateFilters(next) {
   emit('update:filters', next)
@@ -77,6 +81,8 @@ function setReport(report) {
     supplier_id: '',
     item_id: '',
     account_id: '',
+    category_id: '',
+    expense_account_id: '',
     page: 1,
   })
 }
@@ -206,6 +212,26 @@ function setReport(report) {
             label-key="name"
             value-key="id"
             @update:modelValue="setFilter('warehouse_id', $event)"
+          />
+        </div>
+        <div v-if="showExpenseCategory">
+          <NextSelect
+            :floating-text="t('report.filters.expense_category')"
+            :model-value="filters.category_id"
+            :options="expenseCategoryOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('category_id', $event)"
+          />
+        </div>
+        <div v-if="showExpenseAccount">
+          <NextSelect
+            :floating-text="t('report.filters.expense_account')"
+            :model-value="filters.expense_account_id"
+            :options="expenseAccountOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('expense_account_id', $event)"
           />
         </div>
       </div>

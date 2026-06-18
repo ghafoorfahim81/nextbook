@@ -49,6 +49,7 @@ class ReportService
         'day_book_report',
         'journal_book_report',
         'user_activity',
+        'expense_report',
     ];
 
     public function __construct(
@@ -135,6 +136,7 @@ class ReportService
             'day_book_report' => $this->getDayBookReport($filters),
             'journal_book_report' => $this->getJournalBookReport($filters),
             'user_activity' => $this->getUserActivity($filters),
+            'expense_report' => $this->getExpenseReport($filters),
             default => $this->getTrialBalance($filters),
         };
     }
@@ -748,6 +750,95 @@ class ReportService
             [
                 'total_quantity' => $this->quantityValue($summaryRow?->total_quantity),
                 'total_amount'   => $this->moneyValue($summaryRow?->total_amount),
+            ],
+        );
+    }
+
+    public function getExpenseReport(array $filters): array
+    {
+        $branchId = $filters['branch_id'];
+        $expenseClass = \App\Models\Expense\Expense::class;
+
+        $amountSql = '(SELECT COALESCE(SUM(ed2.amount), 0) FROM expense_details ed2 WHERE ed2.expense_id = e.id AND ed2.deleted_at IS NULL)';
+        $baseAmountSql = "($amountSql * COALESCE(t.rate, 1))";
+
+        $expenseAccountSql = "COALESCE((
+            SELECT a.name FROM transaction_lines tl_ea
+            JOIN accounts a ON a.id = tl_ea.account_id AND a.deleted_at IS NULL
+            WHERE tl_ea.transaction_id = t.id AND tl_ea.debit > 0 AND tl_ea.deleted_at IS NULL
+            LIMIT 1
+        ), '-')";
+
+        $bankAccountSql = "COALESCE((
+            SELECT a.name FROM transaction_lines tl_ba
+            JOIN accounts a ON a.id = tl_ba.account_id AND a.deleted_at IS NULL
+            WHERE tl_ba.transaction_id = t.id AND tl_ba.credit > 0 AND tl_ba.deleted_at IS NULL
+            LIMIT 1
+        ), '-')";
+
+        $query = DB::table('expenses as e')
+            ->join('expense_categories as ec', function ($join) {
+                $join->on('ec.id', '=', 'e.category_id')
+                    ->whereNull('ec.deleted_at');
+            })
+            ->leftJoin('transactions as t', function ($join) use ($branchId, $expenseClass) {
+                $join->on('t.reference_id', '=', 'e.id')
+                    ->where('t.reference_type', '=', $expenseClass)
+                    ->where('t.branch_id', '=', $branchId)
+                    ->whereNull('t.deleted_at');
+            })
+            ->where('e.branch_id', $branchId)
+            ->whereNull('e.deleted_at')
+            ->when($filters['category_id'], fn ($q, $v) => $q->where('e.category_id', $v))
+            ->when($filters['expense_account_id'], fn ($q, $v) => $q->whereExists(function ($sub) use ($v) {
+                $sub->select(DB::raw(1))
+                    ->from('transaction_lines as tl_fe')
+                    ->whereColumn('tl_fe.transaction_id', 't.id')
+                    ->where('tl_fe.account_id', $v)
+                    ->whereRaw('tl_fe.debit > 0')
+                    ->whereNull('tl_fe.deleted_at');
+            }))
+            ->when($filters['account_id'], fn ($q, $v) => $q->whereExists(function ($sub) use ($v) {
+                $sub->select(DB::raw(1))
+                    ->from('transaction_lines as tl_fb')
+                    ->whereColumn('tl_fb.transaction_id', 't.id')
+                    ->where('tl_fb.account_id', $v)
+                    ->whereRaw('tl_fb.credit > 0')
+                    ->whereNull('tl_fb.deleted_at');
+            }));
+
+        $this->applyDateFilter($query, 'e.date', $filters);
+
+        $summaryRow = (clone $query)
+            ->selectRaw('COUNT(DISTINCT e.id) as expense_count')
+            ->selectRaw("COALESCE(SUM($baseAmountSql), 0) as total_amount")
+            ->first();
+
+        $query
+            ->orderByDesc('e.date')
+            ->orderByDesc('e.created_at')
+            ->orderByDesc('e.id')
+            ->selectRaw('e.date')
+            ->selectRaw("$baseAmountSql as amount")
+            ->selectRaw('ec.name as category')
+            ->selectRaw("$expenseAccountSql as expense_account")
+            ->selectRaw("$bankAccountSql as bank_account")
+            ->selectRaw("COALESCE(NULLIF(e.remarks, ''), '-') as remark");
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'date'            => $this->displayDate($row->date),
+                'amount'          => $this->moneyValue($row->amount),
+                'category'        => $row->category,
+                'expense_account' => $row->expense_account,
+                'bank_account'    => $row->bank_account,
+                'remark'          => $row->remark,
+            ],
+            [
+                'expense_count' => (int) ($summaryRow?->expense_count ?? 0),
+                'total_amount'  => $this->moneyValue($summaryRow?->total_amount),
             ],
         );
     }
@@ -2676,6 +2767,8 @@ class ReportService
             'max_stock_level',
             'excess_quantity',
             'balance',
+            'amount',
+            'expense_count',
         ];
 
         return in_array($key, $numericKeys, true) ? 'number' : 'text';
@@ -2775,6 +2868,8 @@ class ReportService
             'currency_id' => $this->nullableString($filters['currency_id'] ?? null),
             'warehouse_id' => $this->nullableString($filters['warehouse_id'] ?? null),
             'type' => $this->nullableString($filters['type'] ?? null),
+            'category_id' => $this->nullableString($filters['category_id'] ?? null),
+            'expense_account_id' => $this->nullableString($filters['expense_account_id'] ?? null),
             'view_type' => in_array($filters['view_type'] ?? '', ['general', 'itemwise'], true) ? $filters['view_type'] : 'itemwise',
             'per_page' => $perPage,
             'page' => max(1, (int) ($filters['page'] ?? 1)),
@@ -2850,7 +2945,21 @@ class ReportService
                 ['id' => 'credit', 'name' => 'Credit'],
                 ['id' => 'on_loan', 'name' => 'On Loan'],
             ],
-
+            'expense_categories' => DB::table('expense_categories')
+                ->whereNull('deleted_at')
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
+                ->all(),
+            'expense_accounts' => DB::table('accounts as a')
+                ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
+                ->where('a.branch_id', $branchId)
+                ->where('at.slug', 'expense')
+                ->whereNull('a.deleted_at')
+                ->orderBy('a.name')
+                ->get(['a.id', 'a.name'])
+                ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
+                ->all(),
         ];
     }
 
