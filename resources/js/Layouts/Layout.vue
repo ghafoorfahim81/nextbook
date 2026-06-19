@@ -1167,7 +1167,7 @@ function logout() {
                 </div>
 <!--                </div>-->
             </header>
-            <div class="flex flex-1 min-h-0 flex-col gap-4 overflow-y-auto p-4 pt-4 min-w-0">
+            <div data-scroll-region class="flex flex-1 min-h-0 flex-col gap-4 overflow-y-auto p-4 pt-4 min-w-0">
                 <slot/>
             </div>
             <footer class="border-t border-border/60 bg-[hsl(var(--app-chrome-background))] px-4 py-2 text-center text-[11px] text-[hsl(var(--app-chrome-foreground))]">

@@ -75,7 +75,7 @@ function normalizeFilters(filters) {
     type: filters.type || '',
     category_id: filters.category_id || '',
     expense_account_id: filters.expense_account_id || '',
-    view_type: filters.view_type || 'itemwise',
+    view_type: filters.view_type || 'general',
     per_page: Number(filters.per_page || 25),
     page: Number(filters.page || 1),
   }
@@ -700,12 +700,12 @@ function compactFilters(filters) {
   )
 }
 
-function visitReports(filters) {
+function visitReports(filters, { preserveScroll = true } = {}) {
   isLoadingReport.value = true
 
   router.get('/reports', compactFilters(filters), {
     preserveState: true,
-    preserveScroll: true,
+    preserveScroll,
     replace: true,
     onFinish: () => {
       isLoadingReport.value = false
@@ -767,11 +767,11 @@ function selectReport(reportKey) {
     type: '',
     category_id: '',
     expense_account_id: '',
-    view_type: 'itemwise',
+    view_type: 'general',
     page: 1,
   }
 
-  visitReports({ ...localFilters.value, report: reportKey, page: 1 })
+  visitReports({ ...localFilters.value, report: reportKey, page: 1 }, { preserveScroll: false })
 }
 
 function switchViewType(viewType) {
@@ -894,14 +894,14 @@ function exportReport() {
         <template v-else>
           <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:grid-rows-[auto_auto] lg:items-start">
             <p class="text-xs font-semibold uppercase tracking-[0.28em] text-primary lg:self-center">{{ t('report.active_report') }}</p>
-            <Button variant="outline" class="w-fit shrink-0 lg:justify-self-end" @click="goBackToCatalog">
+            <Button variant="outline" class="h-9 w-fit shrink-0 border-primary text-primary hover:bg-primary hover:text-white lg:justify-self-end" @click="goBackToCatalog">
               {{ t('report.back_to_reports') }}
             </Button>
             <div class="space-y-3">
               <h2 class="text-2xl font-semibold tracking-tight text-foreground">{{ activeDefinition.label }}</h2>
               <p class="max-w-3xl text-sm leading-7 text-muted-foreground">{{ activeDefinition.description }}</p>
             </div>
-            <Button class="gap-2 lg:self-end lg:justify-self-end" @click="exportReport">
+            <Button variant="outline" class="h-9 gap-2 border-primary text-primary hover:bg-primary hover:text-white lg:self-end lg:justify-self-end" @click="exportReport">
               <Download class="h-4 w-4" />
               {{ t('report.export_excel') }}
             </Button>
