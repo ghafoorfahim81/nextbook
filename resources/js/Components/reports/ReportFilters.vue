@@ -237,8 +237,8 @@ function setReport(report) {
       </div>
 
       <div class="flex flex-wrap items-center gap-3">
-        <Button @click="$emit('submit')">{{ t('report.filters.apply') }}</Button>
-        <Button variant="outline" @click="$emit('reset')">{{ t('report.filters.reset') }}</Button>
+        <Button variant="outline" class="h-9 border-primary text-primary hover:bg-primary hover:text-white" @click="$emit('submit')">{{ t('report.filters.apply') }}</Button>
+        <Button variant="outline" class="h-9 border-primary text-primary hover:bg-primary hover:text-white" @click="$emit('reset')">{{ t('report.filters.reset') }}</Button>
       </div>
     </div>
   </div>
