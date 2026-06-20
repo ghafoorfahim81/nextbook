@@ -528,7 +528,7 @@ class SaleController extends Controller
             // Build cost lookup after rebuild so avg_cost reflects post-rebuild state.
             [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
 
-            $validated['item_list'] = array_map(function ($item) use ($itemModelsById, $averageCostsByItemId, $unitValuesById, $originalNetUnitCosts, $originalMovementCosts) {
+            $validated['item_list'] = array_map(function ($item) use ($itemModelsById, $averageCostsByItemId, $unitValuesById, $originalNetUnitCosts, $originalMovementCosts, $sale) {
                 $itemModel = $itemModelsById[$item['item_id']] ?? null;
                 $key = $item['item_id'] . '_' . $item['unit_measure_id'];
                 // 1. net_unit_cost on the sale item — most authoritative (set at sale creation).
@@ -542,7 +542,7 @@ class SaleController extends Controller
                         itemUnitMeasureId: $itemModel->unit_measure_id,
                         unitValuesById: $unitValuesById,
                         itemId: $item['item_id'],
-                        warehouseId: $validated['warehouse_id'],
+                        warehouseId: $item['warehouse_id'],
                         branchId: $sale->branch_id,
                         quantity: (float) $item['quantity'],
                     ) : 0.0);
