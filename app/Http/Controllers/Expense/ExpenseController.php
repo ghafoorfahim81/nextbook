@@ -47,13 +47,13 @@ class ExpenseController extends Controller
         return inertia('Expenses/Expenses/Index', [
             'expenses' => ExpenseResource::collection($expenses),
             'filterOptions' => [
-                'categories' => ExpenseCategory::orderBy('name')->get(['id', 'name']),
-                'expenseAccounts' => Account::whereHas('accountType', fn ($q) => $q->where('slug', 'expense'))
+                'categories' => ExpenseCategoryResource::collection(ExpenseCategory::orderBy('name')->get(['id', 'name'])),
+                'expenseAccounts' => AccountResource::collection(Account::whereHas('accountType', fn ($q) => $q->where('slug', 'expense'))
                     ->orderBy('name')
-                    ->get(['id', 'name']),
-                'bankAccounts' => Account::whereHas('accountType', fn ($q) => $q->whereIn('slug', ['cash-or-bank']))
-                    ->orderBy('name')
-                    ->get(['id', 'name']),
+                    ->get()),
+                'bankAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
+                    $q->whereIn('slug', ['cash-or-bank'])
+                )->get()),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
             ],
             'filters' => [

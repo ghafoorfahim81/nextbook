@@ -79,19 +79,19 @@ const filterFields = computed(() => ([
         key: 'category_id',
         label: t('expense.category'),
         type: 'select',
-        options: (props.filterOptions?.categories || []).map((c) => ({ id: c.id, name: c.name })),
+        options: (props.filterOptions?.categories?.data || []).map((c) => ({ id: c.id, name: c.name })),
     },
     {
         key: 'bankTransaction.lines.account_id',
         label: t('expense.bank_account'),
         type: 'select',
-        options: (props.filterOptions?.bankAccounts || []).map((a) => ({ id: a.id, name: a.name })),
+        options: (props.filterOptions?.bankAccounts?.data || []).map((a) => ({ id: a.id, name: a.name })),
     },
     {
         key: 'expenseTransaction.lines.account_id',
         label: t('expense.expense_account'),
         type: 'select',
-        options: (props.filterOptions?.expenseAccounts || []).map((a) => ({ id: a.id, name: a.name })),
+        options: (props.filterOptions?.expenseAccounts?.data || []).map((a) => ({ id: a.id, name: a.name })),
     },
     { key: 'date', label: t('general.date'), type: 'daterange' },
     {

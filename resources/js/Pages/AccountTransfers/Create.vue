@@ -17,10 +17,8 @@ const { t } = useI18n()
 const page = usePage()
 const accounts = computed(() => page.props.accounts?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
-const bankAccounts = computed(() => page.props.bankAccounts || [])
-console.log('Bank Accounts:', bankAccounts.value)
-// useLazyProps(page.props, ['accounts'])
-
+const bankAccounts = computed(() => page.props.bankAccounts?.data || [])
+ 
 const form = useForm({
   number: page.props.latestNumber ?? '',
   date: '',
