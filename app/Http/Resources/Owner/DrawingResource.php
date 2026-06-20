@@ -22,6 +22,7 @@ class DrawingResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'number' => $this->number,
             'owner_id' => $this->owner_id,
             'owner' => OwnerResource::make($this->whenLoaded('owner')), 
             'date' => $this->date ? $dateConversionService->toDisplay($this->date) : null,
@@ -42,6 +43,7 @@ class DrawingResource extends JsonResource
                 : null,
             'transaction_id' => $transaction?->id,
             'transaction' => $transaction ? new TransactionResource($transaction) : null,
+            'status' => $transaction?->status,
             'branch_id' => $this->branch_id,
             'created_by' => $this->createdBy,
             'updated_by' => $this->updatedBy,

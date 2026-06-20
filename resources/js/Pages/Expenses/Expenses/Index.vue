@@ -18,6 +18,7 @@ const showDialogOpen = ref(false);
 const selectedExpense = ref(null);
 
 const columns = computed(() => [
+    { key: 'number', label: t('general.number'), sortable: true },
     { key: 'date', label: t('general.date'), sortable: true },
     {
         key: 'category.name',

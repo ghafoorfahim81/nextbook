@@ -24,6 +24,7 @@ class Drawing extends Model
     public $incrementing = false;
 
     protected $fillable = [
+        'number',
         'owner_id',
         'date',
         'narration',
@@ -34,6 +35,7 @@ class Drawing extends Model
 
     protected $casts = [
         'id' => 'string',
+        'number' => 'string',
         'owner_id' => 'string',
         'date' => 'date',
         'created_by' => 'string',

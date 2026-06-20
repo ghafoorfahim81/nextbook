@@ -31,6 +31,7 @@ const currencies = computed(() => props.currencies.data || props.currencies);
 
 const expense = props.expense.data;
 const form = useForm({
+    number: expense.number || '',
     date: expense.date || '',
     category_id: expense.category_id || '',
     expense_account_id: expense.expense_account_id || '',
@@ -132,6 +133,7 @@ const handleSubmit = () => {
     const formData = new FormData();
 
     // Add all required fields
+    if (form.number) formData.append('number', form.number);
     formData.append('date', form.date);
     formData.append('category_id', form.category_id);
     formData.append('expense_account_id', form.expense_account_id);
@@ -211,6 +213,11 @@ onUnmounted(() => {
                     {{ t('general.general_info') }}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                    <NextInput
+                        v-model="form.number"
+                        :label="t('general.number')"
+                        :error="form.errors?.number"
+                    />
                     <NextDate
                         v-model="form.date"
                         :error="form.errors?.date"

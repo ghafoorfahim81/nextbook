@@ -19,6 +19,7 @@ const showDialogOpen = ref(false)
 const selectedDrawing = ref(null)
 
 const columns = computed(() => [
+  { key: 'number', label: t('general.number'), sortable: true },
   { key: 'date', label: t('general.date'), sortable: true },
   {
     key: 'owner.name',
@@ -41,6 +42,7 @@ const columns = computed(() => [
     render: (row) => `${row.currency?.symbol || ''} ${Number(row.amount || 0).toLocaleString()}`,
   },
   { key: 'narration', label: t('general.remarks') },
+  { key: 'status', label: t('general.status') },
   { key: 'actions', label: t('general.action') },
 ])
 

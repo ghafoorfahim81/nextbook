@@ -25,6 +25,7 @@ class Expense extends Model
     public $incrementing = false;
 
     protected $fillable = [
+        'number',
         'date',
         'remarks',
         'category_id',

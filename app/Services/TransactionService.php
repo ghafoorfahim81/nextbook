@@ -296,7 +296,7 @@ class TransactionService
                 $remark_fa = "برگشتی فروش #" . $number;
                 $remark_ps = "د خرڅلاو بیرته راګرځول #" . $number;
                 break;
-            
+
             case \App\Models\Payment\Payment::class:
                 $remark = "Reversal of payment #" . $number;
                 $remark_fa = "برگشتی پرداخت #" . $number;
@@ -317,6 +317,17 @@ class TransactionService
 
             case \App\Models\Receipt\Receipt::class:
                 $remark = "Reversal of customer receipt #" . $number;
+                $remark_fa = "برگشتی رسید مشتری #" . $number;
+                $remark_ps = "د پیرودونکي رسید بیرته راګرځول #" . $number;
+                break;
+
+            case \App\Models\Expense\Expense::class:
+                $remark = "Reversal of expense #" . $number;
+                $remark_fa = "برگشتی هزینه #" . $number;
+                $remark_ps = "د هزینه بیرته راګرځول #" . $number;
+                break;
+            case \App\Models\Owner\Drawing::class:
+                $remark = "Reversal of drawing #" . $number;
                 $remark_fa = "برگشتی رسید مشتری #" . $number;
                 $remark_ps = "د پیرودونکي رسید بیرته راګرځول #" . $number;
                 break;
