@@ -516,7 +516,7 @@ class ReportService
                 'number'         => $row->number,
                 'customer'       => $row->customer,
                 'type'           => \App\Enums\SalePurchaseType::tryFrom((string) $row->type)?->getLabel() ?? (string) $row->type,
-                'status'         => $row->status instanceof \BackedEnum ? $row->status->value : (string) $row->status,
+                'status'         => \App\Enums\TransactionStatus::tryFrom((string) $row->status)?->getLabel() ?? (string) $row->status,
                 'payment_status' => \App\Enums\PaymentStatus::tryFrom((string) $row->payment_status)?->getLabel() ?? (string) $row->payment_status,
                 'amount'         => $this->moneyValue($row->amount),
             ],
@@ -676,7 +676,7 @@ class ReportService
                 'number'   => $row->number,
                 'supplier' => $row->supplier,
                 'type'     => \App\Enums\SalePurchaseType::tryFrom((string) $row->type)?->getLabel() ?? (string) $row->type,
-                'status'   => $row->status instanceof \BackedEnum ? $row->status->value : (string) $row->status,
+                'status'   => \App\Enums\TransactionStatus::tryFrom((string) $row->status)?->getLabel() ?? (string) $row->status,
                 'amount'   => $this->moneyValue($row->amount),
             ],
             [
@@ -2940,11 +2940,9 @@ class ReportService
                 ->get(['id', 'name'])
                 ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
                 ->all(),
-            'sale_types' => [
-                ['id' => 'cash', 'name' => 'Cash'],
-                ['id' => 'credit', 'name' => 'Credit'],
-                ['id' => 'on_loan', 'name' => 'On Loan'],
-            ],
+            'sale_types' => collect(\App\Enums\SalePurchaseType::cases())
+                ->map(fn ($case) => ['id' => $case->value, 'name' => $case->getLabel()])
+                ->all(),
             'expense_categories' => DB::table('expense_categories')
                 ->whereNull('deleted_at')
                 ->orderBy('name')
