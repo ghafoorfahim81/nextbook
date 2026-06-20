@@ -14,6 +14,7 @@ class ExpenseStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'number' => ['nullable', 'string', 'max:50'],
             'date' => ['required', 'date'],
             'remarks' => ['nullable', 'string'],
             'category_id' => ['required', 'string', 'exists:expense_categories,id'],

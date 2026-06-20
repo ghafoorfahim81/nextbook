@@ -68,7 +68,9 @@ class ExpenseController extends Controller
 
     public function create(Request $request)
     {
+        $latestNumber = (string) ((int) Expense::max('number') + 1);
         return inertia('Expenses/Expenses/Create', [
+            'latestNumber' => $latestNumber,
             'categories' => ExpenseCategoryResource::collection(
                 ExpenseCategory::where('is_active', true)->get()
             ),
@@ -101,6 +103,7 @@ class ExpenseController extends Controller
 
             // Create expense record
             $expense = Expense::create([
+                'number' => $validated['number'] ?? (string) ((int) Expense::max('number') + 1),
                 'date' => $date,
                 'remarks' => $validated['remarks'] ?? null,
                 'category_id' => $validated['category_id'],
@@ -218,7 +221,7 @@ class ExpenseController extends Controller
         }
 
         DB::transaction(function () use ($expense, $transactionService, $validated) {
-            $transactionService->reverse($expense->transaction()->firstOrFail(), $validated['reason']);
+            $transactionService->reverse($expense->transaction()->firstOrFail(), $validated['reason'], $expense?->number, Expense::class);
             $expense->update(['status' => TransactionStatus::REVERSED->value]);
         });
 
@@ -280,6 +283,7 @@ class ExpenseController extends Controller
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $expense->date;
             // Update expense record
             $expense->update([
+                'number' => $validated['number'] ?? $expense->number,
                 'date' => $date,
                 'remarks' => $validated['remarks'] ?? null,
                 'category_id' => $validated['category_id'],

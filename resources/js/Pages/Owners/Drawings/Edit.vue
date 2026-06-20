@@ -35,6 +35,7 @@ const initialBankAccount = computed(() => {
 const todayValue = () => new Date().toLocaleDateString('en-CA')
 
 const form = useForm({
+  number: currentDrawing.value?.number || '',
   owner_id: currentDrawing.value?.owner_id || '',
   bank_account_id: currentDrawing.value?.bank_account_id || '',
   currency_id: currentDrawing.value?.currency_id || '',
@@ -109,6 +110,7 @@ const handleSubmit = () => {
 
   form
     .transform((data) => ({
+      number: data.number || null,
       owner_id: data.owner_id,
       bank_account_id: data.bank_account_id,
       currency_id: data.currency_id,
@@ -153,6 +155,12 @@ function handleSelectChange(field, value) {
         </div>
 
         <div class="grid grid-cols-1 gap-4 pt-3 md:grid-cols-2 xl:grid-cols-3">
+          <NextInput
+            v-model="form.number"
+            :label="t('general.number')"
+            :error="form.errors?.number"
+          />
+
           <NextSelect
             :options="owners"
             v-model="form.selectedOwner"

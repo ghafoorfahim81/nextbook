@@ -78,7 +78,7 @@ const reverseExpense = (reason) => {
             <DialogHeader>
                 <div class="flex items-center justify-between gap-3">
                     <DialogTitle class="text-xl font-semibold text-violet-600">
-                        {{ t('expense.expense_details') }}
+                        {{ t('expense.expense_details') }}<span v-if="expense?.number"> #{{ expense.number }}</span>
                     </DialogTitle>
                     <span v-if="expense" :class="['rounded-full px-2.5 py-0.5 text-xs font-medium', statusClass]">
                         {{ statusLabel }}
@@ -111,6 +111,10 @@ const reverseExpense = (reason) => {
                 />
                 <!-- General Info -->
                 <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div v-if="expense.number">
+                        <span class="text-muted-foreground">{{ t('general.number') }}:</span>
+                        <span class="ml-2 font-medium">{{ expense.number }}</span>
+                    </div>
                     <div>
                         <span class="text-muted-foreground">{{ t('general.date') }}:</span>
                         <span class="ml-2 font-medium">{{ expense.date }}</span>

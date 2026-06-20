@@ -14,6 +14,7 @@ class DrawingUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'number' => ['nullable', 'string', 'max:50'],
             'owner_id' => ['required', 'string', 'exists:owners,id'],
             'bank_account_id' => ['required', 'string', 'exists:accounts,id'],
             'amount' => ['required', 'numeric', 'min:0.01'],

@@ -71,7 +71,9 @@ class DrawingController extends Controller
     public function create(Request $request): Response
     {
         $accountModel = new Account();
+        $latestNumber = (string) ((int) Drawing::max('number') + 1);
         return inertia('Owners/Drawings/Create', [
+            'latestNumber' => $latestNumber,
             'owners' => OwnerResource::collection(
                 Owner::query()
                     ->with('drawingAccount')
@@ -96,6 +98,7 @@ class DrawingController extends Controller
             $dateConversionService = app(DateConversionService::class);
             $date = $validated['date'] ? $dateConversionService->toGregorian($validated['date']) : null;
             $drawing = Drawing::create([
+                'number' => $validated['number'] ?? (string) ((int) Drawing::max('number') + 1),
                 'owner_id' => $owner->id,
                 'date' => $date,
                 'narration' => $validated['narration'] ?? null,
@@ -196,6 +199,7 @@ class DrawingController extends Controller
             $dateConversionService = app(DateConversionService::class);
             $date = $validated['date'] ? $dateConversionService->toGregorian($validated['date']) : null;
             $drawing->update([
+                'number' => $validated['number'] ?? $drawing->number,
                 'owner_id' => $owner->id,
                 'date' => $date,
                 'narration' => $validated['narration'] ?? null,
@@ -267,6 +271,25 @@ class DrawingController extends Controller
         });
 
         return redirect()->route('drawings.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.drawing')]));
+    }
+
+    public function reverse(Request $request, Drawing $drawing, TransactionService $transactionService)
+    {
+        $this->authorize('update', $drawing);
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:255'],
+        ]);
+
+        $transaction = $drawing->transaction()->firstOrFail();
+
+        if ($transaction->status !== 'posted') {
+            abort(422, __('general.only_posted_can_be_reversed'));
+        }
+
+        $transactionService->reverse($transaction, $validated['reason'], $drawing->number, Drawing::class);
+
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.drawing')]));
     }
 
     public function forceDelete(Request $request, Drawing $drawing)

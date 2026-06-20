@@ -19,6 +19,7 @@ const props = defineProps({
   bankAccounts: Object,
   currencies: Object,
   homeCurrency: Object,
+  latestNumber: Number,
 })
 
 const owners = computed(() => props.owners?.data ?? props.owners ?? [])
@@ -31,6 +32,7 @@ const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gre
 const todayValue = () => todayValueForCalendar(calendarType.value)
 
 const form = useForm({
+  number: props.latestNumber ?? '',
   owner_id: '',
   bank_account_id: '',
   currency_id: '',
@@ -99,6 +101,7 @@ const handleSubmit = (createAndNew = false) => {
 
   form
     .transform((data) => ({
+      number: data.number || null,
       owner_id: data.owner_id,
       bank_account_id: data.bank_account_id,
       currency_id: data.currency_id,
@@ -154,6 +157,12 @@ function handleSelectChange(field, value) {
         </div>
 
         <div class="grid grid-cols-1 gap-4 pt-3 md:grid-cols-2 xl:grid-cols-3">
+          <NextInput
+            v-model="form.number"
+            :label="t('general.number')"
+            :error="form.errors?.number"
+          />
+
           <NextSelect
             autofocus
             :options="owners"

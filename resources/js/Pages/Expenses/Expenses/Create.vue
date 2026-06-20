@@ -18,6 +18,7 @@ const page = usePage()
 const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
 
 const props = defineProps({
+    latestNumber: String,
     categories: { type: Object, required: true },
     expenseAccounts: { type: Object, required: true },
     bankAccounts: { type: Object, required: true },
@@ -31,6 +32,7 @@ const currencies = computed(() => props.currencies.data || props.currencies);
 const homeCurrency = computed(() => props.homeCurrency || {});
 
 const form = useForm({
+    number: props.latestNumber ?? '',
     date: '',
     category_id: '',
     expense_account_id: '',
@@ -152,6 +154,7 @@ const handleSubmit = (createAndNew = false) => {
     }
 
     const formData = new FormData();
+    if (form.number) formData.append('number', form.number);
     formData.append('date', form.date);
     formData.append('category_id', form.category_id);
     formData.append('expense_account_id', form.expense_account_id);
@@ -232,6 +235,11 @@ onUnmounted(() => {
                     {{ t('general.general_info') }}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                    <NextInput
+                        v-model="form.number"
+                        :label="t('general.number')"
+                        :error="form.errors?.number"
+                    />
                     <NextDate
                         v-model="form.date"
                         :current-date="true"
