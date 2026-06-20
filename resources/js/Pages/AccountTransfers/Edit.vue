@@ -16,14 +16,9 @@ const { t } = useI18n()
 const page = usePage()
 const accounts = computed(() => page.props.accounts?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
+const bankAccounts = computed(() => page.props.bankAccounts?.data || [])
 
-useLazyProps(page.props, ['accounts'])
-
-const props = defineProps({
-  data: Object,
-})
-
-const initial = props.data.data || {}
+const initial = page.props.data?.data || {}
 const form = useForm({
   number: initial.number ?? '',
   date: initial.date ?? '',
@@ -38,7 +33,7 @@ const form = useForm({
   remark: initial.remark || '',
 })
 
-watch(() => props.data, (val) => {
+watch(() => page.props.data, (val) => {
   if (!val) return
   form.number = val.number || ''
   form.date = val.date || ''
@@ -106,7 +101,7 @@ const handleSubmit = () => {
           <NextInput placeholder="Rate" :error="form.errors?.rate" :disabled="form.selected_currency.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
 
           <NextSelect
-            :options="accounts"
+            :options="bankAccounts"
             v-model="form.selected_from_account"
             @update:modelValue="(v) => handleSelectChange('from_account_id', v.id)"
             label-key="name"
@@ -119,7 +114,7 @@ const handleSubmit = () => {
             :search-fields="['name', 'number', 'slug']"
           />
           <NextSelect
-            :options="accounts"
+            :options="bankAccounts"
             v-model="form.selected_to_account"
             @update:modelValue="(v) => handleSelectChange('to_account_id', v.id)"
             label-key="name"

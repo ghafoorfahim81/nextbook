@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AccountTransfer\AccountTransferStoreRequest;
 use App\Http\Requests\AccountTransfer\AccountTransferUpdateRequest;
 use App\Http\Resources\AccountTransfer\AccountTransferResource;
+use App\Http\Resources\Account\AccountResource;
+use App\Http\Resources\Administration\CurrencyResource;
 use App\Models\Account\Account;
 use App\Models\AccountTransfer\AccountTransfer;
 use App\Models\Administration\Currency;
@@ -50,8 +52,10 @@ class AccountTransferController extends Controller
         return inertia('AccountTransfers/Index', [
             'transfers' => AccountTransferResource::collection($transfers),
             'filterOptions' => [
-                'accounts' => Account::orderBy('name')->get(['id', 'name']),
-                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'accounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
+                $q->whereIn('slug', ['cash-or-bank'])
+            )->get()),
+                'currencies' => CurrencyResource::collection(Currency::orderBy('code')->get(['id', 'code', 'name'])),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
             ],
             'filters' => [
@@ -65,12 +69,12 @@ class AccountTransferController extends Controller
     }
 
     public function create(Request $request)
-    {
-        $bankAccounts = Account::whereHas('accountType', function ($query) {
-            $query->where('slug', 'cash-or-bank');
-        })->orderBy('created_at', 'desc')->get(['id', 'name', 'local_name']);
+    { 
+
         return inertia('AccountTransfers/Create', [
-            'bankAccounts' => $bankAccounts,
+            'bankAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
+                $q->whereIn('slug', ['cash-or-bank'])
+            )->get()),
         ]);
     }
 
@@ -224,6 +228,9 @@ class AccountTransferController extends Controller
         $accountTransfer->load(['transaction.lines.account.accountType', 'transaction.currency', 'fromAccount', 'toAccount', 'createdBy', 'updatedBy']);
         return inertia('AccountTransfers/Edit', [
             'data' => new AccountTransferResource($accountTransfer),
+            'bankAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
+                $q->whereIn('slug', ['cash-or-bank'])
+            )->get()),
         ]);
     }
 
