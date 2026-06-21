@@ -187,8 +187,13 @@ class ExpenseController extends Controller
             'transaction.reversalTransaction',
         ]);
 
-        return response()->json([
-            'data' => new ExpenseResource($expense),
+        if ($request->wantsJson()) {
+            return response()->json([
+                'data' => new ExpenseResource($expense),
+            ]);
+        }
+        return inertia('Expenses/Expenses/Show', [
+            'expense' => new ExpenseResource($expense),
         ]);
     }
 

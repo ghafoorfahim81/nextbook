@@ -71,10 +71,12 @@ class JournalEntryController extends Controller
      */
     public function create()
     {
+        $latestNumber = (string) ((int) JournalEntry::max('number') + 1);
         return inertia('JournalEntry/JournalEntries/Create', [
             'accounts' => AccountResource::collection(Account::query()->orderBy('created_at', 'desc')->get()),
             'ledgers' => LedgerResource::collection(Ledger::query()->orderBy('created_at', 'desc')->get()),
             'journalClasses' => JournalClass::all(),
+            'latestNumber' => $latestNumber,
         ]);
     }
 
@@ -162,8 +164,13 @@ class JournalEntryController extends Controller
             'transaction.lines.journalClass',
             'transaction.lines.ledger',
         ]);
-        return response()->json([
-            'data' => new JournalEntryResource($journalEntry),
+        if ($request->wantsJson()) {
+            return response()->json([
+                'data' => new JournalEntryResource($journalEntry),
+            ]);
+        }
+        return inertia('JournalEntry/JournalEntries/Show', [
+            'journalEntry' => new JournalEntryResource($journalEntry),
         ]);
     }
 

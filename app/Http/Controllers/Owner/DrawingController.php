@@ -150,8 +150,13 @@ class DrawingController extends Controller
             'transaction.lines.account',
         ]);
 
-        return response()->json([
-            'data' => new DrawingResource($drawing),
+        if ($request->wantsJson()) {
+            return response()->json([
+                'data' => new DrawingResource($drawing),
+            ]);
+        }
+        return inertia('Owners/Drawings/Show', [
+            'drawing' => new DrawingResource($drawing),
         ]);
     }
 

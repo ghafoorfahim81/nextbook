@@ -50,7 +50,7 @@ const saveAndPrintText = computed(() => (props.saveAndPrintLoading ? props.creat
             {{ createAndNewText }}
             <Spinner v-if="createAndNewLoading" class="ml-2 h-4 w-4" />
         </Button>
-        <button
+        <Button
             v-if="showSaveAndPrint"
             type="button"
             variant="outline"

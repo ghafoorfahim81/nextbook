@@ -194,8 +194,13 @@ class ReceiptController extends Controller
     public function show(Request $request, Receipt $receipt)
     {
         $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'saleReceives.sale', 'createdBy', 'updatedBy']);
-        return response()->json([
-            'data' => new ReceiptResource($receipt),
+        if ($request->wantsJson()) {
+            return response()->json([
+                'data' => new ReceiptResource($receipt),
+            ]);
+        }
+        return inertia('Receipts/Show', [
+            'receipt' => new ReceiptResource($receipt),
         ]);
     }
 

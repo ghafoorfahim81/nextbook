@@ -1,9 +1,8 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
-import ShowDialog from './ShowDialog.vue';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3';
 
@@ -14,8 +13,6 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const showDialogOpen = ref(false);
-const selectedExpense = ref(null);
 
 const columns = computed(() => [
     { key: 'number', label: t('general.number'), sortable: true },
@@ -45,16 +42,8 @@ const columns = computed(() => [
     { key: 'actions', label: t('general.action') },
 ]);
 
-const viewItem = async (item) => {
-    console.log('item', item);
-    try {
-        const response = await fetch(route('expenses.show', item));
-        const data = await response.json();
-        selectedExpense.value = data.data;
-        showDialogOpen.value = true;
-    } catch (error) {
-        console.error('Error fetching expense:', error);
-    }
+const viewItem = (item) => {
+    router.visit(route('expenses.show', typeof item === 'object' ? item.id : item));
 };
 
 const editItem = (item) => {
@@ -106,11 +95,6 @@ const filterFields = computed(() => ([
 
 <template>
     <AppLayout :title="t('expense.expenses')">
-        <ShowDialog
-            :open="showDialogOpen"
-            :expense="selectedExpense"
-            @update:open="showDialogOpen = $event"
-        />
         <DataTable
             can="expenses"
             :items="expenses"
