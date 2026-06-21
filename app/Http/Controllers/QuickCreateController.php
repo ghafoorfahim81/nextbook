@@ -184,10 +184,10 @@ class QuickCreateController extends Controller
         Gate::authorize('create', Warehouse::class);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'unique:warehouses,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'name' => ['required', 'string', 'max:255'],
             'address' => ['nullable', 'string'],
             'is_main' => ['nullable', 'boolean'],
-            'is_active' => true,
+            'is_active' => ['nullable', 'boolean'],
         ]);
 
         $warehouse = Warehouse::create($validated);

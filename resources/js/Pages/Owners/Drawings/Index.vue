@@ -1,10 +1,9 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import DataTable from '@/Components/DataTable.vue'
-import ShowDialog from './ShowDialog.vue'
 import { useDeleteResource } from '@/composables/useDeleteResource'
 import { router } from '@inertiajs/vue3'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
@@ -14,9 +13,6 @@ const props = defineProps({
 })
 
 const { t } = useI18n()
-
-const showDialogOpen = ref(false)
-const selectedDrawing = ref(null)
 
 const columns = computed(() => [
   { key: 'number', label: t('general.number'), sortable: true },
@@ -60,15 +56,8 @@ const editItem = (item) => {
   router.visit(route('drawings.edit', item.id))
 }
 
-const viewItem = async (id) => {
-  try {
-    const response = await fetch(route('drawings.show', id))
-    const data = await response.json()
-    selectedDrawing.value = data?.data || null
-    showDialogOpen.value = true
-  } catch (error) {
-    console.error('Error fetching drawing:', error)
-  }
+const viewItem = (id) => {
+  router.visit(route('drawings.show', id))
 }
 
 const filterFields = computed(() => ([
@@ -96,12 +85,6 @@ const filterFields = computed(() => ([
 
 <template>
   <AppLayout :title="t('resources.drawings')">
-    <ShowDialog
-      :open="showDialogOpen"
-      :drawing="selectedDrawing"
-      @update:open="showDialogOpen = $event"
-    />
-
     <DataTable
       can="drawings"
       :items="drawings"

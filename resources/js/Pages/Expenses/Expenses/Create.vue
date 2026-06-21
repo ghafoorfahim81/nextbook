@@ -226,7 +226,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <AppLayout :title="t('general.create', { name: t('expense.expense') })" :sidebar-collapsed="true">
+    <AppLayout :title="t('general.create', { name: t('expense.expense') })" >
         <FormPageToolbar back-route="expenses.index" module="expense" />
         <form @submit.prevent="handleSubmitAction(false)">
             <!-- General Section -->

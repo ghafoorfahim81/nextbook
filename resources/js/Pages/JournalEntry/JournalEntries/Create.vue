@@ -23,11 +23,12 @@ const props = defineProps({
     currencies: { type: Array, required: true },
     homeCurrency: { type: Object, required: true },
     journalClasses: { type: Array, required: true },
+    latestNumber: { type: String, default: '' },
 });
 
 const form = useForm({
     date: '',
-    number: '',
+    number: props.latestNumber ?? '',
     currency_id: '',
     rate: 1,
     remarks: '',

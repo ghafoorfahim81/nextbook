@@ -69,12 +69,13 @@ class AccountTransferController extends Controller
     }
 
     public function create(Request $request)
-    { 
-
+    {
+        $latestNumber = (string) ((int) AccountTransfer::max('number') + 1);
         return inertia('AccountTransfers/Create', [
             'bankAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
                 $q->whereIn('slug', ['cash-or-bank'])
             )->get()),
+            'latestNumber' => $latestNumber,
         ]);
     }
 
@@ -184,8 +185,13 @@ class AccountTransferController extends Controller
     public function show(Request $request, AccountTransfer $accountTransfer)
     {
         $accountTransfer->load(['transaction.lines.account.accountType', 'transaction.currency', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'fromAccount', 'toAccount', 'createdBy', 'updatedBy']);
-        return response()->json([
-            'data' => new AccountTransferResource($accountTransfer),
+        if ($request->wantsJson()) {
+            return response()->json([
+                'data' => new AccountTransferResource($accountTransfer),
+            ]);
+        }
+        return inertia('AccountTransfers/Show', [
+            'transfer' => new AccountTransferResource($accountTransfer),
         ]);
     }
 

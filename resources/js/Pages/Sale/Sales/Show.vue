@@ -5,9 +5,10 @@ import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp, ArrowLeft, Printer, SquarePen, Download } from 'lucide-vue-next';
+import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
+import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
 
 const { t } = useI18n();
 const { can } = useAuth();
@@ -97,66 +98,29 @@ const reverseSale = (reason) => {
     <AppLayout :title="`${t('sale.sale')} #${saleData.number}`">
         <div class="space-y-6">
             <!-- Page header -->
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <Button variant="outline" size="sm" @click="router.visit(route('sales.index'))">
-                    <ArrowLeft class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                    {{ t('general.back') }}
-                </Button>
-                <div class="flex items-center gap-2">
-                    <Button
-                        v-if="saleData.status === 'draft'"
-                        variant="default"
-                        size="sm"
-                        class="bg-green-600 text-white hover:bg-green-700"
-                        @click="postDialogOpen = true"
-                    >
-                        Post
-                    </Button>
-                    <Button
-                        v-if="saleData.status === 'posted'"
-                        variant="destructive"
-                        size="sm"
-                        @click="reverseDialogOpen = true"
-                    >
-                        Reverse
-                    </Button>
-                    <a :href="route('sales.export', saleData.id)" target="_blank" rel="noopener noreferrer">
-                        <Button variant="outline" size="sm">
-                            <Download class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                            {{ t('report.export_excel') }}
-                        </Button>
-                    </a>
-                    <a :href="route('sales.print', saleData.id)" target="_blank" rel="noopener noreferrer">
-                        <Button variant="outline" size="sm">
-                            <Printer class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                            {{ t('general.print') }}
-                        </Button>
-                    </a>
-                    <Button
-                        v-if="can('sales.update') && saleData.id && saleData.status === 'draft'"
-                        variant="default"
-                        size="sm"
-                        class="gap-1.5 bg-primary text-primary-foreground"
-                        @click="router.visit(route('sales.edit', saleData.id))"
-                    >
-                        <SquarePen class="h-4 w-4" />
-                        {{ t('datatable.edit') }}
-                    </Button>
-                </div>
-            </div>
+            <ShowPageToolbar
+                back-route="sales.index"
+                :status="saleData.status"
+                :edit-route="saleData.id ? route('sales.edit', saleData.id) : null"
+                edit-permission="sales.update"
+                :export-url="route('sales.export', saleData.id)"
+                :print-url="route('sales.print', saleData.id)"
+                @post="postDialogOpen = true"
+                @reverse="reverseDialogOpen = true"
+            />
 
             <TransactionActionDialog
                 v-model:open="postDialogOpen"
                 type="post"
-                title="Post sale"
-                description="This will write the accounting and stock entries. Posted documents cannot be edited or deleted."
+                :title="t('sale.post_sale')"
+                :description="t('sale.post_sale_description')"
                 @confirm="postSale"
             />
             <TransactionActionDialog
                 v-model:open="reverseDialogOpen"
                 type="reverse"
-                title="Reverse sale"
-                description="This creates a counter transaction and counter stock movement, then marks the original sale as reversed."
+                :title="t('sale.reverse_sale')"
+                :description="t('sale.reverse_sale_description')"
                 @confirm="reverseSale"
             />
 

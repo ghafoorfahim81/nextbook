@@ -1,10 +1,9 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useDeleteResource } from '@/composables/useDeleteResource';
-import ReceiptShowDialog from '@/Pages/Receipts/ShowDialog.vue'
 import { router } from '@inertiajs/vue3'
 const { t } = useI18n();
 
@@ -15,8 +14,6 @@ const props = defineProps({
 })
 
 const { deleteResource } = useDeleteResource()
-const showDialog = ref(false)
-const selectedReceiptId = ref(null)
 const editItem = (item) => {
     router.visit(route('receipts.edit', item.id));
 }
@@ -27,8 +24,7 @@ const deleteItem = (id) => {
     })
 }
 const showItem = (id) => {
-    selectedReceiptId.value = id
-    showDialog.value = true
+    router.visit(route('receipts.show', id))
 }
 
 const printItem = (id) => {
@@ -108,11 +104,6 @@ const filterFields = computed(() => ([
             :addAction="'redirect'"
             :addRoute="'receipts.create'"
             exportRoute="receipts.export"
-        />
-        <ReceiptShowDialog
-            :open="showDialog"
-            :receipt-id="selectedReceiptId"
-            @update:open="showDialog = $event"
         />
     </AppLayout>
 </template>

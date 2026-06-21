@@ -203,8 +203,13 @@ class PaymentController extends Controller
     public function show(Request $request, Payment $payment)
     {
         $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'purchasePayments.purchase', 'createdBy', 'updatedBy']);
-        return response()->json([
-            'data' => new PaymentResource($payment),
+        if ($request->wantsJson()) {
+            return response()->json([
+                'data' => new PaymentResource($payment),
+            ]);
+        }
+        return inertia('Payments/Show', [
+            'payment' => new PaymentResource($payment),
         ]);
     }
 

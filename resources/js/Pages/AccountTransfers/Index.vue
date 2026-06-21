@@ -1,10 +1,9 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import DataTable from '@/Components/DataTable.vue'
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDeleteResource } from '@/composables/useDeleteResource'
-import ShowDialog from '@/Pages/AccountTransfers/ShowDialog.vue'
 import { router } from '@inertiajs/vue3'
 const { t } = useI18n()
 
@@ -15,8 +14,6 @@ const props = defineProps({
 })
 
 const { deleteResource } = useDeleteResource()
-const showDialog = ref(false)
-const selectedId = ref(null)
 
 const editItem = (item) => {
   router.visit(route('account-transfers.edit', item.id));
@@ -28,8 +25,7 @@ const deleteItem = (id) => {
   })
 }
 const showItem = (id) => {
-  selectedId.value = id
-  showDialog.value = true
+  router.visit(route('account-transfers.show', id))
 }
 
 const columns = computed(() => ([
@@ -102,11 +98,6 @@ const filterFields = computed(() => ([
       :addAction="'redirect'"
       :addRoute="'account-transfers.create'"
       exportRoute="account-transfers.export"
-    />
-    <ShowDialog
-      :open="showDialog"
-      :transfer-id="selectedId"
-      @update:open="showDialog = $event"
     />
   </AppLayout>
 
