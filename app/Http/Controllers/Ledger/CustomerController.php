@@ -197,7 +197,7 @@ class CustomerController extends Controller
             default => $spreadsheetExportService->localeTranslation('sale', 'sales', 'Sales'),
         };
 
-        $entityLabel = $spreadsheetExportService->localeTranslation('ledger', 'customer', 'Customer');
+        $entityLabel = $spreadsheetExportService->localeTranslation('ledger', 'customer.customer', 'Customer');
         $sheetTitle = $entityLabel . ' ' . $moduleLabel;
 
         return $spreadsheetExportService->download([
