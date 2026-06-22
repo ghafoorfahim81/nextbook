@@ -197,7 +197,7 @@ class SupplierController extends Controller
             default => $spreadsheetExportService->localeTranslation('purchase', 'purchases', 'Purchases'),
         };
 
-        $entityLabel = $spreadsheetExportService->localeTranslation('ledger', 'supplier', 'Supplier');
+        $entityLabel = $spreadsheetExportService->localeTranslation('ledger', 'supplier.supplier', 'Supplier');
         $sheetTitle = $entityLabel . ' ' . $moduleLabel;
 
         return $spreadsheetExportService->download([
