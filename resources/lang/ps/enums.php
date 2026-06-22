@@ -49,6 +49,7 @@ return [
         'rejected' => 'Rejected',
         'cancelled' => 'Cancelled',
         'reversed' => 'Reversed',
+        'voided' => 'Voided',
     ],
     'transfer_status' => [
         'pending' => 'Pending',
@@ -74,6 +75,12 @@ return [
         'by_quantity' => 'By Quantity',
         'by_weight' => 'By Weight',
         'by_volume' => 'By Volume',
+    ],
+    'stock_status' => [
+        'posted' => 'Posted',
+        'draft' => 'Draft',
+        'voided' => 'Voided',
+        'cancelled' => 'Cancelled',
     ],
 ];
 

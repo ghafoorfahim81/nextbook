@@ -239,16 +239,27 @@ class TransactionService
                             : StockMovementType::IN->value,
                         'source' => $movement->source,
                         'reference_type' => Transaction::class,
-                        'reference_id' => $reversal->id,
+                        'reference_id' => $movement->reference_id,
                         'quantity' => (float) $movement->quantity,
                         'unit_cost' => $movement->unit_cost,
                         'unit_cost_override' => (float) $movement->unit_cost,
                         'batch' => $movement->batch,
                         'expire_date' => $movement->expire_date,
                         'date' => now()->toDateString(),
-                        'status' => $movement->status,
+                        'status' => \App\Enums\StockStatus::VOIDED->value,
                     ]);
                 });
+
+            $oldMovements = StockMovement::query()
+                ->where('reference_type', $original->reference_type)
+                ->where('reference_id', $original->reference_id)
+                ->get();
+
+            foreach ($oldMovements as $movement) {
+                $movement->update([
+                    'status' => \App\Enums\StockStatus::VOIDED->value,
+                ]);
+            }
 
             $original->update([
                 'status' => TransactionStatus::REVERSED->value,

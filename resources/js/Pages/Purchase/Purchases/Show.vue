@@ -5,14 +5,13 @@ import { useI18n } from 'vue-i18n';
 import { router, useForm } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import { Package2, FileText, User, Calendar, DollarSign, FileCheck, CheckCircle2, XCircle, ArrowLeft, SquarePen, Download } from 'lucide-vue-next';
-import { useAuth } from '@/composables/useAuth';
+import { Package2, FileText, User, Calendar, DollarSign, FileCheck, CheckCircle2, XCircle } from 'lucide-vue-next';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
+import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
 
 const { t } = useI18n();
 const { toast } = useToast();
-const { can } = useAuth();
 
 const props = defineProps({
     purchase: { type: Object, required: true },
@@ -41,11 +40,19 @@ const totalTax = computed(() =>
 );
 
 const grandTotal = computed(() => Number(totalAmount.value - totalDiscount.value + totalTax.value));
+const hasDeferredBalance = computed(() => ['credit', 'on_loan'].includes(String(purchaseData.value.raw_type || '').toLowerCase()));
+const remainingAmount = computed(() => Number(purchaseData.value.remaining_amount ?? purchaseData.value.payable_amount ?? 0));
+const paidAmount = computed(() => Math.max(0, grandTotal.value - remainingAmount.value));
+const documentVoucherNumber = computed(() => purchaseData.value.transaction?.voucher_number || `Purchase #${purchaseData.value.number}`);
+const originalVoucherNumber = computed(() => props.originalDoc?.voucher_number || documentVoucherNumber.value);
+const reversalVoucherNumber = computed(() => props.reversal?.voucher_number || documentVoucherNumber.value);
 
 const formattedTotalAmount = computed(() => totalAmount.value.toFixed(2));
 const formattedTotalDiscount = computed(() => totalDiscount.value.toFixed(2));
 const formattedTotalTax = computed(() => totalTax.value.toFixed(2));
 const formattedGrandTotal = computed(() => grandTotal.value.toFixed(2));
+const formattedPaidAmount = computed(() => paidAmount.value.toFixed(2));
+const formattedRemainingAmount = computed(() => remainingAmount.value.toFixed(2));
 const formatLineValue = (value) => Number(value || 0).toFixed(2);
 
 const statusBadgeClasses = computed(() => {
@@ -103,26 +110,14 @@ const updateStatus = (status) => {
 const postPurchase = () => {
     router.post(route('purchases.post', purchaseData.value.id), {}, {
         preserveScroll: true,
-        onSuccess: () => toast({
-            title: t('general.success'),
-            description: 'Purchase posted successfully',
-            variant: 'success',
-            class: 'bg-green-600 text-white',
-        }),
-        onFinish: () => { postDialogOpen.value = false },
+        onSuccess: () => { postDialogOpen.value = false },
     });
 };
 
 const reversePurchase = (reason) => {
     router.post(route('purchases.reverse', purchaseData.value.id), { reason }, {
         preserveScroll: true,
-        onSuccess: () => toast({
-            title: t('general.success'),
-            description: 'Purchase reversed successfully',
-            variant: 'success',
-            class: 'bg-green-600 text-white',
-        }),
-        onFinish: () => { reverseDialogOpen.value = false },
+        onSuccess: () => { reverseDialogOpen.value = false },
     });
 };
 </script>
@@ -131,76 +126,55 @@ const reversePurchase = (reason) => {
     <AppLayout :title="`${t('purchase.purchase')} #${purchaseData.number}`">
         <div class="space-y-6">
             <!-- Page header -->
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <Button variant="outline" size="sm" @click="router.visit(route('purchases.index'))">
-                    <ArrowLeft class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                    {{ t('general.back') }}
-                </Button>
-                <div class="flex items-center gap-2">
+            <ShowPageToolbar
+                back-route="purchases.index"
+                :status="purchaseData.status"
+                :edit-route="purchaseData.id ? route('purchases.edit', purchaseData.id) : null"
+                edit-permission="purchases.update"
+                :export-url="route('purchases.export', purchaseData.id)"
+                @post="postDialogOpen = true"
+                @reverse="reverseDialogOpen = true"
+            >
+                <template v-if="purchaseData.status === 'pending'">
                     <Button
-                        v-if="purchaseData.status === 'draft'"
-                        variant="default"
-                        size="sm"
-                        class="bg-green-600 text-white hover:bg-green-700"
-                        @click="postDialogOpen = true"
-                    >
-                        Post
-                    </Button>
-                    <Button
-                        v-if="purchaseData.status === 'posted'"
                         variant="destructive"
                         size="sm"
-                        @click="reverseDialogOpen = true"
+                        :disabled="form.processing"
+                        @click="updateStatus('rejected')"
                     >
-                        Reverse
+                        <XCircle class="h-4 w-4 ltr:mr-1 rtl:ml-1" />{{ t('general.reject') }}
                     </Button>
-                    <template v-if="purchaseData.status === 'pending'">
-                        <Button variant="destructive" size="sm" :disabled="form.processing" @click="updateStatus('rejected')">
-                            <XCircle class="h-4 w-4 ltr:mr-1 rtl:ml-1" />{{ t('general.reject') }}
-                        </Button>
-                        <Button size="sm" class="bg-green-600 text-white hover:bg-green-700" :disabled="form.processing" @click="updateStatus('approved')">
-                            <CheckCircle2 class="h-4 w-4 ltr:mr-1 rtl:ml-1" />{{ t('general.approve') }}
-                        </Button>
-                    </template>
-                    <a :href="route('purchases.export', purchaseData.id)" target="_blank" rel="noopener noreferrer">
-                        <Button variant="outline" size="sm">
-                            <Download class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
-                            {{ t('report.export_excel') }}
-                        </Button>
-                    </a>
                     <Button
-                        v-if="can('purchases.update') && purchaseData.id && purchaseData.status === 'draft'"
-                        variant="default"
                         size="sm"
-                        class="gap-1.5 bg-primary text-primary-foreground"
-                        @click="router.visit(route('purchases.edit', purchaseData.id))"
+                        class="bg-green-600 text-white hover:bg-green-700"
+                        :disabled="form.processing"
+                        @click="updateStatus('approved')"
                     >
-                        <SquarePen class="h-4 w-4" />
-                        {{ t('datatable.edit') }}
+                        <CheckCircle2 class="h-4 w-4 ltr:mr-1 rtl:ml-1" />{{ t('general.approve') }}
                     </Button>
-                </div>
-            </div>
+                </template>
+            </ShowPageToolbar>
 
             <TransactionActionDialog
                 v-model:open="postDialogOpen"
                 type="post"
-                title="Post purchase"
-                description="This will write accounting and stock entries. Posted documents cannot be edited or deleted."
+                :title="t('purchase.post_purchase')"
+                :description="t('purchase.post_purchase_description')"
                 @confirm="postPurchase"
             />
             <TransactionActionDialog
                 v-model:open="reverseDialogOpen"
                 type="reverse"
-                title="Reverse purchase"
-                description="This creates a counter transaction and counter stock movement, then marks the original purchase as reversed."
+                :title="t('purchase.reverse_purchase')"
+                :description="t('purchase.reverse_purchase_description')"
                 @confirm="reversePurchase"
             />
 
             <div v-if="originalDoc" class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
-                This is a reversal of transaction {{ originalDoc.voucher_number || originalDoc.id }}.
+                {{ t('general.reversal_of_transaction', { number: originalVoucherNumber }) }}.
             </div>
             <div v-if="purchaseData.status === 'reversed' && reversal" class="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">
-                This document has been reversed by transaction {{ reversal.voucher_number || reversal.id }}.
+                {{ t('general.reversed_by') }} {{ reversalVoucherNumber }}.
             </div>
 
             <!-- Info card -->
@@ -242,13 +216,13 @@ const reversePurchase = (reason) => {
                         <div class="flex items-center gap-2 text-xs text-muted-foreground"><Calendar class="h-3 w-3" />{{ t('general.updated_at') }}</div>
                         <div class="text-sm font-medium text-foreground">{{ purchaseData.updated_at || '-' }}</div>
                     </div>
-                    <div v-if="purchaseData.raw_type === 'credit'" class="space-y-1.5">
-                        <div class="flex items-center gap-2 text-xs text-muted-foreground"><DollarSign class="h-3 w-3" />{{ t('general.paid_total') }}</div>
-                        <div class="text-sm font-medium text-foreground">{{ currencySymbol }} {{ (grandTotal - purchaseData.payable_amount).toFixed(2) }}</div>
+                    <div v-if="hasDeferredBalance" class="space-y-1.5">
+                        <div class="flex items-center gap-2 text-xs text-muted-foreground"><DollarSign class="h-3 w-3" />{{ t('general.paid_amount') }}</div>
+                        <div class="text-sm font-medium text-foreground">{{ currencySymbol }} {{ formattedPaidAmount }}</div>
                     </div>
-                    <div v-if="purchaseData.raw_type === 'credit'" class="space-y-1.5">
-                        <div class="flex items-center gap-2 text-xs text-muted-foreground"><DollarSign class="h-3 w-3" />{{ t('general.payable_amount') }}</div>
-                        <div class="text-sm font-medium text-foreground">{{ currencySymbol }} {{ purchaseData.payable_amount }}</div>
+                    <div v-if="hasDeferredBalance" class="space-y-1.5">
+                        <div class="flex items-center gap-2 text-xs text-muted-foreground"><DollarSign class="h-3 w-3" />{{ t('general.remaining_amount') }}</div>
+                        <div class="text-sm font-medium text-foreground">{{ currencySymbol }} {{ formattedRemainingAmount }}</div>
                     </div>
                 </div>
             </fieldset>

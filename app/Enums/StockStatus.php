@@ -23,4 +23,17 @@ enum StockStatus: string
     {
         return array_column(self::cases(), 'value');
     }
+    public function color(): string
+    {
+        return match($this) {
+            self::POSTED => 'emerald-600',
+            self::DRAFT => 'gray-500',
+            self::VOIDED => 'red-500',
+            self::CANCELLED => 'yellow-500',
+        };
+    }
+    public function label(): string
+    {
+        return $this->getLabel();
+    }
 }
