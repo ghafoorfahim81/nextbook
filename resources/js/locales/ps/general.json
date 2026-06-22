@@ -171,11 +171,15 @@
   "description": "توضیحات",
   "profit": "ګټه",
   "loss": "زیان",
+  "paid_amount": "ورکړل شوې اندازه",
+  "remaining_amount": "پاتې اندازه",
   "total_cost": "ټول لګښت",
   "total_profit": "ټوله ګټه / زیان",
   "unit_cost": "د واحد لګښت",
   "line_profit": "ګټه / زیان",
   "reference_number": "شماره مرجع",
-  "english_name": "نام انگلیسی"
+  "english_name": "نام انگلیسی",
+  "reversed_by": "بېرته ګرځول شوی د",
+  "reversal_of_transaction": "د {number} معاملې بېرته ګرځول"
 }
 

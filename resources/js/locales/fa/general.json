@@ -241,6 +241,8 @@
   "unit_cost": "هزینه واحد",
   "line_profit": "سود / ضرر",
   "reference_number": "شماره مرجع",
-  "english_name": "نام انگلیسی"
+  "english_name": "نام انگلیسی",
+  "reversed_by": "برگشت شده توسط",
+  "reversal_of_transaction": "برگشت تراکنش {number}"
 }
 

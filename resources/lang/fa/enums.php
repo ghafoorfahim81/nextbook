@@ -54,6 +54,7 @@ return [
         'rejected' => 'رد شده',
         'cancelled' => 'لغو شده',
         'reversed' => 'معکوس شده',
+        'voided' => 'لغو شده',
     ],
     'transfer_status' => [
         'pending' => 'در انتظار',
@@ -114,6 +115,12 @@ return [
         'by_quantity' => 'بر اساس تعداد',
         'by_weight' => 'بر اساس وزن',
         'by_volume' => 'بر اساس حجم',
+    ],
+    'stock_status' => [
+        'posted' => 'ثبت شده',
+        'draft' => 'پیش‌نویس',
+        'voided' => 'باطل شده',
+        'cancelled' => 'لغو شده',
     ],
 ];
 

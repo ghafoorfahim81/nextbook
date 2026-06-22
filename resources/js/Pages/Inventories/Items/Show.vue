@@ -247,12 +247,13 @@ onMounted(() => {
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('admin.unit_measure.unit_measure') }}</th>
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.batch') }}</th>
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.expire_date') }}</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.status') }}</th>
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('admin.warehouse.warehouse') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="(row, index) in currentRecords" :key="row.id || index"
-                                class="border-b border-border/60 hover:bg-muted/40 transition">
+                                class="border-b border-border/60 hover:bg-muted/40 transition ">
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ index + 1 }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap font-medium rtl:text-right">{{ row.ledger_name || '—' }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap font-semibold rtl:text-right">{{ row.bill_number || '—' }}</td>
@@ -264,6 +265,7 @@ onMounted(() => {
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.unit_measure_name }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.batch || '—' }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.expire_date || '—' }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap  rtl:text-right" :class="`text-${row.status_color ?? 'gray'}`">{{ row.status_label }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.warehouse_name }}</td>
                             </tr>
                             <tr v-if="!loading && currentRecords.length === 0">

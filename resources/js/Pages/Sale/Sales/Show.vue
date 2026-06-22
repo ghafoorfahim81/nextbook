@@ -42,6 +42,12 @@ const totalTax = computed(() =>
 const grandTotal = computed(() => Number(totalAmount.value - totalDiscount.value + totalTax.value));
 const totalProfit = computed(() => Number((saleData.value.total_profit ?? saleData.value.items?.reduce((sum, item) => sum + Number(item.line_profit || 0), 0)) || 0));
 const isProfitable = computed(() => totalProfit.value >= 0);
+const hasDeferredBalance = computed(() => ['credit', 'on_loan'].includes(String(saleData.value.raw_type || '').toLowerCase()));
+const remainingAmount = computed(() => Number(saleData.value.remaining_amount ?? saleData.value.receivable_amount ?? 0));
+const paidAmount = computed(() => Math.max(0, grandTotal.value - remainingAmount.value));
+const documentVoucherNumber = computed(() => saleData.value.transaction?.voucher_number || `Sale #${saleData.value.number}`);
+const originalVoucherNumber = computed(() => props.originalDoc?.voucher_number || documentVoucherNumber.value);
+const reversalVoucherNumber = computed(() => props.reversal?.voucher_number || documentVoucherNumber.value);
 
 const formattedTotalAmount = computed(() => totalAmount.value.toFixed(2));
 const formattedTotalDiscount = computed(() => totalDiscount.value.toFixed(2));
@@ -49,6 +55,8 @@ const formattedTotalTax = computed(() => totalTax.value.toFixed(2));
 const formattedGrandTotal = computed(() => grandTotal.value.toFixed(2));
 const formattedTotalProfit = computed(() => totalProfit.value.toFixed(2));
 const formattedTotalCost = computed(() => saleData.value.items?.reduce((s, i) => s + (parseFloat(i.unit_cost || 0) * parseFloat(i.quantity || 0)), 0).toFixed(2));
+const formattedPaidAmount = computed(() => paidAmount.value.toFixed(2));
+const formattedRemainingAmount = computed(() => remainingAmount.value.toFixed(2));
 const formatLineValue = (value) => Number(value || 0).toFixed(2);
 
 const statusBadgeClasses = computed(() => {
@@ -125,10 +133,10 @@ const reverseSale = (reason) => {
             />
 
             <div v-if="originalDoc" class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
-                This is a reversal of transaction {{ originalDoc.voucher_number || originalDoc.id }}.
+                {{ t('general.reversal_of_transaction', { number: originalVoucherNumber }) }}.
             </div>
             <div v-if="saleData.status === 'reversed' && reversal" class="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">
-                This document has been reversed by transaction {{ reversal.voucher_number || reversal.id }}.
+                {{ t('general.reversed_by') }} {{ reversalVoucherNumber }}.
             </div>
 
             <!-- Info card -->
@@ -196,20 +204,20 @@ const reverseSale = (reason) => {
                         </div>
                         <div class="text-sm font-medium text-foreground">{{ saleData.updated_at || '-' }}</div>
                     </div>
-                    <div v-if="saleData.raw_type === 'credit'" class="space-y-1.5">
+                    <div v-if="hasDeferredBalance" class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground">
-                            <DollarSign class="h-3 w-3" />{{ t('general.paid_total') }}
+                            <DollarSign class="h-3 w-3" />{{ t('general.paid_amount') }}
                         </div>
                         <div class="text-sm font-medium text-foreground">
-                            {{ currencySymbol }} {{ (grandTotal - saleData.receivable_amount).toFixed(2) }}
+                            {{ currencySymbol }} {{ formattedPaidAmount }}
                         </div>
                     </div>
-                    <div v-if="saleData.raw_type === 'credit'" class="space-y-1.5">
+                    <div v-if="hasDeferredBalance" class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground">
-                            <DollarSign class="h-3 w-3" />{{ t('general.receivable_amount') }}
+                            <DollarSign class="h-3 w-3" />{{ t('general.remaining_amount') }}
                         </div>
                         <div class="text-sm font-medium text-foreground">
-                            {{ currencySymbol }} {{ saleData.receivable_amount }}
+                            {{ currencySymbol }} {{ formattedRemainingAmount }}
                         </div>
                     </div>
                 </div>

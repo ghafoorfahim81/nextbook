@@ -238,5 +238,7 @@
   "unit_cost": "Unit Cost",
   "line_profit": "Profit / Loss",
   "reference_number": "Reference Number",
-  "english_name": "English Name"
+  "english_name": "English Name",
+  "reversed_by": "Reversed by",
+  "reversal_of_transaction": "Reversal of transaction {number}"
 }
