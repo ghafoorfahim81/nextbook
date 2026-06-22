@@ -567,7 +567,7 @@ class SaleController extends Controller
                         itemUnitMeasureId: $itemModel->unit_measure_id,
                         unitValuesById: $unitValuesById,
                         itemId: $item['item_id'],
-                        warehouseId: $validated['warehouse_id'],
+                        warehouseId: $item['warehouse_id'],
                         branchId: $sale->branch_id,
                         quantity: (float) $item['quantity'],
                     ) : 0.0);
