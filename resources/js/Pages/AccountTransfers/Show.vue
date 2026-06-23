@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { router } from '@inertiajs/vue3'
 import { Calendar, DollarSign, FileText, ArrowLeftRight, Banknote, User } from 'lucide-vue-next'
@@ -14,20 +14,20 @@ const props = defineProps({
     transfer: { type: Object, required: true },
 })
 
-const transferData = props.transfer?.data ?? props.transfer ?? {}
+const transferData = computed(() => props.transfer?.data ?? props.transfer ?? {})
 
 const postDialogOpen = ref(false)
 const reverseDialogOpen = ref(false)
 
 function postTransfer() {
-    router.post(route('account-transfers.post', transferData.id), {}, {
+    router.post(route('account-transfers.post', transferData.value.id), {}, {
         preserveScroll: true,
         onSuccess: () => { postDialogOpen.value = false },
     })
 }
 
 function reverseTransfer(reason) {
-    router.post(route('account-transfers.reverse', transferData.id), { reason }, {
+    router.post(route('account-transfers.reverse', transferData.value.id), { reason }, {
         preserveScroll: true,
         onSuccess: () => { reverseDialogOpen.value = false },
     })

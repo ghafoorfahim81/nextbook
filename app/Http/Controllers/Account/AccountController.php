@@ -39,16 +39,29 @@ class AccountController extends Controller
     {
 
         $perPage = $request->input('perPage',  recordsPerPage());
-        $sortField = $request->input('sortField', 'created_at');
+        $sortField = $request->input('sortField', 'balance_amount');
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $accounts = Account::with(['accountType', 'parent'])
+        $balanceFields = ['balance_amount', 'balance'];
+
+        $query = Account::with(['accountType', 'parent'])
             ->search($request->query('search'))
-            ->filter($filters)
-            ->orderBy($sortField, $sortDirection)
-            ->paginate($perPage)
-            ->withQueryString();
+            ->filter($filters);
+
+        if (in_array($sortField, $balanceFields)) {
+            $query->orderByRaw(
+                '(SELECT ABS(COALESCE(SUM(tl.debit * t.rate), 0) - COALESCE(SUM(tl.credit * t.rate), 0))
+                  FROM transaction_lines tl
+                  JOIN transactions t ON t.id = tl.transaction_id
+                  WHERE tl.account_id = accounts.id
+                  AND t.status IN (\'posted\', \'reversed\')) ' . ($sortDirection === 'asc' ? 'ASC' : 'DESC')
+            );
+        } else {
+            $query->orderBy($sortField, $sortDirection);
+        }
+
+        $accounts = $query->paginate($perPage)->withQueryString();
         return inertia('Accounts/Accounts/Index', [
             'accounts' => AccountListResource::collection($accounts),
             'filterOptions' => [
