@@ -96,8 +96,7 @@ class Account extends Model
 
                 $totals = $this->transactionLines()
                     ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
-                    ->where('transactions.status', 'posted')
-                    // ->where('transaction_lines.status', 'posted')
+                    ->whereIn('transactions.status', ['posted', 'reversed'])
                     ->selectRaw('
                         SUM(transaction_lines.debit * transactions.rate)  AS total_debit,
                         SUM(transaction_lines.credit * transactions.rate) AS total_credit
