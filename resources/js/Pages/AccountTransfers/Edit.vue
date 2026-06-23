@@ -8,6 +8,7 @@ import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
+import { useAccountTransferBalances } from '@/composables/useAccountTransferBalances'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 
@@ -16,7 +17,7 @@ const { t } = useI18n()
 const page = usePage()
 const accounts = computed(() => page.props.accounts?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
-const bankAccounts = computed(() => page.props.bankAccounts?.data || [])
+const bankAccounts = computed(() => page.props.bankAccounts?.data ?? page.props.bankAccounts ?? [])
 
 const initial = page.props.data?.data || {}
 const form = useForm({
@@ -60,6 +61,8 @@ const sameAccountError = computed(() => {
   return form.from_account_id && form.to_account_id && form.from_account_id === form.to_account_id
 })
 
+const { fromAccountBalanceText, toAccountBalanceText } = useAccountTransferBalances(form, bankAccounts)
+
 const handleSubmit = () => {
   form.put(`/account-transfers/${initial.id}`, {
     onSuccess: () => {
@@ -100,32 +103,54 @@ const handleSubmit = () => {
           />
           <NextInput placeholder="Rate" :error="form.errors?.rate" :disabled="form.selected_currency.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
 
-          <NextSelect
-            :options="bankAccounts"
-            v-model="form.selected_from_account"
-            @update:modelValue="(v) => handleSelectChange('from_account_id', v.id)"
-            label-key="name"
-            value-key="id"
-            :reduce="acc => acc"
-            :floating-text="t('general.from_account')"
-            :error="form.errors?.from_account_id"
-            :searchable="true"
-            resource-type="accounts"
-            :search-fields="['name', 'number', 'slug']"
-          />
-          <NextSelect
-            :options="bankAccounts"
-            v-model="form.selected_to_account"
-            @update:modelValue="(v) => handleSelectChange('to_account_id', v.id)"
-            label-key="name"
-            value-key="id"
-            :reduce="acc => acc"
-            :floating-text="t('general.to_account')"
-            :error="form.errors?.to_account_id"
-            :searchable="true"
-            resource-type="accounts"
-            :search-fields="['name', 'number', 'slug']"
-          />
+          <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <NextSelect
+                :options="bankAccounts"
+                v-model="form.selected_from_account"
+                @update:modelValue="(v) => handleSelectChange('from_account_id', v.id)"
+                label-key="name"
+                value-key="id"
+                :reduce="acc => acc"
+                :floating-text="t('general.from_account')"
+                :error="form.errors?.from_account_id"
+                :searchable="true"
+                resource-type="accounts"
+                :search-fields="['name', 'number', 'slug']"
+              />
+              <div
+                v-if="fromAccountBalanceText"
+                class="rounded-lg border border-violet-500/20 bg-rose-500/20 px-3 py-2"
+              >
+                <div class="text-xs text-muted-foreground">{{ t('general.balance') }}</div>
+                <div class="text-sm font-semibold text-foreground">{{ fromAccountBalanceText }}</div>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <NextSelect
+                :options="bankAccounts"
+                v-model="form.selected_to_account"
+                @update:modelValue="(v) => handleSelectChange('to_account_id', v.id)"
+                label-key="name"
+                value-key="id"
+                :reduce="acc => acc"
+                :floating-text="t('general.to_account')"
+                :error="form.errors?.to_account_id"
+                :searchable="true"
+                resource-type="accounts"
+                :search-fields="['name', 'number', 'slug']"
+              />
+              <div
+                v-if="toAccountBalanceText"
+                class="rounded-lg border border-emerald-500/20 bg-emerald-300/20 px-3 py-2"
+              >
+                <div class="text-xs text-muted-foreground">{{ t('general.balance') }}</div>
+                <div class="text-sm font-semibold text-foreground">{{ toAccountBalanceText }}</div>
+              </div>
+            </div>
+          </div>
+
           <div v-if="sameAccountError" class="md:col-span-3 text-sm text-red-600">
             {{ t('general.accounts_cannot_be_same') }}
           </div>

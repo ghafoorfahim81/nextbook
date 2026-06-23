@@ -14,6 +14,7 @@ import { Button } from '@/Components/ui/button'
 import { Badge } from '@/Components/ui/badge'
 import { Input } from '@/Components/ui/input'
 import { Label } from '@/Components/ui/label'
+import TransactionActionDialog from '@/Components/TransactionActionDialog.vue'
 import { CalendarDays, Landmark, Wallet, User, FileText, ArrowRightLeft, Percent, RotateCcw } from 'lucide-vue-next'
 
 const { t } = useI18n()
@@ -31,10 +32,26 @@ const creditLine = computed(() => transactionLines.value.find((line) => Number(l
 const debitLine = computed(() => transactionLines.value.find((line) => Number(line.debit || 0) > 0) || null)
 const transactionStatus = computed(() => props.drawing?.status || transaction.value?.status || null)
 
-// ── Reverse dialog ──────────────────────────────────────────────
-const reverseOpen = ref(false)
+const postDialogOpen = ref(false)
+const reverseDialogOpen = ref(false)
 const reverseReason = ref('')
 const reversing = ref(false)
+const posting = ref(false)
+
+function postDrawing() {
+  if (!props.drawing?.id || posting.value) return
+  posting.value = true
+  router.post(route('drawings.post', props.drawing.id), {}, {
+    preserveScroll: true,
+    onSuccess: () => {
+      postDialogOpen.value = false
+      emit('update:open', false)
+    },
+    onFinish: () => {
+      posting.value = false
+    },
+  })
+}
 
 function openReverse() {
   reverseReason.value = ''
@@ -42,7 +59,7 @@ function openReverse() {
 }
 
 function closeReverse() {
-  reverseOpen.value = false
+  reverseDialogOpen.value = false
   reverseReason.value = ''
 }
 
@@ -79,6 +96,7 @@ const currencyLabel = computed(() => {
 
 const statusBadgeClass = computed(() => {
   switch (transactionStatus.value) {
+    case 'draft':    return 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'
     case 'posted':   return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
     case 'reversed': return 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300'
     default:         return 'border-border bg-muted text-foreground'
@@ -87,6 +105,7 @@ const statusBadgeClass = computed(() => {
 
 const statusLabel = computed(() => {
   switch (transactionStatus.value) {
+    case 'draft':    return t('general.status_draft')
     case 'posted':   return t('general.status_posted')
     case 'reversed': return t('general.status_reversed')
     default:         return transactionStatus.value || '-'
@@ -118,6 +137,15 @@ const statusLabel = computed(() => {
               </div>
             </div>
             <div class="flex items-center gap-2">
+              <Button
+                v-if="transactionStatus === 'draft'"
+                size="sm"
+                class="bg-green-600 text-white hover:bg-green-700"
+                :disabled="posting"
+                @click="postDialogOpen = true"
+              >
+                {{ t('general.post') }}
+              </Button>
               <Button
                 v-if="transactionStatus === 'posted'"
                 size="sm"
@@ -239,8 +267,17 @@ const statusLabel = computed(() => {
     </DialogContent>
   </Dialog>
 
+  <TransactionActionDialog
+    v-model:open="postDialogOpen"
+    type="post"
+    :title="t('general.post') + ' ' + t('sidebar.owners.drawing')"
+    :description="t('general.post_document_desc')"
+    :processing="posting"
+    @confirm="postDrawing"
+  />
+
   <!-- ── Reverse confirmation dialog ────────────────────────── -->
-  <Dialog :open="reverseOpen" @update:open="closeReverse">
+  <Dialog :open="reverseDialogOpen" @update:open="closeReverse">
     <DialogContent class="max-w-md">
       <DialogHeader>
         <div class="flex items-center gap-3">

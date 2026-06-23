@@ -321,8 +321,11 @@ class PurchaseController extends Controller
 
     public function edit(Request $request, Purchase $purchase)
     {
+        if ($purchase->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', 'Only draft documents can be edited.');
+        }
+
         $bankAccounts = (new Account())->getAccountsByAccountTypeSlug('cash-or-bank');
-        $stockLocked = $this->purchaseHasPostedStock($purchase);
 
         return inertia('Purchase/Purchases/Edit', [
             'purchase' => new PurchaseResource($purchase->load([
@@ -335,7 +338,6 @@ class PurchaseController extends Controller
                 'transaction.lines.ledger',
             ])),
             'bankAccounts' => $bankAccounts,
-            'stockLocked' => $stockLocked,
         ]);
     }
 
@@ -351,11 +353,6 @@ class PurchaseController extends Controller
             return back()->with('error', 'Only draft documents can be edited.');
         }
 
-        if ($this->purchaseHasPostedStock($purchase)) {
-            throw ValidationException::withMessages([
-                'purchase' => 'This purchase contains posted stock and can no longer be edited.',
-            ]);
-        }
         $beforeState = [
             'number' => $purchase->number,
             'supplier_id' => $purchase->supplier_id,
@@ -369,30 +366,27 @@ class PurchaseController extends Controller
             'transaction_total' => (float) ($purchase->transaction_total ?? 0),
         ];
 
-        $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $stockService, $activityLogService, $beforeState) {
+        $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $activityLogService, $beforeState) {
             $validated = $request->validated();
             $validated['type'] = $validated['purchase_type'] ?? $purchase->type ?? 'cash';
             $validated['status'] = TransactionStatus::DRAFT->value;
 
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $purchase->date;
-            $affectedCombos = $purchase->items()
-                ->get(['item_id', 'warehouse_id', 'branch_id'])
-                ->map(fn ($item) => [
-                    'item_id' => $item->item_id,
-                    'warehouse_id' => $item->warehouse_id,
-                    'branch_id' => $item->branch_id ?? $purchase->branch_id,
-                ])
-                ->all();
 
-            $validated['item_list'] = array_map(function ($item) use ($validated, $purchase, &$affectedCombos) {
+            // Posted/reversed purchases are immutable, so update no longer needs to
+            // rebuild posted stock state or recalculate avg cost.
+            // $affectedCombos = $purchase->items()
+            //     ->get(['item_id', 'warehouse_id', 'branch_id'])
+            //     ->map(fn ($item) => [
+            //         'item_id' => $item->item_id,
+            //         'warehouse_id' => $item->warehouse_id,
+            //         'branch_id' => $item->branch_id ?? $purchase->branch_id,
+            //     ])
+            //     ->all();
+
+            $validated['item_list'] = array_map(function ($item) use ($validated) {
                 $item['discount'] = $item['item_discount'] ?? 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
-
-                $affectedCombos[] = [
-                    'item_id' => $item['item_id'],
-                    'warehouse_id' => $validated['warehouse_id'],
-                    'branch_id' => $purchase->branch_id,
-                ];
 
                 return $item;
             }, $validated['item_list']);
@@ -400,158 +394,143 @@ class PurchaseController extends Controller
             $purchase->update($validated);
             $purchase->items()->forceDelete();
 
-            // StockMovement::query()
-            //     ->where('reference_type', Purchase::class)
-            //     ->where('reference_id', $purchase->id)
-            //     ->forceDelete();
-
-            // $this->rebuildStockStateForCombos($affectedCombos);
-
             $purchase->items()->createMany($validated['item_list']);
 
-            // $transaction = Transaction::query()
-            //     ->where('reference_type', Purchase::class)
-            //     ->where('reference_id', $purchase->id)
-            //     ->first();
+            $transaction = Transaction::query()
+                ->where('reference_type', Purchase::class)
+                ->where('reference_id', $purchase->id)
+                ->first();
 
-            // if ($transaction) {
-            //     $transaction->lines()->forceDelete();
-            //     $transaction->forceDelete();
-            // }
+            if ($transaction) {
+                $transaction->lines()->forceDelete();
+                $transaction->forceDelete();
+            }
 
-            // $lines = [];
-            // $glAccounts = Cache::get('gl_accounts');
-            // $discountTotal = (float) $request->input('discount_total', 0);
-            // $stockPayloads = [];
+            $lines = [];
+            $stockPayloads = [];
+            $glAccounts = Cache::get('gl_accounts');
+            $discountTotal = (float) $request->input('discount_total', 0);
 
-            // foreach ($validated['item_list'] as $item) {
-            //     $quantity = (float) $item['quantity'];
-            //     $unitPrice = (float) $item['unit_price'];
-            //     $itemModel = Item::findOrFail($item['item_id']);
-            //     $accountId = $itemModel->asset_account_id ?? $itemModel->cost_account_id;
+            foreach ($validated['item_list'] as $item) {
+                $quantity = (float) $item['quantity'];
+                $unitPrice = (float) $item['unit_price'];
+                $itemModel = Item::findOrFail($item['item_id']);
+                $accountId = $itemModel->asset_account_id ?? $itemModel->cost_account_id;
 
-            //     $stockPayloads[] = [
-            //         'item_id'         => $item['item_id'],
-            //         'movement_type'   => StockMovementType::IN->value,
-            //         'unit_measure_id' => $item['unit_measure_id'],
-            //         'quantity'        => $quantity,
-            //         'source'          => StockSourceType::PURCHASE->value,
-            //         'unit_cost'       => $unitPrice,
-            //         'status'          => StockStatus::DRAFT->value,
-            //         'batch'           => $item['batch'] ?? null,
-            //         'date'            => $validated['date'],
-            //         'expire_date'     => $item['expire_date'] ?? null,
-            //         'size_id'         => $validated['size_id'] ?? null,
-            //         'warehouse_id'    => $validated['warehouse_id'],
-            //         'branch_id'       => $purchase->branch_id,
-            //         'reference_type'  => Purchase::class,
-            //         'reference_id'    => $purchase->id,
-            //     ];
+                $stockPayloads[] = [
+                    'item_id'         => $item['item_id'],
+                    'movement_type'   => StockMovementType::IN->value,
+                    'unit_measure_id' => $item['unit_measure_id'],
+                    'quantity'        => $quantity,
+                    'source'          => StockSourceType::PURCHASE->value,
+                    'unit_cost'       => $unitPrice,
+                    'status'          => StockStatus::POSTED->value,
+                    'batch'           => $item['batch'] ?? null,
+                    'date'            => $validated['date'],
+                    'expire_date'     => $item['expire_date'] ?? null,
+                    'size_id'         => $validated['size_id'] ?? null,
+                    'warehouse_id'    => $validated['warehouse_id'],
+                    'branch_id'       => $purchase->branch_id,
+                    'reference_type'  => Purchase::class,
+                    'reference_id'    => $purchase->id,
+                ];
 
-            //     $lines[] = [
-            //         'account_id' => $accountId,
-            //         'ledger_id'  => null,
-            //         'debit'      => $quantity * $unitPrice,
-            //         'credit'     => 0,
-            //         'remark'     => 'Purchase for '. ' '. $itemModel->name.' #'.$purchase->number,
-            //         'remark_fa' => 'خرید بابت '. ' '. $itemModel->name.' #'.$purchase->number,
-            //         'remark_ps' => 'د'. ' '. $itemModel->name.' #'.$purchase->number,
-            //     ];
-            // }
+                $lines[] = [
+                    'account_id' => $accountId,
+                    'ledger_id'  => null,
+                    'debit'      => $quantity * $unitPrice,
+                    'credit'     => 0,
+                    'remark'     => 'Purchase for '. ' '. $itemModel->name.' #'.$purchase->number,
+                    'remark_fa' => 'خرید بابت '. ' '. $itemModel->name.' #'.$purchase->number,
+                    'remark_ps' => 'د'. ' '. $itemModel->name.' #'.$purchase->number,
+                ];
+            }
 
-            // Re-recalculate avg_cost after all new movements are posted, because increaseBalance
-            // inside stockService->post() uses current stock quantities (mid-rebuild state) which
-            // gives a wrong weighted average when sales have already consumed some of the stock.
-            // $newItemIds = collect($validated['item_list'])->pluck('item_id')->unique()->values();
-            // foreach ($newItemIds as $newItemId) {
-            //     $this->recalculateAvgCostForItem($newItemId);
-            // }
+            if ($discountTotal > 0) {
+                $lines[] = [
+                    'account_id' => $glAccounts['discount-from-supplier'],
+                    'ledger_id' => null,
+                    'debit' => 0,
+                    'credit' => $discountTotal,
+                    'remark' => 'Discount for purchase #' . $purchase->number,
+                    'remark_fa' => 'تخفیف برای خرید #' . $purchase->number,
+                    'remark_ps' => 'د'. ' '. $purchase->number.' '.'تخفیف اخیستل',
+                ];
+            }
 
-            // if($discountTotal > 0) {
-            //     $lines[] = [
-            //         'account_id' => $glAccounts['discount-from-supplier'],
-            //         'ledger_id' => null,
-            //         'debit' => 0,
-            //         'credit' => $discountTotal,
-            //         'remark' => 'Discount for purchase #' . $purchase->number,
-            //         'remark_fa' => 'تخفیف برای خرید #' . $purchase->number,
-            //         'remark_ps' => 'د'. ' '. $purchase->number.' '.'تخفیف اخیستل',
-            //     ];
-            // }
-            // if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
+            if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
+                $lines[] = [
+                    'account_id' => $validated['bank_account_id'],
+                    'ledger_id'  => null,
+                    'debit'      => 0,
+                    'credit'     => $validated['transaction_total'],
+                    'remark'     => 'Payment for purchase #' . $purchase->number,
+                    'remark_fa' => 'پرداخت برای خرید #' . $purchase->number,
+                    'remark_ps' => 'د'. '#'. $purchase->number.' '.'پرداخت اخیستل',
+                ];
+            }
 
-            //     $lines[] = [
-            //         'account_id' => $validated['bank_account_id'], // cash/bank
-            //         'ledger_id'  => null,
-            //         'debit'      => 0,
-            //         'credit'     => $validated['transaction_total'],
-            //         'remark'     => 'Payment for purchase #' . $purchase->number,
-            //         'remark_fa' => 'پرداخت برای خرید #' . $purchase->number,
-            //         'remark_ps' => 'د'. '#'. $purchase->number.' '.'پرداخت اخیستل',
-            //     ];
-            // }
-            // if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
-            //     $lines[] = [
-            //         'account_id' => $glAccounts['account-payable'], // cash/bank
-            //         'ledger_id'  => $validated['supplier_id'],
-            //         'debit'      => 0,
-            //         'credit'     => $validated['transaction_total'],
-            //         'remark'     => 'Purchase on loan for #' . $purchase->number,
-            //         'remark_fa' => ' بابت خرید قرض #' . $purchase->number,
-            //         'remark_ps' => 'د'. '#'. $purchase->number.' '.'د پور اخیستلو په اړه',
-            //     ];
-            // }
+            if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
+                $lines[] = [
+                    'account_id' => $glAccounts['account-payable'],
+                    'ledger_id'  => $validated['supplier_id'],
+                    'debit'      => 0,
+                    'credit'     => $validated['transaction_total'],
+                    'remark'     => 'Purchase on loan for #' . $purchase->number,
+                    'remark_fa' => ' بابت خرید قرض #' . $purchase->number,
+                    'remark_ps' => 'د'. '#'. $purchase->number.' '.'د پور اخیستلو په اړه',
+                ];
+            }
 
-            // if($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
-            //     if($validated['payment']['amount'] > 0) {
-            //         $amount = (float) $validated['payment']['amount'];
-            //         $lines[] = [
-            //             'account_id' => $validated['payment']['account_id'],
-            //             'debit' => 0,
-            //             'credit' => $amount,
-            //             'remark' => 'Partial payment for purchase #' . $purchase->number,
-            //             'remark_fa' => 'پرداخت جزئی برای خرید #' . $purchase->number,
-            //             'remark_ps' => 'د'. '#'. $purchase->number.' '.'جزوی تادیه',
-            //         ];
-            //         $lines[] = [
-            //             'account_id' => $glAccounts['account-payable'],
-            //             'ledger_id' => $validated['supplier_id'],
-            //             'debit' => 0,
-            //             'credit' => $validated['transaction_total'] - $amount,
-            //             'remark'     => 'Purchase on loan for #' . $purchase->number,
-            //             'remark_fa' => ' بابت خرید قرض #' . $purchase->number,
-            //             'remark_ps' => 'د'. '#'. $purchase->number.' '.'د پور اخیستلو په اړه',
-            //         ];
-            //     }
-            //     else{
-            //         $lines[] = [
-            //             'account_id' => $glAccounts['account-payable'],
-            //             'ledger_id' => $validated['supplier_id'],
-            //             'debit' => 0,
-            //             'credit' => $validated['transaction_total'],
-            //             'remark' => 'Purchase for #' . $purchase->number,
-            //             'remark_fa' => 'خرید قرضی بابت #' . $purchase->number,
-            //             'remark_ps' => 'د'. '#'. $purchase->number.' '.'د پور اخیستلو په اړه',
-            //         ];
-            //     }
-            // }
+            if ($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
+                if ($validated['payment']['amount'] > 0) {
+                    $amount = (float) $validated['payment']['amount'];
+                    $lines[] = [
+                        'account_id' => $validated['payment']['account_id'],
+                        'debit' => 0,
+                        'credit' => $amount,
+                        'remark' => 'Partial payment for purchase #' . $purchase->number,
+                        'remark_fa' => 'پرداخت جزئی برای خرید #' . $purchase->number,
+                        'remark_ps' => 'د'. '#'. $purchase->number.' '.'جزوی تادیه',
+                    ];
+                    $lines[] = [
+                        'account_id' => $glAccounts['account-payable'],
+                        'ledger_id' => $validated['supplier_id'],
+                        'debit' => 0,
+                        'credit' => $validated['transaction_total'] - $amount,
+                        'remark'     => 'Purchase on loan for #' . $purchase->number,
+                        'remark_fa' => ' بابت خرید قرض #' . $purchase->number,
+                        'remark_ps' => 'د'. '#'. $purchase->number.' '.'د پور اخیستلو په اړه',
+                    ];
+                } else {
+                    $lines[] = [
+                        'account_id' => $glAccounts['account-payable'],
+                        'ledger_id' => $validated['supplier_id'],
+                        'debit' => 0,
+                        'credit' => $validated['transaction_total'],
+                        'remark' => 'Purchase for #' . $purchase->number,
+                        'remark_fa' => 'خرید قرضی بابت #' . $purchase->number,
+                        'remark_ps' => 'د'. '#'. $purchase->number.' '.'د پور اخیستلو په اړه',
+                    ];
+                }
+            }
 
-            // $transaction = $transactionService->post(
-            //     header: [
-            //         'currency_id'    => $validated['currency_id'],
-            //         'rate'           => $validated['rate'],
-            //         'voucher_number' => 'Purchase #' . $purchase->number,
-            //         'date'           => $validated['date'],
-            //         'remark'         => 'Purchase #' . $purchase->number,
-            //         'status'         => TransactionStatus::DRAFT->value,
-            //         'reference_type' => Purchase::class,
-            //         'reference_id'   => $purchase->id,
-            //         'posting_payload' => [
-            //             'stock_movements' => $stockPayloads,
-            //         ],
-            //     ],
-            //     lines: $lines
-            // );
+            $transaction = $transactionService->post(
+                header: [
+                    'currency_id'    => $validated['currency_id'],
+                    'rate'           => $validated['rate'],
+                    'voucher_number' => 'Purchase #' . $purchase->number,
+                    'date'           => $validated['date'],
+                    'remark'         => 'Purchase #' . $purchase->number,
+                    'status'         => TransactionStatus::DRAFT->value,
+                    'reference_type' => Purchase::class,
+                    'reference_id'   => $purchase->id,
+                    'posting_payload' => [
+                        'stock_movements' => $stockPayloads,
+                    ],
+                ],
+                lines: $lines
+            );
 
             app(BillAllocationService::class)->recalculatePurchasePaymentStatuses([$purchase->id]);
             $afterState = [
@@ -576,7 +555,7 @@ class PurchaseController extends Controller
                 metadata: [
                     'action' => 'purchase_update',
                     'purchase_type' => $validated['type'],
-                    'transaction_id' => $purchase->transaction?->id,
+                    'transaction_id' => $transaction->id,
                 ],
             );
 
@@ -869,51 +848,6 @@ class PurchaseController extends Controller
             return back()->with('error', 'Only draft documents can be deleted.');
         }
 
-        DB::transaction(function () use ($purchase) {
-            $affectedCombos = $purchase->items()
-                ->get(['item_id', 'warehouse_id', 'branch_id'])
-                ->map(fn ($item) => [
-                    'item_id' => $item->item_id,
-                    'warehouse_id' => $item->warehouse_id,
-                    'branch_id' => $item->branch_id ?? $purchase->branch_id,
-                ])
-                ->all();
-
-            // $stockMovementCombos = StockMovement::query()
-            //     ->where('reference_type', Purchase::class)
-            //     ->where('reference_id', $purchase->id)
-            //     ->get(['item_id', 'warehouse_id', 'branch_id'])
-            //     ->map(fn ($movement) => [
-            //         'item_id' => $movement->item_id,
-            //         'warehouse_id' => $movement->warehouse_id,
-            //         'branch_id' => $movement->branch_id,
-            //     ])
-            //     ->all();
-
-            // $transaction = Transaction::query()
-            //     ->where('reference_type', Purchase::class)
-            //     ->where('reference_id', $purchase->id)
-            //     ->first();
-
-            // if ($transaction) {
-            //     $transaction->lines()->delete();
-            //     $transaction->delete();
-            // }
-
-            // StockMovement::query()
-            //     ->where('reference_type', Purchase::class)
-            //     ->where('reference_id', $purchase->id)
-            //     ->delete();
-
-            $purchase->items()->delete();
-            $purchase->delete();
-
-            // $this->rebuildStockStateForCombos([
-            //     ...$affectedCombos,
-            //     ...$stockMovementCombos,
-            // ]);
-        });
-
         $oldValues = [
             'number' => $purchase->number,
             'supplier_id' => $purchase->supplier_id,
@@ -927,20 +861,26 @@ class PurchaseController extends Controller
             'transaction_total' => (float) ($purchase->transaction_total ?? 0),
         ];
 
-        $purchase->items()->delete();
-        $purchase->stocks()->delete();
-        $purchase->transaction()->delete();
-        $purchase->delete();
+        DB::transaction(function () use ($purchase, $activityLogService, $oldValues) {
+            $transaction = $purchase->transaction()->first();
+            if ($transaction) {
+                $transaction->lines()->delete();
+                $transaction->delete();
+            }
 
-        $activityLogService->logDelete(
-            reference: $purchase,
-            module: 'purchase',
-            description: "Purchase #{$purchase->number} deleted.",
-            oldValues: $oldValues,
-            metadata: [
-                'action' => 'purchase_delete',
-            ],
-        );
+            $purchase->items()->delete();
+            $purchase->delete();
+
+            $activityLogService->logDelete(
+                reference: $purchase,
+                module: 'purchase',
+                description: "Purchase #{$purchase->number} deleted.",
+                oldValues: $oldValues,
+                metadata: [
+                    'action' => 'purchase_delete',
+                ],
+            );
+        });
 
         return redirect()->route('purchases.index')->with('success', __('general.purchase_deleted_successfully'));
     }

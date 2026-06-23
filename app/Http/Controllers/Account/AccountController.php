@@ -54,8 +54,7 @@ class AccountController extends Controller
             'filterOptions' => [
                 'accountTypes' => AccountType::orderBy('name')->get(['id', 'name']),
                 'users' => User::query()
-                    ->whereNull('deleted_at')
-                    ->orderBy('name')
+                    ->whereNull('deleted_at') 
                     ->get(['id', 'name']),
             ],
             'filters' => [
@@ -73,7 +72,7 @@ class AccountController extends Controller
         return inertia('Accounts/Accounts/Create', [
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
             'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
-            'accountTypes' => AccountTypeResource::collection(AccountType::orderBy('name')->get()),
+            'accountTypes' => AccountTypeResource::collection(AccountType::orderBy('created_at','asc')->get()),
         ]);
     }
 

@@ -36,7 +36,7 @@ final class DomainShared
                 CacheKey::forCompanyBranchLocale($request, 'account_types'),
                 $cacheDuration,
                 fn() => AccountTypeResource::collection(
-                    AccountType::query()->orderBy('id')->limit(10)->get()
+                    AccountType::query()->orderBy('slug','asc')->limit(10)->get()
                 )
             )),
             'ledgers' => Inertia::lazy(fn() => Cache::remember(

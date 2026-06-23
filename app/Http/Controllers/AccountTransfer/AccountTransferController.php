@@ -74,7 +74,7 @@ class AccountTransferController extends Controller
         return inertia('AccountTransfers/Create', [
             'bankAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
                 $q->whereIn('slug', ['cash-or-bank'])
-            )->get()),
+            )->orderBy('created_at','desc')->get()),
             'latestNumber' => $latestNumber,
         ]);
     }

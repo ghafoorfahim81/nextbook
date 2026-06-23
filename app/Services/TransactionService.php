@@ -198,6 +198,7 @@ class TransactionService
                 'currency_id'    => $original->currency_id,
                 'rate'           => $original->rate,
                 'date'           => now()->toDateString(),
+                'voucher_number' => 'Reversal of ' . $original->voucher_number,
                 'reference_type' => 'reversal',
                 'reference_id'   => $original->id,
                 'remark'         => $reason ?? 'Reversal of transaction ' . $original->id,

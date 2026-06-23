@@ -21,6 +21,14 @@ const creditLine = computed(() => transactionLines.value.find((l) => Number(l.cr
 const debitLine = computed(() => transactionLines.value.find((l) => Number(l.debit || 0) > 0) || null)
 
 const reverseDialogOpen = ref(false)
+const postDialogOpen = ref(false)
+
+function postDrawing() {
+    router.post(route('drawings.post', drawing.value.id), {}, {
+        preserveScroll: true,
+        onSuccess: () => { postDialogOpen.value = false },
+    })
+}
 
 function reverseDrawing(reason) {
     router.post(route('drawings.reverse', drawing.value.id), { reason }, {
@@ -42,6 +50,7 @@ const currencyLabel = computed(() => {
 
 const statusClass = (status) => {
     switch (status) {
+        case 'draft':    return 'border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300'
         case 'posted':   return 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
         case 'reversed': return 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300'
         default:         return 'border-border bg-muted text-foreground'
@@ -49,6 +58,7 @@ const statusClass = (status) => {
 }
 const statusLabel = (status) => {
     switch (status) {
+        case 'draft':    return t('general.status_draft')
         case 'posted':   return t('general.status_posted')
         case 'reversed': return t('general.status_reversed')
         default:         return status ?? '-'
@@ -62,9 +72,18 @@ const statusLabel = (status) => {
             <ShowPageToolbar
                 back-route="drawings.index"
                 :status="drawing.status"
+                :edit-route="route('drawings.edit', drawing.id)"
+                @post="postDialogOpen = true"
                 @reverse="reverseDialogOpen = true"
             />
 
+            <TransactionActionDialog
+                v-model:open="postDialogOpen"
+                type="post"
+                :title="t('general.post') + ' ' + t('sidebar.owners.drawing')"
+                :description="t('general.post_document_desc')"
+                @confirm="postDrawing"
+            />
             <TransactionActionDialog
                 v-model:open="reverseDialogOpen"
                 type="reverse"
