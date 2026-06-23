@@ -97,6 +97,7 @@ class Account extends Model
                 $totals = $this->transactionLines()
                     ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
                     ->where('transactions.status', 'posted')
+                    // ->where('transaction_lines.status', 'posted')
                     ->selectRaw('
                         SUM(transaction_lines.debit * transactions.rate)  AS total_debit,
                         SUM(transaction_lines.credit * transactions.rate) AS total_credit
@@ -285,7 +286,7 @@ class Account extends Model
             [
                 'name' => 'Cash in Hand',
                 'local_name' => 'نقد در صندوق',
-                'number' => '1010',
+                'number' => '1010', 
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'cash-or-bank')->first()->id,
                 'account_type_slug' => 'cash-or-bank',
                 'slug' => 'cash-in-hand',

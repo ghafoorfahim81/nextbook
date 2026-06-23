@@ -17,10 +17,12 @@ use App\Models\Owner\Drawing;
 use App\Models\Owner\Owner;
 use App\Models\Transaction\TransactionLine;
 use App\Models\User;
+use App\Enums\TransactionStatus;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\RedirectResponse;
 use Inertia\Response;
 use App\Services\DateConversionService;
 class DrawingController extends Controller
@@ -91,12 +93,14 @@ class DrawingController extends Controller
 
     public function store(DrawingStoreRequest $request, TransactionService $transactionService)
     {
-        $validated = $request->validated(); 
+        $validated = $request->validated();
         DB::transaction(function () use ($validated, $transactionService) {
             $owner = Owner::with('drawingAccount')->findOrFail($validated['owner_id']);
             abort_unless($owner->drawing_account_id, 422, 'Selected owner does not have a drawing account.');
             $dateConversionService = app(DateConversionService::class);
             $date = $validated['date'] ? $dateConversionService->toGregorian($validated['date']) : null;
+            $postImmediately = (bool) user_preference('transaction.drawing_post_immediately', true);
+            $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
             $drawing = Drawing::create([
                 'number' => $validated['number'] ?? (string) ((int) Drawing::max('number') + 1),
                 'owner_id' => $owner->id,
@@ -104,6 +108,24 @@ class DrawingController extends Controller
                 'narration' => $validated['narration'] ?? null,
             ]);
             $amount = (float) $validated['amount'];
+            $lines = [
+                [
+                    'account_id' => $validated['bank_account_id'],
+                    'debit' => 0,
+                    'credit' => $amount,
+                    'remark' => "Drawing by {$owner->name}",
+                    'remark_fa' => "برداشت توسط {$owner->name}",
+                    'remark_ps' => "د". ' '. $owner->name.' '.'لخوا انځورګري ',
+                ],
+                [
+                    'account_id' => $owner->drawing_account_id,
+                    'debit' => $amount,
+                    'credit' => 0,
+                    'remark' => "Drawing by {$owner->name}",
+                    'remark_fa' => "برداشت توسط {$owner->name}",
+                    'remark_ps' => "د". ' '. $owner->name.' '.'لخوا انځورګري',
+                ],
+            ];
 
             $transactionService->post(
                 header: [
@@ -113,25 +135,14 @@ class DrawingController extends Controller
                     'reference_type' => Drawing::class,
                     'reference_id' => $drawing->id,
                     'remark' => $validated['narration'] ?? "Drawing by {$owner->name}",
-                ],
-                lines: [
-                    [
-                        'account_id' => $validated['bank_account_id'],
-                        'debit' => 0,
-                        'credit' => $amount,
-                        'remark' => "Drawing by {$owner->name}",
-                        'remark_fa' => "برداشت توسط {$owner->name}",
-                        'remark_ps' => "د". ' '. $owner->name.' '.'لخوا انځورګري ',
-                    ],
-                    [
-                        'account_id' => $owner->drawing_account_id,
-                        'debit' => $amount,
-                        'credit' => 0,
-                        'remark' => "Drawing by {$owner->name}",
-                        'remark_fa' => "برداشت توسط {$owner->name}",
-                        'remark_ps' => "د". ' '. $owner->name.' '.'لخوا انځورګري',
+                    'status' => $documentStatus,
+                    'posting_payload' => [
+                        'amount' => $amount,
+                        'bank_account_id' => $validated['bank_account_id'],
+                        'drawing_account_id' => $owner->drawing_account_id,
                     ],
                 ],
+                lines: $lines,
             );
         });
 
@@ -148,6 +159,8 @@ class DrawingController extends Controller
             'owner.drawingAccount',
             'transaction.currency',
             'transaction.lines.account',
+            'transaction.originalTransaction',
+            'transaction.reversalTransaction',
         ]);
 
         if ($request->wantsJson()) {
@@ -157,11 +170,17 @@ class DrawingController extends Controller
         }
         return inertia('Owners/Drawings/Show', [
             'drawing' => new DrawingResource($drawing),
+            'reversal' => $drawing->transaction?->reversalTransaction,
+            'originalDoc' => $drawing->transaction?->originalTransaction,
         ]);
     }
 
-    public function edit(Request $request, Drawing $drawing): Response
+    public function edit(Request $request, Drawing $drawing): Response|RedirectResponse
     {
+        if ($drawing->transaction?->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', 'Only draft documents can be edited.');
+        }
+
         $drawing->load([
             'owner.drawingAccount',
             'transaction.currency',
@@ -193,6 +212,10 @@ class DrawingController extends Controller
 
     public function update(DrawingUpdateRequest $request, Drawing $drawing, TransactionService $transactionService)
     {
+        if ($drawing->transaction?->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', 'Only draft documents can be edited.');
+        }
+
         $validated = $request->validated();
 
         DB::transaction(function () use ($drawing, $validated, $transactionService) {
@@ -215,6 +238,25 @@ class DrawingController extends Controller
                 $transaction->forceDelete();
             }
 
+            $lines = [
+                [
+                    'account_id' => $validated['bank_account_id'],
+                    'debit' => 0,
+                    'credit' => $amount,
+                    'remark' => "Drawing by {$owner->name}",
+                    'remark_fa' => "برداشت توسط {$owner->name}",
+                    'remark_ps' => "د". ' '. $owner->name.' '.'لخوا انځورګري',
+                ],
+                [
+                    'account_id' => $owner->drawing_account_id,
+                    'debit' => $amount,
+                    'credit' => 0,
+                    'remark' => "Drawing by {$owner->name}",
+                    'remark_fa' => "برداشت توسط {$owner->name}",
+                    'remark_ps' => "د". ' '. $owner->name.' '.'لخوا انځورګري',
+                ],
+            ];
+
             $transactionService->post(
                 header: [
                     'currency_id' => $validated['currency_id'],
@@ -223,33 +265,41 @@ class DrawingController extends Controller
                     'reference_type' => Drawing::class,
                     'reference_id' => $drawing->id,
                     'remark' => $validated['narration'] ?? "Drawing by {$owner->name}",
-                ],
-                lines: [
-                    [
-                        'account_id' => $validated['bank_account_id'],
-                        'debit' => 0,
-                        'credit' => $amount,
-                        'remark' => "Drawing by {$owner->name}",
-                        'remark_fa' => "برداشت توسط {$owner->name}",
-                        'remark_ps' => "د". ' '. $owner->name.' '.'لخوا انځورګري',
-                    ],
-                    [
-                        'account_id' => $owner->drawing_account_id,
-                        'debit' => $amount,
-                        'credit' => 0,
-                        'remark' => "Drawing by {$owner->name}",
-                        'remark_fa' => "برداشت توسط {$owner->name}",
-                        'remark_ps' => "د". ' '. $owner->name.' '.'لخوا انځورګري',
+                    'status' => TransactionStatus::DRAFT->value,
+                    'posting_payload' => [
+                        'amount' => $amount,
+                        'bank_account_id' => $validated['bank_account_id'],
+                        'drawing_account_id' => $owner->drawing_account_id,
                     ],
                 ],
+                lines: $lines,
             );
         });
 
         return redirect()->route('drawings.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.drawing')]));
     }
 
+    public function post(Drawing $drawing, TransactionService $transactionService)
+    {
+        $this->authorize('update', $drawing);
+
+        if ($drawing->transaction?->status !== TransactionStatus::DRAFT->value) {
+            abort(422, 'Only draft documents can be posted.');
+        }
+
+        DB::transaction(function () use ($drawing, $transactionService) {
+            $transactionService->postDraft($drawing->transaction()->firstOrFail());
+        });
+
+        return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.drawing')]));
+    }
+
     public function destroy(Request $request, Drawing $drawing)
     {
+        if ($drawing->transaction?->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', 'Only draft documents can be deleted.');
+        }
+
         DB::transaction(function () use ($drawing) {
             $transaction = $drawing->transaction()->first();
             if ($transaction) {
@@ -288,11 +338,13 @@ class DrawingController extends Controller
 
         $transaction = $drawing->transaction()->firstOrFail();
 
-        if ($transaction->status !== 'posted') {
-            abort(422, __('general.only_posted_can_be_reversed'));
+        if ($transaction->status !== TransactionStatus::POSTED->value) {
+            abort(422, 'Only posted documents can be reversed.');
         }
 
-        $transactionService->reverse($transaction, $validated['reason'], $drawing->number, Drawing::class);
+        DB::transaction(function () use ($transactionService, $transaction, $validated, $drawing) {
+            $transactionService->reverse($transaction, $validated['reason'], $drawing->number, Drawing::class);
+        });
 
         return back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.drawing')]));
     }

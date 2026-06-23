@@ -267,6 +267,7 @@ Route::middleware([
         ->withTrashed();
     Route::get('/drawings/export', [\App\Http\Controllers\Owner\DrawingController::class, 'export'])->name('drawings.export');
     Route::resource('/drawings', \App\Http\Controllers\Owner\DrawingController::class);
+    Route::post('/drawings/{drawing}/post', [\App\Http\Controllers\Owner\DrawingController::class, 'post'])->name('drawings.post');
     Route::post('/drawings/{drawing}/reverse', [\App\Http\Controllers\Owner\DrawingController::class, 'reverse'])->name('drawings.reverse');
     Route::patch('/drawings/{drawing}/restore', [\App\Http\Controllers\Owner\DrawingController::class, 'restore'])->name('drawings.restore')->withTrashed();
     Route::delete('/drawings/{drawing}/force-delete', [\App\Http\Controllers\Owner\DrawingController::class, 'forceDelete'])

@@ -417,6 +417,10 @@ class SaleController extends Controller
 
     public function edit(Request $request, Sale $sale)
     {
+        if ($sale->status !== TransactionStatus::DRAFT->value) {
+            return back()->with('error', 'Only draft documents can be edited.');
+        }
+
         $bankAccounts = (new Account())->getAccountsByAccountTypeSlug('cash-or-bank');
 
         // Load only what the edit form needs.
@@ -471,27 +475,28 @@ class SaleController extends Controller
             $validated['status'] = TransactionStatus::DRAFT->value;
 
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $sale->date;
-            $affectedCombos = $sale->items()
-                ->get(['item_id', 'warehouse_id', 'branch_id'])
-                ->map(fn ($item) => [
-                    'item_id' => $item->item_id,
-                    'warehouse_id' => $item->warehouse_id,
-                    'branch_id' => $item->branch_id ?? $sale->branch_id,
-                ])
-                ->all();
+            // Posted/reversed sales are immutable, so update no longer needs to
+            // rebuild posted stock state or recalculate avg cost.
+            // $affectedCombos = $sale->items()
+            //     ->get(['item_id', 'warehouse_id', 'branch_id'])
+            //     ->map(fn ($item) => [
+            //         'item_id' => $item->item_id,
+            //         'warehouse_id' => $item->warehouse_id,
+            //         'branch_id' => $item->branch_id ?? $sale->branch_id,
+            //     ])
+            //     ->all();
 
-            // Capture item IDs from the OLD sale before merging new items in.
-            $oldItemIds = collect($affectedCombos)->pluck('item_id')->unique()->values()->all();
+            // $oldItemIds = collect($affectedCombos)->pluck('item_id')->unique()->values()->all();
 
-            $validated['item_list'] = array_map(function ($item) use ($validated, $sale, &$affectedCombos) {
+            $validated['item_list'] = array_map(function ($item) use ($validated) {
                 $item['discount'] = $item['item_discount'] ?? 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
 
-                $affectedCombos[] = [
-                    'item_id' => $item['item_id'],
-                    'warehouse_id' => $validated['warehouse_id'],
-                    'branch_id' => $sale->branch_id,
-                ];
+                // $affectedCombos[] = [
+                //     'item_id' => $item['item_id'],
+                //     'warehouse_id' => $validated['warehouse_id'],
+                //     'branch_id' => $sale->branch_id,
+                // ];
 
                 return $item;
             }, $validated['item_list']);
@@ -511,14 +516,10 @@ class SaleController extends Controller
                 ])
                 ->all();
 
-            $originalMovementCosts = StockMovement::query()
-                ->where('reference_type', Sale::class)
-                ->where('reference_id', $sale->id)
-                ->get(['item_id', 'unit_measure_id', 'unit_cost'])
-                ->mapWithKeys(fn ($m) => [
-                    $m->item_id . '_' . $m->unit_measure_id => (float) $m->unit_cost
-                ])
-                ->all();
+            // Draft sales have no stock movements. Movement-cost fallback was only needed
+            // for editing already-posted sales, which is no longer allowed after the
+            // post/reverse workflow was introduced.
+            $originalMovementCosts = [];
 
             // Snapshot avg_cost and stock qty per item BEFORE any changes.
             // Used by the direct-formula avg recalculation for quantity-reduced items.
@@ -536,10 +537,11 @@ class SaleController extends Controller
             //     ->map(fn ($q) => (float) $q)
             //     ->all();
 
-            $oldSaleItemsByKey = $sale->items()
-                ->get(['item_id', 'quantity', 'unit_measure_id'])
-                ->mapWithKeys(fn ($i) => [$i->item_id . '_' . $i->unit_measure_id => (float) $i->quantity])
-                ->all();
+            // Unneeded for draft-only edits. Posted/reversed sales are immutable.
+            // $oldSaleItemsByKey = $sale->items()
+            //     ->get(['item_id', 'quantity', 'unit_measure_id'])
+            //     ->mapWithKeys(fn ($i) => [$i->item_id . '_' . $i->unit_measure_id => (float) $i->quantity])
+            //     ->all();
 
             $sale->items()->forceDelete();
 
@@ -576,260 +578,184 @@ class SaleController extends Controller
 
             $sale->items()->createMany($validated['item_list']);
 
-            // $transaction = Transaction::query()
-            //     ->where('reference_type', Sale::class)
-            //     ->where('reference_id', $sale->id)
-            //     ->first();
+            $transaction = Transaction::query()
+                ->where('reference_type', Sale::class)
+                ->where('reference_id', $sale->id)
+                ->first();
 
-            // if ($transaction) {
-            //     $transaction->lines()->forceDelete();
-            //     $transaction->forceDelete();
-            // }
+            if ($transaction) {
+                $transaction->lines()->forceDelete();
+                $transaction->forceDelete();
+            }
 
             $lines = [];
             $stockPayloads = [];
             $totalDiscount = (float) $request->input('discount_total', 0);
             $glAccounts = Cache::get('gl_accounts');
 
-            // foreach ($validated['item_list'] as $item) {
-            //     $quantity = (float) $item['quantity'];
-            //     $unitPrice = (float) $item['unit_price'];
-            //     $lineGrossTotal = $quantity * $unitPrice;
+            foreach ($validated['item_list'] as $item) {
+                $quantity = (float) $item['quantity'];
+                $unitPrice = (float) $item['unit_price'];
+                $lineGrossTotal = $quantity * $unitPrice;
 
-            //     $itemModel = $itemModelsById[$item['item_id']] ?? null;
-            //     if (!$itemModel) {
-            //         throw (new \Illuminate\Database\Eloquent\ModelNotFoundException())->setModel(Item::class, [$item['item_id']]);
-            //     }
-            //     $unitCost = (float) $item['net_unit_cost'];
-            //     $totalCost = $unitCost * $quantity;
-            //     $stockPayloads[] = [
-            //         'item_id'              => $item['item_id'],
-            //         'movement_type'        => StockMovementType::OUT->value,
-            //         'unit_measure_id'      => $item['unit_measure_id'],
-            //         'quantity'             => $quantity,
-            //         'source'               => StockSourceType::SALE->value,
-            //         'unit_cost'            => $unitCost,
-            //         'unit_cost_override'   => $unitCost,
-            //         'status'               => StockStatus::POSTED->value,
-            //         'batch'                => $item['batch'] ?? null,
-            //         'date'                 => $date,
-            //         'expire_date'          => $item['expire_date'] ?? null,
-            //         'size_id'              => $validated['size_id'] ?? null,
-            //         'warehouse_id'         => $validated['warehouse_id'],
-            //         'branch_id'            => $sale->branch_id,
-            //         'reference_type'       => Sale::class,
-            //         'reference_id'         => $sale->id,
-            //     ];
+                $itemModel = $itemModelsById[$item['item_id']] ?? null;
+                if (!$itemModel) {
+                    throw (new \Illuminate\Database\Eloquent\ModelNotFoundException())->setModel(Item::class, [$item['item_id']]);
+                }
+                $unitCost = (float) $item['net_unit_cost'];
+                $totalCost = $unitCost * $quantity;
+                $stockPayloads[] = [
+                    'item_id'              => $item['item_id'],
+                    'movement_type'        => StockMovementType::OUT->value,
+                    'unit_measure_id'      => $item['unit_measure_id'],
+                    'quantity'             => $quantity,
+                    'source'               => StockSourceType::SALE->value,
+                    'unit_cost'            => $unitCost,
+                    'unit_cost_override'   => $unitCost,
+                    'status'               => StockStatus::POSTED->value,
+                    'batch'                => $item['batch'] ?? null,
+                    'date'                 => $date,
+                    'expire_date'          => $item['expire_date'] ?? null,
+                    'size_id'              => $validated['size_id'] ?? null,
+                    'warehouse_id'         => $validated['warehouse_id'],
+                    'branch_id'            => $sale->branch_id,
+                    'reference_type'       => Sale::class,
+                    'reference_id'         => $sale->id,
+                ];
 
-            //     $lines[] = [
-            //         'account_id' => $itemModel->income_account_id,
-            //         'ledger_id'  => null,
-            //         'debit'      => 0,
-            //         'credit'     => $lineGrossTotal,
-            //         'remark'     => 'Sale income for item ' . $itemModel->name . '  #' . $sale->number,
-            //         'remark_fa' => 'عاید فروش '. ' '. $itemModel->name.' #'.$sale->number,
-            //         'remark_ps' => 'د'. ' '. $itemModel->name.' '.'خرڅلاو څخه عاید د#'.$sale->number,
-            //     ];
+                $lines[] = [
+                    'account_id' => $itemModel->income_account_id,
+                    'ledger_id'  => null,
+                    'debit'      => 0,
+                    'credit'     => $lineGrossTotal,
+                    'remark'     => 'Sale income for item ' . $itemModel->name . '  #' . $sale->number,
+                    'remark_fa' => 'عاید فروش '. ' '. $itemModel->name.' #'.$sale->number,
+                    'remark_ps' => 'د'. ' '. $itemModel->name.' '.'خرڅلاو څخه عاید د#'.$sale->number,
+                ];
 
-            //     // Cost of goods sold
-            //     $lines[] = [
-            //         'account_id' => $itemModel->cost_account_id,
-            //         'ledger_id'  => null,
-            //         'debit'      => $totalCost,
-            //         'credit'     => 0,
-            //         'remark'     => 'COGS for item ' . $itemModel->name . ' #' . $sale->number,
-            //         'remark_fa' => 'هزینه محصول فروخته شد بابت '. ' '. $itemModel->name.' #'.$sale->number,
-            //         'remark_ps' => 'د'. ' '. $itemModel->name.' '.'د پلورل شوي توکو لګښت#'.$sale->number,
-            //     ];
+                // Cost of goods sold
+                $lines[] = [
+                    'account_id' => $itemModel->cost_account_id,
+                    'ledger_id'  => null,
+                    'debit'      => $totalCost,
+                    'credit'     => 0,
+                    'remark'     => 'COGS for item ' . $itemModel->name . ' #' . $sale->number,
+                    'remark_fa' => 'هزینه محصول فروخته شد بابت '. ' '. $itemModel->name.' #'.$sale->number,
+                    'remark_ps' => 'د'. ' '. $itemModel->name.' '.'د پلورل شوي توکو لګښت#'.$sale->number,
+                ];
 
-            //     // Inventory reduction
-            //     $lines[] = [
-            //         'account_id' => $itemModel->asset_account_id,
-            //         'ledger_id'  => null,
-            //         'debit'      => 0,
-            //         'credit'     => $totalCost,
-            //         'remark'     => 'Inventory out for item ' . $itemModel->name . ' #' . $sale->number,
-            //         'remark_fa'  => 'فروش جنس'. ' '. $itemModel->name.' #'.$sale->number,
-            //         'remark_ps'  => 'د'. ' '. $itemModel->name.' '.'د خرڅلاو #'.$sale->number,
-            //     ];
-            // }
+                // Inventory reduction
+                $lines[] = [
+                    'account_id' => $itemModel->asset_account_id,
+                    'ledger_id'  => null,
+                    'debit'      => 0,
+                    'credit'     => $totalCost,
+                    'remark'     => 'Inventory out for item ' . $itemModel->name . ' #' . $sale->number,
+                    'remark_fa'  => 'فروش جنس'. ' '. $itemModel->name.' #'.$sale->number,
+                    'remark_ps'  => 'د'. ' '. $itemModel->name.' '.'د خرڅلاو #'.$sale->number,
+                ];
+            }
 
-            // Recalculate avg_cost for items affected by qty changes:
-            // - REMOVED: no OUTs left → replay is safe.
-            // - REDUCED: units returned to stock → direct formula (avoids ULID date-tie issue).
-            // - UNCHANGED / INCREASED: avg_cost stays the same (OUTs never affect avg).
-            // $newItemsByKey = collect($validated['item_list'])
-            //     ->mapWithKeys(fn ($i) => [$i['item_id'] . '_' . $i['unit_measure_id'] => (float) $i['quantity']])
-            //     ->all();
-            // $newItemIdSet = collect($validated['item_list'])->pluck('item_id')->flip()->all();
-
-            // // Ensure unit measure values for old sale UOMs are available for conversion.
-            // $missingUomIds = collect($oldSaleItemsByKey)
-            //     ->keys()
-            //     ->map(fn ($key) => explode('_', $key, 2)[1] ?? '')
-            //     ->unique()
-            //     ->filter(fn ($id) => $id !== '' && !isset($unitValuesById[$id]))
-            //     ->values()
-            //     ->all();
-            // if (!empty($missingUomIds)) {
-            //     $extra = UnitMeasure::whereIn('id', $missingUomIds)
-            //         ->pluck('unit', 'id')
-            //         ->map(fn ($v) => (float) $v)
-            //         ->all();
-            //     $unitValuesById = array_merge($unitValuesById, $extra);
-            // }
-
-            // foreach ($oldItemIds as $itemId) {
-            //     if (!isset($newItemIdSet[$itemId])) {
-            //         // Item completely removed — replay is safe (no OUTs remain).
-            //         $this->recalculateAvgCostForItem($itemId);
-            //         continue;
-            //     }
-
-            //     // Resolve item base unit value for qty/cost conversion.
-            //     $itemModel   = $itemModelsById[$itemId] ?? null;
-            //     $itemUomId   = $itemModel?->unit_measure_id ?? '';
-            //     $itemUomVal  = (float) ($unitValuesById[$itemUomId] ?? 1.0) ?: 1.0;
-
-            //     // Accumulate returned qty and value in item base units across all sale-line keys.
-            //     $returnQtyItemUnit   = 0.0;
-            //     $returnValueItemUnit = 0.0;
-
-            //     foreach ($oldSaleItemsByKey as $key => $oldQty) {
-            //         if (!str_starts_with($key, $itemId . '_')) {
-            //             continue;
-            //         }
-            //         $newQty = $newItemsByKey[$key] ?? 0.0;
-            //         $diff   = $oldQty - $newQty;
-            //         if ($diff <= 0) {
-            //             continue;
-            //         }
-
-            //         // conversionFactor = saleUnit / itemUnit  (e.g. 1/24 for دانه vs بسته24دانه)
-            //         $saleUomId    = explode('_', $key, 2)[1] ?? '';
-            //         $saleUomVal   = (float) ($unitValuesById[$saleUomId] ?? 1.0) ?: 1.0;
-            //         $convFactor   = $saleUomVal / $itemUomVal;
-
-            //         $saleNetCost = $originalNetUnitCosts[$key] ?? $originalMovementCosts[$key] ?? 0.0;
-
-            //         $diffInItemUnits    = $diff * $convFactor;
-            //         $costPerItemUnit     = $convFactor > 0 ? $saleNetCost / $convFactor : $saleNetCost;
-
-            //         $returnQtyItemUnit   += $diffInItemUnits;
-            //         $returnValueItemUnit += $diffInItemUnits * $costPerItemUnit;
-            //     }
-
-            //     if ($returnQtyItemUnit <= 0) {
-            //         continue; // qty unchanged or increased — no avg change
-            //     }
-
-            //     // Direct WAC formula: returned units come back at historical cost.
-            //     // All quantities are in the item's base unit (e.g. packages, not دانه).
-            //     $stockQtyBefore = $preUpdateStockQty[$itemId] ?? 0.0;
-            //     $currentAvg    = $preUpdateAvgCosts[$itemId] ?? 0.0;
-            //     $denominator   = $stockQtyBefore + $returnQtyItemUnit;
-
-            //     if ($denominator > 0 && $returnValueItemUnit > 0) {
-            //         $newAvg = ($stockQtyBefore * $currentAvg + $returnValueItemUnit) / $denominator;
-            //         Item::where('id', $itemId)->update(['avg_cost' => $newAvg]);
-            //     }
-            // }
+            // Avg-cost recalculation is intentionally skipped for sale updates now.
+            // Only draft sales can be edited, and draft sales have no posted stock
+            // movements or stock-balance impact. Posting later will create the stock
+            // movement from the stored posting payload.
 
             // Sales discount line
-            // if ($totalDiscount > 0) {
-            //     $lines[] = [
-            //         'account_id' => $glAccounts['discount-to-customer'], // must exist in your cache/accounts setup
-            //         'ledger_id'  => null,
-            //         'debit'      => $totalDiscount,
-            //         'credit'     => 0,
-            //         'remark'     => 'Sales discount for sale #' . $sale->number,
-            //         'remark_fa' => 'تخفیف فروش'. ' '. $sale->number,
-            //         'remark_ps' => 'د'. ' '. $sale->number.' '.'تخفیف خرڅلاو د',
-            //     ];
-            // }
+            if ($totalDiscount > 0) {
+                $lines[] = [
+                    'account_id' => $glAccounts['discount-to-customer'], // must exist in your cache/accounts setup
+                    'ledger_id'  => null,
+                    'debit'      => $totalDiscount,
+                    'credit'     => 0,
+                    'remark'     => 'Sales discount for sale #' . $sale->number,
+                    'remark_fa' => 'تخفیف فروش'. ' '. $sale->number,
+                    'remark_ps' => 'د'. ' '. $sale->number.' '.'تخفیف خرڅلاو د',
+                ];
+            }
 
-            // if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
-            //     $lines[] = [
-            //         'account_id' => $validated['bank_account_id'],
-            //         'ledger_id'  => null,
-            //         'debit'      => $validated['transaction_total'],
-            //         'credit'     => 0,
-            //         'remark'     => 'Cash received from sale: #' . $sale->number,
-            //         'remark_fa'  => ':دریافت نقدی بابت فروش #' . $sale->number,
-            //         'remark_ps'  => 'د'. '#'. $sale->number.' '.'د نغدي اخیستلو په اړه فروش: د',
-            //     ];
-            // }
+            if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
+                $lines[] = [
+                    'account_id' => $validated['bank_account_id'],
+                    'ledger_id'  => null,
+                    'debit'      => $validated['transaction_total'],
+                    'credit'     => 0,
+                    'remark'     => 'Cash received from sale: #' . $sale->number,
+                    'remark_fa'  => ':دریافت نقدی بابت فروش #' . $sale->number,
+                    'remark_ps'  => 'د'. '#'. $sale->number.' '.'د نغدي اخیستلو په اړه فروش: د',
+                ];
+            }
 
-            // if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
-            //     $lines[] = [
-            //         'account_id' => $glAccounts['account-receivable'],
-            //         'ledger_id'  => $validated['customer_id'],
-            //         'debit'      => $validated['transaction_total'],
-            //         'credit'     => 0,
-            //         'remark'     => 'Sale on loan for: #' . $sale->number,
-            //         'remark_fa' => ':فروش قرضی بابت #' . $sale->number,
-            //         'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو: د',
-            //     ];
-            // }
+            if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
+                $lines[] = [
+                    'account_id' => $glAccounts['account-receivable'],
+                    'ledger_id'  => $validated['customer_id'],
+                    'debit'      => $validated['transaction_total'],
+                    'credit'     => 0,
+                    'remark'     => 'Sale on loan for: #' . $sale->number,
+                    'remark_fa' => ':فروش قرضی بابت #' . $sale->number,
+                    'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو: د',
+                ];
+            }
 
-            // if ($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
-            //     $paidAmount = (float) ($validated['payment']['amount'] ?? 0);
+            if ($validated['type'] === \App\Enums\SalePurchaseType::Credit->value) {
+                $paidAmount = (float) ($validated['payment']['amount'] ?? 0);
 
-            //     if ($paidAmount > 0) {
-            //         $lines[] = [
-            //             'account_id' => $validated['payment']['account_id'],
-            //             'ledger_id'  => null,
-            //             'debit'      => $paidAmount,
-            //             'credit'     => 0,
-            //             'remark'     => 'Partial payment for sale: #' . $sale->number,
-            //             'remark_fa' => ':پرداخت جزئی برای فروش #' . $sale->number,
-            //             'remark_ps' => 'د'. '#'. $sale->number.' '.'جزوی تادیه خرڅلاو: د',
-            //         ];
+                if ($paidAmount > 0) {
+                    $lines[] = [
+                        'account_id' => $validated['payment']['account_id'],
+                        'ledger_id'  => null,
+                        'debit'      => $paidAmount,
+                        'credit'     => 0,
+                        'remark'     => 'Partial payment for sale: #' . $sale->number,
+                        'remark_fa' => ':پرداخت جزئی برای فروش #' . $sale->number,
+                        'remark_ps' => 'د'. '#'. $sale->number.' '.'جزوی تادیه خرڅلاو: د',
+                    ];
 
-            //         $remaining = $validated['transaction_total'] - $paidAmount;
+                    $remaining = $validated['transaction_total'] - $paidAmount;
 
-            //         if ($remaining > 0) {
-            //             $lines[] = [
-            //                 'account_id' => $glAccounts['account-receivable'],
-            //                 'ledger_id'  => $validated['customer_id'],
-            //                 'debit'      => $remaining,
-            //                 'credit'     => 0,
-            //                 'remark'     => 'Remaining receivable for sale: #' . $sale->number,
-            //                 'remark_fa' => ': فروش قرض #' . $sale->number,
-            //                 'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو: د',
-            //             ];
-            //         }
-            //     } else {
-            //         $lines[] = [
-            //             'account_id' => $glAccounts['account-receivable'],
-            //             'ledger_id'  => $validated['customer_id'],
-            //             'debit'      => $validated['transaction_total'],
-            //             'credit'     => 0,
-            //             'remark'     => 'Cash received from sale: #' . $sale->number,
-            //             'remark_fa' => ':دریافت نقدی بابت فروش#' . $sale->number,
-            //             'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو د',
-            //         ];
-            //     }
-            // }
+                    if ($remaining > 0) {
+                        $lines[] = [
+                            'account_id' => $glAccounts['account-receivable'],
+                            'ledger_id'  => $validated['customer_id'],
+                            'debit'      => $remaining,
+                            'credit'     => 0,
+                            'remark'     => 'Remaining receivable for sale: #' . $sale->number,
+                            'remark_fa' => ': فروش قرض #' . $sale->number,
+                            'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو: د',
+                        ];
+                    }
+                } else {
+                    $lines[] = [
+                        'account_id' => $glAccounts['account-receivable'],
+                        'ledger_id'  => $validated['customer_id'],
+                        'debit'      => $validated['transaction_total'],
+                        'credit'     => 0,
+                        'remark'     => 'Cash received from sale: #' . $sale->number,
+                        'remark_fa' => ':دریافت نقدی بابت فروش#' . $sale->number,
+                        'remark_ps' => 'د'. '#'. $sale->number.' '.'د پور خرڅلاو د',
+                    ];
+                }
+            }
 
-            // $transaction = $transactionService->post(
-            //     header: [
-            //         'currency_id'    => $validated['currency_id'],
-            //         'rate'           => $validated['rate'],
-            //         'date'           => $date,
-            //         'voucher_number' => 'Sale #' . $sale->number,
-            //         'remark'         => 'Sale number: ' . $sale->number,
-            //         'status'         => TransactionStatus::DRAFT->value,
-            //         'reference_type' => Sale::class,
-            //         'reference_id'   => $sale->id,
-            //         'posting_payload' => [
-            //             'stock_movements' => $stockPayloads,
-            //         ],
-            //     ],
-            //     lines: $lines
-            // );
+            $transaction = $transactionService->post(
+                header: [
+                    'currency_id'    => $validated['currency_id'],
+                    'rate'           => $validated['rate'],
+                    'date'           => $date,
+                    'voucher_number' => 'Sale #' . $sale->number,
+                    'remark'         => 'Sale number: ' . $sale->number,
+                    'status'         => TransactionStatus::DRAFT->value,
+                    'reference_type' => Sale::class,
+                    'reference_id'   => $sale->id,
+                    'posting_payload' => [
+                        'stock_movements' => $stockPayloads,
+                    ],
+                ],
+                lines: $lines
+            );
 
-            // app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
+            app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
             $afterState = [
                 'number' => $sale->number,
                 'customer_id' => $sale->customer_id,
@@ -852,7 +778,7 @@ class SaleController extends Controller
                 metadata: [
                     'action' => 'sale_update',
                     'sale_type' => $validated['type'],
-                    'transaction_id' => $sale?->transaction?->id,
+                    'transaction_id' => $transaction->id,
                 ],
             );
 

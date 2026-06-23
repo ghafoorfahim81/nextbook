@@ -22,6 +22,7 @@ class AccountTypeSeeder extends Seeder
                 'name' => $accountType['name'],
                 'is_main' => $accountType['is_main'],
                 'slug' => $accountType['slug'],
+                'nature' => $accountType['nature'],
                 'remark' => $accountType['remark'],
                 'branch_id' => Branch::where('is_main', true)->first()->id,
                 'created_by' => User::withoutGlobalScopes()->where('email', 'admin@nextbook.af')->first()->id,
