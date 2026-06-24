@@ -39,6 +39,107 @@ class StockService
         });
     }
 
+    // ======================================================
+    // 📌 RESERVATIONS (unposted drafts)
+    // ======================================================
+
+    /**
+     * Reserve stock for an unposted draft line. OUT movements (sales) fill
+     * reserved_out, IN movements (purchases) fill reserved_in. Creates the balance
+     * row if missing so a reservation can exist even at zero on-hand.
+     */
+    public function reserve(array $data): void
+    {
+        DB::transaction(function () use ($data) {
+            [$balance, $column, $quantity] = $this->resolveReservation($data, createIfMissing: true);
+
+            $balance->{$column} = (float) $balance->{$column} + $quantity;
+            $balance->save();
+        });
+    }
+
+    /**
+     * Release a previously reserved draft line (on post, edit, or delete).
+     * Floors at zero and is a no-op when no balance row exists.
+     */
+    public function release(array $data): void
+    {
+        DB::transaction(function () use ($data) {
+            [$balance, $column, $quantity] = $this->resolveReservation($data, createIfMissing: false);
+
+            if (! $balance) {
+                return;
+            }
+
+            $balance->{$column} = max(0, (float) $balance->{$column} - $quantity);
+            $balance->save();
+        });
+    }
+
+    /**
+     * Enforcement check for sales when the reservation preference is ON.
+     * Available to other documents = quantity - (reserved_out - this line's own reserved).
+     * Throws so the caller can surface a friendly, item-named message. A document is
+     * never blocked by its own reservation.
+     */
+    public function ensureReservedAvailability(array $data): void
+    {
+        [$balance, $column, $quantity] = $this->resolveReservation($data, createIfMissing: false);
+
+        if (! $balance) {
+            return;
+        }
+
+        $reservedByOthers = max(0, (float) $balance->reserved_out - $quantity);
+        $availableForThis = (float) $balance->quantity - $reservedByOthers;
+
+        if ($availableForThis < $quantity) {
+            throw ValidationException::withMessages([
+                'stock' => 'Insufficient stock.',
+            ]);
+        }
+    }
+
+    /**
+     * Locate (and optionally create + lock) the balance row for a reservation payload,
+     * and resolve the target column and the quantity expressed in the item's base unit.
+     *
+     * @return array{0: ?StockBalance, 1: string, 2: float}
+     */
+    private function resolveReservation(array $data, bool $createIfMissing): array
+    {
+        $item = Item::findOrFail($data['item_id']);
+        $conversionFactor = $this->resolveConversionFactor($item->unit_measure_id, $data['unit_measure_id']);
+        $quantity = (float) $data['quantity'] * $conversionFactor;
+
+        $column = ($data['movement_type'] ?? null) === StockMovementType::IN->value
+            ? 'reserved_in'
+            : 'reserved_out';
+
+        $keys = [
+            'branch_id' => $data['branch_id'],
+            'item_id' => $data['item_id'],
+            'warehouse_id' => $data['warehouse_id'],
+            'batch' => $data['batch'] ?? null,
+            'expire_date' => ! empty($data['expire_date']) ? $this->normalizeDate($data['expire_date']) : null,
+        ];
+
+        if ($createIfMissing) {
+            $balance = StockBalance::firstOrCreate($keys, [
+                'quantity' => 0,
+                'status' => $data['status'] ?? StockStatus::DRAFT->value,
+            ]);
+            $balance = StockBalance::whereKey($balance->id)->lockForUpdate()->first();
+        } else {
+            $balance = StockBalance::query()
+                ->where($keys)
+                ->lockForUpdate()
+                ->first();
+        }
+
+        return [$balance, $column, $quantity];
+    }
+
     /**
      * Handle Stock IN
      */
@@ -372,6 +473,10 @@ class StockService
      */
     protected function validateStockAvailability(array $data): void
     {
+        // Lock the matching balance rows so concurrent OUT posts serialize on the same
+        // item/warehouse/batch. Postgres rejects FOR UPDATE with an aggregate, so we
+        // fetch the locked rows and sum in PHP. The lock is held until this transaction
+        // (StockService::post) commits, closing the check-to-deduct race window.
         $available = (float) StockBalance::query()
             ->where('branch_id', $data['branch_id'])
             ->where('item_id', $data['item_id'])
@@ -382,7 +487,9 @@ class StockService
             ->when(!empty($data['expire_date']), function($query) use ($data) {
                 return $query->whereDate('expire_date', $this->normalizeDate($data['expire_date']));
             })
-            ->sum('quantity');
+            ->lockForUpdate()
+            ->get()
+            ->sum(fn ($balance) => (float) $balance->quantity);
 
         if ($available < (float) $data['quantity']) {
             throw ValidationException::withMessages([

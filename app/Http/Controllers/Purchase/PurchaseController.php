@@ -151,6 +151,9 @@ class PurchaseController extends Controller
 
                 if ($postImmediately) {
                     $stockService->post($stockPayloads[array_key_last($stockPayloads)]);
+                } else {
+                    // Draft: record the incoming stock as reserved_in for visibility.
+                    $stockService->reserve($stockPayloads[array_key_last($stockPayloads)]);
                 }
                 $itemModel = \App\Models\Inventory\Item::find($item['item_id']);
                 $accountId = $itemModel->asset_account_id;
@@ -366,7 +369,7 @@ class PurchaseController extends Controller
             'transaction_total' => (float) ($purchase->transaction_total ?? 0),
         ];
 
-        $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $activityLogService, $beforeState) {
+        $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $stockService, $activityLogService, $beforeState) {
             $validated = $request->validated();
             $validated['type'] = $validated['purchase_type'] ?? $purchase->type ?? 'cash';
             $validated['status'] = TransactionStatus::DRAFT->value;
@@ -402,6 +405,10 @@ class PurchaseController extends Controller
                 ->first();
 
             if ($transaction) {
+                // Release the reserved_in held by the previous draft payload before rebuilding.
+                foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $oldPayload) {
+                    $stockService->release($oldPayload);
+                }
                 $transaction->lines()->forceDelete();
                 $transaction->forceDelete();
             }
@@ -531,6 +538,11 @@ class PurchaseController extends Controller
                 ],
                 lines: $lines
             );
+
+            // The edited purchase stays a draft, so re-hold the incoming stock as reserved_in.
+            foreach ($stockPayloads as $payload) {
+                $stockService->reserve($payload);
+            }
 
             app(BillAllocationService::class)->recalculatePurchasePaymentStatuses([$purchase->id]);
             $afterState = [
@@ -804,6 +816,8 @@ class PurchaseController extends Controller
             $transaction = $purchase->transaction()->firstOrFail();
 
             foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $payload) {
+                // The draft's reserved_in becomes a real stock increase.
+                $stockService->release($payload);
                 $stockService->post($payload);
             }
 
@@ -842,7 +856,7 @@ class PurchaseController extends Controller
         return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.purchase')]));
     }
 
-    public function destroy(Request $request, Purchase $purchase, ActivityLogService $activityLogService)
+    public function destroy(Request $request, Purchase $purchase, ActivityLogService $activityLogService, StockService $stockService)
     {
         if ($purchase->status !== TransactionStatus::DRAFT->value) {
             return back()->with('error', 'Only draft documents can be deleted.');
@@ -861,9 +875,13 @@ class PurchaseController extends Controller
             'transaction_total' => (float) ($purchase->transaction_total ?? 0),
         ];
 
-        DB::transaction(function () use ($purchase, $activityLogService, $oldValues) {
+        DB::transaction(function () use ($purchase, $activityLogService, $oldValues, $stockService) {
             $transaction = $purchase->transaction()->first();
             if ($transaction) {
+                // Release the reserved_in this draft was holding before removing the transaction.
+                foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $payload) {
+                    $stockService->release($payload);
+                }
                 $transaction->lines()->delete();
                 $transaction->delete();
             }

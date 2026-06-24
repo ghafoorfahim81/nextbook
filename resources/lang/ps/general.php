@@ -75,4 +75,5 @@ return [
     'landed_cost_landed_costs_clearing_account_could_not_be_resolved' => 'Landed costs clearing account could not be resolved.',
     'landed_cost_freight_customs_clearing_account_could_not_be_resolved' => 'Freight/customs clearing account could not be resolved.',
     'landed_cost_home_currency_could_not_be_resolved' => 'Home currency could not be resolved.',
+    'cannot_post_insufficient_stock' => 'ثبتول ناشونی: د :item لپاره کافي موجودي نشته. کیدای شي په بل انوایس کې پلورل شوی وي.',
 ];

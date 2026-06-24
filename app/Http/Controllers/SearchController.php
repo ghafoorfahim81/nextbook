@@ -351,62 +351,95 @@ class SearchController extends Controller
         $itemIds = $items->pluck('id')->all();
 
         $stockBalances = StockBalance::query()
-            ->select(['item_id', 'warehouse_id', 'batch', 'expire_date', 'quantity'])
+            ->select(['item_id', 'warehouse_id', 'batch', 'expire_date', 'quantity', 'reserved_out', 'reserved_in'])
             ->where('warehouse_id', $warehouseId)
             ->whereIn('item_id', $itemIds)
             ->get();
 
-        return $items->map(function (Item $item) use ($stockBalances, $warehouseId, $inStockOnly) {
+        // When enforcement is on, drafted (reserved_out) stock is treated as unavailable.
+        $enforceReservation = (bool) user_preference('transaction.enforce_sale_stock_reservation', false);
+
+        return $items->map(function (Item $item) use ($stockBalances, $warehouseId, $inStockOnly, $enforceReservation) {
         $itemStockBalances = $stockBalances->where('item_id', $item->id)
         ->where('warehouse_id', $warehouseId);
 
         $batchSummaries = [];
         $expirySummaries = [];
         $nonBatchOnHand = 0;
+        $nonBatchReservedOut = 0;
+        $nonBatchReservedIn = 0;
         $hasBatch = false;
         $hasExpiry = false;
 
         foreach ($itemStockBalances as $balance) {
-            $available = max(0, (float) $balance->quantity);
-            if ($available <= 0) {
+            $onHand = max(0, (float) $balance->quantity);
+            $reservedOut = max(0, (float) $balance->reserved_out);
+            $reservedIn = max(0, (float) $balance->reserved_in);
+
+            // Keep rows that carry a reservation even when physical quantity is zero.
+            if ($onHand <= 0 && $reservedOut <= 0 && $reservedIn <= 0) {
                 continue;
             }
 
             $batchKey = trim((string) ($balance->batch ?? ''));
             if ($batchKey !== '') {
                 $hasBatch = true;
-                $batchSummaries[$batchKey] = [
+                $summary = $batchSummaries[$batchKey] ?? [
                     'batch' => $batchKey,
                     'expire_date' => $balance->expire_date,
-                    'on_hand' => ($batchSummaries[$batchKey]['on_hand'] ?? 0) + $available,
+                    'on_hand' => 0,
+                    'reserved_out' => 0,
+                    'reserved_in' => 0,
                     'avg_cost' => $item->avg_cost,
                 ];
+                $summary['on_hand'] += $onHand;
+                $summary['reserved_out'] += $reservedOut;
+                $summary['reserved_in'] += $reservedIn;
+                $batchSummaries[$batchKey] = $summary;
             } elseif ($balance->expire_date) {
                 $hasExpiry = true;
                 $expiryKey = (string) $balance->expire_date;
-                $expirySummaries[$expiryKey] = [
+                $summary = $expirySummaries[$expiryKey] ?? [
                     'expire_date' => $balance->expire_date,
-                    'on_hand' => ($expirySummaries[$expiryKey]['on_hand'] ?? 0) + $available,
+                    'on_hand' => 0,
+                    'reserved_out' => 0,
+                    'reserved_in' => 0,
                     'avg_cost' => $item->avg_cost,
                 ];
+                $summary['on_hand'] += $onHand;
+                $summary['reserved_out'] += $reservedOut;
+                $summary['reserved_in'] += $reservedIn;
+                $expirySummaries[$expiryKey] = $summary;
             } else {
-                $nonBatchOnHand += $available;
+                $nonBatchOnHand += $onHand;
+                $nonBatchReservedOut += $reservedOut;
+                $nonBatchReservedIn += $reservedIn;
             }
         }
 
-        $batches = array_map(function ($batch) {
+        $availableFor = function (float $onHand, float $reservedOut) use ($enforceReservation) {
+            return $enforceReservation ? round(max(0, $onHand - $reservedOut), 2) : round($onHand, 2);
+        };
+
+        $batches = array_map(function ($batch) use ($availableFor) {
             return [
                 'batch' => $batch['batch'],
                 'expire_date' => $batch['expire_date'],
                 'on_hand' => round($batch['on_hand'] ?? 0, 2),
+                'reserved_out' => round($batch['reserved_out'] ?? 0, 2),
+                'reserved_in' => round($batch['reserved_in'] ?? 0, 2),
+                'available' => $availableFor((float) ($batch['on_hand'] ?? 0), (float) ($batch['reserved_out'] ?? 0)),
                 'avg_cost' => $batch['avg_cost'],
             ];
         }, $batchSummaries);
 
-        $expiryBatches = array_map(function ($expiry) {
+        $expiryBatches = array_map(function ($expiry) use ($availableFor) {
             return [
                 'expire_date' => $expiry['expire_date'],
                 'on_hand' => round($expiry['on_hand'] ?? 0, 2),
+                'reserved_out' => round($expiry['reserved_out'] ?? 0, 2),
+                'reserved_in' => round($expiry['reserved_in'] ?? 0, 2),
+                'available' => $availableFor((float) ($expiry['on_hand'] ?? 0), (float) ($expiry['reserved_out'] ?? 0)),
                 'avg_cost' => $expiry['avg_cost'],
             ];
         }, $expirySummaries);
@@ -417,6 +450,22 @@ class SearchController extends Controller
             + $nonBatchOnHand,
             2
         );
+
+        $totalReservedOut = round(
+            array_sum(array_column($batches, 'reserved_out'))
+            + array_sum(array_column($expiryBatches, 'reserved_out'))
+            + $nonBatchReservedOut,
+            2
+        );
+
+        $totalReservedIn = round(
+            array_sum(array_column($batches, 'reserved_in'))
+            + array_sum(array_column($expiryBatches, 'reserved_in'))
+            + $nonBatchReservedIn,
+            2
+        );
+
+        $totalAvailable = $availableFor($totalOnHand, $totalReservedOut);
 
         if ($inStockOnly && $totalOnHand <= 0) {
             return null;
@@ -443,11 +492,14 @@ class SearchController extends Controller
             'selected_batch' => null,
             'rate_b' => $item->rate_b,
             'rate_c' => $item->rate_c,
-            'rack_no' => $item->rack_no, 
+            'rack_no' => $item->rack_no,
             'fast_search' => $item->fast_search,
             'batches' => array_values($batches ?? []),
             'expiry_batches' => array_values($expiryBatches ?? []),
             'on_hand' => $totalOnHand,
+            'reserved_out' => $totalReservedOut,
+            'reserved_in' => $totalReservedIn,
+            'available' => $totalAvailable,
             'avg_cost' => $item->avg_cost,
             'has_batch' => $hasBatch,
             'has_expiry' => $hasExpiry,

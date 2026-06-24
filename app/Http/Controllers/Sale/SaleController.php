@@ -40,6 +40,7 @@ use App\Services\ActivityLogService;
 use App\Services\SpreadsheetExportService;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class SaleController extends Controller
 {
@@ -213,6 +214,9 @@ class SaleController extends Controller
 
                 if ($postImmediately) {
                     $stockService->post($stockPayloads[array_key_last($stockPayloads)]);
+                } else {
+                    // Draft: hold the stock as reserved_out so it is visible to other users.
+                    $stockService->reserve($stockPayloads[array_key_last($stockPayloads)]);
                 }
 
                 // Revenue at gross amount
@@ -584,6 +588,10 @@ class SaleController extends Controller
                 ->first();
 
             if ($transaction) {
+                // Release the reservations held by the previous draft payload before rebuilding.
+                foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $oldPayload) {
+                    $stockService->release($oldPayload);
+                }
                 $transaction->lines()->forceDelete();
                 $transaction->forceDelete();
             }
@@ -754,6 +762,11 @@ class SaleController extends Controller
                 ],
                 lines: $lines
             );
+
+            // The edited sale stays a draft, so re-hold the stock as reserved_out.
+            foreach ($stockPayloads as $payload) {
+                $stockService->reserve($payload);
+            }
 
             app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
             $afterState = [
@@ -1157,19 +1170,45 @@ class SaleController extends Controller
             abort(422, 'Only draft documents can be posted.');
         }
 
-        DB::transaction(function () use ($sale, $transactionService, $stockService) {
-            $transaction = $sale->transaction()->firstOrFail();
+        $enforceReservation = (bool) user_preference('transaction.enforce_sale_stock_reservation', false);
 
-            foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $payload) {
-                $stockService->post($payload);
-            }
+        try {
+            DB::transaction(function () use ($sale, $transactionService, $stockService, $enforceReservation) {
+                $transaction = $sale->transaction()->firstOrFail();
 
-            $transactionService->postDraft($transaction);
-            $sale->update([
-                'status' => TransactionStatus::POSTED->value,
-                'updated_by' => Auth::id(),
-            ]);
-        });
+                foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $payload) {
+                    try {
+                        // When enforcement is on, block posting if another draft already
+                        // holds the stock. Checked before releasing this draft's own
+                        // reservation so a document is never blocked by itself.
+                        if ($enforceReservation) {
+                            $stockService->ensureReservedAvailability($payload);
+                        }
+
+                        // This draft's reservation becomes a real deduction.
+                        $stockService->release($payload);
+                        $stockService->post($payload);
+                    } catch (ValidationException $e) {
+                        // Stock was sufficient when this draft was created, but another
+                        // posted invoice has since consumed it. Surface a clear, item-named
+                        // message instead of the raw "Insufficient stock." validation error.
+                        $itemName = Item::find($payload['item_id'] ?? null)?->name ?? ($payload['item_id'] ?? '');
+                        throw ValidationException::withMessages([
+                            'stock' => __('general.cannot_post_insufficient_stock', ['item' => $itemName]),
+                        ]);
+                    }
+                }
+
+                $transactionService->postDraft($transaction);
+                $sale->update([
+                    'status' => TransactionStatus::POSTED->value,
+                    'updated_by' => Auth::id(),
+                ]);
+            });
+        } catch (ValidationException $e) {
+            // Transaction rolled back, so the sale stays a draft and stock is untouched.
+            return redirect()->back()->with('error', $e->validator->errors()->first('stock') ?: $e->getMessage());
+        }
 
         return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.sale')]));
     }
@@ -1199,13 +1238,18 @@ class SaleController extends Controller
         return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.sale')]));
     }
 
-    public function destroy(Request $request, Sale $sale, ActivityLogService $activityLogService)
+    public function destroy(Request $request, Sale $sale, ActivityLogService $activityLogService, StockService $stockService)
     {
         if ($sale->status !== TransactionStatus::DRAFT->value) {
             return back()->with('error', 'Only draft documents can be deleted.');
         }
 
-        DB::transaction(function () use ($sale, $activityLogService) {
+        DB::transaction(function () use ($sale, $activityLogService, $stockService) {
+            // Release the stock this draft was holding as reserved_out.
+            foreach ((array) data_get($sale->transaction?->posting_payload, 'stock_movements', []) as $payload) {
+                $stockService->release($payload);
+            }
+
               $oldValues = [
             'number' => $sale->number,
             'customer' => $sale->customer?->name,

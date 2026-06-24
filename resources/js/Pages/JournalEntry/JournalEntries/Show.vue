@@ -16,7 +16,11 @@ const props = defineProps({
 
 const je = computed(() => props.journalEntry?.data ?? props.journalEntry ?? {})
 const transaction = computed(() => je.value?.transaction || null)
-const lines = computed(() => transaction.value?.lines || [])
+const lines = computed(() => {
+    const txnLines = transaction.value?.lines || []
+    if (txnLines.length) return txnLines
+    return je.value?.lines || []
+})
 const totalDebit = computed(() => lines.value.reduce((sum, l) => sum + (Number(l.debit) || 0), 0))
 const totalCredit = computed(() => lines.value.reduce((sum, l) => sum + (Number(l.credit) || 0), 0))
 

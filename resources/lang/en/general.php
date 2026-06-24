@@ -98,4 +98,5 @@ return [
     'current_period_profit_loss' => 'Current Period Profit / Loss',
     'active' => 'Active',
     'inactive' => 'Inactive',
+    'cannot_post_insufficient_stock' => 'Cannot post: not enough stock for :item. It may have been sold on another invoice.',
 ];

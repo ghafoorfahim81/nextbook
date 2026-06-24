@@ -141,6 +141,7 @@ use Illuminate\Validation\Rule;
             'transaction.account_transfer_post_immediately' => 'sometimes|boolean',
             'transaction.item_transfer_post_immediately' => 'sometimes|boolean',
             'transaction.drawing_post_immediately' => 'sometimes|boolean',
+            'transaction.enforce_sale_stock_reservation' => 'sometimes|boolean',
 
             // Tax & Currency Preferences
             'tax_currency' => 'sometimes|array',

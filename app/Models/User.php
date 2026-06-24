@@ -253,6 +253,7 @@ class User extends Authenticatable
             'account_transfer_post_immediately' => true,
             'item_transfer_post_immediately' => true,
             'drawing_post_immediately' => true,
+            'enforce_sale_stock_reservation' => false,
         ],
         'purchase_order' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
