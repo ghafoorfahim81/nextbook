@@ -68,6 +68,9 @@ const buildEmptyRow = () => ({
     unit_price: '',
     base_unit_price: '',
     on_hand: '',
+    reserved_out: '',
+    reserved_in: '',
+    available: '',
     available_measures: [],
     selected_measure: '',
     item_discount: '',
@@ -128,6 +131,9 @@ const initialRows = (saleRecord?.items || []).map((item) => {
         unit_price: item.unit_price,
         base_unit_price: Number.isFinite(baseUnitPrice) ? baseUnitPrice : toNum(item.unit_price, 0),
         on_hand: selectedItem?.on_hand ?? 0,
+        reserved_out: selectedItem?.reserved_out ?? 0,
+        reserved_in: selectedItem?.reserved_in ?? 0,
+        available: selectedItem?.available ?? 0,
         available_measures: availableMeasures,
         selected_measure: selectedMeasure,
         item_discount: item.discount || '',
@@ -408,6 +414,9 @@ const handleItemChange = (index, selectedItem) => {
     row.item_id = selectedItem.id;
     row.unit_measure_id = selectedItem.unit_measure_id;
     row.on_hand = selectedItem.on_hand;
+    row.reserved_out = selectedItem.reserved_out;
+    row.reserved_in = selectedItem.reserved_in;
+    row.available = selectedItem.available;
     row.selected_batch = null;
     row.batch = '';
     row.expire_date = '';
@@ -457,6 +466,18 @@ const onhand = (index) => {
     const converted = (adjustedOnHandBase * baseUnit) / selectedUnit;
 
     return Number.isFinite(converted) ? Number(converted.toFixed(2)) : 0;
+};
+
+const reservedOut = (index) => {
+    const item = form.items[index];
+    if (!item || !item.selected_item) return 0;
+    return Number(item.selected_batch?.reserved_out ?? item.selected_item?.reserved_out ?? item.reserved_out) || 0;
+};
+
+const reservedIn = (index) => {
+    const item = form.items[index];
+    if (!item || !item.selected_item) return 0;
+    return Number(item.selected_batch?.reserved_in ?? item.selected_item?.reserved_in ?? item.reserved_in) || 0;
 };
 
 const rowTotal = (index) => {
@@ -764,6 +785,7 @@ onUnmounted(() => {
                             <th class="px-1 py-1 w-36" v-if="itemColumns.expiry">{{ t('general.expire_date') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
                             <th class="px-1 py-1 w-24" v-if="itemColumns.on_hand">{{ t('general.on_hand') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="itemColumns.on_hand">{{ t('general.reserved_out') }}</th>
                             <th class="px-1 py-1 w-24" v-if="itemColumns.measure">{{ t('general.unit') }}</th>
                             <th class="px-1 py-1 w-24">{{ t('general.price') }}</th>
                             <th class="px-1 py-1 w-24" v-if="itemColumns.discount">{{ t('general.discount') }}</th>
@@ -830,6 +852,9 @@ onUnmounted(() => {
                             </td>
                             <td class="text-center" v-if="itemColumns.on_hand">
                                 <span :title="String(onhand(index))">{{ Number(onhand(index) || 0)  }}</span>
+                            </td>
+                            <td class="text-center" v-if="itemColumns.on_hand">
+                                <span class="text-amber-600" :title="t('general.reserved_in') + ': ' + reservedIn(index)">{{ reservedOut(index) }}</span>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="itemColumns.measure">
                                 <NextSelect
@@ -913,6 +938,7 @@ onUnmounted(() => {
                             <td v-if="itemColumns.batch"></td>
                             <td v-if="itemColumns.expiry"></td>
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
+                            <td v-if="itemColumns.on_hand"></td>
                             <td v-if="itemColumns.on_hand"></td>
                             <td v-if="itemColumns.measure"></td>
                             <td class="text-center">{{ goodsTotal || 0 }}</td>

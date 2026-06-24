@@ -1320,6 +1320,27 @@ const transactionPostModules = [
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="rounded-lg border border-border bg-background/70 p-4">
+                                <div class="flex items-start gap-3">
+                                    <Checkbox
+                                        id="transaction-enforce_sale_stock_reservation"
+                                        :checked="form.transaction?.enforce_sale_stock_reservation ?? false"
+                                        @update:checked="(checked) => {
+                                            if (!form.transaction) form.transaction = {}
+                                            form.transaction.enforce_sale_stock_reservation = checked
+                                        }"
+                                    />
+                                    <div class="space-y-1">
+                                        <Label for="transaction-enforce_sale_stock_reservation" class="cursor-pointer font-medium">
+                                            {{ t('preferences.transaction.enforce_sale_stock_reservation') }}
+                                        </Label>
+                                        <p class="text-sm text-muted-foreground">
+                                            {{ t('preferences.transaction.enforce_sale_stock_reservation_help') }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
 

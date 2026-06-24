@@ -64,6 +64,9 @@ const buildEmptyRow = () => ({
     unit_price: '',
     base_unit_price: '',
     on_hand: '',
+    reserved_out: '',
+    reserved_in: '',
+    available: '',
     available_measures: [],
     selected_measure: '',
     item_discount: '',
@@ -520,6 +523,9 @@ const handleItemChange = async (index, selected_item) => {
         row.base_unit_price = ''
         row.quantity = ''
         row.on_hand = ''
+        row.reserved_out = ''
+        row.reserved_in = ''
+        row.available = ''
         row.selected_batch = null
         row.batch = ''
         row.expire_date = ''
@@ -541,6 +547,9 @@ const handleItemChange = async (index, selected_item) => {
     row.selected_measure = selected_item.unitMeasure
     row.item_id = selected_item.id
     row.on_hand = selected_item.on_hand
+    row.reserved_out = selected_item.reserved_out
+    row.reserved_in = selected_item.reserved_in
+    row.available = selected_item.available
     row.selected_batch = null
     row.batch = ''
     row.expire_date = ''
@@ -606,6 +615,9 @@ const resetRow = (index) => {
     r.unit_price = ''
     r.base_unit_price = ''
     r.on_hand = ''
+    r.reserved_out = ''
+    r.reserved_in = ''
+    r.available = ''
     disabled =false;
 }
 
@@ -643,6 +655,18 @@ const onhand = (index) => {
     const free = Number(item.free) || 0
     const qty = Number(item.quantity) || 0
     return converted - free - qty;
+}
+
+const reservedOut = (index) => {
+    const item = form.items[index]
+    if (!item || !item.selected_item) return 0
+    return Number(item.selected_batch?.reserved_out ?? item.selected_item?.reserved_out ?? item.reserved_out) || 0
+}
+
+const reservedIn = (index) => {
+    const item = form.items[index]
+    if (!item || !item.selected_item) return 0
+    return Number(item.selected_batch?.reserved_in ?? item.selected_item?.reserved_in ?? item.reserved_in) || 0
 }
 
 const toNum = (v, d = 0) => {
@@ -833,6 +857,7 @@ const addRow = () => {
                             <th class="px-1 py-1 w-36" v-if="item_columns.expiry">{{ t('general.expire_date') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
                             <th class="px-1 py-1 w-24" v-if="item_columns.on_hand">{{ t('general.on_hand') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="item_columns.on_hand">{{ t('general.reserved_out') }}</th>
                             <th class="px-1 py-1 w-24" v-if="item_columns.measure">{{ t('general.unit') }}</th>
                             <th class="px-1 py-1 w-24">{{ t('general.price') }}</th>
                             <th class="px-1 py-1 w-24" v-if="item_columns.discount">{{ t('general.discount') }}</th>
@@ -896,6 +921,9 @@ const addRow = () => {
                             </td>
                             <td class="text-center" v-if="item_columns.on_hand">
                                  <span :title="String(onhand(index))" >{{ Number(onhand(index))  }}</span>
+                            </td>
+                            <td class="text-center" v-if="item_columns.on_hand">
+                                 <span class="text-amber-600" :title="t('general.reserved_in') + ': ' + reservedIn(index)">{{ reservedOut(index) }}</span>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
@@ -980,6 +1008,8 @@ const addRow = () => {
                             <!-- Qty total centered -->
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
                             <!-- On hand blank -->
+                            <td v-if="item_columns.on_hand"></td>
+                            <!-- Reserved out blank -->
                             <td v-if="item_columns.on_hand"></td>
                             <!-- Unit blank -->
                             <td v-if="item_columns.measure"></td>

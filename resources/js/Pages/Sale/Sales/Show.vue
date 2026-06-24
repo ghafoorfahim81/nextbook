@@ -2,16 +2,19 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { router } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
 import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
+import { useToast } from '@/Components/ui/toast/use-toast';
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
 import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
 
 const { t } = useI18n();
 const { can } = useAuth();
+const { toast } = useToast();
+const page = usePage();
 
 const props = defineProps({
     sale: { type: Object, required: true },
@@ -90,7 +93,20 @@ const reverseDialogOpen = ref(false);
 const postSale = () => {
     router.post(route('sales.post', saleData.value.id), {}, {
         preserveScroll: true,
-        onSuccess: () => { postDialogOpen.value = false },
+        onSuccess: () => {
+            // A failed post redirects back with a flash error (e.g. stock sold out on
+            // another invoice). Keep the dialog open and surface it instead of closing.
+            const flashError = page.props.flash?.error;
+            if (flashError) {
+                toast({
+                    title: t('general.error') ?? 'Error',
+                    description: flashError,
+                    variant: 'destructive',
+                });
+                return;
+            }
+            postDialogOpen.value = false;
+        },
     });
 };
 

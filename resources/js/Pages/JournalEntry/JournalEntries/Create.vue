@@ -309,7 +309,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <AppLayout :title="t('general.create', { name: t('expense.expense') })">
+    <AppLayout :title="t('general.create', { name: t('journal_entry.journal_entry') })">
         <FormPageToolbar back-route="journal-entries.index" module="journal_entry" />
         <form @submit.prevent="handleSubmitAction(false)">
             <!-- General Section -->
@@ -341,6 +341,8 @@ onUnmounted(() => {
                             :floating-text="t('admin.currency.currency')"
                             :error="form.errors?.currency_id"
                             :searchable="true"
+                            resource-type="currencies"
+                            :search-fields="['name', 'code', 'symbol']"
                         />
                         <NextInput
                             v-model="form.rate"
@@ -533,11 +535,11 @@ onUnmounted(() => {
                 :create-label="t('general.create')"
                 :create-and-new-label="t('general.create_and_new')"
                 :cancel-label="t('general.cancel')"
-                :creating-label="t('general.creating', { name: t('expense.expense') })"
+                :creating-label="t('general.creating', { name: t('journal_entry.journal_entry') })"
                 :create-loading="createLoading"
                 :create-and-new-loading="createAndNewLoading"
                 @create-and-new="handleSubmitAction(true)"
-                @cancel="() => $inertia.visit(route('expenses.index'))"
+                @cancel="() => $inertia.visit(route('journal-entries.index'))"
             />
         </form>
     </AppLayout>

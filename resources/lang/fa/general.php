@@ -95,4 +95,5 @@ return [
     'current_period_profit_loss' => 'سود/زیان دوره جاری',
     'active' => 'فعال',
     'inactive' => 'غیرفعال',
+    'cannot_post_insufficient_stock' => 'ثبت ناممکن است: موجودی کافی برای :item وجود ندارد. ممکن است در فاکتور دیگری فروخته شده باشد.',
 ];

@@ -64,7 +64,9 @@ onMounted(() => {
   form.remarks = je.remarks ?? je.remark ?? ''
 
   // Map in detail lines: enhance for editability, map by account_id, remark/null handling.
-  form.lines = (je.transaction?.lines || je.lines || []).map(line => ({
+  // For drafts the transaction has no posted lines, so fall back to the resolved je.lines (from posting_payload).
+  const sourceLines = je.transaction?.lines?.length ? je.transaction.lines : (je.lines || [])
+  form.lines = sourceLines.map(line => ({
     ...line,
     debit: Number(line.debit) || 0,
     credit: Number(line.credit) || 0,
