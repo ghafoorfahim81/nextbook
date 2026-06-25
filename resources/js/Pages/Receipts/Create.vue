@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
+import { useFormGuard } from '@/composables/useFormGuard'
 import { useForm, usePage, Link } from '@inertiajs/vue3'
 import { ref, watch, computed, reactive, onMounted } from 'vue'
 import axios from 'axios'
@@ -238,6 +239,8 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
     },
   });
 }
+
+useFormGuard(form)
 </script>
 
 <template>
@@ -248,7 +251,7 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
       :show-preferences="true"
       @preferences="showPreferencesPanel = true"
     />
-    <FormPreferencesPanel
+    <FormPreferencesPanel module="receipt"
       v-model:open="showPreferencesPanel"
       pref-group="receipt_payment"
       :prefs="rpPrefs"
@@ -344,7 +347,7 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
           </div>
         </div>
       </div>
-      <SubmitButtons
+      <SubmitButtons module="receipt"
         :create-label="t('general.create')"
         :create-and-new-label="t('general.create_and_new')"
         :save-and-print-label="t('general.save_and_print')"

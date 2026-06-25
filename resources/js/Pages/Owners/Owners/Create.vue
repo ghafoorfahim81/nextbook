@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
+import { useFormGuard } from '@/composables/useFormGuard'
 import { useForm, usePage } from '@inertiajs/vue3'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
@@ -93,11 +94,13 @@ const handleSubmitAction = (createAndNew = false) => {
         .transform(transformFn)
         .post(route('owners.store'), postOptions);
 };
+
+useFormGuard(form)
 </script>
 
 <template>
     <AppLayout :title="t('general.create', { name: t('owner.owner') })">
-    <FormPageToolbar back-route="owners.index" module="owner" />
+    <FormPageToolbar confirm-module="owner" back-route="owners.index" module="owner" />
     <form @submit.prevent="handleSubmitAction(false)">
       <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
@@ -184,7 +187,7 @@ const handleSubmitAction = (createAndNew = false) => {
           </div>
       </div>
       </div>
-      <SubmitButtons
+      <SubmitButtons module="owner"
         :create-label="t('general.create')"
         :create-and-new-label="t('general.create_and_new')"
         :cancel-label="t('general.cancel')"

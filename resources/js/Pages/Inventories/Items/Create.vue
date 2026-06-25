@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
+import { useFormGuard } from '@/composables/useFormGuard'
 import { computed, watch, ref, reactive, onMounted, nextTick } from 'vue'
 import NextInput from '@/Components/next/NextInput.vue'
 import { useForm, router } from '@inertiajs/vue3'
@@ -488,6 +489,8 @@ onMounted(() => {
     })
 })
 
+
+useFormGuard(form)
 </script>
 
 <template>
@@ -498,7 +501,7 @@ onMounted(() => {
             :show-preferences="true"
             @preferences="showPreferencesPanel = true"
         />
-        <FormPreferencesPanel
+        <FormPreferencesPanel module="item"
             v-model:open="showPreferencesPanel"
             pref-group="item_management"
             :prefs="itemPrefs"
@@ -783,7 +786,7 @@ onMounted(() => {
             </div>
         </div>
 
-            <SubmitButtons
+            <SubmitButtons module="item"
                 :create-label="t('general.create')"
                 :create-and-new-label="t('general.create_and_new')"
                 :cancel-label="t('general.cancel')"

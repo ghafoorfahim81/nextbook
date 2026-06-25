@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
+import { useFormGuard } from '@/composables/useFormGuard'
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
@@ -223,11 +224,13 @@ onUnmounted(() => {
         sidebar.setOpen(prevSidebarOpen.value);
     }
 });
+
+useFormGuard(form)
 </script>
 
 <template>
     <AppLayout :title="t('general.create', { name: t('expense.expense') })" >
-        <FormPageToolbar back-route="expenses.index" module="expense" />
+        <FormPageToolbar confirm-module="expense" back-route="expenses.index" module="expense" />
         <form @submit.prevent="handleSubmitAction(false)">
             <!-- General Section -->
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
@@ -428,7 +431,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Action Buttons -->
-            <SubmitButtons
+            <SubmitButtons module="expense"
                 :create-label="t('general.create')"
                 :create-and-new-label="t('general.create_and_new')"
                 :cancel-label="t('general.cancel')"

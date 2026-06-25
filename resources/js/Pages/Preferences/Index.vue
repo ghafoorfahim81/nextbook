@@ -610,6 +610,25 @@ const transactionPostModules = [
     { key: 'item_transfer_post_immediately', label: 'preferences.transaction.modules.item_transfer' },
     { key: 'drawing_post_immediately', label: 'preferences.transaction.modules.drawing' },
 ]
+
+// Per-module "confirm before save" toggles for modules without a dedicated
+// preferences tab. Sale/Purchase/Receipt/Payment/Item are configured in their own tabs.
+const confirmSaveModules = [
+    { key: 'expense', label: 'preferences.transaction.modules.expense' },
+    { key: 'journal_entry', label: 'preferences.transaction.modules.journal_entry' },
+    { key: 'account_transfer', label: 'preferences.transaction.modules.account_transfer' },
+    { key: 'item_transfer', label: 'preferences.transaction.modules.item_transfer' },
+    { key: 'drawing', label: 'preferences.transaction.modules.drawing' },
+    { key: 'ledger', label: 'preferences.transaction.modules.ledger' },
+    { key: 'account', label: 'preferences.transaction.modules.account' },
+    { key: 'owner', label: 'preferences.transaction.modules.owner' },
+]
+
+const getConfirmSave = (key) => form.confirmations?.[key] ?? true
+const setConfirmSave = (key, value) => {
+    if (!form.confirmations) form.confirmations = {}
+    form.confirmations[key] = value
+}
 </script>
 
 <template>
@@ -882,6 +901,13 @@ const transactionPostModules = [
                                 <Label>{{ t('preferences.tax_currency.spec_text') }}</Label>
                                 <Input v-model="form.item_management.spec_text" rows="3" />
                             </div>
+                            <div class="rounded-lg border border-border bg-background/70 p-4 mt-3 flex items-center justify-between">
+                                <div class="space-y-1">
+                                    <Label class="font-medium">{{ t('general.confirm_before_save') }}</Label>
+                                    <p class="text-sm text-muted-foreground">{{ t('preferences.transaction.confirm_before_save_help') }}</p>
+                                </div>
+                                <Switch :model-value="getConfirmSave('item')" @update:model-value="(v) => setConfirmSave('item', v)" />
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -1115,6 +1141,13 @@ const transactionPostModules = [
                                     </div>
                                 </div>
                             </div>
+                            <div class="rounded-lg border border-border bg-background/70 p-4 flex items-center justify-between">
+                                <div class="space-y-1">
+                                    <Label class="font-medium">{{ t('general.confirm_before_save') }}</Label>
+                                    <p class="text-sm text-muted-foreground">{{ t('preferences.transaction.confirm_before_save_help') }}</p>
+                                </div>
+                                <Switch :model-value="getConfirmSave('sale')" @update:model-value="(v) => setConfirmSave('sale', v)" />
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -1236,6 +1269,13 @@ const transactionPostModules = [
                                         <Label>{{ t('preferences.purchase.show_item_transactions') }}</Label>
                                     </div>
                                 </div>
+                                <div class="rounded-lg border border-border bg-background/70 p-4 flex items-center justify-between">
+                                    <div class="space-y-1">
+                                        <Label class="font-medium">{{ t('general.confirm_before_save') }}</Label>
+                                        <p class="text-sm text-muted-foreground">{{ t('preferences.transaction.confirm_before_save_help') }}</p>
+                                    </div>
+                                    <Switch :model-value="getConfirmSave('purchase')" @update:model-value="(v) => setConfirmSave('purchase', v)" />
+                                </div>
                             </template>
                         </CardContent>
                     </Card>
@@ -1301,6 +1341,16 @@ const transactionPostModules = [
                                     <Label>{{ t('preferences.receipt_payment.require_approval') }}</Label>
                                 </div>
                             </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="rounded-lg border border-border bg-background/70 p-4 flex items-center justify-between">
+                                    <Label class="font-normal">{{ t('preferences.transaction.modules.receipt') }} - {{ t('general.confirm_before_save') }}</Label>
+                                    <Switch :model-value="getConfirmSave('receipt')" @update:model-value="(v) => setConfirmSave('receipt', v)" />
+                                </div>
+                                <div class="rounded-lg border border-border bg-background/70 p-4 flex items-center justify-between">
+                                    <Label class="font-normal">{{ t('preferences.transaction.modules.payment') }} - {{ t('general.confirm_before_save') }}</Label>
+                                    <Switch :model-value="getConfirmSave('payment')" @update:model-value="(v) => setConfirmSave('payment', v)" />
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -1338,6 +1388,28 @@ const transactionPostModules = [
                                         <p class="text-sm text-muted-foreground">
                                             {{ t('preferences.transaction.post_immediately_help') }}
                                         </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Confirm before save (modules without a dedicated tab) -->
+                            <div class="pt-2">
+                                <Label class="text-base font-medium">{{ t('general.confirm_before_save') }}</Label>
+                                <p class="text-sm text-muted-foreground mb-3">{{ t('preferences.transaction.confirm_before_save_help') }}</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div
+                                        v-for="module in confirmSaveModules"
+                                        :key="`confirm-${module.key}`"
+                                        class="flex items-center justify-between rounded-lg border border-border bg-background/70 px-4 py-3"
+                                    >
+                                        <Label :for="`confirm-${module.key}`" class="cursor-pointer font-normal">
+                                            {{ t(module.label) }}
+                                        </Label>
+                                        <Switch
+                                            :id="`confirm-${module.key}`"
+                                            :model-value="getConfirmSave(module.key)"
+                                            @update:model-value="(v) => setConfirmSave(module.key, v)"
+                                        />
                                     </div>
                                 </div>
                             </div>

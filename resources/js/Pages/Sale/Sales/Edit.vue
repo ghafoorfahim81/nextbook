@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
+import { useFormGuard } from '@/composables/useFormGuard'
 import { h, ref, watch, onMounted, onUnmounted, computed, reactive } from 'vue';
 import axios from 'axios';
 import { useForm } from '@inertiajs/vue3';
@@ -673,6 +674,8 @@ onUnmounted(() => {
         sidebar.setOpen(previousSidebarOpen.value);
     }
 });
+
+useFormGuard(form)
 </script>
 <template>
     <AppLayout :title="t('general.edit', { name: t('sale.sale') })" :sidebar-collapsed="true">
@@ -682,7 +685,7 @@ onUnmounted(() => {
             :show-preferences="true"
             @preferences="showPreferencesPanel = true"
         />
-        <FormPreferencesPanel
+        <FormPreferencesPanel module="sale"
             v-model:open="showPreferencesPanel"
             pref-group="sale"
             :prefs="salePrefs"
@@ -767,7 +770,7 @@ onUnmounted(() => {
 
             <div class="rounded-xl border bg-card shadow-sm border-violet-500">
                 <table class="w-full table-fixed min-w-[1200px] sale-table border-separate">
-                    <thead class="" :class="form.sale_type === 'cash' ? 'bg-card sticky top-0 z-[200]' : ''">
+                    <thead class="" :class="form.sale_type === 'cash' ? 'bg-card sticky top-0 z-10' : ''">
                         <tr class="rounded-xl text-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 min-w-5 text-center">#</th>
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
@@ -943,23 +946,14 @@ onUnmounted(() => {
             </div>
 
             <div class="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 items-start">
-                <DiscountSummary
-                    :summary="form.summary"
-                    :total-item-discount="totalItemDiscount"
-                    :bill-discount="billDiscountCurrency"
-                    :total-discount="totalDiscount"
-                />
-                <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
-                <div class="rounded-xl p-4 space-y-4">
-                    <div>
-                        <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.bill_discount') }}</div>
-                        <DiscountField
-                            v-model="form.discount"
-                            v-model:discount-type="form.discount_type"
-                            :error="form.errors?.discount"
-                        />
-                    </div>
-                    <div class="space-y-3" v-if="generalFields.type || form.sale_type === 'cash'">
+                <div class="space-y-4">
+                    <DiscountSummary
+                        :summary="form.summary"
+                        :total-item-discount="totalItemDiscount"
+                        :bill-discount="billDiscountCurrency"
+                        :total-discount="totalDiscount"
+                    />
+                    <div class="grid grid-cols-2 gap-2 items-start" v-if="generalFields.type || form.sale_type === 'cash'">
                         <NextSelect
                             v-if="generalFields.type"
                             :options="salePurchaseTypes"
@@ -988,13 +982,24 @@ onUnmounted(() => {
                         />
                     </div>
                 </div>
+                <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
+                <div class="rounded-xl p-4 space-y-4">
+                    <div>
+                        <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.bill_discount') }}</div>
+                        <DiscountField
+                            v-model="form.discount"
+                            v-model:discount-type="form.discount_type"
+                            :error="form.errors?.discount"
+                        />
+                    </div>
+                </div>
                 <TransactionSummary
                     :summary="transactionSummary"
                     :balance-nature="form?.selected_ledger?.statement?.balance_nature"
                 />
             </div>
 
-            <SubmitButtons
+            <SubmitButtons module="sale"
                 :create-label="t('general.update')"
                 :create-and-new-label="t('general.update')"
                 :save-and-print-label="t('general.save_and_print')"

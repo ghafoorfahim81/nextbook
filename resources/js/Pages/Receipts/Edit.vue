@@ -1,5 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
+import { useSaveConfirmation } from '@/composables/useSaveConfirmation'
+import { useFormGuard } from '@/composables/useFormGuard'
 import { useForm, usePage } from '@inertiajs/vue3'
 import { ref, onMounted, watch, computed, reactive } from 'vue'
 import axios from 'axios'
@@ -219,6 +221,10 @@ function submit(action = 'update') {
     },
   })
 }
+
+useFormGuard(form)
+
+const { confirmSave } = useSaveConfirmation()
 </script>
 
 <template>
@@ -229,13 +235,13 @@ function submit(action = 'update') {
       :show-preferences="true"
       @preferences="showPreferencesPanel = true"
     />
-    <FormPreferencesPanel
+    <FormPreferencesPanel module="receipt"
       v-model:open="showPreferencesPanel"
       pref-group="receipt_payment"
       :prefs="rpPrefs"
       :title="t('preferences.tabs.receipt_payment')"
     />
-    <form @submit.prevent="submit('update')">
+    <form @submit.prevent="confirmSave('receipt', () => submit('update'))">
       <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
           {{ t('general.edit', { name: t('receipt.receipt') }) }}
@@ -330,7 +336,7 @@ function submit(action = 'update') {
           <Spinner v-if="form.processing && submitAction === 'update'" class="mr-2 h-4 w-4" />
           {{ t('general.update') }}
         </button>
-        <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white" :disabled="form.processing" @click="submit('save_and_print')">
+        <button type="button" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white" :disabled="form.processing" @click="confirmSave('receipt', () => submit('save_and_print'))">
           <Spinner v-if="form.processing && submitAction === 'save_and_print'" class="mr-2 h-4 w-4" />
           {{ t('general.save_and_print') }}
         </button>

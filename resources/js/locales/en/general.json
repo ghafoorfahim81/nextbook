@@ -245,5 +245,9 @@
   "reversed_by": "Reversed by",
   "reversal_of_transaction": "Reversal of transaction {number}",
   "settings": "Settings",
-  "column_settings": "Column Settings"
+  "column_settings": "Column Settings",
+  "unsaved_changes_warning": "You have unsaved changes. Are you sure you want to leave?",
+  "save_confirmation_title": "Save confirmation",
+  "save_confirmation_message": "Are you sure you want to save this form?",
+  "confirm_before_save": "Confirm before save"
 }

@@ -9,13 +9,14 @@ const props = defineProps({
     description: String,
     cancelText: String,
     continueText: String,
+    contentClass: { type: String, default: '' },
 })
 const emit = defineEmits(['confirm', 'update:open'])
 </script>
 
 <template>
     <Dialog :open="open" @update:open="value => emit('update:open', value)">
-        <DialogContent>
+        <DialogContent :class="contentClass">
             <DialogHeader>
                 <DialogTitle>{{ title }}</DialogTitle>
                 <DialogDescription>{{ description }}</DialogDescription>

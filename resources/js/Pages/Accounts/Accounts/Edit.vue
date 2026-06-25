@@ -1,5 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
+import { useSaveConfirmation } from '@/composables/useSaveConfirmation'
+import { useFormGuard } from '@/composables/useFormGuard'
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
@@ -60,12 +62,16 @@ const handleSelectChange = (field, value) => {
     }
 
 };
+
+useFormGuard(form)
+
+const { confirmSave } = useSaveConfirmation()
 </script>
 
 <template>
     <AppLayout :title="t('account.chart_of_accounts')">
-        <FormPageToolbar back-route="chart-of-accounts.index" module="chart_of_accounts" />
-        <form @submit.prevent="handleUpdate">
+        <FormPageToolbar confirm-module="account" back-route="chart-of-accounts.index" module="chart_of_accounts" />
+        <form @submit.prevent="confirmSave('account', () => handleUpdate())">
             <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.update', { name: t('account.account') }) }}

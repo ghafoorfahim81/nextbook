@@ -19,11 +19,17 @@ const props = defineProps({
      * Top-level preference group this panel edits.
      * One of: 'sale' | 'purchase' | 'item_management' | 'receipt_payment'
      */
-    prefGroup: { type: String, required: true },
+    prefGroup: { type: String, default: '' },
     /** Parent-owned reactive object holding the current values of this group. */
-    prefs: { type: Object, required: true },
+    prefs: { type: Object, default: () => ({}) },
     /** Optional localized title for the panel header. */
     title: { type: String, default: '' },
+    /**
+     * Module slug for the "confirm before save" toggle (e.g. 'sale', 'purchase',
+     * 'receipt', 'item'). When set, a toggle is shown that writes to
+     * user_preferences.confirmations[module]. Leave empty to hide it.
+     */
+    module: { type: String, default: '' },
 })
 
 const emit = defineEmits(['update:open'])
@@ -189,6 +195,27 @@ const setField = (key, value) => {
 }
 
 const isDisabled = (field) => field.dependsOn ? !props.prefs?.[field.dependsOn] : false
+
+/* ----------------------------------------------------------------------------
+ * "Confirm before save" toggle — stored under user_preferences.confirmations[module].
+ * Persisted independently of the page's preference group so it works for every module.
+ * -------------------------------------------------------------------------- */
+const confirmOnSave = computed(() => {
+    if (!props.module) return false
+    return page.props?.user_preferences?.confirmations?.[props.module] ?? true
+})
+
+const setConfirmOnSave = (value) => {
+    if (!props.module) return
+    if (!page.props.user_preferences) page.props.user_preferences = {}
+    page.props.user_preferences.confirmations = {
+        ...(page.props.user_preferences.confirmations || {}),
+        [props.module]: value,
+    }
+    axios.put(route('preferences.update'), {
+        confirmations: { [props.module]: value },
+    }).catch((e) => console.error('Failed to save confirmation preference', e))
+}
 </script>
 
 <template>
@@ -221,6 +248,20 @@ const isDisabled = (field) => field.dependsOn ? !props.prefs?.[field.dependsOn] 
 
             <!-- Body -->
             <div class="flex-1 overflow-y-auto p-4 space-y-5">
+                <!-- Confirm before save (per-module) -->
+                <div v-if="module" class="space-y-2">
+                    <div class="text-xs font-semibold uppercase tracking-wide text-primary/80">
+                        {{ t('general.general') }}
+                    </div>
+                    <div class="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+                        <Label class="text-sm font-normal">{{ t('general.confirm_before_save') }}</Label>
+                        <Switch
+                            :model-value="confirmOnSave"
+                            @update:model-value="setConfirmOnSave"
+                        />
+                    </div>
+                </div>
+
                 <div v-for="(section, sIdx) in sections" :key="sIdx" class="space-y-2">
                     <div class="text-xs font-semibold uppercase tracking-wide text-primary/80">
                         {{ t(section.titleKey) }}
