@@ -119,6 +119,18 @@ class PreferencesController extends Controller
         Cache::put('recordsPerPage', $newPreferences['appearance']['records_per_page']);
         Cache::forget('balance_nature_format');
         Cache::put('balance_nature_format', $newPreferences['appearance']['balance_nature_format']);
+
+        // AJAX saves (e.g. inline preference panel on Create/Edit forms) expect a JSON
+        // response. Returning a redirect here causes the browser to follow it with the
+        // original PUT method, hitting unrelated resource routes (e.g. PUT /sales/create).
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('preferences.preferences_saved'),
+                'preferences' => $newPreferences,
+            ]);
+        }
+
         return redirect()->back()->with('success', value: __('preferences.preferences_saved'));
     }
 

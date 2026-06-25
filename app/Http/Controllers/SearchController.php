@@ -357,7 +357,7 @@ class SearchController extends Controller
             ->get();
 
         // When enforcement is on, drafted (reserved_out) stock is treated as unavailable.
-        $enforceReservation = (bool) user_preference('transaction.enforce_sale_stock_reservation', false);
+        $enforceReservation = (bool) user_preference('sale.enforce_sale_stock_reservation', false);
 
         return $items->map(function (Item $item) use ($stockBalances, $warehouseId, $inStockOnly, $enforceReservation) {
         $itemStockBalances = $stockBalances->where('item_id', $item->id)

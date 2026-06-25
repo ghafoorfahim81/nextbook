@@ -243,5 +243,7 @@
   "reference_number": "Reference Number",
   "english_name": "English Name",
   "reversed_by": "Reversed by",
-  "reversal_of_transaction": "Reversal of transaction {number}"
+  "reversal_of_transaction": "Reversal of transaction {number}",
+  "settings": "Settings",
+  "column_settings": "Column Settings"
 }

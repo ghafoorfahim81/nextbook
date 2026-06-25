@@ -60,6 +60,8 @@ use Illuminate\Validation\Rule;
             'sale.auto_calculate_tax' => 'sometimes|boolean',
             'sale.show_ledger_transactions' => 'sometimes|boolean',
             'sale.show_item_transactions' => 'sometimes|boolean',
+            'sale.enforce_sale_stock_reservation' => 'sometimes|boolean',
+            'sale.item_columns.reserved_out' => 'sometimes|boolean',
 
             // Sale Order
             'sale_order' => 'sometimes|array',
@@ -141,7 +143,6 @@ use Illuminate\Validation\Rule;
             'transaction.account_transfer_post_immediately' => 'sometimes|boolean',
             'transaction.item_transfer_post_immediately' => 'sometimes|boolean',
             'transaction.drawing_post_immediately' => 'sometimes|boolean',
-            'transaction.enforce_sale_stock_reservation' => 'sometimes|boolean',
 
             // Tax & Currency Preferences
             'tax_currency' => 'sometimes|array',

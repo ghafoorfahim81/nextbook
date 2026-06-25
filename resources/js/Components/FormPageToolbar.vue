@@ -2,7 +2,7 @@
 import { router } from '@inertiajs/vue3'
 import { Button } from '@/Components/ui/button'
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
-import { ArrowLeft } from 'lucide-vue-next'
+import { ArrowLeft, SlidersHorizontal } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
 const props = defineProps({
@@ -10,7 +10,10 @@ const props = defineProps({
     /** Route parameters object, or a single route parameter value (e.g. model id) */
     backRouteParams: { type: [Object, String, Number], default: () => ({}) },
     module: { type: String, required: true },
+    showPreferences: { type: Boolean, default: false },
 })
+
+const emit = defineEmits(['preferences'])
 
 const { t } = useI18n()
 
@@ -47,6 +50,17 @@ function goBack() {
             </Button>
         </div>
         <div class="flex items-center gap-2 ms-auto">
+            <Button
+                v-if="showPreferences"
+                type="button"
+                variant="outline"
+                size="sm"
+                class="h-8 gap-1.5 bg-background border-primary/60 hover:bg-primary/40"
+                @click="emit('preferences')"
+            >
+                <SlidersHorizontal class="h-4 w-4 text-primary" />
+                {{ t('general.settings') }}
+            </Button>
             <ModuleHelpButton :module="module" toolbar />
         </div>
     </div>
