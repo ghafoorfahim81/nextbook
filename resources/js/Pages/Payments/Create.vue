@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
+import { useFormGuard } from '@/composables/useFormGuard'
 import { useForm, usePage } from '@inertiajs/vue3'
 import { ref, watch, computed, reactive, onMounted } from 'vue'
 import axios from 'axios'
@@ -219,6 +220,8 @@ onMounted(() => {
   applyCreateDefaults()
   initialized.value = true
 })
+
+useFormGuard(form)
 </script>
 
 <template>
@@ -229,7 +232,7 @@ onMounted(() => {
       :show-preferences="true"
       @preferences="showPreferencesPanel = true"
     />
-    <FormPreferencesPanel
+    <FormPreferencesPanel module="payment"
       v-model:open="showPreferencesPanel"
       pref-group="receipt_payment"
       :prefs="rpPrefs"
@@ -327,7 +330,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <SubmitButtons
+      <SubmitButtons module="payment"
         :create-label="t('general.create')"
         :create-and-new-label="t('general.create_and_new')"
         :save-and-print-label="t('general.save_and_print')"

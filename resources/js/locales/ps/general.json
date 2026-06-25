@@ -185,6 +185,11 @@
   "reversed_by": "بېرته ګرځول شوی د",
   "reversal_of_transaction": "د {number} معاملې بېرته ګرځول",
   "settings": "ترتیبات",
-  "column_settings": "د کالم ترتیبات"
+  "column_settings": "د کالم ترتیبات",
+  "unsaved_changes_warning": "تاسو ناخوندي بدلونونه لرئ. ایا تاسو ډاډه یاست چې وتل غواړئ؟",
+  "save_confirmation_title": "د ساتلو تاییدي",
+  "save_confirmation_message": "ایا تاسو ډاډه یاست چې دا فورمه ساتل غواړئ؟",
+  "confirm_before_save": "د ساتلو دمخه تاییدي",
+  "general": "عمومي"
 }
 

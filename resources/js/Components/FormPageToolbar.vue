@@ -1,7 +1,9 @@
 <script setup>
+import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { Button } from '@/Components/ui/button'
 import ModuleHelpButton from '@/Components/ModuleHelpButton.vue'
+import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { ArrowLeft, SlidersHorizontal } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 
@@ -11,11 +13,20 @@ const props = defineProps({
     backRouteParams: { type: [Object, String, Number], default: () => ({}) },
     module: { type: String, required: true },
     showPreferences: { type: Boolean, default: false },
+    /**
+     * When set (and the page has no rich preferences panel of its own), the toolbar
+     * renders a built-in Settings button + confirm-only panel exposing the per-module
+     * "confirm before save" toggle. Value is the confirmations preference key.
+     */
+    confirmModule: { type: String, default: '' },
 })
 
 const emit = defineEmits(['preferences'])
 
 const { t } = useI18n()
+
+// Built-in confirm-only settings panel (used by modules without their own panel).
+const showConfirmPanel = ref(false)
 
 function goBack() {
     const p = props.backRouteParams
@@ -61,7 +72,25 @@ function goBack() {
                 <SlidersHorizontal class="h-4 w-4 text-primary" />
                 {{ t('general.settings') }}
             </Button>
+            <Button
+                v-else-if="confirmModule"
+                type="button"
+                variant="outline"
+                size="sm"
+                class="h-8 gap-1.5 bg-background border-primary/60 hover:bg-primary/40"
+                @click="showConfirmPanel = true"
+            >
+                <SlidersHorizontal class="h-4 w-4 text-primary" />
+                {{ t('general.settings') }}
+            </Button>
             <ModuleHelpButton :module="module" toolbar />
         </div>
     </div>
+
+    <FormPreferencesPanel
+        v-if="confirmModule && !showPreferences"
+        v-model:open="showConfirmPanel"
+        :module="confirmModule"
+        :title="t('general.settings')"
+    />
 </template>

@@ -144,6 +144,10 @@ use Illuminate\Validation\Rule;
             'transaction.item_transfer_post_immediately' => 'sometimes|boolean',
             'transaction.drawing_post_immediately' => 'sometimes|boolean',
 
+            // Per-module "confirm before save" toggles
+            'confirmations' => 'sometimes|array',
+            'confirmations.*' => 'sometimes|boolean',
+
             // Tax & Currency Preferences
             'tax_currency' => 'sometimes|array',
             'tax_currency.tax_plus' => 'sometimes|boolean',

@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
+import { useFormGuard } from '@/composables/useFormGuard'
 import { useForm } from '@inertiajs/vue3';
 import NextInput from "@/Components/next/NextInput.vue";
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
@@ -36,6 +37,8 @@ const handleSubmit = () => {
 const goBack = () => {
     $inertia.visit(route('roles.index'));
 };
+
+useFormGuard(form)
 </script>
 
 <template>

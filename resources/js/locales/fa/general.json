@@ -248,6 +248,10 @@
   "reversed_by": "برگشت شده توسط",
   "reversal_of_transaction": "برگشت تراکنش {number}",
   "settings": "تنظیمات",
-  "column_settings": "تنظیمات ستون"
+  "column_settings": "تنظیمات ستون",
+  "unsaved_changes_warning": "تغییرات ذخیره‌نشده دارید. آیا مطمئن هستید که می‌خواهید خارج شوید؟",
+  "save_confirmation_title": "تأیید ذخیره",
+  "save_confirmation_message": "آیا مطمئن هستید که می‌خواهید این فرم را ذخیره کنید؟",
+  "confirm_before_save": "تأیید قبل از ذخیره"
 }
 

@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
+import { useFormGuard } from '@/composables/useFormGuard'
 import { computed, ref, watch } from 'vue'
 import { useForm, router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
@@ -143,11 +144,13 @@ function handleSelectChange(field, value) {
     if (chosen) form.rate = chosen.exchange_rate
   }
 }
+
+useFormGuard(form)
 </script>
 
 <template>
   <AppLayout :title="t('general.edit', { name: t('sidebar.owners.drawing') })">
-    <FormPageToolbar back-route="drawings.index" module="owner" />
+    <FormPageToolbar confirm-module="drawing" back-route="drawings.index" module="owner" />
     <form @submit.prevent="handleSubmit">
       <div class="mb-5 rounded-xl border border-primary p-4 shadow-sm relative bg-card">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">
@@ -270,7 +273,7 @@ function handleSelectChange(field, value) {
         </div>
       </div>
 
-      <SubmitButtons
+      <SubmitButtons module="drawing"
         :create-label="t('general.update')"
         :create-and-new-label="t('general.update')"
         :cancel-label="t('general.cancel')"

@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
+import { useFormGuard } from '@/composables/useFormGuard'
 import { ref, computed } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import NextInput from "@/Components/next/NextInput.vue";
@@ -101,6 +102,8 @@ const handleSubmit = (createAndNew = false) => {
 const goBack = () => {
     $inertia.visit(route('users.index'));
 };
+
+useFormGuard(form)
 </script>
 
 <template>

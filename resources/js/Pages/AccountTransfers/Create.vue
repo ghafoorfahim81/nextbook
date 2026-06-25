@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
+import { useFormGuard } from '@/composables/useFormGuard'
 import { useForm, usePage, router } from '@inertiajs/vue3'
 import { ref, watch, computed } from 'vue'
 import { useLazyProps } from '@/composables/useLazyProps'
@@ -94,11 +95,13 @@ const handleSubmitAction = (createAndNew = false) => {
         .post(route('account-transfers.store'), postOptions);
 };
 
+
+useFormGuard(form)
 </script>
 
 <template>
   <AppLayout :title="t('general.create', { name: t('general.account_transfer') })">
-    <FormPageToolbar back-route="account-transfers.index" module="account_transfer" />
+    <FormPageToolbar confirm-module="account_transfer" back-route="account-transfers.index" module="account_transfer" />
     <form @submit.prevent="handleSubmitAction">
       <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
@@ -182,7 +185,7 @@ const handleSubmitAction = (createAndNew = false) => {
         </div>
       </div>
 
-      <SubmitButtons
+      <SubmitButtons module="account_transfer"
       :create-label="t('general.create')"
       :create-and-new-label="t('general.create_and_new')"
       :cancel-label="t('general.cancel')"

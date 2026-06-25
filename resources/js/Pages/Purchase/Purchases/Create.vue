@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
+import { useFormGuard } from '@/composables/useFormGuard'
 import DataTable from '@/Components/DataTable.vue';
 import { h, ref, watch, onMounted, onUnmounted, computed, reactive } from 'vue';
 import axios from 'axios'
@@ -665,6 +666,8 @@ const spec_text = item_management?.spec_text ?? 'batch'
 
 const showPreferencesPanel = ref(false)
 
+
+useFormGuard(form)
 </script>
 
 <template>
@@ -675,7 +678,7 @@ const showPreferencesPanel = ref(false)
             :show-preferences="true"
             @preferences="showPreferencesPanel = true"
         />
-        <FormPreferencesPanel
+        <FormPreferencesPanel module="purchase"
             v-model:open="showPreferencesPanel"
             pref-group="purchase"
             :prefs="purchasePrefs"
@@ -737,7 +740,7 @@ const showPreferencesPanel = ref(false)
             </div>
             <div class="rounded-xl border bg-card shadow-sm border-violet-500">
                 <table class="w-full table-fixed min-w-[1200px] purchase-table border-separate">
-                    <thead class=" " :class="form.purchase_type === 'cash' ? 'bg-card sticky top-0 z-[200]' : ''">
+                    <thead class=" " :class="form.purchase_type === 'cash' ? 'bg-card sticky top-0 z-10' : ''">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 min-w-5 text-center">#</th>
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
@@ -903,18 +906,9 @@ const showPreferencesPanel = ref(false)
                 </table>
             </div>
             <div class="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 items-start">
-                <DiscountSummary :summary="form.summary" :total-item-discount="totalItemDiscount" :bill-discount="billDiscountCurrency" :total-discount="totalDiscount" />
-                <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
-                <div class="rounded-xl p-4 space-y-4">
-                    <div>
-                        <div class="text-sm font-semibold mb-3 text-violet-500 text-sm">{{t('general.bill_discount')}}</div>
-                        <DiscountField
-                            v-model="form.discount"
-                            v-model:discount-type="form.discount_type"
-                            :error="form.errors?.discount"
-                        />
-                    </div>
-                    <div class="space-y-3" v-if="general_fields.type || form.purchase_type === 'cash'">
+                <div class="space-y-4">
+                    <DiscountSummary :summary="form.summary" :total-item-discount="totalItemDiscount" :bill-discount="billDiscountCurrency" :total-discount="totalDiscount" />
+                    <div class="grid grid-cols-2 gap-2 items-start" v-if="general_fields.type || form.purchase_type === 'cash'">
                         <NextSelect
                             v-if="general_fields.type"
                             :options="salePurchaseTypes"
@@ -943,10 +937,21 @@ const showPreferencesPanel = ref(false)
                         />
                     </div>
                 </div>
+                <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
+                <div class="rounded-xl p-4 space-y-4">
+                    <div>
+                        <div class="text-sm font-semibold mb-3 text-violet-500 text-sm">{{t('general.bill_discount')}}</div>
+                        <DiscountField
+                            v-model="form.discount"
+                            v-model:discount-type="form.discount_type"
+                            :error="form.errors?.discount"
+                        />
+                    </div>
+                </div>
                 <TransactionSummary :summary="transactionSummary" :balance-nature="form?.selected_ledger?.statement?.balance_nature" />
             </div>
 
-            <SubmitButtons
+            <SubmitButtons module="purchase"
                 :create-label="t('general.create')"
                 :create-and-new-label="t('general.create_and_new')"
                 :cancel-label="t('general.cancel')"

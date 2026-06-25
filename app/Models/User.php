@@ -257,6 +257,23 @@ class User extends Authenticatable
             'item_transfer_post_immediately' => true,
             'drawing_post_immediately' => true,
         ],
+        // Per-module "confirm before save" dialog toggles. Defaults to enabled so the
+        // confirmation appears until a user disables it per module in Module Settings.
+        'confirmations' => [
+            'sale' => true,
+            'purchase' => true,
+            'receipt' => true,
+            'payment' => true,
+            'expense' => true,
+            'journal_entry' => true,
+            'account_transfer' => true,
+            'item_transfer' => true,
+            'drawing' => true,
+            'item' => true,
+            'ledger' => true,
+            'owner' => true,
+            'account' => true,
+        ],
         'purchase_order' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
             'item_columns' => [

@@ -288,9 +288,9 @@
         "free": "وړیا",
         "colors": "رنګونه",
         "size": "اندازه",
-        "brand": "برانډ", 
+        "brand": "برانډ",
         "rack_no": "د شیلف نمبر",
-        "category": "دسته" ,
+        "category": "دسته",
         "rates": "نرخونه"
     },
     "sales": {
@@ -348,8 +348,12 @@
             "payment": "تادیه",
             "account_transfer": "د حساب انتقال",
             "item_transfer": "د جنس انتقال",
-            "drawing": "برداشت"
-        }
+            "drawing": "برداشت",
+            "ledger": "کتابچه",
+            "account": "حساب",
+            "owner": "خاوند"
+        },
+        "confirm_before_save_help": "د دې ماژولونو کې د ساتلو دمخه د تایید کړکۍ ښکاره کړئ."
     },
     "receipt_payment": {
         "description": "د رسید او تادیې ترتیبات تنظیم کړئ",

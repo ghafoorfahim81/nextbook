@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
+import { useFormGuard } from '@/composables/useFormGuard'
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
@@ -306,11 +307,13 @@ onUnmounted(() => {
         sidebar.setOpen(prevSidebarOpen.value);
     }
 });
+
+useFormGuard(form)
 </script>
 
 <template>
     <AppLayout :title="t('general.create', { name: t('journal_entry.journal_entry') })">
-        <FormPageToolbar back-route="journal-entries.index" module="journal_entry" />
+        <FormPageToolbar confirm-module="journal_entry" back-route="journal-entries.index" module="journal_entry" />
         <form @submit.prevent="handleSubmitAction(false)">
             <!-- General Section -->
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
@@ -531,7 +534,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Action Buttons -->
-            <SubmitButtons
+            <SubmitButtons module="journal_entry"
                 :create-label="t('general.create')"
                 :create-and-new-label="t('general.create_and_new')"
                 :cancel-label="t('general.cancel')"

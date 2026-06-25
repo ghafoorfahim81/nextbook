@@ -9,7 +9,7 @@
     "confirm_reset": "Are you sure you want to reset these preferences to defaults?",
     "import": "Import",
     "export": "Export",
-        "import_success": "Preferences imported successfully",
+    "import_success": "Preferences imported successfully",
     "import_error": "Failed to import preferences. Please check the file format.",
     "preferences_saved": "Preferences saved successfully",
     "preferences_reset": "Preferences reset to defaults",
@@ -340,8 +340,12 @@
             "payment": "Payment",
             "account_transfer": "Account Transfer",
             "item_transfer": "Item Transfer",
-            "drawing": "Drawing"
-        }
+            "drawing": "Drawing",
+            "ledger": "Ledger",
+            "account": "Account",
+            "owner": "Owner"
+        },
+        "confirm_before_save_help": "Show a confirmation dialog before saving in these modules."
     },
     "receipt_payment": {
         "description": "Configure receipt and payment preferences",
@@ -365,7 +369,7 @@
         "spec_text": "Specification Text"
     },
     "notifications": {
-                "description": "Configure notification preferences",
+        "description": "Configure notification preferences",
         "email_notifications": "Email Notifications",
         "email_notifications_desc": "Receive important updates via email",
         "low_balance_alert": "Low Balance Alert",
@@ -428,7 +432,7 @@
         "saturday": "Saturday"
     },
     "display": {
-            "description": "Configure display and UI preferences",
+        "description": "Configure display and UI preferences",
         "theme": "Color mode",
         "light": "Light",
         "dark": "Dark",
