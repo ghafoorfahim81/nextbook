@@ -1170,7 +1170,7 @@ class SaleController extends Controller
             abort(422, 'Only draft documents can be posted.');
         }
 
-        $enforceReservation = (bool) user_preference('transaction.enforce_sale_stock_reservation', false);
+        $enforceReservation = (bool) user_preference('sale.enforce_sale_stock_reservation', false);
 
         try {
             DB::transaction(function () use ($sale, $transactionService, $stockService, $enforceReservation) {

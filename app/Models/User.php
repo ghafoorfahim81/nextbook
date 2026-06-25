@@ -124,6 +124,7 @@ class User extends Authenticatable
                 'batch' => false,
                 'expiry' => false,
                 'on_hand' => true,
+                'reserved_out' => true,
                 'measure' => true,
                 'discount' => true,
                 'tax' => false,
@@ -144,6 +145,7 @@ class User extends Authenticatable
             'auto_calculate_tax' => true,
             'show_ledger_transactions' => true,
             'show_item_transactions' => true,
+            'enforce_sale_stock_reservation' => false,
         ],
         'sale_order' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
@@ -227,6 +229,7 @@ class User extends Authenticatable
                 'batch' => false,
                 'expiry' => false,
                 'on_hand' => true,
+                'reserved_in' => true,
                 'measure' => true,
                 'discount' => true,
                 'tax' => false,
@@ -253,7 +256,6 @@ class User extends Authenticatable
             'account_transfer_post_immediately' => true,
             'item_transfer_post_immediately' => true,
             'drawing_post_immediately' => true,
-            'enforce_sale_stock_reservation' => false,
         ],
         'purchase_order' => [
             'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],

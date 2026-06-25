@@ -1,11 +1,12 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
-import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
+import { h, ref, watch, onMounted, onUnmounted, computed, reactive } from 'vue';
 import axios from 'axios';
 import { useForm } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
+import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue';
 import PaymentDialog from '@/Components/next/PaymentDialog.vue';
 import { useI18n } from 'vue-i18n';
 import TransactionSummary from '@/Components/next/TransactionSummary.vue';
@@ -40,8 +41,14 @@ useLazyProps(props, ['ledgers', 'accounts']);
 
 const purchaseRecord = props.purchase?.data ?? props.purchase ?? {};
 const userPreferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? {});
-const general_fields = computed(() => userPreferences.value?.purchase?.general_fields ?? {});
-const item_columns = computed(() => userPreferences.value?.purchase?.item_columns ?? {});
+// Single reactive copy of the purchase preferences so the panel and form stay in sync live.
+const purchasePrefs = reactive(JSON.parse(JSON.stringify(userPreferences.value?.purchase ?? {})));
+if (!purchasePrefs.general_fields || typeof purchasePrefs.general_fields !== 'object') purchasePrefs.general_fields = {};
+if (!purchasePrefs.item_columns || typeof purchasePrefs.item_columns !== 'object') purchasePrefs.item_columns = {};
+if (purchasePrefs.item_columns.reserved_in === undefined) purchasePrefs.item_columns.reserved_in = true;
+const general_fields = computed(() => purchasePrefs.general_fields);
+const item_columns = computed(() => purchasePrefs.item_columns);
+const showPreferencesPanel = ref(false);
 const itemManagement = computed(() => userPreferences.value?.item_management ?? {});
 const spec_text = computed(() => itemManagement.value?.spec_text ?? 'batch');
 const MIN_PURCHASE_ROWS = 6;
@@ -628,7 +635,18 @@ onUnmounted(() => {
 </script>
 <template>
     <AppLayout :title="t('general.edit', { name: t('purchase.purchase') })" :sidebar-collapsed="true">
-        <FormPageToolbar back-route="purchases.index" module="purchase" />
+        <FormPageToolbar
+            back-route="purchases.index"
+            module="purchase"
+            :show-preferences="true"
+            @preferences="showPreferencesPanel = true"
+        />
+        <FormPreferencesPanel
+            v-model:open="showPreferencesPanel"
+            pref-group="purchase"
+            :prefs="purchasePrefs"
+            :title="t('preferences.tabs.purchase')"
+        />
         <form @submit.prevent="handleSubmitAction">
             <div
                 v-if="stockLocked"
@@ -698,33 +716,6 @@ onUnmounted(() => {
                         />
                     </div>
 
-                    <div class="grid grid-cols-1 gap-2" v-if="general_fields.type">
-                        <NextSelect
-                            :options="salePurchaseTypes"
-                            v-model="form.selected_purchase_type"
-                            :clearable="false"
-                            @update:modelValue="(value) => handleSelectChange('purchase_type', value)"
-                            label-key="name"
-                            value-key="id"
-                            :reduce="(salePurchaseType) => salePurchaseType"
-                            :floating-text="t('general.payment_type')"
-                            :error="form.errors?.purchase_type"
-                        />
-                    </div>
-                    <NextSelect
-                        v-if="form.purchase_type === 'cash'"
-                        :options="bankAccounts"
-                        v-model="form.selected_bank_account"
-                        @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
-                        label-key="name"
-                        :searchable="true"
-                        :floating-text="t('general.bank_account')"
-                        :error="form.errors?.bank_account_id"
-                        resource-type="accounts"
-                        :search-fields="['name', 'number', 'slug']"
-                        value-key="id"
-                        :reduce="(bankAccount) => bankAccount"
-                    />
                     <NextSelect
                         v-if="general_fields.warehouse"
                         :options="warehouses.data"
@@ -752,7 +743,7 @@ onUnmounted(() => {
                             <th class="px-1 py-1 w-36" v-if="item_columns.expiry">{{ t('general.expire_date') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
                             <th class="px-1 py-1 w-24" v-if="item_columns.on_hand">{{ t('general.on_hand') }}</th>
-                            <th class="px-1 py-1 w-24" v-if="item_columns.on_hand">{{ t('general.reserved_in') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="item_columns.reserved_in">{{ t('general.reserved_in') }}</th>
                             <th class="px-1 py-1 w-24" v-if="item_columns.measure">{{ t('general.unit') }}</th>
                             <th class="px-1 py-1 w-24">{{ t('general.price') }}</th>
                             <th class="px-1 py-1 w-24" v-if="item_columns.discount">{{ t('general.discount') }}</th>
@@ -813,7 +804,7 @@ onUnmounted(() => {
                             <td class="text-center" v-if="item_columns.on_hand">
                                 <span :title="String(onhand(index))">{{ Number(onhand(index) || 0) }}</span>
                             </td>
-                            <td class="text-center" v-if="item_columns.on_hand">
+                            <td class="text-center" v-if="item_columns.reserved_in">
                                 <span class="text-sky-600" :title="t('general.reserved_out') + ': ' + reservedOut(index)">{{ reservedIn(index) }}</span>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.measure">
@@ -891,7 +882,7 @@ onUnmounted(() => {
                             <td v-if="item_columns.expiry"></td>
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
                             <td v-if="item_columns.on_hand"></td>
-                            <td v-if="item_columns.on_hand"></td>
+                            <td v-if="item_columns.reserved_in"></td>
                             <td v-if="item_columns.measure"></td>
                             <td class="text-center">{{ totalPurchasePrice || 0 }}</td>
                             <td class="text-center" v-if="item_columns.discount">{{ totalItemDiscount || 0 }}</td>
@@ -907,13 +898,43 @@ onUnmounted(() => {
             <div class="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 items-start">
                 <DiscountSummary :summary="form.summary" :total-item-discount="totalItemDiscount" :bill-discount="billDiscountCurrency" :total-discount="totalDiscount" />
                 <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
-                <div class="rounded-xl p-4">
-                    <div class="text-sm font-semibold mb-3 text-violet-500 text-sm">{{ t('general.bill_discount') }}</div>
-                    <DiscountField
-                        v-model="form.discount"
-                        v-model:discount-type="form.discount_type"
-                        :error="form.errors?.discount"
-                    />
+                <div class="rounded-xl p-4 space-y-4">
+                    <div>
+                        <div class="text-sm font-semibold mb-3 text-violet-500 text-sm">{{ t('general.bill_discount') }}</div>
+                        <DiscountField
+                            v-model="form.discount"
+                            v-model:discount-type="form.discount_type"
+                            :error="form.errors?.discount"
+                        />
+                    </div>
+                    <div class="space-y-3" v-if="general_fields.type || form.purchase_type === 'cash'">
+                        <NextSelect
+                            v-if="general_fields.type"
+                            :options="salePurchaseTypes"
+                            v-model="form.selected_purchase_type"
+                            :clearable="false"
+                            @update:modelValue="(value) => handleSelectChange('purchase_type', value)"
+                            label-key="name"
+                            value-key="id"
+                            :reduce="(salePurchaseType) => salePurchaseType"
+                            :floating-text="t('general.payment_type')"
+                            :error="form.errors?.purchase_type"
+                        />
+                        <NextSelect
+                            v-if="form.purchase_type === 'cash'"
+                            :options="bankAccounts"
+                            v-model="form.selected_bank_account"
+                            @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
+                            label-key="name"
+                            :searchable="true"
+                            :floating-text="t('general.bank_account')"
+                            :error="form.errors?.bank_account_id"
+                            resource-type="accounts"
+                            :search-fields="['name', 'number', 'slug']"
+                            value-key="id"
+                            :reduce="(bankAccount) => bankAccount"
+                        />
+                    </div>
                 </div>
                 <TransactionSummary :summary="transactionSummary" :balance-nature="form?.selected_ledger?.statement?.balance_nature" />
             </div>

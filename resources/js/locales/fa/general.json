@@ -246,6 +246,8 @@
   "reference_number": "شماره مرجع",
   "english_name": "نام انگلیسی",
   "reversed_by": "برگشت شده توسط",
-  "reversal_of_transaction": "برگشت تراکنش {number}"
+  "reversal_of_transaction": "برگشت تراکنش {number}",
+  "settings": "تنظیمات",
+  "column_settings": "تنظیمات ستون"
 }
 

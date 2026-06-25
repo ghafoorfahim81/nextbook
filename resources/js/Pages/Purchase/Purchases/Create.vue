@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
+import { h, ref, watch, onMounted, onUnmounted, computed, reactive } from 'vue';
 import axios from 'axios'
 import { useForm, usePage } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
@@ -20,6 +20,7 @@ import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { Trash2 } from 'lucide-vue-next';
+import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { useLazyProps } from '@/composables/useLazyProps'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
 const { t } = useI18n();
@@ -651,17 +652,35 @@ const addRow = () => {
     })
 }
 const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
-const general_fields = user_preferences.value?.purchase?.general_fields ?? {}
-const item_columns = user_preferences.value?.purchase?.item_columns ?? {}
-const purchase_preferences = user_preferences.value?.purchase ?? {}
+// Single reactive copy of the purchase preferences so the panel and form stay in sync live.
+const purchasePrefs = reactive(JSON.parse(JSON.stringify(user_preferences.value?.purchase ?? {})))
+if (!purchasePrefs.general_fields || typeof purchasePrefs.general_fields !== 'object') purchasePrefs.general_fields = {}
+if (!purchasePrefs.item_columns || typeof purchasePrefs.item_columns !== 'object') purchasePrefs.item_columns = {}
+if (purchasePrefs.item_columns.reserved_in === undefined) purchasePrefs.item_columns.reserved_in = true
+const general_fields = purchasePrefs.general_fields
+const localColumns = purchasePrefs.item_columns
+const purchase_preferences = purchasePrefs
 const item_management = user_preferences.value?.item_management ?? {}
 const spec_text = item_management?.spec_text ?? 'batch'
+
+const showPreferencesPanel = ref(false)
 
 </script>
 
 <template>
     <AppLayout :title="t('general.create', { name: t('purchase.purchase') })" :sidebar-collapsed="true">
-        <FormPageToolbar back-route="purchases.index" module="purchase" />
+        <FormPageToolbar
+            back-route="purchases.index"
+            module="purchase"
+            :show-preferences="true"
+            @preferences="showPreferencesPanel = true"
+        />
+        <FormPreferencesPanel
+            v-model:open="showPreferencesPanel"
+            pref-group="purchase"
+            :prefs="purchasePrefs"
+            :title="t('preferences.tabs.purchase')"
+        />
         <form @submit.prevent="handleSubmitAction(false)">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative ">
             <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">{{ t('general.create', { name: t('purchase.purchase') }) }}</div>
@@ -701,33 +720,6 @@ const spec_text = item_management?.spec_text ?? 'batch'
                 <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" :disabled="form.selected_currency?.is_base_currency === true" v-model="form.rate" :label="t('general.rate')"/>
                 </div>
 
-               <div class="grid grid-cols-1 gap-2" v-if="general_fields.type">
-                <NextSelect
-                    :options="salePurchaseTypes"
-                    v-model="form.selected_purchase_type"
-                    :clearable="false"
-                    @update:modelValue="(value) => handleSelectChange('purchase_type', value)"
-                    label-key="name"
-                    value-key="id"
-                    :reduce="salePurchaseType => salePurchaseType"
-                    :floating-text="t('general.payment_type')"
-                    :error="form.errors?.purchase_type"
-                />
-                </div>
-                    <NextSelect
-                    v-if="form.purchase_type === 'cash'"
-                    :options="bankAccounts"
-                    v-model="form.selected_bank_account"
-                    @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
-                    label-key="name"
-                    :searchable="true"
-                    :floating-text="t('general.bank_account')"
-                    :error="form.errors?.bank_account_id"
-                    resource-type="accounts"
-                    :search-fields="['name', 'number', 'slug']"
-                    value-key="id"
-                    :reduce="bankAccount => bankAccount"
-                />
                 <NextSelect v-if="general_fields.warehouse"
                     :options="warehouses.data"
                     :clearable="false"
@@ -747,18 +739,18 @@ const spec_text = item_management?.spec_text ?? 'batch'
                 <table class="w-full table-fixed min-w-[1200px] purchase-table border-separate">
                     <thead class=" " :class="form.purchase_type === 'cash' ? 'bg-card sticky top-0 z-[200]' : ''">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
-                            <th class="px-1 py-1 w-5 min-w-5">#</th>
+                            <th class="px-1 py-1 w-5 min-w-5 text-center">#</th>
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
-                            <th class="px-1 py-1 w-32" v-if="item_columns.batch">{{ t(spec_text) }}</th>
-                            <th class="px-1 py-1 w-36" v-if="item_columns.expiry">{{ t('general.expire_date') }}</th>
+                            <th class="px-1 py-1 w-32" v-if="localColumns.batch">{{ t(spec_text) }}</th>
+                            <th class="px-1 py-1 w-36" v-if="localColumns.expiry">{{ t('general.expire_date') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
-                            <th class="px-1 py-1 w-24" v-if="item_columns.on_hand">{{ t('general.on_hand') }}</th>
-                            <th class="px-1 py-1 w-24" v-if="item_columns.on_hand">{{ t('general.reserved_in') }}</th>
-                            <th class="px-1 py-1 w-24" v-if="item_columns.measure">{{ t('general.unit') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="localColumns.on_hand">{{ t('general.on_hand') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="localColumns.reserved_in">{{ t('general.reserved_in') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="localColumns.measure">{{ t('general.unit') }}</th>
                             <th class="px-1 py-1 w-24">{{ t('general.price') }}</th>
-                            <th class="px-1 py-1 w-24" v-if="item_columns.discount">{{ t('general.discount') }}</th>
-                            <th class="px-1 py-1 w-16" v-if="item_columns.free">{{ t('general.free') }}</th>
-                            <th class="px-1 py-1 w-16" v-if="item_columns.tax">{{ t('general.tax') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="localColumns.discount">{{ t('general.discount') }}</th>
+                            <th class="px-1 py-1 w-16" v-if="localColumns.free">{{ t('general.free') }}</th>
+                            <th class="px-1 py-1 w-16" v-if="localColumns.tax">{{ t('general.tax') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.total') }}</th>
                             <th class="px-1 py-1 w-10  ">
                                 <Trash2 class="w-4 h-4 inline text-destructive" />
@@ -767,7 +759,7 @@ const spec_text = item_management?.spec_text ?? 'batch'
                     </thead>
                     <tbody class="p-2">
                         <tr v-for="(item, index) in form.items" :key="item.id" class="hover:bg-muted/40 transition-colors">
-                            <td class="px-1 py-2 align-top w-5">{{ index + 1 }}</td>
+                            <td class="px-1 py-2 align-top w-5 text-center">{{ index + 1 }}</td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
                                     :options="itemOptions"
@@ -786,7 +778,7 @@ const spec_text = item_management?.spec_text ?? 'batch'
                                     @update:modelValue="value => { handleItemChange(index, value) }"
                                     />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.batch">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="localColumns.batch">
                                 <NextInput
                                     v-model="item.batch"
                                     :disabled="!item.selected_item"
@@ -794,7 +786,7 @@ const spec_text = item_management?.spec_text ?? 'batch'
                                     @input="notifyIfDuplicate(index)"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none relative relative wq': !isRowEnabled(index) }" v-if="item_columns.expiry">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none relative relative wq': !isRowEnabled(index) }" v-if="localColumns.expiry">
                                 <NextDate   v-model="item.expire_date"
                                 popover="top-left"
                                 :error="form.errors?.[`item_list.${index}.expire_date`]"   />
@@ -808,10 +800,10 @@ const spec_text = item_management?.spec_text ?? 'batch'
                                     :error="form.errors?.[`item_list.${index}.quantity`]"
                                 />
                             </td>
-                            <td class="text-center" v-if="item_columns.on_hand">
+                            <td class="text-center" v-if="localColumns.on_hand">
                                  <span :title="String(onhand(index))" >{{ Number(onhand(index)) }}</span>
                             </td>
-                            <td class="text-center" v-if="item_columns.on_hand">
+                            <td class="text-center" v-if="localColumns.reserved_in">
                                  <span class="text-sky-600" :title="t('general.reserved_out') + ': ' + reservedOut(index)">{{ reservedIn(index) }}</span>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
@@ -842,7 +834,7 @@ const spec_text = item_management?.spec_text ?? 'batch'
                                     :error="form.errors?.[`item_list.${index}.unit_price`]"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.discount">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="localColumns.discount">
                                 <NextInput
                                     v-model="item.item_discount"
                                     :disabled="!item.selected_item"
@@ -851,7 +843,7 @@ const spec_text = item_management?.spec_text ?? 'batch'
                                     :error="form.errors?.[`item_list.${index}.item_discount`]"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.free">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="localColumns.free">
                                 <NextInput
                                     v-model="item.free"
                                     :disabled="!item.selected_item"
@@ -860,7 +852,7 @@ const spec_text = item_management?.spec_text ?? 'batch'
                                     :error="form.errors?.[`item_list.${index}.free`]"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="item_columns.tax">
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="localColumns.tax">
                                 <NextInput
                                     v-model="item.tax"
                                     :disabled="!item.selected_item"
@@ -884,24 +876,24 @@ const spec_text = item_management?.spec_text ?? 'batch'
                             <!-- Item total centered across item column -->
                             <td class="text-center">{{ totalRows }}</td>
                             <!-- Batch, Expiry blank -->
-                            <td v-if="item_columns.batch"></td>
-                            <td v-if="item_columns.expiry"></td>
+                            <td v-if="localColumns.batch"></td>
+                            <td v-if="localColumns.expiry"></td>
                             <!-- Qty total centered -->
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
                             <!-- On hand blank -->
-                            <td v-if="item_columns.on_hand"></td>
+                            <td v-if="localColumns.on_hand"></td>
                             <!-- Reserved in blank -->
-                            <td v-if="item_columns.on_hand"></td>
+                            <td v-if="localColumns.reserved_in"></td>
                             <!-- Unit blank -->
-                            <td v-if="item_columns.measure"></td>
+                            <td v-if="localColumns.measure"></td>
                             <!-- Value of goods (qty*price) total centered -->
                             <td class="text-center">{{ totalPurchasePrice || 0 }}</td>
                             <!-- Discount total centered -->
-                            <td class="text-center" v-if="item_columns.discount">{{ totalItemDiscount || 0 }}</td>
+                            <td class="text-center" v-if="localColumns.discount">{{ totalItemDiscount || 0 }}</td>
                             <!-- Free total centered -->
-                            <td class="text-center" v-if="item_columns.free">{{ totalFree || 0 }}</td>
+                            <td class="text-center" v-if="localColumns.free">{{ totalFree || 0 }}</td>
                             <!-- Tax total centered -->
-                            <td class="text-center" v-if="item_columns.tax" >{{ totalTax || 0 }}</td>
+                            <td class="text-center" v-if="localColumns.tax" >{{ totalTax || 0 }}</td>
                             <!-- Grand total centered -->
                             <td class="text-center">{{ totalRowTotal || 0 }}</td>
                             <!-- Delete column blank -->
@@ -913,13 +905,43 @@ const spec_text = item_management?.spec_text ?? 'batch'
             <div class="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 items-start">
                 <DiscountSummary :summary="form.summary" :total-item-discount="totalItemDiscount" :bill-discount="billDiscountCurrency" :total-discount="totalDiscount" />
                 <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
-                <div class="rounded-xl p-4">
-                    <div class="text-sm font-semibold mb-3 text-violet-500 text-sm">{{t('general.bill_discount')}}</div>
-                    <DiscountField
-                        v-model="form.discount"
-                        v-model:discount-type="form.discount_type"
-                        :error="form.errors?.discount"
-                    />
+                <div class="rounded-xl p-4 space-y-4">
+                    <div>
+                        <div class="text-sm font-semibold mb-3 text-violet-500 text-sm">{{t('general.bill_discount')}}</div>
+                        <DiscountField
+                            v-model="form.discount"
+                            v-model:discount-type="form.discount_type"
+                            :error="form.errors?.discount"
+                        />
+                    </div>
+                    <div class="space-y-3" v-if="general_fields.type || form.purchase_type === 'cash'">
+                        <NextSelect
+                            v-if="general_fields.type"
+                            :options="salePurchaseTypes"
+                            v-model="form.selected_purchase_type"
+                            :clearable="false"
+                            @update:modelValue="(value) => handleSelectChange('purchase_type', value)"
+                            label-key="name"
+                            value-key="id"
+                            :reduce="salePurchaseType => salePurchaseType"
+                            :floating-text="t('general.payment_type')"
+                            :error="form.errors?.purchase_type"
+                        />
+                        <NextSelect
+                            v-if="form.purchase_type === 'cash'"
+                            :options="bankAccounts"
+                            v-model="form.selected_bank_account"
+                            @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
+                            label-key="name"
+                            :searchable="true"
+                            :floating-text="t('general.bank_account')"
+                            :error="form.errors?.bank_account_id"
+                            resource-type="accounts"
+                            :search-fields="['name', 'number', 'slug']"
+                            value-key="id"
+                            :reduce="bankAccount => bankAccount"
+                        />
+                    </div>
                 </div>
                 <TransactionSummary :summary="transactionSummary" :balance-nature="form?.selected_ledger?.statement?.balance_nature" />
             </div>

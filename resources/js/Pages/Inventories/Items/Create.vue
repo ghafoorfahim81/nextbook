@@ -1,12 +1,13 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
-import { computed, watch, ref,onMounted, nextTick } from 'vue'
+import { computed, watch, ref, reactive, onMounted, nextTick } from 'vue'
 import NextInput from '@/Components/next/NextInput.vue'
 import { useForm, router } from '@inertiajs/vue3'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
+import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import JsBarcode from 'jsbarcode'
@@ -64,8 +65,12 @@ const formatCode = (number) => {
 }
 
 const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
-const visibleFields = computed(() => user_preferences.value.item_management.visible_fields ?? []).value
-const specText = computed(() => user_preferences.value.item_management.spec_text ?? '')
+// Single reactive copy of the item-management preferences so the panel and form stay in sync live.
+const itemPrefs = reactive(JSON.parse(JSON.stringify(user_preferences.value?.item_management ?? {})))
+if (!itemPrefs.visible_fields || typeof itemPrefs.visible_fields !== 'object') itemPrefs.visible_fields = {}
+const visibleFields = computed(() => itemPrefs.visible_fields)
+const specText = computed(() => itemPrefs.spec_text ?? '')
+const showPreferencesPanel = ref(false)
 
 const createOpeningRow = (warehouse = null) => ({
     batch: '',
@@ -487,7 +492,18 @@ onMounted(() => {
 
 <template>
     <AppLayout :title="t('item.item')">
-        <FormPageToolbar back-route="items.index" module="inventory_item" />
+        <FormPageToolbar
+            back-route="items.index"
+            module="inventory_item"
+            :show-preferences="true"
+            @preferences="showPreferencesPanel = true"
+        />
+        <FormPreferencesPanel
+            v-model:open="showPreferencesPanel"
+            pref-group="item_management"
+            :prefs="itemPrefs"
+            :title="t('preferences.tabs.item_management')"
+        />
         <form @submit.prevent="handleSubmitAction">
             <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">

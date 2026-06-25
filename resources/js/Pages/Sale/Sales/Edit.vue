@@ -1,11 +1,12 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
-import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
+import { h, ref, watch, onMounted, onUnmounted, computed, reactive } from 'vue';
 import axios from 'axios';
 import { useForm } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
+import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue';
 import PaymentDialog from '@/Components/next/PaymentDialog.vue';
 import { useI18n } from 'vue-i18n';
 import TransactionSummary from '@/Components/next/TransactionSummary.vue';
@@ -36,8 +37,14 @@ const props = defineProps({
 });
 
 const userPreferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? {});
-const generalFields = computed(() => userPreferences.value?.sale?.general_fields ?? {});
-const itemColumns = computed(() => userPreferences.value?.sale?.item_columns ?? {});
+// Single reactive copy of the sale preferences so the panel and form stay in sync live.
+const salePrefs = reactive(JSON.parse(JSON.stringify(userPreferences.value?.sale ?? {})));
+if (!salePrefs.general_fields || typeof salePrefs.general_fields !== 'object') salePrefs.general_fields = {};
+if (!salePrefs.item_columns || typeof salePrefs.item_columns !== 'object') salePrefs.item_columns = {};
+if (salePrefs.item_columns.reserved_out === undefined) salePrefs.item_columns.reserved_out = true;
+const generalFields = computed(() => salePrefs.general_fields);
+const itemColumns = computed(() => salePrefs.item_columns);
+const showPreferencesPanel = ref(false);
 const itemManagement = computed(() => userPreferences.value?.item_management ?? {});
 const specText = computed(() => itemManagement.value?.spec_text ?? 'batch');
 const decimalPlaces = computed(() => Number(userPreferences.value?.appearance?.decimal_places ?? 2));
@@ -669,7 +676,18 @@ onUnmounted(() => {
 </script>
 <template>
     <AppLayout :title="t('general.edit', { name: t('sale.sale') })" :sidebar-collapsed="true">
-        <FormPageToolbar back-route="sales.index" module="sales" />
+        <FormPageToolbar
+            back-route="sales.index"
+            module="sales"
+            :show-preferences="true"
+            @preferences="showPreferencesPanel = true"
+        />
+        <FormPreferencesPanel
+            v-model:open="showPreferencesPanel"
+            pref-group="sale"
+            :prefs="salePrefs"
+            :title="t('preferences.tabs.sale')"
+        />
         <form @submit.prevent="handleSubmitAction('update')">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
@@ -730,34 +748,6 @@ onUnmounted(() => {
                             :label="t('general.rate')"
                         />
                     </div>
-                      <div class="grid grid-cols-1 gap-2" v-if="generalFields.type">
-                        <NextSelect
-                            :options="salePurchaseTypes"
-                            v-model="form.selected_sale_type"
-                            :clearable="false"
-                            @update:modelValue="(value) => handleSelectChange('sale_type', value)"
-                            label-key="name"
-                            value-key="id"
-                            :reduce="(salePurchaseType) => salePurchaseType"
-                            :floating-text="t('general.sale_type')"
-                            :error="form.errors?.sale_type"
-                        />
-                    </div>
-                    <NextSelect
-                        v-if="form.sale_type === 'cash'"
-                        :options="bankAccounts"
-                        v-model="form.selected_bank_account"
-                        @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
-                        label-key="name"
-                        :searchable="true"
-                        :floating-text="t('general.bank_account')"
-                        :error="form.errors?.bank_account_id"
-                        resource-type="accounts"
-                        :search-fields="['name', 'number', 'slug']"
-                        value-key="id"
-                        :reduce="(bankAccount) => bankAccount"
-                    />
-
                     <NextSelect
                         v-if="generalFields.warehouse"
                         :options="warehouses.data"
@@ -779,13 +769,13 @@ onUnmounted(() => {
                 <table class="w-full table-fixed min-w-[1200px] sale-table border-separate">
                     <thead class="" :class="form.sale_type === 'cash' ? 'bg-card sticky top-0 z-[200]' : ''">
                         <tr class="rounded-xl text-muted-foreground font-semibold text-sm text-violet-500">
-                            <th class="px-1 py-1 w-5 min-w-5">#</th>
+                            <th class="px-1 py-1 w-5 min-w-5 text-center">#</th>
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
                             <th class="px-1 py-1 w-32" v-if="itemColumns.batch">{{ t(specText) }}</th>
                             <th class="px-1 py-1 w-36" v-if="itemColumns.expiry">{{ t('general.expire_date') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
                             <th class="px-1 py-1 w-24" v-if="itemColumns.on_hand">{{ t('general.on_hand') }}</th>
-                            <th class="px-1 py-1 w-24" v-if="itemColumns.on_hand">{{ t('general.reserved_out') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="itemColumns.reserved_out">{{ t('general.reserved_out') }}</th>
                             <th class="px-1 py-1 w-24" v-if="itemColumns.measure">{{ t('general.unit') }}</th>
                             <th class="px-1 py-1 w-24">{{ t('general.price') }}</th>
                             <th class="px-1 py-1 w-24" v-if="itemColumns.discount">{{ t('general.discount') }}</th>
@@ -799,7 +789,7 @@ onUnmounted(() => {
                     </thead>
                     <tbody class="p-2">
                         <tr v-for="(item, index) in form.items" :key="`${index}-${item.item_id || 'row'}`" class="hover:bg-muted/40 transition-colors">
-                            <td class="px-1 py-2 align-top w-5">{{ index + 1 }}</td>
+                            <td class="px-1 py-2 align-top w-5 text-center">{{ index + 1 }}</td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
                                     :options="itemOptions"
@@ -853,7 +843,7 @@ onUnmounted(() => {
                             <td class="text-center" v-if="itemColumns.on_hand">
                                 <span :title="String(onhand(index))">{{ Number(onhand(index) || 0)  }}</span>
                             </td>
-                            <td class="text-center" v-if="itemColumns.on_hand">
+                            <td class="text-center" v-if="itemColumns.reserved_out">
                                 <span class="text-amber-600" :title="t('general.reserved_in') + ': ' + reservedIn(index)">{{ reservedOut(index) }}</span>
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }" v-if="itemColumns.measure">
@@ -939,7 +929,7 @@ onUnmounted(() => {
                             <td v-if="itemColumns.expiry"></td>
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
                             <td v-if="itemColumns.on_hand"></td>
-                            <td v-if="itemColumns.on_hand"></td>
+                            <td v-if="itemColumns.reserved_out"></td>
                             <td v-if="itemColumns.measure"></td>
                             <td class="text-center">{{ goodsTotal || 0 }}</td>
                             <td class="text-center" v-if="itemColumns.discount">{{ totalItemDiscount || 0 }}</td>
@@ -960,13 +950,43 @@ onUnmounted(() => {
                     :total-discount="totalDiscount"
                 />
                 <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
-                <div class="rounded-xl p-4">
-                    <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.bill_discount') }}</div>
-                    <DiscountField
-                        v-model="form.discount"
-                        v-model:discount-type="form.discount_type"
-                        :error="form.errors?.discount"
-                    />
+                <div class="rounded-xl p-4 space-y-4">
+                    <div>
+                        <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.bill_discount') }}</div>
+                        <DiscountField
+                            v-model="form.discount"
+                            v-model:discount-type="form.discount_type"
+                            :error="form.errors?.discount"
+                        />
+                    </div>
+                    <div class="space-y-3" v-if="generalFields.type || form.sale_type === 'cash'">
+                        <NextSelect
+                            v-if="generalFields.type"
+                            :options="salePurchaseTypes"
+                            v-model="form.selected_sale_type"
+                            :clearable="false"
+                            @update:modelValue="(value) => handleSelectChange('sale_type', value)"
+                            label-key="name"
+                            value-key="id"
+                            :reduce="(salePurchaseType) => salePurchaseType"
+                            :floating-text="t('general.sale_type')"
+                            :error="form.errors?.sale_type"
+                        />
+                        <NextSelect
+                            v-if="form.sale_type === 'cash'"
+                            :options="bankAccounts"
+                            v-model="form.selected_bank_account"
+                            @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
+                            label-key="name"
+                            :searchable="true"
+                            :floating-text="t('general.bank_account')"
+                            :error="form.errors?.bank_account_id"
+                            resource-type="accounts"
+                            :search-fields="['name', 'number', 'slug']"
+                            value-key="id"
+                            :reduce="(bankAccount) => bankAccount"
+                        />
+                    </div>
                 </div>
                 <TransactionSummary
                     :summary="transactionSummary"

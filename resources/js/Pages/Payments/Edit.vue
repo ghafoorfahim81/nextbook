@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import { useForm, usePage } from '@inertiajs/vue3'
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, reactive } from 'vue'
 import axios from 'axios'
 import { useLazyProps } from '@/composables/useLazyProps'
 import NextInput from '@/Components/next/NextInput.vue'
@@ -10,6 +10,7 @@ import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import BillAllocationDialog from '@/Components/next/BillAllocationDialog.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
+import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { Spinner } from '@/Components/ui/spinner'
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
@@ -19,6 +20,11 @@ const ledgers = computed(() => page.props.ledgers?.data || [])
 const accounts = computed(() => page.props.accounts?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
 const paymentModes = computed(() => page.props.paymentModes || [])
+// Single reactive copy of the receipt/payment preferences so the panel and form stay in sync live.
+const rpPrefs = reactive(JSON.parse(JSON.stringify(page.props.user_preferences?.receipt_payment ?? {})))
+if (!rpPrefs.visible_fields || typeof rpPrefs.visible_fields !== 'object') rpPrefs.visible_fields = {}
+const rpFields = computed(() => rpPrefs.visible_fields)
+const showPreferencesPanel = ref(false)
 
 useLazyProps(page.props, ['ledgers', 'accounts'])
 const billLoading = ref(false)
@@ -208,7 +214,18 @@ function submit(action = 'update') {
 
 <template>
   <AppLayout :title="t('general.edit', { name: t('payment.payment') })">
-    <FormPageToolbar back-route="payments.index" module="payments" />
+    <FormPageToolbar
+      back-route="payments.index"
+      module="payments"
+      :show-preferences="true"
+      @preferences="showPreferencesPanel = true"
+    />
+    <FormPreferencesPanel
+      v-model:open="showPreferencesPanel"
+      pref-group="receipt_payment"
+      :prefs="rpPrefs"
+      :title="t('preferences.tabs.receipt_payment')"
+    />
     <form @submit.prevent="submit('update')">
       <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
         <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
@@ -228,10 +245,11 @@ function submit(action = 'update') {
             resource-type="ledgers"
             :search-fields="['name', 'email', 'phone_no']"
           />
-          <NextInput :placeholder="t('general.enter', { text: t('general.number') })" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
+          <NextInput v-if="rpFields.number" :placeholder="t('general.enter', { text: t('general.number') })" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
           <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
           <NextInput :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
           <NextSelect
+            v-if="rpFields.currency"
             :options="currencies"
             v-model="form.selected_currency"
             label-key="code"
@@ -244,7 +262,7 @@ function submit(action = 'update') {
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput :placeholder="t('general.enter', { text: t('general.rate') })" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+          <NextInput v-if="rpFields.currency" :placeholder="t('general.enter', { text: t('general.rate') })" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
           <NextSelect
             :options="paymentModes"
             v-model="form.payment_mode"
@@ -257,6 +275,7 @@ function submit(action = 'update') {
             :error="form.errors?.payment_mode"
           />
           <NextSelect
+            v-if="rpFields.debit_account"
             :options="accounts"
             v-model="form.selected_bank_account"
             @update:modelValue="(v) => handleSelectChange('bank_account_id', v.id)"
@@ -282,12 +301,12 @@ function submit(action = 'update') {
               {{ form.allocations.length }} {{ t('general.bills_selected') || 'bills selected' }}
             </p>
           </div>
-          <NextInput :placeholder="t('general.enter', { text: t('general.cheque_no') })" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('general.cheque_no')" />
+          <NextInput v-if="rpFields.cheque_number" :placeholder="t('general.enter', { text: t('general.cheque_no') })" :error="form.errors?.cheque_no" v-model="form.cheque_no" :label="t('general.cheque_no')" />
           <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="md:col-span-2">
               <NextTextarea :placeholder="t('general.enter', { text: t('general.narration') })" :error="form.errors?.narration" v-model="form.narration" :label="t('general.narration')" />
             </div>
-            <div class="md:col-span-1">
+            <div class="md:col-span-1" v-if="rpFields.ledger_old_balance">
               <div class="rounded-xl border p-4 w-full md:w-64 ml-auto">
                 <div class="text-sm font-semibold mb-2 text-violet-500">{{ t('general.old_balance') }}</div>
                 <div class="text-lg font-bold">{{ oldBalanceText() }}</div>
