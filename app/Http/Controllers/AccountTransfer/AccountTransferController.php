@@ -141,18 +141,19 @@ class AccountTransferController extends Controller
                     'account_id' => $fromAccount->id,
                     'debit' => 0,
                     'credit' => $amount,
-                    'remark' => "Transfer to ". ' ' . $toAccount->name,
-                    'remark_fa' => "انتقال به حساب ". ' ' . $toAccount->local_name,
-                    'remark_ps' => "لېږد ته حساب ". ' ' . $toAccount->local_name,
+                    'remark' => "Transfer to {$toAccount->name} #" . $transfer->number,
+                    'remark_fa' => "انتقال به حساب {$toAccount->local_name} #" . $transfer->number,
+                    'remark_ps' => "لېږد ته حساب {$toAccount->local_name} #" . $transfer->number,
                 ],
                 [
                     'account_id' => $toAccount->id,
                     'debit' => $amount,
                     'credit' => 0,
-                    'remark' => "Transfer from ". ' ' .$fromAccount->name,
-                    'remark_fa' => "انتقال از حساب ". ' ' . $fromAccount->local_name,
-                    'remark_ps' => "لېږد له حساب ". ' ' . $fromAccount->local_name,
+                    'remark' => "Transfer from {$fromAccount->name} #" . $transfer->number,
+                    'remark_fa' => "انتقال از حساب {$fromAccount->local_name} #" . $transfer->number,
+                    'remark_ps' => "لېږد له حساب {$fromAccount->local_name} #" . $transfer->number,
                 ],
+           
             ]);
 
             $this->logTransferActivity(
