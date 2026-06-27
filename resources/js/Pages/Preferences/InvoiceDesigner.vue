@@ -22,12 +22,15 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/Components/ui/dialog'
 import CustomInvoiceLayout from '@/Pages/Sale/Sales/CustomInvoiceLayout.vue'
+import { vHighlightSearch } from '@/directives/highlightSearch'
 
 const props = defineProps({
   invoiceThemes:       { type: Array,  default: () => [] },
   invoiceFormats:      { type: Array,  default: () => [] },
   invoiceFormatDefaults: { type: Object, default: () => ({}) },
   currentTheme:        { type: String, default: 'format1' },
+  searchQuery:         { type: String, default: '' },
+  searchToken:         { type: String, default: '' },
 })
 
 const emit = defineEmits(['selectTheme'])
@@ -35,6 +38,10 @@ const emit = defineEmits(['selectTheme'])
 const { t, locale } = useI18n()
 const isRTL = computed(() => ['fa', 'ps', 'ar', 'ur'].includes(String(locale.value).toLowerCase()))
 const uiDir = computed(() => isRTL.value ? 'rtl' : 'ltr')
+const searchHighlightContext = computed(() => ({
+  query: props.searchQuery,
+  token: props.searchToken,
+}))
 
 // ─── local state ─────────────────────────────────────────────────────────────
 const formats    = ref([...props.invoiceFormats])
@@ -396,7 +403,7 @@ const paperLabel = computed(() => {
 </script>
 
 <template>
-  <div class="flex gap-6 min-h-[600px]" :dir="uiDir">
+  <div v-highlight-search="searchHighlightContext" class="flex gap-6 min-h-[600px]" :dir="uiDir">
 
     <!-- ── LEFT: Format list ─────────────────────────────── -->
     <div class="w-72 shrink-0 flex flex-col gap-3">
@@ -702,7 +709,7 @@ const paperLabel = computed(() => {
                   <Label class="text-xs">{{ t('preferences.invoice_designer.tax_display') }}</Label>
                   <Select v-model="draft.optional_sections.tax_display">
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent v-highlight-search="searchHighlightContext">
                       <SelectItem value="per_item">{{ t('preferences.invoice_designer.tax_per_item') }}</SelectItem>
                       <SelectItem value="grouped">{{ t('preferences.invoice_designer.tax_grouped') }}</SelectItem>
                     </SelectContent>
@@ -742,7 +749,7 @@ const paperLabel = computed(() => {
                   <Label class="text-xs">{{ t('preferences.invoice_designer.paper_size') }}</Label>
                   <Select v-model="draft.paper_size">
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent v-highlight-search="searchHighlightContext">
                       <SelectItem v-for="ps in PAPER_SIZES" :key="ps.value" :value="ps.value">{{ ps.label }}</SelectItem>
                     </SelectContent>
                   </Select>
@@ -751,7 +758,7 @@ const paperLabel = computed(() => {
                   <Label class="text-xs">{{ t('preferences.invoice_designer.orientation') }}</Label>
                   <Select v-model="draft.paper_orientation">
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent v-highlight-search="searchHighlightContext">
                       <SelectItem value="portrait">{{ t('preferences.invoice_designer.portrait') }}</SelectItem>
                       <SelectItem value="landscape">{{ t('preferences.invoice_designer.landscape') }}</SelectItem>
                     </SelectContent>
@@ -761,7 +768,7 @@ const paperLabel = computed(() => {
                   <Label class="text-xs">{{ t('preferences.invoice_designer.language') }}</Label>
                   <Select v-model="draft.language">
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent v-highlight-search="searchHighlightContext">
                       <SelectItem value="en">English</SelectItem>
                       <SelectItem value="fa">Dari (دری)</SelectItem>
                       <SelectItem value="ps">Pashto (پښتو)</SelectItem>
@@ -772,7 +779,7 @@ const paperLabel = computed(() => {
                   <Label class="text-xs">{{ t('preferences.invoice_designer.direction') }}</Label>
                   <Select v-model="draft.direction">
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent v-highlight-search="searchHighlightContext">
                       <SelectItem value="ltr">{{ t('preferences.invoice_designer.ltr') }}</SelectItem>
                       <SelectItem value="rtl">{{ t('preferences.invoice_designer.rtl') }}</SelectItem>
                     </SelectContent>
@@ -834,7 +841,7 @@ const paperLabel = computed(() => {
                   <Label class="text-xs">{{ t('preferences.invoice_designer.font_family') }}</Label>
                   <Select v-model="draft.appearance.font_family">
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
+                    <SelectContent v-highlight-search="searchHighlightContext">
                       <SelectItem v-for="f in FONT_FAMILIES" :key="f.value" :value="f.value">{{ f.label }}</SelectItem>
                     </SelectContent>
                   </Select>

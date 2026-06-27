@@ -24,6 +24,8 @@ import {
 } from 'lucide-vue-next'
 import InvoiceDesigner from '@/Pages/Preferences/InvoiceDesigner.vue'
 import { applyAppearanceTheme, resolveAccentColor, resolveColorPalette, resolveDisplayColorMode } from '@/lib/theme'
+import { vHighlightSearch } from '@/directives/highlightSearch'
+import { stringsMatchQuery, tabSearchValues, translateSearchKeys } from '@/Pages/Preferences/preferenceSearchIndex'
 
 const props = defineProps({
     preferences: Object,
@@ -306,22 +308,6 @@ const tabSearchTerms = {
     ],
 }
 
-const visibleTabs = computed(() => {
-    const q = normalizedMenuSearch.value
-
-    if (!q) {
-        return tabs
-    }
-
-    return tabs.filter((tab) => {
-        return [
-            tab.id,
-            t(tab.label),
-            ...(tabSearchTerms[tab.id] || []),
-        ].some((value) => String(value || '').toLowerCase().includes(q))
-    })
-})
-
 const isPreferencesLoading = computed(() => form.processing || pluginForm.processing || importLoading.value || Boolean(resettingCategory.value))
 
 const form = useForm({ ...props.preferences })
@@ -504,20 +490,6 @@ const clearMenuSearch = () => {
     menuSearchQuery.value = ''
 }
 
-watch(
-    () => visibleTabs.value,
-    (nextTabs) => {
-        if (!nextTabs.length) {
-            return
-        }
-
-        if (normalizedMenuSearch.value && !nextTabs.some((tab) => tab.id === activeTab.value)) {
-            activeTab.value = nextTabs[0].id
-        }
-    },
-    { immediate: true },
-)
-
 // Transaction Types for Sale and Purchases
 const saleTransactionTypes = ['sale', 'sale_order', 'sale_return', 'sale_quotation']
 const purchaseTransactionTypes = ['purchase', 'purchase_order', 'purchase_return', 'purchase_quotation']
@@ -629,11 +601,148 @@ const setConfirmSave = (key, value) => {
     if (!form.confirmations) form.confirmations = {}
     form.confirmations[key] = value
 }
+
+const sharedFieldLabelKeys = computed(() => [
+    ...generalFields.map((field) => field.label),
+    ...itemColumns.map((col) => col.label),
+])
+
+const tabSearchExtras = computed(() => ({
+    appearance: [
+        t('preferences.tabs.appearance'),
+        ...(props.sidebarMenus ?? []).map((menu) => t(menu.label)),
+        ...(tabSearchTerms.appearance ?? []),
+    ],
+    item_management: [
+        t('preferences.tabs.item_management'),
+        ...translateSearchKeys(t, itemManagementFields.map((field) => field.label)),
+        ...(tabSearchTerms.item_management ?? []),
+    ],
+    sale: [
+        t('preferences.tabs.sale'),
+        ...translateSearchKeys(t, [
+            ...sharedFieldLabelKeys.value,
+            ...saleTransactionTypes.map((type) => `preferences.sale.types.${type}`),
+        ]),
+        ...(props.invoiceThemes ?? []).flatMap((theme) => [t(theme?.name ?? ''), theme?.id]),
+        ...(tabSearchTerms.sale ?? []),
+    ],
+    purchase: [
+        t('preferences.tabs.purchase'),
+        ...translateSearchKeys(t, [
+            ...sharedFieldLabelKeys.value,
+            ...purchaseTransactionTypes.map((type) => `preferences.purchase.types.${type}`),
+        ]),
+        ...(tabSearchTerms.purchase ?? []),
+    ],
+    receipt_payment: [
+        t('preferences.tabs.receipt_payment'),
+        ...translateSearchKeys(t, [
+            ...receiptPaymentFields.map((field) => field.label),
+            'preferences.receipt_fields.cheque_number',
+            'preferences.receipt_fields.debit_account',
+            'preferences.receipt_fields.ledger_old_balance',
+        ]),
+        ...(props.cashAccounts ?? []).map((account) => account.name),
+        ...(tabSearchTerms.receipt_payment ?? []),
+    ],
+    transaction: [
+        t('preferences.tabs.transaction'),
+        ...translateSearchKeys(t, [
+            ...transactionPostModules.map((module) => module.label),
+            ...confirmSaveModules.map((module) => module.label),
+        ]),
+        ...(tabSearchTerms.transaction ?? []),
+    ],
+    tax_currency: [
+        t('preferences.tabs.tax_currency'),
+        ...(tabSearchTerms.tax_currency ?? []),
+    ],
+    notifications: [
+        t('preferences.tabs.notifications'),
+        ...(tabSearchTerms.notifications ?? []),
+    ],
+    security: [
+        t('preferences.tabs.security'),
+        ...(tabSearchTerms.security ?? []),
+    ],
+    install_plugins: [
+        t('preferences.tabs.install_plugins'),
+        ...allUnitMeasures.value.map((item) => item.name),
+        ...allUnitMeasures.value.map((item) => item.symbol).filter(Boolean),
+        ...allWarehouses.value.map((item) => item.name),
+        ...allCategories.value.map((item) => item.name),
+        ...allSizes.value.map((item) => item.name),
+        ...allCurrencies.value.flatMap((item) => [item.name, item.code].filter(Boolean)),
+        ...allLedgers.value.map((item) => item.name),
+        ...(tabSearchTerms.install_plugins ?? []),
+    ],
+    backup: [
+        t('preferences.tabs.backup'),
+        'PDF',
+        'Excel',
+        'CSV',
+        'Amazon S3',
+        'Google Cloud',
+        'Azure Blob',
+        ...(tabSearchTerms.backup ?? []),
+    ],
+    localization: [
+        t('preferences.tabs.localization'),
+        'English',
+        'فارسی (Persian)',
+        'پښتو (Pashto)',
+        ...(Object.values(props.timezones ?? {})),
+        ...(tabSearchTerms.localization ?? []),
+    ],
+    display: [
+        t('preferences.tabs.display'),
+        ...(tabSearchTerms.display ?? []),
+    ],
+    invoice_designer: [
+        t('preferences.tabs.invoice_designer'),
+        ...(props.invoiceFormats ?? []).map((format) => format.name),
+    ],
+}))
+
+const preferenceSearchContext = computed(() => ({
+    query: normalizedMenuSearch.value,
+    token: activeTab.value,
+}))
+
+const tabMatchesQuery = (tabId, query) => stringsMatchQuery(
+    tabSearchValues(tabId, t, tabSearchExtras.value[tabId] ?? []),
+    query,
+)
+
+const visibleTabs = computed(() => {
+    const q = normalizedMenuSearch.value
+    if (!q) {
+        return tabs
+    }
+
+    return tabs.filter((tab) => tabMatchesQuery(tab.id, q))
+})
+
+watch(normalizedMenuSearch, (query) => {
+    if (!query) {
+        return
+    }
+
+    const matchingTabs = visibleTabs.value
+    if (!matchingTabs.length) {
+        return
+    }
+
+    if (!tabMatchesQuery(activeTab.value, query)) {
+        activeTab.value = matchingTabs[0].id
+    }
+})
 </script>
 
 <template>
     <AppLayout :title="t('preferences.title')">
-        <div class="container mx-auto space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        <div v-highlight-search="preferenceSearchContext" class="container mx-auto space-y-6 px-4 py-6 sm:px-6 lg:px-8">
             <!-- Header -->
             <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div class="flex items-start gap-3 sm:items-center">
@@ -671,7 +780,7 @@ const setConfirmSave = (key, value) => {
                 <!-- Sidebar Navigation -->
                 <div class="w-full shrink-0 lg:w-64">
                     <div class="space-y-3 lg:sticky lg:top-4">
-                        <div class="relative">
+                        <div class="relative" data-search-input>
                             <Search
                                 class="pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                                 :class="isRTL ? 'right-3' : 'left-3'"
@@ -693,7 +802,7 @@ const setConfirmSave = (key, value) => {
                             </button>
                         </div>
 
-                        <nav class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:block lg:space-y-1">
+                        <nav v-if="visibleTabs.length" class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:block lg:space-y-1">
                             <button
                                 v-for="tab in visibleTabs"
                                 :key="tab.id"
@@ -709,6 +818,12 @@ const setConfirmSave = (key, value) => {
                                 {{ t(tab.label) }}
                             </button>
                         </nav>
+                        <p
+                            v-else-if="normalizedMenuSearch"
+                            class="rounded-lg border border-dashed border-border px-3 py-4 text-center text-sm text-muted-foreground"
+                        >
+                            {{ t('general.no_results') }}
+                        </p>
                     </div>
                 </div>
 
@@ -738,7 +853,7 @@ const setConfirmSave = (key, value) => {
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="system">{{ t('preferences.appearance.system') }}</SelectItem>
                                             <SelectItem
                                                 v-for="color in colorOptions"
@@ -756,7 +871,7 @@ const setConfirmSave = (key, value) => {
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="light">{{ t('preferences.appearance.light') }}</SelectItem>
                                             <SelectItem value="dark">{{ t('preferences.appearance.dark') }}</SelectItem>
                                             <SelectItem value="system">{{ t('preferences.appearance.system') }}</SelectItem>
@@ -769,7 +884,7 @@ const setConfirmSave = (key, value) => {
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="system">{{ t('preferences.appearance.system') }}</SelectItem>
                                             <SelectItem
                                                 v-for="color in colorOptions"
@@ -787,7 +902,7 @@ const setConfirmSave = (key, value) => {
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem :value="0">0</SelectItem>
                                             <SelectItem :value="2">2</SelectItem>
                                             <SelectItem :value="3">3</SelectItem>
@@ -800,7 +915,7 @@ const setConfirmSave = (key, value) => {
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem :value="'without_nature'">{{ t('preferences.appearance.without_nature') }}</SelectItem>
                                             <SelectItem :value="'with_nature'">{{ t('preferences.appearance.with_nature') }}</SelectItem>
                                         </SelectContent>
@@ -1313,7 +1428,7 @@ const setConfirmSave = (key, value) => {
                                         <SelectTrigger>
                                             <SelectValue :placeholder="t('preferences.receipt_payment.select_account')" />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem v-for="account in cashAccounts" :key="account.id" :value="account.id">
                                                 {{ account.name }}
                                             </SelectItem>
@@ -1855,7 +1970,7 @@ const setConfirmSave = (key, value) => {
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="none">{{ t('preferences.backup.none') }}</SelectItem>
                                             <SelectItem value="daily">{{ t('preferences.backup.daily') }}</SelectItem>
                                             <SelectItem value="weekly">{{ t('preferences.backup.weekly') }}</SelectItem>
@@ -1882,7 +1997,7 @@ const setConfirmSave = (key, value) => {
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="aws">Amazon S3</SelectItem>
                                             <SelectItem value="google">Google Cloud</SelectItem>
                                             <SelectItem value="azure">Azure Blob</SelectItem>
@@ -1942,7 +2057,7 @@ const setConfirmSave = (key, value) => {
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="en">English</SelectItem>
                                             <SelectItem value="fa">فارسی (Persian)</SelectItem>
                                             <SelectItem value="ps">پښتو (Pashto)</SelectItem>
@@ -1955,7 +2070,7 @@ const setConfirmSave = (key, value) => {
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem v-for="(label, value) in timezones" :key="value" :value="value">
                                                 {{ label }}
                                             </SelectItem>
@@ -1970,7 +2085,7 @@ const setConfirmSave = (key, value) => {
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="Y-m-d">2024-01-15</SelectItem>
                                             <SelectItem value="d/m/Y">15/01/2024</SelectItem>
                                             <SelectItem value="m/d/Y">01/15/2024</SelectItem>
@@ -1984,7 +2099,7 @@ const setConfirmSave = (key, value) => {
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="12h">12-hour (AM/PM)</SelectItem>
                                             <SelectItem value="24h">24-hour</SelectItem>
                                         </SelectContent>
@@ -1998,7 +2113,7 @@ const setConfirmSave = (key, value) => {
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="1,000.00">1,000.00</SelectItem>
                                             <SelectItem value="1.000,00">1.000,00</SelectItem>
                                         </SelectContent>
@@ -2010,7 +2125,7 @@ const setConfirmSave = (key, value) => {
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="sunday">{{ t('preferences.localization.sunday') }}</SelectItem>
                                             <SelectItem value="monday">{{ t('preferences.localization.monday') }}</SelectItem>
                                             <SelectItem value="saturday">{{ t('preferences.localization.saturday') }}</SelectItem>
@@ -2041,7 +2156,7 @@ const setConfirmSave = (key, value) => {
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem value="light">{{ t('preferences.display.light') }}</SelectItem>
                                             <SelectItem value="dark">{{ t('preferences.display.dark') }}</SelectItem>
                                             <SelectItem value="system">{{ t('preferences.display.system') }}</SelectItem>
@@ -2054,7 +2169,7 @@ const setConfirmSave = (key, value) => {
                                         <SelectTrigger>
                                             <SelectValue />
                                         </SelectTrigger>
-                                        <SelectContent>
+                                        <SelectContent v-highlight-search="preferenceSearchContext">
                                             <SelectItem :value="10">10</SelectItem>
                                             <SelectItem :value="25">25</SelectItem>
                                             <SelectItem :value="50">50</SelectItem>
@@ -2120,6 +2235,8 @@ const setConfirmSave = (key, value) => {
                                 :invoice-formats="invoiceFormats"
                                 :invoice-format-defaults="invoiceFormatDefaults"
                                 :current-theme="form.sale?.invoice_theme ?? 'format1'"
+                                :search-query="normalizedMenuSearch"
+                                :search-token="activeTab"
                                 @select-theme="(id) => { selectInvoiceTheme(id); save() }"
                             />
                         </CardContent>
@@ -2130,7 +2247,7 @@ const setConfirmSave = (key, value) => {
         </div>
 
         <Dialog :open="invoiceThemePreviewOpen" @update:open="invoiceThemePreviewOpen = $event">
-            <DialogContent class="max-w-5xl">
+            <DialogContent v-highlight-search="preferenceSearchContext" class="max-w-5xl">
                 <DialogHeader>
                     <DialogTitle>{{ previewInvoiceTheme ? invoiceThemeLabel(previewInvoiceTheme) : t('preferences.sale.invoice_theme') }}</DialogTitle>
                     <DialogDescription>
