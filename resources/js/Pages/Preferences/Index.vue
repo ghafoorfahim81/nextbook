@@ -644,17 +644,17 @@ const setConfirmSave = (key, value) => {
                     </div>
                 </div>
                 <div class="flex w-full flex-wrap gap-2 md:w-auto">
-                    <ModuleHelpButton module="preferences" positionClass="" />
+                    <ModuleHelpButton module="preferences" toolbar />
                     <input ref="fileInput" type="file" accept=".json" class="hidden" @change="handleFileUpload" />
-                    <Button variant="outline" size="sm" @click="importPreferences">
+                    <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="importPreferences">
                         <Upload class="w-4 h-4 mr-2" />
                         {{ t('preferences.import') }}
                     </Button>
-                    <Button variant="outline" size="sm" @click="exportPreferences">
+                    <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="exportPreferences">
                         <Download class="w-4 h-4 mr-2" />
                         {{ t('preferences.export') }}
                     </Button>
-                    <Button @click="save" :disabled="form.processing">
+                    <Button @click="save" :disabled="form.processing" size="sm" class="bg-primary text-white hover:bg-primary/90" :class="form.processing ? 'bg-primary/90' : 'bg-primary'">
                         <Spinner v-if="form.processing" class="w-4 h-4 mr-2" />
                         <Save v-else class="w-4 h-4 mr-2" />
                         {{ form.processing ? t('general.loading') : t('preferences.save') }}
@@ -721,7 +721,7 @@ const setConfirmSave = (key, value) => {
                                 <CardTitle>{{ t('preferences.tabs.appearance') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.appearance.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('appearance')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('appearance')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -878,7 +878,7 @@ const setConfirmSave = (key, value) => {
                                 <CardTitle>{{ t('preferences.tabs.item_management') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.item_management.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('item_management')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('item_management')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -918,7 +918,7 @@ const setConfirmSave = (key, value) => {
                                 <CardTitle>{{ t('preferences.tabs.sale') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.sale.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory(activeSaleType)">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory(activeSaleType)">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -1158,7 +1158,7 @@ const setConfirmSave = (key, value) => {
                                 <CardTitle>{{ t('preferences.tabs.purchase') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.purchase.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory(activePurchaseType)">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory(activePurchaseType)">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -1287,7 +1287,7 @@ const setConfirmSave = (key, value) => {
                                 <CardTitle>{{ t('preferences.tabs.receipt_payment') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.receipt_payment.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('receipt_payment')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('receipt_payment')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -1361,7 +1361,7 @@ const setConfirmSave = (key, value) => {
                                 <CardTitle>{{ t('preferences.tabs.transaction') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.transaction.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('transaction')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('transaction')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -1424,7 +1424,7 @@ const setConfirmSave = (key, value) => {
                                 <CardTitle>{{ t('preferences.tabs.tax_currency') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.tax_currency.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('tax_currency')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('tax_currency')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -1464,7 +1464,7 @@ const setConfirmSave = (key, value) => {
                                 <CardTitle>{{ t('preferences.tabs.notifications') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.notifications.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('notifications')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('notifications')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -1604,7 +1604,7 @@ const setConfirmSave = (key, value) => {
                                 <CardTitle>{{ t('preferences.tabs.security') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.security.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('security')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('security')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -1842,7 +1842,7 @@ const setConfirmSave = (key, value) => {
                                 <CardTitle>{{ t('preferences.tabs.backup') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.backup.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('backup')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('backup')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -1929,7 +1929,7 @@ const setConfirmSave = (key, value) => {
                                 <CardTitle>{{ t('preferences.tabs.localization') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.localization.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('localization')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('localization')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>
@@ -2028,7 +2028,7 @@ const setConfirmSave = (key, value) => {
                                 <CardTitle>{{ t('preferences.tabs.display') }}</CardTitle>
                                 <CardDescription>{{ t('preferences.display.description') }}</CardDescription>
                             </div>
-                            <Button variant="ghost" size="sm" @click="resetCategory('display')">
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('display')">
                                 <RotateCcw class="w-4 h-4 mr-2" />
                                 {{ t('preferences.reset') }}
                             </Button>

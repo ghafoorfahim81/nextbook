@@ -57,6 +57,10 @@ const preventOutsideDismiss = (event: any) => {
 
   event?.preventDefault?.();
 };
+
+const closeDialog = () => {
+  emit('update:open', false);
+};
 </script>
 
 <template>
@@ -77,18 +81,17 @@ const preventOutsideDismiss = (event: any) => {
       @interact-outside="preventOutsideDismiss"
     >
       <div class="flex flex-col max-h-[90vh]">
-        <div class="sticky top-0 z-10 bg-background px-4 pt-5 pb-3 sm:px-6 sm:pt-6 sm:pb-4">
+        <div class="flex flex-col gap-2 px-5 sm:px-6 sm:pt-5 relative">
           <DialogHeader>
-            <DialogTitle class="text-base sm:text-lg">{{ title }}</DialogTitle>
-            <DialogDescription v-if="description" class="text-sm sm:text-base">
+            <DialogTitle class="text-base sm:text-lg">
+              {{ title }}
+            </DialogTitle>
+            <DialogDescription v-if="description" class=" text-[15px] text-muted-foreground">
               {{ description }}
             </DialogDescription>
           </DialogHeader>
         </div>
-
-        <Separator class="sticky top-[64px] sm:top-[72px] z-10" />
-
-        <div :class="['flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4', bodyClass]">
+        <div :class="['flex-1 overflow-y-auto px-5 py-3 sm:px-6', bodyClass]">
           <slot />
         </div>
 

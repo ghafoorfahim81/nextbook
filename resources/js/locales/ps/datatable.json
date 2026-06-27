@@ -6,7 +6,10 @@
   "search": "لټون",
   "showing": "له {from} څخه تر {to} پورې د {total} توکو ښودنه",
   "previous": "مخکینی",
-  "next": "راتلونکی"
+  "next": "راتلونکی",
+  "show": "نمایش",
+  "print": "چاپ",
+  "show_filter_options": "د {title} لپاره د فلټر اختیارونه وښایئ"
 }
 
 
