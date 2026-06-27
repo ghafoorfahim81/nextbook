@@ -57,14 +57,16 @@ const items = computed(() => {
   >
     <Dialog>
       <DialogTrigger as-child>
-        <button
+        <Button
           v-if="props.toolbar"
           type="button"
-          class="inline-flex h-8 items-center gap-1.5 hover:bg-primary/40 hover:text-white rounded-md border border-input bg-background px-2.5 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          variant="outline"
+          class="h-8 gap-1.5 bg-background border-primary/60 hover:bg-primary/40"
+          size="sm"
         >
           <Info class="size-4 shrink-0 text-primary" aria-hidden="true" />
           <span>{{ t('general.info') }}</span>
-        </button>
+        </Button>
         <div
           v-else
           class="bg-card px-2 py-1 rounded-md shadow-sm border mt-3 text-primary"

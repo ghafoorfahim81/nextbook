@@ -31,16 +31,27 @@
 
                         <Popover v-if="hasAdvancedFilters" v-model:open="filtersOpen">
                             <PopoverTrigger as-child>
-                                <button
-                                    type="button"
-                                    class="flex items-center justify-center text-primary"
-                                    @click="openFilters"
-                                >
-                                    <SlidersHorizontal
-                                        class="size-4"
-                                        :class="isAdvancedFiltering ? 'text-primary' : 'text-primary/70 hover:text-primary'"
-                                    />
-                                </button>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger as-child>
+                                        <button
+                                        type="button"
+                                        class="flex items-center justify-center text-primary"
+                                        @click="openFilters"
+                                    >
+                                        <SlidersHorizontal
+                                            class="size-4"
+                                            :class="isAdvancedFiltering ? 'text-primary' : 'text-primary/70 hover:text-primary'"
+                                        />
+                                    </button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>{{ t('datatable.show_filter_options', { title: props.title ? props.title : '' }) }}</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+
+                               
                             </PopoverTrigger>
                             <PopoverContent
                                 :align="isRTL ? 'start' : 'start'"
@@ -296,7 +307,12 @@ import { useI18n } from 'vue-i18n'
 import AddNewButton from '@/Components/next/AddNewButton.vue'
 import DataTableFilterPanel from '@/Components/DataTableFilterPanel.vue'
 import { Popover, PopoverContent, PopoverTrigger } from '@/Components/ui/popover'
-
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/Components/ui/tooltip'
 // UI Components
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,

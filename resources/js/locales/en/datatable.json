@@ -8,7 +8,8 @@
   "previous": "Previous",
   "next": "Next",
   "show": "Show",
-  "print": "Print"
+  "print": "Print",
+  "show_filter_options": "Show filter options for {title}"
 }
 
 

@@ -72,6 +72,7 @@ function goBack() {
                 <SlidersHorizontal class="h-4 w-4 text-primary" />
                 {{ t('general.settings') }}
             </Button>
+            
             <Button
                 v-else-if="confirmModule"
                 type="button"
