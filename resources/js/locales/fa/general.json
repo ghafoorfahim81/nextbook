@@ -147,6 +147,8 @@
   "balance": "بلانس",
   "old_balance": "بلانس قبلی",
   "tax_summary": "خلاصه مالیات",
+  "adjustments": "تنظیمات",
+  "payment": "پرداخت",
   "discount_summary": "خلاصه تخفیف",
   "total_item_discount": "جمع تخفیف آیتم ها",
   "total_discount": "جمع تخفیف",

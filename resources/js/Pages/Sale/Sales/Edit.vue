@@ -11,8 +11,6 @@ import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue';
 import PaymentDialog from '@/Components/next/PaymentDialog.vue';
 import { useI18n } from 'vue-i18n';
 import TransactionSummary from '@/Components/next/TransactionSummary.vue';
-import DiscountSummary from '@/Components/next/DiscountSummary.vue';
-import TaxSummary from '@/Components/next/TaxSummary.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
@@ -57,6 +55,13 @@ useLazyProps(props, ['ledgers', 'accounts']);
 const toNum = (value, fallback = 0) => {
     const number = Number(value);
     return Number.isNaN(number) ? fallback : number;
+};
+
+// Money formatter for footer cards: "1,234.00 AFN"
+const fmtMoney = (value) => {
+    const code = form.selected_currency?.code ?? '';
+    const amount = toNum(value, 0).toFixed(decimalPlaces.value);
+    return code ? `${amount} ${code}` : amount;
 };
 
 const quantityOutInBaseUnits = ({ quantity = 0, free = 0, selectedMeasure = null, selectedItem = null } = {}) => {
@@ -560,15 +565,21 @@ const totalQuantity = computed(() => Number(form.items.reduce((acc, item) => acc
 const totalFree = computed(() => Number(form.items.reduce((acc, item) => acc + toNum(item.free, 0), 0).toFixed(decimalPlaces.value)));
 
 const transactionSummary = computed(() => {
-    const type = form.selected_sale_type?.id || form.sale_type;
+    const saleType = form.selected_sale_type?.id;
+    let cashReceived = 0;
+    if (saleType === 'cash') {
+        cashReceived = goodsTotal.value; // transaction total
+    } else if (saleType === 'credit') {
+        cashReceived = paid; // on loan = 0, default
+    } 
+    else {
+        cashReceived = 0;
+    }
     const oldBalance = toNum(form?.selected_ledger?.statement?.balance, 0);
     const balanceNature = form?.selected_ledger?.statement?.balance_nature;
     const hasSelectedItem = Array.isArray(form.items) && form.items.some((row) => !!row.selected_item);
     const netAmount = goodsTotal.value - totalDiscount.value + totalTax.value;
-    const paid = type === 'cash'
-        ? netAmount
-        : (type === 'credit' ? toNum(form.payment.amount, 0) : 0);
-    const receivableDelta = netAmount - paid;
+    const receivableDelta = netAmount - cashReceived;
     const signedOldBalance = balanceNature === 'dr' ? oldBalance : -oldBalance;
     const signedBalance = hasSelectedItem ? signedOldBalance + receivableDelta : signedOldBalance;
 
@@ -577,7 +588,7 @@ const transactionSummary = computed(() => {
         billDiscountPercent: billDiscountPercent.value,
         billDiscount: billDiscountCurrency.value,
         itemDiscount: totalItemDiscount.value,
-        cashReceived: paid,
+        cashReceived: cashReceived,
         balance: Math.abs(signedBalance),
         grandTotal: netAmount,
         oldBalance,
@@ -946,53 +957,76 @@ useFormGuard(form)
             </div>
 
             <div class="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 items-start">
-                <div class="space-y-4">
-                    <DiscountSummary
-                        :summary="form.summary"
-                        :total-item-discount="totalItemDiscount"
-                        :bill-discount="billDiscountCurrency"
-                        :total-discount="totalDiscount"
-                    />
-                    <div class="grid grid-cols-2 gap-2 items-start" v-if="generalFields.type || form.sale_type === 'cash'">
-                        <NextSelect
-                            v-if="generalFields.type"
-                            :options="salePurchaseTypes"
-                            v-model="form.selected_sale_type"
-                            :clearable="false"
-                            @update:modelValue="(value) => handleSelectChange('sale_type', value)"
-                            label-key="name"
-                            value-key="id"
-                            :reduce="(salePurchaseType) => salePurchaseType"
-                            :floating-text="t('general.sale_type')"
-                            :error="form.errors?.sale_type"
-                        />
-                        <NextSelect
-                            v-if="form.sale_type === 'cash'"
-                            :options="bankAccounts"
-                            v-model="form.selected_bank_account"
-                            @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
-                            label-key="name"
-                            :searchable="true"
-                            :floating-text="t('general.bank_account')"
-                            :error="form.errors?.bank_account_id"
-                            resource-type="accounts"
-                            :search-fields="['name', 'number', 'slug']"
-                            value-key="id"
-                            :reduce="(bankAccount) => bankAccount"
-                        />
+                <!-- Discount Summary -->
+                <div class="rounded-xl border bg-card p-4 shadow-sm">
+                    <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.discount_summary') }}</div>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-muted-foreground">{{ t('general.total_item_discount') }}</span>
+                            <span class="tabular-nums text-sm">{{ fmtMoney(totalItemDiscount) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-muted-foreground">{{ t('general.bill_disc') }}</span>
+                            <span class="tabular-nums text-sm">{{ fmtMoney(billDiscountCurrency) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between font-semibold pt-1">
+                            <span class="text-sm">{{ t('general.total_discount') }}</span>
+                            <span class="tabular-nums text-sm">{{ fmtMoney(totalDiscount) }}</span>
+                        </div>
                     </div>
                 </div>
-                <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
-                <div class="rounded-xl p-4 space-y-4">
+
+                <!-- Adjustments -->
+                <div class="rounded-xl border bg-card p-4 shadow-sm">
+                    <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.adjustments') }}</div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-muted-foreground">{{ t('general.total_item_tax') }}</span>
+                        <span class="tabular-nums text-sm">{{ fmtMoney(totalTax) }}</span>
+                    </div>
                     <div>
-                        <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.bill_discount') }}</div>
+                        <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">{{ t('general.bill_discount') }} (%)</div>
                         <DiscountField
                             v-model="form.discount"
                             v-model:discount-type="form.discount_type"
+                            label=" "
                             :error="form.errors?.discount"
                         />
                     </div>
                 </div>
+
+                <!-- Payment -->
+                 <div class="rounded-xl border bg-card p-4 shadow-sm space-y-4">
+                    <div class="text-sm font-semibold text-violet-500">{{ t('general.payment') }}</div>
+                    <div v-if="general_fields.type">
+                        <NextSelect
+                            :options="salePurchaseTypes"
+                            v-model="form.selected_sale_type"
+                            :floating-text="t('general.sale_type')"
+                            :clearable="false"
+                            @update:modelValue="(value) => handleSelectChange('sale_type', value)"
+                            label-key="name"
+                            value-key="id"
+                            :reduce="salePurchaseType => salePurchaseType"
+                            :error="form.errors?.sale_type"
+                        />
+                    </div>
+                    <div v-if="form.sale_type === 'cash'">
+                        <NextSelect
+                            :options="bankAccounts"
+                            :floating-text="t('general.bank_account')"
+                            v-model="form.selected_bank_account"
+                            @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
+                            label-key="name"
+                            :searchable="true"
+                            :error="form.errors?.bank_account_id"
+                            resource-type="accounts"
+                            :search-fields="['name', 'number', 'slug']"
+                            value-key="id"
+                            :reduce="bankAccount => bankAccount"
+                        />
+                    </div>
+                </div>
+
                 <TransactionSummary
                     :summary="transactionSummary"
                     :balance-nature="form?.selected_ledger?.statement?.balance_nature"

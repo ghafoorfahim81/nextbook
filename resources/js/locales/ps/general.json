@@ -144,6 +144,8 @@
   "balance": "انډول",
   "old_balance": "زړې پاتي پیسې",
   "tax_summary": "د مالیې لنډیز",
+  "adjustments": "سمونونه",
+  "payment": "تادیه",
   "discount_summary": "د تخفیف لنډیز",
   "total_item_discount": "د ټولو توکو تخفیف",
   "total_discount": "ټول تخفیف",
