@@ -206,7 +206,7 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
     <!-- ── Header trigger button ──────────────────────────────────────────── -->
     <button
         @click="openSearch"
-        class="hidden md:flex items-center gap-2 h-8 w-[260px] lg:w-[360px] rounded-md border border-primary bg-background/60 px-3 text-xs text-muted-foreground hover:border-primary hover:text-foreground transition-colors shrink-0"
+        class="hidden md:flex items-center gap-2 h-9 w-[320px] lg:w-[400px] rounded-md border border-primary bg-background/60 px-3 text-xs text-muted-foreground hover:border-primary hover:text-foreground transition-colors shrink-0"
         :aria-label="t('global_search.open_aria')"
     >
         <Search class="size-3.5 shrink-0 opacity-60 text-primary" />

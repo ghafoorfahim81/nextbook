@@ -12,8 +12,6 @@ import DiscountField from '@/Components/next/DiscountField.vue';
 import PaymentDialog from '@/Components/next/PaymentDialog.vue';
 import { useI18n } from 'vue-i18n';
 import TransactionSummary from '@/Components/next/TransactionSummary.vue';
-import DiscountSummary from '@/Components/next/DiscountSummary.vue';
-import TaxSummary from '@/Components/next/TaxSummary.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useSidebar } from '@/Components/ui/sidebar/utils';
@@ -613,7 +611,17 @@ const totalPurchasePrice = computed(() => form.items.reduce((acc, item) => acc +
 
 // Transaction summary for card (spec-compliant)
 const transactionSummary = computed(() => {
-    const paid = toNum(form.payment.amount, 0)
+    const paid =  toNum(form.payment.amount, 0) ;
+    const purchaseType = form.selected_purchase_type?.id;
+    let cashReceived = 0;
+    if (purchaseType === 'cash') {
+        cashReceived = goodsTotal.value; // transaction total
+    } else if (purchaseType === 'credit') {
+        cashReceived = paid; // on loan = 0, default
+    } 
+    else {
+        cashReceived = 0;
+    }
     const oldBalance = toNum(form?.selected_ledger?.statement?.balance, 0)
     const nature = form?.selected_ledger?.statement?.balance_nature // 'Dr' | 'Cr'
     const hasSelected_item = Array.isArray(form.items) && form.items.some(r => !!r.selected_item)
@@ -627,12 +635,12 @@ const transactionSummary = computed(() => {
         billDiscountPercent: billDiscountPercent.value,
         billDiscount: billDiscountCurrency.value,
         itemDiscount: totalItemDiscount.value,
-        cashReceived: paid,
+        cashReceived: cashReceived,
         balance: balance,
         grandTotal: grandTotal,
         oldBalance: oldBalance,
         balanceNature: nature,
-        currencySymbol: form.selected_currency?.symbol,
+        currencySymbol: form.selected_currency?.symbol ?? '',
     }
 })
 
@@ -663,6 +671,14 @@ const localColumns = purchasePrefs.item_columns
 const purchase_preferences = purchasePrefs
 const item_management = user_preferences.value?.item_management ?? {}
 const spec_text = item_management?.spec_text ?? 'batch'
+const decimalPlaces = Number(user_preferences.value?.appearance?.decimal_places ?? 2)
+
+// Money formatter for footer cards: "1,234.00 AFN"
+const fmtMoney = (value) => {
+    const code = form.selected_currency?.code ?? ''
+    const amount = toNum(value, 0).toFixed(decimalPlaces)
+    return code ? `${amount} ${code}` : amount
+}
 
 const showPreferencesPanel = ref(false)
 
@@ -906,29 +922,67 @@ useFormGuard(form)
                 </table>
             </div>
             <div class="mt-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 items-start">
-                <div class="space-y-4">
-                    <DiscountSummary :summary="form.summary" :total-item-discount="totalItemDiscount" :bill-discount="billDiscountCurrency" :total-discount="totalDiscount" />
-                    <div class="grid grid-cols-2 gap-2 items-start" v-if="general_fields.type || form.purchase_type === 'cash'">
+                <!-- Discount Summary -->
+                <div class="rounded-xl border bg-card p-4 shadow-sm">
+                    <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.discount_summary') }}</div>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-muted-foreground">{{ t('general.total_item_discount') }}</span>
+                            <span class="tabular-nums text-sm">{{ fmtMoney(totalItemDiscount) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-muted-foreground">{{ t('general.bill_disc') }}</span>
+                            <span class="tabular-nums text-sm">{{ fmtMoney(billDiscountCurrency) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between font-semibold pt-1">
+                            <span class="text-sm">{{ t('general.total_discount') }}</span>
+                            <span class="tabular-nums text-sm">{{ fmtMoney(totalDiscount) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Adjustments -->
+                <div class="rounded-xl border bg-card p-4 shadow-sm">
+                    <div class="text-sm font-semibold mb-3 text-violet-500">{{ t('general.adjustments') }}</div>
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-muted-foreground">{{ t('general.total_item_tax') }}</span>
+                        <span class="tabular-nums text-sm">{{ fmtMoney(totalTax) }}</span>
+                    </div>
+                    <div>
+                        <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">{{ t('general.bill_discount') }} (%)</div>
+                        <DiscountField
+                            v-model="form.discount"
+                            v-model:discount-type="form.discount_type"
+                            label=" "
+                            :error="form.errors?.discount"
+                        />
+                    </div>
+                </div>
+
+                <!-- Payment -->
+                <div class="rounded-xl border bg-card p-4 shadow-sm space-y-4">
+                    <div class="text-sm font-semibold text-violet-500">{{ t('general.payment') }}</div>
+                    <div v-if="general_fields.type">
                         <NextSelect
-                            v-if="general_fields.type"
                             :options="salePurchaseTypes"
                             v-model="form.selected_purchase_type"
+                            :floating-text="t('general.payment_type')"
                             :clearable="false"
                             @update:modelValue="(value) => handleSelectChange('purchase_type', value)"
                             label-key="name"
                             value-key="id"
                             :reduce="salePurchaseType => salePurchaseType"
-                            :floating-text="t('general.payment_type')"
                             :error="form.errors?.purchase_type"
                         />
+                    </div>
+                    <div v-if="form.purchase_type === 'cash'">
                         <NextSelect
-                            v-if="form.purchase_type === 'cash'"
                             :options="bankAccounts"
                             v-model="form.selected_bank_account"
+                            :floating-text="t('general.bank_account')"
                             @update:modelValue="(value) => handleSelectChange('bank_account_id', value)"
                             label-key="name"
                             :searchable="true"
-                            :floating-text="t('general.bank_account')"
                             :error="form.errors?.bank_account_id"
                             resource-type="accounts"
                             :search-fields="['name', 'number', 'slug']"
@@ -937,17 +991,7 @@ useFormGuard(form)
                         />
                     </div>
                 </div>
-                <TaxSummary :summary="form.summary" :total-item-tax="totalTax" />
-                <div class="rounded-xl p-4 space-y-4">
-                    <div>
-                        <div class="text-sm font-semibold mb-3 text-violet-500 text-sm">{{t('general.bill_discount')}}</div>
-                        <DiscountField
-                            v-model="form.discount"
-                            v-model:discount-type="form.discount_type"
-                            :error="form.errors?.discount"
-                        />
-                    </div>
-                </div>
+
                 <TransactionSummary :summary="transactionSummary" :balance-nature="form?.selected_ledger?.statement?.balance_nature" />
             </div>
 

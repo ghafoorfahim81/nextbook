@@ -6,15 +6,15 @@
                 <div class="flex justify-items-start">
                     <h1 :class="isRTL ? 'text-lg font-semibold ml-2 text-nowrap mt-1 text-primary' : 'text-lg font-semibold mr-2 text-nowrap mt-1 text-primary'">{{ props.title }}</h1>
                 </div>
-                <div class="relative w-full max-w-full sm:max-w-md">
+                <div class="relative w-full max-w-full sm:w-[320px] lg:w-[400px]">
                     <input
                         id="search"
                         v-model="search"
                         @input="debouncedSearch"
                         type="text"
                         :placeholder="`${t('datatable.search')} ${props.title ? props.title : ''}`"
-                        :class="isRTL ? 'flex h-10 w-full rounded-md border border-primary bg-background px-3 py-2 text-sm placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring pl-8 pr-10 text-primary' :
-                        'flex h-10 w-full rounded-md border border-primary bg-background px-3 py-2 text-sm placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring pl-8 pr-20 text-primary'"
+                        :class="isRTL ? 'flex h-9 w-full rounded-md border border-primary bg-background px-3 py-2 text-sm placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring pl-8 pr-10 text-primary' :
+                        'flex h-9 w-full rounded-md border border-primary bg-background px-3 py-2 text-sm placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring pl-8 pr-20 text-primary'"
                     />
                     <span class="absolute start-0 inset-y-0 flex items-center justify-center px-2">
                         <Search class="size-4 text-primary hover:text-primary/80" />
