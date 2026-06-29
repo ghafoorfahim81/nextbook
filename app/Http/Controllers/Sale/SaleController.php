@@ -256,6 +256,9 @@ class SaleController extends Controller
             }
 
             if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
+                $sale->update([
+                    'payment_status' => \App\Enums\PaymentStatus::Paid->value,
+                ]);
                 $lines[] = [
                     'account_id' => $validated['bank_account_id'],
                     'ledger_id'  => null,
@@ -268,6 +271,9 @@ class SaleController extends Controller
             }
 
             if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
+                $sale->update([
+                    'payment_status' => \App\Enums\PaymentStatus::Unpaid->value,
+                ]);
                 $lines[] = [
                     'account_id' => $glAccounts['account-receivable'],
                     'ledger_id'  => $validated['customer_id'],
@@ -292,6 +298,10 @@ class SaleController extends Controller
                         'remark_fa' => 'پرداخت جزئی برای فروش #' . $sale->number,
                         'remark_ps' => 'د'. '#'. $sale->number.' '.'جزوی تادیه خرڅلاو د',
                     ];
+                    app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
+                    $sale->update([
+                        'payment_status' => \App\Enums\PaymentStatus::PartiallyPaid->value,
+                    ]);
 
                     $remaining = $validated['transaction_total'] - $paidAmount;
 
@@ -307,6 +317,9 @@ class SaleController extends Controller
                         ];
                     }
                 } else {
+                    $sale->update([
+                        'payment_status' => \App\Enums\PaymentStatus::Unpaid->value,
+                    ]);
                     $lines[] = [
                         'account_id' => $glAccounts['account-receivable'],
                         'ledger_id'  => $validated['customer_id'],
@@ -332,8 +345,6 @@ class SaleController extends Controller
                 ],
                 lines: $lines
             );
-
-            app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
             $activityLogService->logCreate(
                 reference: $sale,
                 module: 'sale',
@@ -723,6 +734,9 @@ class SaleController extends Controller
             }
 
             if ($validated['type'] === \App\Enums\SalePurchaseType::Cash->value) {
+                $sale->update([
+                    'payment_status' => \App\Enums\PaymentStatus::Paid->value,
+                ]);
                 $lines[] = [
                     'account_id' => $validated['bank_account_id'],
                     'ledger_id'  => null,
@@ -735,6 +749,9 @@ class SaleController extends Controller
             }
 
             if ($validated['type'] === \App\Enums\SalePurchaseType::OnLoan->value) {
+                $sale->update([
+                    'payment_status' => \App\Enums\PaymentStatus::Unpaid->value,
+                ]);
                 $lines[] = [
                     'account_id' => $glAccounts['account-receivable'],
                     'ledger_id'  => $validated['customer_id'],
@@ -759,6 +776,11 @@ class SaleController extends Controller
                         'remark_fa' => ':پرداخت جزئی برای فروش #' . $sale->number,
                         'remark_ps' => 'د'. '#'. $sale->number.' '.'جزوی تادیه خرڅلاو: د',
                     ];
+                    app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
+
+                    $sale->update([
+                        'payment_status' => \App\Enums\PaymentStatus::PartiallyPaid->value,
+                    ]);
 
                     $remaining = $validated['transaction_total'] - $paidAmount;
 
@@ -774,6 +796,9 @@ class SaleController extends Controller
                         ];
                     }
                 } else {
+                    $sale->update([ 
+                        'payment_status' => \App\Enums\PaymentStatus::Unpaid->value,
+                    ]);
                     $lines[] = [
                         'account_id' => $glAccounts['account-receivable'],
                         'ledger_id'  => $validated['customer_id'],
@@ -798,9 +823,7 @@ class SaleController extends Controller
                     'reference_id'   => $sale->id,
                 ],
                 lines: $lines
-            );
-
-            app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
+            ); 
             $afterState = [
                 'number' => $sale->number,
                 'customer_id' => $sale->customer_id,
