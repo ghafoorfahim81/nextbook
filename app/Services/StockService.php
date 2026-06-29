@@ -15,6 +15,19 @@ use Illuminate\Validation\ValidationException;
 
 class StockService
 {
+    /**
+     * Comparison tolerance for stock quantities.
+     *
+     * Persisted quantities (stock_balances.quantity, stock_movements.qty_remaining)
+     * are numeric(18,4) — 4 decimal places. When a sale uses a sub-unit of the item's
+     * base unit (e.g. selling "بسته" of a "کارتن6بسته" item), unit conversion yields a
+     * repeating decimal (2 ÷ 6 = 0.33333…) that the DB stores rounded to 0.3333, while
+     * the required amount is computed in PHP at full precision (0.33333333). Comparing
+     * the two directly reports a false "Insufficient stock". This epsilon ignores
+     * shortfalls below the storage resolution.
+     */
+    private const QUANTITY_EPSILON = 0.0001;
+
     private $dateConversionService;
 
     public function __construct(DateConversionService $dateConversionService)
@@ -244,7 +257,7 @@ class StockService
             ];
             $remaining -= $deductQty;
         }
-        if ($remaining > 0) {
+        if ($remaining > self::QUANTITY_EPSILON) {
             throw ValidationException::withMessages([
                 'stock' => 'Insufficient stock for FIFO deduction.'
             ]);
@@ -314,7 +327,7 @@ class StockService
             $remaining -= $deductQty;
         }
 
-        if ($remaining > 0) {
+        if ($remaining > self::QUANTITY_EPSILON) {
             throw ValidationException::withMessages([
                 'stock' => 'Insufficient stock for LIFO deduction.'
             ]);
@@ -491,9 +504,9 @@ class StockService
             ->get()
             ->sum(fn ($balance) => (float) $balance->quantity);
 
-        if ($available < (float) $data['quantity']) {
+        if ($available + self::QUANTITY_EPSILON < (float) $data['quantity']) {
             throw ValidationException::withMessages([
-                'stock' => 'Insufficient stock.'
+                'stock' => 'Insufficient stock.' . 'item_id ' .$data['item_id']. ' available: ' .$available. ' required: ' .$data['quantity']
             ]);
         }
     }
@@ -545,7 +558,7 @@ class StockService
             $remaining -= $deductQty;
         }
 
-        if ($remaining > 0) {
+        if ($remaining > self::QUANTITY_EPSILON) {
             throw ValidationException::withMessages([
                     'stock' => 'Negative stock is not allowed.',
                     'allocation' => $allocation['expire_date'] ,
