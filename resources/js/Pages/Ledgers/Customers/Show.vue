@@ -7,6 +7,7 @@ import { Button } from '@/Components/ui/button';
 import { ArrowLeft, SquarePen } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue';
+import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus';
 
 const props = defineProps({
     customer: { type: Object, required: true },
@@ -46,6 +47,7 @@ const customerSalesTableRows = computed(() => salesRows.value.map((row) => ({
     type: row.type || '-',
     amount: row.amount,
     status: row.payment_status_label || row.payment_status || '-',
+    payment_status: row.payment_status,
     description: row.description || '-',
 })));
 
@@ -261,7 +263,13 @@ const customerMovementColumns = computed(() => [
                         :row-number-label="t('report.columns.no')"
                         default-sort-key="date"
                         default-sort-direction="desc"
-                    />
+                    >
+                        <template #cell-status="{ row }">
+                            <span :class="[PAYMENT_STATUS_BADGE_BASE, paymentStatusBadgeClass(row.payment_status)]">
+                                {{ row.status }}
+                            </span>
+                        </template>
+                    </LedgerListTable>
                     <LedgerListTable
                         v-else-if="activeTxnTab === 'receipts'"
                         :title="t('receipt.receipts')"

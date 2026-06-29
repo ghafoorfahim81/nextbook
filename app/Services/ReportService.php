@@ -518,6 +518,7 @@ class ReportService
                 'type'           => \App\Enums\SalePurchaseType::tryFrom((string) $row->type)?->getLabel() ?? (string) $row->type,
                 'status'         => \App\Enums\TransactionStatus::tryFrom((string) $row->status)?->getLabel() ?? (string) $row->status,
                 'payment_status' => \App\Enums\PaymentStatus::tryFrom((string) $row->payment_status)?->getLabel() ?? (string) $row->payment_status,
+                'payment_status_value' => (string) $row->payment_status,
                 'amount'         => $this->moneyValue($row->amount),
             ],
             [

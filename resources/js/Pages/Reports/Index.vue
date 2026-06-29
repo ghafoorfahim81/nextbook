@@ -38,6 +38,7 @@ import ReportDataTable from '@/Components/reports/ReportDataTable.vue'
 import ReportStatement from '@/Components/reports/ReportStatement.vue'
 import ReportGroupedTable from '@/Components/reports/ReportGroupedTable.vue'
 import ReportUserActivity from '@/Components/reports/ReportUserActivity.vue'
+import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus'
 
 const props = defineProps({
   filters: { type: Object, required: true },
@@ -971,7 +972,13 @@ function exportReport() {
               :pagination="result.pagination"
               :empty-message="emptyMessage"
               @page-change="submit"
-            />
+            >
+              <template #cell-payment_status="{ row }">
+                <span :class="[PAYMENT_STATUS_BADGE_BASE, paymentStatusBadgeClass(row.payment_status_value ?? row.payment_status)]">
+                  {{ row.payment_status }}
+                </span>
+              </template>
+            </ReportDataTable>
           </section>
         </template>
       </section>
