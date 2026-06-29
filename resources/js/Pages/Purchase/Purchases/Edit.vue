@@ -531,15 +531,21 @@ const billDiscountPercent = computed(() => {
 const totalDiscount = computed(() => billDiscountCurrency.value + totalItemDiscount.value);
 
 const transactionSummary = computed(() => {
-    const type = form.selected_purchase_type?.id || form.purchase_type;
+    const purchaseType = form.selected_purchase_type?.id;
+    let cashReceived = 0;
+    if (purchaseType === 'cash') {
+        cashReceived = goodsTotal.value; // transaction total
+    } else if (purchaseType === 'credit') {
+        cashReceived = paid; // on loan = 0, default
+    } 
+    else {
+        cashReceived = 0;
+    }
     const oldBalance = toNum(form?.selected_ledger?.statement?.balance, 0);
     const nature = form?.selected_ledger?.statement?.balance_nature;
     const hasSelectedItem = Array.isArray(form.items) && form.items.some((row) => !!row.selected_item);
     const netAmount = goodsTotal.value - totalDiscount.value + totalTax.value;
-    const paid = type === 'cash'
-        ? netAmount
-        : (type === 'credit' ? toNum(form.payment.amount, 0) : 0);
-    const payableDelta = netAmount - paid;
+    const payableDelta = netAmount - cashReceived;
     const signedOldBalance = nature === 'dr' ? -oldBalance : oldBalance;
     const signedBalance = hasSelectedItem ? signedOldBalance + payableDelta : signedOldBalance;
 
@@ -548,7 +554,7 @@ const transactionSummary = computed(() => {
         billDiscountPercent: billDiscountPercent.value,
         billDiscount: billDiscountCurrency.value,
         itemDiscount: totalItemDiscount.value,
-        cashReceived: paid,
+        cashReceived: cashReceived,
         balance: Math.abs(signedBalance),
         grandTotal: netAmount,
         oldBalance,
