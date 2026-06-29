@@ -194,6 +194,13 @@
                             <template v-else-if="column.render">
                                 {{ column.render(item) }}
                             </template>
+                            <template v-else-if="isPaymentStatusColumn(column.key)">
+                                <span
+                                    :class="[PAYMENT_STATUS_BADGE_BASE, paymentStatusBadgeClass(item.payment_status ?? getNestedValue(item, column.key))]"
+                                >
+                                    {{ getNestedValue(item, column.key) || item.payment_status_label || '-' }}
+                                </span>
+                            </template>
                             <template v-else-if="isStatusColumn(column.key)">
                                 <span
                                     class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium capitalize"
@@ -330,6 +337,7 @@ import {
     DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 } from '@/Components/ui/dropdown-menu'
 import { useAuth } from '@/composables/useAuth'
+import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus'
 const { can } = useAuth();
 const props = defineProps({
     can: String,
@@ -409,6 +417,8 @@ const isBalanceColumn = (key) => {
 }
 
 const isStatusColumn = (key) => key === 'status' || key === 'status_label'
+
+const isPaymentStatusColumn = (key) => key === 'payment_status' || key === 'payment_status_label'
 
 const statusBadgeClass = (status) => {
     switch (String(status || '').toLowerCase()) {

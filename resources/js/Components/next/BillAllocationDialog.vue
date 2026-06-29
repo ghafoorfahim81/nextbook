@@ -11,6 +11,7 @@ import {
 } from '@/Components/ui/dialog'
 import { Button } from '@/Components/ui/button'
 import NextInput from '@/Components/next/NextInput.vue'
+import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus'
 
 const { t } = useI18n()
 
@@ -204,7 +205,11 @@ watch(
                 </td>
                 <td class="px-3 py-2 font-medium">
                   #{{ row.number }}
-                  <div class="text-xs text-muted-foreground">{{ row.payment_status }}</div>
+                  <div class="mt-0.5">
+                    <span :class="[PAYMENT_STATUS_BADGE_BASE, paymentStatusBadgeClass(row.payment_status)]">
+                      {{ row.payment_status }}
+                    </span>
+                  </div>
                 </td>
                 <td class="px-3 py-2">{{ row.date || '-' }}</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ Number(row.remaining_amount || 0).toLocaleString() }}</td>
