@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
@@ -21,7 +22,7 @@ use App\Models\Transaction\Transaction;
 use App\Traits\HasUserTracking;
 class Sale extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.

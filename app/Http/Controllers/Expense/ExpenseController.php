@@ -11,6 +11,7 @@ use App\Models\Account\Account;
 use App\Models\Administration\Currency;
 use App\Models\Expense\Expense;
 use App\Models\Expense\ExpenseCategory;
+use App\Services\AttachmentService;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -86,17 +87,13 @@ class ExpenseController extends Controller
     public function store(
         ExpenseStoreRequest $request,
         TransactionService $transactionService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
-        $expense = DB::transaction(function () use ($request, $transactionService, $activityLogService) {
+        $expense = DB::transaction(function () use ($request, $transactionService, $activityLogService, $attachmentService) {
             $validated = $request->validated();
 
-            // Handle file upload
-            // if ($request->hasFile('attachment')) {
-            //     $validated['attachment'] = $request->file('attachment')
-            //         ->store('expenses', 'public');
-            // }
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $postImmediately = (bool) user_preference('transaction.expense_post_immediately', true);
             $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
@@ -112,6 +109,11 @@ class ExpenseController extends Controller
 
             // Create expense details
             $expense->details()->createMany($validated['details']);
+
+            // Persist any uploaded attachments
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($expense, $request->file('attachments'));
+            }
             // Calculate total
             $total = collect($validated['details'])->sum('amount');
 
@@ -185,6 +187,7 @@ class ExpenseController extends Controller
             'transaction.lines.account',
             'transaction.originalTransaction',
             'transaction.reversalTransaction',
+            'attachments',
         ]);
 
         if ($request->wantsJson()) {
@@ -235,7 +238,7 @@ class ExpenseController extends Controller
 
     public function edit(Request $request, Expense $expense)
     {
-        $expense->load(['category', 'details', 'transaction.currency', 'transaction.lines.account']);
+        $expense->load(['category', 'details', 'transaction.currency', 'transaction.lines.account', 'attachments']);
 
         // dd($expense);
         return inertia('Expenses/Expenses/Edit', [
@@ -256,7 +259,8 @@ class ExpenseController extends Controller
         ExpenseUpdateRequest $request,
         Expense $expense,
         TransactionService $transactionService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
         if ($expense->status !== TransactionStatus::DRAFT->value) {
@@ -273,17 +277,13 @@ class ExpenseController extends Controller
             'rate' => $expense->transaction?->rate,
         ];
 
-        DB::transaction(function () use ($request, $expense, $transactionService, $activityLogService, $beforeState) {
+        DB::transaction(function () use ($request, $expense, $transactionService, $activityLogService, $attachmentService, $beforeState) {
             $validated = $request->validated();
-            // Handle file upload
-            // if ($request->hasFile('attachment')) {
-            //     // Delete old attachment
-            //     if ($expense->attachment) {
-            //         Storage::disk('public')->delete($expense->attachment);
-            //     }
-            //     $validated['attachment'] = $request->file('attachment')
-            //         ->store('expenses', 'public');
-            // }
+
+            // Persist any newly uploaded attachments (removals are handled via attachments.destroy)
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($expense, $request->file('attachments'));
+            }
 
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $expense->date;
             // Update expense record

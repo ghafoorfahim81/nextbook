@@ -5,6 +5,7 @@ return [
         'account' => 'Account',
         'account_transfer' => 'Account transfer',
         'account_type' => 'Account type',
+        'attachment' => 'Attachment',
         'branch' => 'Branch',
         'brand' => 'Brand',
         'category' => 'Category',
@@ -31,6 +32,10 @@ return [
         'unit_measure' => 'Unit measure',
         'user' => 'User',
     ],
+
+    'attachment_upload_hint' => 'Click to browse or drop files here',
+    'attachment_invalid_type' => ':name has an unsupported file type.',
+    'attachment_too_large' => ':name exceeds the :size MB limit.',
 
     'created_successfully' => ':resource created successfully.',
     'updated_successfully' => ':resource updated successfully.',

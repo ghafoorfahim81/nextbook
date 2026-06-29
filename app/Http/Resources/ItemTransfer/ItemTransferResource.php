@@ -3,6 +3,7 @@
 namespace App\Http\Resources\ItemTransfer;
 
 use App\Http\Resources\UserManagement\UserSimpleResource;
+use App\Http\Resources\AttachmentResource;
 use App\Services\DateConversionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -42,6 +43,7 @@ class ItemTransferResource extends JsonResource
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
         ];
     }
 }

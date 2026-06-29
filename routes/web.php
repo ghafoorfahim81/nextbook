@@ -242,6 +242,9 @@ Route::middleware([
         ->withTrashed();
     Route::get('/payments/{payment}/print', [\App\Http\Controllers\Payment\PaymentController::class, 'print'])->name('payments.print');
 
+    // Attachments (polymorphic, shared across modules)
+    Route::delete('/attachments/{attachment}', [\App\Http\Controllers\AttachmentController::class, 'destroy'])->name('attachments.destroy');
+
     // Account Transfers
     Route::get('/account-transfers/export', [\App\Http\Controllers\AccountTransfer\AccountTransferController::class, 'export'])->name('account-transfers.export');
     Route::resource('/account-transfers', \App\Http\Controllers\AccountTransfer\AccountTransferController::class);

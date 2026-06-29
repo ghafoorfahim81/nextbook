@@ -4,6 +4,7 @@ namespace App\Http\Resources\Sale;
 
 use App\Http\Resources\Transaction\TransactionResource;
 use App\Http\Resources\UserManagement\UserSimpleResource;
+use App\Http\Resources\AttachmentResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Enums\SalePurchaseType;
@@ -121,6 +122,7 @@ class SaleResource extends JsonResource
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
             'total_cost' => $totalCostValue,
             'total_profit' => $totalProfitValue,
+            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
         ];
     }
 }

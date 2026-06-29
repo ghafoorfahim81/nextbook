@@ -11,6 +11,7 @@ use App\Models\Account\Account;
 use App\Models\Administration\Currency;
 use App\Models\Owner\Owner;
 use App\Services\TransactionService;
+use App\Services\AttachmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Response;
@@ -69,7 +70,8 @@ class OwnerController extends Controller
     public function store(
         OwnerStoreRequest $request,
         TransactionService $transactionService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
         $validated = $request->validated();
@@ -79,7 +81,7 @@ class OwnerController extends Controller
         $owner = null;
         $transaction = null;
 
-        DB::transaction(function () use (&$owner, &$transaction, $validated, $transactionService, $activityLogService) {
+        DB::transaction(function () use (&$owner, &$transaction, $request, $validated, $transactionService, $activityLogService, $attachmentService) {
             $sharePercentage = (float) ($validated['share_percentage']
                 ?? $validated['ownership_percentage']
                 ?? 100);
@@ -97,6 +99,10 @@ class OwnerController extends Controller
                 'capital_account_id' => $validated['capital_account_id'],
                 'drawing_account_id' => $validated['drawing_account_id'],
             ]);
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($owner, $request->file('attachments'));
+            }
 
             // Create financial transactions
             $amount = (float) $validated['amount'];
@@ -175,6 +181,7 @@ class OwnerController extends Controller
             'drawingAccount',
             'transaction.currency',
             'transaction.lines.account',
+            'attachments',
         ]);
 
         return response()->json([
@@ -185,7 +192,7 @@ class OwnerController extends Controller
     public function edit(Request $request, Owner $owner): Response
     {
         $accountModel = new Account();
-        $owner->load(['transaction.currency', 'transaction.lines.account', 'capitalAccount', 'drawingAccount']);
+        $owner->load(['transaction.currency', 'transaction.lines.account', 'capitalAccount', 'drawingAccount', 'attachments']);
 
         return inertia('Owners/Owners/Edit', [
             'owner' => new OwnerResource($owner),
@@ -196,7 +203,7 @@ class OwnerController extends Controller
         ]);
     }
 
-    public function update(OwnerUpdateRequest $request, Owner $owner, ActivityLogService $activityLogService)
+    public function update(OwnerUpdateRequest $request, Owner $owner, ActivityLogService $activityLogService, AttachmentService $attachmentService)
     {
         $validated = $request->validated();
         $sharePercentage = (float) ($validated['share_percentage']
@@ -234,11 +241,17 @@ class OwnerController extends Controller
         DB::transaction(function () use (
             &$transaction,
             $owner,
+            $request,
             $validated,
             $amount,
             $currencyId,
             $rate,
+            $attachmentService,
         ) {
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($owner, $request->file('attachments'));
+            }
+
             $transaction = $owner->transaction()->with('lines')->first();
 
             $owner->update([

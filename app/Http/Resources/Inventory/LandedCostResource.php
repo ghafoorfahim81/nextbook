@@ -6,6 +6,7 @@ use App\Enums\LandedCostAllocationMethod;
 use App\Enums\LandedCostStatus;
 use App\Http\Resources\Purchase\PurchaseResource;
 use App\Http\Resources\UserManagement\UserSimpleResource;
+use App\Http\Resources\AttachmentResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -42,6 +43,7 @@ class LandedCostResource extends JsonResource
             'items' => LandedCostItemResource::collection($this->whenLoaded('items')),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
+            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
         ];
     }
 }

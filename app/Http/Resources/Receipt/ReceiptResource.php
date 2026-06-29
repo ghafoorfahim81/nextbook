@@ -9,6 +9,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\UserManagement\UserSimpleResource;
 use App\Http\Resources\Sale\SaleReceiveResource;
+use App\Http\Resources\AttachmentResource;
 class ReceiptResource extends JsonResource
 {
     /**
@@ -47,6 +48,7 @@ class ReceiptResource extends JsonResource
             'sale_receives' => SaleReceiveResource::collection($this->whenLoaded('saleReceives')),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
+            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
         ];
     }
 }

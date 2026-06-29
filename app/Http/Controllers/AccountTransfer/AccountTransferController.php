@@ -13,6 +13,7 @@ use App\Models\AccountTransfer\AccountTransfer;
 use App\Models\Administration\Currency;
 use App\Models\Ledger\Ledger;
 use App\Services\TransactionService;
+use App\Services\AttachmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
@@ -80,10 +81,10 @@ class AccountTransferController extends Controller
     }
 
 
-    public function store(AccountTransferStoreRequest $request, TransactionService $transactionService, ActivityLogService $activityLogService)
+    public function store(AccountTransferStoreRequest $request, TransactionService $transactionService, ActivityLogService $activityLogService, AttachmentService $attachmentService)
     {
         // dd((string) \Symfony\Component\Uid\Ulid::generate());
-        DB::transaction(function () use ($request, $transactionService, $activityLogService) {
+        DB::transaction(function () use ($request, $transactionService, $activityLogService, $attachmentService) {
             $validated = $request->validated();
 
             $fromAccountId = $validated['from_account_id'];
@@ -122,6 +123,11 @@ class AccountTransferController extends Controller
                 'remark' => $validated['remark'] ?? null,
                 'status' => $documentStatus,
             ]);
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($transfer, $request->file('attachments'));
+            }
+
             $transaction = $transactionService->post([
                 'currency_id' => $currencyId,
                 'rate' => $rate,
@@ -185,7 +191,7 @@ class AccountTransferController extends Controller
 
     public function show(Request $request, AccountTransfer $accountTransfer)
     {
-        $accountTransfer->load(['transaction.lines.account.accountType', 'transaction.currency', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'fromAccount', 'toAccount', 'createdBy', 'updatedBy']);
+        $accountTransfer->load(['transaction.lines.account.accountType', 'transaction.currency', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'fromAccount', 'toAccount', 'createdBy', 'updatedBy', 'attachments']);
         if ($request->wantsJson()) {
             return response()->json([
                 'data' => new AccountTransferResource($accountTransfer),
@@ -232,7 +238,7 @@ class AccountTransferController extends Controller
 
     public function edit(Request $request, AccountTransfer $accountTransfer)
     {
-        $accountTransfer->load(['transaction.lines.account.accountType', 'transaction.currency', 'fromAccount', 'toAccount', 'createdBy', 'updatedBy']);
+        $accountTransfer->load(['transaction.lines.account.accountType', 'transaction.currency', 'fromAccount', 'toAccount', 'createdBy', 'updatedBy', 'attachments']);
         return inertia('AccountTransfers/Edit', [
             'data' => new AccountTransferResource($accountTransfer),
             'bankAccounts' => AccountResource::collection(Account::whereHas('accountType', fn($q) =>
@@ -241,7 +247,7 @@ class AccountTransferController extends Controller
         ]);
     }
 
-    public function update(AccountTransferUpdateRequest $request, AccountTransfer $accountTransfer, ActivityLogService $activityLogService)
+    public function update(AccountTransferUpdateRequest $request, AccountTransfer $accountTransfer, ActivityLogService $activityLogService, AttachmentService $attachmentService)
     {
         if ($accountTransfer->status !== TransactionStatus::DRAFT->value) {
             return back()->with('error', 'Only draft documents can be edited.');
@@ -249,8 +255,12 @@ class AccountTransferController extends Controller
 
         $before = $this->transferSnapshot($accountTransfer->loadMissing('transaction.lines.account', 'transaction.currency'));
 
-        DB::transaction(function () use ($request, $accountTransfer, $activityLogService, $before) {
+        DB::transaction(function () use ($request, $accountTransfer, $activityLogService, $attachmentService, $before) {
             $validated = $request->validated();
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($accountTransfer, $request->file('attachments'));
+            }
 
             $accountTransfer->update([
                 'number' => $validated['number'] ?? $accountTransfer->number,

@@ -30,6 +30,8 @@ class OwnerUpdateRequest extends FormRequest
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'amount' => ['nullable', 'numeric', 'min:0'],
             'rate' => ['nullable', 'numeric', 'min:0'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 }

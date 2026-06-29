@@ -2,6 +2,7 @@
 
 namespace App\Models\Expense;
 
+use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
@@ -19,7 +20,7 @@ use App\Traits\BranchSpecific;
 use App\Models\Transaction\Transaction;
 class Expense extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, BranchSpecific, HasBranch, HasUserAuditable, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, BranchSpecific, HasBranch, HasUserAuditable, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;

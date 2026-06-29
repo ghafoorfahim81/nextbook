@@ -57,6 +57,8 @@ class ItemStoreRequest extends FormRequest
             'openings.*.quantity' => ['nullable', 'numeric'],
             'openings.*.unit_price' => ['nullable', 'numeric','required_with:openings.*.quantity>0'], 
             'openings.*.warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
 
         ];
     }

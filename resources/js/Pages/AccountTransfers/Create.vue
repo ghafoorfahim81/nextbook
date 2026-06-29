@@ -9,6 +9,7 @@ import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useAccountTransferBalances } from '@/composables/useAccountTransferBalances'
 import { useI18n } from 'vue-i18n'
@@ -33,6 +34,7 @@ const form = useForm({
   selected_currency: null,
   rate: '',
   remark: '',
+  attachments: [],
 })
 
 const submitAction = ref(null)
@@ -181,6 +183,10 @@ useFormGuard(form)
 
           <div class="md:col-span-3">
             <NextTextarea placeholder="Remark" :error="form.errors?.remark" v-model="form.remark" :label="t('general.remark')" />
+          </div>
+
+          <div class="md:col-span-3">
+            <AttachmentUploader v-model="form.attachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" />
           </div>
         </div>
       </div>

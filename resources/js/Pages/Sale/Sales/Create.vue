@@ -13,6 +13,7 @@ import PaymentDialog from '@/Components/next/PaymentDialog.vue';
 import { useI18n } from 'vue-i18n';
 import TransactionSummary from '@/Components/next/TransactionSummary.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
+import AttachmentUploader from '@/Components/AttachmentUploader.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast'
@@ -111,6 +112,7 @@ const form = useForm({
     selected_warehouse: '',
     item_list:[],
     items: Array.from({ length: 6 }, buildEmptyRow),
+    attachments: [],
 })
 
 const resolveDefaultLedger = () => props.ledgers?.data?.find((ledger) => ledger.code === 'CASH-CUST') ?? null
@@ -1112,6 +1114,10 @@ useFormGuard(form)
                 </div>
 
                 <TransactionSummary :summary="transactionSummary" :balance-nature="form?.selected_ledger?.statement?.balance_nature" />
+            </div>
+
+            <div class="mt-4">
+                <AttachmentUploader v-model="form.attachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" />
             </div>
 
             <SubmitButtons module="sale"

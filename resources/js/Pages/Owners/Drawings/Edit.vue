@@ -10,6 +10,7 @@ import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 
 const { t } = useI18n()
@@ -47,7 +48,15 @@ const form = useForm({
   selectedOwner: currentDrawing.value?.owner || null,
   selected_bank_account: initialBankAccount.value,
   selected_currency: currentDrawing.value?.currency || null,
+  attachments: [],
 })
+const existingAttachments = ref(currentDrawing.value?.attachments || [])
+const removeExistingAttachment = (id) => {
+  router.delete(route('attachments.destroy', id), {
+    preserveScroll: true,
+    onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id) },
+  })
+}
 
 const submitAction = ref(null)
 const updateLoading = computed(() => form.processing && submitAction.value === 'update')
@@ -119,6 +128,7 @@ const handleSubmit = () => {
       amount: data.amount,
       date: data.date,
       narration: data.narration,
+      attachments: data.attachments,
     }))
     .patch(route('drawings.update', currentDrawing.value.id), {
       preserveScroll: true,
@@ -239,6 +249,10 @@ useFormGuard(form)
             rows="2"
             class="md:col-span-2 xl:col-span-3"
           />
+
+          <div class="md:col-span-2 xl:col-span-3">
+            <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
+          </div>
         </div>
       </div>
 

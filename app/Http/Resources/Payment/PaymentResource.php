@@ -9,6 +9,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\UserManagement\UserSimpleResource;
 use App\Http\Resources\Purchase\PurchasePaymentResource;
+use App\Http\Resources\AttachmentResource;
 
 class PaymentResource extends JsonResource
 {
@@ -46,6 +47,7 @@ class PaymentResource extends JsonResource
             'purchase_payments' => PurchasePaymentResource::collection($this->whenLoaded('purchasePayments')),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
+            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
         ];
     }
 }

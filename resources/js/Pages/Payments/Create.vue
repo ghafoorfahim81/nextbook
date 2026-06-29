@@ -11,6 +11,7 @@ import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import BillAllocationDialog from '@/Components/next/BillAllocationDialog.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { useI18n } from 'vue-i18n'
@@ -51,6 +52,7 @@ const form = useForm({
   cheque_no: '',
   narration: '',
   allocations: [],
+  attachments: [],
 })
 
 const submitAction = ref(null)
@@ -198,6 +200,7 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
         form.reset('date', 'amount', 'cheque_no', 'narration')
         form.payment_mode = 'on_account'
         form.allocations = []
+        form.attachments = []
         showBillDialog.value = false
         billOptions.value = []
         applyCreateDefaults({ number: String((isNaN(latest) ? 0 : latest) + 1) })
@@ -327,6 +330,9 @@ useFormGuard(form)
               </div>
             </div>
           </div>
+        </div>
+        <div class="mt-4">
+          <AttachmentUploader v-model="form.attachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" />
         </div>
       </div>
 

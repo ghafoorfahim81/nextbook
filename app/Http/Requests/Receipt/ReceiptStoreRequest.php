@@ -29,6 +29,8 @@ class ReceiptStoreRequest extends FormRequest
             'allocations' => ['nullable', 'array'],
             'allocations.*.bill_id' => ['required_with:allocations', 'string'],
             'allocations.*.amount' => ['required_with:allocations', 'numeric', 'min:0.01'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 

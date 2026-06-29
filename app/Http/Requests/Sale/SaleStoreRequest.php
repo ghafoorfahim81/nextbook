@@ -51,6 +51,8 @@ class SaleStoreRequest extends FormRequest
             'item_list.*.item_discount' => ['nullable', 'numeric', 'min:0'],
             'item_list.*.free' => ['nullable', 'numeric', 'min:0'],
             'item_list.*.tax' => ['nullable', 'numeric', 'min:0'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 }

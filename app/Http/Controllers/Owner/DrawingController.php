@@ -19,6 +19,7 @@ use App\Models\Transaction\TransactionLine;
 use App\Models\User;
 use App\Enums\TransactionStatus;
 use App\Services\TransactionService;
+use App\Services\AttachmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -91,10 +92,10 @@ class DrawingController extends Controller
         ]);
     }
 
-    public function store(DrawingStoreRequest $request, TransactionService $transactionService)
+    public function store(DrawingStoreRequest $request, TransactionService $transactionService, AttachmentService $attachmentService)
     {
         $validated = $request->validated();
-        DB::transaction(function () use ($validated, $transactionService) {
+        DB::transaction(function () use ($request, $validated, $transactionService, $attachmentService) {
             $owner = Owner::with('drawingAccount')->findOrFail($validated['owner_id']);
             abort_unless($owner->drawing_account_id, 422, 'Selected owner does not have a drawing account.');
             $dateConversionService = app(DateConversionService::class);
@@ -107,6 +108,11 @@ class DrawingController extends Controller
                 'date' => $date,
                 'narration' => $validated['narration'] ?? null,
             ]);
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($drawing, $request->file('attachments'));
+            }
+
             $amount = (float) $validated['amount'];
             $lines = [
                 [
@@ -161,6 +167,7 @@ class DrawingController extends Controller
             'transaction.lines.account',
             'transaction.originalTransaction',
             'transaction.reversalTransaction',
+            'attachments',
         ]);
 
         if ($request->wantsJson()) {
@@ -185,6 +192,7 @@ class DrawingController extends Controller
             'owner.drawingAccount',
             'transaction.currency',
             'transaction.lines.account',
+            'attachments',
         ]);
 
         return inertia('Owners/Drawings/Edit', [
@@ -210,7 +218,7 @@ class DrawingController extends Controller
         ]);
     }
 
-    public function update(DrawingUpdateRequest $request, Drawing $drawing, TransactionService $transactionService)
+    public function update(DrawingUpdateRequest $request, Drawing $drawing, TransactionService $transactionService, AttachmentService $attachmentService)
     {
         if ($drawing->transaction?->status !== TransactionStatus::DRAFT->value) {
             return back()->with('error', 'Only draft documents can be edited.');
@@ -218,9 +226,13 @@ class DrawingController extends Controller
 
         $validated = $request->validated();
 
-        DB::transaction(function () use ($drawing, $validated, $transactionService) {
+        DB::transaction(function () use ($request, $drawing, $validated, $transactionService, $attachmentService) {
             $owner = Owner::with('drawingAccount')->findOrFail($validated['owner_id']);
             abort_unless($owner->drawing_account_id, 422, 'Selected owner does not have a drawing account.');
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($drawing, $request->file('attachments'));
+            }
 
             $amount = (float) $validated['amount'];
             $transaction = $drawing->transaction()->with('lines')->first();

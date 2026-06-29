@@ -4,6 +4,7 @@ namespace App\Models\Owner;
 
 use App\Models\Transaction\Transaction;
 use App\Traits\BranchSpecific;
+use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasSearch;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 class Drawing extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasAttachments, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;

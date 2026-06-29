@@ -17,6 +17,7 @@ use App\Services\ActivityLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
+use App\Services\AttachmentService;
 use Illuminate\Support\Facades\Cache;
 class ItemTransferController extends Controller
 {
@@ -71,7 +72,7 @@ class ItemTransferController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(ItemTransferStoreRequest $request)
+    public function store(ItemTransferStoreRequest $request, AttachmentService $attachmentService)
     {
         $validated = $request->validated();
 
@@ -82,6 +83,9 @@ class ItemTransferController extends Controller
             }, $validated['items']);
         }
         $transfer = $this->transferService->createTransfer($validated);
+        if ($request->hasFile('attachments')) {
+            $attachmentService->store($transfer, $request->file('attachments'));
+        }
         if ((bool) user_preference('transaction.item_transfer_post_immediately', true)) {
             $transfer = $this->transferService->completeTransfer($transfer);
         }
@@ -97,7 +101,7 @@ class ItemTransferController extends Controller
      */
     public function show(Request $request, ItemTransfer $itemTransfer)
     {
-        $itemTransfer->load(['fromWarehouse', 'toWarehouse', 'items.item', 'items.unitMeasure', 'branch', 'createdBy', 'updatedBy']);
+        $itemTransfer->load(['fromWarehouse', 'toWarehouse', 'items.item', 'items.unitMeasure', 'branch', 'createdBy', 'updatedBy', 'attachments']);
 
         return response()->json([
             'data' => new ItemTransferResource($itemTransfer),
@@ -112,7 +116,7 @@ class ItemTransferController extends Controller
         if ($itemTransfer->status === TransferStatus::COMPLETED || $itemTransfer->status === TransferStatus::CANCELLED) {
             return redirect()->back()->withErrors(['error' => __('general.cannot_edit_completed_or_cancelled_transfer')]);
         }
-        $itemTransfer->load(['fromWarehouse', 'toWarehouse', 'items.item', 'items.unitMeasure']);
+        $itemTransfer->load(['fromWarehouse', 'toWarehouse', 'items.item', 'items.unitMeasure', 'attachments']);
 
         return inertia('ItemTransfer/ItemTransfers/Edit', [
             'transfer' => new ItemTransferResource($itemTransfer),
@@ -122,13 +126,17 @@ class ItemTransferController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(ItemTransferUpdateRequest $request, ItemTransfer $itemTransfer)
+    public function update(ItemTransferUpdateRequest $request, ItemTransfer $itemTransfer, AttachmentService $attachmentService)
     {
         if ($itemTransfer->status !== TransferStatus::PENDING) {
             abort(403, 'Only draft documents can be edited.');
         }
 
         $validated = $request->validated();
+
+        if ($request->hasFile('attachments')) {
+            $attachmentService->store($itemTransfer, $request->file('attachments'));
+        }
 
         // Convert item expire dates if items are being updated
         if (isset($validated['items'])) {

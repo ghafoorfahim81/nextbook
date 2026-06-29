@@ -14,6 +14,7 @@ use App\Http\Resources\Inventory\StockMovementResource;
 use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Administration\BrandResource;
 use App\Http\Resources\Administration\SizeResource;
+use App\Http\Resources\AttachmentResource;
 class ItemResource extends JsonResource
 {
     /**
@@ -115,6 +116,7 @@ class ItemResource extends JsonResource
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
             'openings' => StockMovementResource::collection($this->whenLoaded('openings')),
+            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
         ];
     }
 

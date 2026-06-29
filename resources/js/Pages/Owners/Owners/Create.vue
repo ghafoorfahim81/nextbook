@@ -5,6 +5,7 @@ import { useForm, usePage } from '@inertiajs/vue3'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useI18n } from 'vue-i18n'
 import { watch, computed, ref } from 'vue'
@@ -41,6 +42,7 @@ const form = useForm({
     amount: null, 
     selected_currency: null,
     rate: 1,
+    attachments: [],
 })
 
 const submitAction = ref(null)
@@ -186,6 +188,9 @@ useFormGuard(form)
               </div>
           </div>
       </div>
+        <div class="mt-4">
+          <AttachmentUploader v-model="form.attachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" />
+        </div>
       </div>
       <SubmitButtons module="owner"
         :create-label="t('general.create')"

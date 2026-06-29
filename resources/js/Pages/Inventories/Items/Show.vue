@@ -1,5 +1,6 @@
 <script setup>
-import AppLayout from '@/Layouts/Layout.vue';
+import AppLayout from '@/Layouts/Layout.vue'
+import AttachmentList from '@/Components/AttachmentList.vue';
 import { ref, computed, onMounted, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3';
@@ -278,6 +279,9 @@ onMounted(() => {
                         Loading more...
                     </div>
                 </div>
+            </div>
+            <div class="mt-4">
+                <AttachmentList :items="itemData.attachments || []" :label="t('general.attachment')" />
             </div>
         </div>
     </AppLayout>

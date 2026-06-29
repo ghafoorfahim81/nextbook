@@ -2,7 +2,8 @@
 import AppLayout from '@/Layouts/Layout.vue'
 import { useSaveConfirmation } from '@/composables/useSaveConfirmation'
 import { useFormGuard } from '@/composables/useFormGuard'
-import { useForm, usePage } from '@inertiajs/vue3'
+import { useForm, usePage, router } from '@inertiajs/vue3'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import { ref, onMounted, watch, computed, reactive } from 'vue'
 import axios from 'axios'
 import { useLazyProps } from '@/composables/useLazyProps'
@@ -51,7 +52,15 @@ const form = useForm({
   cheque_no: '',
   narration: '',
   allocations: [],
+  attachments: [],
 })
+const existingAttachments = ref([])
+const removeExistingAttachment = (id) => {
+  router.delete(route('attachments.destroy', id), {
+    preserveScroll: true,
+    onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id) },
+  })
+}
 const submitAction = ref('update')
 const pendingPrintWindow = ref(null)
 
@@ -87,6 +96,7 @@ onMounted(async () => {
   form.bank_account_id = bankId
   form.selected_bank_account = r.bank_account
   form.bank_account_id = r.bank_account_id
+  existingAttachments.value = r.attachments || []
   oldBalanceText();
   initialized.value = true
 })
@@ -328,6 +338,9 @@ const { confirmSave } = useSaveConfirmation()
               </div>
             </div>
           </div>
+        </div>
+        <div class="mt-4">
+          <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
         </div>
       </div>
 

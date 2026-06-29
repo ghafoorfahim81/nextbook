@@ -5,6 +5,7 @@ return [
         'account' => 'حساب',
         'account_transfer' => 'انتقال حساب',
         'account_type' => 'نوع حساب',
+        'attachment' => 'ضمیمه',
         'branch' => 'شعبه',
         'brand' => 'برند',
         'category' => 'دسته‌بندی',
@@ -31,6 +32,10 @@ return [
         'unit_measure' => 'واحد اندازه‌گیری',
         'user' => 'کاربر',
     ],
+
+    'attachment_upload_hint' => 'برای انتخاب کلیک کنید یا فایل‌ها را اینجا رها کنید',
+    'attachment_invalid_type' => 'نوع فایل :name پشتیبانی نمی‌شود.',
+    'attachment_too_large' => 'حجم :name از محدودیت :size مگابایت بیشتر است.',
 
     'created_successfully' => ':resource با موفقیت ایجاد شد.',
     'updated_successfully' => ':resource با موفقیت به‌روزرسانی شد.',

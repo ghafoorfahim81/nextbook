@@ -10,6 +10,7 @@ use App\Http\Resources\Inventory\LandedCostResource;
 use App\Models\Inventory\LandedCost;
 use App\Models\Purchase\Purchase;
 use App\Services\LandedCostService;
+use App\Services\AttachmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -80,9 +81,9 @@ class LandedCostController extends Controller
         ]);
     }
 
-    public function store(LandedCostRequest $request, LandedCostService $service)
+    public function store(LandedCostRequest $request, LandedCostService $service, AttachmentService $attachmentService)
     {
-        $landedCost = DB::transaction(function () use ($request, $service) {
+        $landedCost = DB::transaction(function () use ($request, $service, $attachmentService) {
             $landedCost = LandedCost::create([
                 'date' => $request->validated('date'),
                 'purchase_id' => $request->validated('purchase_id'),
@@ -92,6 +93,10 @@ class LandedCostController extends Controller
                 'status' => LandedCostStatus::Draft->value,
                 'notes' => $request->validated('notes'),
             ]);
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($landedCost, $request->file('attachments'));
+            }
 
             $service->syncPurchases($landedCost, $this->resolvePurchaseIds($request));
             $service->syncItems($landedCost, $request->input('items', []));
@@ -108,7 +113,7 @@ class LandedCostController extends Controller
 
     public function show(Request $request, LandedCost $landedCost)
     {
-        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy']);
+        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy', 'attachments']);
         $payload = LandedCostResource::make($landedCost)->resolve($request);
 
         if ($request->expectsJson()) {
@@ -124,7 +129,7 @@ class LandedCostController extends Controller
 
     public function edit(Request $request, LandedCost $landedCost)
     {
-        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy']);
+        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy', 'attachments']);
         $payload = LandedCostResource::make($landedCost)->resolve($request);
 
         return inertia('Inventories/LandedCosts/Edit', [
@@ -137,7 +142,7 @@ class LandedCostController extends Controller
         ]);
     }
 
-    public function update(LandedCostRequest $request, LandedCost $landedCost, LandedCostService $service)
+    public function update(LandedCostRequest $request, LandedCost $landedCost, LandedCostService $service, AttachmentService $attachmentService)
     {
         if (($landedCost->status instanceof LandedCostStatus ? $landedCost->status->value : (string) $landedCost->status) === LandedCostStatus::Posted->value) {
             throw ValidationException::withMessages([
@@ -145,7 +150,11 @@ class LandedCostController extends Controller
             ]);
         }
 
-        $landedCost = DB::transaction(function () use ($request, $landedCost, $service) {
+        $landedCost = DB::transaction(function () use ($request, $landedCost, $service, $attachmentService) {
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($landedCost, $request->file('attachments'));
+            }
+
             $landedCost->update([
                 'date' => $request->validated('date'),
                 'purchase_id' => $request->validated('purchase_id'),
@@ -159,7 +168,7 @@ class LandedCostController extends Controller
             $service->syncPurchases($landedCost, $this->resolvePurchaseIds($request));
             $service->syncItems($landedCost, $request->input('items', []));
 
-            return $landedCost->fresh(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy']);
+            return $landedCost->fresh(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy', 'attachments']);
         });
 
         if ($request->expectsJson()) {

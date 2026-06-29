@@ -15,6 +15,7 @@ use App\Models\Administration\Currency;
 use App\Http\Requests\JournalEntry\JournalEntryStoreRequest;
 use App\Http\Requests\JournalEntry\JournalEntryUpdateRequest;
 use App\Services\TransactionService;
+use App\Services\AttachmentService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\Support\Inertia\CacheKey;
@@ -83,9 +84,9 @@ class JournalEntryController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(JournalEntryStoreRequest $request, ActivityLogService $activityLogService)
+    public function store(JournalEntryStoreRequest $request, ActivityLogService $activityLogService, AttachmentService $attachmentService)
     {
-        DB::transaction(function () use ($request, $activityLogService) {
+        DB::transaction(function () use ($request, $activityLogService, $attachmentService) {
             $validated = $request->validated();
             $postImmediately = (bool) user_preference('transaction.journal_entry_post_immediately', true);
             $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
@@ -99,6 +100,11 @@ class JournalEntryController extends Controller
                 'rate' => $validated['rate'],
                 'remark' => $validated['remarks'],
             ]);
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($journalEntry, $request->file('attachments'));
+            }
+
             $transactionService = app(TransactionService::class);
             $lines = collect($validated['lines'])
                 ->map(fn ($line) => [
@@ -163,6 +169,7 @@ class JournalEntryController extends Controller
             'transaction.lines.account',
             'transaction.lines.journalClass',
             'transaction.lines.ledger',
+            'attachments',
         ]);
         if ($request->wantsJson()) {
             return response()->json([
@@ -179,7 +186,7 @@ class JournalEntryController extends Controller
      */
     public function edit(Request $request, JournalEntry $journalEntry)
     {
-        $journalEntry->load(['transaction.currency', 'transaction.lines.account', 'transaction.lines.journalClass','transaction.lines.ledger']);
+        $journalEntry->load(['transaction.currency', 'transaction.lines.account', 'transaction.lines.journalClass','transaction.lines.ledger', 'attachments']);
         return inertia('JournalEntry/JournalEntries/Edit', [
             'journalEntry' => new JournalEntryResource($journalEntry),
             'accounts' => AccountResource::collection(Account::all()),
@@ -194,7 +201,8 @@ class JournalEntryController extends Controller
     public function update(
         JournalEntryUpdateRequest $request,
         JournalEntry $journalEntry,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
         if ($journalEntry->status !== TransactionStatus::DRAFT->value) {
@@ -213,7 +221,11 @@ class JournalEntryController extends Controller
             'line_count' => $journalEntry->transaction?->lines()->count() ?? 0,
         ];
 
-        DB::transaction(function () use ($validated, $journalEntry, $beforeState, $activityLogService) {
+        DB::transaction(function () use ($request, $validated, $journalEntry, $beforeState, $activityLogService, $attachmentService) {
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($journalEntry, $request->file('attachments'));
+            }
+
             // Update journal entry details
             $date =  $validated['date'] ? app(DateConversionService::class)->toGregorian($validated['date']) : null;
             $journalEntry->update([

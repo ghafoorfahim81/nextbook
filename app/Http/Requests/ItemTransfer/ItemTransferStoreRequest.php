@@ -37,6 +37,8 @@ class ItemTransferStoreRequest extends FormRequest
             'items.*.quantity' => ['required', 'numeric', 'min:0.0001'],
             'items.*.measure_id' => ['required', 'string', 'exists:unit_measures,id'],
             'items.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 }

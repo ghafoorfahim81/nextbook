@@ -14,6 +14,7 @@ use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
 use App\Services\BillAllocationService;
 use App\Services\TransactionService;
+use App\Services\AttachmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -83,10 +84,11 @@ class ReceiptController extends Controller
     public function store(
         ReceiptStoreRequest $request,
         TransactionService $transactionService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
-        $receipt = DB::transaction(function () use ($request, $transactionService, $activityLogService) {
+        $receipt = DB::transaction(function () use ($request, $transactionService, $activityLogService, $attachmentService) {
             $validated = $request->validated();
 
             $ledger = Ledger::findOrFail($validated['ledger_id']);
@@ -109,6 +111,11 @@ class ReceiptController extends Controller
                 'narration' => $validated['narration'] ?? null,
                 'status' => $documentStatus,
             ]);
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($receipt, $request->file('attachments'));
+            }
+
             $glAccounts = Cache::get('gl_accounts');
             // Credit Accounts Receivable for selected ledger
             $arAccountId = $glAccounts['account-receivable'];
@@ -193,7 +200,7 @@ class ReceiptController extends Controller
 
     public function show(Request $request, Receipt $receipt)
     {
-        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'saleReceives.sale', 'createdBy', 'updatedBy']);
+        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'saleReceives.sale', 'createdBy', 'updatedBy', 'attachments']);
         if ($request->wantsJson()) {
             return response()->json([
                 'data' => new ReceiptResource($receipt),
@@ -281,7 +288,7 @@ class ReceiptController extends Controller
 
     public function edit(Request $request, Receipt $receipt)
     {
-        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'saleReceives.sale', 'createdBy', 'updatedBy']);
+        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'saleReceives.sale', 'createdBy', 'updatedBy', 'attachments']);
         return inertia('Receipts/Edit', [
             'data' => new ReceiptResource($receipt),
             'paymentModes' => collect(PaymentMode::cases())->map(fn (PaymentMode $mode) => [
@@ -291,7 +298,7 @@ class ReceiptController extends Controller
         ]);
     }
 
-    public function update(ReceiptUpdateRequest $request, Receipt $receipt, ActivityLogService $activityLogService)
+    public function update(ReceiptUpdateRequest $request, Receipt $receipt, ActivityLogService $activityLogService, AttachmentService $attachmentService)
     {
         if ($receipt->status !== TransactionStatus::DRAFT->value) {
             return back()->with('error', 'Only draft documents can be edited.');
@@ -306,8 +313,12 @@ class ReceiptController extends Controller
             'rate' => $receipt->transaction?->rate,
         ];
 
-        DB::transaction(function () use ($request, $receipt, $activityLogService, $beforeState) {
+        DB::transaction(function () use ($request, $receipt, $activityLogService, $attachmentService, $beforeState) {
             $validated = $request->validated();
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($receipt, $request->file('attachments'));
+            }
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $receipt->date;
             $currentPaymentMode = $receipt->payment_mode instanceof PaymentMode
                 ? $receipt->payment_mode->value

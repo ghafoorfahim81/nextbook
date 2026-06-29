@@ -6,6 +6,7 @@ use App\Services\DateConversionService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Account\AccountResource;
+use App\Http\Resources\AttachmentResource;
 class ExpenseResource extends JsonResource
 {
     public function toArray(Request $request): array
@@ -32,6 +33,7 @@ class ExpenseResource extends JsonResource
             'rate' => $this->transaction?->rate,
             'attachment' => $this->attachment,
             'attachment_url' => $this->attachment ? asset('storage/' . $this->attachment) : null,
+            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
             'details' => ExpenseDetailResource::collection($this->whenLoaded('details')),
             'total' => $this->whenLoaded('details', fn() => $this->details->sum('amount')),
             'base_total' => $this->whenLoaded('details', fn() => $this->details->sum('amount') * ($this->rate ?? 1)),
