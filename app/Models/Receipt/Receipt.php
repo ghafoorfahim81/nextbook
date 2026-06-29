@@ -5,6 +5,7 @@ namespace App\Models\Receipt;
 use App\Enums\PaymentMode;
 use App\Models\Ledger\Ledger;
 use App\Models\Transaction\Transaction;
+use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
@@ -22,7 +23,7 @@ use App\Traits\BranchSpecific;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 class Receipt extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
  
     protected $fillable = [
         'number',

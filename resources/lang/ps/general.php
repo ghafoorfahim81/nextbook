@@ -5,6 +5,7 @@ return [
         'account' => 'Account',
         'account_transfer' => 'Account transfer',
         'account_type' => 'Account type',
+        'attachment' => 'ضمیمه',
         'branch' => 'Branch',
         'brand' => 'Brand',
         'category' => 'Category',
@@ -31,6 +32,10 @@ return [
         'unit_measure' => 'Unit measure',
         'user' => 'User',
     ],
+
+    'attachment_upload_hint' => 'د انتخاب لپاره کلیک وکړئ یا فایلونه دلته راوغورځوئ',
+    'attachment_invalid_type' => 'د :name د فایل ډول ملاتړ نه کیږي.',
+    'attachment_too_large' => ':name د :size MB له حد څخه اوړي.',
 
     'created_successfully' => ':resource created successfully.',
     'updated_successfully' => ':resource updated successfully.',

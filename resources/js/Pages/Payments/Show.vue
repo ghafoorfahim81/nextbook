@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
+import AttachmentList from '@/Components/AttachmentList.vue'
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { router } from '@inertiajs/vue3'
@@ -171,6 +172,9 @@ const statusLabel = (status) => {
                     </tbody>
                 </table>
             </div>
+        </div>
+        <div class="mt-4">
+            <AttachmentList :items="payment.attachments || []" :label="t('general.attachment')" />
         </div>
     </AppLayout>
 </template>

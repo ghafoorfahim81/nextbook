@@ -2,9 +2,10 @@
 import AppLayout from '@/Layouts/Layout.vue'
 import { useSaveConfirmation } from '@/composables/useSaveConfirmation'
 import { useFormGuard } from '@/composables/useFormGuard'
-import { useForm, usePage } from '@inertiajs/vue3'
+import { useForm, usePage, router } from '@inertiajs/vue3'
 import { ref, watch, computed } from 'vue'
 import { useLazyProps } from '@/composables/useLazyProps'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
@@ -34,7 +35,15 @@ const form = useForm({
   selected_currency: initial?.currency || initial.currency || null,
   rate: initial?.rate || initial.rate || '',
   remark: initial.remark || '',
+  attachments: [],
 })
+const existingAttachments = ref(initial.attachments || [])
+const removeExistingAttachment = (id) => {
+  router.delete(route('attachments.destroy', id), {
+    preserveScroll: true,
+    onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id) },
+  })
+}
 
 watch(() => page.props.data, (val) => {
   if (!val) return
@@ -163,6 +172,10 @@ const { confirmSave } = useSaveConfirmation()
 
           <div class="md:col-span-3">
             <NextTextarea placeholder="Remark" :error="form.errors?.remark" v-model="form.remark" :label="t('general.remark')" />
+          </div>
+
+          <div class="md:col-span-3">
+            <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
           </div>
         </div>
       </div>

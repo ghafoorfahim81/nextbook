@@ -3,7 +3,8 @@ import AppLayout from '@/Layouts/Layout.vue';
 import { useSaveConfirmation } from '@/composables/useSaveConfirmation'
 import { useFormGuard } from '@/composables/useFormGuard'
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, router } from '@inertiajs/vue3';
+import AttachmentUploader from '@/Components/AttachmentUploader.vue';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
@@ -41,7 +42,7 @@ const form = useForm({
     currency_id: expense.currency_id || '',
     rate: expense.rate || 1,
     remarks: expense.remarks || '',
-    attachment: null,
+    attachments: [],
     details: expense.details?.length
         ? expense.details.map(d => ({
             amount: d.amount,
@@ -56,9 +57,16 @@ const form = useForm({
     selected_currency: expense.currency,
 });
 
-const fileInput = ref(null);
-const attachmentPreview = ref(expense.attachment_url || null);
-const existingAttachment = ref(expense.attachment || null);
+const existingAttachments = ref(expense.attachments || []);
+
+const removeExistingAttachment = (id) => {
+    router.delete(route('attachments.destroy', id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            existingAttachments.value = existingAttachments.value.filter(a => a.id !== id);
+        },
+    });
+};
 
 // Update rate when currency changes
 const handleCurrencyChange = (currency) => {
@@ -88,39 +96,6 @@ const removeDetailLine = (index) => {
     }
 };
 
-// Handle file upload
-const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-        // Make sure to set form.attachment to the File object
-        form.attachment = file;
-        existingAttachment.value = null;
-
-        console.log('File selected:', file.name, file.size, file.type);
-
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                attachmentPreview.value = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        } else {
-            attachmentPreview.value = null;
-        }
-    } else {
-        form.attachment = null;
-    }
-};
-
-const removeAttachment = () => {
-    form.attachment = null;
-    existingAttachment.value = null;
-    attachmentPreview.value = null;
-    if (fileInput.value) {
-        fileInput.value.value = '';
-    }
-};
-
 const handleSubmit = () => {
     // ... validation code ...
     const validDetails = form.details.filter(d => d.title && d.amount);
@@ -144,18 +119,10 @@ const handleSubmit = () => {
     formData.append('rate', form.rate);
     formData.append('remarks', form.remarks || '');
 
-    // Add attachment if new file is selected
-    if (form.attachment instanceof File) {
-        formData.append('attachment', form.attachment);
-        console.log('File added to FormData:', form.attachment.name, form.attachment.size);
-    } else {
-        console.log('No file to attach');
-    }
-
-    // Debug: Log FormData contents
-    for (let [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
-    }
+    // Add any newly selected attachments
+    form.attachments.forEach((file, index) => {
+        formData.append(`attachments[${index}]`, file);
+    });
 
     // Add details
     formData.append('details', JSON.stringify(validDetails));
@@ -294,53 +261,14 @@ const { confirmSave } = useSaveConfirmation()
                     />
                 </div>
 
-                <!-- Attachment -->
+                <!-- Attachments -->
                 <div class="mt-4">
-                    <label class="block text-sm font-medium mb-2">{{ t('general.attachment') }}</label>
-                    <div class="flex items-center gap-4">
-                        <input
-                            ref="fileInput"
-                            type="file"
-                            @change="handleFileChange"
-                            class="hidden"
-                            accept="image/*,.pdf,.doc,.docx"
-                        />
-                        <Button
-                            type="button"
-                            variant="outline"
-                            @click="() => fileInput?.click()"
-                        >
-                            <Upload class="w-4 h-4 mr-2" />
-                            {{ existingAttachment ? t('general.change_file') : t('general.upload_file') }}
-                        </Button>
-                        <span v-if="form.attachment" class="text-sm text-muted-foreground">
-                            {{ form.attachment.name }}
-                            <button
-                                type="button"
-                                @click="removeAttachment"
-                                class="ml-2 text-red-500 hover:text-red-700"
-                            >
-                                <Trash2 class="w-4 h-4 inline" />
-                            </button>
-                        </span>
-                        <span v-else-if="existingAttachment" class="text-sm text-muted-foreground">
-                            {{ t('general.current_file') }}
-                            <a :href="props.expense.attachment_url" target="_blank" class="text-violet-600 hover:underline ml-1">
-                                {{ t('general.view') }}
-                            </a>
-                            <button
-                                type="button"
-                                @click="removeAttachment"
-                                class="ml-2 text-red-500 hover:text-red-700"
-                            >
-                                <Trash2 class="w-4 h-4 inline" />
-                            </button>
-                        </span>
-                    </div>
-                    <img
-                        v-if="attachmentPreview"
-                        :src="attachmentPreview"
-                        class="mt-2 max-h-32 rounded border"
+                    <AttachmentUploader
+                        v-model="form.attachments"
+                        :existing="existingAttachments"
+                        :label="t('general.attachment')"
+                        :error="form.errors['attachments.0']"
+                        @remove-existing="removeExistingAttachment"
                     />
                 </div>
             </div>

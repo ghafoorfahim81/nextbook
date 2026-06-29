@@ -31,6 +31,7 @@ use App\Models\Inventory\StockBalance;
 use App\Models\Purchase\Purchase;
 use App\Models\Sale\Sale;
 use App\Services\SpreadsheetExportService;
+use App\Services\AttachmentService;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 class ItemController extends Controller
 {
@@ -175,13 +176,17 @@ class ItemController extends Controller
             'costAccounts' => $costAccounts,
         ]);
     }
-    public function store(ItemStoreRequest $request)
+    public function store(ItemStoreRequest $request, AttachmentService $attachmentService)
     {
         $validated = $request->validated();
         $validated['item_type'] = $validated['item_type']??ItemType::INVENTORY_MATERIALS->value;
-        DB::transaction(function () use ($validated, $request) {
+        DB::transaction(function () use ($validated, $request, $attachmentService) {
             // 1) Create item
             $item = Item::create($validated);
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($item, $request->file('attachments'));
+            }
             // 2) Create opening stocks (if any)
             $openings = collect($validated['openings'] ?? []);
             $transactionService = app(\App\Services\TransactionService::class);
@@ -265,7 +270,7 @@ class ItemController extends Controller
 
     public function show(Request $request, Item $item)
     {
-        $item->load('assetAccount', 'incomeAccount', 'costAccount', 'createdBy', 'updatedBy', 'brand', 'size', 'stocks');
+        $item->load('assetAccount', 'incomeAccount', 'costAccount', 'createdBy', 'updatedBy', 'brand', 'size', 'stocks', 'attachments');
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -400,7 +405,7 @@ class ItemController extends Controller
 
     public function edit(Request $request, Item $item)
     {
-        $item = Item::with('unitMeasure', 'brand', 'category', 'size', 'assetAccount', 'incomeAccount', 'costAccount', 'openings.warehouse')->find($item->id);
+        $item = Item::with('unitMeasure', 'brand', 'category', 'size', 'assetAccount', 'incomeAccount', 'costAccount', 'openings.warehouse', 'attachments')->find($item->id);
         $accountModel = new Account();
         $otherCurrentAssetsAccounts = $accountModel->getAccountsByAccountTypeSlug('other-current-asset');
         $incomeAccounts = $accountModel->getAccountsByAccountTypeSlug('income');
@@ -413,7 +418,7 @@ class ItemController extends Controller
         ]);
     }
 
-    public function update(ItemUpdateRequest $request, Item $item)
+    public function update(ItemUpdateRequest $request, Item $item, AttachmentService $attachmentService)
     {
         $validated = $request->validated();
         // Handle photo update
@@ -422,7 +427,10 @@ class ItemController extends Controller
             $path = $request->file('photo')->store('items', 'public');
             $validated['photo'] = $path;
         }
-        DB::transaction(function () use ($validated, $item) {
+        DB::transaction(function () use ($validated, $item, $request, $attachmentService) {
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($item, $request->file('attachments'));
+            }
             // $existingDraftOpenings = $item->openings()
             //     ->where('status', StockStatus::DRAFT->value)
             //     ->orderBy('created_at')

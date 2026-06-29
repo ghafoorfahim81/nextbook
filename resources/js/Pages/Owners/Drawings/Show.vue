@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
+import AttachmentList from '@/Components/AttachmentList.vue'
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { router } from '@inertiajs/vue3'
@@ -170,6 +171,9 @@ const statusLabel = (status) => {
                         <div class="mt-1 text-xs text-muted-foreground">{{ currencyLabel }} {{ formatAmount(debitLine?.debit || drawing.amount) }}</div>
                     </div>
                 </div>
+            </div>
+            <div class="mt-4">
+                <AttachmentList :items="drawing.attachments || []" :label="t('general.attachment')" />
             </div>
         </div>
     </AppLayout>

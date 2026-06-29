@@ -25,6 +25,8 @@ class ExpenseStoreRequest extends FormRequest
             'details' => ['required', 'array', 'min:1'],
             'details.*.amount' => ['required', 'numeric', 'min:0.01'],
             'details.*.title' => ['required', 'string', 'max:255'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 

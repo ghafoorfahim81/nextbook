@@ -2,7 +2,8 @@
 import AppLayout from '@/Layouts/Layout.vue'
 import { useSaveConfirmation } from '@/composables/useSaveConfirmation'
 import { useFormGuard } from '@/composables/useFormGuard'
-import { useForm, usePage } from '@inertiajs/vue3'
+import { useForm, usePage, router } from '@inertiajs/vue3'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import { ref, onMounted, computed, watch } from 'vue'
 import { useLazyProps } from '@/composables/useLazyProps'
 import NextInput from '@/Components/next/NextInput.vue'
@@ -32,12 +33,16 @@ const form = useForm({
   rate: '',
   remarks: '',
   lines: [],
-  // Optionally support attachment editing
-  attachment: null
+  attachments: [],
 })
 
-const attachmentPreview = ref(null)
-const fileInput = ref(null)
+const existingAttachments = ref([])
+const removeExistingAttachment = (id) => {
+  router.delete(route('attachments.destroy', id), {
+    preserveScroll: true,
+    onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id) },
+  })
+}
 
 // Helper to handle line remarks (null fallback)
 function getLineRemark(line) {
@@ -84,6 +89,8 @@ onMounted(() => {
   if (!form.selected_currency && form.currency_id) {
     form.selected_currency = currencies.value.find(c => c.id === form.currency_id) || null
   }
+
+  existingAttachments.value = je.attachments || []
 })
 
 watch(currencies, () => {
@@ -132,23 +139,6 @@ function removeLine(index) {
   form.lines.splice(index, 1)
 }
 
-// For attachment, you may extend as needed
-function handleFileChange(e) {
-  const file = e.target.files[0]
-  if (file) {
-    form.attachment = file
-    const reader = new FileReader()
-    reader.onload = e => {
-      attachmentPreview.value = e.target.result
-    }
-    reader.readAsDataURL(file)
-  }
-}
-function removeAttachment() {
-  form.attachment = null
-  attachmentPreview.value = null
-  if (fileInput.value) fileInput.value.value = ''
-}
 const totalCredit = computed(() => {
     return form.lines.reduce((sum, d) => sum + (Number(d.credit) || 0), 0);
 });
@@ -243,36 +233,7 @@ const { confirmSave } = useSaveConfirmation()
           />
         </div>
         <div class="mt-4">
-          <label class="block text-sm font-medium mb-2">{{ t('general.attachment') }}</label>
-          <div class="flex items-center gap-4">
-            <input
-              ref="fileInput"
-              type="file"
-              @change="handleFileChange"
-              class="hidden"
-              accept="image/*,.pdf,.doc,.docx"
-            />
-            <button
-              type="button"
-              class="btn btn-outline"
-              @click="() => fileInput?.click()"
-            >
-              {{ t('general.upload_file') }}
-            </button>
-            <span v-if="form.attachment" class="text-sm text-muted-foreground">
-              {{ form.attachment.name }}
-              <button
-                type="button"
-                @click="removeAttachment"
-                class="ml-2 text-red-500 hover:text-red-700"
-              >x</button>
-            </span>
-          </div>
-          <img
-            v-if="attachmentPreview"
-            :src="attachmentPreview"
-            class="mt-2 max-h-32 rounded border"
-          />
+          <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
         </div>
         </div>
       </div>

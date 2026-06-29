@@ -51,6 +51,8 @@ class PurchaseUpdateRequest extends FormRequest
             'payment.account_id' => ['nullable', 'string', 'exists:accounts,id'],
             'payment.amount' => ['nullable', 'numeric', 'min:0'],
             'payment.note' => ['nullable', 'string'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 }

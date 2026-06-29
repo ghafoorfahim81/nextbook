@@ -2,8 +2,9 @@
 import AppLayout from '@/Layouts/Layout.vue'
 import { useSaveConfirmation } from '@/composables/useSaveConfirmation'
 import { useFormGuard } from '@/composables/useFormGuard'
-import { useForm, usePage } from '@inertiajs/vue3'
+import { useForm, usePage, router } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextInput from '@/Components/next/NextInput.vue'
@@ -64,7 +65,15 @@ const form = useForm({
     base_unit_price: item.unit_price || 0,
     available_measures: [],
   })),
+  attachments: [],
 })
+const existingAttachments = ref(transfer.attachments || [])
+const removeExistingAttachment = (id) => {
+  router.delete(route('attachments.destroy', id), {
+    preserveScroll: true,
+    onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id) },
+  })
+}
 
 watch(items, (list) => {
   if (!Array.isArray(list) || !form.items?.length) return
@@ -196,6 +205,7 @@ function handleSubmit() {
     transfer_cost: form.transfer_cost,
     remarks: form.remarks,
     items: payloadItems,
+    attachments: form.attachments,
   })).put(route('item-transfers.update', transfer.id), {
     onSuccess: () => {
       toast({
@@ -406,6 +416,10 @@ const { confirmSave } = useSaveConfirmation()
             </tr>
           </tfoot>
         </table>
+      </div>
+
+      <div class="mt-4">
+        <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
       </div>
 
       <div class="mt-4 flex gap-2">

@@ -1,5 +1,6 @@
 <script setup>
-import AppLayout from '@/Layouts/Layout.vue';
+import AppLayout from '@/Layouts/Layout.vue'
+import AttachmentList from '@/Components/AttachmentList.vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { router, usePage } from '@inertiajs/vue3';
@@ -368,6 +369,9 @@ const reverseSale = (reason) => {
                         </tfoot>
                     </table>
                 </div>
+            </div>
+            <div class="mt-4">
+                <AttachmentList :items="saleData.attachments || []" :label="t('general.attachment')" />
             </div>
         </div>
     </AppLayout>

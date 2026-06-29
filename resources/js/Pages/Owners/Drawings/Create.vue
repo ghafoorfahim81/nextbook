@@ -10,6 +10,7 @@ import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
 
@@ -44,6 +45,7 @@ const form = useForm({
   selected_owner: null,
   selected_bank_account: null,
   selected_currency: null,
+  attachments: [],
 })
 
 const submitAction = ref(null)
@@ -110,6 +112,7 @@ const handleSubmit = (createAndNew = false) => {
       amount: data.amount,
       date: data.date,
       narration: data.narration,
+      attachments: data.attachments,
       create_and_new: isCreateAndNew,
     }))
     .post(route('drawings.store'), {
@@ -128,6 +131,7 @@ const handleSubmit = (createAndNew = false) => {
           form.selected_bank_account = null
           form.amount = ''
           form.narration = ''
+          form.attachments = []
         }
       },
       onError: () => {
@@ -244,6 +248,10 @@ useFormGuard(form)
             rows="2"
             class="md:col-span-2 xl:col-span-3"
           />
+
+          <div class="md:col-span-2 xl:col-span-3">
+            <AttachmentUploader v-model="form.attachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" />
+          </div>
         </div>
       </div>
 

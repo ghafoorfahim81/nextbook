@@ -5,6 +5,7 @@ namespace App\Http\Resources\Owner;
 use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\Administration\CurrencyResource;
 use App\Http\Resources\Transaction\TransactionResource;
+use App\Http\Resources\AttachmentResource;
 use App\Models\Account\Account;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -61,6 +62,7 @@ class DrawingResource extends JsonResource
             'branch_id' => $this->branch_id,
             'created_by' => $this->createdBy,
             'updated_by' => $this->updatedBy,
+            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
         ];
     }
 }

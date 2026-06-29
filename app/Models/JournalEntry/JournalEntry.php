@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
 use Laravel\Scout\Searchable;
+use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
 use App\Traits\HasCache;
 use App\Traits\HasDependencyCheck;
@@ -22,7 +23,7 @@ use App\Traits\BranchSpecific;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 class JournalEntry extends Model
 {
-    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     protected $table = 'journal_entries';
     protected $primaryKey = 'id';

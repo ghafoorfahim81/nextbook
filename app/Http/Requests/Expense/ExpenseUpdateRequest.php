@@ -24,7 +24,9 @@ class ExpenseUpdateRequest extends FormRequest
             'rate' => ['sometimes', 'required', 'numeric', 'min:0'], 
             'details' => ['sometimes', 'required', 'array', 'min:1'],
             'details.*.amount' => ['required', 'numeric', 'min:0.01'],
-            'details.*.title' => ['required', 'string', 'max:255'], 
+            'details.*.title' => ['required', 'string', 'max:255'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
     

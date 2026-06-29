@@ -8,6 +8,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\Ledger\LedgerResource;
 use App\Http\Resources\Transaction\TransactionLineResource;
+use App\Http\Resources\AttachmentResource;
 use App\Models\Account\Account;
 use App\Models\JournalEntry\JournalClass;
 use App\Models\Ledger\Ledger;
@@ -31,6 +32,7 @@ class JournalEntryResource extends JsonResource
             'amount' => $debitTotal > 0 ? $debitTotal : $creditTotal,
             'lines' => $lines->values(),
             'transaction' => new TransactionResource($this->whenLoaded('transaction')),
+            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
         ];
     }
 

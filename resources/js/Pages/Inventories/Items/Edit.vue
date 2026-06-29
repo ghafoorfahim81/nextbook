@@ -4,7 +4,8 @@ import { useSaveConfirmation } from '@/composables/useSaveConfirmation'
 import { useFormGuard } from '@/composables/useFormGuard'
 import { ref, computed, watch, reactive, nextTick } from 'vue'
 import NextInput from '@/Components/next/NextInput.vue'
-import { useForm } from '@inertiajs/vue3'
+import { useForm, router } from '@inertiajs/vue3'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import NextSelect from "@/Components/next/NextSelect.vue";
 import NextDatePicker from '@/Components/next/NextDatePicker.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
@@ -67,7 +68,15 @@ const form = useForm({
             status: o.status
         }))
         : [{ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null, warehouse: null, status: null }],
+    attachments: [],
 })
+const existingAttachments = ref(props.item.data.attachments || [])
+const removeExistingAttachment = (id) => {
+  router.delete(route('attachments.destroy', id), {
+    preserveScroll: true,
+    onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id) },
+  })
+}
 
 
 // File handler
@@ -526,6 +535,9 @@ const { confirmSave } = useSaveConfirmation()
                         </div>
                     </div>
                 </div>
+            </div>
+            <div class="mt-4">
+                <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
             </div>
             <progress v-if="form.progress" :value="form.progress.percentage" max="100">
             {{ form.progress.percentage }}%

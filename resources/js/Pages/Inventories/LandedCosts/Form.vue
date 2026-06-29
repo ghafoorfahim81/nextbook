@@ -10,6 +10,7 @@ import axios from 'axios';
 import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
 import { Plus, Trash2 } from 'lucide-vue-next';
+import AttachmentUploader from '@/Components/AttachmentUploader.vue';
 import { todayValueForCalendar } from '@/utils/dateDefaults';
 import { usePage } from '@inertiajs/vue3';
 
@@ -173,7 +174,16 @@ const form = useForm({
   allocation_method: currentRecord.value?.allocation_method_id || 'by_value',
   notes: currentRecord.value?.notes || '',
   items: (currentRecord.value?.items || []).length > 0 ? (currentRecord.value.items || []).map(normalizeItem) : [blankRow()],
+  attachments: [],
 });
+
+const existingAttachments = ref(currentRecord.value?.attachments || []);
+const removeExistingAttachment = (id) => {
+  router.delete(route('attachments.destroy', id), {
+    preserveScroll: true,
+    onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id); },
+  });
+};
 
 const isPosted = computed(() => currentRecord.value?.status_id === 'posted');
 const canEditItems = computed(() => !isPosted.value);
@@ -287,6 +297,7 @@ const setRecordFromResponse = (data) => {
   form.allocation_method = data.allocation_method_id || 'by_value';
   form.notes = data.notes || '';
   form.items = (data.items || []).map(normalizeItem);
+  existingAttachments.value = data.attachments || [];
 };
 
 const prepareItemsPayload = () => form.items
@@ -310,6 +321,7 @@ const buildPayload = () => ({
   allocation_method: form.allocation_method,
   notes: form.notes,
   items: prepareItemsPayload(),
+  attachments: form.attachments,
 });
 
 const submitRoute = computed(() => (props.submitMethod === 'post'
@@ -663,6 +675,10 @@ onMounted(() => {
             </tfoot>
           </table>
         </div>
+      </div>
+
+      <div class="rounded-xl border border-violet-500 bg-card p-4 shadow-sm">
+        <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
       </div>
 
       <div class="flex flex-wrap items-center gap-3">

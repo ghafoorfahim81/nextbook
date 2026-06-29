@@ -6,6 +6,7 @@ use App\Enums\LandedCostAllocationMethod;
 use App\Enums\LandedCostStatus;
 use App\Models\Purchase\Purchase;
 use App\Traits\BranchSpecific;
+use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasDynamicFilters;
@@ -23,7 +24,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LandedCost extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable, HasDynamicFilters, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasUserTracking, HasUserAuditable, HasDynamicFilters, BranchSpecific, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     protected $table = 'landed_costs';
     protected $keyType = 'string';

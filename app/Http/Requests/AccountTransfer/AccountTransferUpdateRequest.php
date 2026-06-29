@@ -22,6 +22,8 @@ class AccountTransferUpdateRequest extends FormRequest
             'currency_id' => ['nullable', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric', 'min:0'],
             'remark' => ['nullable', 'string'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 }

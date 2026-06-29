@@ -4,6 +4,7 @@ namespace App\Http\Resources\Owner;
 
 use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\Administration\CurrencyResource;
+use App\Http\Resources\AttachmentResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -71,6 +72,7 @@ class OwnerResource extends JsonResource
             'bank_account_id' => $this->transaction?->lines?->first()?->account_id, 
             'bank_account' => $this->transaction?->lines?->first()?->account,
             'bank_account_name' => $locale === 'en' ? $this->transaction?->lines?->first()?->account?->name : $this->transaction?->lines?->first()?->account?->local_name,
+            'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
         ];
     }
 }

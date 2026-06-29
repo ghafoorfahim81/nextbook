@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
 use App\Models\Account\Account;
 use App\Services\StockService;
+use App\Services\AttachmentService;
 use App\Models\Transaction\Transaction;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
@@ -91,11 +92,12 @@ class PurchaseController extends Controller
         PurchaseStoreRequest $request,
         TransactionService $transactionService,
         StockService $stockService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
         $validated = $request->validated();
-        $purchase = DB::transaction(function () use ($request, $transactionService, $stockService, $activityLogService) {
+        $purchase = DB::transaction(function () use ($request, $transactionService, $stockService, $activityLogService, $attachmentService) {
             // Create purchase
             $validated = $request->validated();
 
@@ -106,6 +108,11 @@ class PurchaseController extends Controller
 
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
             $purchase = Purchase::create($validated);
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($purchase, $request->file('attachments'));
+            }
+
             $validated['item_list'] = array_map(function ($item) use ($validated) {
                 $item['discount'] = $item['item_discount'] ? $item['item_discount'] : 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
@@ -307,6 +314,7 @@ class PurchaseController extends Controller
             'transaction.reversalTransaction',
             'createdBy',
             'updatedBy',
+            'attachments',
         ]);
 
         if ($request->expectsJson()) {
@@ -339,6 +347,7 @@ class PurchaseController extends Controller
                 'transaction.currency',
                 'transaction.lines.account',
                 'transaction.lines.ledger',
+                'attachments',
             ])),
             'bankAccounts' => $bankAccounts,
         ]);
@@ -349,7 +358,8 @@ class PurchaseController extends Controller
         Purchase $purchase,
         TransactionService $transactionService,
         StockService $stockService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
         if ($purchase->status !== TransactionStatus::DRAFT->value) {
@@ -369,8 +379,13 @@ class PurchaseController extends Controller
             'transaction_total' => (float) ($purchase->transaction_total ?? 0),
         ];
 
-        $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $stockService, $activityLogService, $beforeState) {
+        $purchase = DB::transaction(function () use ($request, $purchase, $transactionService, $stockService, $activityLogService, $attachmentService, $beforeState) {
             $validated = $request->validated();
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($purchase, $request->file('attachments'));
+            }
+
             $validated['type'] = $validated['purchase_type'] ?? $purchase->type ?? 'cash';
             $validated['status'] = TransactionStatus::DRAFT->value;
 

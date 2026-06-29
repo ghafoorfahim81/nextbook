@@ -31,6 +31,8 @@ class OwnerStoreRequest extends FormRequest
             'bank_account_id' => ['nullable', 'string', 'exists:accounts,id','required_with: amount'],
             'opening_currency_id' => ['nullable', 'string', 'exists:currencies,id','required_with: amount'],
             'rate' => ['nullable', 'numeric', 'min:0','required_with: amount'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 }

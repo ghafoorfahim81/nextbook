@@ -14,6 +14,7 @@ use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
 use App\Services\BillAllocationService;
 use App\Services\TransactionService;
+use App\Services\AttachmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -90,10 +91,11 @@ class PaymentController extends Controller
     public function store(
         PaymentStoreRequest $request,
         TransactionService $transactionService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
-        $payment = DB::transaction(function () use ($request, $transactionService, $activityLogService) {
+        $payment = DB::transaction(function () use ($request, $transactionService, $activityLogService, $attachmentService) {
             $validated = $request->validated();
 
             $ledger = Ledger::findOrFail($validated['ledger_id']);
@@ -115,6 +117,10 @@ class PaymentController extends Controller
                 'narration' => $validated['narration'] ?? null,
                 'status' => $documentStatus,
             ]);
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($payment, $request->file('attachments'));
+            }
 
             // Debit Accounts Payable for selected ledger (reduce liability)
             $glAccounts = Cache::get('gl_accounts');
@@ -202,7 +208,7 @@ class PaymentController extends Controller
 
     public function show(Request $request, Payment $payment)
     {
-        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'purchasePayments.purchase', 'createdBy', 'updatedBy']);
+        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'transaction.originalTransaction', 'transaction.reversalTransaction', 'purchasePayments.purchase', 'createdBy', 'updatedBy', 'attachments']);
         if ($request->wantsJson()) {
             return response()->json([
                 'data' => new PaymentResource($payment),
@@ -289,7 +295,7 @@ class PaymentController extends Controller
 
     public function edit(Request $request, Payment $payment)
     {
-        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'purchasePayments.purchase', 'createdBy', 'updatedBy']);
+        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'purchasePayments.purchase', 'createdBy', 'updatedBy', 'attachments']);
         return inertia('Payments/Edit', [
             'data' => new PaymentResource($payment),
             'paymentModes' => collect(PaymentMode::cases())->map(fn (PaymentMode $mode) => [
@@ -299,7 +305,7 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function update(PaymentUpdateRequest $request, Payment $payment, ActivityLogService $activityLogService)
+    public function update(PaymentUpdateRequest $request, Payment $payment, ActivityLogService $activityLogService, AttachmentService $attachmentService)
     {
         if ($payment->status !== TransactionStatus::DRAFT->value) {
             return back()->with('error', 'Only draft documents can be edited.');
@@ -314,8 +320,12 @@ class PaymentController extends Controller
             'rate' => $payment->transaction?->rate,
         ];
 
-        DB::transaction(function () use ($request, $payment, $activityLogService, $beforeState) {
+        DB::transaction(function () use ($request, $payment, $activityLogService, $attachmentService, $beforeState) {
             $validated = $request->validated();
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($payment, $request->file('attachments'));
+            }
 
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $payment->date;
             $currentPaymentMode = $payment->payment_mode instanceof PaymentMode

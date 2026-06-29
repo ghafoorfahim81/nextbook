@@ -46,6 +46,11 @@ class AppServiceProvider extends ServiceProvider
             'owner' => 'App\Models\Owner\Owner',
             'drawing' => 'App\Models\Owner\Drawing',
             'journal_entry' => 'App\Models\JournalEntry\JournalEntry',
+            'account_transfer' => 'App\Models\AccountTransfer\AccountTransfer',
+            'landed_cost' => 'App\Models\Inventory\LandedCost',
+            'payment' => 'App\Models\Payment\Payment',
+            'receipt' => 'App\Models\Receipt\Receipt',
+            'attachment' => 'App\Models\Attachment',
 
         ]);
 

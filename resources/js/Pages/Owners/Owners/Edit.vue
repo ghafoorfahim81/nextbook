@@ -2,10 +2,11 @@
 import AppLayout from '@/Layouts/Layout.vue'
 import { useSaveConfirmation } from '@/composables/useSaveConfirmation'
 import { useFormGuard } from '@/composables/useFormGuard'
-import { useForm, usePage } from '@inertiajs/vue3'
+import { useForm, usePage, router } from '@inertiajs/vue3'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useI18n } from 'vue-i18n'
 import { watch, computed, ref } from 'vue'
@@ -43,7 +44,15 @@ const form = useForm({
     amount: owner?.amount ?? null, 
     selected_currency: owner?.selected_currency ?? null,
     rate: owner?.rate ?? 1,
+    attachments: [],
 })
+const existingAttachments = ref(owner?.attachments || [])
+const removeExistingAttachment = (id) => {
+  router.delete(route('attachments.destroy', id), {
+    preserveScroll: true,
+    onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id) },
+  })
+}
 
 const submitAction = ref(null)
 const createLoading = computed(() => form.processing && submitAction.value === 'create')
@@ -175,6 +184,9 @@ const { confirmSave } = useSaveConfirmation()
               </div>
           </div>
       </div>
+        <div class="mt-4">
+          <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
+        </div>
       </div>
       <div class="mt-4 flex gap-2">
         <button type="submit" class="btn btn-primary px-4 py-2 rounded-md bg-primary text-white" :disabled="form.processing">{{ t('general.update') }}</button>

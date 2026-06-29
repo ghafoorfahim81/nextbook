@@ -8,6 +8,7 @@ import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import NextDate from '@/Components/next/NextDatePicker.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
+import AttachmentUploader from '@/Components/AttachmentUploader.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useI18n } from 'vue-i18n';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
@@ -33,6 +34,7 @@ const form = useForm({
     currency_id: '',
     rate: 1,
     remarks: '',
+    attachments: [],
     lines: [
         {
             account_id: '',
@@ -117,8 +119,6 @@ const handleSubmitAction = (createAndNew = false) => {
     handleSubmit(isCreateAndNew);
 };
 
-const fileInput = ref(null);
-const attachmentPreview = ref(null);
 
 // Set default currency
 watch(() => props.currencies, (currencies) => {
@@ -170,30 +170,6 @@ const removeLine = (index) => {
     }
 };
 
-// Handle file upload
-const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-        form.attachment = file;
-        if (file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                attachmentPreview.value = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        } else {
-            attachmentPreview.value = null;
-        }
-    }
-};
-
-const removeAttachment = () => {
-    form.attachment = null;
-    attachmentPreview.value = null;
-    if (fileInput.value) {
-        fileInput.value.value = '';
-    }
-};
 
 const normalize = () => {
     return form.lines.filter(d =>
@@ -228,9 +204,9 @@ const handleSubmit = (createAndNew = false) => {
     formData.append('rate', form.rate);
     formData.append('remarks', form.remarks || '');
 
-    if (form.attachment) {
-        formData.append('attachment', form.attachment);
-    }
+    form.attachments.forEach((file, index) => {
+        formData.append(`attachments[${index}]`, file);
+    });
 
     validDetails.forEach((detail, index) => {
         formData.append(`lines[${index}][account_id]`, detail.account_id);
@@ -256,7 +232,7 @@ const handleSubmit = (createAndNew = false) => {
             if (createAndNew) {
                 form.reset();
                 form.lines = defaultJournalLines();
-                attachmentPreview.value = null;
+                form.attachments = [];
                 applyCreateDefaults();
             }
         },
@@ -363,41 +339,9 @@ useFormGuard(form)
                         rows="2"
                     />
 
-                <!-- Attachment -->
+                <!-- Attachments -->
                 <div class="mt-4">
-                    <label class="block text-sm font-medium mb-2">{{ t('general.attachment') }}</label>
-                    <div class="flex items-center gap-4">
-                        <input
-                            ref="fileInput"
-                            type="file"
-                            @change="handleFileChange"
-                            class="hidden"
-                            accept="image/*,.pdf,.doc,.docx"
-                        />
-                        <Button
-                            type="button"
-                            variant="outline"
-                            @click="() => fileInput?.click()"
-                        >
-                            <Upload class="w-4 h-4 mr-2" />
-                            {{ t('general.upload_file') }}
-                        </Button>
-                        <span v-if="form.attachment" class="text-sm text-muted-foreground">
-                            {{ form.attachment.name }}
-                            <button
-                                type="button"
-                                @click="removeAttachment"
-                                class="ml-2 text-red-500 hover:text-red-700"
-                            >
-                                <Trash2 class="w-4 h-4 inline" />
-                            </button>
-                        </span>
-                    </div>
-                    <img
-                        v-if="attachmentPreview"
-                        :src="attachmentPreview"
-                        class="mt-2 max-h-32 rounded border"
-                    />
+                    <AttachmentUploader v-model="form.attachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" />
                 </div>
                 </div>
 

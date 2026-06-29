@@ -37,6 +37,8 @@ class LandedCostRequest extends FormRequest
             'items.*.warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
             'items.*.batch' => ['nullable', 'string'],
             'items.*.expire_date' => ['nullable', 'date'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 

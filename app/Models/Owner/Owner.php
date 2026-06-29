@@ -4,6 +4,7 @@ namespace App\Models\Owner;
 
 use App\Models\Account\Account;
 use App\Models\Transaction\Transaction;
+use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -19,7 +20,7 @@ use App\Traits\BranchSpecific;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 class Owner extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasAttachments, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;

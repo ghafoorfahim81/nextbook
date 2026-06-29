@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
 use App\Traits\HasDynamicFilters;
 use App\Traits\HasUserAuditable;
@@ -20,7 +21,7 @@ use App\Traits\HasUserTracking;
 use Illuminate\Database\Eloquent\Builder;
 class AccountTransfer extends Model
 {
-    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, SoftDeletes;
+    use HasFactory, HasUlids, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasAttachments, SoftDeletes;
 
     protected $keyType = 'string';
     public $incrementing = false;

@@ -3,7 +3,8 @@ import AppLayout from '@/Layouts/Layout.vue';
 import { useFormGuard } from '@/composables/useFormGuard'
 import { h, ref, watch, onMounted, onUnmounted, computed, reactive } from 'vue';
 import axios from 'axios';
-import { useForm } from '@inertiajs/vue3';
+import { useForm, router } from '@inertiajs/vue3';
+import AttachmentUploader from '@/Components/AttachmentUploader.vue';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
@@ -190,7 +191,16 @@ const form = useForm({
     selected_warehouse: findById(props.warehouses?.data, purchaseRecord.warehouse_id) || purchaseRecord.warehouse || '',
     item_list: purchaseRecord.item_list || [],
     items: initialRows.length ? [...initialRows] : Array.from({ length: MIN_PURCHASE_ROWS }, buildEmptyRow),
+    attachments: [],
 });
+
+const existingAttachments = ref(purchaseRecord.attachments || []);
+const removeExistingAttachment = (id) => {
+    router.delete(route('attachments.destroy', id), {
+        preserveScroll: true,
+        onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id); },
+    });
+};
 
 const hydratedExistingRows = ref(false);
 const itemOptions = ref([]);
@@ -984,6 +994,10 @@ useFormGuard(form)
 
                 <TransactionSummary :summary="transactionSummary" :balance-nature="form?.selected_ledger?.statement?.balance_nature" />
             </div>
+            </div>
+
+            <div class="mt-4">
+                <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
             </div>
 
             <SubmitButtons module="purchase"

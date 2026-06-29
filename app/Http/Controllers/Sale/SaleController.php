@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 use App\Services\TransactionService;
 use App\Models\Account\Account;
 use App\Services\StockService;
+use App\Services\AttachmentService;
 use App\Models\Transaction\Transaction;
 use Mpdf\Mpdf;
 use App\Enums\TransactionStatus;
@@ -138,11 +139,12 @@ class SaleController extends Controller
         SaleStoreRequest $request,
         TransactionService $transactionService,
         StockService $stockService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
         $validated = $request->validated();
-        $sale = DB::transaction(function () use ($request, $transactionService, $stockService, $validated, $activityLogService) {
+        $sale = DB::transaction(function () use ($request, $transactionService, $stockService, $validated, $activityLogService, $attachmentService) {
             $validated = $request->validated();
 
             $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
@@ -152,6 +154,10 @@ class SaleController extends Controller
             $validated['status'] = $documentStatus;
 
             $sale = Sale::create($validated);
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($sale, $request->file('attachments'));
+            }
             $totalDiscount = $request->input('discount_total', 0);
             // Build cost lookup before createMany so net_unit_cost captures the avg_cost
             // at the moment of this sale (before any stock deductions change state).
@@ -415,6 +421,7 @@ class SaleController extends Controller
             'transaction.reversalTransaction',
             'createdBy',
             'updatedBy',
+            'attachments',
         ]);
 
         $resource = new SaleResource($sale);
@@ -451,6 +458,7 @@ class SaleController extends Controller
             'transaction',
             'transaction.currency:id,code,symbol,is_base_currency,exchange_rate',
             'transaction.lines:id,transaction_id,account_id,ledger_id,debit,credit',
+            'attachments',
         ]);
 
         return inertia('Sale/Sales/Edit', [
@@ -464,7 +472,8 @@ class SaleController extends Controller
         Sale $sale,
         TransactionService $transactionService,
         StockService $stockService,
-        ActivityLogService $activityLogService
+        ActivityLogService $activityLogService,
+        AttachmentService $attachmentService
     )
     {
         if ($sale->status !== TransactionStatus::DRAFT->value) {
@@ -484,8 +493,13 @@ class SaleController extends Controller
             'transaction_total' => (float) ($sale->transaction_total ?? 0),
         ];
 
-        $sale = DB::transaction(function () use ($request, $sale, $transactionService, $stockService, $activityLogService, $beforeState) {
+        $sale = DB::transaction(function () use ($request, $sale, $transactionService, $stockService, $activityLogService, $attachmentService, $beforeState) {
             $validated = $request->validated();
+
+            if ($request->hasFile('attachments')) {
+                $attachmentService->store($sale, $request->file('attachments'));
+            }
+
             $validated['type'] = $validated['sale_type'] ?? $sale->type ?? 'cash';
             $validated['status'] = TransactionStatus::DRAFT->value;
 

@@ -30,6 +30,8 @@ class JournalEntryUpdateRequest extends FormRequest
             'lines.*.remark' => ['nullable', 'string'],
             'lines.*.ledger_id' => ['nullable', 'exists:ledgers,id'],
             'lines.*.journal_class_id' => ['nullable', 'exists:journal_classes,id'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 

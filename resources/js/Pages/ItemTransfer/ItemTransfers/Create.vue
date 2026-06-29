@@ -11,6 +11,7 @@ import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { Trash2 } from 'lucide-vue-next'
 import { useSidebar } from '@/Components/ui/sidebar/utils'
@@ -48,6 +49,7 @@ const form = useForm({
   transfer_cost: '',
   remarks: '',
   items: defaultTransferRows(),
+  attachments: [],
 })
 
 const submitAction = ref(null)
@@ -248,6 +250,7 @@ function handleSubmit(createAndNew = false) {
     transfer_cost: form.transfer_cost,
     remarks: form.remarks,
     items: payloadItems,
+    attachments: form.attachments,
     ...(createAndNew ? { create_and_new: true } : {}),
   })).post(route('item-transfers.store'), {
     onSuccess: () => {
@@ -261,6 +264,7 @@ function handleSubmit(createAndNew = false) {
       if (createAndNew) {
         form.reset()
         form.items = defaultTransferRows()
+        form.attachments = []
         applyCreateDefaults()
       }
     },
@@ -464,6 +468,10 @@ useFormGuard(form)
             </tr>
           </tfoot>
         </table>
+      </div>
+
+      <div class="mt-4">
+        <AttachmentUploader v-model="form.attachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" />
       </div>
 
       <SubmitButtons module="item_transfer"
