@@ -1233,6 +1233,13 @@ watch(normalizedMenuSearch, (query) => {
                                         />
                                         <Label>{{ t('preferences.sale.show_item_transactions') }}</Label>
                                     </div>
+                                    <div class="flex items-center gap-3">
+                                        <Switch
+                                            :model-value="form.sale.show_attachments"
+                                            @update:model-value="(v) => form.sale.show_attachments = v"
+                                        />
+                                        <Label>{{ t('preferences.sale.show_attachments') }}</Label>
+                                    </div>
                                 </div>
                             </template>
 
@@ -1382,6 +1389,13 @@ watch(normalizedMenuSearch, (query) => {
                                             @update:model-value="(v) => form.purchase.show_item_transactions = v"
                                         />
                                         <Label>{{ t('preferences.purchase.show_item_transactions') }}</Label>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <Switch
+                                            :model-value="form.purchase.show_attachments"
+                                            @update:model-value="(v) => form.purchase.show_attachments = v"
+                                        />
+                                        <Label>{{ t('preferences.purchase.show_attachments') }}</Label>
                                     </div>
                                 </div>
                                 <div class="rounded-lg border border-border bg-background/70 p-4 flex items-center justify-between">

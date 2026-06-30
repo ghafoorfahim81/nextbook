@@ -24,6 +24,9 @@
     "purchase_updated_successfully_variant": "Success",
     "error_updating_purchase": "Error updating purchase",
     "error_updating_purchase_description": "Error updating purchase",
-    "error_updating_purchase_variant": "Error", 
-    "error_updating_purchase_title": "Error"
+    "error_updating_purchase_variant": "Error",
+    "error_updating_purchase_title": "Error",
+    "unit_price_required": "Unit price is required",
+    "unit_measure_required": "Unit is required",
+    "complete_item_rows": "Please enter the price for all added items."
 }

@@ -46,6 +46,7 @@ const purchasePrefs = reactive(JSON.parse(JSON.stringify(userPreferences.value?.
 if (!purchasePrefs.general_fields || typeof purchasePrefs.general_fields !== 'object') purchasePrefs.general_fields = {};
 if (!purchasePrefs.item_columns || typeof purchasePrefs.item_columns !== 'object') purchasePrefs.item_columns = {};
 if (purchasePrefs.item_columns.reserved_in === undefined) purchasePrefs.item_columns.reserved_in = true;
+const showAttachmentsField = computed(() => purchasePrefs.show_attachments === true);
 const general_fields = computed(() => purchasePrefs.general_fields);
 const item_columns = computed(() => purchasePrefs.item_columns);
 const showPreferencesPanel = ref(false);
@@ -587,6 +588,33 @@ const handleSubmit = () => {
         return;
     }
 
+    // Validate each added row up-front so missing values surface as inline
+    // field errors instead of a confusing server error.
+    form.clearErrors();
+    let hasRowError = false;
+    form.items.forEach((item, index) => {
+        if (!(item.selected_item && item.item_id)) return;
+        const price = item.unit_price;
+        if (price === '' || price === null || price === undefined || isNaN(Number(price))) {
+            form.setError(`item_list.${index}.unit_price`, t('purchase.unit_price_required'));
+            hasRowError = true;
+        }
+        if (!(item.selected_measure?.id || item.unit_measure_id)) {
+            form.setError(`item_list.${index}.unit_measure_id`, t('purchase.unit_measure_required'));
+            hasRowError = true;
+        }
+    });
+    if (hasRowError) {
+        notifySound('error');
+        toast({
+            title: t('general.error'),
+            description: t('purchase.complete_item_rows'),
+            variant: 'destructive',
+            class: 'bg-pink-600 text-white',
+        });
+        return;
+    }
+
     form.item_list = selectedItems.map((item) => ({
         item_id: item.item_id,
         quantity: item.quantity,
@@ -996,8 +1024,8 @@ useFormGuard(form)
             </div>
             </div>
 
-            <div class="mt-4">
-                <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
+            <div v-if="showAttachmentsField" class="mt-4">
+                <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
             </div>
 
             <SubmitButtons module="purchase"

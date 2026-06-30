@@ -181,6 +181,7 @@
   "total_cost": "ټول لګښت",
   "total_profit": "ټوله ګټه / زیان",
   "unit_cost": "د واحد لګښت",
+  "attachments": "ضمایم",
   "line_profit": "ګټه / زیان",
   "reference_number": "شماره مرجع",
   "english_name": "نام انگلیسی",
@@ -192,6 +193,9 @@
   "save_confirmation_title": "د ساتلو تاییدي",
   "save_confirmation_message": "ایا تاسو ډاډه یاست چې دا فورمه ساتل غواړئ؟",
   "confirm_before_save": "د ساتلو دمخه تاییدي",
-  "general": "عمومي"
+  "general": "عمومي",
+  "duplicate_item_detected": "د توکي تکراري ته ورکړل شوه",
+  "duplicate_item_detected_description": "د {batchText} او {expiryText} د توکي تکراري ته ورکړل شوه",
+  "unselect": "انتخاب نه کول"
 }
 

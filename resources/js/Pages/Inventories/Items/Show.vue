@@ -281,7 +281,7 @@ onMounted(() => {
                 </div>
             </div>
             <div class="mt-4">
-                <AttachmentList :items="itemData.attachments || []" :label="t('general.attachment')" />
+                <AttachmentList :items="itemData.attachments || []" :label="t('general.attachments')" />
             </div>
         </div>
     </AppLayout>

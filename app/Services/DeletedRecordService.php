@@ -169,6 +169,12 @@ class DeletedRecordService
         }
 
         Model::withoutEvents(function () use ($record, $entry): void {
+            // Events are suppressed here, so the HasAttachments forceDeleted
+            // hook won't fire — purge attachments explicitly.
+            if (method_exists($record, 'attachments')) {
+                app(AttachmentService::class)->purge($record);
+            }
+
             $this->runForceDeleteStrategy($record, $entry);
         });
     }

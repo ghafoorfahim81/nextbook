@@ -329,7 +329,7 @@ const reversePurchase = (reason) => {
                 </div>
             </div>
             <div class="mt-4">
-                <AttachmentList :items="purchaseData.attachments || []" :label="t('general.attachment')" />
+                <AttachmentList :items="purchaseData.attachments || []" :label="t('general.attachments')" />
             </div>
         </div>
     </AppLayout>

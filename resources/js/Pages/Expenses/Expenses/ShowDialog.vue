@@ -191,7 +191,7 @@ const reverseExpense = (reason) => {
 
                 <!-- Attachment -->
                 <div v-if="expense.attachment_url">
-                    <span class="text-muted-foreground text-sm">{{ t('general.attachment') }}:</span>
+                    <span class="text-muted-foreground text-sm">{{ t('general.attachments') }}:</span>
                     <a
                         :href="expense.attachment_url"
                         target="_blank"

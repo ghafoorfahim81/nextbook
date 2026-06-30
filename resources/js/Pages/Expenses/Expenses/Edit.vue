@@ -266,7 +266,7 @@ const { confirmSave } = useSaveConfirmation()
                     <AttachmentUploader
                         v-model="form.attachments"
                         :existing="existingAttachments"
-                        :label="t('general.attachment')"
+                        :label="t('general.attachments')"
                         :error="form.errors['attachments.0']"
                         @remove-existing="removeExistingAttachment"
                     />

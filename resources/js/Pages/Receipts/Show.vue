@@ -186,7 +186,7 @@ const statusLabel = (status) => {
             </div>
         </div>
         <div class="mt-4">
-            <AttachmentList :items="receipt.attachments || []" :label="t('general.attachment')" />
+            <AttachmentList :items="receipt.attachments || []" :label="t('general.attachments')" />
         </div>
     </AppLayout>
 </template>

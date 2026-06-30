@@ -34,6 +34,10 @@ return [
     ],
 
     'attachment_upload_hint' => 'برای انتخاب کلیک کنید یا فایل‌ها را اینجا رها کنید',
+    'attachment_drop_here' => 'فایل‌ها را اینجا رها کنید،',
+    'attachment_click_browse' => 'یا برای انتخاب کلیک کنید',
+    'attachment_supported_files' => 'فایل‌های پشتیبانی‌شده',
+    'attachment_max_size' => 'حداکثر حجم: :size مگابایت',
     'attachment_invalid_type' => 'نوع فایل :name پشتیبانی نمی‌شود.',
     'attachment_too_large' => 'حجم :name از محدودیت :size مگابایت بیشتر است.',
 

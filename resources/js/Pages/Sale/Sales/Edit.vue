@@ -42,6 +42,7 @@ const salePrefs = reactive(JSON.parse(JSON.stringify(userPreferences.value?.sale
 if (!salePrefs.general_fields || typeof salePrefs.general_fields !== 'object') salePrefs.general_fields = {};
 if (!salePrefs.item_columns || typeof salePrefs.item_columns !== 'object') salePrefs.item_columns = {};
 if (salePrefs.item_columns.reserved_out === undefined) salePrefs.item_columns.reserved_out = true;
+const showAttachmentsField = computed(() => salePrefs.show_attachments === true);
 const generalFields = computed(() => salePrefs.general_fields);
 const itemColumns = computed(() => salePrefs.item_columns);
 const showPreferencesPanel = ref(false);
@@ -1043,8 +1044,8 @@ useFormGuard(form)
                 />
             </div>
 
-            <div class="mt-4">
-                <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
+            <div v-if="showAttachmentsField" class="mt-4">
+                <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
             </div>
 
             <SubmitButtons module="sale"

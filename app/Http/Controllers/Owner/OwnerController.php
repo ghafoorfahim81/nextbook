@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Owner\OwnerStoreRequest;
 use App\Http\Requests\Owner\OwnerUpdateRequest;
 use App\Http\Resources\Administration\CurrencyResource;
+use App\Http\Resources\Owner\DrawingResource;
 use App\Http\Resources\Owner\OwnerResource;
 use App\Models\Account\Account;
 use App\Models\Administration\Currency;
@@ -182,10 +183,19 @@ class OwnerController extends Controller
             'transaction.currency',
             'transaction.lines.account',
             'attachments',
+            'drawings.transaction.currency',
+            'drawings.transaction.lines.account',
         ]);
 
-        return response()->json([
-            'data' => new OwnerResource($owner),
+        if ($request->wantsJson()) {
+            return response()->json([
+                'data' => new OwnerResource($owner),
+            ]);
+        }
+
+        return inertia('Owners/Owners/Show', [
+            'owner' => new OwnerResource($owner),
+            'drawings' => DrawingResource::collection($owner->drawings->sortByDesc('date')->values()),
         ]);
     }
 

@@ -5,5 +5,7 @@
     "post_sale": "Post Sale",
     "reverse_sale": "Reverse Sale",
     "post_sale_description": "This will write the accounting and stock entries. Posted documents cannot be edited or deleted.",
-    "reverse_sale_description": "This creates a counter transaction and counter stock movement, then marks the original sale as reversed."
+    "reverse_sale_description": "This creates a counter transaction and counter stock movement, then marks the original sale as reversed.",
+    "no_item_warning": "No Item",
+    "no_item_warning_description": "Please add at least one item to create a sale"
 }

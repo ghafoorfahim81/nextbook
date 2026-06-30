@@ -179,7 +179,7 @@
   "created_successfully": "موفقانه ثبت شد",
   "general_info": "اطلاعات عمومی",
   "add_more": "افزودن بیشتر",
-  "attachment": "ضمیمه",
+  "attachments": "ضمایم",
   "upload_file": "بارگذاری فایل",
   "change_file": "تغییر فایل",
   "current_file": "فایل فعلی",
@@ -254,6 +254,17 @@
   "unsaved_changes_warning": "تغییرات ذخیره‌نشده دارید. آیا مطمئن هستید که می‌خواهید خارج شوید؟",
   "save_confirmation_title": "تأیید ذخیره",
   "save_confirmation_message": "آیا مطمئن هستید که می‌خواهید این فرم را ذخیره کنید؟",
-  "confirm_before_save": "تأیید قبل از ذخیره"
+  "confirm_before_save": "تأیید قبل از ذخیره",
+  "attachment_upload_hint": "برای انتخاب فایل یا بارگذاری فایل، اینجا کلیک کنید",
+  "attachment_drop_here": "فایل‌ها را اینجا رها کنید،",
+  "attachment_click_browse": "یا برای انتخاب فایل کلیک کنید",
+    "attachment_supported_files": "فایل‌های پشتیبانی شده: {extensions}",
+    "attachment_max_size": "حداکثر حجم فایل: {size} مگابایت",
+    "attachment_too_large": "حجم فایل بیش از حد است. حداکثر حجم مجاز {size} مگابایت است.",
+    "attachment_unsupported_file": "نوع فایل پشتیبانی نمی‌شود. انواع پشتیبانی شده عبارتند از: {extensions}.",
+    "attachment_invalid_type": "نوع فایل نامعتبر است. انواع پشتیبانی شده عبارتند از: {extensions}.",
+    "duplicate_item_detected": "آیتم تکراری یافت شد",
+    "duplicate_item_detected_description": "آیتم مشابه با {batchText} و {expiryText} قبلاً وجود دارد.",
+    "unselect": "لغو انتخاب"
 }
 

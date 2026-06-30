@@ -341,7 +341,7 @@ useFormGuard(form)
 
                 <!-- Attachments -->
                 <div class="mt-4">
-                    <AttachmentUploader v-model="form.attachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" />
+                    <AttachmentUploader v-model="form.attachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" />
                 </div>
                 </div>
 
