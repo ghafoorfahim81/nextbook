@@ -1,6 +1,5 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
-import { useSaveConfirmation } from '@/composables/useSaveConfirmation'
 import { useFormGuard } from '@/composables/useFormGuard'
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { useForm, router } from '@inertiajs/vue3';
@@ -173,13 +172,12 @@ onUnmounted(() => {
 
 useFormGuard(form)
 
-const { confirmSave } = useSaveConfirmation()
 </script>
 
 <template>
     <AppLayout :title="t('general.edit', { name: t('expense.expense') })" :sidebar-collapsed="true">
         <FormPageToolbar confirm-module="expense" back-route="expenses.index" module="expense" />
-        <form @submit.prevent="confirmSave('expense', () => handleSubmit())">
+        <form @submit.prevent="handleSubmit()">
             <!-- General Section -->
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-violet-500">
