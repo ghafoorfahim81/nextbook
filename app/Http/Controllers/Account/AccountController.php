@@ -288,6 +288,9 @@ class AccountController extends Controller
         $chart_of_account->load(['accountType','opening', 'opening.transaction.currency','opening.transaction.lines', 'parent']);
         return inertia('Accounts/Accounts/Edit', [
             'account' => new AccountResource($chart_of_account),
+            'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
+            'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
+            'accountTypes' => AccountTypeResource::collection(AccountType::orderBy('created_at','asc')->get()),
         ]);
     }
 

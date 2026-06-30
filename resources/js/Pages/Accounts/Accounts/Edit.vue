@@ -1,13 +1,12 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
-import { useSaveConfirmation } from '@/composables/useSaveConfirmation'
 import { useFormGuard } from '@/composables/useFormGuard'
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useForm, router, usePage } from '@inertiajs/vue3';
-import { useI18n } from 'vue-i18n'; 
+import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import { useLazyProps } from '@/composables/useLazyProps'
 import { computed } from 'vue';
@@ -19,7 +18,7 @@ const account = computed(() => page.props.account?.data || {})
 const accountTypes = computed(() => page.props.accountTypes?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
 const homeCurrency = computed(() => page.props.homeCurrency || {})
-useLazyProps(page.props, ['accounts']) 
+useLazyProps(page.props, ['accounts'])
 
 const form = useForm({
     ...account.value,
@@ -35,7 +34,6 @@ const form = useForm({
     amount: account.value?.opening?.amount??0,
 });
 
-
 const handleUpdate = () => {
     form.patch(route('chart-of-accounts.update', form.id), {
         onSuccess: () => {
@@ -47,25 +45,43 @@ const handleUpdate = () => {
     });
 }
 
-
 const handleCancel = () => {
     router.visit(route('chart-of-accounts.index'));
 };
 
 const handleSelectChange = (field, value) => {
+    if(field === 'account_type_id') {
+        form.selected_parent_account = null;
+        form.parent_id = null;
+        form[field] = value.id;
+    }
     if(field === 'currency_id') {
         form.rate = value?.exchange_rate??0;
         form.currency_id = value?.id;
     }
     else{
-        form[field] = value.id;
+        if(value){
+            form[field] = value.id;
+        }
+        else{
+            form[field] = null;
+        }
     }
-
 };
+
+// Filtered parent accounts based on selected account type
+const filteredParentAccounts = computed(() => {
+    if (!form.selected_account_type || !form.selected_account_type.id) {
+        return [];
+    }
+    // Exclude the account itself from being its own parent
+    return accounts.value.filter(
+        acc => acc.account_type_id === form.selected_account_type.id && acc.id !== form.id
+    );
+});
 
 useFormGuard(form)
 
-const { confirmSave } = useSaveConfirmation()
 </script>
 
 <template>
@@ -110,12 +126,13 @@ const { confirmSave } = useSaveConfirmation()
                         resource-type="account-types"
                         :search-fields="['name']"
                         :error="form.errors.account_type_id"
-                    /> 
+                    />
                     <NextSelect
-                        :options="accounts"
+                        :options="filteredParentAccounts"
                         v-model="form.selected_parent_account"
                         label-key="name"
                         value-key="id"
+                        :floating-text="t('account.parent_account')"
                         @update:modelValue="(value) => handleSelectChange('parent_id', value)"
                         id="parent_account"
                         :reduce="account => account"

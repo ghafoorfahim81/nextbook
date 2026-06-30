@@ -51,7 +51,7 @@
                                     </Tooltip>
                                   </TooltipProvider>
 
-                               
+
                             </PopoverTrigger>
                             <PopoverContent
                                 :align="isRTL ? 'start' : 'start'"
@@ -187,7 +187,7 @@
                                         <DropdownMenuItem v-if="props.hasShow && can(`${props.can}.view`)" :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']" @click="$emit('show', item.id)"><Eye class="h-3 w-3" /> {{ t('datatable.show') }}</DropdownMenuItem>
                                         <DropdownMenuItem v-if="props.hasPrint && can(`${props.can}.print`)" :class="[isRTL ? 'flex-row-reverse gap-2' : 'gap-2', '[&:hover]:bg-violet-500 [&:hover]:text-white [&:focus]:bg-violet-500 [&:focus]:text-white text-xs py-1.5']" @click="$emit('print', item.id)"><Printer class="h-3 w-3" /> {{ t('datatable.print') }}</DropdownMenuItem>
                                     </DropdownMenuContent>
-                        
+
                                 </DropdownMenu>
                                 </div>
                             </template>
@@ -236,8 +236,8 @@
                 <div class="flex items-center gap-1 text-xs text-muted-foreground">
                     <span>{{ t('datatable.per_page') }}:</span>
                     <Select v-model="perPage" @update:modelValue="updatePerPage">
-                        <SelectTrigger class="w-[80px] h-7 text-xs border-input">
-                            <SelectValue :placeholder="t('datatable.per_page')" />
+                        <SelectTrigger class="w-[100px] h-7 text-xs border-input">
+                            <SelectValue :value="perPage ?? 10" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem
@@ -275,7 +275,7 @@
                 </Button>
 
                 <span class="mx-2 text-xs text-muted-foreground">
-                    Page {{ currentPage }} of {{ lastPage }}
+                    {{ t('datatable.page', { page: currentPage, total: lastPage }) }}
                 </span>
 
                 <!-- Next -->
@@ -338,6 +338,7 @@ import {
 } from '@/Components/ui/dropdown-menu'
 import { useAuth } from '@/composables/useAuth'
 import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus'
+ 
 const { can } = useAuth();
 const props = defineProps({
     can: String,
@@ -373,7 +374,7 @@ defineEmits(['edit', 'delete', 'add', 'print', 'show'])
 
 const pageOptions = [10, 20, 50, 100]
 const search = ref(props.filters?.search || '')
-const perPage = ref(props.filters?.perPage || 10)
+const perPage = ref(props.items?.meta?.per_page || 10)
 const sortField = ref(props.filters?.sortField || 'id')
 const sortDirection = ref(props.filters?.sortDirection || 'asc')
 const advancedFilters = ref(props.filters?.filters || {})

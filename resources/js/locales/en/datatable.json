@@ -9,7 +9,8 @@
   "next": "Next",
   "show": "Show",
   "print": "Print",
-  "show_filter_options": "Show filter options for {title}"
+  "show_filter_options": "Show filter options for {title}",
+  "page": "Page {page} of {total}"
 }
 
 

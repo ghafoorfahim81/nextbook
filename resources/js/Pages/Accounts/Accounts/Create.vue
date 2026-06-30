@@ -25,6 +25,7 @@ const form = useForm({
     number: '',
     remark: '',
     parent_id: null,
+    selected_parent_account: null, // Ensure this is tracked for v-model binding below.
     selected_currency: null,
     currency_id: null,
     rate: 1,
@@ -80,14 +81,34 @@ const handleCancel = () => {
 };
 
 const handleSelectChange = (field, value) => {
+    if(field === 'account_type_id') {
+        form.selected_parent_account = null;
+        form.parent_id = null;
+        form[field] = value.id;
+    }
     if(field === 'currency_id') {
         form.rate = value?.exchange_rate??0;
         form.currency_id = value?.id; 
     }
     else{ 
-        form[field] = value.id;
+        if(value){
+            form[field] = value.id;
+        }
+        else{
+            form[field] = null;
+        }
     }
 };
+
+// Filtered parent accounts based on selected account type
+const filteredParentAccounts = computed(() => {
+    if (!form.selected_account_type || !form.selected_account_type.id) {
+        return [];
+    }
+    return accounts.value.filter(
+        acc => acc.account_type_id === form.selected_account_type.id
+    );
+});
 
 useFormGuard(form)
 </script>
@@ -136,7 +157,7 @@ useFormGuard(form)
                         :error="form.errors?.account_type_id"
                     />
                     <NextSelect
-                        :options="accounts"
+                        :options="filteredParentAccounts"
                         v-model="form.selected_parent_account"
                         label-key="name"
                         value-key="id"
