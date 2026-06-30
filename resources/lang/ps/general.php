@@ -34,6 +34,10 @@ return [
     ],
 
     'attachment_upload_hint' => 'د انتخاب لپاره کلیک وکړئ یا فایلونه دلته راوغورځوئ',
+    'attachment_drop_here' => 'فایلونه دلته راوغورځوئ،',
+    'attachment_click_browse' => 'یا د انتخاب لپاره کلیک وکړئ',
+    'attachment_supported_files' => 'ملاتړ شوي فایلونه',
+    'attachment_max_size' => 'اعظمي اندازه: :size MB',
     'attachment_invalid_type' => 'د :name د فایل ډول ملاتړ نه کیږي.',
     'attachment_too_large' => ':name د :size MB له حد څخه اوړي.',
 

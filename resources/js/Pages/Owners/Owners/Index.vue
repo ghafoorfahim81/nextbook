@@ -1,9 +1,8 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
-import OwnerShowDialog from './ShowDialog.vue';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3'
 const props = defineProps({
@@ -13,9 +12,6 @@ const props = defineProps({
     filterOptions: Object,
 });
 
-const isDialogOpen = ref(false);
-const showDialog = ref(false);
-const selectedOwnerId = ref(null);
 const { t } = useI18n();
 
 const columns = computed(() => ([
@@ -42,8 +38,7 @@ const editItem = (item) => {
 };
 
 const showItem = (id) => {
-    selectedOwnerId.value = id;
-    showDialog.value = true;
+    router.visit(route('owners.show', id));
 };
 
 const filterFields = computed(() => ([
@@ -77,11 +72,6 @@ const filterFields = computed(() => ([
             :addTitle="t('owner.owner')"
             :addAction="'redirect'"
             :addRoute="'owners.create'"
-        />
-        <OwnerShowDialog
-            :open="showDialog"
-            :owner-id="selectedOwnerId"
-            @update:open="showDialog = $event"
         />
     </AppLayout>
     </template>

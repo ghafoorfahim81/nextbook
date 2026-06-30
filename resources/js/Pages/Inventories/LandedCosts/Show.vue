@@ -270,7 +270,7 @@ const totalLanded = computed(() => Number(
         </div>
       </div>
       <div class="mt-4">
-        <AttachmentList :items="record.attachments || []" :label="t('general.attachment')" />
+        <AttachmentList :items="record.attachments || []" :label="t('general.attachments')" />
       </div>
     </div>
   </AppLayout>

@@ -141,7 +141,7 @@ const statusLabel = (status) => {
             </div>
         </div>
         <div class="mt-4">
-            <AttachmentList :items="transferData.attachments || []" :label="t('general.attachment')" />
+            <AttachmentList :items="transferData.attachments || []" :label="t('general.attachments')" />
         </div>
     </AppLayout>
 </template>

@@ -678,7 +678,7 @@ onMounted(() => {
       </div>
 
       <div class="rounded-xl border border-violet-500 bg-card p-4 shadow-sm">
-        <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
+        <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
       </div>
 
       <div class="flex flex-wrap items-center gap-3">

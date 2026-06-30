@@ -180,7 +180,7 @@
   "created_successfully": "created successfully",
   "general_info": "General Information",
   "add_more": "Add More",
-  "attachment": "Attachment",
+  "attachments": "Attachments",
   "upload_file": "Upload File",
   "change_file": "Change File",
   "current_file": "Current file",
@@ -251,5 +251,16 @@
   "unsaved_changes_warning": "You have unsaved changes. Are you sure you want to leave?",
   "save_confirmation_title": "Save confirmation",
   "save_confirmation_message": "Are you sure you want to save this form?",
-  "confirm_before_save": "Confirm before save"
+  "confirm_before_save": "Confirm before save",
+  "attachment_upload_hint": "Click to browse or drop files here",
+  "attachment_drop_here": "Drop files here,",
+  "attachment_click_browse": "or click to browse",
+  "attachment_supported_files": "Supported files: {extensions}",
+  "attachment_max_size": "Max file size: {size} MB",
+  "attachment_too_large": "File is too large. Maximum size is {size} MB.",
+  "attachment_unsupported_file": "Unsupported file type. Supported types are: {extensions}.",
+  "attachment_invalid_type": "Invalid file type. Supported types are: {extensions}.",
+  "duplicate_item_detected": "Duplicate item detected",
+  "duplicate_item_detected_description": "Item with {batchText} and {expiryText} already exists.",
+  "unselect": "Unselect"
 }

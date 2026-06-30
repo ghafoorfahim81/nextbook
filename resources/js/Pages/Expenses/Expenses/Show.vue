@@ -164,7 +164,7 @@ const statusLabel = (status) => {
             </div>
 
             <div v-if="expense.attachment_url" class="text-sm">
-                <span class="text-muted-foreground">{{ t('general.attachment') }}:</span>
+                <span class="text-muted-foreground">{{ t('general.attachments') }}:</span>
                 <a :href="expense.attachment_url" target="_blank" class="ml-2 text-violet-600 hover:underline">
                     {{ t('general.view_attachment') }}
                 </a>
@@ -189,7 +189,7 @@ const statusLabel = (status) => {
             </div>
         </div>
         <div class="mt-4">
-            <AttachmentList :items="expense.attachments || []" :label="t('general.attachment')" />
+            <AttachmentList :items="expense.attachments || []" :label="t('general.attachments')" />
         </div>
     </AppLayout>
 </template>

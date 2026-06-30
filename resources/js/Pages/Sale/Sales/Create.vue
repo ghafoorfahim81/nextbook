@@ -55,6 +55,7 @@ if (salePrefs.item_columns.reserved_out === undefined) salePrefs.item_columns.re
 const general_fields = salePrefs.general_fields
 const localColumns = salePrefs.item_columns
 const sale_preferences = salePrefs
+const showAttachmentsField = computed(() => salePrefs.show_attachments === true)
 const item_management = user_preferences.value?.item_management ?? {}
 const spec_text = item_management?.spec_text ?? 'batch'
 const decimalPlaces = Number(user_preferences.value?.appearance?.decimal_places ?? 2)
@@ -360,8 +361,8 @@ function handleSubmit({ createAndNew = false, createAndPrint = false } = {}) {
         cleanupPrintWindow();
         notifySound('error');
         toast({
-            title: 'Please add items',
-            description: 'Please add at least one item to create a sale',
+            title: t('sale.no_item_warning'),
+            description: t('sale.no_item_warning_description'),
             variant: 'destructive',
             class:'bg-yellow-600 text-white',
         })
@@ -389,8 +390,8 @@ function handleSubmit({ createAndNew = false, createAndPrint = false } = {}) {
                 notifySound('success');
                 resetFormForCreate();
                 toast({
-                    title: 'Success',
-                    description: 'Sale created successfully',
+                    title: t('general.success'),
+                    description: t('general.create_success', { name: t('sale.sale') }),
                     variant: 'success',
                     class:'bg-green-600 text-white',
                 })
@@ -399,8 +400,8 @@ function handleSubmit({ createAndNew = false, createAndPrint = false } = {}) {
                 cleanupPrintWindow();
                 notifySound('error');
                 toast({
-                    title: 'Error creating sale',
-                    description: 'Error creating sale',
+                    title: t('general.error'),
+                    description: t('general.error_creating_sale'),
                     variant: 'destructive',
                     class:'bg-pink-600 text-white',
                 })
@@ -416,8 +417,8 @@ function handleSubmit({ createAndNew = false, createAndPrint = false } = {}) {
                 }
 
                 toast({
-                    title: 'Sale created successfully',
-                    description: 'Sale created successfully',
+                    title: t('general.success'),
+                    description: t('general.create_success', { name: t('sale.sale') }),
                     variant: 'success',
                     class:'bg-green-600 text-white',
                 })
@@ -426,8 +427,8 @@ function handleSubmit({ createAndNew = false, createAndPrint = false } = {}) {
                 cleanupPrintWindow();
                 notifySound('error');
                 toast({
-                    title: 'Error creating sale',
-                    description: 'Error creating sale',
+                    title: t('general.error'),
+                    description: t('general.error_creating_sale'),
                     variant: 'destructive',
                     class:'bg-pink-600 text-white',
                 })
@@ -638,12 +639,12 @@ const notifyIfDuplicate = (index) => {
         const expiryText = item.expire_date ? `Expiry: ${item.expire_date}` : 'No expiry'
         disabled =true;
         toast({
-            title: 'Duplicate item detected',
-            description: `Same item with ${batchText} and ${expiryText} already exists.`,
+            title: t('general.duplicate_item_detected'),
+            description: t('general.duplicate_item_detected_description', { batchText: batchText, expiryText: expiryText }),
             variant: 'destructive',
             class:'bg-pink-600 text-white',
             duration: Infinity,
-            action: h(ToastAction, { altText: 'Unselect', onClick: () => resetRow(index) }, { default: () => 'Unselect' }),
+            action: h(ToastAction, { altText: t('general.unselect'), onClick: () => resetRow(index) }, { default: () => t('general.unselect') }),
         })
     }
 }
@@ -1116,8 +1117,8 @@ useFormGuard(form)
                 <TransactionSummary :summary="transactionSummary" :balance-nature="form?.selected_ledger?.statement?.balance_nature" />
             </div>
 
-            <div class="mt-4">
-                <AttachmentUploader v-model="form.attachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" />
+            <div v-if="showAttachmentsField" class="mt-4">
+                <AttachmentUploader v-model="form.attachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" />
             </div>
 
             <SubmitButtons module="sale"

@@ -44,4 +44,29 @@ class AttachmentService
 
         $attachment->delete();
     }
+
+    /**
+     * Permanently delete the file from storage and remove the row.
+     */
+    public function forceDestroy(Attachment $attachment): void
+    {
+        Storage::disk($attachment->disk)->delete($attachment->path);
+
+        $attachment->forceDelete();
+    }
+
+    /**
+     * Unlink and permanently delete every attachment (trashed or not)
+     * belonging to a model, including the underlying files.
+     */
+    public function purge(Model $model): void
+    {
+        if (! method_exists($model, 'attachmentsUnscoped')) {
+            return;
+        }
+
+        $model->attachmentsUnscoped()->withTrashed()->get()->each(
+            fn (Attachment $attachment) => $this->forceDestroy($attachment)
+        );
+    }
 }

@@ -304,6 +304,7 @@
         "auto_calculate_tax": "Auto Calculate Tax",
         "show_ledger_transactions": "Show Ledger Latest Transactions",
         "show_item_transactions": "Show Item Latest Transactions",
+        "show_attachments": "Show Attachments Field",
         "enforce_sale_stock_reservation": "Block selling stock reserved by drafts",
         "enforce_sale_stock_reservation_help": "When enabled, stock reserved by unposted draft sales is treated as unavailable and a sale cannot be posted if another draft already holds the stock. When disabled, reservations are shown for information only and do not block posting."
     },
@@ -325,7 +326,8 @@
         "reminder_days": "Reminder Days",
         "late_fee_percentage": "Late Fee %",
         "show_ledger_transactions": "Show Ledger Latest Transactions",
-        "show_item_transactions": "Show Item Latest Transactions"
+        "show_item_transactions": "Show Item Latest Transactions",
+        "show_attachments": "Show Attachments Field"
     },
     "transaction": {
         "description": "Control whether each document posts accounting and stock entries immediately or is saved as a draft.",

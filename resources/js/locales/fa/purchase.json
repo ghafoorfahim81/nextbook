@@ -23,6 +23,9 @@
     "purchase_updated_successfully_variant": "موفقیت",
     "error_updating_purchase": "خطا در به روز رسانی خرید",
     "error_updating_purchase_description": "خطا در به روز رسانی خرید",
-    "error_updating_purchase_variant": "خطا", 
-    "error_updating_purchase_title": "خطا"
+    "error_updating_purchase_variant": "خطا",
+    "error_updating_purchase_title": "خطا",
+    "unit_price_required": "قیمت واحد الزامی است",
+    "unit_measure_required": "واحد الزامی است",
+    "complete_item_rows": "لطفاً قیمت همه اقلام افزوده‌شده را وارد کنید."
 }

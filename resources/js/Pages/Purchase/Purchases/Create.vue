@@ -295,6 +295,34 @@ function handleSubmit(createAndNew = false) {
     }
     else{
         const FormItems = form.items.filter(item => item.selected_item && item.item_id);
+
+        // Validate each added row up-front so missing values surface as inline
+        // field errors instead of a confusing server error.
+        form.clearErrors();
+        let hasRowError = false;
+        form.items.forEach((item, index) => {
+            if (!(item.selected_item && item.item_id)) return;
+            const price = item.unit_price;
+            if (price === '' || price === null || price === undefined || isNaN(Number(price))) {
+                form.setError(`item_list.${index}.unit_price`, t('purchase.unit_price_required'));
+                hasRowError = true;
+            }
+            if (!item.selected_measure) {
+                form.setError(`item_list.${index}.unit_measure_id`, t('purchase.unit_measure_required'));
+                hasRowError = true;
+            }
+        });
+        if (hasRowError) {
+            notifySound('error');
+            toast({
+                title: t('general.error'),
+                description: t('purchase.complete_item_rows'),
+                variant: 'destructive',
+                class: 'bg-pink-600 text-white',
+            });
+            return;
+        }
+
         form.item_list = FormItems;
         form.transaction_total = toNum(goodsTotal.value - totalDiscount.value + totalTax.value);
         form.discount_total = toNum(totalDiscount.value);
@@ -671,6 +699,7 @@ if (purchasePrefs.item_columns.reserved_in === undefined) purchasePrefs.item_col
 const general_fields = purchasePrefs.general_fields
 const localColumns = purchasePrefs.item_columns
 const purchase_preferences = purchasePrefs
+const showAttachmentsField = computed(() => purchasePrefs.show_attachments === true)
 const item_management = user_preferences.value?.item_management ?? {}
 const spec_text = item_management?.spec_text ?? 'batch'
 const decimalPlaces = Number(user_preferences.value?.appearance?.decimal_places ?? 2)
@@ -997,8 +1026,8 @@ useFormGuard(form)
                 <TransactionSummary :summary="transactionSummary" :balance-nature="form?.selected_ledger?.statement?.balance_nature" />
             </div>
 
-            <div class="mt-4">
-                <AttachmentUploader v-model="form.attachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" />
+            <div v-if="showAttachmentsField" class="mt-4">
+                <AttachmentUploader v-model="form.attachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" />
             </div>
 
             <SubmitButtons module="purchase"

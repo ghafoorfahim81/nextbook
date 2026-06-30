@@ -60,6 +60,7 @@ use Illuminate\Validation\Rule;
             'sale.auto_calculate_tax' => 'sometimes|boolean',
             'sale.show_ledger_transactions' => 'sometimes|boolean',
             'sale.show_item_transactions' => 'sometimes|boolean',
+            'sale.show_attachments' => 'sometimes|boolean',
             'sale.enforce_sale_stock_reservation' => 'sometimes|boolean',
             'sale.item_columns.reserved_out' => 'sometimes|boolean',
 
@@ -101,6 +102,7 @@ use Illuminate\Validation\Rule;
             'purchase.late_fee_percentage' => 'sometimes|numeric|min:0|max:100',
             'purchase.show_ledger_transactions' => 'sometimes|boolean',
             'purchase.show_item_transactions' => 'sometimes|boolean',
+            'purchase.show_attachments' => 'sometimes|boolean',
 
             // Purchase Order
             'purchase_order' => 'sometimes|array',

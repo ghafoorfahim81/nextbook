@@ -34,6 +34,10 @@ return [
     ],
 
     'attachment_upload_hint' => 'Click to browse or drop files here',
+    'attachment_drop_here' => 'Drop your files here,',
+    'attachment_click_browse' => 'or click to browse',
+    'attachment_supported_files' => 'Supported files',
+    'attachment_max_size' => 'Maximum size: :size MB',
     'attachment_invalid_type' => ':name has an unsupported file type.',
     'attachment_too_large' => ':name exceeds the :size MB limit.',
 

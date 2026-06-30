@@ -145,6 +145,7 @@ class User extends Authenticatable
             'auto_calculate_tax' => true,
             'show_ledger_transactions' => true,
             'show_item_transactions' => true,
+            'show_attachments' => false,
             'enforce_sale_stock_reservation' => false,
         ],
         'sale_order' => [
@@ -245,6 +246,7 @@ class User extends Authenticatable
             'late_fee_percentage' => 0,
             'show_ledger_transactions' => true,
             'show_item_transactions' => true,
+            'show_attachments' => false,
         ],
         'transaction' => [
             'sale_post_immediately' => true,

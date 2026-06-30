@@ -124,6 +124,7 @@ const SCHEMAS = {
                 { key: 'auto_calculate_tax', type: 'switch', labelKey: 'preferences.sale.auto_calculate_tax' },
                 { key: 'show_ledger_transactions', type: 'switch', labelKey: 'preferences.sale.show_ledger_transactions' },
                 { key: 'show_item_transactions', type: 'switch', labelKey: 'preferences.sale.show_item_transactions' },
+                { key: 'show_attachments', type: 'switch', labelKey: 'preferences.sale.show_attachments' },
                 { key: 'enforce_sale_stock_reservation', type: 'switch', labelKey: 'preferences.sale.enforce_sale_stock_reservation' },
             ]
         },
@@ -142,6 +143,7 @@ const SCHEMAS = {
                 { key: 'late_fee_percentage', type: 'number', labelKey: 'preferences.purchase.late_fee_percentage', min: 0, max: 100, step: '0.1' },
                 { key: 'show_ledger_transactions', type: 'switch', labelKey: 'preferences.purchase.show_ledger_transactions' },
                 { key: 'show_item_transactions', type: 'switch', labelKey: 'preferences.purchase.show_item_transactions' },
+                { key: 'show_attachments', type: 'switch', labelKey: 'preferences.purchase.show_attachments' },
             ]
         },
     ],

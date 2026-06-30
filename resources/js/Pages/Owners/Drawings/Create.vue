@@ -250,7 +250,7 @@ useFormGuard(form)
           />
 
           <div class="md:col-span-2 xl:col-span-3">
-            <AttachmentUploader v-model="form.attachments" :label="t('general.attachment')" :error="form.errors['attachments.0']" />
+            <AttachmentUploader v-model="form.attachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" />
           </div>
         </div>
       </div>
