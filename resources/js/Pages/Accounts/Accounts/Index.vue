@@ -12,6 +12,8 @@ const props = defineProps({
     filterOptions: Object,
     balanceNatureFormat: String,
 });
+
+console.log('accounts', props.accounts)
 const { t } = useI18n();
 const columns = computed(() => ([
     { key: 'number', label: t('general.number'), sortable: true },
