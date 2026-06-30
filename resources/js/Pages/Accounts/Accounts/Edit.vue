@@ -87,7 +87,7 @@ useFormGuard(form)
 <template>
     <AppLayout :title="t('account.chart_of_accounts')">
         <FormPageToolbar confirm-module="account" back-route="chart-of-accounts.index" module="chart_of_accounts" />
-        <form @submit.prevent="confirmSave('account', () => handleUpdate())">
+        <form @submit.prevent="handleUpdate()">
             <div class="mb-5 rounded-xl border p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.update', { name: t('account.account') }) }}

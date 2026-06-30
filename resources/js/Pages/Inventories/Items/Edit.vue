@@ -1,6 +1,5 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
-import { useSaveConfirmation } from '@/composables/useSaveConfirmation'
 import { useFormGuard } from '@/composables/useFormGuard'
 import { ref, computed, watch, reactive, nextTick } from 'vue'
 import NextInput from '@/Components/next/NextInput.vue'
@@ -248,7 +247,6 @@ console.log('this is the showOpeningWarning', showOpeningWarning.value)
 
 useFormGuard(form)
 
-const { confirmSave } = useSaveConfirmation()
 </script>
 <template>
     <AppLayout :title="t('general.edit', { name: t('item.item') })">
@@ -264,7 +262,7 @@ const { confirmSave } = useSaveConfirmation()
             :prefs="itemPrefs"
             :title="t('preferences.tabs.item_management')"
         />
-        <form @submit.prevent="confirmSave('item', () => handleSubmit())">
+        <form @submit.prevent="handleSubmit()">
             <div class="mb-5 rounded-xl border p-4 shadow-sm border-primary relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
                     {{ t('general.edit', { name: t('item.item') }) }}
