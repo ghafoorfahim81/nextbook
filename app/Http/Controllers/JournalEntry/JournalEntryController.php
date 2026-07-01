@@ -125,6 +125,7 @@ class JournalEntryController extends Controller
                 header: [
                     'currency_id' => $validated['currency_id'],
                     'rate' => $validated['rate'],
+                    'voucher_number' =>  'journal #'.$validated['number'],
                     'date' => $validated['date'],
                     'remark' => $validated['remarks'],
                     'reference_type' => JournalEntry::class,
