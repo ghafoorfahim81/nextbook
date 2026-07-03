@@ -79,7 +79,7 @@
                     variant="outline"
                     size="sm"
                     @click="exportToExcel"
-                    class="h-9 border-primary text-primary hover:bg-primary hover:text-white"
+                    class="h-9 border-green-800 text-green-600 hover:bg-green-700 hover:text-white"
                 >
                     <FileDown class="h-4 w-4" />
                     <span class="ml-1">{{ t('general.excel') }}</span>
@@ -338,7 +338,7 @@ import {
 } from '@/Components/ui/dropdown-menu'
 import { useAuth } from '@/composables/useAuth'
 import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus'
- 
+
 const { can } = useAuth();
 const props = defineProps({
     can: String,

@@ -86,6 +86,7 @@ class Purchase extends Model
         'transaction.currency_id',
         'type',
         'warehouse_id',
+        'payment_status',
         'date',
         'due_date',
         'created_by',

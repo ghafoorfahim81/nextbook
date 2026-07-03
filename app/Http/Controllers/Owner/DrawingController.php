@@ -59,6 +59,12 @@ class DrawingController extends Controller
                 'branches' => BranchResource::collection(
                     Branch::query()->orderBy('name')->get()
                 ),
+                'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'bankAccounts' => (new Account())->getAccountsByAccountTypeSlug('cash-or-bank'),
+                'drawingAccounts' => Account::query()
+                    ->whereIn('id', Owner::query()->whereNotNull('drawing_account_id')->pluck('drawing_account_id'))
+                    ->orderBy('name')
+                    ->get(['id', 'name']),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
             ],
             'filters' => [

@@ -138,10 +138,31 @@ class Item extends Model
         'category_id',
         'size_id',
         'brand_id',
+        'warehouse_id',
         'purchase_price',
         'sale_price',
         'created_by',
     ];
+
+    /**
+     * Custom filter handlers. Warehouse is not a column on items; instead we
+     * match items that currently hold stock in the selected warehouse.
+     */
+    protected function dynamicFilterHandlers(): array
+    {
+        return [
+            'warehouse_id' => function ($query, $value) {
+                $query->whereHas('stockBalances', function ($balanceQuery) use ($value) {
+                    if (is_array($value)) {
+                        $balanceQuery->whereIn('warehouse_id', $value);
+                        return;
+                    }
+
+                    $balanceQuery->where('warehouse_id', $value);
+                });
+            },
+        ];
+    }
 
     public function unitMeasure(): BelongsTo
     {

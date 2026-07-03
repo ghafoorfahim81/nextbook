@@ -61,6 +61,8 @@ class JournalEntry extends Model
 
     protected array $allowedFilters = [
         'transaction.currency_id',
+        'transaction.lines.journal_class_id',
+        'transaction.lines.ledger_id',
         'date',
         'created_by',
     ];

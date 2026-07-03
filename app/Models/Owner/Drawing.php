@@ -54,10 +54,40 @@ class Drawing extends Model
 
     protected array $allowedFilters = [
         'owner_id',
+        'transaction.currency_id',
+        'bank_account_id',
+        'drawing_account_id',
         'date',
         'branch_id',
         'created_by',
     ];
+
+    /**
+     * A drawing posts two lines: the bank/cash account is credited and the
+     * owner's drawing account is debited. Match on the relevant side so the
+     * two account filters don't collide.
+     */
+    protected function dynamicFilterHandlers(): array
+    {
+        return [
+            'bank_account_id' => function ($query, $value) {
+                $query->whereHas('transaction.lines', function ($lineQuery) use ($value) {
+                    $lineQuery->where('credit', '>', 0);
+                    is_array($value)
+                        ? $lineQuery->whereIn('account_id', $value)
+                        : $lineQuery->where('account_id', $value);
+                });
+            },
+            'drawing_account_id' => function ($query, $value) {
+                $query->whereHas('transaction.lines', function ($lineQuery) use ($value) {
+                    $lineQuery->where('debit', '>', 0);
+                    is_array($value)
+                        ? $lineQuery->whereIn('account_id', $value)
+                        : $lineQuery->where('account_id', $value);
+                });
+            },
+        ];
+    }
 
     public function owner(): BelongsTo
     {

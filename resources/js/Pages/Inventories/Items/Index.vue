@@ -75,6 +75,12 @@ const filterFields = computed(() => ([
     type: 'select',
     options: (props.filterOptions?.brands || []).map((o) => ({ id: o.id, name: o.name })),
   },
+  {
+    key: 'warehouse_id',
+    label: t('admin.warehouse.warehouse'),
+    type: 'select',
+    options: (props.filterOptions?.warehouses || []).map((o) => ({ id: o.id, name: o.name })),
+  },
   { key: 'purchase_price', label: t('item.purchase_price'), type: 'numberrange' },
   { key: 'sale_price', label: t('item.sale_price'), type: 'numberrange' },
   {

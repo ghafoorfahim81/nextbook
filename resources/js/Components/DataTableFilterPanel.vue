@@ -5,7 +5,7 @@ import { Button } from '@/Components/ui/button'
 import { Input } from '@/Components/ui/input'
 import { Label } from '@/Components/ui/label'
 import NextSelect from '@/Components/next/NextSelect.vue'
-
+import NextDate from '@/Components/next/NextDatePicker.vue'
 const { t } = useI18n()
 
 const props = defineProps({
@@ -88,14 +88,14 @@ function clear() {
 </script>
 
 <template>
-  <div class="space-y-4">
-    <div class="flex items-center justify-between gap-2">
+  <div class="flex max-h-[70vh] flex-col">
+    <div class="flex shrink-0 items-center justify-between gap-2 pb-3">
       <div class="text-sm font-medium">
         {{ title || t('datatable.filters') }}
       </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-3">
+    <div class="grid flex-1 grid-cols-1 gap-3 overflow-y-auto pr-1">
       <div
         v-for="f in normalizedFields"
         :key="f.key"
@@ -108,8 +108,8 @@ function clear() {
         <div class="col-span-8">
           <template v-if="f.type === 'daterange'">
             <div class="grid grid-cols-2 gap-2">
-              <Input v-model="local[`${f.key}_from`]" type="date" />
-              <Input v-model="local[`${f.key}_to`]" type="date" />
+                <NextDate v-model="local[`${f.key}_from`]" :current-date="true" />
+                <NextDate v-model="local[`${f.key}_to`]" :current-date="true" />
             </div>
           </template>
 
@@ -120,7 +120,7 @@ function clear() {
             </div>
           </template>
 
-          <template v-else-if="f.type === 'select' && f.options?.length">
+          <template v-else-if="f.type === 'select'">
             <NextSelect
               :modelValue="local[f.key]"
               @update:modelValue="(v) => (local[f.key] = v)"
@@ -148,7 +148,7 @@ function clear() {
       </div>
     </div>
 
-    <div class="flex justify-end gap-2 pt-1">
+    <div class="mt-1 flex shrink-0 justify-end gap-2 border-t pt-3">
       <Button variant="outline" type="button" @click="clear">
         {{ t('general.clear') }}
       </Button>

@@ -54,6 +54,8 @@ class JournalEntryController extends Controller
             'journalEntries' => JournalEntryResource::collection($journalEntries),
             'filterOptions' => [
                 'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'journalClasses' => JournalClass::orderBy('name')->get(['id', 'name']),
+                'ledgers' => Ledger::orderBy('name')->get(['id', 'name']),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
             ],
             'filters' => [
