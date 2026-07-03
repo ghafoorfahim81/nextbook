@@ -44,6 +44,18 @@ const filterFields = computed(() => ([
         type: 'select',
         options: (props.filterOptions?.currencies || []).map((c) => ({ id: c.id, name: c.code })),
     },
+    {
+        key: 'transaction.lines.journal_class_id',
+        label: t('sidebar.journal_entry.journal_class'),
+        type: 'select',
+        options: (props.filterOptions?.journalClasses || []).map((c) => ({ id: c.id, name: c.name })),
+    },
+    {
+        key: 'transaction.lines.ledger_id',
+        label: t('general.ledger'),
+        type: 'select',
+        options: (props.filterOptions?.ledgers || []).map((l) => ({ id: l.id, name: l.name })),
+    },
     { key: 'date', label: t('general.date'), type: 'daterange' },
     {
         key: 'created_by',

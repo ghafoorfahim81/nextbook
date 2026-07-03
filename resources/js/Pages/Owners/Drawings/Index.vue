@@ -73,6 +73,24 @@ const filterFields = computed(() => ([
     type: 'select',
     options: (props.filterOptions?.branches?.data ?? props.filterOptions?.branches ?? []).map((branch) => ({ id: branch.id, name: branch.name })),
   },
+  {
+    key: 'bank_account_id',
+    label: t('general.bank_account'),
+    type: 'select',
+    options: (props.filterOptions?.bankAccounts || []).map((a) => ({ id: a.id, name: a.name })),
+  },
+  {
+    key: 'drawing_account_id',
+    label: t('owner.drawing_account'),
+    type: 'select',
+    options: (props.filterOptions?.drawingAccounts || []).map((a) => ({ id: a.id, name: a.name })),
+  },
+  {
+    key: 'transaction.currency_id',
+    label: t('admin.currency.currency'),
+    type: 'select',
+    options: (props.filterOptions?.currencies || []).map((c) => ({ id: c.id, name: c.code })),
+  },
   { key: 'date', label: t('general.date'), type: 'daterange' },
   {
     key: 'created_by',

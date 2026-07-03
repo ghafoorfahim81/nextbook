@@ -65,6 +65,10 @@ class PurchaseController extends Controller
                     ['id' => 'cash', 'name' => 'Cash'],
                     ['id' => 'credit', 'name' => 'Credit'],
                 ],
+                'paymentStatuses' => collect(\App\Enums\PaymentStatus::cases())->map(fn ($status) => [
+                    'id' => $status->value,
+                    'name' => $status->getLabel(),
+                ])->values(),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
             ],
             'filters' => [

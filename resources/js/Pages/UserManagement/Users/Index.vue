@@ -8,9 +8,20 @@ import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3'
 const props = defineProps({
     users: Object,
+    filters: Object,
+    filterOptions: Object,
 });
 
 const { t } = useI18n();
+
+const filterFields = computed(() => ([
+    {
+        key: 'role_id',
+        label: t('user_mangements.roles'),
+        type: 'select',
+        options: (props.filterOptions?.roles || []).map((r) => ({ id: r.id, name: r.name })),
+    },
+]));
 const showDialog = ref(false);
 const selectedUserId = ref(null);
 
@@ -51,6 +62,8 @@ const showItem = (id) => {
             can="users"
             :items="users"
             :columns="columns"
+            :filters="filters"
+            :filterFields="filterFields"
             @delete="deleteItem"
             @edit="editItem"
             :title="t('user_mangements.users')"

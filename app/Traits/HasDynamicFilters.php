@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
+use App\Services\DateConversionService;
 use Carbon\Carbon;
 
 trait HasDynamicFilters
@@ -90,7 +91,7 @@ trait HasDynamicFilters
 
         // Date
         if ($this->isDateColumn($field)) {
-            $query->whereDate($field, $value);
+            $query->whereDate($field, $this->normalizeFilterDate($value));
             return;
         }
 
@@ -200,10 +201,30 @@ trait HasDynamicFilters
         return [$relation, $field];
     }
 
+    /**
+     * Normalize a filter date value to a Gregorian Y-m-d string.
+     *
+     * The frontend date picker emits Jalali dates (e.g. 1403-04-11) when the
+     * company calendar is Jalali, so any date the user passes must be converted
+     * to Gregorian before it is compared against the (Gregorian) stored values.
+     */
+    protected function normalizeFilterDate(mixed $value): mixed
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return $value;
+        }
+
+        try {
+            return app(DateConversionService::class)->toGregorian($value);
+        } catch (\Throwable $e) {
+            return $value;
+        }
+    }
+
     protected function applyDateComparison(Builder $query, string $fieldPath, string $operator, mixed $value): void
     {
         try {
-            $date = Carbon::parse($value);
+            $date = Carbon::parse($this->normalizeFilterDate($value));
         } catch (\Throwable $e) {
             return;
         }

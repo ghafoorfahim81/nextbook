@@ -68,6 +68,12 @@ const filterFields = computed(() => ([
         type: 'select',
         options: (props.filterOptions?.warehouses || []).map((w) => ({ id: w.id, name: w.name })),
     },
+    {
+        key: 'payment_status',
+        label: t('general.payment_status'),
+        type: 'select',
+        options: (props.filterOptions?.paymentStatuses || []).map((s) => ({ id: s.id, name: s.name })),
+    },
     { key: 'date', label: t('general.date'), type: 'daterange' },
     {
         key: 'created_by',

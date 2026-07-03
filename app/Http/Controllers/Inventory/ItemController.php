@@ -21,6 +21,7 @@ use App\Models\Administration\UnitMeasure;
 use App\Models\Administration\Category;
 use App\Models\Administration\Brand;
 use App\Models\Administration\Size;
+use App\Models\Administration\Warehouse;
 use App\Models\User;
 use App\Enums\StockSourceType;
 use App\Enums\StockMovementType;
@@ -146,6 +147,7 @@ class ItemController extends Controller
                 'categories' => Category::orderBy('name')->get(['id', 'name']),
                 'sizes' => Size::orderBy('name')->get(['id', 'name']),
                 'brands' => Brand::orderBy('name')->get(['id', 'name']),
+                'warehouses' => Warehouse::orderBy('name')->get(['id', 'name']),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
             ],
             'filters' => [

@@ -24,6 +24,7 @@ class UserController extends Controller
         $perPage = $request->input('perPage', recordsPerPage());
         $sortField = $request->input('sortField', 'created_at');
         $sortDirection = $request->input('sortDirection', 'desc');
+        $filters = (array) $request->input('filters', []);
 
         $users = User::with(['company', 'roles'])
             ->when($request->query('search'), function ($query, $search) {
@@ -32,12 +33,29 @@ class UserController extends Controller
                       ->orWhere('email', 'like', "%{$search}%");
                 });
             })
+            ->when($filters['role_id'] ?? null, function ($query, $roleId) {
+                $query->whereHas('roles', function ($q) use ($roleId) {
+                    is_array($roleId)
+                        ? $q->whereIn('roles.id', $roleId)
+                        : $q->where('roles.id', $roleId);
+                });
+            })
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
 
         return inertia('UserManagement/Users/Index', [
             'users' => UserResource::collection($users),
+            'filterOptions' => [
+                'roles' => \App\Models\Role::orderBy('name')->get(['id', 'name']),
+            ],
+            'filters' => [
+                'search' => $request->query('search'),
+                'perPage' => $perPage,
+                'sortField' => $sortField,
+                'sortDirection' => $sortDirection,
+                'filters' => $filters,
+            ],
         ]);
     }
 
