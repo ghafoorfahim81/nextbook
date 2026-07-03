@@ -602,6 +602,17 @@ const setConfirmSave = (key, value) => {
     form.confirmations[key] = value
 }
 
+const getTransactionPost = (key) => form.transaction?.[key] ?? true
+const allTransactionsPostImmediately = computed(() =>
+    transactionPostModules.every((module) => getTransactionPost(module.key))
+)
+const setAllTransactionsPostImmediately = (checked) => {
+    if (!form.transaction) form.transaction = {}
+    transactionPostModules.forEach((module) => {
+        form.transaction[module.key] = checked
+    })
+}
+
 const sharedFieldLabelKeys = computed(() => [
     ...generalFields.map((field) => field.label),
     ...itemColumns.map((col) => col.label),
@@ -1496,6 +1507,16 @@ watch(normalizedMenuSearch, (query) => {
                             </Button>
                         </CardHeader>
                         <CardContent class="space-y-4">
+                            <div class="flex items-center gap-3 rounded-lg border border-primary/40 bg-primary/5 px-4 py-3">
+                                <Checkbox
+                                    id="transaction-select-all"
+                                    :checked="allTransactionsPostImmediately"
+                                    @update:checked="setAllTransactionsPostImmediately"
+                                />
+                                <Label for="transaction-select-all" class="cursor-pointer font-medium">
+                                    {{ allTransactionsPostImmediately ? t('preferences.transaction.deselect_all') : t('preferences.transaction.select_all') }}
+                                </Label>
+                            </div>
                             <div
                                 v-for="module in transactionPostModules"
                                 :key="module.key"
@@ -1504,7 +1525,7 @@ watch(normalizedMenuSearch, (query) => {
                                 <div class="flex items-start gap-3">
                                     <Checkbox
                                         :id="`transaction-${module.key}`"
-                                        :checked="form.transaction?.[module.key] ?? true"
+                                        :checked="getTransactionPost(module.key)"
                                         @update:checked="(checked) => {
                                             if (!form.transaction) form.transaction = {}
                                             form.transaction[module.key] = checked

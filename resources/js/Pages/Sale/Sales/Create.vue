@@ -743,7 +743,7 @@ const transactionSummary = computed(() => {
         cashReceived = goodsTotal.value; // transaction total
     } else if (saleType === 'credit') {
         cashReceived = paid; // on loan = 0, default
-    } 
+    }
     else {
         cashReceived = 0;
     }
@@ -861,10 +861,10 @@ useFormGuard(form)
                 />
             </div>
             </div>
-            <div class="rounded-xl border bg-card shadow-sm border-violet-500">
+            <div class="rounded-md border bg-card shadow-sm border-violet-500">
                 <table class="w-full table-fixed min-w-[1200px] sale-table border-separate">
-                    <thead class=" " :class="form.sale_type === 'cash' ? 'bg-card sticky top-0 z-10' : ''">
-                        <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-violet-500">
+                    <thead class="bg-card sticky top-0 z-10">
+                        <tr class="rounded-xl text-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 min-w-5 text-center">#</th>
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
                             <th class="px-1 py-1 w-32" v-if="localColumns.batch">{{ t(spec_text) }}</th>
@@ -1071,7 +1071,7 @@ useFormGuard(form)
                         <span class="tabular-nums text-sm">{{ fmtMoney(totalTax) }}</span>
                     </div>
                     <div>
-                        <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">{{ t('general.bill_discount') }} (%)</div>
+                        <div class="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">{{ t('general.bill_discount') }} ({{ form.discount_type === 'percentage' ? '%' : form.selected_currency?.symbol }})</div>
                         <DiscountField
                             v-model="form.discount"
                             v-model:discount-type="form.discount_type"
@@ -1084,7 +1084,7 @@ useFormGuard(form)
                 <!-- Payment -->
                 <div class="rounded-xl border bg-card p-4 shadow-sm space-y-4">
                     <div class="text-sm font-semibold text-violet-500">{{ t('general.payment') }}</div>
-                    <div v-if="general_fields.type"> 
+                    <div v-if="general_fields.type">
                         <NextSelect
                             :options="salePurchaseTypes"
                             v-model="form.selected_sale_type"
@@ -1097,7 +1097,7 @@ useFormGuard(form)
                             :error="form.errors?.sale_type"
                         />
                     </div>
-                    <div v-if="form.sale_type === 'cash'"> 
+                    <div v-if="form.sale_type === 'cash'">
                         <NextSelect
                             :options="bankAccounts"
                             :floating-text="t('general.bank_account')"
@@ -1157,6 +1157,7 @@ useFormGuard(form)
 </template>
 
 <style scoped>
+
 .sale-table thead {
     border: 2px solid hsl(var(--border));
     border-radius: 8px;
@@ -1168,7 +1169,5 @@ useFormGuard(form)
     white-space: nowrap;
     overflow: hidden;
 }
-
-
 
 </style>

@@ -333,6 +333,8 @@
         "description": "Control whether each document posts accounting and stock entries immediately or is saved as a draft.",
         "post_immediately": "Post Immediately",
         "post_immediately_help": "Uncheck to save as Draft for review before posting",
+        "select_all": "Select all – Post Immediately",
+        "deselect_all": "Deselect all – Save as Draft",
         "modules": {
             "sale": "Sale",
             "purchase": "Purchase",
