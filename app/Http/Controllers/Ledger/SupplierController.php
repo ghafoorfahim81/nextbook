@@ -53,6 +53,8 @@ class SupplierController extends Controller
         $suppliers = Ledger::search($request->query('search'))
             ->where('type', $type) // Filter by type
             ->filter($filters)
+            ->with(['currency', 'branch'])
+            ->withStatementTotals()
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();

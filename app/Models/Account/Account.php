@@ -19,7 +19,9 @@ use App\Traits\HasUserAuditable;
 use App\Traits\HasUserTracking;
 use App\Models\Administration\Branch;
 use App\Traits\BranchSpecific;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Facades\DB;
 
 class Account extends Model
 {
@@ -94,17 +96,25 @@ class Account extends Model
         return Attribute::make(
             get: function () {
 
-                $totals = $this->transactionLines()
-                    ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
-                    ->whereIn('transactions.status', ['posted', 'reversed'])
-                    ->selectRaw('
-                        SUM(transaction_lines.debit * transactions.rate)  AS total_debit,
-                        SUM(transaction_lines.credit * transactions.rate) AS total_credit
-                    ')
-                    ->first();
+                // Prefer totals precomputed by scopeWithStatementTotals() so lists
+                // don't trigger one aggregate query per account.
+                if (array_key_exists('statement_total_debit', $this->attributes)
+                    && array_key_exists('statement_total_credit', $this->attributes)) {
+                    $totalDebit  = (float) $this->attributes['statement_total_debit'];
+                    $totalCredit = (float) $this->attributes['statement_total_credit'];
+                } else {
+                    $totals = $this->transactionLines()
+                        ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
+                        ->whereIn('transactions.status', ['posted', 'reversed'])
+                        ->selectRaw('
+                            SUM(transaction_lines.debit * transactions.rate)  AS total_debit,
+                            SUM(transaction_lines.credit * transactions.rate) AS total_credit
+                        ')
+                        ->first();
 
-                $totalDebit  = (float) ($totals->total_debit ?? 0);
-                $totalCredit = (float) ($totals->total_credit ?? 0);
+                    $totalDebit  = (float) ($totals->total_debit ?? 0);
+                    $totalCredit = (float) ($totals->total_credit ?? 0);
+                }
 
                 $netBalance = $totalDebit>0 ? $totalDebit - $totalCredit : $totalCredit - $totalDebit;
                 $balanceAmount = abs($netBalance);
@@ -140,6 +150,34 @@ class Account extends Model
                 ];
             }
         );
+    }
+
+    /**
+     * Precompute the statement totals used by the statement accessor as two
+     * correlated subqueries, so a whole list of accounts is resolved in a
+     * single SQL query instead of one aggregate query per account.
+     */
+    public function scopeWithStatementTotals(Builder $query): Builder
+    {
+        if (is_null($query->getQuery()->columns)) {
+            $query->select($query->qualifyColumn('*'));
+        }
+
+        $lineTotals = DB::table('transaction_lines')
+            ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
+            ->whereColumn('transaction_lines.account_id', 'accounts.id')
+            ->whereIn('transactions.status', ['posted', 'reversed'])
+            ->whereNull('transaction_lines.deleted_at');
+
+        return $query
+            ->selectSub(
+                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.debit * transactions.rate), 0)'),
+                'statement_total_debit'
+            )
+            ->selectSub(
+                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.credit * transactions.rate), 0)'),
+                'statement_total_credit'
+            );
     }
 
     public function isNormalBalance(float $netBalance): bool

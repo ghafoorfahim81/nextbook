@@ -136,6 +136,27 @@ class SaleController extends Controller
         return inertia('Sale/Sales/Create', [
             'saleNumber' => $saleNumber,
             'bankAccounts' => $bankAccounts,
+            'ledgers' => \App\Http\Resources\Ledger\LedgerOptionResource::collection(
+                Ledger::query()
+                    ->select([
+                        'id',
+                        'name',
+                        'code',
+                        'type',
+                        'email',
+                        'phone_no',
+                        'address',
+                        'currency_id',
+                        'is_active',
+                        'branch_id',
+                    ])
+                    ->withStatementTotals()
+                    ->where('is_active', true)
+                    ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")
+                    ->orderBy('created_at','desc')
+                    ->limit(200)
+                    ->get()
+            ),
         ]);
     }
 
@@ -468,6 +489,27 @@ class SaleController extends Controller
         return inertia('Sale/Sales/Edit', [
             'sale' => new SaleResource($sale),
             'bankAccounts' => $bankAccounts,
+            'ledgers' => \App\Http\Resources\Ledger\LedgerOptionResource::collection(
+                Ledger::query()
+                    ->select([
+                        'id',
+                        'name',
+                        'code',
+                        'type',
+                        'email',
+                        'phone_no',
+                        'address',
+                        'currency_id',
+                        'is_active',
+                        'branch_id',
+                    ])
+                    ->withStatementTotals()
+                    ->where('is_active', true)
+                    ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")
+                    ->orderBy('created_at','desc')
+                    ->limit(200)
+                    ->get()
+            ),
         ]);
     }
 
