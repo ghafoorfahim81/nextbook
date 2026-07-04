@@ -777,7 +777,7 @@ watch(normalizedMenuSearch, (query) => {
                     <Button @click="save" :disabled="form.processing" size="sm" class="bg-primary text-white hover:bg-primary/90" :class="form.processing ? 'bg-primary/90' : 'bg-primary'">
                         <Spinner v-if="form.processing" class="w-4 h-4 mr-2" />
                         <Save v-else class="w-4 h-4 mr-2" />
-                        {{ form.processing ? t('general.loading') : t('preferences.save') }}
+                        {{ form.processing ? t('general.saving') : t('preferences.save') }}
                     </Button>
                 </div>
             </div>

@@ -78,6 +78,27 @@ class ReceiptController extends Controller
                 'id' => $mode->value,
                 'name' => $mode->getLabel(),
             ])->values(),
+            'ledgers' =>  \App\Http\Resources\Ledger\LedgerOptionResource::collection(
+                    Ledger::query()
+                        ->select([
+                            'id',
+                            'name',
+                            'code',
+                            'type',
+                            'email',
+                            'phone_no',
+                            'address',
+                            'currency_id',
+                            'is_active',
+                            'branch_id',
+                        ])
+                        ->withStatementTotals()
+                        ->where('is_active', true)
+                        ->orderByRaw("CASE WHEN code = 'CASH-CUST' THEN 0 ELSE 1 END")
+                        ->orderBy('created_at','desc')
+                        ->limit(200)
+                        ->get()
+                )
         ]);
     }
 
@@ -352,7 +373,7 @@ class ReceiptController extends Controller
                     'voucher_number' => $validated['cheque_no'] ?? 'Receipt #' . $receipt->number,
                     'date' => $validated['date'],
                     'reference_type' => Receipt::class,
-                    'remark'    => $validated['narration'] ?? "Receipt #{$receipt->number} from {$ledger->name}",   
+                    'remark'    => $validated['narration'] ?? "Receipt #{$receipt->number} from {$ledger->name}",
                     'reference_id' => $receipt->id,
                     'status' => TransactionStatus::DRAFT->value,
                     'posting_payload' => [

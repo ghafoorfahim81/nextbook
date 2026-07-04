@@ -46,6 +46,8 @@ const props = defineProps({
     bankAccounts: {type: Object, required: true},
 
 })
+
+console.log(props.ledgers);
 const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
 // Single reactive copy of the sale preferences so the panel and form stay in sync live.
 const salePrefs = reactive(JSON.parse(JSON.stringify(user_preferences.value?.sale ?? {})))
@@ -83,7 +85,7 @@ const buildEmptyRow = () => ({
     tax: '',
 })
 
-const { fetchLazyProps } = useLazyProps(props, ['ledgers', 'accounts'])
+const { fetchLazyProps } = useLazyProps(props, [ 'accounts'])
 
 const form = useForm({
     number: props.saleNumber,
@@ -748,12 +750,15 @@ const transactionSummary = computed(() => {
         cashReceived = 0;
     }
     const oldBalance = toNum(form?.selected_ledger?.statement?.balance, 0)
+    console.log('this is old balance',oldBalance);
     const nature = form?.selected_ledger?.statement?.balance_nature // 'Dr' | 'Cr'
+    const balanceType = form?.selected_ledger?.statement?.balance_type // '-' | '+'
+    console.log('this is balance type',balanceType);
     const hasSelected_item = Array.isArray(form.items) && form.items.some(r => !!r.selected_item)
     const netAmount = goodsTotal.value - totalDiscount.value + totalTax.value
     const grandTotal = netAmount - paid;
     const balance = hasSelected_item
-        ? (nature === 'dr' ? (grandTotal + oldBalance) : (grandTotal - oldBalance))
+        ? (balanceType === '-' ? (grandTotal + oldBalance) : (grandTotal - oldBalance))
         : 0
     return {
         valueOfGoods: Number(goodsTotal.value.toFixed(decimalPlaces)),

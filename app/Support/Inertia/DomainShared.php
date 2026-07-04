@@ -29,7 +29,12 @@ final class DomainShared
                 CacheKey::forCompanyBranchLocale($request, 'accounts'),
                 $cacheDuration,
                 fn() => AccountResource::collection(
-                    Account::query()->orderBy('id')->limit(1000)->get()
+                    Account::query()
+                        ->with(['accountType', 'branch'])
+                        ->withStatementTotals()
+                        ->orderBy('id')
+                        ->limit(1000)
+                        ->get()
                 )
             )),
             'accountTypes' => Inertia::lazy(fn() => Cache::remember(

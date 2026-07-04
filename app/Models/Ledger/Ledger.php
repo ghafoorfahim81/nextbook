@@ -41,20 +41,28 @@ class Ledger extends Model
         return Attribute::make(
             get: function () {
 
-                // Calculate total debit and credit, multiplying each by its transaction's rate
-                $totals = TransactionLine::whereHas('transaction', function ($query) {
-                        $query->where('ledger_id', $this->id);
-                        //->where('status', 'posted');
-                    })
-                    ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
-                    ->selectRaw('
-                        SUM(transaction_lines.debit * transactions.rate) as total_debit,
-                        SUM(transaction_lines.credit * transactions.rate) as total_credit
-                    ')
-                    ->first();
+                // Prefer totals precomputed by scopeWithStatementTotals() so lists
+                // don't trigger one aggregate query per ledger.
+                if (array_key_exists('statement_total_debit', $this->attributes)
+                    && array_key_exists('statement_total_credit', $this->attributes)) {
+                    $totalDebit  = (float) $this->attributes['statement_total_debit'];
+                    $totalCredit = (float) $this->attributes['statement_total_credit'];
+                } else {
+                    // Calculate total debit and credit, multiplying each by its transaction's rate
+                    $totals = TransactionLine::whereHas('transaction', function ($query) {
+                            $query->where('ledger_id', $this->id);
+                            //->where('status', 'posted');
+                        })
+                        ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
+                        ->selectRaw('
+                            SUM(transaction_lines.debit * transactions.rate) as total_debit,
+                            SUM(transaction_lines.credit * transactions.rate) as total_credit
+                        ')
+                        ->first();
 
-                $totalDebit  = (float) ($totals->total_debit ?? 0);
-                $totalCredit = (float) ($totals->total_credit ?? 0);
+                    $totalDebit  = (float) ($totals->total_debit ?? 0);
+                    $totalCredit = (float) ($totals->total_credit ?? 0);
+                }
 
                 $netBalance = $totalDebit - $totalCredit;
 
@@ -62,7 +70,7 @@ class Ledger extends Model
                 $balanceNature = $netBalance >= 0 ? 'dr' : 'cr';
 
                 $natureFormat = balanceNatureFormat();
-
+                $locale = app()->getLocale();
                 $isSupplier = $this->type === 'supplier';
                 // Format balance based on user preference
                 if ($natureFormat === 'with_nature') {
@@ -86,7 +94,6 @@ class Ledger extends Model
                     'balance_nature' => $balanceNature,
                     'normal_balance_nature' => $normalNature,
                     'is_normal_balance' => $balanceNature === $normalNature,
-
                     'total_debit' => $totalDebit,
                     'total_credit' => $totalCredit,
                     'net_balance' => $netBalance,
@@ -98,7 +105,13 @@ class Ledger extends Model
                             ? "Customer owes you {$balanceAmount}"
                             : "You owe {$balanceAmount} to this customer"),
                     'account_type' => $this->type,
-
+                    'balance_type' => $isSupplier
+                    ? ($balanceNature === 'cr'
+                        ? '-'
+                        : '+')
+                    : ($balanceNature === 'dr'
+                        ? '-'
+                        : '+'),
                     'payable_amount' => $balanceNature === 'cr' ? $balanceAmount : 0,
                     'receivable_amount' => $balanceNature === 'dr' ? $balanceAmount : 0,
                 ];
@@ -155,6 +168,10 @@ class Ledger extends Model
 
     public function scopeWithStatementTotals(Builder $query): Builder
     {
+        if (is_null($query->getQuery()->columns)) {
+            $query->select($query->qualifyColumn('*'));
+        }
+
         $lineTotals = DB::table('transaction_lines')
             ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
             ->whereColumn('transaction_lines.ledger_id', 'ledgers.id')

@@ -29,7 +29,7 @@ if (!rpPrefs.visible_fields || typeof rpPrefs.visible_fields !== 'object') rpPre
 const rpFields = computed(() => rpPrefs.visible_fields)
 const showPreferencesPanel = ref(false)
 import { toast } from 'vue-sonner'
-useLazyProps(page.props, ['ledgers', 'accounts'])
+useLazyProps(page.props, ['accounts'])
 const billLoading = ref(false)
 const showBillDialog = ref(false)
 const billOptions = ref([])
