@@ -317,8 +317,6 @@ watch(() => form.selected_sale_type, (newType) => {
     if (newType?.id === 'credit') showPaymentDialog.value = true;
 });
 
-let disabled = false;
-
 const createLoading = computed(() => form.processing && submitAction.value === 'update');
 const createAndNewLoading = computed(() => false);
 const saveAndPrintLoading = computed(() => form.processing && submitAction.value === 'save_and_print');
@@ -377,12 +375,17 @@ const isRowEnabled = (index) => {
     return true;
 };
 
-const buildRowKey = (row) => [
-    (row.item_id || row.selected_item?.id || '').toString(),
-    (row.batch || '').toString().trim().toLowerCase(),
-    (row.expire_date || '').toString().trim(),
-    (row?.selected_measure?.id || '').toString(),
-].join('|');
+const buildRowKey = (row) => {
+    const measureId = row?.selected_measure?.id
+        || (typeof row?.selected_measure === 'object' ? (row?.selected_measure?.name || row?.selected_measure?.unit) : row?.selected_measure)
+        || '';
+    return [
+        (row.item_id || row.selected_item?.id || '').toString(),
+        (row.batch || '').toString().trim().toLowerCase(),
+        (row.expire_date || '').toString().trim(),
+        measureId.toString(),
+    ].join('|');
+};
 
 const isDuplicateRow = (index) => {
     const row = form.items[index];
@@ -399,16 +402,34 @@ const isDuplicateRow = (index) => {
 
 const resetRow = (index) => {
     form.items[index] = buildEmptyRow();
-    disabled = false;
 };
+
+const duplicateToast = ref(null);
+
+const hasDuplicateRows = computed(() => {
+    const seen = new Set();
+    for (const row of form.items) {
+        if (!row?.selected_item || !row?.selected_measure) continue;
+        const key = buildRowKey(row);
+        if (seen.has(key)) return true;
+        seen.add(key);
+    }
+    return false;
+});
+
+watch(hasDuplicateRows, (hasDuplicates) => {
+    if (!hasDuplicates && duplicateToast.value) {
+        duplicateToast.value.dismiss();
+        duplicateToast.value = null;
+    }
+});
 
 const notifyIfDuplicate = (index) => {
     if (isDuplicateRow(index)) {
         const item = form.items[index];
         const batchText = item.batch ? `Batch: ${item.batch}` : 'No batch';
         const expiryText = item.expire_date ? `Expiry: ${item.expire_date}` : 'No expiry';
-        disabled = true;
-        toast({
+        duplicateToast.value = toast({
             title: 'Duplicate item detected',
             description: `Same item with ${batchText} and ${expiryText} already exists.`,
             variant: 'destructive',
@@ -419,8 +440,6 @@ const notifyIfDuplicate = (index) => {
                 onClick: () => resetRow(index),
             }, { default: () => 'Unselect' }),
         });
-    } else {
-        disabled = false;
     }
 };
 
@@ -825,6 +844,7 @@ useFormGuard(form)
                                     :error="form.errors?.[`item_list.${index}.item_id`]"
                                     :show-arrow="false"
                                     :searchable="true"
+                                    :has-add-button="false"
                                     resource-type="items-list"
                                     :search-fields="['name', 'code', 'generic_name', 'packing', 'barcode', 'fast_search']"
                                     value-key="id"
@@ -1059,7 +1079,7 @@ useFormGuard(form)
                 :save-and-print-loading="saveAndPrintLoading"
                 :show-create-and-new="false"
                 :show-save-and-print="true"
-                :disabled="disabled"
+                :disabled="hasDuplicateRows"
                 @save-and-print="handleSubmitAction('save_and_print')"
                 @cancel="() => $inertia.visit(route('sales.index'))"
             />

@@ -84,6 +84,7 @@ import {
     Tag,
     Trash2,
     History,
+    Rocket,
 } from 'lucide-vue-next'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -1066,6 +1067,12 @@ function logout() {
                                     <DropdownMenuItem>
                                         <Sparkles class="text-primary hover:text-white" />
                                         {{ t('layout.upgrade_to_pro') }}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem as-child>
+                                        <Link :href="route('whats-new')" class="flex w-full items-center">
+                                            <Rocket class="text-primary hover:text-white" />
+                                            {{ t('layout.whats_new') }}
+                                        </Link>
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />

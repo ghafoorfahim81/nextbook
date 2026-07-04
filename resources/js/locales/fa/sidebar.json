@@ -45,14 +45,15 @@
     "fast_opening": "افتتاحیه سریع",
     "barcode_print": "چاپ بارکد",
     "item_transfer": "انتقال جنس",
-    "pricing": "بررسی قیمت‌ها"
+    "pricing": "بررسی قیمت‌ها",
+    "landed_costs": "مصارف اجناس"
   },
   "account": {
     "chart_of_account": "چارت حساب",
     "account_type": "نوع حساب"
   },
   "journal_entry": {
-      "journal_entry": "ژورنال",
+    "journal_entry": "ژورنال",
     "journal_entries": "ژورنال ها",
     "journal_class": "کلاس ژورنال",
     "journal_classes": "کلاس های ژورنال"
@@ -77,7 +78,7 @@
   "owners": {
     "owners": "مالکان",
     "drawing": "برداشت"
-    },
+  },
   "user_management": {
     "user": "کاربر",
     "role": "نقش"

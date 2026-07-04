@@ -141,7 +141,6 @@ const resetFormForCreate = ({ number = props.purchaseNumber } = {}) => {
     form.transaction_total = 0
     form.discount_total = 0
     form.items = Array.from({ length: 6 }, buildEmptyRow)
-    disabled = false
     applyCreateDefaults({ number })
     fetchLazyProps()
     loadItemOptions(form.warehouse_id)
@@ -248,7 +247,6 @@ watch(() => form.selected_purchase_type, (newType) => {
     }
 });
 
-let disabled = (false);
 const submitAction = ref(null);
 
 const handleSubmitAction = (createAndNew = false) => {
@@ -503,7 +501,7 @@ const buildRowKey = (r) => {
         (r.item_id || r.selected_item?.id || '').toString(),
         (r.batch || '').toString().trim().toLowerCase(),
         (r.expire_date || '').toString().trim(),
-        (r?.selected_measure?.id || r?.selected_measure?.id || '').toString()
+        measureId.toString()
     ].join('|')
 }
 const isDuplicateRow = (index) => {
@@ -532,16 +530,34 @@ const resetRow = (index) => {
     r.quantity = ''
     r.unit_price = ''
     r.base_unit_price = ''
-    disabled =false;
 }
+
+const duplicateToast = ref(null)
+
+const hasDuplicateRows = computed(() => {
+    const seen = new Set()
+    for (const r of form.items) {
+        if (!r?.selected_item || !r?.selected_measure) continue
+        const key = buildRowKey(r)
+        if (seen.has(key)) return true
+        seen.add(key)
+    }
+    return false
+})
+
+watch(hasDuplicateRows, (hasDuplicates) => {
+    if (!hasDuplicates && duplicateToast.value) {
+        duplicateToast.value.dismiss()
+        duplicateToast.value = null
+    }
+})
 
 const notifyIfDuplicate = (index) => {
     if (isDuplicateRow(index)) {
         const item = form.items[index]
         const batchText = item.batch ? `Batch: ${item.batch}` : 'No batch'
         const expiryText = item.expire_date ? `Expiry: ${item.expire_date}` : 'No expiry'
-        disabled =true;
-        toast({
+        duplicateToast.value = toast({
             title: 'Duplicate item detected',
             description: `Same item with ${batchText} and ${expiryText} already exists.`,
             variant: 'destructive',
@@ -1037,7 +1053,7 @@ useFormGuard(form)
                 :creating-label="t('general.creating', { name: t('purchase.purchase') })"
                 :create-loading="createLoading"
                 :create-and-new-loading="createAndNewLoading"
-                :disabled="disabled"
+                :disabled="hasDuplicateRows"
                 @create-and-new="handleSubmitAction(true)"
                 @cancel="() => $inertia.visit(route('purchases.index'))"
             />
