@@ -559,6 +559,7 @@ const navMain = computed(() => [
         icon: ShoppingCart,
         items: [
             { title: t('sidebar.sale.sale'), url: '/sales', permission: 'sales.view_any' },
+            { title: t('sidebar.sale.sale_order'), url: '/sale-orders', permission: 'sale_orders.view_any' },
             { title: t('sidebar.sale.sale_return'), url: '/sale-returns', permission: 'sale_returns.view_any' },
         ],
     },

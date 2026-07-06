@@ -23,6 +23,7 @@ import { Trash2 } from 'lucide-vue-next';
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { useLazyProps } from '@/composables/useLazyProps'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
+import SaleOrderPickerDialog from '@/Components/next/SaleOrderPickerDialog.vue'
 const { t } = useI18n();
 const showFilter = () => {
     showFilter.value = true;
@@ -44,6 +45,7 @@ const props = defineProps({
     items: {type: Object, required: false, default: () => ({ data: [] })},
     user_preferences: {type: Object, required: true},
     bankAccounts: {type: Object, required: true},
+    saleOrderId: {type: String, default: null},
 
 })
 
@@ -113,6 +115,7 @@ const form = useForm({
     status: '',
     warehouse_id: '',
     selected_warehouse: '',
+    sale_order_id: '',
     item_list:[],
     items: Array.from({ length: 6 }, buildEmptyRow),
     attachments: [],
@@ -311,6 +314,89 @@ const handleResetPayment = () => {
         note: '',
     }
 }
+// Sales Order conversion: selecting a customer offers that customer's posted,
+// not-yet-completed sale orders for autofill via a picker dialog.
+const pickerOpen = ref(false)
+const eligibleSaleOrders = ref([])
+const skipEligibilityCheck = ref(false)
+
+const loadEligibleSaleOrders = async (customerId) => {
+    if (!customerId) return
+    try {
+        const response = await axios.get(route('sale-orders.eligible'), { params: { customer_id: customerId } })
+        eligibleSaleOrders.value = response.data?.sale_orders || []
+        if (eligibleSaleOrders.value.length > 0) {
+            pickerOpen.value = true
+        }
+    } catch (error) {
+        console.error('Failed to load eligible sale orders', error)
+    }
+}
+
+const applySaleOrderToForm = (saleOrderId, payload) => {
+    const { sale_order: header, items } = payload
+
+    skipEligibilityCheck.value = true
+    form.sale_order_id = saleOrderId
+    form.customer_id = header.customer_id
+    form.selected_ledger = props.ledgers?.data?.find((ledger) => ledger.id === header.customer_id)
+        || { id: header.customer_id, name: header.customer_name }
+
+    if (header.currency_id) {
+        const currency = props.currencies?.data?.find((c) => c.id === header.currency_id)
+        if (currency) {
+            form.selected_currency = currency
+            form.currency_id = currency.id
+        }
+    }
+    if (header.rate) form.rate = header.rate
+    if (header.warehouse_id) {
+        const warehouse = props.warehouses?.data?.find((w) => w.id === header.warehouse_id)
+        if (warehouse) {
+            form.selected_warehouse = warehouse
+            form.warehouse_id = warehouse.id
+        }
+    }
+    form.discount = header.discount || ''
+    form.discount_type = header.discount_type || 'percentage'
+    form.description = header.note || ''
+
+    form.items = items.map((item) => ({
+        item_id: item.item_id,
+        selected_item: { id: item.item_id, name: item.item_name },
+        quantity: item.quantity,
+        unit_measure_id: item.unit_measure_id,
+        selected_measure: { id: item.unit_measure_id, name: item.unit_measure_name, unit: 1 },
+        available_measures: [],
+        batch: item.batch || '',
+        selected_batch: null,
+        expire_date: item.expire_date || '',
+        unit_price: item.unit_price,
+        base_unit_price: item.unit_price,
+        on_hand: '',
+        reserved_out: '',
+        reserved_in: '',
+        available: '',
+        item_discount: item.discount || '',
+        free: item.free || '',
+        tax: '',
+    }))
+
+    if (form.items.length) addRow()
+
+    setTimeout(() => { skipEligibilityCheck.value = false }, 0)
+}
+
+const handleSaleOrderPicked = async (saleOrderId) => {
+    pickerOpen.value = false
+    try {
+        const response = await axios.get(route('sale-orders.for-conversion', saleOrderId))
+        applySaleOrderToForm(saleOrderId, response.data)
+    } catch (error) {
+        console.error('Failed to load sale order for conversion', error)
+    }
+}
+
 const handleSelectChange = (field, value) => {
     if(field === 'warehouse_id') {
         form.items = Array.from({ length: 6 }, buildEmptyRow);
@@ -324,6 +410,10 @@ const handleSelectChange = (field, value) => {
         }
     }
     form[field] = value.id;
+
+    if (field === 'customer_id' && !skipEligibilityCheck.value) {
+        loadEligibleSaleOrders(value.id)
+    }
 };
 
 
@@ -471,6 +561,10 @@ onMounted(() => {
     // Auto-generate bill number: latest + 1
     ;(async () => {
     })()
+
+    if (props.saleOrderId) {
+        handleSaleOrderPicked(props.saleOrderId)
+    }
 })
 onUnmounted(() => {
     if (sidebar) {
@@ -827,6 +921,12 @@ useFormGuard(form)
             pref-group="sale"
             :prefs="salePrefs"
             :title="t('preferences.tabs.sale')"
+        />
+        <SaleOrderPickerDialog
+            :open="pickerOpen"
+            :sale-orders="eligibleSaleOrders"
+            @update:open="(value) => pickerOpen = value"
+            @select="handleSaleOrderPicked"
         />
         <form @submit.prevent="handleSubmitAction('create')">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative ">

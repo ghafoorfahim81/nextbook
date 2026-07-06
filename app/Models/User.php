@@ -250,6 +250,7 @@ class User extends Authenticatable
         ],
         'transaction' => [
             'sale_post_immediately' => true,
+            'sale_order_post_immediately' => true,
             'purchase_post_immediately' => true,
             'expense_post_immediately' => true,
             'journal_entry_post_immediately' => true,

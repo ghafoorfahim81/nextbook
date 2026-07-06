@@ -9,6 +9,8 @@ use App\Http\Resources\Sale\SaleListResource;
 use App\Http\Resources\Sale\SaleResource;
 use App\Models\Sale\Sale;
 use App\Models\Sale\SaleItem;
+use App\Models\Sale\SaleOrder;
+use App\Enums\SaleOrderStatus;
 use App\Services\BillAllocationService;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
@@ -136,6 +138,7 @@ class SaleController extends Controller
         return inertia('Sale/Sales/Create', [
             'saleNumber' => $saleNumber,
             'bankAccounts' => $bankAccounts,
+            'saleOrderId' => $request->query('sale_order_id'),
             'ledgers' => \App\Http\Resources\Ledger\LedgerOptionResource::collection(
                 Ledger::query()
                     ->select([
@@ -177,6 +180,18 @@ class SaleController extends Controller
             $postImmediately = (bool) user_preference('transaction.sale_post_immediately', true);
             $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
             $validated['status'] = $documentStatus;
+
+            if (!empty($validated['sale_order_id'])) {
+                $saleOrder = SaleOrder::where('id', $validated['sale_order_id'])->lockForUpdate()->first();
+
+                abort_unless(
+                    $saleOrder
+                        && $saleOrder->status === SaleOrderStatus::POSTED->value
+                        && $saleOrder->customer_id === $validated['customer_id'],
+                    422,
+                    'The selected sale order is no longer available for conversion.'
+                );
+            }
 
             $sale = Sale::create($validated);
 
@@ -412,6 +427,10 @@ class SaleController extends Controller
                 ],
             );
 
+            if ($documentStatus === TransactionStatus::POSTED->value) {
+                $this->markSaleOrderCompleted($validated['sale_order_id'] ?? null);
+            }
+
             return $sale;
         });
 
@@ -441,6 +460,7 @@ class SaleController extends Controller
             'items.item',
             'items.unitMeasure',
             'customer',
+            'saleOrder:id,number',
             'transaction.currency',
             'transaction.originalTransaction',
             'transaction.reversalTransaction',
@@ -1282,6 +1302,8 @@ class SaleController extends Controller
                     'status' => TransactionStatus::POSTED->value,
                     'updated_by' => Auth::id(),
                 ]);
+
+                $this->markSaleOrderCompleted($sale->sale_order_id);
             });
         } catch (ValidationException $e) {
             // Transaction rolled back, so the sale stays a draft and stock is untouched.
@@ -1289,6 +1311,22 @@ class SaleController extends Controller
         }
 
         return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.sale')]));
+    }
+
+    /**
+     * When a Sale created from a Sales Order gets posted, the order is fully consumed
+     * (whole-order conversion only) so it flips to Completed to prevent reuse.
+     */
+    private function markSaleOrderCompleted(?string $saleOrderId): void
+    {
+        if (!$saleOrderId) {
+            return;
+        }
+
+        SaleOrder::where('id', $saleOrderId)->update([
+            'status' => SaleOrderStatus::COMPLETED->value,
+            'updated_by' => Auth::id(),
+        ]);
     }
 
     public function reverse(Request $request, Sale $sale, TransactionService $transactionService)

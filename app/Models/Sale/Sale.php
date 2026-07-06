@@ -32,6 +32,7 @@ class Sale extends Model
     protected $fillable = [
         'number',
         'customer_id',
+        'sale_order_id',
         'date',
         'discount',
         'discount_type',
@@ -53,6 +54,7 @@ class Sale extends Model
     {
         return [
             'customer_id' => 'string',
+            'sale_order_id' => 'string',
             'date' => 'date',
             'discount' => 'float',
             'created_by' => 'string',
@@ -106,6 +108,11 @@ class Sale extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Ledger\Ledger::class);
+    }
+
+    public function saleOrder(): BelongsTo
+    {
+        return $this->belongsTo(SaleOrder::class);
     }
 
     public function transaction(): HasOne

@@ -52,7 +52,8 @@
     "edit_sale": "خرڅ سمول",
     "sale_created_successfully": "خرڅ په بریالیتوب سره جوړ شو",
     "sale_updated_successfully": "خرڅ په بریالیتوب سره تازه شو",
-    "sale_return": "د خرڅ ستنول"
+    "sale_return": "د خرڅ ستنول",
+    "sale_order": "د خرڅ امر"
   },
   "ledger": {
     "customer": "پېرېدونکی",

@@ -108,5 +108,11 @@ return [
         'duplicate_order' => 'تکراري امر',
         'other' => 'نور',
     ],
+    'sale_order_status' => [
+        'draft' => 'مسوده',
+        'posted' => 'ثبت شوی',
+        'completed' => 'بشپړ شوی',
+        'cancelled' => 'لغوه شوی',
+    ],
 ];
 

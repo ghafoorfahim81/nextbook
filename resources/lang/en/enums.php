@@ -147,4 +147,10 @@ return [
         'duplicate_order' => 'Duplicate Order',
         'other' => 'Other',
     ],
+    'sale_order_status' => [
+        'draft' => 'Draft',
+        'posted' => 'Posted',
+        'completed' => 'Completed',
+        'cancelled' => 'Cancelled',
+    ],
 ];
