@@ -1,0 +1,23 @@
+{
+    "sale_return": "Sale Return",
+    "sale_returns": "Sale Returns",
+    "sale_return_details": "Sale Return Details",
+    "create_return": "Create Return",
+    "select_sale": "Select Sale",
+    "search_sale_placeholder": "Search by sale number or customer",
+    "returnable_items": "Returnable Items",
+    "original_quantity": "Original Qty",
+    "returned_quantity": "Already Returned",
+    "remaining_quantity": "Remaining",
+    "quantity_to_return": "Return Qty",
+    "total_credit_to_customer": "Total Credit to Customer",
+    "reason": "Reason",
+    "post_sale_return": "Post Sale Return",
+    "reverse_sale_return": "Reverse Sale Return",
+    "post_sale_return_description": "This will write the accounting and stock entries. Posted documents cannot be edited or deleted.",
+    "reverse_sale_return_description": "This creates a counter transaction and counter stock movement, then marks this sale return as reversed.",
+    "no_item_warning": "No Item",
+    "no_item_warning_description": "Please select at least one item with a return quantity greater than zero",
+    "linked_sale": "Sale",
+    "no_sale_selected": "Select a posted sale to load its returnable items"
+}

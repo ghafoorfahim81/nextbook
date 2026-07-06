@@ -35,6 +35,7 @@ use App\Models\Purchase\PurchaseItem;
 use App\Models\Receipt\Receipt;
 use App\Models\Sale\Sale;
 use App\Models\Sale\SaleItem;
+use App\Models\Sale\SaleReturn;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
 use App\Models\User;
@@ -290,6 +291,13 @@ class DeletedRecordService
                 'title' => fn (Model $record) => $record->number ?: $record->description ?: $record->id,
                 'restore' => fn (Model $record) => $this->restoreTransactionRecord($record, relations: ['items', 'stockOuts']),
                 'force_delete' => fn (Model $record) => $this->forceDeleteTransactionRecord($record, relations: ['items', 'stockOuts']),
+            ],
+            'sale_returns' => [
+                'label' => 'Sale Returns',
+                'model' => SaleReturn::class,
+                'title' => fn (Model $record) => $record->number ?: $record->description ?: $record->id,
+                'restore' => fn (Model $record) => $this->restoreTransactionRecord($record, relations: ['items']),
+                'force_delete' => fn (Model $record) => $this->forceDeleteTransactionRecord($record, relations: ['items']),
             ],
             'receipts' => [
                 'label' => 'Receipts',

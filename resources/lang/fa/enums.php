@@ -139,5 +139,14 @@ return [
         'voided' => 'باطل شده',
         'cancelled' => 'لغو شده',
     ],
+    'sale_return_reason' => [
+        'damaged' => 'خراب شده',
+        'wrong_item' => 'جنس اشتباه',
+        'defective' => 'معیوب',
+        'expired' => 'تاریخ گذشته',
+        'customer_changed_mind' => 'انصراف مشتری',
+        'duplicate_order' => 'سفارش تکراری',
+        'other' => 'سایر',
+    ],
 ];
 

@@ -27,6 +27,7 @@ return [
         'receipt' => 'Receipt',
         'role' => 'Role',
         'sale' => 'Sale',
+        'sale_return' => 'د خرڅلاو بیرته راګرځول',
         'size' => 'Size',
         'warehouse' => 'Warehouse',
         'supplier' => 'Supplier',

@@ -28,6 +28,7 @@ use App\Models\Purchase\Purchase;
 use App\Models\Receipt\Receipt;
 use App\Models\Role;
 use App\Models\Sale\Sale;
+use App\Models\Sale\SaleReturn;
 use App\Models\User;
 use App\Policies\AccountPolicy;
 use App\Policies\AccountTransferPolicy;
@@ -52,6 +53,7 @@ use App\Policies\PurchasePolicy;
 use App\Policies\ReceiptPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SalePolicy;
+use App\Policies\SaleReturnPolicy;
 use App\Policies\SizePolicy;
 use App\Policies\WarehousePolicy;
 use App\Policies\UnitMeasurePolicy;
@@ -98,6 +100,7 @@ class AuthServiceProvider extends ServiceProvider
         // Purchases & Sales
         Purchase::class => PurchasePolicy::class,
         Sale::class => SalePolicy::class,
+        SaleReturn::class => SaleReturnPolicy::class,
 
         // Receipts & Payments & Transfers
         Receipt::class => ReceiptPolicy::class,

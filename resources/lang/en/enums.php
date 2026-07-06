@@ -138,4 +138,13 @@ return [
         'voided' => 'Voided',
         'cancelled' => 'Cancelled',
     ],
+    'sale_return_reason' => [
+        'damaged' => 'Damaged',
+        'wrong_item' => 'Wrong Item',
+        'defective' => 'Defective',
+        'expired' => 'Expired',
+        'customer_changed_mind' => 'Customer Changed Mind',
+        'duplicate_order' => 'Duplicate Order',
+        'other' => 'Other',
+    ],
 ];

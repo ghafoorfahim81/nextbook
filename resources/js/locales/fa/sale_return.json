@@ -1,0 +1,23 @@
+{
+    "sale_return": "برگشت فروش",
+    "sale_returns": "برگشت‌های فروش",
+    "sale_return_details": "جزئیات برگشت فروش",
+    "create_return": "ایجاد برگشت",
+    "select_sale": "انتخاب فروش",
+    "search_sale_placeholder": "جستجو بر اساس شماره فروش یا مشتری",
+    "returnable_items": "اجناس قابل برگشت",
+    "original_quantity": "تعداد اصلی",
+    "returned_quantity": "قبلا برگشت شده",
+    "remaining_quantity": "باقیمانده",
+    "quantity_to_return": "تعداد برگشتی",
+    "total_credit_to_customer": "مجموع اعتبار به مشتری",
+    "reason": "دلیل",
+    "post_sale_return": "ثبت برگشت فروش",
+    "reverse_sale_return": "برگشت دادن برگشت فروش",
+    "post_sale_return_description": "این عمل ورودی‌های حسابداری و موجودی را ثبت می‌کند. اسناد ثبت شده قابل ویرایش یا حذف نیستند.",
+    "reverse_sale_return_description": "این عمل تراکنش برگشتی را ایجاد می‌کند و این برگشت فروش را به حالت برگشت شده تغییر می‌دهد.",
+    "no_item_warning": "بدون جنس",
+    "no_item_warning_description": "لطفا حداقل یک جنس با تعداد برگشتی بیشتر از صفر انتخاب کنید",
+    "linked_sale": "فروش",
+    "no_sale_selected": "یک فروش ثبت شده را انتخاب کنید تا اجناس قابل برگشت آن بارگذاری شود"
+}
