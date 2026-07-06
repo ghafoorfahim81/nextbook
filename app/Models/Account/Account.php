@@ -1182,6 +1182,28 @@ class Account extends Model
                 'is_main' => true,
             ],
 
+            // STOCK ADJUSTMENT OFFSETS
+            [
+                'name' => 'Inventory Shrinkage & Wastage',
+                'local_name' => 'ضایعات و کسری انبار',
+                'number' => '9040',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
+                'account_type_slug' => 'expense',
+                'slug' => 'inventory-shrinkage-and-wastage',
+                'remark' => 'Real economic losses from damage, expiry, theft, loss, wastage',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Inventory Adjustments',
+                'local_name' => 'تعدیلات موجودی',
+                'number' => '9050',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
+                'account_type_slug' => 'expense',
+                'slug' => 'inventory-adjustments',
+                'remark' => 'Neutral record corrections from counts, found stock, surplus',
+                'is_main' => true,
+            ],
+
             // MISC
             [
                 'name' => 'Exchange Gain or Loss',

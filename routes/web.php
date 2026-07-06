@@ -148,6 +148,15 @@ Route::middleware([
         ->name('items.force-delete')
         ->withTrashed();
     Route::resource('/landed-costs', \App\Http\Controllers\Inventory\LandedCostController::class);
+    Route::get('/stock-adjustments/export', [\App\Http\Controllers\Inventory\StockAdjustmentController::class, 'export'])->name('stock-adjustments.export');
+    Route::resource('/stock-adjustments', \App\Http\Controllers\Inventory\StockAdjustmentController::class)
+        ->parameters(['stock-adjustments' => 'stockAdjustment']);
+    Route::post('/stock-adjustments/{stockAdjustment}/post', [\App\Http\Controllers\Inventory\StockAdjustmentController::class, 'post'])->name('stock-adjustments.post');
+    Route::post('/stock-adjustments/{stockAdjustment}/reverse', [\App\Http\Controllers\Inventory\StockAdjustmentController::class, 'reverse'])->name('stock-adjustments.reverse');
+    Route::patch('/stock-adjustments/{stockAdjustment}/restore', [\App\Http\Controllers\Inventory\StockAdjustmentController::class, 'restore'])->name('stock-adjustments.restore')->withTrashed();
+    Route::delete('/stock-adjustments/{stockAdjustment}/force-delete', [\App\Http\Controllers\Inventory\StockAdjustmentController::class, 'forceDelete'])
+        ->name('stock-adjustments.force-delete')
+        ->withTrashed();
     Route::resource('/ledgers', \App\Http\Controllers\Ledger\LedgerController::class);
     Route::patch('/ledgers/{ledger}/restore', [\App\Http\Controllers\Ledger\LedgerController::class, 'restore'])->name('ledgers.restore')->withTrashed();
     Route::delete('/ledgers/{ledger}/force-delete', [\App\Http\Controllers\Ledger\LedgerController::class, 'forceDelete'])

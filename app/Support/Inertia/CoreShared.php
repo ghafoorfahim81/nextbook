@@ -58,7 +58,10 @@ final class CoreShared
             ? Cache::remember(
                 CacheKey::forUser($request, 'preferences'),
                 $cacheDuration,
-                fn() => $user->preferences
+                // Merge with defaults so newly introduced preference keys are
+                // always present for the frontend, even for users whose stored
+                // preferences predate them.
+                fn() => $user->getAllPreferences()
             )
             : null;
         // $recordsPerPage = $userPreferences['appearance']['records_per_page'] ?? 10;

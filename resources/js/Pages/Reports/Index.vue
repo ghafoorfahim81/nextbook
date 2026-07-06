@@ -26,6 +26,7 @@ import {
   LayoutList,
   Layers,
   Banknote,
+  SlidersHorizontal,
 } from 'lucide-vue-next'
 import AppLayout from '@/Layouts/Layout.vue'
 import { Button } from '@/Components/ui/button'
@@ -74,6 +75,7 @@ function normalizeFilters(filters) {
     currency_id: filters.currency_id || '',
     warehouse_id: filters.warehouse_id || '',
     type: filters.type || '',
+    reason: filters.reason || '',
     category_id: filters.category_id || '',
     expense_account_id: filters.expense_account_id || '',
     view_type: filters.view_type || 'general',
@@ -373,7 +375,9 @@ const reportDefinitions = computed(() => ({
     group: 'inventory',
     icon: ArrowLeftRight,
     summary: [
-      { key: 'total_quantity', label: t('report.summary.total_quantity'), type: 'quantity' },
+      { key: 'total_quantity', label: t('report.summary.total_movement'), type: 'quantity' },
+      { key: 'total_in', label: t('report.summary.total_in'), type: 'quantity' },
+      { key: 'total_out', label: t('report.summary.total_out'), type: 'quantity' },
     ],
     columns: [
       { key: 'date', label: t('report.columns.date') },
@@ -387,6 +391,34 @@ const reportDefinitions = computed(() => ({
       { key: 'batch', label: t('report.columns.batch') },
       { key: 'expire_date', label: t('report.columns.expire_date') },
       { key: 'number', label: t('report.columns.reference_number') },
+    ],
+  },
+  stock_adjustment_report: {
+    label: t('report.reports.stock_adjustment_report.label'),
+    description: t('report.reports.stock_adjustment_report.description'),
+    filters: ['warehouse_id', 'item_id', 'reason'],
+    group: 'inventory',
+    icon: SlidersHorizontal,
+    summary: [
+      { key: 'total_quantity', label: t('report.summary.total_quantity'), type: 'quantity' },
+      { key: 'total_in', label: t('report.summary.total_in'), type: 'quantity' },
+      { key: 'total_out', label: t('report.summary.total_out'), type: 'quantity' },
+      { key: 'total_cost', label: t('report.summary.total_cost'), type: 'money' },
+    ],
+    columns: [
+      { key: 'date', label: t('report.columns.date') },
+      { key: 'reference', label: t('report.columns.reference') },
+      { key: 'item', label: t('report.columns.item') },
+      { key: 'warehouse', label: t('report.columns.warehouse') },
+      { key: 'type', label: t('report.columns.type') },
+      { key: 'reason', label: t('report.columns.reason') },
+      { key: 'quantity', label: t('report.columns.quantity'), type: 'quantity', align: 'right' },
+      { key: 'unit_measure', label: t('report.columns.unit_measure') },
+      { key: 'unit_cost', label: t('report.columns.unit_cost'), type: 'money', align: 'right' },
+      { key: 'total_cost', label: t('report.columns.total_cost'), type: 'money', align: 'right' },
+      { key: 'batch', label: t('report.columns.batch') },
+      { key: 'expire_date', label: t('report.columns.expire_date') },
+      { key: 'status', label: t('report.columns.status') },
     ],
   },
   low_stock: {
@@ -738,6 +770,7 @@ function resetFilters() {
     currency_id: '',
     warehouse_id: '',
     type: '',
+    reason: '',
     category_id: '',
     expense_account_id: '',
     view_type: localFilters.value.view_type,
@@ -766,6 +799,7 @@ function selectReport(reportKey) {
     currency_id: '',
     warehouse_id: '',
     type: '',
+    reason: '',
     category_id: '',
     expense_account_id: '',
     view_type: 'general',

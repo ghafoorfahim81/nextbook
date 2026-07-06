@@ -18,6 +18,7 @@
     "tabs": {
         "appearance": "ظاهر",
         "item_management": "مدیریت اقلام",
+        "stock_adjustment": "تعدیل موجودی",
         "sale": "فروش",
         "purchase": "خرید",
         "receipt_payment": "دریافت و پرداخت",
@@ -341,12 +342,25 @@
             "payment": "پرداخت",
             "account_transfer": "انتقال حساب",
             "item_transfer": "انتقال جنس",
+            "stock_adjustment": "تعدیل موجودی",
             "drawing": "برداشت",
             "ledger": "دفتر",
             "account": "حساب",
             "owner": "مالک"
         },
         "confirm_before_save_help": "قبل از ذخیره در این ماژول‌ها یک پنجره تأیید نمایش داده شود."
+    },
+    "stock_adjustment": {
+        "title": "تعدیل موجودی",
+        "description": "پیکربندی شماره‌گذاری مرجع، ورود قیمت و حساب‌های مقابل تعدیل موجودی.",
+        "reference_prefix": "پیشوند شماره مرجع",
+        "allow_in_cost_override": "اجازه ورود قیمت توسط کاربر برای تعدیلات ورودی",
+        "reason_accounts": "نگاشت دلیل ← حساب مقابل",
+        "reason_accounts_help": "انتخاب کنید هر دلیل تعدیل به کدام حساب مصرفی ثبت شود.",
+        "accounts": {
+            "shrinkage": "9040 ضایعات و کسری انبار",
+            "adjustments": "9050 تعدیلات موجودی"
+        }
     },
     "receipt_payment": {
         "description": "پیکربندی تنظیمات دریافت و پرداخت",

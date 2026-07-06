@@ -34,6 +34,7 @@
     "fast_opening": "چټک افتتاح",
     "barcode_print": "بارکوډ چاپ",
     "item_transfer": "جنس لېږد",
+    "stock_adjustment": "د موجودۍ تعدیل",
     "pricing": "د قیمتونو کتنه"
   },
   "account": {

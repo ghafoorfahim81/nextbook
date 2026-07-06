@@ -18,6 +18,7 @@ return [
         'expense_category' => 'دسته‌بندی مصرف',
         'item' => 'آیتم',
         'item_transfer' => 'انتقال آیتم',
+        'stock_adjustment' => 'تعدیل موجودی',
         'ledger' => 'لیجر',
         'landed_cost' => 'هزینه ورودی',
         'owner' => 'مالک',

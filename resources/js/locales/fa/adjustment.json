@@ -1,1 +1,41 @@
-﻿{}
+{
+  "stock_adjustment": "تعدیل موجودی",
+  "stock_adjustments": "تعدیلات موجودی",
+  "adjustment_details": "جزئیات تعدیل",
+  "adjustment_items": "اجناس تعدیل",
+  "reference": "شماره مرجع",
+  "type": "نوع",
+  "reason": "دلیل",
+  "warehouse": "گدام",
+  "notes": "یادداشت",
+  "unit_cost": "قیمت فی واحد",
+  "total_cost": "مجموع قیمت",
+  "stock_decreases": "موجودی کاهش می‌یابد",
+  "stock_increases": "موجودی افزایش می‌یابد",
+  "cost_from_costing_method": "قیمت به صورت خودکار از روش قیمت‌گذاری (FIFO/LIFO/اوسط) محاسبه می‌شود",
+  "quantity_exceeds_on_hand": "مقدار از موجودی فعلی یک یا چند جنس بیشتر است.",
+  "only_draft_can_be_edited": "فقط تعدیلات پیش‌نویس قابل ویرایش هستند.",
+  "only_draft_can_be_deleted": "فقط تعدیلات پیش‌نویس قابل حذف هستند.",
+  "posted_successfully": "تعدیل موجودی موفقانه ثبت شد.",
+  "reversed_successfully": "تعدیل موجودی موفقانه برگشت داده شد.",
+  "direction": {
+    "in": "ورودی",
+    "out": "خروجی"
+  },
+  "reasons": {
+    "damage": "تخریب / شکستگی",
+    "expiry": "انقضا",
+    "theft": "سرقت / کسری",
+    "loss": "مفقودی / گمشده",
+    "count_down": "اصلاح شمارش موجودی (کاهش)",
+    "internal_use": "استفاده داخلی / مصرف",
+    "sample": "نمونه / تبلیغات / اهدا",
+    "wastage": "ضایعات / باطله",
+    "quality_rejection": "رد کیفیت",
+    "count_up": "اصلاح شمارش موجودی (افزایش)",
+    "found": "پیدا شده / بازیافت شده",
+    "opening_stock": "ثبت موجودی ابتدایی",
+    "production_output": "محصول تولید / مونتاژ",
+    "surplus": "مازاد / اضافه"
+  }
+}

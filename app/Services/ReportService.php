@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\LedgerType;
+use App\Enums\StockAdjustmentReason;
 use App\Enums\StockMovementType;
 use App\Enums\StockStatus;
 use App\Enums\TransactionStatus;
@@ -35,6 +36,7 @@ class ReportService
         'purchase_report',
         'inventory_stock',
         'stock_movement',
+        'stock_adjustment_report',
         'low_stock',
         'inventory_valuation',
         'batch_wise_report',
@@ -122,6 +124,7 @@ class ReportService
             'purchase_report' => $this->getPurchaseReport($filters),
             'inventory_stock' => $this->getInventoryStock($filters),
             'stock_movement' => $this->getStockMovements($filters),
+            'stock_adjustment_report' => $this->getStockAdjustmentReport($filters),
             'low_stock' => $this->getLowStock($filters),
             'inventory_valuation' => $this->getInventoryValuation($filters),
             'batch_wise_report' => $this->getBatchWiseReport($filters),
@@ -988,6 +991,8 @@ class ReportService
 
         $summaryRow = (clone $query)
             ->selectRaw('COALESCE(SUM(sm.quantity), 0) as total_quantity')
+            ->selectRaw("COALESCE(SUM(CASE WHEN sm.movement_type = 'in' THEN sm.quantity ELSE 0 END), 0) as total_in")
+            ->selectRaw("COALESCE(SUM(CASE WHEN sm.movement_type = 'out' THEN sm.quantity ELSE 0 END), 0) as total_out")
             ->first();
 
         $query
@@ -1046,6 +1051,91 @@ class ReportService
             ],
             [
                 'total_quantity' => $this->quantityValue($summaryRow?->total_quantity),
+                'total_in' => $this->quantityValue($summaryRow?->total_in),
+                'total_out' => $this->quantityValue($summaryRow?->total_out),
+            ],
+        );
+    }
+
+    public function getStockAdjustmentReport(array $filters): array
+    {
+        $query = DB::table('stock_adjustments as sa')
+            ->join('stock_adjustment_items as sai', function ($join) {
+                $join->on('sai.stock_adjustment_id', '=', 'sa.id')
+                    ->whereNull('sai.deleted_at');
+            })
+            ->join('items as i', function ($join) use ($filters) {
+                $join->on('i.id', '=', 'sai.item_id')
+                    ->where('i.branch_id', '=', $filters['branch_id'])
+                    ->whereNull('i.deleted_at');
+            })
+            ->join('warehouses as w', function ($join) use ($filters) {
+                $join->on('w.id', '=', 'sa.warehouse_id')
+                    ->where('w.branch_id', '=', $filters['branch_id'])
+                    ->whereNull('w.deleted_at');
+            })
+            ->leftJoin('unit_measures as u', function ($join) {
+                $join->on('u.id', '=', 'sai.unit_measure_id')
+                    ->whereNull('u.deleted_at');
+            })
+            ->where('sa.branch_id', $filters['branch_id'])
+            ->whereNull('sa.deleted_at')
+            ->when($filters['warehouse_id'], fn ($builder, $warehouseId) => $builder->where('sa.warehouse_id', $warehouseId))
+            ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('sai.item_id', $itemId))
+            ->when($filters['reason'], fn ($builder, $reason) => $builder->where('sa.reason', $reason));
+
+        $this->applyDateFilter($query, 'sa.date', $filters);
+
+        $summaryRow = (clone $query)
+            ->selectRaw('COALESCE(SUM(sai.quantity), 0) as total_quantity')
+            ->selectRaw("COALESCE(SUM(CASE WHEN sa.type = 'in' THEN sai.quantity ELSE 0 END), 0) as total_in")
+            ->selectRaw("COALESCE(SUM(CASE WHEN sa.type = 'out' THEN sai.quantity ELSE 0 END), 0) as total_out")
+            ->selectRaw('COALESCE(SUM(sai.quantity * sai.unit_cost), 0) as total_cost')
+            ->first();
+
+        $query
+            ->orderByDesc('sa.date')
+            ->orderByDesc('sa.created_at')
+            ->selectRaw('sai.id as id')
+            ->selectRaw('sa.reference as reference')
+            ->selectRaw('sa.date as date')
+            ->selectRaw('i.name as item')
+            ->selectRaw('w.name as warehouse')
+            ->selectRaw('u.name as unit_measure')
+            ->selectRaw('sa.type as type')
+            ->selectRaw('sa.reason as reason')
+            ->selectRaw('sa.status as status')
+            ->selectRaw('sai.quantity as quantity')
+            ->selectRaw('sai.unit_cost as unit_cost')
+            ->selectRaw('sai.batch as batch')
+            ->selectRaw('sai.expire_date as expire_date')
+            ->selectRaw('sa.notes as notes');
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'id' => $row->id,
+                'date' => $this->displayDate($row->date),
+                'reference' => $row->reference,
+                'item' => $row->item,
+                'warehouse' => $row->warehouse,
+                'type' => StockMovementType::tryFrom((string) $row->type)?->getLabel() ?? (string) $row->type,
+                'reason' => StockAdjustmentReason::tryFrom((string) $row->reason)?->getLabel() ?? (string) $row->reason,
+                'unit_measure' => $row->unit_measure,
+                'quantity' => $this->quantityValue($row->quantity),
+                'unit_cost' => $this->moneyValue($row->unit_cost),
+                'total_cost' => $this->moneyValue((float) $row->quantity * (float) $row->unit_cost),
+                'batch' => $row->batch,
+                'expire_date' => $row->expire_date ? $this->displayDate($row->expire_date) : null,
+                'status' => TransactionStatus::tryFrom((string) $row->status)?->getLabel() ?? (string) $row->status,
+                'notes' => $row->notes,
+            ],
+            [
+                'total_quantity' => $this->quantityValue($summaryRow?->total_quantity),
+                'total_in' => $this->quantityValue($summaryRow?->total_in),
+                'total_out' => $this->quantityValue($summaryRow?->total_out),
+                'total_cost' => $this->moneyValue($summaryRow?->total_cost),
             ],
         );
     }
@@ -2653,6 +2743,7 @@ class ReportService
                 : ['date', 'purchase_number', 'supplier', 'item', 'quantity', 'unit_price', 'total_amount'],
             'inventory_stock' => ['item', 'warehouse', 'quantity', 'average_cost', 'total_value'],
             'stock_movement' => ['date', 'item', 'warehouse', 'movement_type', 'quantity', 'unit_price', 'source_type', 'reference_type', 'reference_id'],
+            'stock_adjustment_report' => ['date', 'reference', 'item', 'warehouse', 'type', 'reason', 'quantity', 'unit_measure', 'unit_cost', 'total_cost', 'batch', 'expire_date', 'status', 'notes'],
             'low_stock' => ['item', 'warehouse', 'quantity', 'reorder_level'],
             'inventory_valuation' => ['item', 'quantity', 'average_cost', 'total_value'],
             'batch_wise_report' => ['item_code', 'item_name', 'batch_number', 'expiry_date', 'in_quantity', 'out_quantity', 'on_hand'],
@@ -2737,6 +2828,8 @@ class ReportService
             'amount_paid',
             'quantity',
             'unit_price',
+            'unit_cost',
+            'total_cost',
             'total_amount',
             'average_cost',
             'total_value',
@@ -2868,6 +2961,7 @@ class ReportService
             'account_id' => $this->nullableString($filters['account_id'] ?? null),
             'currency_id' => $this->nullableString($filters['currency_id'] ?? null),
             'warehouse_id' => $this->nullableString($filters['warehouse_id'] ?? null),
+            'reason' => $this->nullableString($filters['reason'] ?? null),
             'type' => $this->nullableString($filters['type'] ?? null),
             'category_id' => $this->nullableString($filters['category_id'] ?? null),
             'expense_account_id' => $this->nullableString($filters['expense_account_id'] ?? null),
@@ -2942,6 +3036,9 @@ class ReportService
                 ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
                 ->all(),
             'sale_types' => collect(\App\Enums\SalePurchaseType::cases())
+                ->map(fn ($case) => ['id' => $case->value, 'name' => $case->getLabel()])
+                ->all(),
+            'stock_adjustment_reasons' => collect(StockAdjustmentReason::cases())
                 ->map(fn ($case) => ['id' => $case->value, 'name' => $case->getLabel()])
                 ->all(),
             'expense_categories' => DB::table('expense_categories')

@@ -333,6 +333,12 @@ class TransactionService
                 $remark_ps = "د پیرودونکي رسید بیرته راګرځول #" . $number;
                 break;
 
+            case \App\Models\Inventory\StockAdjustment::class:
+                $remark = "Reversal of stock adjustment #" . $number;
+                $remark_fa = "برگشتی تعدیل موجودی #" . $number;
+                $remark_ps = "د موجودۍ تعدیل بیرته راګرځول #" . $number;
+                break;
+
             case \App\Models\Expense\Expense::class:
                 $remark = "Reversal of expense #" . $number;
                 $remark_fa = "برگشتی هزینه #" . $number;

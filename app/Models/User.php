@@ -258,6 +258,31 @@ class User extends Authenticatable
             'account_transfer_post_immediately' => true,
             'item_transfer_post_immediately' => true,
             'drawing_post_immediately' => true,
+            'stock_adjustment_post_immediately' => true,
+        ],
+        // Stock adjustment module settings. reason_accounts maps each reason to
+        // the offset expense account slug (9040 shrinkage vs 9050 adjustments).
+        'stock_adjustment' => [
+            'reference_prefix' => 'ADJ-',
+            'start_number' => 1,
+            'default_warehouse_id' => null,
+            'allow_in_cost_override' => true,
+            'reason_accounts' => [
+                'damage' => 'inventory-shrinkage-and-wastage',
+                'expiry' => 'inventory-shrinkage-and-wastage',
+                'theft' => 'inventory-shrinkage-and-wastage',
+                'loss' => 'inventory-shrinkage-and-wastage',
+                'internal_use' => 'inventory-shrinkage-and-wastage',
+                'sample' => 'inventory-shrinkage-and-wastage',
+                'wastage' => 'inventory-shrinkage-and-wastage',
+                'quality_rejection' => 'inventory-shrinkage-and-wastage',
+                'count_down' => 'inventory-adjustments',
+                'count_up' => 'inventory-adjustments',
+                'found' => 'inventory-adjustments',
+                'opening_stock' => 'inventory-adjustments',
+                'production_output' => 'inventory-adjustments',
+                'surplus' => 'inventory-adjustments',
+            ],
         ],
         // Per-module "confirm before save" dialog toggles. Defaults to enabled so the
         // confirmation appears until a user disables it per module in Module Settings.
@@ -270,6 +295,7 @@ class User extends Authenticatable
             'journal_entry' => true,
             'account_transfer' => true,
             'item_transfer' => true,
+            'stock_adjustment' => true,
             'drawing' => true,
             'item' => true,
             'ledger' => true,

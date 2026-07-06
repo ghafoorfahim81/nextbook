@@ -18,6 +18,7 @@ return [
         'expense_category' => 'Expense category',
         'item' => 'Item',
         'item_transfer' => 'Item transfer',
+        'stock_adjustment' => 'Stock adjustment',
         'ledger' => 'Ledger',
         'landed_cost' => 'Landed cost',
         'owner' => 'Owner',

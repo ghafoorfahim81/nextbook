@@ -38,6 +38,7 @@
     "warehouse": "Warehouse",
     "currency": "Currency",
     "type": "Transaction type",
+    "reason": "Reason",
     "expense_category": "Expense category",
     "expense_account": "Expense account",
     "per_page": "Rows",
@@ -64,7 +65,9 @@
     "balance_label": "Balance",
     "total_amount": "Total amount",
     "total_quantity": "Total quantity",
+    "total_movement": "Total movement",
     "total_value": "Total value",
+    "total_cost": "Total cost",
     "total_items": "Items",
     "total_in": "Total in",
     "total_out": "Total out",
@@ -165,7 +168,11 @@
     "category": "Category",
     "expense_account": "Expense account",
     "bank_account": "Bank / Cash account",
-    "remark": "Remark"
+    "remark": "Remark",
+    "reason": "Reason",
+    "unit_cost": "Unit cost",
+    "total_cost": "Total cost",
+    "notes": "Notes"
   },
   "view_types": {
     "general": "General view",
@@ -223,6 +230,10 @@
     "stock_movement": {
       "label": "Stock movement",
       "description": "Detailed stock movement history by item and warehouse."
+    },
+    "stock_adjustment_report": {
+      "label": "Stock adjustment report",
+      "description": "Stock adjustment lines by warehouse, item, and reason, with direction, cost, and status."
     },
     "low_stock": {
       "label": "Low stock",

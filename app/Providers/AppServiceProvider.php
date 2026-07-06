@@ -39,7 +39,7 @@ class AppServiceProvider extends ServiceProvider
             'income' => 'App\Models\Income\Income',
             'transfer' => 'App\Models\Transfer\Transfer',
             'item_transfer' => 'App\Models\ItemTransfer\ItemTransfer',
-            'stock_adjustment' => 'App\Models\Adjustment\Adjustment',
+            'stock_adjustment' => 'App\Models\Inventory\StockAdjustment',
             'opening' => 'App\Models\Inventory\StockOpening',
             'stock_out' => 'App\Models\Inventory\StockOut',
             'item' => 'App\Models\Inventory\Item',
