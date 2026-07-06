@@ -149,6 +149,12 @@ const reverseSale = (reason) => {
                 @confirm="reverseSale"
             />
 
+            <div v-if="saleData.status === 'posted' && can('sale_returns.create')" class="flex justify-end">
+                <Button variant="outline" size="sm" @click="router.visit(route('sale-returns.create', { sale_id: saleData.id }))">
+                    {{ t('sale_return.create_return') }}
+                </Button>
+            </div>
+
             <div v-if="originalDoc" class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
                 {{ t('general.reversal_of_transaction', { number: originalVoucherNumber }) }}.
             </div>

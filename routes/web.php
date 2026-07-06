@@ -216,6 +216,15 @@ Route::middleware([
     Route::get('/sales/{sale}/export', [\App\Http\Controllers\Sale\SaleController::class, 'exportDetail'])->name('sales.export');
     Route::get('/purchases/{purchase}/export', [\App\Http\Controllers\Purchase\PurchaseController::class, 'exportDetail'])->name('purchases.export');
 
+    Route::get('/sale-returns/returnable-items', [\App\Http\Controllers\Sale\SaleReturnController::class, 'returnableItems'])->name('sale-returns.returnable-items');
+    Route::resource('/sale-returns', \App\Http\Controllers\Sale\SaleReturnController::class);
+    Route::post('/sale-returns/{sale_return}/post', [\App\Http\Controllers\Sale\SaleReturnController::class, 'post'])->name('sale-returns.post');
+    Route::post('/sale-returns/{sale_return}/reverse', [\App\Http\Controllers\Sale\SaleReturnController::class, 'reverse'])->name('sale-returns.reverse');
+    Route::patch('/sale-returns/{sale_return}/restore', [\App\Http\Controllers\Sale\SaleReturnController::class, 'restore'])->name('sale-returns.restore')->withTrashed();
+    Route::delete('/sale-returns/{sale_return}/force-delete', [\App\Http\Controllers\Sale\SaleReturnController::class, 'forceDelete'])
+        ->name('sale-returns.force-delete')
+        ->withTrashed();
+
 
     // Company routes
     Route::get('/company', [\App\Http\Controllers\CompanyController::class, 'show'])

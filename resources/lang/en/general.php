@@ -27,6 +27,7 @@ return [
         'receipt' => 'Receipt',
         'role' => 'Role',
         'sale' => 'Sale',
+        'sale_return' => 'Sale return',
         'size' => 'Size',
         'warehouse' => 'Warehouse',
         'supplier' => 'Supplier',

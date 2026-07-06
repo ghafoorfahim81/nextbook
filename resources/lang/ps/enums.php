@@ -99,5 +99,14 @@ return [
         'production_output' => 'د تولید / مونتاژ محصول',
         'surplus' => 'اضافي / زیاتوالی',
     ],
+    'sale_return_reason' => [
+        'damaged' => 'زیانمن شوی',
+        'wrong_item' => 'غلط توکی',
+        'defective' => 'عیب لرونکی',
+        'expired' => 'نېټه تېره شوې',
+        'customer_changed_mind' => 'د پیرودونکي بدلون',
+        'duplicate_order' => 'تکراري امر',
+        'other' => 'نور',
+    ],
 ];
 

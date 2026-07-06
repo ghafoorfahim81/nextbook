@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PaymentStatus;
+use App\Enums\TransactionStatus;
 use App\Models\Payment\Payment;
 use App\Models\Purchase\Purchase;
 use App\Models\Purchase\PurchasePayment;
@@ -137,6 +138,7 @@ class BillAllocationService
                 'saleReceives' => fn ($query) => $query
                     ->whereNull('deleted_at')
                     ->when($excludeReceiptId, fn ($query) => $query->where('receipt_id', '!=', $excludeReceiptId)),
+                'saleReturnItems.saleReturn:id,status',
             ])
             ->where('customer_id', $customerId)
             ->whereNull('deleted_at')
@@ -207,6 +209,7 @@ class BillAllocationService
                 'items',
                 'transaction.lines.account',
                 'saleReceives' => fn ($query) => $query->whereNull('deleted_at'),
+                'saleReturnItems.saleReturn:id,status',
             ])
             ->whereIn('id', $saleIds)
             ->get()
@@ -277,7 +280,12 @@ class BillAllocationService
         $saleIds = collect($allocations)->pluck('bill_id')->all();
 
         return Sale::query()
-            ->with(['items', 'transaction.lines.account', 'saleReceives' => fn ($query) => $query->whereNull('deleted_at')])
+            ->with([
+                'items',
+                'transaction.lines.account',
+                'saleReceives' => fn ($query) => $query->whereNull('deleted_at'),
+                'saleReturnItems.saleReturn:id,status',
+            ])
             ->whereIn('id', $saleIds)
             ->get()
             ->keyBy('id');
@@ -347,15 +355,34 @@ class BillAllocationService
     {
         $transaction = $sale->transaction;
 
-        if (!$transaction) {
+        $arFromSale = 0.0;
+
+        if ($transaction) {
+            $rate = (float) ($transaction->rate ?? 1);
+
+            $arFromSale = (float) $transaction->lines
+                ->filter(fn ($line) => (float) $line->debit > 0 && ($line->account?->slug ?? null) === 'account-receivable')
+                ->sum(fn ($line) => (float) $line->debit * $rate);
+        }
+
+        return max($arFromSale - $this->saleReturnedAmount($sale), 0.0);
+    }
+
+    /**
+     * Total value credited back to the customer by posted sale returns against this sale.
+     * A sale return posts its account-receivable credit into its own Transaction (not the
+     * original sale's), so it must be netted out here explicitly rather than picked up by
+     * the transaction.lines filter above.
+     */
+    private function saleReturnedAmount(Sale $sale): float
+    {
+        if (!$sale->relationLoaded('saleReturnItems')) {
             return 0.0;
         }
 
-        $rate = (float) ($transaction->rate ?? 1);
-
-        return (float) $transaction->lines
-            ->filter(fn ($line) => (float) $line->debit > 0 && ($line->account?->slug ?? null) === 'account-receivable')
-            ->sum(fn ($line) => (float) $line->debit * $rate);
+        return (float) $sale->saleReturnItems
+            ->filter(fn ($item) => $item->saleReturn?->status === TransactionStatus::POSTED->value)
+            ->sum(fn ($item) => (float) $item->quantity * (float) $item->unit_price);
     }
 
     private function purchaseOutstandingAmount(Purchase $purchase): float

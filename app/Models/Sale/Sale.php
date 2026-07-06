@@ -123,6 +123,23 @@ class Sale extends Model
         return $this->hasMany(SaleReceive::class);
     }
 
+    public function returns(): HasMany
+    {
+        return $this->hasMany(SaleReturn::class);
+    }
+
+    public function saleReturnItems(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(
+            SaleReturnItem::class,
+            SaleItem::class,
+            'sale_id',
+            'sale_item_id',
+            'id',
+            'id'
+        );
+    }
+
     public function stockOuts()
     {
         return $this->hasMany(\App\Models\Inventory\StockOut::class, 'source_id', 'id');

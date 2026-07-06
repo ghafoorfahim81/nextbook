@@ -309,6 +309,12 @@ class TransactionService
                 $remark_ps = "د خرڅلاو بیرته راګرځول #" . $number;
                 break;
 
+            case \App\Models\Sale\SaleReturn::class:
+                $remark = "Reversal of sale return #" . $number;
+                $remark_fa = "برگشتی مسترد فروش #" . $number;
+                $remark_ps = "د خرڅلاو بیرته راستنیدو بیرته راګرځول #" . $number;
+                break;
+
             case \App\Models\Payment\Payment::class:
                 $remark = "Reversal of payment #" . $number;
                 $remark_fa = "برگشتی پرداخت #" . $number;
