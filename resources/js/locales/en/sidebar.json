@@ -70,7 +70,8 @@
     "edit_sale": "Edit Sale",
     "sale_created_successfully": "Sale created successfully",
     "sale_updated_successfully": "Sale updated successfully",
-    "sale_return": "Sale Return"
+    "sale_return": "Sale Return",
+    "sale_order": "Sale Order"
   },
   "ledger": {
     "customer": "Customer",

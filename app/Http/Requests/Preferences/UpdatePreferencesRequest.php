@@ -137,6 +137,7 @@ use Illuminate\Validation\Rule;
             // Transaction Posting
             'transaction' => 'sometimes|array',
             'transaction.sale_post_immediately' => 'sometimes|boolean',
+            'transaction.sale_order_post_immediately' => 'sometimes|boolean',
             'transaction.purchase_post_immediately' => 'sometimes|boolean',
             'transaction.expense_post_immediately' => 'sometimes|boolean',
             'transaction.journal_entry_post_immediately' => 'sometimes|boolean',

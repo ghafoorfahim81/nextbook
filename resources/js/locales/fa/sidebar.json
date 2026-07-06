@@ -70,7 +70,8 @@
     "edit_sale": "ویرایش فروش",
     "sale_created_successfully": "فروش با موفقیت ایجاد شد",
     "sale_updated_successfully": "فروش با موفقیت بروزرسانی شد",
-    "sale_return": "برگشت فروش"
+    "sale_return": "برگشت فروش",
+    "sale_order": "سفارش فروش"
   },
   "ledger": {
     "customer": "مشتری",

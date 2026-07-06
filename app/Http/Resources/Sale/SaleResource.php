@@ -66,6 +66,8 @@ class SaleResource extends JsonResource
             'customer_id' => $this->customer_id,
             'customer' => $this->whenLoaded('customer'),
             'customer_name' => $this->customer?->name,
+            'sale_order_id' => $this->sale_order_id,
+            'sale_order_number' => $this->whenLoaded('saleOrder', fn () => $this->saleOrder?->number),
             'date' => $dateConversionService->toDisplay($this->date),
             'due_date' => $dateConversionService->toDisplay($this->due_date),
             'updated_at' => $dateConversionService->toDisplay($this->updated_at?->toDateString()),

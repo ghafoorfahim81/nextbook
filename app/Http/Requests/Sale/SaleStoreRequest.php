@@ -24,6 +24,7 @@ class SaleStoreRequest extends FormRequest
         return [
             'number' => ['required', 'integer', 'min:1', 'unique:sales,number,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'customer_id' => ['required', 'string', 'exists:ledgers,id'],
+            'sale_order_id' => ['nullable', 'string', 'exists:sale_orders,id'],
             'date' => ['nullable', 'date'],
             'transaction_total' => ['required', 'numeric'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],

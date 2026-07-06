@@ -155,6 +155,13 @@ const reverseSale = (reason) => {
                 </Button>
             </div>
 
+            <div v-if="saleData.sale_order_id" class="text-sm text-muted-foreground">
+                {{ t('sale_order.linked_sale') }}:
+                <a :href="route('sale-orders.show', saleData.sale_order_id)" class="text-violet-600 underline dark:text-violet-400">
+                    #{{ saleData.sale_order_number }}
+                </a>
+            </div>
+
             <div v-if="originalDoc" class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
                 {{ t('general.reversal_of_transaction', { number: originalVoucherNumber }) }}.
             </div>

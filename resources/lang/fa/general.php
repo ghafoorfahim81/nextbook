@@ -27,6 +27,7 @@ return [
         'receipt' => 'رسید',
         'role' => 'نقش',
         'sale' => 'فروش',
+        'sale_order' => 'سفارش فروش',
         'sale_return' => 'برگشت فروش',
         'size' => 'سایز',
         'warehouse' => 'انبار/گدام',

@@ -7,7 +7,9 @@
       "Bash(php artisan *)",
       "Bash(findstr /I \"invoice\")",
       "Bash(Get-ChildItem -Path \"app\\\\Models\" -Directory -Recurse)",
-      "PowerShell(npm run build 2>&1)"
+      "PowerShell(npm run build 2>&1)",
+      "PowerShell(php artisan tinker --execute='$perms = App\\\\Models\\\\Permission::where\\(\"name\",\"like\",\"sale_orders.%\"\\)->pluck\\(\"name\"\\); echo \"sale_orders perms: \" . $perms->implode\\(\", \"\\);' 2>&1)",
+      "PowerShell(php artisan test --filter=Sale 2>&1)"
     ]
   }
 }

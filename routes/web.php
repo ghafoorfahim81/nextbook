@@ -225,6 +225,16 @@ Route::middleware([
         ->name('sale-returns.force-delete')
         ->withTrashed();
 
+    Route::get('/sale-orders/eligible', [\App\Http\Controllers\Sale\SaleOrderController::class, 'eligibleForLedger'])->name('sale-orders.eligible');
+    Route::get('/sale-orders/{sale_order}/for-conversion', [\App\Http\Controllers\Sale\SaleOrderController::class, 'forConversion'])->name('sale-orders.for-conversion');
+    Route::resource('/sale-orders', \App\Http\Controllers\Sale\SaleOrderController::class);
+    Route::post('/sale-orders/{sale_order}/post', [\App\Http\Controllers\Sale\SaleOrderController::class, 'post'])->name('sale-orders.post');
+    Route::post('/sale-orders/{sale_order}/cancel', [\App\Http\Controllers\Sale\SaleOrderController::class, 'cancel'])->name('sale-orders.cancel');
+    Route::patch('/sale-orders/{sale_order}/restore', [\App\Http\Controllers\Sale\SaleOrderController::class, 'restore'])->name('sale-orders.restore')->withTrashed();
+    Route::delete('/sale-orders/{sale_order}/force-delete', [\App\Http\Controllers\Sale\SaleOrderController::class, 'forceDelete'])
+        ->name('sale-orders.force-delete')
+        ->withTrashed();
+
 
     // Company routes
     Route::get('/company', [\App\Http\Controllers\CompanyController::class, 'show'])
