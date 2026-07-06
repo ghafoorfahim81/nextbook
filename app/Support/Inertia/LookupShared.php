@@ -127,7 +127,9 @@ final class LookupShared
                 'finished-goods',
                 'other-expenses',
                 'discount-to-customer',
-                'discount-from-supplier'
+                'discount-from-supplier',
+                'inventory-shrinkage-and-wastage',
+                'inventory-adjustments'
 
             ])->pluck('id', 'slug')
         );

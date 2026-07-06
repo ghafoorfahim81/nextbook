@@ -19,6 +19,7 @@ use App\Models\Expense\Expense;
 use App\Models\Expense\ExpenseCategory;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\LandedCost;
+use App\Models\Inventory\StockAdjustment;
 use App\Models\Ledger\Ledger;
 use App\Models\Owner\Drawing;
 use App\Models\Owner\Owner;
@@ -44,6 +45,7 @@ use App\Policies\ExpensePolicy;
 use App\Policies\DrawingPolicy;
 use App\Policies\ItemPolicy;
 use App\Policies\LandedCostPolicy;
+use App\Policies\StockAdjustmentPolicy;
 use App\Policies\OwnerPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\PurchasePolicy;
@@ -84,6 +86,7 @@ class AuthServiceProvider extends ServiceProvider
         // Inventory
         Item::class => ItemPolicy::class,
         LandedCost::class => LandedCostPolicy::class,
+        StockAdjustment::class => StockAdjustmentPolicy::class,
 
         // Ledgers (customers & suppliers)
         Ledger::class => CustomerSupplierPolicy::class,

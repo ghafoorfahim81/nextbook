@@ -18,6 +18,7 @@
     "tabs": {
         "appearance": "Appearance",
         "item_management": "Item Management",
+        "stock_adjustment": "Stock Adjustment",
         "sale": "Sale",
         "purchase": "Purchase",
         "receipt_payment": "Receipt & Payment",
@@ -344,12 +345,25 @@
             "payment": "Payment",
             "account_transfer": "Account Transfer",
             "item_transfer": "Item Transfer",
+            "stock_adjustment": "Stock Adjustment",
             "drawing": "Drawing",
             "ledger": "Ledger",
             "account": "Account",
             "owner": "Owner"
         },
         "confirm_before_save_help": "Show a confirmation dialog before saving in these modules."
+    },
+    "stock_adjustment": {
+        "title": "Stock Adjustment",
+        "description": "Configure stock adjustment reference numbering, cost entry and offset accounts.",
+        "reference_prefix": "Reference Prefix",
+        "allow_in_cost_override": "Allow user-entered cost for stock-in adjustments",
+        "reason_accounts": "Reason → Offset Account Mapping",
+        "reason_accounts_help": "Choose which expense account each adjustment reason posts against.",
+        "accounts": {
+            "shrinkage": "9040 Shrinkage & Wastage",
+            "adjustments": "9050 Inventory Adjustments"
+        }
     },
     "receipt_payment": {
         "description": "Configure receipt and payment preferences",

@@ -145,6 +145,19 @@ use Illuminate\Validation\Rule;
             'transaction.account_transfer_post_immediately' => 'sometimes|boolean',
             'transaction.item_transfer_post_immediately' => 'sometimes|boolean',
             'transaction.drawing_post_immediately' => 'sometimes|boolean',
+            'transaction.stock_adjustment_post_immediately' => 'sometimes|boolean',
+
+            // Stock Adjustment
+            'stock_adjustment' => 'sometimes|array',
+            'stock_adjustment.reference_prefix' => 'sometimes|string|max:20',
+            'stock_adjustment.start_number' => 'sometimes|integer|min:1',
+            'stock_adjustment.default_warehouse_id' => 'sometimes|nullable|string|exists:warehouses,id',
+            'stock_adjustment.allow_in_cost_override' => 'sometimes|boolean',
+            'stock_adjustment.reason_accounts' => 'sometimes|array',
+            'stock_adjustment.reason_accounts.*' => [
+                'sometimes',
+                Rule::in(['inventory-shrinkage-and-wastage', 'inventory-adjustments']),
+            ],
 
             // Per-module "confirm before save" toggles
             'confirmations' => 'sometimes|array',

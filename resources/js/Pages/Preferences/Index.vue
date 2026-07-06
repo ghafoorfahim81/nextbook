@@ -60,6 +60,7 @@ const importLoading = ref(false)
 const tabs = [
     { id: 'appearance', label: 'preferences.tabs.appearance', icon: Palette },
     { id: 'item_management', label: 'preferences.tabs.item_management', icon: Package },
+    { id: 'stock_adjustment', label: 'preferences.tabs.stock_adjustment', icon: preferencesIcon },
     { id: 'sale', label: 'preferences.tabs.sale', icon: ShoppingCart },
     { id: 'purchase', label: 'preferences.tabs.purchase', icon: ShoppingBag },
     { id: 'receipt_payment', label: 'preferences.tabs.receipt_payment', icon: CreditCard },
@@ -595,6 +596,59 @@ const confirmSaveModules = [
     { key: 'account', label: 'preferences.transaction.modules.account' },
     { key: 'owner', label: 'preferences.transaction.modules.owner' },
 ]
+
+// Stock adjustment: reason → offset account mapping (9040 shrinkage vs 9050 adjustments).
+const stockAdjustmentReasons = [
+    { key: 'damage', direction: 'out' },
+    { key: 'expiry', direction: 'out' },
+    { key: 'theft', direction: 'out' },
+    { key: 'loss', direction: 'out' },
+    { key: 'count_down', direction: 'out' },
+    { key: 'internal_use', direction: 'out' },
+    { key: 'sample', direction: 'out' },
+    { key: 'wastage', direction: 'out' },
+    { key: 'quality_rejection', direction: 'out' },
+    { key: 'count_up', direction: 'in' },
+    { key: 'found', direction: 'in' },
+    { key: 'opening_stock', direction: 'in' },
+    { key: 'production_output', direction: 'in' },
+    { key: 'surplus', direction: 'in' },
+]
+const stockAdjustmentDefaultAccounts = {
+    damage: 'inventory-shrinkage-and-wastage',
+    expiry: 'inventory-shrinkage-and-wastage',
+    theft: 'inventory-shrinkage-and-wastage',
+    loss: 'inventory-shrinkage-and-wastage',
+    internal_use: 'inventory-shrinkage-and-wastage',
+    sample: 'inventory-shrinkage-and-wastage',
+    wastage: 'inventory-shrinkage-and-wastage',
+    quality_rejection: 'inventory-shrinkage-and-wastage',
+    count_down: 'inventory-adjustments',
+    count_up: 'inventory-adjustments',
+    found: 'inventory-adjustments',
+    opening_stock: 'inventory-adjustments',
+    production_output: 'inventory-adjustments',
+    surplus: 'inventory-adjustments',
+}
+const offsetAccountOptions = [
+    { id: 'inventory-shrinkage-and-wastage', label: 'preferences.stock_adjustment.accounts.shrinkage' },
+    { id: 'inventory-adjustments', label: 'preferences.stock_adjustment.accounts.adjustments' },
+]
+const ensureStockAdjustmentPrefs = () => {
+    if (!form.stock_adjustment) form.stock_adjustment = {}
+    if (!form.stock_adjustment.reason_accounts) form.stock_adjustment.reason_accounts = {}
+}
+const getStockAdjustmentPref = (key, fallback) => form.stock_adjustment?.[key] ?? fallback
+const setStockAdjustmentPref = (key, value) => {
+    ensureStockAdjustmentPrefs()
+    form.stock_adjustment[key] = value
+}
+const getReasonAccount = (reason) =>
+    form.stock_adjustment?.reason_accounts?.[reason] ?? stockAdjustmentDefaultAccounts[reason]
+const setReasonAccount = (reason, value) => {
+    ensureStockAdjustmentPrefs()
+    form.stock_adjustment.reason_accounts[reason] = value
+}
 
 const getConfirmSave = (key) => form.confirmations?.[key] ?? true
 const setConfirmSave = (key, value) => {
@@ -1564,6 +1618,100 @@ watch(normalizedMenuSearch, (query) => {
                                 </div>
                             </div>
 
+                        </CardContent>
+                    </Card>
+
+                    <!-- Stock adjustment preferences -->
+                    <Card v-show="activeTab === 'stock_adjustment'" class="animate-in fade-in duration-200">
+                        <CardHeader class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <CardTitle>{{ t('preferences.stock_adjustment.title') }}</CardTitle>
+                                <CardDescription>{{ t('preferences.stock_adjustment.description') }}</CardDescription>
+                            </div>
+                            <Button variant="outline" size="sm" class="bg-background border-primary/60 hover:bg-primary/40" @click="resetCategory('stock_adjustment')">
+                                <RotateCcw class="w-4 h-4 mr-2" />
+                                {{ t('preferences.reset') }}
+                            </Button>
+                        </CardHeader>
+                        <CardContent class="space-y-6">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="flex items-center justify-between rounded-lg border border-border bg-background/70 px-4 py-3">
+                                    <div class="space-y-0.5">
+                                        <Label class="font-normal">{{ t('preferences.transaction.post_immediately') }}</Label>
+                                        <p class="text-xs text-muted-foreground">{{ t('preferences.transaction.post_immediately_help') }}</p>
+                                    </div>
+                                    <Switch
+                                        :model-value="getTransactionPost('stock_adjustment_post_immediately')"
+                                        @update:model-value="(v) => {
+                                            if (!form.transaction) form.transaction = {}
+                                            form.transaction.stock_adjustment_post_immediately = v
+                                        }"
+                                    />
+                                </div>
+                                <div class="flex items-center justify-between rounded-lg border border-border bg-background/70 px-4 py-3">
+                                    <Label class="font-normal">{{ t('general.confirm_before_save') }}</Label>
+                                    <Switch
+                                        :model-value="getConfirmSave('stock_adjustment')"
+                                        @update:model-value="(v) => setConfirmSave('stock_adjustment', v)"
+                                    />
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="space-y-2">
+                                    <Label>{{ t('preferences.stock_adjustment.reference_prefix') }}</Label>
+                                    <Input
+                                        :model-value="getStockAdjustmentPref('reference_prefix', 'ADJ-')"
+                                        @update:model-value="(v) => setStockAdjustmentPref('reference_prefix', v)"
+                                    />
+                                </div>
+                                <div class="flex items-center gap-3 sm:pt-7">
+                                    <Switch
+                                        :model-value="getStockAdjustmentPref('allow_in_cost_override', true)"
+                                        @update:model-value="(v) => setStockAdjustmentPref('allow_in_cost_override', v)"
+                                    />
+                                    <Label>{{ t('preferences.stock_adjustment.allow_in_cost_override') }}</Label>
+                                </div>
+                            </div>
+                            <div>
+                                <Label class="font-medium">{{ t('preferences.stock_adjustment.reason_accounts') }}</Label>
+                                <p class="text-sm text-muted-foreground mb-3">{{ t('preferences.stock_adjustment.reason_accounts_help') }}</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div
+                                        v-for="reason in stockAdjustmentReasons"
+                                        :key="`reason-account-${reason.key}`"
+                                        class="flex items-center justify-between gap-3 rounded-lg border border-border bg-background/70 px-4 py-3"
+                                    >
+                                        <div class="flex items-center gap-2">
+                                            <Label class="font-normal">{{ t(`adjustment.reasons.${reason.key}`) }}</Label>
+                                            <span
+                                                class="text-[10px] font-semibold uppercase rounded px-1.5 py-0.5"
+                                                :class="reason.direction === 'in'
+                                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                                                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'"
+                                            >
+                                                {{ t(`adjustment.direction.${reason.direction}`) }}
+                                            </span>
+                                        </div>
+                                        <Select
+                                            :model-value="getReasonAccount(reason.key)"
+                                            @update:model-value="(v) => setReasonAccount(reason.key, v)"
+                                        >
+                                            <SelectTrigger class="w-56">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem
+                                                    v-for="option in offsetAccountOptions"
+                                                    :key="option.id"
+                                                    :value="option.id"
+                                                >
+                                                    {{ t(option.label) }}
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
 

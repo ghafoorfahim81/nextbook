@@ -25,6 +25,7 @@ const showAccount = computed(() => props.activeDefinition.filters.includes('acco
 const showWarehouse = computed(() => props.activeDefinition.filters.includes('warehouse_id'))
 const showCurrency = computed(() => props.activeDefinition.filters.includes('currency_id'))
 const showType = computed(() => props.activeDefinition.filters.includes('type'))
+const showReason = computed(() => props.activeDefinition.filters.includes('reason'))
 const showExpenseCategory = computed(() => props.activeDefinition.filters.includes('category_id'))
 const showExpenseAccount = computed(() => props.activeDefinition.filters.includes('expense_account_id'))
 
@@ -57,6 +58,7 @@ const accountOptions = computed(() => withPlaceholder(props.options.cash_account
 const warehouseOptions = computed(() => withPlaceholder(props.options.warehouses, t('report.filters.warehouse')))
 const currencyOptions = computed(() => withPlaceholder(props.options.currencies, t('report.filters.currency')))
 const typeOptions = computed(() => withPlaceholder(props.options.sale_types, t('report.filters.type')))
+const reasonOptions = computed(() => withPlaceholder(props.options.stock_adjustment_reasons, t('report.filters.reason')))
 const expenseCategoryOptions = computed(() => withPlaceholder(props.options.expense_categories, t('report.filters.expense_category')))
 const expenseAccountOptions = computed(() => withPlaceholder(props.options.expense_accounts, t('report.filters.expense_account')))
 
@@ -83,6 +85,8 @@ function setReport(report) {
     account_id: '',
     category_id: '',
     expense_account_id: '',
+    warehouse_id: '',
+    reason: '',
     page: 1,
   })
 }
@@ -192,6 +196,16 @@ function setReport(report) {
             label-key="name"
             value-key="id"
             @update:modelValue="setFilter('type', $event)"
+          />
+        </div>
+        <div v-if="showReason">
+          <NextSelect
+            :floating-text="t('report.filters.reason')"
+            :model-value="filters.reason"
+            :options="reasonOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('reason', $event)"
           />
         </div>
         <div v-if="showCurrency">

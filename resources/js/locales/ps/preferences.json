@@ -18,6 +18,7 @@
     "tabs": {
         "appearance": "ظاهر",
         "item_management": "د توکو مدیریت",
+        "stock_adjustment": "د موجودۍ تعدیل",
         "sales": "پلورنه",
         "purchases": "اخیستنه",
         "sale": "پلورنه",
@@ -352,12 +353,25 @@
             "payment": "تادیه",
             "account_transfer": "د حساب انتقال",
             "item_transfer": "د جنس انتقال",
+            "stock_adjustment": "د موجودۍ تعدیل",
             "drawing": "برداشت",
             "ledger": "کتابچه",
             "account": "حساب",
             "owner": "خاوند"
         },
         "confirm_before_save_help": "د دې ماژولونو کې د ساتلو دمخه د تایید کړکۍ ښکاره کړئ."
+    },
+    "stock_adjustment": {
+        "title": "د موجودۍ تعدیل",
+        "description": "د موجودۍ تعدیل د مرجع شمېرې، د بیې ننوتلو او مقابل حسابونو تنظیم.",
+        "reference_prefix": "د مرجع شمېرې مختاړی",
+        "allow_in_cost_override": "د ورودي تعدیلاتو لپاره د کارونکي لخوا د بیې ننوتلو اجازه",
+        "reason_accounts": "دلیل ← مقابل حساب نقشه",
+        "reason_accounts_help": "وټاکئ چې هر د تعدیل دلیل کوم لګښت حساب ته ثبت شي.",
+        "accounts": {
+            "shrinkage": "9040 د انبار ضایعات او کسر",
+            "adjustments": "9050 د موجودۍ تعدیلات"
+        }
     },
     "receipt_payment": {
         "description": "د رسید او تادیې ترتیبات تنظیم کړئ",

@@ -6,7 +6,8 @@
       "PowerShell(dir \"G:\\\\nextbook\\\\database\\\\migrations\\\\\" | Where-Object {$_.Name -match \"\\(setting|print|invoice|format\\)\"})",
       "Bash(php artisan *)",
       "Bash(findstr /I \"invoice\")",
-      "Bash(Get-ChildItem -Path \"app\\\\Models\" -Directory -Recurse)"
+      "Bash(Get-ChildItem -Path \"app\\\\Models\" -Directory -Recurse)",
+      "PowerShell(npm run build 2>&1)"
     ]
   }
 }

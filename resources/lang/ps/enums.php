@@ -44,6 +44,7 @@ return [
         'credit' => 'Credit',
     ],
     'transaction_status' => [
+        'draft' => 'مسوده',
         'posted' => 'Posted',
         'approved' => 'Approved',
         'rejected' => 'Rejected',
@@ -81,6 +82,22 @@ return [
         'draft' => 'Draft',
         'voided' => 'Voided',
         'cancelled' => 'Cancelled',
+    ],
+    'stock_adjustment_reason' => [
+        'damage' => 'زیان / ماتیدل',
+        'expiry' => 'د نېټې تېرېدل',
+        'theft' => 'غلا / کسر',
+        'loss' => 'ورکیدل / نشتوالی',
+        'count_down' => 'د موجودۍ د شمېرنې سمون (کمښت)',
+        'internal_use' => 'داخلي کارونه / مصرف',
+        'sample' => 'نمونه / اعلانات / ډالۍ',
+        'wastage' => 'ضایعات / باطله',
+        'quality_rejection' => 'د کیفیت ردول',
+        'count_up' => 'د موجودۍ د شمېرنې سمون (زیاتوالی)',
+        'found' => 'موندل شوی / بیرته ترلاسه شوی',
+        'opening_stock' => 'د پیل موجودي ثبت',
+        'production_output' => 'د تولید / مونتاژ محصول',
+        'surplus' => 'اضافي / زیاتوالی',
     ],
 ];
 

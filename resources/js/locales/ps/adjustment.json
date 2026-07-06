@@ -1,1 +1,41 @@
-﻿{}
+{
+  "stock_adjustment": "د موجودۍ تعدیل",
+  "stock_adjustments": "د موجودۍ تعدیلات",
+  "adjustment_details": "د تعدیل جزئیات",
+  "adjustment_items": "د تعدیل توکي",
+  "reference": "د مرجع شمېره",
+  "type": "ډول",
+  "reason": "دلیل",
+  "warehouse": "ګدام",
+  "notes": "یادښت",
+  "unit_cost": "د واحد بیه",
+  "total_cost": "ټوله بیه",
+  "stock_decreases": "موجودي کمیږي",
+  "stock_increases": "موجودي زیاتیږي",
+  "cost_from_costing_method": "بیه په اوتومات ډول د بیې ټاکلو میتود (FIFO/LIFO/اوسط) څخه محاسبه کیږي",
+  "quantity_exceeds_on_hand": "مقدار د یو یا څو توکو له اوسنۍ موجودۍ څخه زیات دی.",
+  "only_draft_can_be_edited": "یوازې مسوده تعدیلات سمولی شي.",
+  "only_draft_can_be_deleted": "یوازې مسوده تعدیلات ړنګولی شي.",
+  "posted_successfully": "د موجودۍ تعدیل په بریالیتوب سره ثبت شو.",
+  "reversed_successfully": "د موجودۍ تعدیل په بریالیتوب سره بیرته وګرځول شو.",
+  "direction": {
+    "in": "ورودي",
+    "out": "وتونکي"
+  },
+  "reasons": {
+    "damage": "زیان / ماتیدل",
+    "expiry": "د نېټې تېرېدل",
+    "theft": "غلا / کسر",
+    "loss": "ورکیدل / نشتوالی",
+    "count_down": "د موجودۍ د شمېرنې سمون (کمښت)",
+    "internal_use": "داخلي کارونه / مصرف",
+    "sample": "نمونه / اعلانات / ډالۍ",
+    "wastage": "ضایعات / باطله",
+    "quality_rejection": "د کیفیت ردول",
+    "count_up": "د موجودۍ د شمېرنې سمون (زیاتوالی)",
+    "found": "موندل شوی / بیرته ترلاسه شوی",
+    "opening_stock": "د پیل موجودي ثبت",
+    "production_output": "د تولید / مونتاژ محصول",
+    "surplus": "اضافي / زیاتوالی"
+  }
+}

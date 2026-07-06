@@ -38,6 +38,7 @@
     "warehouse": "ګودام",
     "currency": "اسعار",
     "type": "د راکړې ورکړې ډول",
+    "reason": "دلیل",
     "expense_category": "د لګښت کټګوري",
     "expense_account": "د لګښت حساب",
     "per_page": "قطارونه",
@@ -64,7 +65,9 @@
     "balance_label": "بیلانس",
     "total_amount": "ټول مبلغ",
     "total_quantity": "ټول مقدار",
+    "total_movement": "ټول حرکت",
     "total_value": "ټول ارزښت",
+    "total_cost": "ټول لګښت",
     "total_items": "توکي",
     "total_in": "ټول داخل",
     "total_out": "ټول خارج",
@@ -164,7 +167,11 @@
     "category": "کټګوري",
     "expense_account": "د لګښت حساب",
     "bank_account": "د بانک / نغدي حساب",
-    "remark": "یادښت"
+    "remark": "یادښت",
+    "reason": "دلیل",
+    "unit_cost": "د واحد بیه",
+    "total_cost": "ټوله بیه",
+    "notes": "یادښت"
   },
   "view_types": {
     "general": "عمومي لید",
@@ -222,6 +229,10 @@
     "stock_movement": {
       "label": "د سټاک حرکت",
       "description": "د توکي او ګودام له مخې د سټاک تفصیلي تاریخچه."
+    },
+    "stock_adjustment_report": {
+      "label": "د موجودۍ تعدیل راپور",
+      "description": "د ګدام، توکي او دلیل له مخې د موجودۍ تعدیل کرښې، له جهت، بیې او حالت سره."
     },
     "low_stock": {
       "label": "کم سټاک",

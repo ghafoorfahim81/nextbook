@@ -38,6 +38,7 @@
     "warehouse": "انبار",
     "currency": "ارز",
     "type": "نوع معامله",
+    "reason": "دلیل",
     "expense_category": "دسته‌بندی مصرف",
     "expense_account": "حساب مصرف",
     "per_page": "تعداد سطر",
@@ -64,7 +65,9 @@
     "balance_label": "مانده",
     "total_amount": "مجموع مبلغ",
     "total_quantity": "مجموع مقدار",
+    "total_movement": "مجموع ورودی/خروجی",
     "total_value": "مجموع ارزش",
+    "total_cost": "مجموع قیمت تمام‌شده",
     "total_items": "تعداد اقلام",
     "total_in": "مجموع ورودی",
     "total_out": "مجموع خروجی",
@@ -165,7 +168,11 @@
     "category": "دسته‌بندی",
     "expense_account": "حساب مصرف",
     "bank_account": "حساب بانکی / نقدی",
-    "remark": "ملاحظات"
+    "remark": "ملاحظات",
+    "reason": "دلیل",
+    "unit_cost": "قیمت فی واحد",
+    "total_cost": "مجموع قیمت",
+    "notes": "یادداشت"
   },
   "view_types": {
     "general": "عمومی",
@@ -223,6 +230,10 @@
     "stock_movement": {
       "label": "گردش موجودی",
       "description": "تاریخچه تفصیلی گردش موجودی بر اساس کالا و انبار."
+    },
+    "stock_adjustment_report": {
+      "label": "گزارش تعدیل موجودی",
+      "description": "ردیف‌های تعدیل موجودی بر اساس انبار، کالا و دلیل، همراه با جهت، قیمت و وضعیت."
     },
     "low_stock": {
       "label": "موجودی کم",
