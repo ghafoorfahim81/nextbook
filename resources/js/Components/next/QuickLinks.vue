@@ -31,6 +31,8 @@
       c: '/customers/create',
       e: '/expenses/create',
       r: '/receipts/create',
+      o: '/sale-orders/create',
+      u: '/sale-returns/create',
     }
     const handleShortcuts = (event: KeyboardEvent) => {
       if (!event.altKey || event.ctrlKey || event.metaKey) {
@@ -129,6 +131,32 @@
               </div>
               <KbdGroup>
                 <Kbd>Alt + S</Kbd>
+              </KbdGroup>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              @click="navigateTo('/sale-orders/create')"
+              class="cursor-pointer flex items-center justify-between rtl:flex-row-reverse"
+            >
+              <div class="flex items-center gap-2 rtl:flex-row-reverse">
+                <PlusCircle class="w-4 h-4" />
+                <span>{{ t('sidebar.sale.sale_order') }}</span>
+              </div>
+              <KbdGroup>
+                <Kbd>Alt + O</Kbd>
+              </KbdGroup>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              @click="navigateTo('/sale-returns/create')"
+              class="cursor-pointer flex items-center justify-between rtl:flex-row-reverse"
+            >
+              <div class="flex items-center gap-2 rtl:flex-row-reverse">
+                <PlusCircle class="w-4 h-4" />
+                <span>{{ t('sidebar.sale.sale_return') }}</span>
+              </div>
+              <KbdGroup>
+                <Kbd>Alt + U</Kbd>
               </KbdGroup>
             </DropdownMenuItem>
 

@@ -335,6 +335,7 @@
         "deselect_all": "لغو انتخاب همه – ذخیره به صورت پیش نویس",
         "modules": {
             "sale": "فروش",
+            "sale_order": "سفارش فروش",
             "purchase": "خرید",
             "expense": "مصرف",
             "journal_entry": "سند ژورنال",

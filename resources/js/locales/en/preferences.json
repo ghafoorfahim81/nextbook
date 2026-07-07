@@ -338,6 +338,7 @@
         "deselect_all": "Deselect all – Save as Draft",
         "modules": {
             "sale": "Sale",
+            "sale_order": "Sale Order",
             "purchase": "Purchase",
             "expense": "Expense",
             "journal_entry": "Journal Entry",

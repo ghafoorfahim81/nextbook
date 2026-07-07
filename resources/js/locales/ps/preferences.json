@@ -346,6 +346,7 @@
         "deselect_all": "د ټولو ټاکنه لغوه کړئ – د مسودې په توګه وساتئ",
         "modules": {
             "sale": "خرڅلاو",
+            "sale_order": "د خرڅ امر",
             "purchase": "پېرود",
             "expense": "لګښت",
             "journal_entry": "ژورنال سند",

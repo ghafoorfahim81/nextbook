@@ -67,7 +67,7 @@ const cancelSaleOrder = () => {
     });
 };
 
-const canCancel = computed(() => ['draft', 'posted'].includes(orderData.value.status) && can('sale_orders.update'));
+const canCancel = computed(() => orderData.value.status === 'draft' && can('sale_orders.update'));
 </script>
 
 <template>
@@ -106,6 +106,11 @@ const canCancel = computed(() => ['draft', 'posted'].includes(orderData.value.st
                 <legend class="px-2 flex items-center gap-1.5">
                     <span class="text-sm font-semibold text-violet-500">{{ t('sale_order.sale_order') }} #{{ orderData.number }}</span>
                     <Badge :class="statusBadgeClasses">{{ orderData.status_label }}</Badge>
+                    <a v-if="orderData.sale_id" :href="route('sales.show', orderData.sale_id)">
+                        <Badge class="border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300 hover:underline">
+                            {{ t('sale.sale') }} #{{ orderData.sale_number }}
+                        </Badge>
+                    </a>
                 </legend>
                 <div class="mb-4 flex items-center gap-2">
                     <FileText class="h-5 w-5 text-violet-500" />

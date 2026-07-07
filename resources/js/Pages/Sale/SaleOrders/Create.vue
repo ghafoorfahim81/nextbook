@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import { useFormGuard } from '@/composables/useFormGuard'
-import { h, ref, watch, onMounted, onUnmounted, computed } from 'vue';
+import { h, ref, watch, onMounted, onUnmounted, computed, reactive } from 'vue';
 import axios from 'axios'
 import { useForm, usePage } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
@@ -11,6 +11,7 @@ import DiscountField from '@/Components/next/DiscountField.vue';
 import { useI18n } from 'vue-i18n';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
+import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
@@ -34,6 +35,15 @@ const unitMeasures = computed(() => page.props.unitMeasures ?? { data: [] })
 const sizes = computed(() => page.props.sizes ?? { data: [] })
 const categories = computed(() => page.props.categories ?? { data: [] })
 const decimalPlaces = Number(page.props.auth?.user?.preferences?.appearance?.decimal_places ?? 2)
+
+const user_preferences = computed(() => page.props.user_preferences?.data ?? page.props.user_preferences ?? {})
+// Single reactive copy of the sale_order preferences so the panel and form stay in sync live.
+const salePrefs = reactive(JSON.parse(JSON.stringify(user_preferences.value?.sale_order ?? {})))
+if (!salePrefs.general_fields || typeof salePrefs.general_fields !== 'object') salePrefs.general_fields = {}
+if (!salePrefs.item_columns || typeof salePrefs.item_columns !== 'object') salePrefs.item_columns = {}
+const general_fields = salePrefs.general_fields
+const localColumns = salePrefs.item_columns
+const showPreferencesPanel = ref(false)
 
 const buildEmptyRow = () => ({
     item_id: '',
@@ -427,7 +437,18 @@ useFormGuard(form)
 
 <template>
     <AppLayout :title="t('general.create', { name: t('sale_order.sale_order') })" :sidebar-collapsed="true">
-        <FormPageToolbar back-route="sale-orders.index" module="sale_orders" />
+        <FormPageToolbar
+            back-route="sale-orders.index"
+            module="sale_orders"
+            :show-preferences="true"
+            @preferences="showPreferencesPanel = true"
+        />
+        <FormPreferencesPanel module="sale_order"
+            v-model:open="showPreferencesPanel"
+            pref-group="sale_order"
+            :prefs="salePrefs"
+            :title="t('sale_order.sale_order')"
+        />
 
         <form @submit.prevent="handleSubmitAction('create')">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
@@ -448,11 +469,11 @@ useFormGuard(form)
                         :search-fields="['name', 'email', 'phone_no']"
                         :search-options="{ type: 'customer' }"
                     />
-                    <NextInput placeholder="Number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
-                    <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
+                    <NextInput placeholder="Number" v-if="general_fields.number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
+                    <NextDate v-if="general_fields.date" v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
                     <NextDate v-model="form.delivery_date" :error="form.errors?.delivery_date" :placeholder="t('general.enter', { text: t('sale_order.delivery_date') })" :label="t('sale_order.delivery_date')" />
 
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-2 gap-2" v-if="general_fields.currency">
                         <NextSelect
                             :options="currencies.data"
                             v-model="form.selected_currency"
@@ -470,7 +491,7 @@ useFormGuard(form)
                         <NextInput placeholder="Rate" :error="form.errors?.rate" type="number" step="any" :disabled="form.selected_currency?.is_base_currency === true" v-model="form.rate" :label="t('general.rate')" />
                     </div>
 
-                    <NextSelect
+                    <NextSelect v-if="general_fields.warehouse"
                         :options="warehouses.data"
                         :clearable="true"
                         v-model="form.selected_warehouse"
@@ -492,15 +513,15 @@ useFormGuard(form)
                         <tr class="rounded-xl text-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 min-w-5 text-center">#</th>
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
-                            <th class="px-1 py-1 w-32">{{ t('general.batch') }}</th>
-                            <th class="px-1 py-1 w-36">{{ t('general.expire_date') }}</th>
+                            <th class="px-1 py-1 w-32" v-if="localColumns.batch">{{ t('general.batch') }}</th>
+                            <th class="px-1 py-1 w-36" v-if="localColumns.expiry">{{ t('general.expire_date') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
-                            <th class="px-1 py-1 w-24">{{ t('general.unit') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="localColumns.measure">{{ t('general.unit') }}</th>
                             <th class="px-1 py-1 w-24">{{ t('general.price') }}</th>
-                            <th class="px-1 py-1 w-28">{{ t('administration.size.size') }}</th>
-                            <th class="px-1 py-1 w-28">{{ t('administration.category.category') }}</th>
-                            <th class="px-1 py-1 w-24">{{ t('general.discount') }}</th>
-                            <th class="px-1 py-1 w-16">{{ t('general.free') }}</th>
+                            <th class="px-1 py-1 w-28" v-if="localColumns.size">{{ t('admin.size.size') }}</th>
+                            <th class="px-1 py-1 w-28" v-if="localColumns.category">{{ t('admin.category.category') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="localColumns.discount">{{ t('general.discount') }}</th>
+                            <th class="px-1 py-1 w-16" v-if="localColumns.free">{{ t('general.free') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.total') }}</th>
                             <th class="px-1 py-1 w-10">
                                 <Trash2 class="w-4 h-4 text-fuchsia-700 inline" />
@@ -528,7 +549,7 @@ useFormGuard(form)
                                     @update:modelValue="value => handleItemChange(index, value)"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td v-if="localColumns.batch" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
                                     :options="item.selected_item?.batches"
                                     v-model="item.selected_batch"
@@ -541,13 +562,13 @@ useFormGuard(form)
                                     @update:modelValue="value => handleBatchChange(index, value)"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td v-if="localColumns.expiry" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextDate v-model="item.expire_date" popover="top-left" disabled="true" :error="form.errors?.[`item_list.${index}.expire_date`]" />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput v-model="item.quantity" :disabled="!item?.selected_item" type="number" step="any" inputmode="decimal" :error="form.errors?.[`item_list.${index}.quantity`]" />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td v-if="localColumns.measure" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
                                     :options="item.available_measures"
                                     v-model="item.selected_measure"
@@ -568,7 +589,7 @@ useFormGuard(form)
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput v-model="item.unit_price" :disabled="!item?.selected_item" type="number" step="any" inputmode="decimal" :error="form.errors?.[`item_list.${index}.unit_price`]" />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td v-if="localColumns.size" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
                                     :options="sizes.data"
                                     v-model="item.selected_size"
@@ -579,7 +600,7 @@ useFormGuard(form)
                                     :error="form.errors?.[`item_list.${index}.size_id`]"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td v-if="localColumns.category" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
                                     :options="categories.data"
                                     v-model="item.selected_category"
@@ -590,10 +611,10 @@ useFormGuard(form)
                                     :error="form.errors?.[`item_list.${index}.category_id`]"
                                 />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td v-if="localColumns.discount" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput v-model="item.discount" :disabled="!item?.selected_item" type="number" step="any" inputmode="decimal" :error="form.errors?.[`item_list.${index}.discount`]" />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td v-if="localColumns.free" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput v-model="item.free" :disabled="!item?.selected_item" type="number" step="any" inputmode="decimal" :error="form.errors?.[`item_list.${index}.free`]" />
                             </td>
                             <td class="text-center">
@@ -608,15 +629,15 @@ useFormGuard(form)
                         <tr class="bg-violet-500/10 hover:bg-violet-500/30 transition-colors">
                             <td></td>
                             <td class="text-center">{{ totalRows }}</td>
-                            <td></td>
-                            <td></td>
+                            <td v-if="localColumns.batch"></td>
+                            <td v-if="localColumns.expiry"></td>
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
-                            <td></td>
+                            <td v-if="localColumns.measure"></td>
                             <td class="text-center">{{ goodsTotal || 0 }}</td>
-                            <td></td>
-                            <td></td>
-                            <td class="text-center">{{ totalItemDiscount || 0 }}</td>
-                            <td class="text-center">{{ totalFree || 0 }}</td>
+                            <td v-if="localColumns.size"></td>
+                            <td v-if="localColumns.category"></td>
+                            <td class="text-center" v-if="localColumns.discount">{{ totalItemDiscount || 0 }}</td>
+                            <td class="text-center" v-if="localColumns.free">{{ totalFree || 0 }}</td>
                             <td class="text-center">{{ totalRowTotal || 0 }}</td>
                             <td></td>
                         </tr>

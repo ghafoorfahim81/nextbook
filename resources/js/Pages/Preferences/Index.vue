@@ -574,6 +574,7 @@ const receiptPaymentFields = [
 
 const transactionPostModules = [
     { key: 'sale_post_immediately', label: 'preferences.transaction.modules.sale' },
+    { key: 'sale_order_post_immediately', label: 'preferences.transaction.modules.sale_order' },
     { key: 'purchase_post_immediately', label: 'preferences.transaction.modules.purchase' },
     { key: 'expense_post_immediately', label: 'preferences.transaction.modules.expense' },
     { key: 'journal_entry_post_immediately', label: 'preferences.transaction.modules.journal_entry' },
