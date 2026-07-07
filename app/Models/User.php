@@ -149,7 +149,7 @@ class User extends Authenticatable
             'enforce_sale_stock_reservation' => false,
         ],
         'sale_order' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
                 'colors' => false,

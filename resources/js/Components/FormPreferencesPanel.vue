@@ -74,6 +74,16 @@ const purchaseItemColumns = [
     ...baseItemColumns.slice(3),
 ]
 
+const saleOrderItemColumns = [
+    { key: 'batch', labelKey: 'preferences.fields.batch' },
+    { key: 'expiry', labelKey: 'preferences.fields.expiry' },
+    { key: 'measure', labelKey: 'preferences.fields.measure' },
+    { key: 'discount', labelKey: 'preferences.fields.discount' },
+    { key: 'free', labelKey: 'preferences.fields.free' },
+    { key: 'size', labelKey: 'preferences.fields.size' },
+    { key: 'category', labelKey: 'preferences.fields.category' },
+]
+
 const itemManagementFields = [
     { key: 'code', labelKey: 'preferences.item_fields.code' },
     { key: 'generic_name', labelKey: 'preferences.item_fields.generic_name' },
@@ -126,6 +136,18 @@ const SCHEMAS = {
                 { key: 'show_item_transactions', type: 'switch', labelKey: 'preferences.sale.show_item_transactions' },
                 { key: 'show_attachments', type: 'switch', labelKey: 'preferences.sale.show_attachments' },
                 { key: 'enforce_sale_stock_reservation', type: 'switch', labelKey: 'preferences.sale.enforce_sale_stock_reservation' },
+            ]
+        },
+    ],
+    sale_order: [
+        { type: 'toggles', group: 'general_fields', titleKey: 'preferences.sale.general_fields', items: generalFields },
+        { type: 'toggles', group: 'item_columns', titleKey: 'preferences.sale.item_columns', items: saleOrderItemColumns },
+        {
+            type: 'fields', titleKey: 'general.settings', items: [
+                { key: 'invoice_prefix', type: 'text', labelKey: 'preferences.sale.invoice_prefix' },
+                { key: 'start_number', type: 'number', labelKey: 'preferences.sale.start_number', min: 1 },
+                { key: 'due_days', type: 'number', labelKey: 'preferences.sale.due_days', min: 0 },
+                { key: 'terms', type: 'textarea', labelKey: 'preferences.sale.terms' },
             ]
         },
     ],

@@ -149,19 +149,6 @@ const reverseSale = (reason) => {
                 @confirm="reverseSale"
             />
 
-            <div v-if="saleData.status === 'posted' && can('sale_returns.create')" class="flex justify-end">
-                <Button variant="outline" size="sm" @click="router.visit(route('sale-returns.create', { sale_id: saleData.id }))">
-                    {{ t('sale_return.create_return') }}
-                </Button>
-            </div>
-
-            <div v-if="saleData.sale_order_id" class="text-sm text-muted-foreground">
-                {{ t('sale_order.linked_sale') }}:
-                <a :href="route('sale-orders.show', saleData.sale_order_id)" class="text-violet-600 underline dark:text-violet-400">
-                    #{{ saleData.sale_order_number }}
-                </a>
-            </div>
-
             <div v-if="originalDoc" class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
                 {{ t('general.reversal_of_transaction', { number: originalVoucherNumber }) }}.
             </div>
@@ -174,6 +161,11 @@ const reverseSale = (reason) => {
                 <legend class="px-2 flex items-center gap-1.5">
                     <span class="text-sm font-semibold text-violet-500">{{ t('sale.sale') }} #{{ saleData.number }}</span>
                     <Badge :class="statusBadgeClasses">{{ getStatusLabel(saleData.status) }}</Badge>
+                    <a v-if="saleData.sale_order_id" :href="route('sale-orders.show', saleData.sale_order_id)">
+                        <Badge class="border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300 hover:underline">
+                            {{ t('sale_order.sale_order') }} #{{ saleData.sale_order_number }}
+                        </Badge>
+                    </a>
                 </legend>
                 <div class="mb-4 flex items-center gap-2">
                     <FileText class="h-5 w-5 text-violet-500" />
@@ -203,6 +195,16 @@ const reverseSale = (reason) => {
                             <DollarSign class="h-3 w-3" />{{ t('general.amount') }}
                         </div>
                         <div class="text-sm font-medium text-foreground">{{ currencySymbol }} {{ formattedGrandTotal }}</div>
+                    </div>
+                    <div v-if="saleData.sale_order_id" class="space-y-1.5">
+                        <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                            <FileCheck class="h-3 w-3" />{{ t('sale_order.sale_order') }}
+                        </div>
+                        <div class="text-sm font-medium text-foreground">
+                            <a :href="route('sale-orders.show', saleData.sale_order_id)" class="text-violet-600 underline dark:text-violet-400">
+                                #{{ saleData.sale_order_number }}
+                            </a>
+                        </div>
                     </div>
                     <!-- Profit highlight -->
                     <div class="space-y-1.5 rounded-lg px-3 py-2"
@@ -250,6 +252,12 @@ const reverseSale = (reason) => {
                             {{ currencySymbol }} {{ formattedRemainingAmount }}
                         </div>
                     </div>
+                </div>
+
+                <div v-if="saleData.status === 'posted' && can('sale_returns.create')" class="flex justify-end mt-4">
+                    <Button variant="outline" size="sm" @click="router.visit(route('sale-returns.create', { sale_id: saleData.id }))">
+                        {{ t('sale_return.create_return') }}
+                    </Button>
                 </div>
             </fieldset>
 

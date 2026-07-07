@@ -195,9 +195,8 @@ class SaleOrderTest extends TestCase
         $this->assertDatabaseMissing('sales', ['number' => 9502]);
     }
 
-    public function test_draft_sale_order_can_be_posted_and_then_cancelled(): void
+    public function test_draft_sale_order_can_be_posted_then_no_longer_edited_or_cancelled(): void
     {
-        config(['app.debug' => true]);
         // Force draft by disabling post-immediately preference for this request.
         $this->ctx['user']->setPreference('transaction.sale_order_post_immediately', false);
         $this->ctx['user']->save();
@@ -208,6 +207,23 @@ class SaleOrderTest extends TestCase
 
         $this->post(route('sale-orders.post', $saleOrder->id))->assertRedirect();
         $this->assertDatabaseHas('sale_orders', ['id' => $saleOrder->id, 'status' => SaleOrderStatus::POSTED->value]);
+
+        // Once posted, the order can no longer be cancelled or edited.
+        $this->post(route('sale-orders.cancel', $saleOrder->id))->assertStatus(422);
+        $this->assertDatabaseHas('sale_orders', ['id' => $saleOrder->id, 'status' => SaleOrderStatus::POSTED->value]);
+
+        $this->get(route('sale-orders.edit', $saleOrder->id))->assertRedirect();
+        $this->assertDatabaseHas('sale_orders', ['id' => $saleOrder->id, 'status' => SaleOrderStatus::POSTED->value]);
+    }
+
+    public function test_draft_sale_order_can_be_cancelled(): void
+    {
+        $this->ctx['user']->setPreference('transaction.sale_order_post_immediately', false);
+        $this->ctx['user']->save();
+
+        $this->post(route('sale-orders.store'), $this->storeSaleOrderPayload(['number' => 5003]));
+        $saleOrder = SaleOrder::query()->where('number', 5003)->firstOrFail();
+        $this->assertEquals(SaleOrderStatus::DRAFT->value, $saleOrder->status);
 
         $this->post(route('sale-orders.cancel', $saleOrder->id))->assertRedirect();
         $this->assertDatabaseHas('sale_orders', ['id' => $saleOrder->id, 'status' => SaleOrderStatus::CANCELLED->value]);

@@ -280,8 +280,8 @@ class SaleOrderController extends Controller
     {
         $this->authorize('update', $saleOrder);
 
-        if (!in_array($saleOrder->status, [SaleOrderStatus::DRAFT->value, SaleOrderStatus::POSTED->value], true)) {
-            abort(422, 'Only draft or posted documents can be cancelled.');
+        if ($saleOrder->status !== SaleOrderStatus::DRAFT->value) {
+            abort(422, 'Only draft documents can be cancelled.');
         }
 
         $saleOrder->update([
