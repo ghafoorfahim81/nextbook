@@ -89,13 +89,13 @@ function clear() {
 
 <template>
   <div class="flex max-h-[70vh] flex-col">
-    <div class="flex shrink-0 items-center justify-between gap-2 pb-3">
+    <div class="flex shrink-0 items-center justify-between gap-2 pb-3 border-b">
       <div class="text-sm font-medium">
         {{ title || t('datatable.filters') }}
       </div>
     </div>
 
-    <div class="grid flex-1 grid-cols-1 gap-3 overflow-y-auto pr-1">
+    <div class="grid flex-1 grid-cols-1 gap-3 overflow-y-auto pr-1 pt-3">
       <div
         v-for="f in normalizedFields"
         :key="f.key"

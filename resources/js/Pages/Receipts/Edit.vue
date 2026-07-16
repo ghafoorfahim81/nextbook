@@ -30,7 +30,7 @@ const rpPrefs = reactive(JSON.parse(JSON.stringify(page.props.user_preferences?.
 if (!rpPrefs.visible_fields || typeof rpPrefs.visible_fields !== 'object') rpPrefs.visible_fields = {}
 const rpFields = computed(() => rpPrefs.visible_fields)
 const showPreferencesPanel = ref(false)
-useLazyProps(page.props, ['ledgers', 'accounts'])
+const { loading: lazyLoading } = useLazyProps(page.props, ['ledgers', 'accounts'])
 const billLoading = ref(false)
 const showBillDialog = ref(false)
 const billOptions = ref([])
@@ -256,6 +256,7 @@ useFormGuard(form)
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextSelect
+            :loading="lazyLoading"
             :options="ledgers"
             v-model="form.selected_ledger"
             @update:modelValue="(v) => handleSelectChange('ledger_id', v.id)"
@@ -299,6 +300,7 @@ useFormGuard(form)
           />
           <NextSelect
             v-if="rpFields.debit_account"
+            :loading="lazyLoading"
             :options="accounts"
             v-model="form.selected_bank_account"
             @update:modelValue="(v) => handleSelectChange('bank_account_id', v.id)"

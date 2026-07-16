@@ -27,7 +27,7 @@ const warehouses = computed(() => page.props.warehouses?.data || page.props.ware
 const items = computed(() => page.props.items?.data || page.props.items || [])
 const unitMeasures = computed(() => page.props.unitMeasures?.data || page.props.unitMeasures || [])
 
-useLazyProps(page.props, ['items'])
+const { loading: lazyLoading } = useLazyProps(page.props, ['items'])
 
 const transfer = props.transfer.data
 
@@ -326,6 +326,7 @@ useFormGuard(form)
               <td class="px-1 py-2 align-top w-5">{{ index + 1 }}</td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                 <NextSelect
+                  :loading="lazyLoading"
                   :options="items"
                   v-model="item.selected_item"
                   label-key="name"

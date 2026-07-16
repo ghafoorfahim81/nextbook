@@ -15,10 +15,9 @@
         @close="handleClose"
         :filterable="false"
         :clearable="clearable"
-        :loading="isLoading"
+        :loading="combinedLoading"
         :placeholder="placeholder"
         :close-on-select="true"
-        :no-options-text="noResultsText"
         :append-to-body="shouldAppendToBody"
         :calculate-position="shouldAppendToBody ? calculatePosition : null"
         class="col-span-3 w-full sm:text-sm"
@@ -26,6 +25,17 @@
 
         v-bind="$attrs"
       >
+        <!-- Loading placeholder shown in place of the empty options list -->
+        <template #no-options>
+          <div v-if="combinedLoading" class="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">
+            <Spinner class="size-4" />
+            <span>{{ t('general.loading') }}</span>
+          </div>
+          <div v-else class="py-3 text-sm text-muted-foreground">
+            {{ t('general.no_results') }}
+          </div>
+        </template>
+
         <!-- Add New Option Button (always visible at bottom when open) -->
         <template #list-footer v-if="showQuickCreateButton">
           <div class="list-footer">
@@ -70,6 +80,7 @@
   import { ref, computed, watch, onMounted, onUnmounted, getCurrentInstance, nextTick } from 'vue'
   import { useI18n } from 'vue-i18n'
   import FloatingLabel from '@/Components/next/FloatingLabel.vue'
+  import { Spinner } from '@/Components/ui/spinner'
   import { useSearchResources } from '@/composables/useSearchResources.js'
   import QuickCreateModal from '@/Components/next/QuickCreateModal.vue'
   import { QUICK_CREATE_EVENT, quickCreateRegistry } from '@/Components/next/quickCreateRegistry'
@@ -90,6 +101,8 @@
     error: { type: String, default: '' },
     placeholder: { type: String, default: '' },
     autofocus: { type: Boolean, default: false },
+    // External loading state (e.g. options still being fetched via a lazy prop reload)
+    loading: { type: Boolean, default: false },
 
     searchable: { type: Boolean, default: false },
     resourceType: { type: String, default: null },
@@ -256,6 +269,7 @@
   const searchableOptions = ref([...props.options])
   const currentSearchTerm = ref('')
   const { searchResources, isLoading } = useSearchResources()
+  const combinedLoading = computed(() => isLoading.value || props.loading)
 
   const resolvedSearchFields = computed(() => {
     const baseFields = Array.isArray(props.searchFields) ? [...props.searchFields] : ['name']

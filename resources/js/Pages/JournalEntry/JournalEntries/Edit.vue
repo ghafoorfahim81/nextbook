@@ -21,7 +21,7 @@ const accounts = computed(() => page.props.accounts?.data || [])
 const ledgers = computed(() => page.props.ledgers?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
 const journalClasses = computed(() => page.props.journalClasses?.data || [])
-useLazyProps(page.props, ['accounts', 'ledgers', 'currencies'])
+const { loading: lazyLoading } = useLazyProps(page.props, ['accounts', 'ledgers', 'currencies'])
 
 const form = useForm({
   id: '',
@@ -203,6 +203,7 @@ useFormGuard(form)
           />
           <div class="grid grid-cols-2 gap-2">
             <NextSelect
+                :loading="lazyLoading"
                 :options="currencies.data || currencies"
                 v-model="form.selected_currency"
                 @update:modelValue="handleCurrencyChange"
@@ -257,6 +258,7 @@ useFormGuard(form)
                 <td class="px-4 py-2 text-center text-muted-foreground">{{ index + 1 }}</td>
                 <td class="px-4 py-2 w-64">
                     <NextSelect
+                        :loading="lazyLoading"
                         :options="accounts.data || accounts"
                         v-model="line.selected_account"
                         @update:modelValue="(val) => { line.account_id = val?.id || null }"
@@ -299,6 +301,7 @@ useFormGuard(form)
                 </td>
                 <td class="px-4 py-2 w-64">
                     <NextSelect
+                        :loading="lazyLoading"
                         :options="ledgers.data || ledgers"
                             v-model="line.selected_ledger"
                         @update:modelValue="(val) => { line.ledger_id = val?.id || '' }"

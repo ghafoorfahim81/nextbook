@@ -29,7 +29,7 @@ if (!rpPrefs.visible_fields || typeof rpPrefs.visible_fields !== 'object') rpPre
 const rpFields = computed(() => rpPrefs.visible_fields)
 const showPreferencesPanel = ref(false)
 import { toast } from 'vue-sonner'
-useLazyProps(page.props, ['accounts'])
+const { loading: lazyLoading } = useLazyProps(page.props, ['accounts'])
 const billLoading = ref(false)
 const showBillDialog = ref(false)
 const billOptions = ref([])
@@ -311,6 +311,7 @@ useFormGuard(form)
           />
           <NextSelect
             v-if="rpFields.debit_account"
+            :loading="lazyLoading"
             :options="accounts"
             v-model="form.selected_bank_account"
             @update:modelValue="(v) => handleSelectChange('bank_account_id', v.id)"

@@ -45,7 +45,7 @@ const props = defineProps({
     bankAccounts: {type: Object, required: true},
 })
 
-const { fetchLazyProps } = useLazyProps(props, ['ledgers', 'accounts'])
+const { fetchLazyProps, loading: lazyLoading } = useLazyProps(props, ['ledgers', 'accounts'])
 
 const buildEmptyRow = () => ({
     item_id: '',
@@ -753,6 +753,7 @@ useFormGuard(form)
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                 <NextSelect
                     autofocus
+                    :loading="lazyLoading"
                     :options="ledgers?.data || []"
                     v-model="form.selected_ledger"
                     @update:modelValue="(value) => handleSelectChange('supplier_id', value)"

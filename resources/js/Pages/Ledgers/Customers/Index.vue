@@ -13,14 +13,15 @@ import { router } from '@inertiajs/vue3'
     const { t } = useI18n()
 
     const columns = computed(() => ([
-        { key: 'name', label: t('general.name') },
-        { key: 'code', label: t('admin.currency.code') },
+        { key: 'name', label: t('general.name'), sortable: true },
+        { key: 'code', label: t('admin.currency.code'), sortable: true },
         { key: 'contact_person', label: t('ledger.contact_person') },
-        { key: 'phone_no', label: t('general.phone') },
-        { key: 'email', label: t('general.email') },
+        { key: 'phone_no', label: t('general.phone'), sortable: true },
+        { key: 'email', label: t('general.email'), sortable: true },
         {
             key: 'is_active',
             label: t('general.status'),
+            sortable: true,
             render: (row) => row.is_active ? t('general.active') : t('general.inactive'),
         },
         { key: 'actions', label: t('general.actions') },

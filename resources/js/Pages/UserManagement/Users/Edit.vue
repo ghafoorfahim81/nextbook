@@ -25,7 +25,7 @@ const props = defineProps({
 });
 const user = props.user?.data;
 
-useLazyProps(props, ['roles'])
+const { loading: lazyLoading } = useLazyProps(props, ['roles'])
 
 // Add a loading state as in many create pages
 const loading = ref(false);
@@ -153,6 +153,7 @@ useFormGuard(form)
                     <!-- Roles -->
                     <NextSelect
                         v-model="form.roles"
+                        :loading="lazyLoading"
                         :options="roles"
                         label-key="name"
                         value-key="id"
