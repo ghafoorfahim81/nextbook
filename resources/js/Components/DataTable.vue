@@ -118,8 +118,14 @@
                     </TableRow>
                 </TableHeader>
                 <TableBody>
+                    <!-- Skeleton Loading Rows -->
+                    <TableRow v-if="loading" v-for="n in skeletonRowsToShow" :key="`skeleton-${n}`" class="h-11">
+                        <TableCell v-for="column in derivedColumns" :key="column.key" class="py-1 px-3">
+                            <Skeleton class="h-7 w-full max-w-[160px]" />
+                        </TableCell>
+                    </TableRow>
                     <!-- Empty State Message -->
-                    <TableRow v-if="isEmpty">
+                    <TableRow v-else-if="isEmpty">
                         <TableCell :colspan="derivedColumns.length" class="h-48 text-center">
                             <div class="flex flex-col items-center justify-center space-y-4 py-8">
                                 <div class="rounded-full bg-violet-100 p-4">
@@ -324,6 +330,7 @@ import {
 import {
     Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/Components/ui/table'
+import { Skeleton } from '@/Components/ui/skeleton'
 import { Button } from '@/Components/ui/button'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -395,6 +402,10 @@ const emptyRowsToShow = computed(() => {
     return Math.max(0, props.emptyRowsCount - dataRowsCount.value)
 })
 
+// Loading state: shown while navigating, searching, filtering or sorting
+const loading = ref(false)
+const skeletonRowsToShow = computed(() => dataRowsCount.value || props.emptyRowsCount)
+
 // Derived columns: inject index column at the start
 const derivedColumns = computed(() => {
     const cols = props.columns ? [...props.columns] : []
@@ -452,7 +463,12 @@ const updateFilters = () => {
             sortDirection: sortDirection.value,
             filters: advancedFilters.value,
         },
-        { preserveState: true, preserveScroll: true }
+        {
+            preserveState: true,
+            preserveScroll: true,
+            onStart: () => { loading.value = true },
+            onFinish: () => { loading.value = false },
+        }
     )
 }
 
@@ -482,7 +498,12 @@ const changePage = (page) => {
             sortDirection: sortDirection.value,
             filters: advancedFilters.value,
         },
-        { preserveState: true, preserveScroll: true }
+        {
+            preserveState: true,
+            preserveScroll: true,
+            onStart: () => { loading.value = true },
+            onFinish: () => { loading.value = false },
+        }
     )
 }
 
@@ -507,7 +528,12 @@ const applyAdvancedFilters = () => {
             sortDirection: sortDirection.value,
             filters: advancedFilters.value,
         },
-        { preserveState: true, preserveScroll: true }
+        {
+            preserveState: true,
+            preserveScroll: true,
+            onStart: () => { loading.value = true },
+            onFinish: () => { loading.value = false },
+        }
     )
 }
 

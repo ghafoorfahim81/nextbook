@@ -18,7 +18,7 @@ const account = computed(() => page.props.account?.data || {})
 const accountTypes = computed(() => page.props.accountTypes?.data || [])
 const currencies = computed(() => page.props.currencies?.data || [])
 const homeCurrency = computed(() => page.props.homeCurrency || {})
-useLazyProps(page.props, ['accounts'])
+const { loading: lazyLoading } = useLazyProps(page.props, ['accounts'])
 
 const form = useForm({
     ...account.value,
@@ -128,6 +128,7 @@ useFormGuard(form)
                         :error="form.errors.account_type_id"
                     />
                     <NextSelect
+                        :loading="lazyLoading"
                         :options="filteredParentAccounts"
                         v-model="form.selected_parent_account"
                         label-key="name"

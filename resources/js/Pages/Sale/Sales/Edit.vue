@@ -52,7 +52,7 @@ const decimalPlaces = computed(() => Number(userPreferences.value?.appearance?.d
 const saleRecord = props.sale?.data ?? props.sale ?? {};
 const MIN_SALE_ROWS = 6;
 
-useLazyProps(props, ['ledgers', 'accounts']);
+const { loading: lazyLoading } = useLazyProps(props, ['ledgers', 'accounts']);
 
 const toNum = (value, fallback = 0) => {
     const number = Number(value);
@@ -739,6 +739,7 @@ useFormGuard(form)
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextSelect
+                        :loading="lazyLoading"
                         :options="ledgers?.data || []"
                         v-model="form.selected_ledger"
                         @update:modelValue="(value) => handleSelectChange('customer_id', value)"

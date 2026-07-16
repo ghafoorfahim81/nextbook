@@ -1,4 +1,4 @@
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 
 const hasData = (value) => {
@@ -15,18 +15,22 @@ const hasData = (value) => {
 }
 
 export const useLazyProps = (source, keys) => {
+  const loading = ref(false)
+
   const fetchLazyProps = () => {
     const only = keys.filter((key) => !hasData(source?.[key]))
     if (!only.length) return
+    loading.value = true
     router.reload({
       only,
       preserveState: true,
       preserveScroll: true,
       replace: true,
+      onFinish: () => { loading.value = false },
     })
   }
 
   onMounted(fetchLazyProps)
 
-  return { fetchLazyProps }
+  return { fetchLazyProps, loading }
 }

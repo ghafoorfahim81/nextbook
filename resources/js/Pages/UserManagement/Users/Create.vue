@@ -24,7 +24,7 @@ const props = defineProps({
     branches: {type: Object, required: true},
 });
 
-useLazyProps(props, ['roles'])
+const { loading: lazyLoading } = useLazyProps(props, ['roles'])
 
 console.log(props.branches);
 const form = useForm({
@@ -147,6 +147,7 @@ useFormGuard(form)
                     <!-- Roles -->
                     <NextSelect
                         v-model="form.roles"
+                        :loading="lazyLoading"
                         :options="roles"
                         label-key="name"
                         value-key="id"

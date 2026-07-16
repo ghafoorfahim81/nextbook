@@ -37,7 +37,7 @@ const props = defineProps({
     stockLocked: { type: Boolean, default: false },
 });
 
-useLazyProps(props, ['ledgers', 'accounts']);
+const { loading: lazyLoading } = useLazyProps(props, ['ledgers', 'accounts']);
 
 const purchaseRecord = props.purchase?.data ?? props.purchase ?? {};
 const userPreferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? {});
@@ -735,6 +735,7 @@ useFormGuard(form)
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextSelect
+                        :loading="lazyLoading"
                         :options="ledgers?.data || []"
                         v-model="form.selected_ledger"
                         @update:modelValue="(value) => handleSelectChange('supplier_id', value)"
