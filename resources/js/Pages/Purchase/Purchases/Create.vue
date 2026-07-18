@@ -293,44 +293,33 @@ function handleSubmit(createAndNew = false) {
     }
     else{
         const FormItems = form.items.filter(item => item.selected_item && item.item_id);
-
-        // Validate each added row up-front so missing values surface as inline
-        // field errors instead of a confusing server error.
-        form.clearErrors();
-        let hasRowError = false;
-        form.items.forEach((item, index) => {
-            if (!(item.selected_item && item.item_id)) return;
-            const price = item.unit_price;
-            if (price === '' || price === null || price === undefined || isNaN(Number(price))) {
-                form.setError(`item_list.${index}.unit_price`, t('purchase.unit_price_required'));
-                hasRowError = true;
-            }
-            if (!item.selected_measure) {
-                form.setError(`item_list.${index}.unit_measure_id`, t('purchase.unit_measure_required'));
-                hasRowError = true;
-            }
-        });
-        if (hasRowError) {
-            notifySound('error');
-            toast({
-                title: t('general.error'),
-                description: t('purchase.complete_item_rows'),
-                variant: 'destructive',
-                class: 'bg-pink-600 text-white',
-            });
-            return;
-        }
-
-        form.item_list = FormItems;
+        form.item_list = FormItems.map(item => ({
+            item_id: item.item_id,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            unit_measure_id: item.selected_measure?.id || item.unit_measure_id,
+            batch: item.batch || '',
+            expire_date: item.expire_date || null,
+            item_discount: item.item_discount || 0,
+            free: item.free || 0,
+            tax: item.tax || 0,
+        }));
         form.transaction_total = toNum(goodsTotal.value - totalDiscount.value + totalTax.value);
         form.discount_total = toNum(totalDiscount.value);
-        // Filter out empty items and set unit_measure_id
-        form.item_list.forEach(item => {
-            item.unit_measure_id = item.selected_measure.id;
-        });
     }
+
+    // Only the lean `item_list` needs to reach the server — `items` and the
+    // `selected_*` fields carry full nested objects (item catalog data,
+    // batches, etc.) purely for UI binding and must never be POSTed, or
+    // Laravel's wildcard validation on item_list.* can exhaust memory
+    // flattening them (Arr::dot runs once per item_list.* rule).
+    const stripUiOnlyFields = (data) => {
+        const { items, selected_ledger, selected_currency, selected_purchase_type, selected_bank_account, selected_warehouse, ...rest } = data
+        return rest
+    }
+
     if (createAndNew) {
-        form.transform((data) => ({ ...data, create_and_new: true })).post(route('purchases.store'), {
+        form.transform((data) => ({ ...stripUiOnlyFields(data), create_and_new: true })).post(route('purchases.store'), {
             onSuccess: () => {
                 notifySound('success');
                 resetFormForCreate();
@@ -352,7 +341,7 @@ function handleSubmit(createAndNew = false) {
             }
         })
         } else {
-            form.post(route('purchases.store'), {
+            form.transform(stripUiOnlyFields).post(route('purchases.store'), {
             onSuccess: () => {
                 notifySound('success');
 
@@ -664,7 +653,7 @@ const transactionSummary = computed(() => {
         cashReceived = goodsTotal.value; // transaction total
     } else if (purchaseType === 'credit') {
         cashReceived = paid; // on loan = 0, default
-    } 
+    }
     else {
         cashReceived = 0;
     }

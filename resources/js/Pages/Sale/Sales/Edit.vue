@@ -656,10 +656,15 @@ const handleSubmit = ({ saveAndPrint = false } = {}) => {
     form.transaction_total = toNum(goodsTotal.value - totalDiscount.value + totalTax.value);
     form.discount_total = toNum(totalDiscount.value);
 
-    form.transform((data) => ({
-        ...data,
-        save_and_print: saveAndPrint,
-    })).put(route('sales.update', saleRecord.id), {
+    // Only the lean `item_list` needs to reach the server — `items` and the
+    // `selected_*` fields carry full nested objects (item catalog data,
+    // batches, etc.) purely for UI binding and must never be POSTed, or
+    // Laravel's wildcard validation on item_list.* can exhaust memory
+    // flattening them (Arr::dot runs once per item_list.* rule).
+    form.transform((data) => {
+        const { items, selected_ledger, selected_currency, selected_sale_type, selected_bank_account, selected_warehouse, ...rest } = data
+        return { ...rest, save_and_print: saveAndPrint }
+    }).put(route('sales.update', saleRecord.id), {
         onSuccess: (page) => {
             notifySound('success');
             if (saveAndPrint) finalizePrint(page);
