@@ -357,13 +357,19 @@ function handleSubmit({ createAndNew = false, createAndPrint = false } = {}) {
     }
     else{
         const FormItems = form.items.filter(item => item.selected_item && item.item_id);
-        form.item_list = FormItems;
+        form.item_list = FormItems.map(item => ({
+            item_id: item.item_id,
+            quantity: item.quantity,
+            unit_price: item.unit_price,
+            unit_measure_id: item.selected_measure?.id || item.unit_measure_id,
+            batch: item.batch || '',
+            expire_date: item.expire_date || null,
+            item_discount: item.item_discount || 0,
+            free: item.free || 0,
+            tax: item.tax || 0,
+        }));
         form.transaction_total = toNum(goodsTotal.value - totalDiscount.value + totalTax.value);
         form.discount_total = toNum(totalDiscount.value);
-        // Filter out empty items and set unit_measure_id
-        form.item_list.forEach(item => {
-            item.unit_measure_id = item.selected_measure.id;
-        });
     }
 
     const payload = {
@@ -371,8 +377,18 @@ function handleSubmit({ createAndNew = false, createAndPrint = false } = {}) {
         create_and_print: createAndPrint,
     }
 
+    // Only the lean `item_list` needs to reach the server — `items` and the
+    // `selected_*` fields carry full nested objects (item catalog data,
+    // batches, etc.) purely for UI binding and must never be POSTed, or
+    // Laravel's wildcard validation on item_list.* can exhaust memory
+    // flattening them (Arr::dot runs once per item_list.* rule).
+    const stripUiOnlyFields = (data) => {
+        const { items, selected_ledger, selected_currency, selected_sale_type, selected_bank_account, selected_warehouse, ...rest } = data
+        return { ...rest, ...payload }
+    }
+
     if (createAndNew) {
-        form.transform((data) => ({ ...data, ...payload })).post(route('sales.store'), {
+        form.transform(stripUiOnlyFields).post(route('sales.store'), {
             onSuccess: () => {
                 notifySound('success');
                 resetFormForCreate();
@@ -395,7 +411,7 @@ function handleSubmit({ createAndNew = false, createAndPrint = false } = {}) {
             }
         })
         } else {
-            form.transform((data) => ({ ...data, ...payload })).post(route('sales.store'), {
+            form.transform(stripUiOnlyFields).post(route('sales.store'), {
             onSuccess: (page) => {
                 notifySound('success');
 
