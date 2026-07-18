@@ -97,6 +97,8 @@ import { usePage, Link, router } from '@inertiajs/vue3'
 import Toaster from '@/Components/ui/toast/Toaster.vue'
 // @ts-ignore - Vue SFC default export shim
 import Sonner from '@/Components/ui/sonner/Sonner.vue'
+// @ts-ignore - Vue SFC default export shim
+import PageLoadingOverlay from '@/Components/next/PageLoadingOverlay.vue'
 import { HousePlug, ShoppingCart, Receipt as ReceiptIcon, Home } from 'lucide-vue-next'
 // @ts-ignore - Vue SFC default export shim
 import NotificationDropdown from '@/Components/notifications/NotificationDropdown.vue'
@@ -793,6 +795,7 @@ function logout() {
         :theme="sonnerTheme"
         :position="isRTL ? 'bottom-left' : 'bottom-right'"
     />
+    <PageLoadingOverlay />
     <SidebarProvider v-model:open="sidebarOpen" :default-open="!props.sidebarCollapsed">
         <Sidebar collapsible="icon" :side="sidebarSide">
             <SidebarHeader>
