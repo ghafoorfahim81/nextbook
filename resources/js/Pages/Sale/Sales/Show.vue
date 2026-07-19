@@ -317,6 +317,15 @@ const currencySymbol = computed(() => saleData.value.transaction?.currency?.symb
                     </table>
                 </div>
             </div>
+
+            <!-- Description -->
+            <div v-if="saleData.description" class="rounded-xl border border-border bg-card px-5 py-4 text-card-foreground shadow-sm">
+                <div class="mb-2 flex items-center gap-2">
+                    <FileText class="h-5 w-5 text-violet-500" />
+                    <h3 class="text-base font-semibold text-foreground">{{ t('general.description') }}</h3>
+                </div>
+                <p class="text-sm text-muted-foreground whitespace-pre-line">{{ saleData.description }}</p>
+            </div>
         </div>
     </AppLayout>
 </template>

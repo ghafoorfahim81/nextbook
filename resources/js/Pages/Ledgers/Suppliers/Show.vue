@@ -4,7 +4,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3';
 import { Button } from '@/Components/ui/button';
-import { ArrowLeft, SquarePen } from 'lucide-vue-next';
+import { ArrowLeft, SquarePen, Printer } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue';
 
@@ -39,6 +39,11 @@ const exportUrl = (list) => route('suppliers.export', {
     list,
 });
 
+const openPrint = (routeName, id) => {
+    if (!routeName || !id) return;
+    window.open(route(routeName, id), '_blank');
+};
+
 const supplierPurchaseTableRows = computed(() => purchaseRows.value.map((row) => ({
     id: row.id,
     number: row.number || row.reference_id || row.id,
@@ -58,6 +63,7 @@ const supplierReceiptTableRows = computed(() => receiptRows.value.map((row) => (
     rate: row.rate || 0,
     payment_mode: row.payment_mode_label || row.payment_mode || '-',
     description: row.narration || row.description || '-',
+    printRoute: 'receipts.print',
 })));
 
 const supplierPaymentTableRows = computed(() => paymentRows.value.map((row) => ({
@@ -69,6 +75,7 @@ const supplierPaymentTableRows = computed(() => paymentRows.value.map((row) => (
     rate: row.rate || 0,
     payment_mode: row.payment_mode_label || row.payment_mode || '-',
     description: row.narration || row.description || '-',
+    printRoute: 'payments.print',
 })));
 
 const supplierPurchaseColumns = computed(() => [
@@ -88,6 +95,7 @@ const supplierMovementColumns = computed(() => [
     { key: 'rate', label: t('general.rate'), type: 'money', align: 'right' },
     { key: 'payment_mode', label: t('general.payment_method') },
     { key: 'description', label: t('general.description') },
+    { key: 'actions', label: t('general.actions'), align: 'right' },
 ]);
 </script>
 
@@ -273,7 +281,13 @@ const supplierMovementColumns = computed(() => [
                         :row-number-label="t('report.columns.no')"
                         default-sort-key="date"
                         default-sort-direction="desc"
-                    />
+                    >
+                        <template #cell-actions="{ row }">
+                            <Button variant="outline" size="icon" :title="t('datatable.print')" @click="openPrint(row.printRoute, row.id)">
+                                <Printer class="h-4 w-4" />
+                            </Button>
+                        </template>
+                    </LedgerListTable>
                     <LedgerListTable
                         v-else
                         :title="t('payment.payments')"
@@ -285,7 +299,13 @@ const supplierMovementColumns = computed(() => [
                         :row-number-label="t('report.columns.no')"
                         default-sort-key="date"
                         default-sort-direction="desc"
-                    />
+                    >
+                        <template #cell-actions="{ row }">
+                            <Button variant="outline" size="icon" :title="t('datatable.print')" @click="openPrint(row.printRoute, row.id)">
+                                <Printer class="h-4 w-4" />
+                            </Button>
+                        </template>
+                    </LedgerListTable>
                 </div>
             </div>
 
