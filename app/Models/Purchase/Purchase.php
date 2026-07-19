@@ -78,6 +78,9 @@ class Purchase extends Model
             'due_date',
             'description',
             'status',
+            'payment_status',
+            'supplier.name',
+            'transaction.currency.name',
         ];
     }
 

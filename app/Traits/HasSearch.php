@@ -31,8 +31,13 @@ trait HasSearch
             $query->where(function ($query) use ($searchTerm, $searchableColumns): void {
                 foreach ($searchableColumns as $column) {
                     if (str_contains($column, '.')) {
-                        // Handle relationship column search
-                        [$relationship, $relatedColumn] = explode('.', $column, 2);
+                        // Handle relationship column search. The relation path may itself be
+                        // dotted (e.g. "transaction.currency.name"), so split on the LAST dot:
+                        // everything before it is the (possibly nested) relation, the rest is
+                        // the column — Eloquent's whereHas() accepts dotted relation paths.
+                        $lastDot = strrpos($column, '.');
+                        $relationship = substr($column, 0, $lastDot);
+                        $relatedColumn = substr($column, $lastDot + 1);
                         $query->orWhereHas($relationship, function ($q) use ($relatedColumn, $searchTerm): void {
                             $q->where($relatedColumn, 'like', "%{$searchTerm}%");
                         });

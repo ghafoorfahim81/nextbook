@@ -4,6 +4,7 @@
       :voucher="props.voucher.data"
       :company="props.company"
       :voucher-type="props.voucherType"
+      :ledger-balance="props.ledgerBalance"
     />
   </div>
 </template>
@@ -17,6 +18,7 @@ const props = defineProps({
   voucher: Object,
   company: Object,
   voucherType: String,
+  ledgerBalance: Object,
 })
 
 onMounted(() => {

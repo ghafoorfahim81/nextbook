@@ -7,7 +7,7 @@ import axios from 'axios'
 import {
   FileText, Plus, Copy, Trash2, Star, StarOff, ChevronDown, ChevronRight,
   Eye, EyeOff, Save, X, RotateCcw, Settings, Columns, Layout,
-  PanelLeft, Type, SlidersHorizontal, Printer
+  PanelLeft, Type, SlidersHorizontal, Printer, ChevronUp
 } from 'lucide-vue-next'
 import { Button } from '@/Components/ui/button'
 import { Input } from '@/Components/ui/input'
@@ -186,6 +186,21 @@ const toggleColumn = (key) => {
   const idx = draft.item_columns.visible.indexOf(key)
   if (idx === -1) draft.item_columns.visible.push(key)
   else            draft.item_columns.visible.splice(idx, 1)
+}
+
+// Visible columns in the order they will be printed
+const orderedVisibleColumns = computed(() =>
+  draft.item_columns.visible
+    .map(key => ITEM_COLUMN_OPTIONS.value.find(c => c.key === key))
+    .filter(Boolean)
+)
+
+const moveColumn = (key, direction) => {
+  const list = draft.item_columns.visible
+  const idx = list.indexOf(key)
+  const swapWith = idx + direction
+  if (idx === -1 || swapWith < 0 || swapWith >= list.length) return
+  ;[list[idx], list[swapWith]] = [list[swapWith], list[idx]]
 }
 
 // Populate draft from a format object
@@ -621,15 +636,42 @@ const paperLabel = computed(() => {
                 </label>
               </div>
 
-              <!-- Column header labels -->
+              <!-- Column header labels + order -->
               <div>
-                <Label class="text-xs block mb-2 font-semibold">{{ t('preferences.invoice_designer.column_labels') }}</Label>
-                <div class="grid grid-cols-2 gap-x-4 gap-y-2">
-                  <div v-for="col in ITEM_COLUMN_OPTIONS" :key="col.key" class="flex items-center gap-2">
+                <div class="flex items-center justify-between mb-2">
+                  <Label class="text-xs font-semibold">{{ t('preferences.invoice_designer.column_labels') }}</Label>
+                  <span class="text-[10px] text-muted-foreground">{{ t('preferences.invoice_designer.column_order_hint') }}</span>
+                </div>
+                <div class="flex flex-col gap-1.5">
+                  <div
+                    v-for="(col, index) in orderedVisibleColumns"
+                    :key="col.key"
+                    class="flex items-center gap-2 rounded-md border px-2 py-1"
+                  >
+                    <div class="flex flex-col shrink-0">
+                      <button
+                        type="button"
+                        class="h-4 w-4 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-25 disabled:pointer-events-none"
+                        :disabled="index === 0"
+                        :title="t('preferences.invoice_designer.column_order_hint')"
+                        @click="moveColumn(col.key, -1)"
+                      >
+                        <ChevronUp class="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        class="h-4 w-4 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-25 disabled:pointer-events-none"
+                        :disabled="index === orderedVisibleColumns.length - 1"
+                        :title="t('preferences.invoice_designer.column_order_hint')"
+                        @click="moveColumn(col.key, 1)"
+                      >
+                        <ChevronDown class="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                     <span class="text-xs text-muted-foreground w-20 shrink-0 truncate">{{ col.label }}</span>
                     <Input
                       v-model="draft.item_columns.column_labels[col.key]"
-                      class="h-7 text-xs"
+                      class="h-7 text-xs flex-1"
                       :placeholder="col.label"
                     />
                   </div>

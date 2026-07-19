@@ -303,6 +303,7 @@ class ReceiptController extends Controller
             'voucher' => new ReceiptResource($receipt),
             'company' => auth()->user()?->company,
             'voucherType' => 'receipt',
+            'ledgerBalance' => $receipt->ledger?->statement,
         ]);
     }
 
