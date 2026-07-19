@@ -224,6 +224,7 @@ class PaymentController extends Controller
             'voucher' => new PaymentResource($payment),
             'company' => auth()->user()?->company,
             'voucherType' => 'payment',
+            'ledgerBalance' => $payment->ledger?->statement,
         ]);
     }
 

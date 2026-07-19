@@ -533,6 +533,7 @@ const generalFields = [
     { key: 'currency', label: 'preferences.fields.currency' },
     { key: 'type', label: 'preferences.fields.type' },
     { key: 'warehouse', label: 'preferences.fields.warehouse' },
+    { key: 'description', label: 'preferences.fields.description' },
 ]
 
 const itemColumns = [

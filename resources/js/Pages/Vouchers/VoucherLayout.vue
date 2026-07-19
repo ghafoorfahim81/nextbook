@@ -8,6 +8,7 @@ const props = defineProps({
   voucher: { type: Object, default: () => ({}) },
   company: { type: Object, default: () => ({}) },
   voucherType: { type: String, default: 'receipt' },
+  ledgerBalance: { type: Object, default: null },
 })
 
 const page = usePage()
@@ -96,6 +97,11 @@ const amountInWords = computed(() => {
   return `${words} ${currencyLabel.value}`.trim()
 })
 
+const remainingBalanceText = computed(() => {
+  const amount = toNumber(props.ledgerBalance?.balance_amount)
+  return `${currencyLabel.value} ${formatNumber(amount)}`.trim()
+})
+
 const voucherNumber = computed(() => props.voucher?.number || '-')
 const voucherDate = computed(() => props.voucher?.date || '-')
 const titleText = computed(() => isPayment.value ? t('voucher.payment_voucher') : t('voucher.receipt_voucher'))
@@ -181,7 +187,7 @@ const paidLabel = computed(() => isPayment.value ? t('voucher.paid_short') : t('
           </div>
           <div class="field-row compact">
             <span class="field-label">{{ t('voucher.due_short') }}</span>
-            <span class="field-fill">{{ currencyLabel }} 0</span>
+            <span class="field-fill">{{ remainingBalanceText }}</span>
           </div>
         </div>
 

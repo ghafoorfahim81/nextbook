@@ -17,6 +17,7 @@ import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import NextDate from '@/Components/next/NextDatePicker.vue';
+import NextTextarea from '@/Components/next/NextTextarea.vue';
 import { Trash2 } from 'lucide-vue-next';
 import { useLazyProps } from '@/composables/useLazyProps';
 
@@ -725,6 +726,13 @@ onUnmounted(() => {
                         :error="form.errors?.warehouse_id"
                         resource-type="warehouses"
                         :search-fields="['name', 'code', 'address']"
+                    />
+                    <NextTextarea
+                        v-if="general_fields.description !== false"
+                        v-model="form.description"
+                        :label="t('general.description')"
+                        :placeholder="t('general.enter', { text: t('general.description') })"
+                        :error="form.errors?.description"
                     />
                 </div>
             </div>

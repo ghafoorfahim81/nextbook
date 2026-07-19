@@ -837,6 +837,13 @@ const addRow = () => {
                     resource-type="warehouses"
                     :search-fields="['name', 'code', 'address']"
                 />
+                <NextTextarea
+                    v-if="general_fields.description !== false"
+                    v-model="form.description"
+                    :label="t('general.description')"
+                    :placeholder="t('general.enter', { text: t('general.description') })"
+                    :error="form.errors?.description"
+                />
             </div>
             </div>
             <div class="rounded-xl border bg-card shadow-sm border-violet-500">
