@@ -90,10 +90,10 @@ const taxIsGrouped = computed(() => sec.value.tax_display === 'grouped')
 
 const visibleCols = computed(() => {
   const visible = cols.value.visible ?? ['row', 'name', 'quantity', 'unit_price', 'discount', 'total']
-  return COLUMN_DEFS.filter(c => {
-    if (c.key === 'tax' && taxIsGrouped.value) return false
-    return visible.includes(c.key)
-  })
+  return visible
+    .filter(key => !(key === 'tax' && taxIsGrouped.value))
+    .map(key => COLUMN_DEFS.find(c => c.key === key))
+    .filter(Boolean)
 })
 
 const colLabel = (col) =>
