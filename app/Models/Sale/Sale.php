@@ -72,6 +72,9 @@ class Sale extends Model
             'due_date',
             'description',
             'status',
+            'payment_status',
+            'customer.name',
+            'transaction.currency.name',
         ];
     }
 

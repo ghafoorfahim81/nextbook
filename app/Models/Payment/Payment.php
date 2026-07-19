@@ -53,6 +53,9 @@ class Payment extends Model
             'date',
             'cheque_no',
             'narration',
+            'payment_mode',
+            'ledger.name',
+            'transaction.currency.name',
         ];
     }
 
