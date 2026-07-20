@@ -915,6 +915,81 @@ class SearchController extends Controller
         return response()->json(['data' => $data]);
     }
 
+    /**
+     * Lightweight "suggested" lists shown in the search modal before typing.
+     * Cached longer than the full index since these rankings barely change.
+     */
+    public function suggestions(): JsonResponse
+    {
+        $branchId = Auth::user()?->branch_id ?? 'default';
+        $cacheKey = 'global_search_suggestions_v1:' . $branchId;
+
+        $data = Cache::remember($cacheKey, now()->addMinutes(20), fn () => [
+            'top_customers' => $this->topLedgers('customer', '/customers/'),
+            'top_suppliers' => $this->topLedgers('supplier', '/suppliers/'),
+            'top_accounts'  => $this->topAccounts(),
+            'top_items'     => $this->topItems(),
+        ]);
+
+        return response()->json(['data' => $data]);
+    }
+
+    private function topLedgers(string $type, string $urlPrefix): array
+    {
+        $sub = Ledger::query()
+            ->select(['id', 'name'])
+            ->withStatementTotals()
+            ->where('type', $type)
+            ->where('is_active', true);
+
+        return DB::query()->fromSub($sub, 'x')
+            ->orderByRaw('ABS(statement_total_debit - statement_total_credit) DESC')
+            ->limit(5)
+            ->get()
+            ->map(fn ($l) => [
+                'id' => $l->id, 'name' => $l->name,
+                'amount' => round(abs($l->statement_total_debit - $l->statement_total_credit), 2),
+                'url' => $urlPrefix . $l->id,
+            ])->all();
+    }
+
+    private function topAccounts(): array
+    {
+        $locale = app()->getLocale();
+
+        $sub = Account::query()
+            ->select(['id', 'name', 'local_name'])
+            ->withStatementTotals()
+            ->where('is_active', true);
+
+        return DB::query()->fromSub($sub, 'x')
+            ->orderByRaw('ABS(statement_total_debit - statement_total_credit) DESC')
+            ->limit(5)
+            ->get()
+            ->map(fn ($a) => [
+                'id' => $a->id,
+                'name' => $locale === 'en' ? $a->name : ($a->local_name ?: $a->name),
+                'amount' => round(abs($a->statement_total_debit - $a->statement_total_credit), 2),
+                'url' => '/chart-of-accounts/' . $a->id,
+            ])->all();
+    }
+
+    private function topItems(): array
+    {
+        return StockMovement::query()
+            ->join('items', 'items.id', '=', 'stock_movements.item_id')
+            ->selectRaw('items.id, items.name, COUNT(*) as tx_count')
+            ->groupBy('items.id', 'items.name')
+            ->orderByDesc('tx_count')
+            ->limit(5)
+            ->get()
+            ->map(fn ($i) => [
+                'id' => $i->id, 'name' => $i->name,
+                'amount' => (int) $i->tx_count,
+                'url' => '/items/' . $i->id,
+            ])->all();
+    }
+
     private function buildGlobalIndex(): array
     {
         $results = [];

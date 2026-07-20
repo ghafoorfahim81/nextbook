@@ -377,6 +377,8 @@ Route::middleware([
         ->name('search.items-list');
     Route::get('/search/global', [SearchController::class, 'globalIndex'])
         ->name('search.global');
+    Route::get('/search/suggestions', [SearchController::class, 'suggestions'])
+        ->name('search.suggestions');
     Route::get('/search/{resourceType}', [SearchController::class, 'search']);
     Route::get('/search/resource-types', [SearchController::class, 'getResourceTypes']);
 
