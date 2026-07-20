@@ -47,6 +47,8 @@ class Item extends Model
         'unit_measure_id',
         'is_batch_tracked',
         'is_expiry_tracked',
+        'is_color_tracked',
+        'is_size_tracked',
         'brand_id',
         'category_id',
         'cost_account_id',
@@ -100,6 +102,8 @@ class Item extends Model
             'colors' => 'array',
             'is_batch_tracked' => 'boolean',
             'is_expiry_tracked' => 'boolean',
+            'is_color_tracked' => 'boolean',
+            'is_size_tracked' => 'boolean',
         ];
     }
 

@@ -212,7 +212,11 @@
         "rate_c": "نرخ ج",
         "barcode": "بارکوډ",
         "rack_no": "د شیلف نمبر",
-        "fast_search": "چټکه لټون"
+        "fast_search": "چټکه لټون",
+        "is_batch_tracked": "بیچ لرونکی",
+        "is_expiry_tracked": "د پای نیټه لرونکی",
+        "is_color_tracked": "رنګ لرونکی",
+        "is_size_tracked": "اندازه لرونکی"
     },
     "sale": {
         "description": "Ø¯ Ù¾Ù„ÙˆØ±Ù†Û Ù…Ø¹Ø§Ù…Ù„Û ØªØ±ØªÛŒØ¨Ø§Øª ØªÙ†Ø¸ÛŒÙ… Ú©Ú“Ø¦",

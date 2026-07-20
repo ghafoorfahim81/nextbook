@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node check_opening_table2.js)",
+      "Bash(node check_final.js)"
+    ]
+  }
+}

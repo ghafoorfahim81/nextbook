@@ -64,5 +64,16 @@
     "expiry_status": "د پای نیټه حالت",
     "update_price": "بیه تازه کړئ",
     "pricing_search_placeholder": "د نوم، کوډ یا بارکوډ له مخې لټون...",
-    "showing_results": "{from} تر {to} ښودل کیږي له {total} ټولو"
+    "showing_results": "{from} تر {to} ښودل کیږي له {total} ټولو",
+    "is_batch_tracked": "بیچ لرونکی",
+    "is_batch_tracked_desc": "د توکي لپاره د بیچ تعقیب فعال کړئ.",
+    "is_expiry_tracked": "د پای نیټه لرونکی",
+    "is_expiry_tracked_desc": "د توکي لپاره د پای نیټې تعقیب فعال کړئ.",
+    "is_color_tracked": "رنګ لرونکی",
+    "is_color_tracked_desc": "د توکي لپاره د رنګ تعقیب فعال کړئ.",
+    "is_size_tracked": "اندازه لرونکی",
+    "is_size_tracked_desc": "د توکي لپاره د اندازې تعقیب فعال کړئ.",
+    "color": "رنګ",
+    "color_warning": "که د رنګ تعقیب فعال کړئ، وروسته له جوړیدو یې نشئ سمولی.",
+    "size_warning": "که د اندازې تعقیب فعال کړئ، وروسته له جوړیدو یې نشئ سمولی."
 }

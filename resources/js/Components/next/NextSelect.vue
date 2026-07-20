@@ -17,7 +17,7 @@
         :clearable="clearable"
         :loading="combinedLoading"
         :placeholder="placeholder"
-        :close-on-select="true"
+        :close-on-select="!isMultiple"
         :append-to-body="shouldAppendToBody"
         :calculate-position="shouldAppendToBody ? calculatePosition : null"
         class="col-span-3 w-full sm:text-sm"
@@ -49,6 +49,14 @@
             </button>
           </div>
         </template>
+
+        <!-- Per-option content (defaults to plain label text when not overridden) -->
+        <template #option="option">
+          <slot name="option" v-bind="option">{{ option[labelKey] }}</slot>
+        </template>
+        <template #selected-option="option">
+          <slot name="selected-option" v-bind="option">{{ option[labelKey] }}</slot>
+        </template>
       </v-select>
 
       <QuickCreateModal
@@ -77,7 +85,12 @@
 
 
   <script setup>
-  import { ref, computed, watch, onMounted, onUnmounted, getCurrentInstance, nextTick } from 'vue'
+  import { ref, computed, watch, onMounted, onUnmounted, getCurrentInstance, nextTick, useAttrs } from 'vue'
+
+  // Attrs like `multiple`/`disabled` must only land on <v-select> (bound explicitly below via
+  // v-bind="$attrs"), not on the root <div> — Tailwind Forms' `[multiple]` reset rule would
+  // otherwise paint a stray white background/border on the wrapper.
+  defineOptions({ inheritAttrs: false })
   import { useI18n } from 'vue-i18n'
   import FloatingLabel from '@/Components/next/FloatingLabel.vue'
   import { Spinner } from '@/Components/ui/spinner'
@@ -121,6 +134,9 @@
   })
 
   const emit = defineEmits(['update:modelValue', 'add-new'])
+
+  const attrs = useAttrs()
+  const isMultiple = computed(() => attrs.multiple !== undefined && attrs.multiple !== false)
 
   /* ---------------- I18N / DIRECTION ---------------- */
 
@@ -566,6 +582,8 @@ const onGlobalQuickCreated = (event) => {
   :deep(.vs__selected-options) {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 0.375rem;
     padding: 0;
     margin: 0;
   }
@@ -585,6 +603,22 @@ const onGlobalQuickCreated = (event) => {
   :deep(.vs__selected),
   :deep(.vs__search) {
     color: hsl(var(--foreground));
+  }
+
+  /* Multi-select tags (chips) */
+  :deep(.vs__selected) {
+    background-color: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    border-radius: calc(var(--radius) - 4px);
+    padding: 0.0625rem 0.5rem;
+  }
+
+  :deep(.vs__deselect) {
+    fill: hsl(var(--muted-foreground));
+  }
+
+  :deep(.vs__deselect:hover) {
+    fill: hsl(var(--foreground));
   }
 
   :deep(.vs__open-indicator),
@@ -634,5 +668,12 @@ const onGlobalQuickCreated = (event) => {
   :deep(.vs__dropdown-toggle:focus-within) {
     border-color: rgb(137, 80, 221);
     box-shadow: 0 0 0 1px rgba(99,102,241,.25);
+  }
+
+  /* suppress the browser's native focus outline on internal elements —
+     our custom border/box-shadow above is the only focus indicator */
+  :deep(.v-select *:focus),
+  :deep(.v-select *:focus-visible) {
+    outline: none;
   }
   </style>
