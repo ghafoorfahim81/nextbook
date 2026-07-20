@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Administration\WarehouseResource;
 use App\Http\Resources\Administration\UnitMeasureResource;
+use App\Http\Resources\Administration\SizeResource;
 use App\Services\DecimalNumberFormat;
 class StockMovementResource extends JsonResource
 {
@@ -22,6 +23,9 @@ class StockMovementResource extends JsonResource
             'warehouse_name' => $this->warehouse?->name ?? null,
             'warehouse_id' => $this->warehouse_id,
             'batch' => $this->batch,
+            'color' => $this->color,
+            'size_id' => $this->size_id,
+            'size' => SizeResource::make($this->whenLoaded('size')),
             'source' => $this->source?->getLabel() ?? null,
             'status' => $this->status?->getLabel() ?? null,
             'status_color' => $this->status?->color() ?? null,

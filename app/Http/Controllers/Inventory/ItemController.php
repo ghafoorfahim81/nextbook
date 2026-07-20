@@ -211,7 +211,8 @@ class ItemController extends Controller
                         'batch'           => $o['batch'] ?? null,
                         'date'            => Carbon::now()->toDateString(),
                         'expire_date'     => $o['expire_date'] ?? null,
-                        'size_id'         => $validated['size_id'] ?? null,
+                        'size_id'         => $o['size_id'] ?? $validated['size_id'] ?? null,
+                        'color'           => $o['color'] ?? null,
                         'warehouse_id'    => $o['warehouse_id'],
                         'branch_id'       => $branchId,
                     ]);
@@ -407,7 +408,7 @@ class ItemController extends Controller
 
     public function edit(Request $request, Item $item)
     {
-        $item = Item::with('unitMeasure', 'brand', 'category', 'size', 'assetAccount', 'incomeAccount', 'costAccount', 'openings.warehouse', 'attachments')->find($item->id);
+        $item = Item::with('unitMeasure', 'brand', 'category', 'size', 'assetAccount', 'incomeAccount', 'costAccount', 'openings.warehouse', 'openings.size', 'attachments')->find($item->id);
         $accountModel = new Account();
         $otherCurrentAssetsAccounts = $accountModel->getAccountsByAccountTypeSlug('other-current-asset');
         $incomeAccounts = $accountModel->getAccountsByAccountTypeSlug('income');

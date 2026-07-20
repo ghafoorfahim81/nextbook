@@ -104,6 +104,8 @@ const itemManagementFields = [
     { key: 'sku', labelKey: 'preferences.fields.sku' },
     { key: 'is_batch_tracked', labelKey: 'preferences.item_fields.is_batch_tracked' },
     { key: 'is_expiry_tracked', labelKey: 'preferences.item_fields.is_expiry_tracked' },
+    { key: 'is_color_tracked', labelKey: 'preferences.item_fields.is_color_tracked' },
+    { key: 'is_size_tracked', labelKey: 'preferences.item_fields.is_size_tracked' },
 ]
 
 const receiptPaymentFields = [

@@ -13,6 +13,7 @@ import {
 } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import JsBarcode from 'jsbarcode';
+import { COLOR_OPTIONS } from '@/constants/colors';
 
 const { t } = useI18n();
 const { can } = useAuth();
@@ -51,7 +52,6 @@ const itemDetails = computed(() => [
     { label: t('item.cost_account'), value: itemData.value?.cost_account?.name, icon: TrendingDown },
     { label: t('item.maximum_stock'), value: itemData.value?.maximum_stock, icon: TrendingUp },
     { label: t('item.current_stock'), value: itemData.value?.on_hand || 0, icon: Target },
-    { label: t('item.colors'), value: itemData.value?.colors, icon: Palette },
     { label: t('item.size'), value: itemData.value?.size?.name, icon: Ruler },
     { label: t('item.purchase_price'), value: itemData.value?.purchase_price, icon: DollarSign },
     { label: t('item.average_cost'), value: itemData.value?.avg_cost, icon: DollarSign },
@@ -65,6 +65,15 @@ const itemDetails = computed(() => [
     { label: t('general.created_by'), value: itemData.value?.created_by?.name || '—', icon: User },
     { label: t('general.updated_by'), value: itemData.value?.updated_by?.name || '—', icon: User },
 ]);
+
+const itemColors = computed(() => {
+    const colors = Array.isArray(itemData.value?.colors) ? itemData.value.colors : [];
+    return colors.map((value) => ({
+        value,
+        name: t(`colors.${value}`),
+        hex: COLOR_OPTIONS.find((c) => c.value === value)?.hex ?? '#9ca3af',
+    }));
+});
 
 const fetchRecords = async (type, page) => {
     const res = await axios.get(route(`items.${type}-records`, itemData.value.id), {
@@ -177,6 +186,18 @@ onMounted(() => {
                         <div class="flex-1 min-w-0">
                             <p class="text-xs text-muted-foreground">{{ detail.label }}</p>
                             <p class="text-sm font-medium text-foreground truncate">{{ detail.value ?? '—' }}</p>
+                        </div>
+                    </div>
+                    <div v-if="itemColors.length" class="flex items-start gap-2">
+                        <Palette class="w-4 h-4 text-violet-500 mt-0.5 flex-shrink-0" />
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs text-muted-foreground">{{ t('item.colors') }}</p>
+                            <div class="flex flex-wrap gap-x-2 gap-y-1 mt-0.5">
+                                <span v-for="color in itemColors" :key="color.value" class="flex items-center gap-1 text-sm font-medium text-foreground">
+                                    <span class="h-3 w-3 shrink-0 rounded-full border border-black/10" :style="{ backgroundColor: color.hex }" />
+                                    {{ color.name }}
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div v-if="itemData.barcode" class="col-span-2 rounded-lg border border-border p-3">

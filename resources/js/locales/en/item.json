@@ -85,6 +85,13 @@
     "is_batch_tracked_desc": "Enable batch tracking for the item.",
     "is_expiry_tracked": "Expiry Tracked",
     "is_expiry_tracked_desc": "Enable expiry tracking for the item.",
+    "is_color_tracked": "Color Tracked",
+    "is_color_tracked_desc": "Enable color tracking for the item.",
+    "is_size_tracked": "Size Tracked",
+    "is_size_tracked_desc": "Enable size tracking for the item.",
+    "color": "Color",
+    "color_warning": "If you enable color tracking, you can't edit it once it is created.",
+    "size_warning": "If you enable size tracking, you can't edit it once it is created.",
     "opening_lock_warning": "Opening Lock Warning",
     "opening_lock_warning_description": "Some of the openings of this item are locked. Because this records are already in use and you can't edit them.",
     "opening_warning":{

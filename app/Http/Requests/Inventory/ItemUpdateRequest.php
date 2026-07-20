@@ -28,6 +28,8 @@ class ItemUpdateRequest extends FormRequest
             'sku' => ['nullable', 'string', 'unique:items,sku,NULL,id,branch_id,NULL,deleted_at,NULL'],
             'is_batch_tracked' => ['nullable', 'boolean'],
             'is_expiry_tracked' => ['nullable', 'boolean'],
+            'is_color_tracked' => ['nullable', 'boolean'],
+            'is_size_tracked' => ['nullable', 'boolean'],
             'generic_name' => ['nullable', 'string'],
             'packing' => ['nullable', 'string'],
             'barcode' => ['nullable', 'string'],
@@ -58,6 +60,8 @@ class ItemUpdateRequest extends FormRequest
             'openings.*.unit_price' => ['nullable', 'numeric','required_with:openings.*.quantity>0'],
             'openings.*.status' => ['nullable', 'string'],
             'openings.*.warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
+            'openings.*.color' => ['nullable', 'string'],
+            'openings.*.size_id' => ['nullable', 'string', 'exists:sizes,id'],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
         ];

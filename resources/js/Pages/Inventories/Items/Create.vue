@@ -5,6 +5,7 @@ import { computed, watch, ref, reactive, onMounted, nextTick } from 'vue'
 import NextInput from '@/Components/next/NextInput.vue'
 import { useForm, router } from '@inertiajs/vue3'
 import NextSelect from '@/Components/next/NextSelect.vue'
+import { COLOR_OPTIONS } from '@/constants/colors'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
 import AttachmentUploader from '@/Components/AttachmentUploader.vue'
@@ -81,6 +82,8 @@ const createOpeningRow = (warehouse = null) => ({
     quantity: 0,
     warehouse_id: warehouse?.id ?? null,
     selected_warehouse: warehouse,
+    color: null,
+    size_id: null,
 })
 
 const form = useForm({
@@ -91,7 +94,7 @@ const form = useForm({
     remark: '',
     branch_id: null,
     warehouse_id: null,
-    colors: '',
+    colors: [],
     size_id: null,
     item_type: null,
     barcode: '',
@@ -122,9 +125,18 @@ const form = useForm({
     photo: null, // file
     is_batch_tracked: false,
     is_expiry_tracked: false,
+    is_color_tracked: false,
+    is_size_tracked: false,
     attachments: [],
     openings: [createOpeningRow()],
 })
+
+// Full color palette, translated, for the per-opening color picker.
+const itemColorOptions = computed(() => COLOR_OPTIONS.map(o => ({
+    id: o.value,
+    name: t(`colors.${o.value}`),
+    hex: o.hex,
+})))
 
 const findBySlugOrName = (list, want) => {
     const w = String(want || '').trim().toLowerCase()
@@ -317,11 +329,11 @@ const onPhotoChange = (e) => {
 // rows
 const addRow = (index) => {
     if (index === form.openings.length - 1) {
-        form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null })
+        form.openings.push(createOpeningRow())
     }
 }
 const addOpeningRow = () => {
-    form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null })
+    form.openings.push(createOpeningRow())
 }
 const removeRow = (idx) => {
     if (form.openings.length > 1) form.openings.splice(idx, 1)
@@ -520,21 +532,6 @@ useFormGuard(form)
                 <NextInput v-show="visibleFields.code" :label="t('admin.currency.code')" disabled="true"  v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
                 <NextInput v-show="visibleFields.generic_name" :label="t('item.generic_name')" v-model="form.generic_name" :error="form.errors?.generic_name" :placeholder="t('general.enter', { text: t('item.generic_name') })" />
                 <NextInput v-show="visibleFields.packing" :label="t('item.packing')" v-model="form.packing" :error="form.errors?.packing" :placeholder="t('general.enter', { text: t('item.packing') })" />
-                <NextInput v-show="visibleFields.colors" packing:label="t('item.colors')" v-model="form.colors" :error="form.errors?.colors" :placeholder="t('general.enter', { text: t('item.colors') })" />
-                <NextSelect
-                    v-show="visibleFields.size"
-                    v-model="form.selected_size"
-                    :options="sizes"
-                    @update:modelValue="(value) => handleSelectChange('size_id', value)"
-                    label-key="name"
-                    value-key="id"
-                    id="size_id"
-                    :floating-text="t('item.size')"
-                    :searchable="true"
-                    resource-type="sizes"
-                    :search-fields="['name','code']"
-                    :error="form.errors.size_id"
-                />
                 <NextSelect
                     v-model="form.selected_unit_measure"
                     :options="unitMeasures"
@@ -702,19 +699,37 @@ useFormGuard(form)
                 </div>
                 <NextInput v-show="visibleFields.rack_no" :label="t('item.rack_no')" v-model="form.rack_no" :placeholder="t('general.enter', { text: t('item.rack_no') })" :error="form.errors?.rack_no" />
                 <NextInput v-show="visibleFields.fast_search" :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 rtl:text-right">
+                <div class="md:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 rtl:text-right">
                     <div v-show="visibleFields.is_batch_tracked" class="flex items-center gap-2">
-                        <Label class="text-base">{{ t('item.is_batch_tracked') }}</Label>
+                        <Label class="text-base whitespace-nowrap">{{ t('item.is_batch_tracked') }}</Label>
                         <Switch
+                            class="shrink-0"
                             :model-value="form.is_batch_tracked"
                             @update:model-value="(v) => form.is_batch_tracked = v"
                         />
                     </div>
                     <div v-show="visibleFields.is_expiry_tracked" class="flex items-center gap-2">
-                        <Label class="text-base">{{ t('item.is_expiry_tracked') }}</Label>
+                        <Label class="text-base whitespace-nowrap">{{ t('item.is_expiry_tracked') }}</Label>
                         <Switch
+                            class="shrink-0"
                             :model-value="form.is_expiry_tracked"
                             @update:model-value="(v) => form.is_expiry_tracked = v"
+                        />
+                    </div>
+                    <div v-show="visibleFields.is_color_tracked" class="flex items-center gap-2">
+                        <Label class="text-base whitespace-nowrap">{{ t('item.is_color_tracked') }}</Label>
+                        <Switch
+                            class="shrink-0"
+                            :model-value="form.is_color_tracked"
+                            @update:model-value="(v) => form.is_color_tracked = v"
+                        />
+                    </div>
+                    <div v-show="visibleFields.is_size_tracked" class="flex items-center gap-2">
+                        <Label class="text-base whitespace-nowrap">{{ t('item.is_size_tracked') }}</Label>
+                        <Switch
+                            class="shrink-0"
+                            :model-value="form.is_size_tracked"
+                            @update:model-value="(v) => form.is_size_tracked = v"
                         />
                     </div>
                 </div>
@@ -735,6 +750,8 @@ useFormGuard(form)
                                     <li>{{ t('item.opening_key_points.4') }}</li>
                                     <li v-show="form.is_batch_tracked">{{ t('item.batch_warning') }}</li>
                                     <li v-show="form.is_expiry_tracked">{{ t('item.expiry_warning') }}</li>
+                                    <li v-show="form.is_color_tracked">{{ t('item.color_warning') }}</li>
+                                    <li v-show="form.is_size_tracked">{{ t('item.size_warning') }}</li>
                                 </ul>
                             </AlertDescription>
                         </Alert>
@@ -743,7 +760,7 @@ useFormGuard(form)
             </div>
             <div class="md:col-span-4 mt-4">
                 <div class="pt-2">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between mb-3">
                         <span class="font-bold">{{ t('item.opening') }}</span>
                         <button
                             type="button"
@@ -753,37 +770,101 @@ useFormGuard(form)
                             + {{ t('general.add', { title: t('item.opening') }) }}
                         </button>
                     </div>
-                    <div
-                        v-for="(opening, index) in form.openings"
-                        :key="index"
-                        class="mt-3 grid grid-cols-1 md:grid-cols-6 gap-4 items-start"
-                    >
-                        <NextInput v-show="form.is_batch_tracked" :label="specText?? t('item.batch')" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
-                        <NextDate v-show="form.is_expiry_tracked" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
-                        <NextInput :label="t('item.quantity')" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
-                        <NextInput :label="t('general.unit_price')" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
-                        <NextSelect
-                            v-model="opening.selected_warehouse"
-                            :options="warehouses"
-                            label-key="name"
-                            @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
-                            value-key="id"
-                            id="warehouse_id"
-                            :floating-text="t('admin.warehouse.warehouse')"
-                            :error="form.errors[`openings.${index}.warehouse_id`]"
-                            :searchable="true"
-                            resource-type="warehouses"
-                            :search-fields="['name', 'address']"
-                        />
-                        <div  class="mt-2" v-if="form.openings.length > 1">
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-outline-danger px-3"
-                                @click="removeRow(index)"
-                            >
-                                <Trash2 class="w-4 h-4 text-fuchsia-800 hover:cursor-pointer" />
-                            </button>
-                        </div>
+                    <div class="rounded-md border border-primary overflow-hidden overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-primary text-white h-9">
+                                    <th v-show="form.is_batch_tracked" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ specText || t('item.batch') }}</th>
+                                    <th v-show="form.is_expiry_tracked" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.expire_date') }}</th>
+                                    <th v-show="form.is_color_tracked" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.color') }}</th>
+                                    <th v-show="form.is_size_tracked" class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.size') }}</th>
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.quantity') }}</th>
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('general.unit_price') }}</th>
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('admin.warehouse.warehouse') }}</th>
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap w-10"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="(opening, index) in form.openings"
+                                    :key="index"
+                                    class="border-t border-border hover:bg-muted/50 align-top"
+                                >
+                                    <td v-show="form.is_batch_tracked" class="p-2 min-w-[140px]">
+                                        <NextInput label="" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" />
+                                    </td>
+                                    <td v-show="form.is_expiry_tracked" class="p-2 min-w-[160px]">
+                                        <NextDate v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+                                    </td>
+                                     <td v-show="form.is_color_tracked" class="p-2 min-w-[170px]">
+                                        <NextSelect
+                                            v-model="opening.color"
+                                            :options="itemColorOptions"
+                                            label-key="name"
+                                            value-key="id"
+                                            :reduce="o => o.id"
+                                            :id="`opening_color_${index}`"
+                                            :error="form.errors?.[`openings.${index}.color`]"
+                                        >
+                                            <template #option="{ name, hex }">
+                                                <span class="flex items-center gap-2">
+                                                    <span class="h-3.5 w-3.5 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
+                                                    <span>{{ name }}</span>
+                                                </span>
+                                            </template>
+                                            <template #selected-option="{ name, hex }">
+                                                <span class="flex items-center gap-1.5">
+                                                    <span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
+                                                    <span>{{ name }}</span>
+                                                </span>
+                                            </template>
+                                        </NextSelect>
+                                    </td>
+                                    <td v-show="form.is_size_tracked" class="p-2 min-w-[150px]">
+                                        <NextSelect
+                                            v-model="opening.size_id"
+                                            :options="sizes"
+                                            label-key="name"
+                                            value-key="id"
+                                            :reduce="o => o.id"
+                                            :id="`opening_size_${index}`"
+                                            :error="form.errors?.[`openings.${index}.size_id`]"
+                                        />
+                                    </td>
+                                    <td class="p-2 min-w-[110px]">
+                                        <NextInput label="" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
+                                    </td>
+                                    <td class="p-2 min-w-[110px]">
+                                        <NextInput label="" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
+                                    </td>
+                                    <td class="p-2 min-w-[180px]">
+                                        <NextSelect
+                                            v-model="opening.selected_warehouse"
+                                            :options="warehouses"
+                                            label-key="name"
+                                            @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
+                                            value-key="id"
+                                            :id="`warehouse_id_${index}`"
+                                            :error="form.errors[`openings.${index}.warehouse_id`]"
+                                            :searchable="true"
+                                            resource-type="warehouses"
+                                            :search-fields="['name', 'address']"
+                                        />
+                                    </td>
+
+                                    <td class="p-2 text-center">
+                                        <button
+                                            type="button"
+                                            v-if="form.openings.length > 1"
+                                            class="btn btn-sm btn-outline-danger px-2"
+                                            @click="removeRow(index)"
+                                        >
+                                            <Trash2 class="w-4 h-4 text-fuchsia-800 hover:cursor-pointer" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

@@ -240,7 +240,9 @@
         "item_type": "Item Type",
         "sku": "Stock keeping unit",
         "is_batch_tracked": "Batch Tracked",
-        "is_expiry_tracked": "Expiry Tracked"
+        "is_expiry_tracked": "Expiry Tracked",
+        "is_color_tracked": "Color Tracked",
+        "is_size_tracked": "Size Tracked"
     },
     "fields": {
         "number": "Number",
@@ -268,7 +270,9 @@
         "item_type": "Item Type",
         "sku": "Stock keeping unit",
         "is_batch_tracked": "Batch Tracked",
-        "is_expiry_tracked": "Expiry Tracked"
+        "is_expiry_tracked": "Expiry Tracked",
+        "is_color_tracked": "Color Tracked",
+        "is_size_tracked": "Size Tracked"
     },
     "sale": {
         "description": "Configure sale transaction preferences",

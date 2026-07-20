@@ -59,6 +59,8 @@ class ItemResource extends JsonResource
             'fast_search' => $this->fast_search,
             'is_batch_tracked' => $this->is_batch_tracked,
             'is_expiry_tracked' => $this->is_expiry_tracked,
+            'is_color_tracked' => $this->is_color_tracked,
+            'is_size_tracked' => $this->is_size_tracked,
             'sku' => $this->sku,
             'item_type' => $this->item_type ? $this->item_type?->getLabel() : null,
             'item_type_id' => $this->item_type,

@@ -108,6 +108,8 @@ class User extends Authenticatable
                 'sku' => true,
                 'is_batch_tracked' => false,
                 'is_expiry_tracked' => false,
+                'is_color_tracked' => false,
+                'is_size_tracked' => false,
             ],
             'spec_text' => 'Batch',
         ],
