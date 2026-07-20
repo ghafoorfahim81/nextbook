@@ -4,9 +4,12 @@ import { router } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import {
     Search, Package, FileText, ShoppingCart, Banknote,
-    TrendingDown, BookOpen, User, Building2, ReceiptText,
+    TrendingDown, BookOpen, User, Building2, ReceiptText, Clock,
 } from 'lucide-vue-next'
-import { useGlobalSearch, searchIndex, loadIndex } from '@/composables/useGlobalSearch'
+import {
+    useGlobalSearch, searchIndex, loadIndex,
+    suggestions, loadSuggestions, getRecent, pushRecent, clearRecent,
+} from '@/composables/useGlobalSearch'
 
 const { query, results, people, items, finance, counts, isLoading } = useGlobalSearch()
 const { t, locale } = useI18n()
@@ -16,15 +19,32 @@ const isOpen    = ref(false)
 const inputRef  = ref<HTMLInputElement | null>(null)
 const activeTab = ref<'all' | 'people' | 'items' | 'finance'>('all')
 const activeIdx = ref(-1)
+const recent    = ref<{ name: string, subtitle?: string, url: string }[]>([])
 
 function openSearch() {
     isOpen.value    = true
     activeIdx.value = -1
-    const forceReload = true
-    console.log('[GlobalSearch] Opening, index size:', searchIndex.value.length, '— force reload:', forceReload)
-    loadIndex(forceReload)
+    recent.value    = getRecent()
+    loadIndex(true)
+    loadSuggestions()
     nextTick(() => inputRef.value?.focus())
 }
+
+const SUGGESTION_GROUPS = [
+    { key: 'top_customers', label: 'global_search.top_customers', suffix: '' },
+    { key: 'top_suppliers', label: 'global_search.top_suppliers', suffix: '' },
+    { key: 'top_accounts',  label: 'global_search.top_accounts',  suffix: '' },
+    { key: 'top_items',     label: 'global_search.top_items',     suffix: 'x' },
+] as const
+
+const suggestionGroups = computed(() => {
+    if (!suggestions.value) return []
+    return SUGGESTION_GROUPS
+        .map(g => ({ ...g, label: t(g.label), items: suggestions.value[g.key] ?? [] }))
+        .filter(g => g.items.length)
+})
+
+const hasEmptyStateContent = computed(() => recent.value.length > 0 || suggestionGroups.value.length > 0)
 
 function closeSearch() {
     isOpen.value   = false
@@ -101,6 +121,8 @@ function openActive(event?: KeyboardEvent) {
 }
 
 function navigate(item: any, event?: MouseEvent | KeyboardEvent) {
+    pushRecent({ name: getResultName({ item }) || item.name, subtitle: item.subtitle, url: item.url })
+
     if (event && ('ctrlKey' in event) && (event.ctrlKey || event.metaKey)) {
         window.open(item.url, '_blank')
         closeSearch()
@@ -307,12 +329,43 @@ const initials   = (n: string) => n.split(' ').slice(0, 2).map(w => w[0] ?? '').
                         <!-- Results -->
                         <div class="max-h-[400px] overflow-y-auto py-1.5">
 
-                            <!-- Waiting for input -->
-                            <div v-if="query.trim().length < 2" class="flex flex-col items-center py-10 text-center">
-                                <Search class="mb-2 size-8 text-muted-foreground/25" />
-                                <p class="text-sm text-muted-foreground">{{ t('global_search.empty_title') }}</p>
-                                <p class="mt-1 text-xs text-muted-foreground/50">{{ t('global_search.empty_description') }}</p>
-                            </div>
+                            <!-- Waiting for input: recent searches + suggestions -->
+                            <template v-if="query.trim().length < 2">
+                                <div v-if="hasEmptyStateContent">
+                                    <div v-if="recent.length">
+                                        <div class="flex items-center justify-between px-4 pt-2.5 pb-1">
+                                            <span class="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/55">{{ t('global_search.recent') }}</span>
+                                            <button @click="recent = []; clearRecent()" class="text-[10px] text-muted-foreground/60 hover:text-foreground">{{ t('general.clear') }}</button>
+                                        </div>
+                                        <button
+                                            v-for="r in recent" :key="r.url"
+                                            @click="(e) => navigate(r, e)"
+                                            class="w-full flex items-center gap-3 px-4 py-2 text-start transition-colors hover:bg-primary/15"
+                                        >
+                                            <Clock class="size-3.5 shrink-0 text-muted-foreground/50" />
+                                            <span class="text-sm text-foreground truncate">{{ r.name }}</span>
+                                        </button>
+                                    </div>
+
+                                    <div v-for="group in suggestionGroups" :key="group.key">
+                                        <div class="px-4 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/55">{{ group.label }}</div>
+                                        <button
+                                            v-for="s in group.items" :key="s.id"
+                                            @click="(e) => navigate(s, e)"
+                                            class="w-full flex items-center justify-between gap-3 px-4 py-2 text-start transition-colors hover:bg-primary/15"
+                                        >
+                                            <span class="text-sm text-foreground truncate">{{ s.name }}</span>
+                                            <span class="shrink-0 text-xs text-muted-foreground/70">{{ Number(s.amount).toLocaleString() }}{{ group.suffix }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div v-else class="flex flex-col items-center py-10 text-center">
+                                    <Search class="mb-2 size-8 text-muted-foreground/25" />
+                                    <p class="text-sm text-muted-foreground">{{ t('global_search.empty_title') }}</p>
+                                    <p class="mt-1 text-xs text-muted-foreground/50">{{ t('global_search.empty_description') }}</p>
+                                </div>
+                            </template>
 
                             <!-- Loading -->
                             <div v-else-if="isLoading" class="py-10 text-center text-sm text-muted-foreground">

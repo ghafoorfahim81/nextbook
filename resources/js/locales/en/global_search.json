@@ -8,6 +8,11 @@
   "no_results_for": "No results for \"{query}\"",
   "navigate": "navigate",
   "open_new_tab": "open in new tab",
+  "recent": "Recent",
+  "top_customers": "Top Customers",
+  "top_suppliers": "Top Suppliers",
+  "top_accounts": "High-Balance Accounts",
+  "top_items": "Most Active Items",
   "tabs": {
     "all": "All",
     "items": "Items",

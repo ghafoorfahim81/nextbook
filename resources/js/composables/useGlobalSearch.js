@@ -117,6 +117,47 @@ router.on('finish', () => {
     if (indexLoaded) loadIndex(true)
 })
 
+// ── Suggested lists (top customers/suppliers/accounts/items) ────────────────
+export const suggestions = ref(null)
+let suggestionsLoaded = false
+
+export async function loadSuggestions() {
+    if (suggestionsLoaded) return
+    suggestionsLoaded = true
+    try {
+        const res = await fetch('/search/suggestions', {
+            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        suggestions.value = (await res.json()).data
+    } catch (e) {
+        console.error('[GlobalSearch] Suggestions load failed:', e)
+        suggestionsLoaded = false
+    }
+}
+
+// ── Recent searches (client-side, per browser) ───────────────────────────────
+const RECENT_KEY = 'global_search_recent'
+const RECENT_MAX = 6
+
+export function getRecent() {
+    try {
+        return JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]')
+    } catch {
+        return []
+    }
+}
+
+export function pushRecent(entry) {
+    const list = getRecent().filter(r => r.url !== entry.url)
+    list.unshift(entry)
+    localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, RECENT_MAX)))
+}
+
+export function clearRecent() {
+    localStorage.removeItem(RECENT_KEY)
+}
+
 // ── Per-instance composable ──────────────────────────────────────────────────
 export function useGlobalSearch() {
     const query   = ref('')
