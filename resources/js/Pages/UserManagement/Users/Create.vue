@@ -117,12 +117,14 @@ useFormGuard(form)
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <!-- Basic Information -->
                     <NextInput
+                        is-required
                         :label="t('general.name')"
                         :placeholder="t('general.enter', { text: t('general.name') })"
                         v-model="form.name"
                         :error="form.errors?.name"
                     />
                     <NextInput
+                        is-required
                         :label="t('general.email')"
                         type="email"
                         :placeholder="t('general.enter', { text: t('general.email') })"
@@ -130,6 +132,7 @@ useFormGuard(form)
                         :error="form.errors?.email"
                     />
                     <NextInput
+                        is-required
                         :label="t('auth.password')"
                         type="password"
                         :placeholder="t('general.enter', { text: t('auth.password') })"

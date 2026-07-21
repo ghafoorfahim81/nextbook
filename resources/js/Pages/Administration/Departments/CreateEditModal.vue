@@ -74,7 +74,7 @@ const handleSubmit = async () => {
             <div class="grid gap-4 py-4">
                 <div class="grid items-center grid-cols-4 gap-4">
                     <Label for="name" class="text-nowrap">
-                        Name
+                        Name <span class="text-red-500">*</span>
                     </Label>
                     <Input id="name" autocomplete="false" v-model="form.name" placeholder="Enter name" class="col-span-3" />
                 </div>

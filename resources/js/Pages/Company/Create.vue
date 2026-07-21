@@ -138,7 +138,7 @@ const handleSelectChange = (field, value) => {
                                 <div class="space-y-4">
                                     <h3 class="text-lg font-medium">{{ t('company.basic_information') }}</h3>
 
-                                    <NextInput :error="form.errors?.name_en" type="text" v-model="form.name_en" :label="t('company.name_en') + '*'" />
+                                    <NextInput is-required :error="form.errors?.name_en" type="text" v-model="form.name_en" :label="t('company.name_en')" />
                                     <NextInput :error="form.errors?.name" type="text" v-model="form.name_fa" :label="t('company.name_fa')" />
                                     <NextInput :error="form.errors?.name" type="text" v-model="form.name_pa" :label="t('company.name_pa')" />
 
@@ -174,6 +174,7 @@ const handleSelectChange = (field, value) => {
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('business_type', value)"
                                         :floating-text="t('company.business_type')"
+                                        is-required
                                         :error="form.errors?.business_type"
                                     />
                                     <NextSelect
@@ -183,6 +184,7 @@ const handleSelectChange = (field, value) => {
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('calendar_type', value)"
                                         :floating-text="t('company.calendar_type')"
+                                        is-required
                                         :error="form.errors?.calendar_type"
                                     />
                                     <NextSelect
@@ -192,6 +194,7 @@ const handleSelectChange = (field, value) => {
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('working_style', value)"
                                         :floating-text="t('company.working_style')"
+                                        is-required
                                         :error="form.errors?.working_style"
                                     />
                                 </div>
@@ -204,6 +207,7 @@ const handleSelectChange = (field, value) => {
                                         value-key="id"
                                         @update:modelValue="(value) => handleSelectChange('locale', value)"
                                         :floating-text="t('company.locale')"
+                                        is-required
                                         :error="form.errors?.locale"
                                     />
                                     <NextSelect
@@ -214,6 +218,7 @@ const handleSelectChange = (field, value) => {
                                         @update:modelValue="(value) => handleSelectChange('currency_id', value)"
                                         :reduce="currency => currency.id"
                                         :floating-text="t('company.currency')"
+                                        is-required
                                         :error="form.errors?.currency_id"
                                         :searchable="true"
                                         resource-type="currencies"

@@ -72,6 +72,7 @@
       <FloatingLabel
         :id="id"
         :label="floatingText"
+        :required="isRequired"
         class="pointer-events-none z-20"
       />
 
@@ -111,6 +112,7 @@
     reduce: { type: Function, default: null },
     id: { type: String, default: () => 'sel-' + Math.random().toString(36).slice(2) },
     floatingText: { type: String, default: '' },
+    isRequired: { type: Boolean, default: false },
     error: { type: String, default: '' },
     placeholder: { type: String, default: '' },
     autofocus: { type: Boolean, default: false },
@@ -605,8 +607,9 @@ const onGlobalQuickCreated = (event) => {
     color: hsl(var(--foreground));
   }
 
-  /* Multi-select tags (chips) */
-  :deep(.vs__selected) {
+  /* Multi-select tags (chips) — only for multiple selects.
+     Single selects keep vue-select's default transparent selected text. */
+  :deep(.vs--multiple .vs__selected) {
     background-color: hsl(var(--muted));
     border: 1px solid hsl(var(--border));
     border-radius: calc(var(--radius) - 4px);

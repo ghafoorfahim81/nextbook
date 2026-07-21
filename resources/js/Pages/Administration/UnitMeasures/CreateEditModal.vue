@@ -298,7 +298,7 @@ const handleSubmit = () => {
                 <div v-else class="grid grid-cols-2 gap-6">
                     <!-- Quantity Types Column -->
                     <div class="space-y-4 p-1">
-                        <h3 class="text-lg font-semibold text-foreground">{{ t('admin.unit_measure.quantity') }}</h3>
+                        <h3 class="text-lg font-semibold text-foreground">{{ t('admin.unit_measure.quantity') }} <span class="text-red-500">*</span></h3>
                         <div class="space-y-2">
                             <NextRadio
                                 v-for="quantity in quantityOptions"
@@ -347,7 +347,7 @@ const handleSubmit = () => {
 
                     <!-- Measures Column -->
                     <div class="space-y-4">
-                        <h3 class="text-lg font-semibold text-foreground">{{ t('admin.unit_measure.custom_measure') }}</h3>
+                        <h3 class="text-lg font-semibold text-foreground">{{ t('admin.unit_measure.custom_measure') }} <span class="text-red-500">*</span></h3>
                         <div class="space-y-4">
                             <NextInput
                                 v-model="form.measure.name"

@@ -121,12 +121,13 @@ useFormGuard(form)
                         value-key="id"
                         :reduce="sale => sale"
                         :floating-text="t('sale_return.select_sale')"
+                        is-required
                         :placeholder="t('sale_return.search_sale_placeholder')"
                         :error="form.errors?.sale_id"
                         :searchable="true"
                         :search-fields="['number', 'customer_name', 'label']"
                     />
-                    <NextInput type="number" :error="form.errors?.number" v-model="form.number" :label="t('general.bill_number')" />
+                    <NextInput is-required type="number" :error="form.errors?.number" v-model="form.number" :label="t('general.bill_number')" />
                     <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
                     <NextSelect
                         :options="reasons"
@@ -160,7 +161,7 @@ useFormGuard(form)
                             <th class="px-2 py-2 w-24 text-right">{{ t('sale_return.returned_quantity') }}</th>
                             <th class="px-2 py-2 w-24 text-right">{{ t('sale_return.remaining_quantity') }}</th>
                             <th class="px-2 py-2 w-24 text-right">{{ t('general.price') }}</th>
-                            <th class="px-2 py-2 w-32 text-right">{{ t('sale_return.quantity_to_return') }}</th>
+                            <th class="px-2 py-2 w-32 text-right">{{ t('sale_return.quantity_to_return') }} <span class="text-red-500">*</span></th>
                             <th class="px-2 py-2 w-24 text-right">{{ t('general.total') }}</th>
                         </tr>
                     </thead>

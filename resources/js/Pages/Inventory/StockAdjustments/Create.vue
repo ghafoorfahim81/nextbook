@@ -417,6 +417,7 @@ useFormGuard(form)
             value-key="id"
             :reduce="reason => reason"
             :floating-text="t('adjustment.reason')"
+            is-required
             :error="form.errors?.reason"
             :searchable="true"
           />
@@ -428,6 +429,7 @@ useFormGuard(form)
             value-key="id"
             :reduce="warehouse => warehouse"
             :floating-text="t('adjustment.warehouse')"
+            is-required
             :error="form.errors?.warehouse_id"
             :searchable="true"
           />
@@ -454,12 +456,12 @@ useFormGuard(form)
           <thead class="bg-card sticky top-0 z-10">
             <tr class="text-muted-foreground font-semibold text-sm text-violet-500">
               <th class="px-1 py-1 w-5 min-w-5">#</th>
-              <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
+              <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }} <span class="text-red-500">*</span></th>
               <th class="px-1 py-1 w-32">{{ t('general.batch') }}</th>
               <th class="px-1 py-1 w-36">{{ t('general.expire_date') }}</th>
-              <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
+              <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
               <th class="px-1 py-1 w-24">{{ t('general.on_hand') }}</th>
-              <th class="px-1 py-1 w-24">{{ t('general.unit') }}</th>
+              <th class="px-1 py-1 w-24">{{ t('general.unit') }} <span class="text-red-500">*</span></th>
               <th class="px-1 py-1 w-24">{{ t('adjustment.unit_cost') }}</th>
               <th class="px-1 py-1 w-24">{{ t('general.total') }}</th>
               <th class="px-1 py-1 w-10">

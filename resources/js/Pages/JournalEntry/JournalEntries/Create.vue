@@ -318,12 +318,14 @@ useFormGuard(form)
                             value-key="id"
                             :reduce="cur => cur"
                             :floating-text="t('admin.currency.currency')"
+                            is-required
                             :error="form.errors?.currency_id"
                             :searchable="true"
                             resource-type="currencies"
                             :search-fields="['name', 'code', 'symbol']"
                         />
                         <NextInput
+                            is-required
                             v-model="form.rate"
                             type="number"
                             step="any"
@@ -357,9 +359,9 @@ useFormGuard(form)
                     <thead class="bg-muted/50">
                         <tr class="text-sm text-muted-foreground rtl:text-right ltr:text-left">
                             <th class="px-4 py-2 w-12">#</th>
-                            <th class="px-4 py-2 ">{{ t('account.account') }} *</th>
-                            <th class="px-4 py-2 ">{{ t('general.debit') }} *</th>
-                            <th class="px-4 py-2 ">{{ t('general.credit') }} *</th>
+                            <th class="px-4 py-2 ">{{ t('account.account') }} <span class="text-red-500">*</span></th>
+                            <th class="px-4 py-2 ">{{ t('general.debit') }} <span class="text-red-500">*</span></th>
+                            <th class="px-4 py-2 ">{{ t('general.credit') }} <span class="text-red-500">*</span></th>
                             <th class="px-4 py-2 ">{{ t('general.remark') }} </th>
                             <th class="px-4 py-2 ">{{ t('general.ledger') }} </th>
                             <th class="px-4 py-2 ">{{ t('sidebar.journal_entry.journal_class') }} </th>

@@ -87,7 +87,7 @@ const handleSubmit = async () => {
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid gap-4 py-4">
                 <!-- Name -->
-                <NextInput :label="t('general.name')" id="name" v-model="form.name" :placeholder="t('general.enter', { text: t('general.name') })" :error="form.errors.name" />
+                <NextInput is-required :label="t('general.name')" id="name" v-model="form.name" :placeholder="t('general.enter', { text: t('general.name') })" :error="form.errors.name" />
                 <NextTextarea :label="t('general.remark')" v-model="form.remark" :placeholder="t('general.enter', { text: t('general.remark') })" />
             </div> 
         </form>

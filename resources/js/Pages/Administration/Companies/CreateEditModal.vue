@@ -105,7 +105,7 @@ const handleSubmit = () => {
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid col-span-2 gap-4 py-4">
                 <div class="grid items-center grid-cols-3 gap-4">
-                    <NextInput :label="t('general.name')" v-model="form.name" :error="errors?.name" />
+                    <NextInput is-required :label="t('general.name')" v-model="form.name" :error="errors?.name" />
                     <NextInput :label="t('admin.company.legal_name')" v-model="form.legal_name" type="text" :error="errors?.legal_name"/>
                     <NextInput :label="t('admin.company.registration_number')" v-model="form.registration_number" type="text" :error="errors?.registration_number"/>
                     <NextInput :label="t('admin.shared.email')" v-model="form.email" type="email" :error="errors?.email"/>

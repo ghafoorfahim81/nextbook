@@ -109,11 +109,11 @@ const handleSubmit = async () => {
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid col-span-2 gap-4 py-4">
                 <div v-if="isEditing" class="grid items-center grid-cols-2 gap-4">
-                    <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name"/>
-                    <NextInput :label="t('admin.currency.code')" v-model="form.code" :error="form.errors?.code"/>
-                    <NextInput :label="t('admin.shared.symbol')" v-model="form.symbol" :error="form.errors?.symbol"/>
-                    <NextInput :label="t('admin.currency.format')" v-model="form.format" :error="form.errors?.format"/>
-                    <NextInput :label="t('admin.currency.exchange_rate')" v-model="form.exchange_rate" type="number" :error="form.errors?.exchange_rate"/>
+                    <NextInput is-required :label="t('general.name')" v-model="form.name" :error="form.errors?.name"/>
+                    <NextInput is-required :label="t('admin.currency.code')" v-model="form.code" :error="form.errors?.code"/>
+                    <NextInput is-required :label="t('admin.shared.symbol')" v-model="form.symbol" :error="form.errors?.symbol"/>
+                    <NextInput is-required :label="t('admin.currency.format')" v-model="form.format" :error="form.errors?.format"/>
+                    <NextInput is-required :label="t('admin.currency.exchange_rate')" v-model="form.exchange_rate" type="number" :error="form.errors?.exchange_rate"/>
                     <NextInput :label="t('admin.currency.flag')" v-model="form.flag" :error="form.errors?.flag"/>
                 </div>
                 <div v-else class="grid items-center grid-cols-1 gap-4">
@@ -125,6 +125,7 @@ const handleSubmit = async () => {
                         value-key="id"
                         :reduce="(currency) => currency?.id"
                         :floating-text="t('admin.currency.currency')"
+                        is-required
                         :error="form.errors?.currency_code"
                     />
                 </div>

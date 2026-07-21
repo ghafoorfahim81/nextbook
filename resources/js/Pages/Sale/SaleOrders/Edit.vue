@@ -217,13 +217,14 @@ useFormGuard(form)
                         value-key="id"
                         :reduce="ledger => ledger"
                         :floating-text="t('ledger.customer.customer')"
+                        is-required
                         :error="form.errors?.customer_id"
                         :searchable="true"
                         resource-type="ledgers"
                         :search-fields="['name', 'email', 'phone_no']"
                         :search-options="{ type: 'customer' }"
                     />
-                    <NextInput v-if="general_fields.number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
+                    <NextInput is-required v-if="general_fields.number" :error="form.errors?.number" type="number" v-model="form.number" :label="t('general.bill_number')" />
                     <NextDate v-if="general_fields.date" v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
                     <NextDate v-model="form.delivery_date" :error="form.errors?.delivery_date" :placeholder="t('general.enter', { text: t('sale_order.delivery_date') })" :label="t('sale_order.delivery_date')" />
 
@@ -261,12 +262,12 @@ useFormGuard(form)
                     <thead class="bg-card sticky top-0 z-10">
                         <tr class="rounded-xl text-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 text-center">#</th>
-                            <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
+                            <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-32" v-if="localColumns.batch">{{ t('general.batch') }}</th>
                             <th class="px-1 py-1 w-36" v-if="localColumns.expiry">{{ t('general.expire_date') }}</th>
-                            <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
+                            <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-24" v-if="localColumns.measure">{{ t('general.unit') }}</th>
-                            <th class="px-1 py-1 w-24">{{ t('general.price') }}</th>
+                            <th class="px-1 py-1 w-24">{{ t('general.price') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-28" v-if="localColumns.size">{{ t('admin.size.size') }}</th>
                             <th class="px-1 py-1 w-28" v-if="localColumns.category">{{ t('admin.category.category') }}</th>
                             <th class="px-1 py-1 w-24" v-if="localColumns.discount">{{ t('general.discount') }}</th>

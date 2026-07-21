@@ -198,12 +198,12 @@ const updateItemsPerPage = (value) => {
                         <thead class="sticky top-0 bg-muted/40">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-white bg-primary">
                             <th class="px-1 py-1 w-5 min-w-5">#</th>
-                            <th class="px-1 py-1 w-40">{{ t('item.item') }}</th>
-                            <th class="px-1 py-1 w-28">{{ t('item.opening_amount') }}</th>
-                            <th class="px-1 py-1 w-28">{{ t('admin.unit_measure.unit_measure') }}</th>
+                            <th class="px-1 py-1 w-40">{{ t('item.item') }} <span class="text-red-500">*</span></th>
+                            <th class="px-1 py-1 w-28">{{ t('item.opening_amount') }} <span class="text-red-500">*</span></th>
+                            <th class="px-1 py-1 w-28">{{ t('admin.unit_measure.unit_measure') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-36">{{ t('item.batch') }}</th>
                             <th class="px-1 py-1 w-44">{{ t('item.expire_date') }}</th>
-                            <th class="px-1 py-1 w-40">{{ t('item.cost') }}</th>
+                            <th class="px-1 py-1 w-40">{{ t('item.cost') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-44">{{ t('admin.warehouse.warehouse') }}</th>
                             <th class="px-1 py-1 w-24">{{ t('general.actions') }}</th>
                         </tr>

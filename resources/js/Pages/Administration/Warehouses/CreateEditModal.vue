@@ -86,6 +86,7 @@ const handleSubmit = async () => {
         <form @submit.prevent="handleSubmit">
             <div class="grid gap-4 py-4">
                 <NextInput
+                    is-required
                     :label="t('general.name')"
                     v-model="form.name"
                     :error="form.errors?.name"

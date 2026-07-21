@@ -106,7 +106,7 @@ const handleSubmit = async () => {
 
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid gap-4 py-4"> 
-                <NextInput :label="t('general.name')" :placeholder="t('general.enter', { text: t('general.name') })" v-model="form.name" :error="form.errors.name" />
+                <NextInput is-required :label="t('general.name')" :placeholder="t('general.enter', { text: t('general.name') })" v-model="form.name" :error="form.errors.name" />
                 <NextSelect
                     v-model="form.parent_id"
                     :options="categories"

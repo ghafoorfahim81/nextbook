@@ -30,7 +30,7 @@
          peer-[:not(:placeholder-shown)]:-translate-y-1/2
          peer-[:not(:placeholder-shown)]:text-xs peer-[:not(:placeholder-shown)]:opacity-100">
             {{ label }}
-            <span v-if="isRequired" class="text-red-600 ms-[2px]">*</span>
+            <span v-if="isRequired" class="text-red-500 ms-0.5">*</span>
         </label>
 
 

@@ -64,6 +64,7 @@ useFormGuard(form)
                 </div>
                 <div class="grid grid-cols-1 gap-4 mt-3">
                     <NextInput
+                        is-required
                         :label="t('general.name')"
                         :placeholder="t('general.enter', { text: t('general.name') })"
                         v-model="form.name"

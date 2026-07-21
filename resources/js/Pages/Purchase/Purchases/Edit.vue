@@ -752,6 +752,7 @@ useFormGuard(form)
                         value-key="id"
                         :reduce="(ledger) => ledger"
                         :floating-text="t('ledger.supplier.supplier')"
+                        is-required
                         :error="form.errors?.supplier_id"
                         :searchable="true"
                         resource-type="ledgers"
@@ -759,6 +760,7 @@ useFormGuard(form)
                         :search-options="{ type: 'supplier' }"
                     />
                     <NextInput
+                        is-required
                         v-if="general_fields.number"
                         v-model="form.number"
                         placeholder="Number"
@@ -809,6 +811,7 @@ useFormGuard(form)
                         value-key="id"
                         :reduce="(warehouse) => warehouse"
                         :floating-text="t('admin.warehouse.warehouse')"
+                        is-required
                         :error="form.errors?.warehouse_id"
                         resource-type="warehouses"
                         :search-fields="['name', 'code', 'address']"
@@ -828,14 +831,14 @@ useFormGuard(form)
                     <thead :class="form.purchase_type === 'cash' ? 'bg-card sticky top-0 z-10' : ''">
                         <tr class="text-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-1 py-1 w-5 min-w-5">#</th>
-                            <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
+                            <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-32" v-if="item_columns.batch">{{ t(spec_text) }}</th>
                             <th class="px-1 py-1 w-36" v-if="item_columns.expiry">{{ t('general.expire_date') }}</th>
-                            <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
+                            <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-24" v-if="item_columns.on_hand">{{ t('general.on_hand') }}</th>
                             <th class="px-1 py-1 w-24" v-if="item_columns.reserved_in">{{ t('general.reserved_in') }}</th>
-                            <th class="px-1 py-1 w-24" v-if="item_columns.measure">{{ t('general.unit') }}</th>
-                            <th class="px-1 py-1 w-24">{{ t('general.price') }}</th>
+                            <th class="px-1 py-1 w-24" v-if="item_columns.measure">{{ t('general.unit') }} <span class="text-red-500">*</span></th>
+                            <th class="px-1 py-1 w-24">{{ t('general.price') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-24" v-if="item_columns.discount">{{ t('general.discount') }}</th>
                             <th class="px-1 py-1 w-16" v-if="item_columns.free">{{ t('general.free') }}</th>
                             <th class="px-1 py-1 w-16" v-if="item_columns.tax">{{ t('general.tax') }}</th>

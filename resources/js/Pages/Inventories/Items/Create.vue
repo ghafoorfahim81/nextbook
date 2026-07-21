@@ -15,7 +15,7 @@ import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import JsBarcode from 'jsbarcode'
 import { Info, RefreshCw, Trash2, AlertCircleIcon } from 'lucide-vue-next'
-import { Switch } from '@/Components/ui/switch'
+import { Checkbox } from '@/Components/ui/checkbox'
 import {
   Popover,
   PopoverContent,
@@ -528,7 +528,7 @@ useFormGuard(form)
                     {{ t('general.create', { name: t('item.item') }) }}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                <NextInput ref="nameInputRef" autofocus :label="t('general.name')" v-model="form.name" :error="form.errors?.name"  :placeholder="t('general.enter', { text: t('general.name') })" />
+                <NextInput ref="nameInputRef" autofocus is-required :label="t('general.name')" v-model="form.name" :error="form.errors?.name"  :placeholder="t('general.enter', { text: t('general.name') })" />
                 <NextInput v-show="visibleFields.code" :label="t('admin.currency.code')" disabled="true"  v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
                 <NextInput v-show="visibleFields.generic_name" :label="t('item.generic_name')" v-model="form.generic_name" :error="form.errors?.generic_name" :placeholder="t('general.enter', { text: t('item.generic_name') })" />
                 <NextInput v-show="visibleFields.packing" :label="t('item.packing')" v-model="form.packing" :error="form.errors?.packing" :placeholder="t('general.enter', { text: t('item.packing') })" />
@@ -540,6 +540,7 @@ useFormGuard(form)
                     value-key="id"
                     id="measure_id"
                     :floating-text="t('admin.unit_measure.unit_measure')"
+                    is-required
                     :searchable="true"
                     resource-type="unit_measures"
                     :search-fields="['name','unit','symbol']"
@@ -590,6 +591,7 @@ useFormGuard(form)
                     value-key="id"
                     id="assets_account"
                     :floating-text="t('item.asset_account')"
+                    is-required
                     :searchable="true"
                     resource-type="assets_accounts"
                     :search-fields="['name']"
@@ -603,6 +605,7 @@ useFormGuard(form)
                     id="income_account"
                     :has-clear-button="false"
                     :floating-text="t('item.income_account')"
+                    is-required
                     :searchable="true"
                     resource-type="income_accounts"
                     :search-fields="['name']"
@@ -615,6 +618,7 @@ useFormGuard(form)
                     value-key="id"
                     id="cost_account"
                     :floating-text="t('item.cost_account')"
+                    is-required
                     :searchable="true"
                     resource-type="cost_accounts"
                     :search-fields="['name']"
@@ -699,39 +703,35 @@ useFormGuard(form)
                 </div>
                 <NextInput v-show="visibleFields.rack_no" :label="t('item.rack_no')" v-model="form.rack_no" :placeholder="t('general.enter', { text: t('item.rack_no') })" :error="form.errors?.rack_no" />
                 <NextInput v-show="visibleFields.fast_search" :label="t('item.fast_search')" v-model="form.fast_search" :placeholder="t('general.enter', { text: t('item.fast_search') })" :error="form.errors?.fast_search" />
-                <div class="md:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-3 rtl:text-right">
-                    <div v-show="visibleFields.is_batch_tracked" class="flex items-center gap-2">
-                        <Label class="text-base whitespace-nowrap">{{ t('item.is_batch_tracked') }}</Label>
-                        <Switch
-                            class="shrink-0"
-                            :model-value="form.is_batch_tracked"
-                            @update:model-value="(v) => form.is_batch_tracked = v"
-                        />
-                    </div>
-                    <div v-show="visibleFields.is_expiry_tracked" class="flex items-center gap-2">
-                        <Label class="text-base whitespace-nowrap">{{ t('item.is_expiry_tracked') }}</Label>
-                        <Switch
-                            class="shrink-0"
-                            :model-value="form.is_expiry_tracked"
-                            @update:model-value="(v) => form.is_expiry_tracked = v"
-                        />
-                    </div>
-                    <div v-show="visibleFields.is_color_tracked" class="flex items-center gap-2">
-                        <Label class="text-base whitespace-nowrap">{{ t('item.is_color_tracked') }}</Label>
-                        <Switch
-                            class="shrink-0"
-                            :model-value="form.is_color_tracked"
-                            @update:model-value="(v) => form.is_color_tracked = v"
-                        />
-                    </div>
-                    <div v-show="visibleFields.is_size_tracked" class="flex items-center gap-2">
-                        <Label class="text-base whitespace-nowrap">{{ t('item.is_size_tracked') }}</Label>
-                        <Switch
-                            class="shrink-0"
-                            :model-value="form.is_size_tracked"
-                            @update:model-value="(v) => form.is_size_tracked = v"
-                        />
-                    </div>
+                <div class="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-3 rtl:text-right">
+                    <label v-show="visibleFields.is_batch_tracked" class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer">
+                        <Checkbox class="mt-0.5" :checked="form.is_batch_tracked" @update:checked="(v) => form.is_batch_tracked = v" />
+                        <div>
+                            <p class="font-semibold text-sm">{{ t('item.is_batch_tracked') }}</p>
+                            <p class="text-sm text-muted-foreground">{{ t('item.batch_warning') }}</p>
+                        </div>
+                    </label>
+                    <label v-show="visibleFields.is_expiry_tracked" class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer">
+                        <Checkbox class="mt-0.5" :checked="form.is_expiry_tracked" @update:checked="(v) => form.is_expiry_tracked = v" />
+                        <div>
+                            <p class="font-semibold text-sm">{{ t('item.is_expiry_tracked') }}</p>
+                            <p class="text-sm text-muted-foreground">{{ t('item.expiry_warning') }}</p>
+                        </div>
+                    </label>
+                    <label v-show="visibleFields.is_color_tracked" class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer">
+                        <Checkbox class="mt-0.5" :checked="form.is_color_tracked" @update:checked="(v) => form.is_color_tracked = v" />
+                        <div>
+                            <p class="font-semibold text-sm">{{ t('item.is_color_tracked') }}</p>
+                            <p class="text-sm text-muted-foreground">{{ t('item.color_warning') }}</p>
+                        </div>
+                    </label>
+                    <label v-show="visibleFields.is_size_tracked" class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer">
+                        <Checkbox class="mt-0.5" :checked="form.is_size_tracked" @update:checked="(v) => form.is_size_tracked = v" />
+                        <div>
+                            <p class="font-semibold text-sm">{{ t('item.is_size_tracked') }}</p>
+                            <p class="text-sm text-muted-foreground">{{ t('item.size_warning') }}</p>
+                        </div>
+                    </label>
                 </div>
             </div>
             <div class="mt-2">
@@ -748,10 +748,10 @@ useFormGuard(form)
                                     <li>{{ t('item.opening_key_points.2') }}</li>
                                     <li>{{ t('item.opening_key_points.3') }}</li>
                                     <li>{{ t('item.opening_key_points.4') }}</li>
-                                    <li v-show="form.is_batch_tracked">{{ t('item.batch_warning') }}</li>
+                                    <!-- <li v-show="form.is_batch_tracked">{{ t('item.batch_warning') }}</li>
                                     <li v-show="form.is_expiry_tracked">{{ t('item.expiry_warning') }}</li>
                                     <li v-show="form.is_color_tracked">{{ t('item.color_warning') }}</li>
-                                    <li v-show="form.is_size_tracked">{{ t('item.size_warning') }}</li>
+                                    <li v-show="form.is_size_tracked">{{ t('item.size_warning') }}</li> -->
                                 </ul>
                             </AlertDescription>
                         </Alert>
@@ -805,6 +805,7 @@ useFormGuard(form)
                                             :reduce="o => o.id"
                                             :id="`opening_color_${index}`"
                                             :error="form.errors?.[`openings.${index}.color`]"
+                                            :append-to-body="true"
                                         >
                                             <template #option="{ name, hex }">
                                                 <span class="flex items-center gap-2">
@@ -829,6 +830,7 @@ useFormGuard(form)
                                             :reduce="o => o.id"
                                             :id="`opening_size_${index}`"
                                             :error="form.errors?.[`openings.${index}.size_id`]"
+                                            :append-to-body="true"
                                         />
                                     </td>
                                     <td class="p-2 min-w-[110px]">
@@ -849,6 +851,7 @@ useFormGuard(form)
                                             :searchable="true"
                                             resource-type="warehouses"
                                             :search-fields="['name', 'address']"
+                                            :append-to-body="true"
                                         />
                                     </td>
 
