@@ -314,6 +314,7 @@ useFormGuard(form)
             value-key="id"
             :reduce="warehouse => warehouse"
             :floating-text="t('item_transfer.from_warehouse')"
+            is-required
             :error="form.errors?.from_warehouse_id"
             :searchable="true"
           />
@@ -325,6 +326,7 @@ useFormGuard(form)
             value-key="id"
             :reduce="warehouse => warehouse"
             :floating-text="t('item_transfer.to_warehouse')"
+            is-required
             :error="form.errors?.to_warehouse_id"
             :searchable="true"
             resource-type="warehouses"
@@ -349,15 +351,15 @@ useFormGuard(form)
 
       <div class="rounded-xl border bg-card shadow-sm overflow-x-auto max-h-80">
         <table class="w-full table-fixed min-w-[900px] purchase-table border-separate">
-          <thead class="bg-card sticky top-0 z-[200]">
+          <thead class="bg-card sticky top-0 z-10">
             <tr class="text-muted-foreground font-semibold text-sm text-violet-500">
               <th class="px-1 py-1 w-5 min-w-5">#</th>
-              <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }}</th>
+              <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }} <span class="text-red-500">*</span></th>
               <th class="px-1 py-1 w-32">{{ t('general.batch') }}</th>
               <th class="px-1 py-1 w-36">{{ t('general.expire_date') }}</th>
-              <th class="px-1 py-1 w-16">{{ t('general.qty') }}</th>
+              <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
               <th class="px-1 py-1 w-24">{{ t('general.on_hand') }}</th>
-              <th class="px-1 py-1 w-24">{{ t('general.unit') }}</th>
+              <th class="px-1 py-1 w-24">{{ t('general.unit') }} <span class="text-red-500">*</span></th>
               <th class="px-1 py-1 w-24">{{ t('general.unit_price') }}</th>
               <th class="px-1 py-1 w-24">{{ t('general.total') }}</th>
               <th class="px-1 py-1 w-10">

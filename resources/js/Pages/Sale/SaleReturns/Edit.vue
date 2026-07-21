@@ -112,7 +112,7 @@ useFormGuard(form)
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextInput disabled :model-value="`#${returnData.sale_number}`" :label="t('sale_return.linked_sale')" />
-                    <NextInput type="number" :error="form.errors?.number" v-model="form.number" :label="t('general.bill_number')" />
+                    <NextInput is-required type="number" :error="form.errors?.number" v-model="form.number" :label="t('general.bill_number')" />
                     <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
                     <NextSelect
                         :options="reasons"
@@ -142,7 +142,7 @@ useFormGuard(form)
                             <th class="px-2 py-2 w-24 text-right">{{ t('sale_return.returned_quantity') }}</th>
                             <th class="px-2 py-2 w-24 text-right">{{ t('sale_return.remaining_quantity') }}</th>
                             <th class="px-2 py-2 w-24 text-right">{{ t('general.price') }}</th>
-                            <th class="px-2 py-2 w-32 text-right">{{ t('sale_return.quantity_to_return') }}</th>
+                            <th class="px-2 py-2 w-32 text-right">{{ t('sale_return.quantity_to_return') }} <span class="text-red-500">*</span></th>
                             <th class="px-2 py-2 w-24 text-right">{{ t('general.total') }}</th>
                         </tr>
                     </thead>

@@ -95,6 +95,7 @@ useFormGuard(form)
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextInput
+                        is-required
                         :label="t('general.english_name')"
                         v-model="form.name"
                         :error="form.errors?.name"
@@ -107,6 +108,7 @@ useFormGuard(form)
                         :placeholder="t('general.enter', { text: t('account.local_name') })"
                     />
                     <NextInput
+                        is-required
                         :label="t('general.number')"
                         v-model="form.number"
                         :error="form.errors?.number"
@@ -122,6 +124,7 @@ useFormGuard(form)
                         id="account_type"
                         :reduce="accountType => accountType"
                         :floating-text="t('account.account_type')"
+                        is-required
                         :searchable="true"
                         resource-type="account-types"
                         :search-fields="['name']"

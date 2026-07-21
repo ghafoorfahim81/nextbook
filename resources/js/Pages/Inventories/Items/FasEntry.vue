@@ -252,9 +252,9 @@ const handleSubmit = () => {
                         <thead class="sticky top-0 bg-muted/40">
                         <tr class="rounded-xltext-muted-foreground font-semibold text-sm text-white bg-primary">
                             <th class="px-1 py-1 w-5 min-w-5">#</th>
-                            <th class="px-1 py-1 w-36">{{ t('general.name') }}</th>
+                            <th class="px-1 py-1 w-36">{{ t('general.name') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-20">{{ t('item.code') }}</th>
-                            <th class="px-1 py-1 w-28">{{ t('admin.unit_measure.unit_measure') }}</th>
+                            <th class="px-1 py-1 w-28">{{ t('admin.unit_measure.unit_measure') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-20">{{ t('item.opening_amount') }}</th>
                             <th class="px-1 py-1 w-20">{{ t('item.batch') }}</th>
                             <th class="px-1 py-1 w-36">{{ t('item.expire_date') }}</th>

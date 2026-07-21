@@ -503,6 +503,7 @@ onMounted(() => {
             :disabled="isPosted"
           />
           <NextInput
+            is-required
             v-model="form.total_cost"
             type="number"
             step="any"
@@ -516,6 +517,7 @@ onMounted(() => {
             value-key="id"
             :reduce="method => method.id"
             :floating-text="t('landed_cost.allocation_method')"
+            is-required
             :disabled="isPosted"
           />
           <NextTextarea

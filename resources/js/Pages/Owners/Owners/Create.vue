@@ -109,8 +109,8 @@ useFormGuard(form)
           {{ t('general.create', { name: t('owner.owner') }) }}
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-          <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name" />
-          <NextInput :label="t('owner.father_name')" v-model="form.father_name" :error="form.errors?.father_name" />
+          <NextInput is-required :label="t('general.name')" v-model="form.name" :error="form.errors?.name" />
+          <NextInput is-required :label="t('owner.father_name')" v-model="form.father_name" :error="form.errors?.father_name" />
           <NextInput :label="t('owner.nic')" v-model="form.nic" :error="form.errors?.nic" />
           <NextInput :label="t('owner.email')" v-model="form.email" type="email" :error="form.errors?.email"/>
           <NextInput :label="t('owner.phone_number')" v-model="form.phone_number" type="text" :error="form.errors?.phone_number"/>
@@ -124,6 +124,7 @@ useFormGuard(form)
             v-model="form.selected_capital_account"
             @update:modelValue="(value) => handleSelectChange('capital_account_id', value?.id)"
             :floating-text="t('owner.capital_account')"
+            is-required
             :error="form.errors?.capital_account_id"
             :searchable="true"
             resource-type="accounts"
@@ -137,6 +138,7 @@ useFormGuard(form)
             v-model="form.selected_drawing_account"
             @update:modelValue="(value) => handleSelectChange('drawing_account_id', value?.id)"
             :floating-text="t('owner.drawing_account')"
+            is-required
             :error="form.errors?.drawing_account_id"
             :searchable="true"
             resource-type="accounts"

@@ -99,7 +99,7 @@ useFormGuard(form)
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
           <NextInput :placeholder="t('general.enter', { text: t('general.number') })" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
           <NextDate v-model="form.date" :current-date="false" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
-          <NextInput :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
+          <NextInput is-required :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
 
           <NextSelect
             :options="currencies"
@@ -109,12 +109,13 @@ useFormGuard(form)
             @update:modelValue="(value) => handleSelectChange('currency_id', value.id)"
             :reduce="currency => currency"
             :floating-text="t('admin.currency.currency')"
+            is-required
             :error="form.errors?.currency_id"
             :searchable="true"
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput placeholder="Rate" :error="form.errors?.rate" :disabled="form.selected_currency.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+          <NextInput is-required placeholder="Rate" :error="form.errors?.rate" :disabled="form.selected_currency.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
 
           <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="space-y-2">
@@ -126,6 +127,7 @@ useFormGuard(form)
                 value-key="id"
                 :reduce="acc => acc"
                 :floating-text="t('general.from_account')"
+                is-required
                 :error="form.errors?.from_account_id"
                 :searchable="true"
                 resource-type="accounts"
@@ -149,6 +151,7 @@ useFormGuard(form)
                 value-key="id"
                 :reduce="acc => acc"
                 :floating-text="t('general.to_account')"
+                is-required
                 :error="form.errors?.to_account_id"
                 :searchable="true"
                 resource-type="accounts"

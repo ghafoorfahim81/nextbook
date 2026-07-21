@@ -202,6 +202,7 @@ useFormGuard(form)
                         value-key="id"
                         :reduce="cat => cat"
                         :floating-text="t('expense.category')"
+                        is-required
                         :error="form.errors?.category_id"
                         :searchable="true"
                         resource-type="expense_categories"
@@ -215,6 +216,7 @@ useFormGuard(form)
                         value-key="id"
                         :reduce="acc => acc"
                         :floating-text="t('expense.expense_account')"
+                        is-required
                         :error="form.errors?.expense_account_id"
                         :searchable="true"
                     />
@@ -226,6 +228,7 @@ useFormGuard(form)
                         value-key="id"
                         :reduce="acc => acc"
                         :floating-text="t('expense.bank_account')"
+                        is-required
                         :error="form.errors?.bank_account_id"
                         :searchable="true"
                     />
@@ -238,10 +241,12 @@ useFormGuard(form)
                             value-key="id"
                             :reduce="cur => cur"
                             :floating-text="t('admin.currency.currency')"
+                            is-required
                             :error="form.errors?.currency_id"
                             :searchable="true"
                         />
                         <NextInput
+                            is-required
                             v-model="form.rate"
                             type="number"
                             step="any"
@@ -284,8 +289,8 @@ useFormGuard(form)
                     <thead class="bg-muted/50">
                         <tr class="text-sm text-muted-foreground">
                             <th class="px-4 py-2 w-12">#</th>
-                            <th class="px-4 py-2 text-center">{{ t('general.description') }} *</th>
-                            <th class="px-4 py-2 w-40 text-center">{{ t('general.amount') }} *</th>
+                            <th class="px-4 py-2 text-center">{{ t('general.description') }} <span class="text-red-500">*</span></th>
+                            <th class="px-4 py-2 w-40 text-center">{{ t('general.amount') }} <span class="text-red-500">*</span></th>
                             <th class="px-4 py-2 w-12"></th>
                         </tr>
                     </thead>

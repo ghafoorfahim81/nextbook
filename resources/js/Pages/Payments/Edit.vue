@@ -255,14 +255,15 @@ useFormGuard(form)
             value-key="id"
             :reduce="ledger => ledger"
             :floating-text="t('ledger.supplier.supplier')"
+            is-required
             :error="form.errors?.ledger_id"
             :searchable="true"
             resource-type="ledgers"
             :search-fields="['name', 'email', 'phone_no']"
           />
-          <NextInput v-if="rpFields.number" :placeholder="t('general.enter', { text: t('general.number') })" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
+          <NextInput is-required v-if="rpFields.number" :placeholder="t('general.enter', { text: t('general.number') })" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
           <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
-          <NextInput :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
+          <NextInput is-required :placeholder="t('general.enter', { text: t('general.amount') })" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
           <NextSelect
             v-if="rpFields.currency"
             :options="currencies"
@@ -272,12 +273,13 @@ useFormGuard(form)
             @update:modelValue="(value) => handleSelectChange('currency_id', value.id)"
             :reduce="currency => currency"
             :floating-text="t('admin.currency.currency')"
+            is-required
             :error="form.errors?.currency_id"
             :searchable="true"
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
           />
-          <NextInput v-if="rpFields.currency" :placeholder="t('general.enter', { text: t('general.rate') })" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+          <NextInput is-required v-if="rpFields.currency" :placeholder="t('general.enter', { text: t('general.rate') })" :error="form.errors?.rate" :disabled="form.selected_currency?.is_base_currency === true" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
           <NextSelect
             :options="paymentModes"
             v-model="form.payment_mode"
@@ -299,6 +301,7 @@ useFormGuard(form)
             value-key="id"
             :reduce="acc => acc"
             :floating-text="t('payment.pay_from_account')"
+            is-required
             :error="form.errors?.bank_account_id"
             :searchable="true"
             resource-type="accounts"

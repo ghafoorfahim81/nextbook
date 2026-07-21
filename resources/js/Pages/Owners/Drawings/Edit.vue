@@ -182,6 +182,7 @@ useFormGuard(form)
             value-key="id"
             :reduce="(owner) => owner"
             :floating-text="t('owner.owner')"
+            is-required
             :error="form.errors?.owner_id"
             :searchable="true"
             resource-type="owners"
@@ -196,6 +197,7 @@ useFormGuard(form)
             value-key="id"
             :reduce="(account) => account"
             :floating-text="t('general.bank_account')"
+            is-required
             :error="form.errors?.bank_account_id"
             :searchable="true"
             resource-type="accounts"
@@ -218,12 +220,13 @@ useFormGuard(form)
             @update:modelValue="(value) => handleSelectChange('currency_id', value)"
             :reduce="currency => currency"
             :floating-text="t('admin.currency.currency')"
+            is-required
             :error="form.errors?.currency_id"
             :searchable="true"
             resource-type="currencies"
             :search-fields="['name', 'code', 'symbol']"
              />
-            <NextInput placeholder="Rate" :disabled="form.selected_currency?.is_base_currency == true" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+            <NextInput is-required placeholder="Rate" :disabled="form.selected_currency?.is_base_currency == true" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
             
           </div>
 
@@ -235,6 +238,7 @@ useFormGuard(form)
           </div>
 
           <NextInput
+            is-required
             v-model="form.amount"
             type="number"
             step="any"

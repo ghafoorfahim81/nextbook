@@ -82,13 +82,13 @@ const handleSubmit = async () => {
                 v-model="form.name"
                 :label="t('general.name')"
                 :error="form.errors.name"
-                required
+                is-required
             />
             <NextInput
                 v-model="form.code"
                 :label="t('admin.currency.code')"
                 :error="form.errors.code"
-                required
+                is-required
             />
         </form>
     </ModalDialog>
