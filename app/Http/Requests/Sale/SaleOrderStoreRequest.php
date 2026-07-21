@@ -39,6 +39,7 @@ class SaleOrderStoreRequest extends FormRequest
             'item_list.*.unit_price' => ['required', 'numeric', 'min:0'],
             'item_list.*.unit_measure_id' => ['nullable', 'string', 'exists:unit_measures,id'],
             'item_list.*.batch' => ['nullable', 'string'],
+            'item_list.*.color' => ['nullable', 'string'],
             'item_list.*.expire_date' => ['nullable', 'date'],
             'item_list.*.size_id' => ['nullable', 'string', 'exists:sizes,id'],
             'item_list.*.category_id' => ['nullable', 'string', 'exists:categories,id'],

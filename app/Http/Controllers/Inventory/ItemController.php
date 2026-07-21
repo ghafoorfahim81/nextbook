@@ -745,6 +745,16 @@ class ItemController extends Controller
             }, function ($query) {
                 return $query->whereNull('expire_date');
             })
+            ->when($opening->color !== null, function ($query) use ($opening) {
+                return $query->where('color', $opening->color);
+            }, function ($query) {
+                return $query->whereNull('color');
+            })
+            ->when($opening->size_id !== null, function ($query) use ($opening) {
+                return $query->where('size_id', $opening->size_id);
+            }, function ($query) {
+                return $query->whereNull('size_id');
+            })
             ->lockForUpdate()
             ->value('id');
     }
@@ -764,6 +774,16 @@ class ItemController extends Controller
                 return $query->whereDate('expire_date', $opening->expire_date->toDateString());
             }, function ($query) {
                 return $query->whereNull('expire_date');
+            })
+            ->when($opening->color !== null, function ($query) use ($opening) {
+                return $query->where('color', $opening->color);
+            }, function ($query) {
+                return $query->whereNull('color');
+            })
+            ->when($opening->size_id !== null, function ($query) use ($opening) {
+                return $query->where('size_id', $opening->size_id);
+            }, function ($query) {
+                return $query->whereNull('size_id');
             })
             ->lockForUpdate()
             ->first();

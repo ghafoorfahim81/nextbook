@@ -34,6 +34,7 @@ class SaleOrderItem extends Model
         'unit_price',
         'unit_measure_id',
         'batch',
+        'color',
         'expire_date',
         'size_id',
         'category_id',

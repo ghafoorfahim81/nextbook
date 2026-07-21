@@ -31,6 +31,7 @@ class SaleItem extends Model
         'sale_id',
         'item_id',
         'batch',
+        'color',
         'expire_date',
         'quantity',
         'unit_measure_id',
@@ -133,5 +134,10 @@ class SaleItem extends Model
     public function remainingReturnableQuantity(?string $excludingSaleReturnId = null): float
     {
         return max((float) $this->quantity - $this->returnedQuantity($excludingSaleReturnId), 0.0);
+    }
+
+    public function size(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Administration\Size::class);
     }
 }

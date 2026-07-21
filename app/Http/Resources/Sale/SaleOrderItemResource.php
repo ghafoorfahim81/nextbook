@@ -21,6 +21,7 @@ class SaleOrderItemResource extends JsonResource
             'item_name' => $this->item?->name,
             'item_code' => $this->item?->code,
             'batch' => $this->batch,
+            'color' => $this->color,
             'expire_date' => $this->expire_date ? $dateConversionService->toDisplay($this->expire_date) : null,
             'quantity' => $this->quantity,
             'free' => $this->free,

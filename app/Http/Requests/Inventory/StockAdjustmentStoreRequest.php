@@ -34,6 +34,7 @@ class StockAdjustmentStoreRequest extends FormRequest
             'items.*.quantity' => ['required', 'numeric', 'min:0.0001'],
             'items.*.unit_cost' => ['nullable', 'numeric', 'min:0'],
             'items.*.batch' => ['nullable', 'string'],
+            'items.*.color' => ['nullable', 'string'],
             'items.*.expire_date' => ['nullable', 'date'],
             'items.*.size_id' => ['nullable', 'string', 'exists:sizes,id'],
             'items.*.category_id' => ['nullable', 'string', 'exists:categories,id'],

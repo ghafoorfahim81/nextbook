@@ -29,10 +29,12 @@ class PurchaseItem extends Model
         'purchase_id',
         'item_id',
         'batch',
+        'color',
         'expire_date',
         'quantity',
         'unit_measure_id',
         'warehouse_id',
+        'size_id',
         'unit_price',
         'discount',
         'free',
@@ -103,5 +105,8 @@ class PurchaseItem extends Model
         return $this->belongsTo(\App\Models\Administration\UnitMeasure::class);
     }
 
-
+    public function size(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Administration\Size::class);
+    }
 }

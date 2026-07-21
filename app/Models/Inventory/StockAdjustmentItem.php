@@ -23,6 +23,7 @@ class StockAdjustmentItem extends Model
         'quantity',
         'unit_cost',
         'batch',
+        'color',
         'expire_date',
         'size_id',
         'category_id',
