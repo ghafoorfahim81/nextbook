@@ -134,6 +134,8 @@ class StockService
             'item_id' => $data['item_id'],
             'warehouse_id' => $data['warehouse_id'],
             'batch' => $data['batch'] ?? null,
+            'color' => $data['color'] ?? null,
+            'size_id' => $data['size_id'] ?? null,
             'expire_date' => ! empty($data['expire_date']) ? $this->normalizeDate($data['expire_date']) : null,
         ];
 
@@ -217,6 +219,9 @@ class StockService
             $query->whereDate('expire_date', $this->normalizeDate($balanceData['expire_date']));
         }
 
+        // Only consume incoming stock of the same colour/size variant.
+        $this->applyVariantFilter($query, $balanceData['color'] ?? null, $balanceData['size_id'] ?? null);
+
         $inMovements = $query
             ->orderByRaw('CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END')
             ->orderBy('expire_date')
@@ -250,6 +255,8 @@ class StockService
             $allocations[] = [
                 'quantity' => $deductQty,
                 'batch' => $movement->batch,
+                'color' => $movement->color,
+                'size_id' => $movement->size_id,
                 'expire_date' => ($movement->expire_date?->toDateString()),
                 'status' => $this->stockStatusValue($movement->status),
                 'movement_id' => $movement->id,
@@ -287,6 +294,9 @@ class StockService
             $query->whereDate('expire_date', $this->normalizeDate($balanceData['expire_date']));
         }
 
+        // Only consume incoming stock of the same colour/size variant.
+        $this->applyVariantFilter($query, $balanceData['color'] ?? null, $balanceData['size_id'] ?? null);
+
         $inMovements = $query
             ->orderByRaw('CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END')
             ->orderBy('expire_date', 'asc')
@@ -319,6 +329,8 @@ class StockService
             $allocations[] = [
                 'quantity'       => $deductQty,
                 'batch'          => $movement->batch,
+                'color'          => $movement->color,
+                'size_id'        => $movement->size_id,
                 'expire_date'    => $movement->expire_date?->toDateString(),
                 'status'         => $this->stockStatusValue($movement->status),
                 'movement_id'    => $movement->id,
@@ -368,6 +380,8 @@ class StockService
                 'item_id' => $data['item_id'],
                 'warehouse_id' => $data['warehouse_id'],
                 'batch' => $data['batch'] ?? null,
+                'color' => $data['color'] ?? null,
+                'size_id' => $data['size_id'] ?? null,
                 'expire_date' => $data['expire_date'] ? $this->normalizeDate($data['expire_date']) : null,
             ],
             [
@@ -434,6 +448,11 @@ class StockService
                     }, function ($query) {
                         return $query->whereNull('expire_date');
                     })
+                    ->tap(fn ($query) => $this->applyVariantFilter(
+                        $query,
+                        $allocation['color'] ?? null,
+                        $allocation['size_id'] ?? null
+                    ))
                     ->lockForUpdate()
                     ->orderBy('created_at')
                     ->orderBy('id')
@@ -458,6 +477,11 @@ class StockService
             ->when(!empty($data['expire_date']), function ($query) use ($data) {
                 return $query->whereDate('expire_date', $this->normalizeDate($data['expire_date']));
             })
+            ->tap(fn ($query) => $this->applyVariantFilter(
+                $query,
+                $data['color'] ?? null,
+                $data['size_id'] ?? null
+            ))
             ->lockForUpdate()
             ->orderByRaw('CASE WHEN expire_date IS NULL THEN 1 ELSE 0 END')
             ->orderBy('expire_date')
@@ -467,6 +491,28 @@ class StockService
 
         $this->decrementBalances($balances, (float) $data['quantity'], []);
         $this->markBalancesAsPosted($balances);
+    }
+
+    /**
+     * Constrain a stock balance / movement query to one colour+size variant.
+     *
+     * A NULL colour is a distinct variant from any named colour, so NULL must
+     * match NULL exactly rather than matching everything. Items that track
+     * neither dimension always pass nulls here and so keep their single row.
+     */
+    protected function applyVariantFilter($query, ?string $color, ?string $sizeId)
+    {
+        return $query
+            ->when(
+                $color !== null && $color !== '',
+                fn ($q) => $q->where('color', $color),
+                fn ($q) => $q->whereNull('color')
+            )
+            ->when(
+                $sizeId !== null && $sizeId !== '',
+                fn ($q) => $q->where('size_id', $sizeId),
+                fn ($q) => $q->whereNull('size_id')
+            );
     }
 
     /**
@@ -500,6 +546,11 @@ class StockService
             ->when(!empty($data['expire_date']), function($query) use ($data) {
                 return $query->whereDate('expire_date', $this->normalizeDate($data['expire_date']));
             })
+            ->tap(fn ($query) => $this->applyVariantFilter(
+                $query,
+                $data['color'] ?? null,
+                $data['size_id'] ?? null
+            ))
             ->lockForUpdate()
             ->get()
             ->sum(fn ($balance) => (float) $balance->quantity);
@@ -521,7 +572,7 @@ class StockService
             ?? 'fifo';
     }
 
-    public function getStockLevel(string $itemId, string $warehouseId, ?string $batch = null, ?string $expireDate = null): array
+    public function getStockLevel(string $itemId, string $warehouseId, ?string $batch = null, ?string $expireDate = null, ?string $color = null, ?string $sizeId = null): array
     {
         $totalStock = StockBalance::where('item_id', $itemId)
             ->where('warehouse_id', $warehouseId)
@@ -530,6 +581,12 @@ class StockService
             })
             ->when($expireDate, function($query) use ($expireDate) {
                 return $query->whereDate('expire_date', $this->normalizeDate($expireDate));
+            })
+            ->when($color, function($query) use ($color) {
+                return $query->where('color', $color);
+            })
+            ->when($sizeId, function($query) use ($sizeId) {
+                return $query->where('size_id', $sizeId);
             })
             ->sum('quantity');
 

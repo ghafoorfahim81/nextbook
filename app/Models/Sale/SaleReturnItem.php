@@ -31,6 +31,7 @@ class SaleReturnItem extends Model
         'sale_item_id',
         'item_id',
         'batch',
+        'color',
         'expire_date',
         'quantity',
         'unit_measure_id',
@@ -104,5 +105,10 @@ class SaleReturnItem extends Model
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'warehouse_id');
+    }
+
+    public function size(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Administration\Size::class);
     }
 }

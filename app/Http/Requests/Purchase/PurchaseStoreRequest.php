@@ -42,6 +42,8 @@ class PurchaseStoreRequest extends FormRequest
             'item_list' => ['required', 'array'],
             'item_list.*.item_id' => ['required', 'string', 'exists:items,id'],
             'item_list.*.batch' => ['nullable', 'string'],
+            'item_list.*.color' => ['nullable', 'string'],
+            'item_list.*.size_id' => ['nullable', 'string', 'exists:sizes,id'],
             'item_list.*.expire_date' => ['nullable', 'string'],
             'item_list.*.quantity' => ['required', 'numeric'],
             'item_list.*.unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],

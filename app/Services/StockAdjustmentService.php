@@ -307,6 +307,7 @@ class StockAdjustmentService
                 'quantity' => $quantity,
                 'unit_cost' => $unitCost,
                 'batch' => $line['batch'] ?? null,
+                'color' => $line['color'] ?? null,
                 'expire_date' => !empty($line['expire_date'])
                     ? $this->dateConversionService->toGregorian($line['expire_date'])
                     : null,
@@ -325,6 +326,7 @@ class StockAdjustmentService
                 'unit_cost_override' => $unitCost,
                 'status' => StockStatus::POSTED->value,
                 'batch' => $line['batch'] ?? null,
+                'color' => $line['color'] ?? null,
                 'date' => $date,
                 'expire_date' => $line['expire_date'] ?? null,
                 'size_id' => $line['size_id'] ?? null,

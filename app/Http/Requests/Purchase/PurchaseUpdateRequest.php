@@ -42,6 +42,8 @@ class PurchaseUpdateRequest extends FormRequest
             'item_list.*.unit_price' => ['required', 'numeric', 'min:0'],
             'item_list.*.free' => ['nullable', 'numeric', 'min:0'],
             'item_list.*.batch' => ['nullable', 'string'],
+            'item_list.*.color' => ['nullable', 'string'],
+            'item_list.*.size_id' => ['nullable', 'string', 'exists:sizes,id'],
             'item_list.*.expire_date' => ['nullable', 'date'],
             'item_list.*.item_discount' => ['nullable', 'numeric', 'min:0'],
             'item_list.*.tax' => ['nullable', 'numeric', 'min:0'],

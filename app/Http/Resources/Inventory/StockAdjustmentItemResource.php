@@ -37,8 +37,10 @@ class StockAdjustmentItemResource extends JsonResource
             'unit_cost' => $this->unit_cost,
             'total_cost' => (float) $this->quantity * (float) ($this->unit_cost ?? 0),
             'batch' => $this->batch,
+            'color' => $this->color,
             'expire_date' => $this->expire_date ? $dateConversionService->toDisplay($this->expire_date) : null,
             'size_id' => $this->size_id,
+            'size_name' => $this->size?->name,
             'category_id' => $this->category_id,
             'branch_id' => $this->branch_id,
         ];
