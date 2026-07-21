@@ -26,6 +26,7 @@ class StockMovementResource extends JsonResource
             'color' => $this->color,
             'size_id' => $this->size_id,
             'size' => SizeResource::make($this->whenLoaded('size')),
+            'size_name' => $this->size?->name ?? null,
             'source' => $this->source?->getLabel() ?? null,
             'status' => $this->status?->getLabel() ?? null,
             'status_color' => $this->status?->color() ?? null,

@@ -117,5 +117,11 @@
     "total_in": "Total In",
     "total_out": "Total Out",
     "opening_balance": "Opening Balance",
-    "avg_cost": "Avg Cost"
+    "avg_cost": "Avg Cost",
+    "in_stock": "In Stock",
+    "low_stock": "Low Stock",
+    "out_of_stock": "Out of Stock",
+    "stock_by_warehouse": "Stock by Warehouse",
+    "reserved": "Reserved",
+    "available": "Available"
 }

@@ -20,6 +20,7 @@ const { can } = useAuth();
 
 const props = defineProps({
     item: { type: Object, required: true },
+    stockByWarehouse: { type: Array, default: () => [] },
 });
 
 const itemData = computed(() => props.item?.data ?? props.item ?? {});
@@ -50,9 +51,9 @@ const itemDetails = computed(() => [
     { label: t('item.asset_account'), value: itemData.value?.asset_account?.name, icon: Building },
     { label: t('item.income_account'), value: itemData.value?.income_account?.name, icon: TrendingUp },
     { label: t('item.cost_account'), value: itemData.value?.cost_account?.name, icon: TrendingDown },
+    { label: t('item.minimum_stock'), value: itemData.value?.minimum_stock, icon: TrendingDown },
     { label: t('item.maximum_stock'), value: itemData.value?.maximum_stock, icon: TrendingUp },
     { label: t('item.current_stock'), value: itemData.value?.on_hand || 0, icon: Target },
-    { label: t('item.size'), value: itemData.value?.size?.name, icon: Ruler },
     { label: t('item.purchase_price'), value: itemData.value?.purchase_price, icon: DollarSign },
     { label: t('item.average_cost'), value: itemData.value?.avg_cost, icon: DollarSign },
     { label: t('item.sale_price'), value: itemData.value?.sale_price, icon: DollarSign },
@@ -74,6 +75,48 @@ const itemColors = computed(() => {
         hex: COLOR_OPTIONS.find((c) => c.value === value)?.hex ?? '#9ca3af',
     }));
 });
+
+// Reorder signal: compare on-hand against the item's configured minimum stock.
+// `on_hand` arrives pre-formatted (e.g. "1,234.00"), so strip separators first.
+const toNumber = (value) => {
+    const parsed = Number(String(value ?? '').replace(/,/g, ''));
+    return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const stockStatus = computed(() => {
+    const onHand = toNumber(itemData.value?.on_hand);
+    const min = itemData.value?.minimum_stock;
+
+    if (onHand <= 0) {
+        return { label: t('item.out_of_stock'), class: 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400' };
+    }
+    if (min !== null && min !== undefined && min !== '' && onHand <= toNumber(min)) {
+        return { label: t('item.low_stock'), class: 'border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400' };
+    }
+    return { label: t('item.in_stock'), class: 'border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400' };
+});
+
+// Only surface the tracking toggles that are actually enabled.
+const trackingFlags = computed(() => [
+    { key: 'batch', label: t('item.is_batch_tracked'), on: !!itemData.value?.is_batch_tracked },
+    { key: 'expiry', label: t('item.is_expiry_tracked'), on: !!itemData.value?.is_expiry_tracked },
+    { key: 'color', label: t('item.is_color_tracked'), on: !!itemData.value?.is_color_tracked },
+    { key: 'size', label: t('item.is_size_tracked'), on: !!itemData.value?.is_size_tracked },
+].filter(flag => flag.on));
+
+const stockRows = computed(() => props.stockByWarehouse ?? []);
+
+const formatQty = (value) => Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 });
+const formatMoney = (value) => Number(value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// Resolve a single stored color value (e.g. "red") to its label + swatch.
+const resolveColor = (value) => {
+    if (!value) return null;
+    return {
+        name: t(`colors.${value}`),
+        hex: COLOR_OPTIONS.find((c) => c.value === value)?.hex ?? '#9ca3af',
+    };
+};
 
 const fetchRecords = async (type, page) => {
     const res = await axios.get(route(`items.${type}-records`, itemData.value.id), {
@@ -174,11 +217,28 @@ onMounted(() => {
             <!-- Info section -->
             <fieldset class="rounded-xl border border-border bg-muted/40 px-5 pb-5 pt-3">
                 <legend class="px-2 text-sm font-semibold text-violet-500">{{ itemData.name }}</legend>
-                <div class="flex items-center gap-2 mb-4">
+                <div class="flex flex-wrap items-center gap-2 mb-4">
                     <div class="bg-violet-500 text-white p-1.5 rounded">
                         <Layers class="w-4 h-4" />
                     </div>
                     <h3 class="text-sm font-semibold text-foreground">{{ t('general.details') }}</h3>
+
+                    <!-- Reorder signal -->
+                    <span
+                        class="ms-1 rounded-full border px-2 py-0.5 text-xs font-medium"
+                        :class="stockStatus.class"
+                    >
+                        {{ stockStatus.label }}
+                    </span>
+
+                    <!-- Enabled tracking toggles -->
+                    <span
+                        v-for="flag in trackingFlags"
+                        :key="flag.key"
+                        class="rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-xs font-medium text-violet-600 dark:text-violet-300"
+                    >
+                        {{ flag.label }}
+                    </span>
                 </div>
                 <div class="grid gap-x-6 gap-y-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
                     <div v-for="detail in itemDetails" :key="detail.label" class="flex items-start gap-2">
@@ -226,6 +286,41 @@ onMounted(() => {
                         <div><p class="text-xs text-muted-foreground">{{ t('item.stock_value') }}</p><p class="text-sm font-medium text-foreground">{{ itemData.stock_value ?? '—' }}</p></div>
                     </div>
                 </div>
+
+                <!-- Stock by warehouse -->
+                <template v-if="stockRows.length">
+                    <hr class="my-4 border-border" />
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="bg-violet-500 text-white p-1.5 rounded"><Building class="w-4 h-4" /></div>
+                        <h3 class="text-sm font-semibold text-foreground">{{ t('item.stock_by_warehouse') }}</h3>
+                    </div>
+                    <div class="rounded-lg border border-border overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-muted/60 text-muted-foreground">
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('admin.warehouse.warehouse') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('general.on_hand') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.reserved') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.available') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.stock_value') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="row in stockRows"
+                                    :key="row.warehouse_id"
+                                    class="border-t border-border/60 hover:bg-muted/40 transition"
+                                >
+                                    <td class="py-2 px-3 whitespace-nowrap font-medium text-foreground">{{ row.warehouse_name || '—' }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-foreground">{{ formatQty(row.quantity) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatQty(row.reserved) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap font-semibold text-foreground">{{ formatQty(row.available) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-muted-foreground">{{ formatMoney(row.stock_value) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
             </fieldset>
 
             <!-- Records table -->
@@ -268,6 +363,8 @@ onMounted(() => {
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.source') }}</th>
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('admin.unit_measure.unit_measure') }}</th>
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.batch') }}</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.color') }}</th>
+                                <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.size') }}</th>
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('item.expire_date') }}</th>
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('general.status') }}</th>
                                 <th class="py-3 px-3 text-left whitespace-nowrap rtl:text-right">{{ t('admin.warehouse.warehouse') }}</th>
@@ -286,12 +383,20 @@ onMounted(() => {
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.source }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.unit_measure_name }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.batch || '—' }}</td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">
+                                    <span v-if="resolveColor(row.color)" class="flex items-center gap-1.5">
+                                        <span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: resolveColor(row.color).hex }" />
+                                        {{ resolveColor(row.color).name }}
+                                    </span>
+                                    <span v-else>—</span>
+                                </td>
+                                <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.size_name || '—' }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.expire_date || '—' }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap  rtl:text-right" :class="`text-${row.status_color ?? 'gray'}`">{{ row.status_label }}</td>
                                 <td class="py-3 px-3 whitespace-nowrap text-muted-foreground rtl:text-right">{{ row.warehouse_name }}</td>
                             </tr>
                             <tr v-if="!loading && currentRecords.length === 0">
-                                <td colspan="11" class="py-8 text-center text-muted-foreground">{{ t('general.no_record_available') }}</td>
+                                <td colspan="15" class="py-8 text-center text-muted-foreground">{{ t('general.no_record_available') }}</td>
                             </tr>
                         </tbody>
                     </table>
