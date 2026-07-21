@@ -4,6 +4,7 @@ import { useFormGuard } from '@/composables/useFormGuard'
 import { useForm, usePage } from '@inertiajs/vue3'
 import { h, ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useColors } from '@/composables/useColors';
 import { useToast } from '@/Components/ui/toast/use-toast'
 import { ToastAction } from '@/Components/ui/toast'
 import axios from 'axios'
@@ -19,6 +20,7 @@ import { useSidebar } from '@/Components/ui/sidebar/utils'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
 
 const { t } = useI18n()
+const { colorOptions } = useColors()
 const { toast } = useToast()
 
 const props = defineProps({
@@ -29,6 +31,7 @@ const page = usePage()
 const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
 const warehouses = computed(() => page.props.warehouses?.data || page.props.warehouses || [])
 const unitMeasures = computed(() => page.props.unitMeasures?.data || page.props.unitMeasures || [])
+const sizeOptions = computed(() => page.props.sizes?.data || page.props.sizes || [])
 const userPreferences = computed(() => page.props.user_preferences || {})
 const allowInCostOverride = computed(
   () => userPreferences.value?.stock_adjustment?.allow_in_cost_override ?? true
@@ -45,6 +48,9 @@ const createEmptyRow = () => ({
   selected_measure: null,
   batch: '',
   selected_batch: null,
+  color: null,
+  size_id: null,
+  selected_size: null,
   expire_date: '',
   unit_cost: '',
   base_unit_cost: '',
@@ -332,6 +338,8 @@ function handleSubmit(createAndNew = false) {
       quantity: row.quantity,
       unit_measure_id: row.selected_measure?.id || row.unit_measure_id,
       batch: row.batch || '',
+      color: row.color || null,
+      size_id: row.selected_size?.id || row.size_id || null,
       expire_date: row.expire_date || null,
       // OUT cost always comes from the costing engine on the server.
       unit_cost: costEditable.value ? (row.unit_cost || null) : null,
@@ -458,6 +466,8 @@ useFormGuard(form)
               <th class="px-1 py-1 w-5 min-w-5">#</th>
               <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }} <span class="text-red-500">*</span></th>
               <th class="px-1 py-1 w-32">{{ t('general.batch') }}</th>
+              <th class="px-1 py-1 w-32">{{ t('item.color') }}</th>
+              <th class="px-1 py-1 w-28">{{ t('item.size') }}</th>
               <th class="px-1 py-1 w-36">{{ t('general.expire_date') }}</th>
               <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
               <th class="px-1 py-1 w-24">{{ t('general.on_hand') }}</th>
@@ -502,6 +512,49 @@ useFormGuard(form)
                   value-key="batch"
                   :reduce="batch => batch"
                   @update:modelValue="value => { handleBatchChange(index, value) }"
+                />
+              </td>
+              <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                <NextSelect
+                  v-model="item.color"
+                  :options="colorOptions"
+                  label-key="name"
+                  value-key="id"
+                  :reduce="o => o.id"
+                  :disabled="!item.selected_item"
+                  :id="`adj_color_${index}`"
+                  :placeholder="t('general.select')"
+                  :show-arrow="false"
+                  :append-to-body="true"
+                  :error="form.errors?.[`items.${index}.color`]"
+                >
+                  <template #option="{ name, hex }">
+                    <span class="flex items-center gap-2">
+                      <span class="h-3.5 w-3.5 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
+                      <span>{{ name }}</span>
+                    </span>
+                  </template>
+                  <template #selected-option="{ name, hex }">
+                    <span class="flex items-center gap-1.5">
+                      <span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
+                      <span>{{ name }}</span>
+                    </span>
+                  </template>
+                </NextSelect>
+              </td>
+              <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                <NextSelect
+                  v-model="item.selected_size"
+                  :options="sizeOptions"
+                  label-key="name"
+                  value-key="id"
+                  :reduce="s => s"
+                  :disabled="!item.selected_item"
+                  :id="`adj_size_${index}`"
+                  :placeholder="t('general.select')"
+                  :show-arrow="false"
+                  :append-to-body="true"
+                  :error="form.errors?.[`items.${index}.size_id`]"
                 />
               </td>
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">

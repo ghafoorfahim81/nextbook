@@ -12,7 +12,10 @@ import ConfirmDeleteDialog from '@/Components/next/ConfirmDeleteDialog.vue';
 import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
 import { useAuth } from '@/composables/useAuth';
 
+import { useColors } from '@/composables/useColors';
+
 const { t } = useI18n();
+const { resolveColor } = useColors();
 const { toast } = useToast();
 const page = usePage();
 const { can } = useAuth();
@@ -184,6 +187,8 @@ const canCancel = computed(() => orderData.value.status === 'draft' && can('sale
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">#</th>
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('item.item') }}</th>
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.batch') }}</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('item.color') }}</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('item.size') }}</th>
                                 <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.qty') }}</th>
                                 <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.unit') }}</th>
                                 <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.price') }}</th>
@@ -199,6 +204,14 @@ const canCancel = computed(() => orderData.value.status === 'draft' && can('sale
                                     <div class="text-xs text-muted-foreground">{{ item.item_code }}</div>
                                 </td>
                                 <td class="px-3 py-3 text-foreground">{{ item.batch || '-' }}</td>
+                                <td class="px-3 py-3 text-foreground">
+                                    <span v-if="resolveColor(item.color)" class="flex items-center gap-1.5">
+                                        <span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: resolveColor(item.color).hex }" />
+                                        {{ resolveColor(item.color).name }}
+                                    </span>
+                                    <span v-else>-</span>
+                                </td>
+                                <td class="px-3 py-3 text-foreground">{{ item.size_name || '-' }}</td>
                                 <td class="px-3 py-3 text-right text-foreground">{{ item.quantity }}</td>
                                 <td class="px-3 py-3 text-foreground">{{ item.unit_measure_name }}</td>
                                 <td class="px-3 py-3 text-right text-foreground">{{ formatLineValue(item.unit_price) }}</td>
