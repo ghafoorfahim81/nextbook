@@ -76,6 +76,7 @@ const companyAddress = computed(() => {
 
 const party = computed(() => props.voucher?.ledger ?? {})
 const partyName = computed(() => party.value?.name || props.voucher?.ledger_name || t('invoice.not_available'))
+const createdByName = computed(() => props.voucher?.created_by?.name || t('invoice.not_available'))
 const currencyLabel = computed(() => {
   return props.voucher?.transaction?.currency?.code
     || props.voucher?.currency_code
@@ -168,7 +169,7 @@ const paidLabel = computed(() => isPayment.value ? t('voucher.paid_short') : t('
         <div class="dual-row">
           <div class="field-row">
             <span class="field-label">{{ t('voucher.for_label') }}</span>
-            <span class="field-fill">{{ partyName }}</span>
+            <span class="field-fill">{{ createdByName }}</span>
           </div>
           <div class="field-row compact">
             <span class="field-label">{{ t('general.branch') }}</span>
