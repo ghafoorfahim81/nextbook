@@ -18,21 +18,30 @@ const widthPx = computed(() => `${Number(props.size)}px`)
         <div class="book-loader__spine-nub" />
 
         <div class="book-loader__page book-loader__page--left">
+            <p class="book-loader__title">
+                <span class="book-loader__title-next">Next</span><span class="book-loader__title-book">book</span>
+            </p>
             <span class="book-loader__block" />
-            <span class="book-loader__line" v-for="n in 4" :key="`l${n}`" />
+            <span class="book-loader__line" v-for="n in 3" :key="`l${n}`" />
         </div>
 
         <div class="book-loader__page book-loader__page--right">
+            <p class="book-loader__title">
+                <span class="book-loader__title-next">Next</span><span class="book-loader__title-book">book</span>
+            </p>
             <span class="book-loader__line" v-for="n in 2" :key="`r${n}`" />
             <span class="book-loader__block" />
-            <span class="book-loader__line" v-for="n in 2" :key="`r2-${n}`" />
+            <span class="book-loader__line" v-for="n in 1" :key="`r2-${n}`" />
         </div>
 
         <div class="book-loader__flap">
             <div class="book-loader__flap-face book-loader__flap-face--front">
+                <p class="book-loader__title">
+                    <span class="book-loader__title-next">Next</span><span class="book-loader__title-book">book</span>
+                </p>
                 <span class="book-loader__line" v-for="n in 2" :key="`f${n}`" />
                 <span class="book-loader__block" />
-                <span class="book-loader__line" v-for="n in 2" :key="`f2-${n}`" />
+                <span class="book-loader__line" v-for="n in 1" :key="`f2-${n}`" />
             </div>
             <div class="book-loader__flap-face book-loader__flap-face--back" />
         </div>
@@ -70,11 +79,12 @@ const widthPx = computed(() => `${Number(props.size)}px`)
     top: 0;
     bottom: 8%;
     width: 47%;
-    padding: 10% 8%;
+    padding: 8% 8% 10%;
     background: theme('colors.white');
     display: flex;
     flex-direction: column;
-    gap: 8%;
+    gap: 6%;
+    overflow: hidden;
 }
 
 .book-loader__page--left {
@@ -88,10 +98,33 @@ const widthPx = computed(() => `${Number(props.size)}px`)
     border-radius: 1px 4px 4px 1px;
 }
 
+.book-loader__title {
+    width: 100%;
+    margin: 0 -4% 4%;
+    padding: 0;
+    text-align: center;
+    line-height: 1;
+    white-space: nowrap;
+    letter-spacing: -0.02em;
+    font-family: theme('fontFamily.sans');
+    font-size: calc(var(--book-loader-width, 64px) * 0.058);
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.book-loader__title-next {
+    color: theme('colors.nextbook.purple.600');
+}
+
+.book-loader__title-book {
+    color: theme('colors.nextbook.blue-gray.800');
+}
+
 .book-loader__line {
     display: block;
     height: 7%;
     width: 100%;
+    flex-shrink: 0;
     border-radius: 999px;
     background: theme('colors.nextbook.blue-gray.200');
 }
@@ -100,6 +133,7 @@ const widthPx = computed(() => `${Number(props.size)}px`)
     display: block;
     height: 22%;
     width: 60%;
+    flex-shrink: 0;
     border-radius: 2px;
     background: theme('colors.nextbook.purple.100');
 }
@@ -123,11 +157,12 @@ const widthPx = computed(() => `${Number(props.size)}px`)
 }
 
 .book-loader__flap-face--front {
-    padding: 10% 8%;
+    padding: 8% 8% 10%;
     background: theme('colors.white');
     display: flex;
     flex-direction: column;
-    gap: 8%;
+    gap: 6%;
+    overflow: hidden;
 }
 
 .book-loader__flap-face--back {

@@ -61,7 +61,7 @@ onBeforeUnmount(() => {
             aria-live="polite"
             :aria-label="t('general.loading')"
         >
-            <BookLoader :size="96" />
+            <BookLoader :size="140" />
             <span class="text-sm font-medium text-muted-foreground">{{ t('general.loading') }}</span>
         </div>
     </Transition>
