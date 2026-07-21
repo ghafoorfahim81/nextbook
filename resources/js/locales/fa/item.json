@@ -117,5 +117,11 @@
     "total_in": "کل ورودی",
     "total_out": "کل خروجی",
     "opening_balance": "موجودی اولیه",
-    "avg_cost": "میانگین هزینه"
+    "avg_cost": "میانگین هزینه",
+    "in_stock": "موجود",
+    "low_stock": "موجودی کم",
+    "out_of_stock": "ناموجود",
+    "stock_by_warehouse": "موجودی بر اساس گدام",
+    "reserved": "رزرو شده",
+    "available": "قابل دسترس"
 }

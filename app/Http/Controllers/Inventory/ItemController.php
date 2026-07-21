@@ -283,7 +283,49 @@ class ItemController extends Controller
 
         return inertia('Inventories/Items/Show', [
             'item' => ItemResource::make($item),
+            'stockByWarehouse' => $this->stockByWarehouse($item),
         ]);
+    }
+
+    /**
+     * Per-warehouse stock breakdown for the item detail page.
+     *
+     * stock_balances rows are keyed by (item, warehouse, batch, expire_date),
+     * so they are aggregated up to one row per warehouse. `reserved_out` is
+     * stock already committed to unposted outgoing lines, so the quantity a
+     * user can actually sell is quantity - reserved_out.
+     *
+     * stock_balances has no per-warehouse cost column, so value is derived
+     * from the item's average cost.
+     */
+    protected function stockByWarehouse(Item $item): array
+    {
+        $averageCost = (float) $item->avg_cost;
+
+        return StockBalance::query()
+            ->where('item_id', $item->id)
+            ->selectRaw('warehouse_id')
+            ->selectRaw('SUM(quantity) as quantity')
+            ->selectRaw('SUM(reserved_out) as reserved_out')
+            ->groupBy('warehouse_id')
+            ->with('warehouse:id,name')
+            ->get()
+            ->map(function (StockBalance $balance) use ($averageCost) {
+                $quantity = (float) $balance->quantity;
+                $reserved = (float) $balance->reserved_out;
+
+                return [
+                    'warehouse_id' => $balance->warehouse_id,
+                    'warehouse_name' => $balance->warehouse?->name,
+                    'quantity' => $quantity,
+                    'reserved' => $reserved,
+                    'available' => $quantity - $reserved,
+                    'stock_value' => $quantity * $averageCost,
+                ];
+            })
+            ->sortByDesc('quantity')
+            ->values()
+            ->all();
     }
     public function inRecords(Request $request, Item $item)
     {
@@ -750,6 +792,8 @@ class ItemController extends Controller
                     'unit_measure_name' => $row['unit_measure_name'] ?? '-',
                     'date' => $row['date'] ?? '-',
                     'batch' => $row['batch'] ?? '-',
+                    'color' => $row['color'] ? ucfirst((string) $row['color']) : '-',
+                    'size_name' => $row['size_name'] ?? '-',
                     'expire_date' => $row['expire_date'] ?? '-',
                     'unit_cost' => $row['unit_cost'] ?? 0,
                     'warehouse_name' => $row['warehouse_name'] ?? '-',
@@ -777,6 +821,8 @@ class ItemController extends Controller
                 ['key' => 'unit_measure_name', 'label' => $spreadsheetExportService->localeTranslation('admin', 'unit_measure.unit_measure', 'Unit Measure'), 'width' => 14],
                 ['key' => 'date', 'label' => $spreadsheetExportService->localeTranslation('general', 'date', 'Date'), 'width' => 14],
                 ['key' => 'batch', 'label' => $spreadsheetExportService->localeTranslation('item', 'batch', 'Batch'), 'width' => 12],
+                ['key' => 'color', 'label' => $spreadsheetExportService->localeTranslation('item', 'color', 'Color'), 'width' => 12],
+                ['key' => 'size_name', 'label' => $spreadsheetExportService->localeTranslation('item', 'size', 'Size'), 'width' => 12],
                 ['key' => 'expire_date', 'label' => $spreadsheetExportService->localeTranslation('item', 'expire_date', 'Expire Date'), 'width' => 16],
                 ['key' => 'unit_cost', 'label' => $spreadsheetExportService->localeTranslation('general', 'unit_price', 'Unit Price'), 'type' => 'money', 'align' => 'right', 'width' => 14],
                 ['key' => 'warehouse_name', 'label' => $spreadsheetExportService->localeTranslation('admin', 'warehouse.warehouse', 'Warehouse'), 'width' => 18],
@@ -790,6 +836,7 @@ class ItemController extends Controller
         return StockMovement::with([
                 'warehouse',
                 'unitMeasure',
+                'size',
                 'reference' => function (MorphTo $morphTo) {
                     $morphTo->morphWith([
                         Purchase::class => ['supplier'],

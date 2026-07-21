@@ -51,4 +51,8 @@ class StockBalance extends Model
     {
         return $this->belongsTo(Branch::class);
     }
+    public function warehouse()
+    {
+        return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'warehouse_id');
+    }
 }
