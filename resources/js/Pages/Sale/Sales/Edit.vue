@@ -18,11 +18,13 @@ import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import NextDate from '@/Components/next/NextDatePicker.vue';
+import { useColors } from '@/composables/useColors';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import { Trash2 } from 'lucide-vue-next';
 import { useLazyProps } from '@/composables/useLazyProps';
 
 const { t } = useI18n();
+const { resolveColor } = useColors();
 const { toast } = useToast();
 
 const props = defineProps({
@@ -80,6 +82,10 @@ const buildEmptyRow = () => ({
     unit_measure_id: '',
     batch: '',
     selected_batch: null,
+    color: null,
+    size_id: null,
+    selected_size: null,
+    selected_variant: null,
     expire_date: '',
     unit_price: '',
     base_unit_price: '',
@@ -143,6 +149,10 @@ const initialRows = (saleRecord?.items || []).map((item) => {
         unit_measure_id: item.unit_measure_id,
         batch: item.batch || '',
         selected_batch: item.batch ? { batch: item.batch, expire_date: item.expire_date, on_hand: 0 } : null,
+        color: item.color || null,
+        size_id: item.size_id || null,
+        selected_size: item.size_id ? { id: item.size_id, name: item.size_name } : null,
+        selected_variant: null,
         expire_date: item.expire_date || '',
         unit_price: item.unit_price,
         base_unit_price: Number.isFinite(baseUnitPrice) ? baseUnitPrice : toNum(item.unit_price, 0),
@@ -490,11 +500,54 @@ const handleBatchChange = (index, batch) => {
     notifyIfDuplicate(index);
 };
 
+/* ---------------- COLOUR / SIZE VARIANTS ---------------- */
+const rowVariants = (index) => form.items[index]?.selected_item?.variants ?? [];
+
+const variantColorOptions = (index) => {
+    const seen = new Map();
+    rowVariants(index).forEach((variant) => {
+        if (!variant.color || seen.has(variant.color)) return;
+        seen.set(variant.color, resolveColor(variant.color));
+    });
+    return Array.from(seen.values()).map(c => ({ id: c.value, name: c.name, hex: c.hex }));
+};
+
+const variantSizeOptions = (index) => {
+    const row = form.items[index];
+    const seen = new Map();
+    rowVariants(index)
+        .filter(variant => !row?.color || variant.color === row.color)
+        .forEach((variant) => {
+            if (!variant.size_id || seen.has(variant.size_id)) return;
+            seen.set(variant.size_id, { id: variant.size_id, name: variant.size_name });
+        });
+    return Array.from(seen.values());
+};
+
+const syncSelectedVariant = (index) => {
+    const row = form.items[index];
+    if (!row) return;
+    row.size_id = row.selected_size?.id ?? null;
+    if (!row.color && !row.size_id) { row.selected_variant = null; return; }
+    row.selected_variant = rowVariants(index).find(variant =>
+        (variant.color ?? null) === (row.color ?? null)
+        && (variant.size_id ?? null) === (row.size_id ?? null)
+    ) ?? null;
+};
+
+const handleVariantColorChange = (index) => {
+    const row = form.items[index];
+    if (!row) return;
+    const stillValid = variantSizeOptions(index).some(s => s.id === row.selected_size?.id);
+    if (!stillValid) { row.selected_size = null; row.size_id = null; }
+    syncSelectedVariant(index);
+};
+
 const onhand = (index) => {
     const item = form.items[index];
     if (!item || !item.selected_item) return '';
 
-    const onHandBase = Number(item.selected_batch?.on_hand ?? item.selected_item?.on_hand ?? item.on_hand) || 0;
+    const onHandBase = Number(item.selected_variant?.on_hand ?? item.selected_batch?.on_hand ?? item.selected_item?.on_hand ?? item.on_hand) || 0;
     const baseUnit = Number(item.selected_item?.unitMeasure?.unit) || 1;
     const selectedUnit = Number(item.selected_measure?.unit) || baseUnit;
     const persistedQuantityBase = (item.selected_item?.id || item.item_id) === item.persisted_item_id
@@ -649,6 +702,8 @@ const handleSubmit = ({ saveAndPrint = false } = {}) => {
         unit_price: item.unit_price,
         free: item.free || 0,
         batch: item.batch || '',
+        color: item.color || null,
+        size_id: item.size_id || null,
         expire_date: item.expire_date || null,
         item_discount: item.item_discount || 0,
         tax: item.tax || 0,
@@ -834,6 +889,8 @@ useFormGuard(form)
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-32" v-if="itemColumns.batch">{{ t(specText) }}</th>
                             <th class="px-1 py-1 w-36" v-if="itemColumns.expiry">{{ t('general.expire_date') }}</th>
+                            <th class="px-1 py-1 w-32">{{ t('item.color') }}</th>
+                            <th class="px-1 py-1 w-28">{{ t('item.size') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-24" v-if="itemColumns.on_hand">{{ t('general.on_hand') }}</th>
                             <th class="px-1 py-1 w-24" v-if="itemColumns.reserved_out">{{ t('general.reserved_out') }}</th>
@@ -890,6 +947,51 @@ useFormGuard(form)
                                     popover="top-left"
                                     disabled="true"
                                     :error="form.errors?.[`item_list.${index}.expire_date`]"
+                                />
+                            </td>
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                                <NextSelect
+                                    v-model="item.color"
+                                    :options="variantColorOptions(index)"
+                                    label-key="name"
+                                    value-key="id"
+                                    :reduce="o => o.id"
+                                    :disabled="!item?.selected_item || !variantColorOptions(index).length"
+                                    :id="`sale_color_${index}`"
+                                    :placeholder="t('general.select')"
+                                    :show-arrow="false"
+                                    :append-to-body="true"
+                                    @update:modelValue="() => handleVariantColorChange(index)"
+                                    :error="form.errors?.[`item_list.${index}.color`]"
+                                >
+                                    <template #option="{ name, hex }">
+                                        <span class="flex items-center gap-2">
+                                            <span class="h-3.5 w-3.5 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
+                                            <span>{{ name }}</span>
+                                        </span>
+                                    </template>
+                                    <template #selected-option="{ name, hex }">
+                                        <span class="flex items-center gap-1.5">
+                                            <span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
+                                            <span>{{ name }}</span>
+                                        </span>
+                                    </template>
+                                </NextSelect>
+                            </td>
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                                <NextSelect
+                                    v-model="item.selected_size"
+                                    :options="variantSizeOptions(index)"
+                                    label-key="name"
+                                    value-key="id"
+                                    :reduce="s => s"
+                                    :disabled="!item?.selected_item || !variantSizeOptions(index).length"
+                                    :id="`sale_size_${index}`"
+                                    :placeholder="t('general.select')"
+                                    :show-arrow="false"
+                                    :append-to-body="true"
+                                    @update:modelValue="() => syncSelectedVariant(index)"
+                                    :error="form.errors?.[`item_list.${index}.size_id`]"
                                 />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
@@ -989,6 +1091,8 @@ useFormGuard(form)
                             <td class="text-center">{{ totalRows }}</td>
                             <td v-if="itemColumns.batch"></td>
                             <td v-if="itemColumns.expiry"></td>
+                            <td></td>
+                            <td></td>
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
                             <td v-if="itemColumns.on_hand"></td>
                             <td v-if="itemColumns.reserved_out"></td>
