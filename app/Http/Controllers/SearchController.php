@@ -351,7 +351,8 @@ class SearchController extends Controller
         $itemIds = $items->pluck('id')->all();
 
         $stockBalances = StockBalance::query()
-            ->select(['item_id', 'warehouse_id', 'batch', 'expire_date', 'quantity', 'reserved_out', 'reserved_in'])
+            ->select(['item_id', 'warehouse_id', 'batch', 'expire_date', 'quantity', 'reserved_out', 'reserved_in', 'color', 'size_id'])
+            ->with('size:id,name')
             ->where('warehouse_id', $warehouseId)
             ->whereIn('item_id', $itemIds)
             ->get();
@@ -365,6 +366,7 @@ class SearchController extends Controller
 
         $batchSummaries = [];
         $expirySummaries = [];
+        $variantSummaries = [];
         $nonBatchOnHand = 0;
         $nonBatchReservedOut = 0;
         $nonBatchReservedIn = 0;
@@ -379,6 +381,24 @@ class SearchController extends Controller
             // Keep rows that carry a reservation even when physical quantity is zero.
             if ($onHand <= 0 && $reservedOut <= 0 && $reservedIn <= 0) {
                 continue;
+            }
+
+            // Colour/size variants are their own stock buckets, so a sale line can
+            // pick one and see only that variant's availability.
+            if ($balance->color !== null || $balance->size_id !== null) {
+                $variantKey = ($balance->color ?? '') . '|' . ($balance->size_id ?? '');
+                $variant = $variantSummaries[$variantKey] ?? [
+                    'color' => $balance->color,
+                    'size_id' => $balance->size_id,
+                    'size_name' => $balance->size?->name,
+                    'on_hand' => 0,
+                    'reserved_out' => 0,
+                    'reserved_in' => 0,
+                ];
+                $variant['on_hand'] += $onHand;
+                $variant['reserved_out'] += $reservedOut;
+                $variant['reserved_in'] += $reservedIn;
+                $variantSummaries[$variantKey] = $variant;
             }
 
             $batchKey = trim((string) ($balance->batch ?? ''));
@@ -432,6 +452,18 @@ class SearchController extends Controller
                 'avg_cost' => $batch['avg_cost'],
             ];
         }, $batchSummaries);
+
+        $variants = array_map(function ($variant) use ($availableFor) {
+            return [
+                'color' => $variant['color'],
+                'size_id' => $variant['size_id'],
+                'size_name' => $variant['size_name'],
+                'on_hand' => round($variant['on_hand'] ?? 0, 2),
+                'reserved_out' => round($variant['reserved_out'] ?? 0, 2),
+                'reserved_in' => round($variant['reserved_in'] ?? 0, 2),
+                'available' => $availableFor((float) ($variant['on_hand'] ?? 0), (float) ($variant['reserved_out'] ?? 0)),
+            ];
+        }, $variantSummaries);
 
         $expiryBatches = array_map(function ($expiry) use ($availableFor) {
             return [
@@ -496,6 +528,8 @@ class SearchController extends Controller
             'fast_search' => $item->fast_search,
             'batches' => array_values($batches ?? []),
             'expiry_batches' => array_values($expiryBatches ?? []),
+            'variants' => array_values($variants ?? []),
+            'has_variants' => count($variants ?? []) > 0,
             'on_hand' => $totalOnHand,
             'reserved_out' => $totalReservedOut,
             'reserved_in' => $totalReservedIn,

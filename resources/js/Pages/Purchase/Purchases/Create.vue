@@ -19,6 +19,7 @@ import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
+import { useColors } from '@/composables/useColors';
 import { Trash2 } from 'lucide-vue-next';
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { useLazyProps } from '@/composables/useLazyProps'
@@ -43,7 +44,12 @@ const props = defineProps({
     purchaseNumber: {type: String, required: true},
     user_preferences: {type: Object, required: true},
     bankAccounts: {type: Object, required: true},
+    sizes: {type: [Array, Object], required: false, default: () => ([])},
 })
+
+// Purchases bring new stock in, so any colour/size may be received.
+const { colorOptions } = useColors();
+const sizeOptions = computed(() => props.sizes?.data ?? props.sizes ?? [])
 
 const { fetchLazyProps, loading: lazyLoading } = useLazyProps(props, ['ledgers', 'accounts'])
 
@@ -53,6 +59,9 @@ const buildEmptyRow = () => ({
     quantity: '',
     unit_measure_id: '',
     batch: '',
+    color: null,
+    size_id: null,
+    selected_size: null,
     expire_date: '',
     unit_price: '',
     base_unit_price: '',
@@ -299,6 +308,8 @@ function handleSubmit(createAndNew = false) {
             unit_price: item.unit_price,
             unit_measure_id: item.selected_measure?.id || item.unit_measure_id,
             batch: item.batch || '',
+            color: item.color || null,
+            size_id: item.selected_size?.id || item.size_id || null,
             expire_date: item.expire_date || null,
             item_discount: item.item_discount || 0,
             free: item.free || 0,
@@ -808,6 +819,8 @@ useFormGuard(form)
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-32" v-if="localColumns.batch">{{ t(spec_text) }}</th>
                             <th class="px-1 py-1 w-36" v-if="localColumns.expiry">{{ t('general.expire_date') }}</th>
+                            <th class="px-1 py-1 w-32">{{ t('item.color') }}</th>
+                            <th class="px-1 py-1 w-28">{{ t('item.size') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-24" v-if="localColumns.on_hand">{{ t('general.on_hand') }}</th>
                             <th class="px-1 py-1 w-24" v-if="localColumns.reserved_in">{{ t('general.reserved_in') }}</th>
@@ -855,6 +868,52 @@ useFormGuard(form)
                                 <NextDate   v-model="item.expire_date"
                                 popover="top-left"
                                 :error="form.errors?.[`item_list.${index}.expire_date`]"   />
+                            </td>
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                                <NextSelect
+                                    v-model="item.color"
+                                    :options="colorOptions"
+                                    label-key="name"
+                                    value-key="id"
+                                    :reduce="o => o.id"
+                                    :disabled="!item.selected_item"
+                                    :id="`purchase_color_${index}`"
+                                    :placeholder="t('general.select')"
+                                    :show-arrow="false"
+                                    :append-to-body="true"
+                                    :error="form.errors?.[`item_list.${index}.color`]"
+                                >
+                                    <template #option="{ name, hex }">
+                                        <span class="flex items-center gap-2">
+                                            <span class="h-3.5 w-3.5 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
+                                            <span>{{ name }}</span>
+                                        </span>
+                                    </template>
+                                    <template #selected-option="{ name, hex }">
+                                        <span class="flex items-center gap-1.5">
+                                            <span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
+                                            <span>{{ name }}</span>
+                                        </span>
+                                    </template>
+                                </NextSelect>
+                            </td>
+                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                                <NextSelect
+                                    v-model="item.selected_size"
+                                    :options="sizeOptions"
+                                    label-key="name"
+                                    value-key="id"
+                                    :reduce="s => s"
+                                    :disabled="!item.selected_item"
+                                    :id="`purchase_size_${index}`"
+                                    :placeholder="t('general.select')"
+                                    :show-arrow="false"
+                                    :append-to-body="true"
+                                    :searchable="true"
+                                    resource-type="sizes"
+                                    :search-fields="['name','code']"
+                                    :error="form.errors?.[`item_list.${index}.size_id`]"
+                                />
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextInput
