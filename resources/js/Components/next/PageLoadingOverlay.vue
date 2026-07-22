@@ -15,7 +15,22 @@ let showTimer = null
 let hideTimer = null
 let shownAt = 0
 
-function handleStart() {
+// The reports page refreshes itself in place (changing report/filter/page)
+// and renders its own skeleton for the result area. Showing this full-screen
+// loader on top of that would double up, so skip it for same-page reports
+// refreshes. Navigating INTO reports from elsewhere still shows the overlay.
+function isSamePageReportsRefresh(event) {
+    try {
+        const target = event?.detail?.visit?.url?.pathname ?? ''
+        return target === '/reports' && window.location.pathname === '/reports'
+    } catch {
+        return false
+    }
+}
+
+function handleStart(event) {
+    if (isSamePageReportsRefresh(event)) return
+
     clearTimeout(hideTimer)
     clearTimeout(showTimer)
     showTimer = setTimeout(() => {
