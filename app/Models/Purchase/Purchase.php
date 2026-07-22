@@ -122,6 +122,23 @@ class Purchase extends Model
         return $this->hasMany(PurchasePayment::class);
     }
 
+    public function returns(): HasMany
+    {
+        return $this->hasMany(PurchaseReturn::class);
+    }
+
+    public function purchaseReturnItems(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    {
+        return $this->hasManyThrough(
+            PurchaseReturnItem::class,
+            PurchaseItem::class,
+            'purchase_id',
+            'purchase_item_id',
+            'id',
+            'id'
+        );
+    }
+
     public function getDependencyMessage(): string
     {
         return 'You cannot delete this purchase because it has dependencies.';

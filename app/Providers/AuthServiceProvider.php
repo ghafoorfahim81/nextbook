@@ -25,6 +25,7 @@ use App\Models\Owner\Drawing;
 use App\Models\Owner\Owner;
 use App\Models\Payment\Payment;
 use App\Models\Purchase\Purchase;
+use App\Models\Purchase\PurchaseReturn;
 use App\Models\Receipt\Receipt;
 use App\Models\Role;
 use App\Models\Sale\Sale;
@@ -51,6 +52,7 @@ use App\Policies\StockAdjustmentPolicy;
 use App\Policies\OwnerPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\PurchasePolicy;
+use App\Policies\PurchaseReturnPolicy;
 use App\Policies\ReceiptPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SalePolicy;
@@ -101,6 +103,7 @@ class AuthServiceProvider extends ServiceProvider
 
         // Purchases & Sales
         Purchase::class => PurchasePolicy::class,
+        PurchaseReturn::class => PurchaseReturnPolicy::class,
         Sale::class => SalePolicy::class,
         SaleReturn::class => SaleReturnPolicy::class,
         SaleOrder::class => SaleOrderPolicy::class,

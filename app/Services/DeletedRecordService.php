@@ -32,6 +32,7 @@ use App\Models\Owner\Owner;
 use App\Models\Payment\Payment;
 use App\Models\Purchase\Purchase;
 use App\Models\Purchase\PurchaseItem;
+use App\Models\Purchase\PurchaseReturn;
 use App\Models\Receipt\Receipt;
 use App\Models\Sale\Sale;
 use App\Models\Sale\SaleItem;
@@ -292,6 +293,13 @@ class DeletedRecordService
                 'title' => fn (Model $record) => $record->number ?: $record->description ?: $record->id,
                 'restore' => fn (Model $record) => $this->restoreTransactionRecord($record, relations: ['items', 'stockOuts']),
                 'force_delete' => fn (Model $record) => $this->forceDeleteTransactionRecord($record, relations: ['items', 'stockOuts']),
+            ],
+            'purchase_returns' => [
+                'label' => 'Purchase Returns',
+                'model' => PurchaseReturn::class,
+                'title' => fn (Model $record) => $record->number ?: $record->description ?: $record->id,
+                'restore' => fn (Model $record) => $this->restoreTransactionRecord($record, relations: ['items']),
+                'force_delete' => fn (Model $record) => $this->forceDeleteTransactionRecord($record, relations: ['items']),
             ],
             'sale_returns' => [
                 'label' => 'Sale Returns',

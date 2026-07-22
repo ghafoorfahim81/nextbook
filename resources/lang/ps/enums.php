@@ -114,5 +114,15 @@ return [
         'completed' => 'بشپړ شوی',
         'cancelled' => 'لغوه شوی',
     ],
+    'purchase_return_reason' => [
+        'damaged' => 'زیانمن شوی',
+        'wrong_item' => 'غلط توکی',
+        'defective' => 'عیب لرونکی',
+        'expired' => 'نېټه تېره شوې',
+        'quality_rejection' => 'د کیفیت ردول',
+        'over_ordered' => 'زیات امر شوی',
+        'duplicate_order' => 'تکراري امر',
+        'other' => 'نور',
+    ],
 ];
 

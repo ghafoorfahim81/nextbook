@@ -320,6 +320,7 @@ class PurchaseController extends Controller
             'createdBy',
             'updatedBy',
             'attachments',
+            'returns.items',
         ]);
 
         if ($request->expectsJson()) {

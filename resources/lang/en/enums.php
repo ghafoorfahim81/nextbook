@@ -153,4 +153,14 @@ return [
         'completed' => 'Completed',
         'cancelled' => 'Cancelled',
     ],
+    'purchase_return_reason' => [
+        'damaged' => 'Damaged',
+        'wrong_item' => 'Wrong Item',
+        'defective' => 'Defective',
+        'expired' => 'Expired',
+        'quality_rejection' => 'Quality Rejection',
+        'over_ordered' => 'Over Ordered',
+        'duplicate_order' => 'Duplicate Order',
+        'other' => 'Other',
+    ],
 ];

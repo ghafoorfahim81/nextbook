@@ -6,15 +6,17 @@ import { useI18n } from 'vue-i18n';
 import { router, useForm } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import { Package2, FileText, User, Calendar, DollarSign, FileCheck, CheckCircle2, XCircle } from 'lucide-vue-next';
+import { Package2, FileText, User, Calendar, DollarSign, FileCheck, CheckCircle2, XCircle, RotateCcw } from 'lucide-vue-next';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
 import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
 import { useColors } from '@/composables/useColors';
+import { useAuth } from '@/composables/useAuth';
 
 const { t } = useI18n();
 const { resolveColor } = useColors();
 const { toast } = useToast();
+const { can } = useAuth();
 
 const props = defineProps({
     purchase: { type: Object, required: true },
@@ -83,6 +85,15 @@ const getStatusLabel = (status) => {
 };
 
 const currencySymbol = computed(() => purchaseData.value.transaction?.currency?.symbol || '');
+const purchaseReturns = computed(() => purchaseData.value.returns || []);
+const returnStatusBadgeClasses = (status) => {
+    switch (status) {
+        case 'draft': return 'border-gray-500/30 bg-gray-500/10 text-gray-700 dark:text-gray-300';
+        case 'posted': return 'border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-300';
+        case 'reversed': return 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300';
+        default: return 'border-border bg-muted text-foreground';
+    }
+};
 const postDialogOpen = ref(false);
 const reverseDialogOpen = ref(false);
 
@@ -172,6 +183,12 @@ const reversePurchase = (reason) => {
                 :description="t('purchase.reverse_purchase_description')"
                 @confirm="reversePurchase"
             />
+
+            <div v-if="purchaseData.status === 'posted' && can('purchase_returns.create')" class="flex justify-end">
+                <Button variant="outline" size="sm" @click="router.visit(route('purchase-returns.create', { purchase_id: purchaseData.id }))">
+                    {{ t('purchase_return.create_return') }}
+                </Button>
+            </div>
 
             <div v-if="originalDoc" class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
                 {{ t('general.reversal_of_transaction', { number: originalVoucherNumber }) }}.
@@ -351,6 +368,41 @@ const reversePurchase = (reason) => {
                     </table>
                 </div>
             </div>
+
+            <!-- Purchase returns -->
+            <div v-if="purchaseReturns.length" class="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                <div class="border-b border-border bg-muted/30 px-4 py-3 flex items-center gap-2">
+                    <RotateCcw class="h-5 w-5 text-violet-500" />
+                    <h3 class="text-base font-semibold text-foreground">{{ t('purchase_return.purchase_returns') }}</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="border-b border-border bg-muted/40">
+                            <tr>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.number') }}</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.date') }}</th>
+                                <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.qty') }}</th>
+                                <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ t('general.total') }}</th>
+                                <th class="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground rtl:text-right">{{ t('general.status') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border">
+                            <tr v-for="ret in purchaseReturns" :key="ret.id"
+                                class="cursor-pointer bg-background/40 transition-colors hover:bg-muted/40"
+                                @click="router.visit(route('purchase-returns.show', ret.id))">
+                                <td class="px-3 py-3 text-violet-600 underline dark:text-violet-400">#{{ ret.number }}</td>
+                                <td class="px-3 py-3 text-foreground">{{ ret.date }}</td>
+                                <td class="px-3 py-3 text-right text-foreground">{{ ret.quantity }}</td>
+                                <td class="px-3 py-3 text-right font-semibold text-foreground">{{ currencySymbol }} {{ formatLineValue(ret.amount) }}</td>
+                                <td class="px-3 py-3">
+                                    <Badge :class="returnStatusBadgeClasses(ret.status)">{{ getStatusLabel(ret.status) }}</Badge>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <div class="mt-4">
                 <AttachmentList :items="purchaseData.attachments || []" :label="t('general.attachments')" />
             </div>
