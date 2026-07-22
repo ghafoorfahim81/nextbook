@@ -580,6 +580,21 @@ const onGlobalQuickCreated = (event) => {
     color: hsl(var(--foreground));
   }
 
+  /* disabled: keep the input look, just dim it (vue-select defaults to a grey fill) */
+  :deep(.vs--disabled .vs__search),
+  :deep(.vs--disabled .vs__selected),
+  :deep(.vs--disabled .vs__actions),
+  :deep(.vs--disabled .vs__clear),
+  :deep(.vs--disabled .vs__open-indicator) {
+    background-color: transparent !important;
+  }
+
+  :deep(.vs--disabled .vs__dropdown-toggle) {
+    background-color: hsl(var(--background)) !important;
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   /* Ensure internal content centers vertically and doesn't add extra height */
   :deep(.vs__selected-options) {
     display: flex;
