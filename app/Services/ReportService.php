@@ -41,6 +41,7 @@ class ReportService
         'inventory_valuation',
         'batch_wise_report',
         'expiry_wise_report',
+        'variant_wise_report',
         'zero_on_hand_report',
         'fast_moving_report',
         'slow_moving_report',
@@ -129,6 +130,7 @@ class ReportService
             'inventory_valuation' => $this->getInventoryValuation($filters),
             'batch_wise_report' => $this->getBatchWiseReport($filters),
             'expiry_wise_report' => $this->getExpiryWiseReport($filters),
+            'variant_wise_report' => $this->getVariantWiseReport($filters),
             'zero_on_hand_report' => $this->getZeroOnHandReport($filters),
             'fast_moving_report' => $this->getFastMovingReport($filters),
             'slow_moving_report' => $this->getSlowMovingReport($filters),
@@ -1286,6 +1288,82 @@ class ReportService
         );
     }
 
+    /**
+     * Stock grouped by colour/size variant, mirroring the batch-wise report but
+     * keyed on (item, colour, size). Only rows that carry a colour or size are
+     * included, so it stays a variant view rather than a duplicate of the plain
+     * inventory-stock report. Value uses the item's average cost since stock
+     * balances hold no per-variant cost.
+     */
+    public function getVariantWiseReport(array $filters): array
+    {
+        $movementTotals = $this->stockMovementTotalsByVariantSubquery($filters['branch_id']);
+
+        $query = $this->stockBatchTotalsQuery($filters)
+            ->leftJoin('sizes as sz', 'sz.id', '=', 'sb.size_id')
+            ->leftJoinSub($movementTotals, 'sm_totals', function ($join) {
+                $join->on('sm_totals.item_id', '=', 'sb.item_id')
+                    ->whereRaw('COALESCE(sm_totals.color, \'\') = COALESCE(sb.color, \'\')')
+                    ->whereRaw('COALESCE(sm_totals.size_id::text, \'\') = COALESCE(sb.size_id::text, \'\')');
+            })
+            ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('sb.item_id', $itemId))
+            ->when($filters['warehouse_id'], fn ($builder, $warehouseId) => $builder->where('sb.warehouse_id', $warehouseId))
+            // Variant rows only: at least one of colour/size must be present.
+            ->where(function ($builder) {
+                $builder->whereNotNull('sb.color')
+                    ->orWhereNotNull('sb.size_id');
+            })
+            ->where(function ($builder) {
+                $builder->whereRaw('COALESCE(sb.quantity, 0) <> 0')
+                    ->orWhereRaw('COALESCE(sm_totals.total_in, 0) <> 0')
+                    ->orWhereRaw('COALESCE(sm_totals.total_out, 0) <> 0');
+            })
+            ->groupBy('i.id', 'i.code', 'i.name', 'sb.color', 'sb.size_id', 'sz.name')
+            ->selectRaw('i.code as item_code')
+            ->selectRaw('i.name as item_name')
+            ->selectRaw('sb.color as color')
+            ->selectRaw('sz.name as size_name')
+            ->selectRaw('COALESCE(SUM(COALESCE(sm_totals.total_in, 0)), 0) as in_quantity')
+            ->selectRaw('COALESCE(SUM(COALESCE(sm_totals.total_out, 0)), 0) as out_quantity')
+            ->selectRaw('COALESCE(SUM(sb.quantity), 0) as on_hand')
+            ->selectRaw('COALESCE(SUM(sb.quantity), 0) * COALESCE(MAX(i.avg_cost), 0) as stock_value')
+            ->orderBy('i.code')
+            ->orderBy('i.name')
+            ->orderByRaw('CASE WHEN sb.color IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('sb.color')
+            ->orderBy('sz.name');
+
+        $summaryRow = DB::query()
+            ->fromSub(clone $query, 'variant_rows')
+            ->selectRaw('COALESCE(SUM(in_quantity), 0) as total_in')
+            ->selectRaw('COALESCE(SUM(out_quantity), 0) as total_out')
+            ->selectRaw('COALESCE(SUM(on_hand), 0) as total_on_hand')
+            ->selectRaw('COALESCE(SUM(stock_value), 0) as total_value')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'item_code' => $row->item_code,
+                'item_name' => $row->item_name,
+                'color' => $row->color ? $this->colorLabel($row->color) : '-',
+                'size' => $row->size_name ?: '-',
+                'in_quantity' => $this->quantityValue($row->in_quantity),
+                'out_quantity' => $this->quantityValue($row->out_quantity),
+                'on_hand' => $this->quantityValue($row->on_hand),
+                'stock_value' => $this->moneyValue($row->stock_value),
+            ],
+            [
+                'total_in' => $this->quantityValue($summaryRow?->total_in),
+                'total_out' => $this->quantityValue($summaryRow?->total_out),
+                'total_on_hand' => $this->quantityValue($summaryRow?->total_on_hand),
+                'total_value' => $this->moneyValue($summaryRow?->total_value),
+            ],
+            ['layout' => 'snapshot'],
+        );
+    }
+
     public function getExpiryWiseReport(array $filters): array
     {
         $movementTotals = $this->stockMovementTotalsByExpirySubquery($filters['branch_id']);
@@ -1894,6 +1972,20 @@ class ReportService
     protected function stockMovementTotalsByBatchSubquery(string $branchId): Builder
     {
         return $this->stockBatchMovementTotalsSubquery($branchId);
+    }
+
+    protected function stockMovementTotalsByVariantSubquery(string $branchId): Builder
+    {
+        return DB::table('stock_movements as sm')
+            ->where('sm.branch_id', $branchId)
+            ->whereNull('sm.deleted_at')
+            ->whereNotIn('sm.status', [StockStatus::VOIDED->value, StockStatus::CANCELLED->value])
+            ->groupBy('sm.item_id', 'sm.color', 'sm.size_id')
+            ->selectRaw('sm.item_id')
+            ->selectRaw('sm.color')
+            ->selectRaw('sm.size_id')
+            ->selectRaw("COALESCE(SUM(CASE WHEN sm.movement_type = 'in' THEN sm.quantity ELSE 0 END), 0) as total_in")
+            ->selectRaw("COALESCE(SUM(CASE WHEN sm.movement_type = 'out' THEN sm.quantity ELSE 0 END), 0) as total_out");
     }
 
     protected function stockMovementTotalsByExpirySubquery(string $branchId): Builder
@@ -2748,6 +2840,7 @@ class ReportService
             'inventory_valuation' => ['item', 'quantity', 'average_cost', 'total_value'],
             'batch_wise_report' => ['item_code', 'item_name', 'batch_number', 'expiry_date', 'in_quantity', 'out_quantity', 'on_hand'],
             'expiry_wise_report' => ['item_code', 'item_name', 'expiry_date', 'in_quantity', 'out_quantity', 'on_hand'],
+            'variant_wise_report' => ['item_code', 'item_name', 'color', 'size', 'in_quantity', 'out_quantity', 'on_hand', 'stock_value'],
             'zero_on_hand_report' => ['item_code', 'item_name', 'total_in', 'total_out', 'on_hand'],
             'fast_moving_report' => ['item_code', 'item_name', 'total_sold', 'sale_count', 'average_per_day'],
             'slow_moving_report' => ['item_code', 'item_name', 'total_sold', 'sale_count', 'days_on_hand', 'turnover_rate'],
@@ -2809,6 +2902,31 @@ class ReportService
         return $this->reportTranslation("reports.{$reportKey}.label", Str::headline($reportKey));
     }
 
+    /**
+     * Translate a stored colour slug (e.g. "red") into its localized label,
+     * reusing the same colours.json the frontend colour pickers use.
+     */
+    protected function colorLabel(string $color): string
+    {
+        static $cache = [];
+
+        $locale = app()->getLocale();
+
+        if (! array_key_exists($locale, $cache)) {
+            $path = resource_path("js/locales/{$locale}/colors.json");
+
+            if (! is_file($path)) {
+                $path = resource_path('js/locales/en/colors.json');
+            }
+
+            $cache[$locale] = is_file($path)
+                ? (json_decode((string) file_get_contents($path), true) ?: [])
+                : [];
+        }
+
+        return (string) ($cache[$locale][$color] ?? Str::headline($color));
+    }
+
     protected function reportColumnLabel(string $key): string
     {
         return $this->reportTranslation("columns.{$key}", Str::headline(str_replace('_', ' ', $key)));
@@ -2848,6 +2966,7 @@ class ReportService
             'in_quantity',
             'out_quantity',
             'on_hand',
+            'stock_value',
             'total_sold',
             'sale_count',
             'average_per_day',

@@ -130,6 +130,9 @@
     "total_value": "ارزش کل",
     "item_code": "کد کالا",
     "item_name": "نام کالا",
+    "color": "رنگ",
+    "size": "سایز",
+    "stock_value": "ارزش موجودی",
     "batch_number": "شماره بچ",
     "expiry_date": "تاریخ انقضا",
     "in_quantity": "ورودی",
@@ -250,6 +253,10 @@
     "expiry_wise_report": {
       "label": "گزارش بر اساس انقضا",
       "description": "گردش موجودی بر اساس تاریخ انقضای هر بچ."
+    },
+    "variant_wise_report": {
+      "label": "گزارش بر اساس رنگ و سایز",
+      "description": "موجودی بر اساس رنگ و سایز با مجموع ورودی، خروجی، موجودی و ارزش."
     },
     "zero_on_hand_report": {
       "label": "اقلام با موجودی صفر",

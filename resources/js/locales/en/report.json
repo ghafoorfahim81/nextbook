@@ -131,6 +131,9 @@
     "total_sold": "Total sold",
     "item_code": "Item Code",
     "item_name": "Item Name",
+    "color": "Color",
+    "size": "Size",
+    "stock_value": "Stock Value",
     "batch_number": "Batch Number",
     "expiry_date": "Expiry Date",
     "in_quantity": "In",
@@ -250,6 +253,10 @@
     "expiry_wise_report": {
       "label": "Expiry wise report",
       "description": "Current expiry-based quantities with in, out, and on hand totals."
+    },
+    "variant_wise_report": {
+      "label": "Color/Size wise report",
+      "description": "Stock by color and size variant with in, out, on hand, and value."
     },
     "zero_on_hand_report": {
       "label": "Items with zero on hand",

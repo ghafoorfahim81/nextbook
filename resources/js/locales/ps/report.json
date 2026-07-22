@@ -129,6 +129,9 @@
     "total_value": "ټول ارزښت",
     "item_code": "د توکي کوډ",
     "item_name": "د توکي نوم",
+    "color": "رنګ",
+    "size": "اندازه",
+    "stock_value": "د موجودۍ ارزښت",
     "batch_number": "د بچ شمېره",
     "expiry_date": "د ختمېدو نېټه",
     "in_quantity": "داخل",
@@ -249,6 +252,10 @@
     "expiry_wise_report": {
       "label": "د ختمېدو له مخې راپور",
       "description": "د هر بچ د ختمېدو نېټې له مخې د موجودۍ حرکت."
+    },
+    "variant_wise_report": {
+      "label": "د رنګ/اندازې له مخې راپور",
+      "description": "د رنګ او اندازې له مخې موجودي د ورودي، وتلو، موجودۍ او ارزښت سره."
     },
     "zero_on_hand_report": {
       "label": "صفر موجودي لرونکي توکي",
