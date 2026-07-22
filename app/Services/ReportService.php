@@ -1308,6 +1308,8 @@ class ReportService
             })
             ->when($filters['item_id'], fn ($builder, $itemId) => $builder->where('sb.item_id', $itemId))
             ->when($filters['warehouse_id'], fn ($builder, $warehouseId) => $builder->where('sb.warehouse_id', $warehouseId))
+            ->when($filters['color'], fn ($builder, $color) => $builder->where('sb.color', $color))
+            ->when($filters['size_id'], fn ($builder, $sizeId) => $builder->where('sb.size_id', $sizeId))
             // Variant rows only: at least one of colour/size must be present.
             ->where(function ($builder) {
                 $builder->whereNotNull('sb.color')
@@ -3080,6 +3082,8 @@ class ReportService
             'account_id' => $this->nullableString($filters['account_id'] ?? null),
             'currency_id' => $this->nullableString($filters['currency_id'] ?? null),
             'warehouse_id' => $this->nullableString($filters['warehouse_id'] ?? null),
+            'color' => $this->nullableString($filters['color'] ?? null),
+            'size_id' => $this->nullableString($filters['size_id'] ?? null),
             'reason' => $this->nullableString($filters['reason'] ?? null),
             'type' => $this->nullableString($filters['type'] ?? null),
             'category_id' => $this->nullableString($filters['category_id'] ?? null),
@@ -3148,6 +3152,13 @@ class ReportService
                 ->map(fn ($row) => ['id' => $row->id, 'name' => $row->code.' - '.$row->name])
                 ->all(),
             'warehouses' => DB::table('warehouses')
+                ->where('branch_id', $branchId)
+                ->whereNull('deleted_at')
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
+                ->all(),
+            'sizes' => DB::table('sizes')
                 ->where('branch_id', $branchId)
                 ->whereNull('deleted_at')
                 ->orderBy('name')

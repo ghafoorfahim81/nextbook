@@ -5,6 +5,7 @@ import { Button } from '@/Components/ui/button'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { useAuth } from '@/composables/useAuth'
+import { useColors } from '@/composables/useColors'
 const props = defineProps({
   filters: { type: Object, required: true },
   options: { type: Object, required: true },
@@ -16,6 +17,7 @@ const props = defineProps({
 const emit = defineEmits(['update:filters', 'submit', 'reset'])
 const { t } = useI18n()
 const { can, isSuperAdmin } = useAuth()
+const { colorOptions } = useColors()
 
 const showLedger = computed(() => props.activeDefinition.filters.includes('ledger_id'))
 const showCustomer = computed(() => props.activeDefinition.filters.includes('customer_id'))
@@ -23,6 +25,8 @@ const showSupplier = computed(() => props.activeDefinition.filters.includes('sup
 const showItem = computed(() => props.activeDefinition.filters.includes('item_id'))
 const showAccount = computed(() => props.activeDefinition.filters.includes('account_id'))
 const showWarehouse = computed(() => props.activeDefinition.filters.includes('warehouse_id'))
+const showColor = computed(() => props.activeDefinition.filters.includes('color'))
+const showSize = computed(() => props.activeDefinition.filters.includes('size_id'))
 const showCurrency = computed(() => props.activeDefinition.filters.includes('currency_id'))
 const showType = computed(() => props.activeDefinition.filters.includes('type'))
 const showReason = computed(() => props.activeDefinition.filters.includes('reason'))
@@ -56,6 +60,12 @@ const supplierOptions = computed(() => withPlaceholder(props.options.suppliers, 
 const itemOptions = computed(() => withPlaceholder(props.options.items, t('report.filters.item')))
 const accountOptions = computed(() => withPlaceholder(props.options.cash_accounts, t('report.filters.account')))
 const warehouseOptions = computed(() => withPlaceholder(props.options.warehouses, t('report.filters.warehouse')))
+const sizeFilterOptions = computed(() => withPlaceholder(props.options.sizes, t('report.filters.size')))
+// Colour palette comes from the shared composable, with a "no filter" first entry.
+const colorFilterOptions = computed(() => [
+  { id: '', name: t('report.filters.color'), hex: 'transparent' },
+  ...colorOptions.value,
+])
 const currencyOptions = computed(() => withPlaceholder(props.options.currencies, t('report.filters.currency')))
 const typeOptions = computed(() => withPlaceholder(props.options.sale_types, t('report.filters.type')))
 const reasonOptions = computed(() => withPlaceholder(props.options.stock_adjustment_reasons, t('report.filters.reason')))
@@ -86,6 +96,8 @@ function setReport(report) {
     category_id: '',
     expense_account_id: '',
     warehouse_id: '',
+    color: '',
+    size_id: '',
     reason: '',
     page: 1,
   })
@@ -226,6 +238,39 @@ function setReport(report) {
             label-key="name"
             value-key="id"
             @update:modelValue="setFilter('warehouse_id', $event)"
+          />
+        </div>
+        <div v-if="showColor">
+          <NextSelect
+            :floating-text="t('report.filters.color')"
+            :model-value="filters.color"
+            :options="colorFilterOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('color', $event)"
+          >
+            <template #option="{ name, hex }">
+              <span class="flex items-center gap-2">
+                <span v-if="hex && hex !== 'transparent'" class="h-3.5 w-3.5 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
+                <span>{{ name }}</span>
+              </span>
+            </template>
+            <template #selected-option="{ name, hex }">
+              <span class="flex items-center gap-1.5">
+                <span v-if="hex && hex !== 'transparent'" class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: hex }" />
+                <span>{{ name }}</span>
+              </span>
+            </template>
+          </NextSelect>
+        </div>
+        <div v-if="showSize">
+          <NextSelect
+            :floating-text="t('report.filters.size')"
+            :model-value="filters.size_id"
+            :options="sizeFilterOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('size_id', $event)"
           />
         </div>
         <div v-if="showExpenseCategory">

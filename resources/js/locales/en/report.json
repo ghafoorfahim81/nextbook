@@ -36,6 +36,8 @@
     "item": "Item",
     "account": "Cash / Bank account",
     "warehouse": "Warehouse",
+    "color": "All colors",
+    "size": "All sizes",
     "currency": "Currency",
     "type": "Transaction type",
     "reason": "Reason",
@@ -255,7 +257,7 @@
       "description": "Current expiry-based quantities with in, out, and on hand totals."
     },
     "variant_wise_report": {
-      "label": "Color/Size wise report",
+      "label": "Variant Wise Report",
       "description": "Stock by color and size variant with in, out, on hand, and value."
     },
     "zero_on_hand_report": {

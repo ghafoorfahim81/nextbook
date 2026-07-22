@@ -75,6 +75,8 @@ function normalizeFilters(filters) {
     account_id: filters.account_id || '',
     currency_id: filters.currency_id || '',
     warehouse_id: filters.warehouse_id || '',
+    color: filters.color || '',
+    size_id: filters.size_id || '',
     type: filters.type || '',
     reason: filters.reason || '',
     category_id: filters.category_id || '',
@@ -503,7 +505,7 @@ const reportDefinitions = computed(() => ({
   variant_wise_report: {
     label: t('report.reports.variant_wise_report.label'),
     description: t('report.reports.variant_wise_report.description'),
-    filters: ['item_id', 'warehouse_id'],
+    filters: ['item_id', 'warehouse_id', 'color', 'size_id'],
     snapshot: true,
     group: 'inventory',
     icon: Palette,
