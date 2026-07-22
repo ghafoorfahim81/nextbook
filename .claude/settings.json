@@ -3,7 +3,11 @@
     "allow": [
       "Bash(node check_opening_table2.js)",
       "Bash(node check_final.js)",
-      "Bash(git status *)"
+      "Bash(git status *)",
+      "Bash(git add *)",
+      "Bash(git reset *)",
+      "Bash(git commit *)",
+      "Bash(node check_purchase.js)"
     ]
   }
 }
