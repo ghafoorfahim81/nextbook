@@ -2,9 +2,11 @@
 
 namespace App\Models\Purchase;
 
+use App\Enums\TransactionStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
@@ -108,5 +110,32 @@ class PurchaseItem extends Model
     public function size(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Administration\Size::class);
+    }
+
+    public function returnItems(): HasMany
+    {
+        return $this->hasMany(PurchaseReturnItem::class);
+    }
+
+    /**
+     * Sum of quantity already claimed by non-reversed purchase returns for this line.
+     * Includes DRAFT returns so two concurrent drafts cannot both claim the same units.
+     */
+    public function returnedQuantity(?string $excludingPurchaseReturnId = null): float
+    {
+        return (float) $this->returnItems()
+            ->whereHas('purchaseReturn', function ($query) {
+                $query->whereIn('status', [
+                    TransactionStatus::DRAFT->value,
+                    TransactionStatus::POSTED->value,
+                ]);
+            })
+            ->when($excludingPurchaseReturnId, fn ($query) => $query->where('purchase_return_id', '!=', $excludingPurchaseReturnId))
+            ->sum('quantity');
+    }
+
+    public function remainingReturnableQuantity(?string $excludingPurchaseReturnId = null): float
+    {
+        return max((float) $this->quantity - $this->returnedQuantity($excludingPurchaseReturnId), 0.0);
     }
 }

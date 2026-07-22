@@ -551,7 +551,7 @@ const navMain = computed(() => [
         icon: ShoppingBasket,
         items: [
             { title: t('sidebar.purchase.purchase'), url: '/purchases', permission: 'purchases.view_any' },
-            // { title: t('sidebar.purchase.purchase_return'), url: '/purchase-returns' },
+            { title: t('sidebar.purchase.purchase_return'), url: '/purchase-returns', permission: 'purchase_returns.view_any' },
         ],
     },
     {

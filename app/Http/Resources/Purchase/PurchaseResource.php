@@ -86,6 +86,16 @@ class PurchaseResource extends JsonResource
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
             'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),
+            'returns' => $this->whenLoaded('returns', fn () => $this->returns->map(function ($return) {
+                return [
+                    'id' => $return->id,
+                    'number' => $return->number,
+                    'date' => $return->date?->toDateString(),
+                    'status' => $return->status,
+                    'quantity' => $return->items->sum(fn ($item) => (float) $item->quantity),
+                    'amount' => $return->items->sum(fn ($item) => (float) $item->quantity * (float) $item->unit_price),
+                ];
+            })),
         ];
     }
 }

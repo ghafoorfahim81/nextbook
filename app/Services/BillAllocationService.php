@@ -173,6 +173,7 @@ class BillAllocationService
                 'purchasePayments' => fn ($query) => $query
                     ->whereNull('deleted_at')
                     ->when($excludePaymentId, fn ($query) => $query->where('payment_id', '!=', $excludePaymentId)),
+                'purchaseReturnItems.purchaseReturn:id,status',
             ])
             ->where('supplier_id', $supplierId)
             ->whereNull('deleted_at')
@@ -235,6 +236,7 @@ class BillAllocationService
                 'items',
                 'transaction.lines.account',
                 'purchasePayments' => fn ($query) => $query->whereNull('deleted_at'),
+                'purchaseReturnItems.purchaseReturn:id,status',
             ])
             ->whereIn('id', $purchaseIds)
             ->get()
@@ -296,7 +298,12 @@ class BillAllocationService
         $purchaseIds = collect($allocations)->pluck('bill_id')->all();
 
         return Purchase::query()
-            ->with(['items', 'transaction.lines.account', 'purchasePayments' => fn ($query) => $query->whereNull('deleted_at')])
+            ->with([
+                'items',
+                'transaction.lines.account',
+                'purchasePayments' => fn ($query) => $query->whereNull('deleted_at'),
+                'purchaseReturnItems.purchaseReturn:id,status',
+            ])
             ->whereIn('id', $purchaseIds)
             ->get()
             ->keyBy('id');
@@ -389,15 +396,34 @@ class BillAllocationService
     {
         $transaction = $purchase->transaction;
 
-        if (!$transaction) {
+        $apFromPurchase = 0.0;
+
+        if ($transaction) {
+            $rate = (float) ($transaction->rate ?? 1);
+
+            $apFromPurchase = (float) $transaction->lines
+                ->filter(fn ($line) => (float) $line->credit > 0 && ($line->account?->slug ?? null) === 'account-payable')
+                ->sum(fn ($line) => (float) $line->credit * $rate);
+        }
+
+        return max($apFromPurchase - $this->purchaseReturnedAmount($purchase), 0.0);
+    }
+
+    /**
+     * Total value debited off the supplier's payable by posted purchase returns against this
+     * purchase. A purchase return posts its account-payable debit into its own Transaction (not
+     * the original purchase's), so it must be netted out here explicitly rather than picked up by
+     * the transaction.lines filter above.
+     */
+    private function purchaseReturnedAmount(Purchase $purchase): float
+    {
+        if (!$purchase->relationLoaded('purchaseReturnItems')) {
             return 0.0;
         }
 
-        $rate = (float) ($transaction->rate ?? 1);
-
-        return (float) $transaction->lines
-            ->filter(fn ($line) => (float) $line->credit > 0 && ($line->account?->slug ?? null) === 'account-payable')
-            ->sum(fn ($line) => (float) $line->credit * $rate);
+        return (float) $purchase->purchaseReturnItems
+            ->filter(fn ($item) => $item->purchaseReturn?->status === TransactionStatus::POSTED->value)
+            ->sum(fn ($item) => (float) $item->quantity * (float) $item->unit_price);
     }
 
     private function saleAllocatedAmount(Sale $sale): float

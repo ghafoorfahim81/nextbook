@@ -154,5 +154,15 @@ return [
         'completed' => 'تکمیل شده',
         'cancelled' => 'لغو شده',
     ],
+    'purchase_return_reason' => [
+        'damaged' => 'خراب شده',
+        'wrong_item' => 'جنس اشتباه',
+        'defective' => 'معیوب',
+        'expired' => 'تاریخ گذشته',
+        'quality_rejection' => 'رد کیفیت',
+        'over_ordered' => 'سفارش اضافی',
+        'duplicate_order' => 'سفارش تکراری',
+        'other' => 'سایر',
+    ],
 ];
 

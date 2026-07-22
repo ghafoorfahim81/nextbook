@@ -24,6 +24,7 @@ return [
         'owner' => 'Owner',
         'payment' => 'Payment',
         'purchase' => 'Purchase',
+        'purchase_return' => 'د پیرودنې بیرته راستنیدل',
         'receipt' => 'Receipt',
         'role' => 'Role',
         'sale' => 'Sale',

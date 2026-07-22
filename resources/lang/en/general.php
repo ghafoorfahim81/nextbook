@@ -24,6 +24,7 @@ return [
         'owner' => 'Owner',
         'payment' => 'Payment',
         'purchase' => 'Purchase',
+        'purchase_return' => 'Purchase return',
         'receipt' => 'Receipt',
         'role' => 'Role',
         'sale' => 'Sale',

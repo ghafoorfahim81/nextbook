@@ -225,6 +225,15 @@ Route::middleware([
         ->name('sale-returns.force-delete')
         ->withTrashed();
 
+    Route::get('/purchase-returns/returnable-items', [\App\Http\Controllers\Purchase\PurchaseReturnController::class, 'returnableItems'])->name('purchase-returns.returnable-items');
+    Route::resource('/purchase-returns', \App\Http\Controllers\Purchase\PurchaseReturnController::class);
+    Route::post('/purchase-returns/{purchase_return}/post', [\App\Http\Controllers\Purchase\PurchaseReturnController::class, 'post'])->name('purchase-returns.post');
+    Route::post('/purchase-returns/{purchase_return}/reverse', [\App\Http\Controllers\Purchase\PurchaseReturnController::class, 'reverse'])->name('purchase-returns.reverse');
+    Route::patch('/purchase-returns/{purchase_return}/restore', [\App\Http\Controllers\Purchase\PurchaseReturnController::class, 'restore'])->name('purchase-returns.restore')->withTrashed();
+    Route::delete('/purchase-returns/{purchase_return}/force-delete', [\App\Http\Controllers\Purchase\PurchaseReturnController::class, 'forceDelete'])
+        ->name('purchase-returns.force-delete')
+        ->withTrashed();
+
     Route::get('/sale-orders/eligible', [\App\Http\Controllers\Sale\SaleOrderController::class, 'eligibleForLedger'])->name('sale-orders.eligible');
     Route::get('/sale-orders/{sale_order}/for-conversion', [\App\Http\Controllers\Sale\SaleOrderController::class, 'forConversion'])->name('sale-orders.for-conversion');
     Route::resource('/sale-orders', \App\Http\Controllers\Sale\SaleOrderController::class);
