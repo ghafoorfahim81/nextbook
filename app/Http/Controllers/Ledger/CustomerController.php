@@ -15,6 +15,10 @@ use App\Models\Ledger\Ledger;
 use App\Models\Transaction\Transaction;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Branch;
+use App\Models\Administration\Country;
+use App\Models\Administration\CustomerGroup;
+use App\Models\Administration\PaymentTerm;
+use App\Models\Administration\Province;
 use Illuminate\Http\Request;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\Cache;
@@ -49,7 +53,7 @@ class CustomerController extends Controller
         $customers = Ledger::search($request->query('search'))
             ->where('type', $type) // Filter by type
             ->filter($filters)
-            ->with(['currency', 'branch'])
+            ->with(['currency', 'branch', 'group', 'country', 'province'])
             ->withStatementTotals()
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -79,6 +83,11 @@ class CustomerController extends Controller
         return inertia('Ledgers/Customers/Create', [
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
             'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
+            'customerGroups' => CustomerGroup::query()->orderBy('name_en')->get(),
+            'paymentTerms' => PaymentTerm::query()->orderBy('name')->get(),
+            'countries' => Country::query()->orderBy('name_en')->get(),
+            'provinces' => Province::query()->orderBy('name_en')->get(),
+            'nextCode' => $this->nextCode(),
             'accountTypes' => [],
         ]);
     }
@@ -90,11 +99,12 @@ class CustomerController extends Controller
     {
         $validated = $request->validated();
         $validated['type'] = 'customer';
+        $validated['code'] = $validated['code'] ?: $this->nextCode();
         $validated['is_active'] = $validated['is_active'] ?? true;
         $ledger = Ledger::create($validated);
         $glAccounts = Cache::get('gl_accounts');
         $transactionService = app(TransactionService::class);
-        if ($validated['opening_currency_id'] && $validated['amount'] && $validated['amount'] > 0) {
+        if ($validated['currency_id'] && $validated['amount'] && $validated['amount'] > 0) {
 
             $arId = $glAccounts['account-receivable'];
             $equityId = $glAccounts['opening-balance-equity'];
@@ -103,7 +113,7 @@ class CustomerController extends Controller
 
             $transaction = $transactionService->post(
                 header: [
-                    'currency_id' => $validated['opening_currency_id'],
+                    'currency_id' => $validated['currency_id'],
                     'rate' => (float) $validated['rate'],
                     'date' => Carbon::now()->toDateString(),
                     'reference_type' => Ledger::class,
@@ -113,12 +123,12 @@ class CustomerController extends Controller
                 lines: [
                 ['account_id' => $arId, 'ledger_id' => $ledger->id, 'debit' => (float) $validated['amount'], 'credit' => 0,
                 'remark' => 'Opening balance for customer ' . $ledger->name,
-                'remark_fa' => 'موجودی اولیه برای مشتری ' . $ledger->name,
-                'remark_ps' =>'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
+                'remark_fa' => 'Ù…ÙˆØ¬ÙˆØ¯ÛŒ Ø§ÙˆÙ„ÛŒÙ‡ Ø¨Ø±Ø§ÛŒ Ù…Ø´ØªØ±ÛŒ ' . $ledger->name,
+                'remark_ps' =>'Ø¯'. ' '. $ledger->name.' '.'Ø¯ Ù¾Ø±Ø§Ù†ÛŒØ³ØªÙ„Ùˆ Ø¨ÛŒÙ„Ø§Ù†Ø³ ',
             ],
                 ['account_id' => $equityId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $ledger->name,
-                'remark_fa' => 'موجودی اولیه برای مشتری ' . $ledger->name,
-                'remark_ps' =>'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
+                'remark_fa' => 'Ù…ÙˆØ¬ÙˆØ¯ÛŒ Ø§ÙˆÙ„ÛŒÙ‡ Ø¨Ø±Ø§ÛŒ Ù…Ø´ØªØ±ÛŒ ' . $ledger->name,
+                'remark_ps' =>'Ø¯'. ' '. $ledger->name.' '.'Ø¯ Ù¾Ø±Ø§Ù†ÛŒØ³ØªÙ„Ùˆ Ø¨ÛŒÙ„Ø§Ù†Ø³ ',
                 ],
             ]);
             $transaction->opening()->create([
@@ -146,6 +156,12 @@ class CustomerController extends Controller
     {
         $customer->load([
             'currency',
+            'group',
+            'paymentTerm',
+            'country',
+            'province',
+            'createdBy',
+            'updatedBy',
             'opening',
             'opening.transaction.currency',
             'opening.transaction.lines',
@@ -240,9 +256,14 @@ class CustomerController extends Controller
      */
     public function edit(Ledger $customer)
     {
-        $customer->load(['currency', 'opening', 'opening.transaction.currency','opening.transaction.lines']);
+        $customer->load(['currency', 'group', 'paymentTerm', 'country', 'province', 'opening', 'opening.transaction.currency', 'opening.transaction.lines']);
         return inertia('Ledgers/Customers/Edit', [
             'customer' => new LedgerResource($customer),
+            'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
+            'customerGroups' => CustomerGroup::query()->orderBy('name_en')->get(),
+            'paymentTerms' => PaymentTerm::query()->orderBy('name')->get(),
+            'countries' => Country::query()->orderBy('name_en')->get(),
+            'provinces' => Province::query()->orderBy('name_en')->get(),
         ]);
     }
 
@@ -332,7 +353,7 @@ class CustomerController extends Controller
         }
 
 
-        if ($validated['amount'] && $validated['amount'] > 0 && $validated['opening_currency_id'] && $validated['rate']) {  // Update existing opening balances
+        if ($validated['amount'] && $validated['amount'] > 0 && $validated['currency_id'] && $validated['rate']) {  // Update existing opening balances
             $glAccounts = Cache::get('gl_accounts');
             $arId = $glAccounts['account-receivable'];
             $equityId = $glAccounts['opening-balance-equity'];
@@ -341,7 +362,7 @@ class CustomerController extends Controller
 
             $transaction = $transactionService->post(
                 header: [
-                    'currency_id' => $validated['opening_currency_id'],
+                    'currency_id' => $validated['currency_id'],
                     'rate' => (float) $validated['rate'],
                     'date' => Carbon::now()->toDateString(),
                     'reference_type' => Ledger::class,
@@ -351,12 +372,12 @@ class CustomerController extends Controller
                 lines: [
                 ['account_id' => $arId, 'ledger_id' => $customer->id, 'debit' => (float) $validated['amount'], 'credit' => 0,
                 'remark' => 'Opening balance for customer ' . $customer->name,
-                'remark_fa' => 'موجودی اولیه برای مشتری ' . $customer->name,
-                'remark_ps' =>'د'. ' '. $customer->name.' '.'د پرانیستلو بیلانس ',
+                'remark_fa' => 'Ù…ÙˆØ¬ÙˆØ¯ÛŒ Ø§ÙˆÙ„ÛŒÙ‡ Ø¨Ø±Ø§ÛŒ Ù…Ø´ØªØ±ÛŒ ' . $customer->name,
+                'remark_ps' =>'Ø¯'. ' '. $customer->name.' '.'Ø¯ Ù¾Ø±Ø§Ù†ÛŒØ³ØªÙ„Ùˆ Ø¨ÛŒÙ„Ø§Ù†Ø³ ',
                 ],
                 ['account_id' => $equityId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $customer->name,
-                'remark_fa' => 'موجودی اولیه برای مشتری ' . $customer->name,
-                'remark_ps' =>'د'. ' '. $customer->name.' '.'د پرانیستلو بیلانس ',
+                'remark_fa' => 'Ù…ÙˆØ¬ÙˆØ¯ÛŒ Ø§ÙˆÙ„ÛŒÙ‡ Ø¨Ø±Ø§ÛŒ Ù…Ø´ØªØ±ÛŒ ' . $customer->name,
+                'remark_ps' =>'Ø¯'. ' '. $customer->name.' '.'Ø¯ Ù¾Ø±Ø§Ù†ÛŒØ³ØªÙ„Ùˆ Ø¨ÛŒÙ„Ø§Ù†Ø³ ',
                 ],
             ]);
 
@@ -489,5 +510,18 @@ class CustomerController extends Controller
             ],
             'rows' => $rows,
         ]);
+    }
+
+    protected function nextCode(): string
+    {
+        $latest = Ledger::query()
+            ->where('type', 'customer')
+            ->where('branch_id', auth()->user()?->branch_id)
+            ->where('code', 'like', 'CUST-%')
+            ->max('code');
+
+        $number = $latest ? ((int) str_replace('CUST-', '', $latest)) + 1 : 1;
+
+        return 'CUST-' . str_pad((string) $number, 6, '0', STR_PAD_LEFT);
     }
 }

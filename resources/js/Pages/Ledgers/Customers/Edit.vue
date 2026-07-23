@@ -3,6 +3,7 @@ import AppLayout from '@/Layouts/Layout.vue';
 import { useFormGuard } from '@/composables/useFormGuard'
 import { Button } from '@/Components/ui/button';
 import NextInput from '@/Components/next/NextInput.vue';
+import NextPhoneInput from '@/Components/next/NextPhoneInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from "@/Components/next/NextTextarea.vue";
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
@@ -14,6 +15,10 @@ const props = defineProps({
     customer: { type: Object, required: true },
     currencies: { type: Array, required: true },
     homeCurrency: { type: Object, required: true },
+    customerGroups: { type: Array, default: () => [] },
+    paymentTerms: { type: Array, default: () => [] },
+    countries: { type: Array, default: () => [] },
+    provinces: { type: Array, default: () => [] },
 });
 
 const { t } = useI18n();
@@ -24,8 +29,6 @@ const form = useForm({
     currency_id: props.customer.data.currency_id,
     selected_currency: props.customer.data?.currency,
     currency_id: props.customer.data.currency_id,
-    selected_opening_currency: props.customer.data?.opening?.currency,
-    opening_currency_id: props.customer.data?.opening?.currency_id,
     rate: props.customer.data?.opening?.rate,
     amount: props.customer.data?.opening?.amount??0,
 })
@@ -55,11 +58,7 @@ const handleSelectChange = (field, value) => {
         form.rate = value?.exchange_rate??0;
         form.currency_id = value?.id;
     }
-    else if(field === 'opening_currency_id') {
-        form.rate = value?.exchange_rate??0;
-        form.opening_currency_id = value?.id;
-    }
-    else{
+    else {
         form[field] = value;
     }
 };
@@ -78,10 +77,11 @@ useFormGuard(form)
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
                     <NextInput is-required :label="t('general.name')" v-model="form.name" :error="form.errors?.name" :placeholder="t('general.enter', { text: t('general.name') })" />
-                    <NextInput :label="t('admin.currency.code')" v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
+                    <NextInput :label="t('admin.currency.code')" v-model="form.code" :error="form.errors?.code" />
                     <NextInput :label="t('ledger.contact_person')" v-model="form.contact_person" :error="form.errors?.contact_person" :placeholder="t('general.enter', { text: t('ledger.contact_person') })" />
                     <NextInput :label="t('general.email')" v-model="form.email" :error="form.errors?.email" :placeholder="t('general.enter', { text: t('general.email') })" />
-                    <NextInput :label="t('general.phone')" v-model="form.phone_no" :error="form.errors?.phone_no" :placeholder="t('general.enter', { text: t('general.phone') })" />
+                    <NextPhoneInput :label="t('general.phone')" v-model="form.phone_no" :error="form.errors?.phone_no" />
+                    <NextPhoneInput :label="t('ledger.whatsapp_number')" v-model="form.whatsapp_number" :error="form.errors?.whatsapp_number" />
                     <NextInput :label="t('general.address')" v-model="form.address" :error="form.errors?.address" :placeholder="t('general.enter', { text: t('general.address') })" />
 
                     <NextSelect
@@ -96,28 +96,21 @@ useFormGuard(form)
                         :search-fields="['name', 'code', 'symbol']"
                         :error="form.errors.currency_id"
                     />
-
+                    <NextSelect :options="customerGroups" v-model="form.group_id" label-key="localized_name" value-key="id" :floating-text="t('ledger.customer_group')" :searchable="true" />
+                    <NextSelect :options="paymentTerms" v-model="form.payment_term_id" label-key="name" value-key="id" :floating-text="t('ledger.payment_term')" :searchable="true" />
+                    <NextSelect :options="countries" v-model="form.country_id" label-key="localized_name" value-key="id" :floating-text="t('ledger.country')" :searchable="true" />
+                    <NextSelect :options="provinces.filter((province) => !form.country_id || province.country_id === form.country_id)" v-model="form.province_id" label-key="localized_name" value-key="id" :floating-text="t('ledger.province')" :searchable="true" />
+                    <NextInput type="number" step="any" :label="t('ledger.credit_limit')" v-model="form.credit_limit" :error="form.errors?.credit_limit" />
+                    <NextSelect :options="[{ id: 'Block', name: t('ledger.credit_limit_block') }, { id: 'Indicate', name: t('ledger.credit_limit_indicate') }]" v-model="form.credit_limit_status" label-key="name" value-key="id" :floating-text="t('ledger.credit_limit_status')" />
+                    <NextInput type="number" step="any" :label="t('ledger.discount')" v-model="form.discount" :error="form.errors?.discount" />
                 </div>
 
                 <div class="md:col-span-4 mt-4">
                     <div class="pt-2">
                         <span class="font-bold">{{ t('item.opening') }}</span>
                         <div class="mt-3 space-y-3">
-                            <div class="grid grid-cols-3 gap-2">
-                                <NextSelect
-                                :options="currencies.data"
-                                v-model="form.selected_opening_currency"
-                                label-key="code"
-                                value-key="id"
-                                @update:modelValue="(value) => handleSelectChange('opening_currency_id', value)"
-                                :reduce="currency => currency"
-                                :floating-text="t('admin.currency.currency')"
-                                :error="form.errors?.opening_currency_id"
-                                :searchable="true"
-                                resource-type="currencies"
-                                :search-fields="['name', 'code', 'symbol']"
-                                 />
-                                <NextInput placeholder="Rate" :disabled="form.opening_currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
+                            <div class="grid grid-cols-2 gap-2">
+                                <NextInput placeholder="Rate" :disabled="form.currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
                                 <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
                             </div>
                         </div>

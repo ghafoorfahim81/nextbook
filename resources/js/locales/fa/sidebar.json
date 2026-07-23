@@ -30,6 +30,8 @@
   },
   "administration": {
     "category": "دسته بندی",
+    "customer_group": "گروه مشتریان",
+    "payment_term": "شرایط پرداخت",
     "currency": "ارز",
     "currency_rate_update": "به‌روزرسانی نرخ ارز",
     "unit_measure": "واحد اندازه گیری",

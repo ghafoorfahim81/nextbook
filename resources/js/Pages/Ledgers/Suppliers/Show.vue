@@ -21,7 +21,7 @@ const { can } = useAuth();
 
 const supplierData = computed(() => props.supplier?.data ?? props.supplier ?? {});
 const statement = computed(() => supplierData.value.statement ?? {});
-const openings = computed(() => supplierData.value.openings ?? []);
+const openings = computed(() => supplierData.value.opening ? [supplierData.value.opening] : []);
 
 const purchaseRows = computed(() => props.purchases?.data ?? props.purchases ?? []);
 const receiptRows = computed(() => props.receipts?.data ?? props.receipts ?? []);
@@ -45,6 +45,26 @@ const openPrint = (routeName, id) => {
     window.open(route(routeName, id), '_blank');
 };
 
+const openTransaction = (routeName, id) => {
+    if (routeName && id) router.visit(route(routeName, id));
+};
+
+const creditLimitStatusLabel = (status) => {
+    if (status === 'Block') return t('ledger.credit_limit_block');
+    if (status === 'Indicate') return t('ledger.credit_limit_indicate');
+    return '-';
+};
+
+const createTransactionRoute = (type) => {
+    const id = supplierData.value.id;
+    const routes = {
+        purchases: route('purchases.create', { supplier_id: id }),
+        receipts: route('receipts.create', { ledger_id: id }),
+        payments: route('payments.create', { ledger_id: id }),
+    };
+    return routes[type];
+};
+
 const supplierPurchaseTableRows = computed(() => purchaseRows.value.map((row) => ({
     id: row.id,
     number: row.number || row.reference_id || row.id,
@@ -54,6 +74,7 @@ const supplierPurchaseTableRows = computed(() => purchaseRows.value.map((row) =>
     status: row.payment_status_label || row.payment_status || '-',
     payment_status: row.payment_status,
     description: row.description || '-',
+    showRoute: 'purchases.show',
 })));
 
 const supplierReceiptTableRows = computed(() => receiptRows.value.map((row) => ({
@@ -66,6 +87,7 @@ const supplierReceiptTableRows = computed(() => receiptRows.value.map((row) => (
     payment_mode: row.payment_mode_label || row.payment_mode || '-',
     description: row.narration || row.description || '-',
     printRoute: 'receipts.print',
+    showRoute: 'receipts.show',
 })));
 
 const supplierPaymentTableRows = computed(() => paymentRows.value.map((row) => ({
@@ -78,6 +100,7 @@ const supplierPaymentTableRows = computed(() => paymentRows.value.map((row) => (
     payment_mode: row.payment_mode_label || row.payment_mode || '-',
     description: row.narration || row.description || '-',
     printRoute: 'payments.print',
+    showRoute: 'payments.show',
 })));
 
 const supplierPurchaseColumns = computed(() => [
@@ -214,12 +237,52 @@ const supplierMovementColumns = computed(() => [
                                 <div class="font-medium text-foreground">{{ supplierData.currency?.name || '' }}</div>
                             </div>
                             <div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.customer_group') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.group?.localized_name || '-' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.payment_term') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.payment_term?.name || '-' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.country') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.country?.localized_name || '-' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.province') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.province?.localized_name || '-' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.whatsapp_number') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.whatsapp_number || '-' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.credit_limit') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.credit_limit ?? '-' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.credit_limit_status') }}</div>
+                                <div class="font-medium text-foreground">{{ creditLimitStatusLabel(supplierData.credit_limit_status) }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.discount') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.discount ?? '-' }}</div>
+                            </div>
+                            <div>
                                 <div class="text-xs text-muted-foreground">{{ t('general.branch') }}</div>
                                 <div class="font-medium text-foreground">{{ supplierData.branch?.name || '' }}</div>
                             </div>
                             <div class="md:col-span-2">
                                 <div class="text-xs text-muted-foreground">{{ t('general.address') }}</div>
                                 <div class="font-medium text-foreground">{{ supplierData.address }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('general.created_by') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.created_by?.name || '-' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('general.updated_by') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.updated_by?.name || '-' }}</div>
                             </div>
                         </div>
                     </div>
@@ -268,9 +331,12 @@ const supplierMovementColumns = computed(() => [
                         :empty-message="t('general.no_data_found')"
                         :export-url="exportUrl('purchases')"
                         :export-label="t('report.export_excel')"
+                        :add-route="createTransactionRoute('purchases')"
+                        :add-label="t('general.add_new')"
                         :row-number-label="t('report.columns.no')"
                         default-sort-key="date"
                         default-sort-direction="desc"
+                        @row-click="openTransaction($event.showRoute, $event.id)"
                     >
                         <template #cell-status="{ row }">
                             <span :class="[PAYMENT_STATUS_BADGE_BASE, paymentStatusBadgeClass(row.payment_status)]">
@@ -286,12 +352,15 @@ const supplierMovementColumns = computed(() => [
                         :empty-message="t('general.no_data_found')"
                         :export-url="exportUrl('receipts')"
                         :export-label="t('report.export_excel')"
+                        :add-route="createTransactionRoute('receipts')"
+                        :add-label="t('general.add_new')"
                         :row-number-label="t('report.columns.no')"
                         default-sort-key="date"
                         default-sort-direction="desc"
+                        @row-click="openTransaction($event.showRoute, $event.id)"
                     >
                         <template #cell-actions="{ row }">
-                            <Button variant="outline" size="icon" :title="t('datatable.print')" @click="openPrint(row.printRoute, row.id)">
+                            <Button variant="outline" size="icon" :title="t('datatable.print')" @click.stop="openPrint(row.printRoute, row.id)">
                                 <Printer class="h-4 w-4" />
                             </Button>
                         </template>
@@ -304,12 +373,15 @@ const supplierMovementColumns = computed(() => [
                         :empty-message="t('general.no_data_found')"
                         :export-url="exportUrl('payments')"
                         :export-label="t('report.export_excel')"
+                        :add-route="createTransactionRoute('payments')"
+                        :add-label="t('general.add_new')"
                         :row-number-label="t('report.columns.no')"
                         default-sort-key="date"
                         default-sort-direction="desc"
+                        @row-click="openTransaction($event.showRoute, $event.id)"
                     >
                         <template #cell-actions="{ row }">
-                            <Button variant="outline" size="icon" :title="t('datatable.print')" @click="openPrint(row.printRoute, row.id)">
+                            <Button variant="outline" size="icon" :title="t('datatable.print')" @click.stop="openPrint(row.printRoute, row.id)">
                                 <Printer class="h-4 w-4" />
                             </Button>
                         </template>

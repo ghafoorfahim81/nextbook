@@ -3,6 +3,11 @@
 namespace App\Models\Ledger;
 
 use App\Models\Administration\Branch;
+use App\Models\Administration\Country;
+use App\Models\Administration\CustomerGroup;
+use App\Models\Administration\PaymentTerm;
+use App\Models\Administration\Province;
+use App\Enums\CreditLimitStatus;
 use App\Models\Ledger\LedgerOpening;
 use App\Models\Sale\Sale;
 use App\Models\Receipt\Receipt;
@@ -11,6 +16,7 @@ use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasUserTracking;
 use App\Traits\HasDynamicFilters;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -29,7 +35,7 @@ use App\Traits\BranchSpecific;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 class Ledger extends Model
 {
-    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
 
     // ... your existing code ...
 
@@ -134,6 +140,14 @@ class Ledger extends Model
         'branch_id',
         'email',
         'currency_id',
+        'group_id',
+        'payment_term_id',
+        'country_id',
+        'province_id',
+        'credit_limit',
+        'credit_limit_status',
+        'discount',
+        'whatsapp_number',
         'is_main',
         'type',
         'is_active',
@@ -150,6 +164,13 @@ class Ledger extends Model
     {
         return [
             'currency_id' => 'string',
+            'group_id' => 'string',
+            'payment_term_id' => 'string',
+            'country_id' => 'string',
+            'province_id' => 'string',
+            'credit_limit' => 'double',
+            'discount' => 'double',
+            'credit_limit_status' => CreditLimitStatus::class,
             'created_by' => 'string',
             'updated_by' => 'string',
             'branch_id' => 'string',
@@ -203,6 +224,26 @@ class Ledger extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(CustomerGroup::class, 'group_id');
+    }
+
+    public function paymentTerm(): BelongsTo
+    {
+        return $this->belongsTo(PaymentTerm::class);
+    }
+
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class);
+    }
+
+    public function province(): BelongsTo
+    {
+        return $this->belongsTo(Province::class);
     }
 
     public function opening()
