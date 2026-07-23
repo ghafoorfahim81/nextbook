@@ -98,7 +98,12 @@
     "gross_profit": "Gross profit",
     "total_expenses": "Total expenses",
     "net_profit": "Net profit",
-    "expense_count": "Expenses"
+    "expense_count": "Expenses",
+    "current": "Current (0-30)",
+    "days_31_60": "31-60 days",
+    "days_61_90": "61-90 days",
+    "days_90_plus": "90+ days",
+    "total_outstanding": "Total outstanding"
   },
   "columns": {
     "no": "No.",
@@ -177,7 +182,12 @@
     "reason": "Reason",
     "unit_cost": "Unit cost",
     "total_cost": "Total cost",
-    "notes": "Notes"
+    "notes": "Notes",
+    "current": "Current (0-30)",
+    "days_31_60": "31-60 days",
+    "days_61_90": "61-90 days",
+    "days_90_plus": "90+ days",
+    "total_outstanding": "Total outstanding"
   },
   "view_types": {
     "general": "General view",
@@ -207,6 +217,14 @@
     "supplier_statement": {
       "label": "Supplier statement",
       "description": "Posted supplier movements and balances."
+    },
+    "aged_receivables": {
+      "label": "Aged receivables",
+      "description": "Outstanding customer balances bucketed by age as of the selected date."
+    },
+    "aged_payables": {
+      "label": "Aged payables",
+      "description": "Outstanding supplier balances bucketed by age as of the selected date."
     },
     "receipt_report": {
       "label": "Receipt report",
@@ -326,9 +344,9 @@
       "delete": "Deletes"
     },
     "columns": {
-    "no": "No.",
-    "section": "Section",
-    "account_name": "Account Name",
+      "no": "No.",
+      "section": "Section",
+      "account_name": "Account Name",
       "user": "User",
       "role": "Role",
       "total_activities": "Activities",
@@ -364,5 +382,3 @@
     }
   }
 }
-
-

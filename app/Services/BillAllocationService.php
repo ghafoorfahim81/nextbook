@@ -199,6 +199,65 @@ class BillAllocationService
             ->values();
     }
 
+    /**
+     * All open (partially/fully unpaid) sales for a branch, each with its customer
+     * and current outstanding amount. Used by the aged-receivables report to bucket
+     * balances by age. Not filtered by customer, unlike openSalesForCustomer().
+     */
+    public function openSales(?string $branchId = null): Collection
+    {
+        return Sale::query()
+            ->with([
+                'customer:id,name',
+                'transaction.lines.account',
+                'saleReceives' => fn ($query) => $query->whereNull('deleted_at'),
+                'saleReturnItems.saleReturn:id,status',
+            ])
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
+            ->whereNull('deleted_at')
+            ->get()
+            ->map(fn (Sale $sale): array => [
+                'id' => $sale->id,
+                'number' => $sale->number,
+                'date' => $sale->date?->toDateString(),
+                'due_date' => $sale->due_date?->toDateString(),
+                'party_id' => $sale->customer_id,
+                'party_name' => $sale->customer?->name,
+                'remaining_amount' => $this->saleRemainingAmount($sale),
+            ])
+            ->filter(fn (array $row) => $row['remaining_amount'] > 0.00001)
+            ->values();
+    }
+
+    /**
+     * All open (partially/fully unpaid) purchases for a branch, each with its supplier
+     * and current outstanding amount. Used by the aged-payables report.
+     */
+    public function openPurchases(?string $branchId = null): Collection
+    {
+        return Purchase::query()
+            ->with([
+                'supplier:id,name',
+                'transaction.lines.account',
+                'purchasePayments' => fn ($query) => $query->whereNull('deleted_at'),
+                'purchaseReturnItems.purchaseReturn:id,status',
+            ])
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
+            ->whereNull('deleted_at')
+            ->get()
+            ->map(fn (Purchase $purchase): array => [
+                'id' => $purchase->id,
+                'number' => $purchase->number,
+                'date' => $purchase->date?->toDateString(),
+                'due_date' => $purchase->due_date?->toDateString(),
+                'party_id' => $purchase->supplier_id,
+                'party_name' => $purchase->supplier?->name,
+                'remaining_amount' => $this->purchaseRemainingAmount($purchase),
+            ])
+            ->filter(fn (array $row) => $row['remaining_amount'] > 0.00001)
+            ->values();
+    }
+
     private function recalculateSales(array $saleIds): void
     {
         if (empty($saleIds)) {

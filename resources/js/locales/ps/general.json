@@ -196,6 +196,12 @@
   "general": "عمومي",
   "duplicate_item_detected": "د توکي تکراري ته ورکړل شوه",
   "duplicate_item_detected_description": "د {batchText} او {expiryText} د توکي تکراري ته ورکړل شوه",
-  "unselect": "انتخاب نه کول"
+  "unselect": "انتخاب نه کول",
+  "scan_barcode": "بارکوډ سکن کړئ",
+  "scan_barcode_hint": "Enter کرښه زیاتوي · F2 دلته فوکس · Ctrl+S خوندي کول",
+  "barcode_not_found": "د «{code}» بارکوډ لپاره توکی ونه موندل شو",
+  "barcode_lookup_failed": "د بارکوډ لټون ناکام شو",
+  "select_warehouse_first": "لومړی ګودام وټاکئ",
+  "select_ledger_first": "لومړی پیرودونکی یا عرضه‌کوونکی وټاکئ"
 }
 

@@ -29,6 +29,8 @@ class ReportService
         'general_ledger',
         'customer_statement',
         'supplier_statement',
+        'aged_receivables',
+        'aged_payables',
         'receipt_report',
         'payment_report',
         'cash_book',
@@ -57,6 +59,7 @@ class ReportService
 
     public function __construct(
         private readonly DateConversionService $dateConversionService,
+        private readonly BillAllocationService $billAllocationService,
     ) {
     }
 
@@ -118,6 +121,8 @@ class ReportService
             'general_ledger' => $this->getGeneralLedger($filters),
             'customer_statement' => $this->getCustomerStatement($filters),
             'supplier_statement' => $this->getSupplierStatement($filters),
+            'aged_receivables' => $this->getAgedReceivables($filters),
+            'aged_payables' => $this->getAgedPayables($filters),
             'receipt_report' => $this->getReceiptReport($filters),
             'payment_report' => $this->getPaymentReport($filters),
             'cash_book' => $this->getCashBook($filters),
@@ -276,6 +281,135 @@ class ReportService
             ],
             $summary,
         );
+    }
+
+    public function getAgedReceivables(array $filters): array
+    {
+        return $this->buildAgedReport(
+            $this->billAllocationService->openSales($filters['branch_id']),
+            $filters,
+            $filters['customer_id'] ?? null,
+            'customer',
+        );
+    }
+
+    public function getAgedPayables(array $filters): array
+    {
+        return $this->buildAgedReport(
+            $this->billAllocationService->openPurchases($filters['branch_id']),
+            $filters,
+            $filters['supplier_id'] ?? null,
+            'supplier',
+        );
+    }
+
+    /**
+     * Bucket open bills by age relative to the "as of" date (date_to) and aggregate
+     * per party. Ages are measured from the bill date; the remaining amount is each
+     * bill's current outstanding balance. Bills dated after the as-of date are skipped.
+     *
+     * @param  \Illuminate\Support\Collection<int, array>  $openBills
+     */
+    protected function buildAgedReport(\Illuminate\Support\Collection $openBills, array $filters, ?string $partyId, string $partyColumn): array
+    {
+        $asOf = Carbon::parse($filters['date_to'])->startOfDay();
+
+        $parties = [];
+
+        foreach ($openBills as $bill) {
+            if ($partyId && $bill['party_id'] !== $partyId) {
+                continue;
+            }
+
+            if (! $bill['date']) {
+                continue;
+            }
+
+            $billDate = Carbon::parse($bill['date'])->startOfDay();
+
+            if ($billDate->gt($asOf)) {
+                continue;
+            }
+
+            $ageDays = $billDate->diffInDays($asOf);
+            $bucket = $this->agingBucket($ageDays);
+            $amount = round((float) $bill['remaining_amount'], 2);
+
+            $key = $bill['party_id'] ?? '—';
+
+            if (! isset($parties[$key])) {
+                $parties[$key] = [
+                    'party_name' => $bill['party_name'] ?: '—',
+                    'current' => 0.0,
+                    'days_31_60' => 0.0,
+                    'days_61_90' => 0.0,
+                    'days_90_plus' => 0.0,
+                    'total_outstanding' => 0.0,
+                ];
+            }
+
+            $parties[$key][$bucket] += $amount;
+            $parties[$key]['total_outstanding'] += $amount;
+        }
+
+        $rows = collect($parties)
+            ->sortByDesc('total_outstanding')
+            ->map(fn (array $party) => [
+                $partyColumn => $party['party_name'],
+                'current' => $this->moneyValue($party['current']),
+                'days_31_60' => $this->moneyValue($party['days_31_60']),
+                'days_61_90' => $this->moneyValue($party['days_61_90']),
+                'days_90_plus' => $this->moneyValue($party['days_90_plus']),
+                'total_outstanding' => $this->moneyValue($party['total_outstanding']),
+            ])
+            ->values();
+
+        $summary = [
+            'current' => $this->moneyValue($rows->sum('current')),
+            'days_31_60' => $this->moneyValue($rows->sum('days_31_60')),
+            'days_61_90' => $this->moneyValue($rows->sum('days_61_90')),
+            'days_90_plus' => $this->moneyValue($rows->sum('days_90_plus')),
+            'total_outstanding' => $this->moneyValue($rows->sum('total_outstanding')),
+        ];
+
+        return $this->paginateCollection($rows, $filters, $summary, ['layout' => 'snapshot']);
+    }
+
+    protected function agingBucket(int $ageDays): string
+    {
+        return match (true) {
+            $ageDays <= 30 => 'current',
+            $ageDays <= 60 => 'days_31_60',
+            $ageDays <= 90 => 'days_61_90',
+            default => 'days_90_plus',
+        };
+    }
+
+    /**
+     * Paginate an in-memory collection of already-transformed rows, returning the same
+     * shape as paginateReport(). Used by reports whose rows are computed in PHP rather
+     * than fetched through a single query builder.
+     */
+    protected function paginateCollection(\Illuminate\Support\Collection $rows, array $filters, array $summary = [], array $meta = []): array
+    {
+        $perPage = max(1, (int) $filters['per_page']);
+        $page = max(1, (int) $filters['page']);
+        $total = $rows->count();
+
+        $paginator = new LengthAwarePaginator(
+            $rows->forPage($page, $perPage)->values()->all(),
+            $total,
+            $perPage,
+            $page,
+            ['pageName' => 'page'],
+        );
+
+        return [
+            'rows' => $paginator->items(),
+            'pagination' => $this->paginationArray($paginator),
+            'summary' => $summary,
+            'meta' => $meta,
+        ];
     }
 
     public function getReceiptReport(array $filters): array
@@ -2826,6 +2960,8 @@ class ReportService
             'trial_balance' => ['ledger_id', 'ledger_name', 'total_debit', 'total_credit', 'balance', 'balance_label'],
             'general_ledger' => ['date', 'transaction_number', 'reference_type', 'description', 'debit', 'credit', 'running_balance', 'running_balance_label'],
             'customer_statement', 'supplier_statement' => ['date', 'reference', 'description', 'debit', 'credit', 'running_balance', 'balance'],
+            'aged_receivables' => ['customer', 'current', 'days_31_60', 'days_61_90', 'days_90_plus', 'total_outstanding'],
+            'aged_payables' => ['supplier', 'current', 'days_31_60', 'days_61_90', 'days_90_plus', 'total_outstanding'],
             'receipt_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'amount_received'],
             'payment_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'amount_paid'],
             'cash_book' => ['date', 'reference', 'description', 'debit', 'credit', 'running_balance', 'running_balance_label'],
@@ -2984,6 +3120,11 @@ class ReportService
             'balance',
             'amount',
             'expense_count',
+            'current',
+            'days_31_60',
+            'days_61_90',
+            'days_90_plus',
+            'total_outstanding',
         ];
 
         return in_array($key, $numericKeys, true) ? 'number' : 'text';
