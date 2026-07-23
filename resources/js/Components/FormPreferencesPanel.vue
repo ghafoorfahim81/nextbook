@@ -52,26 +52,36 @@ const generalFields = [
     { key: 'warehouse', labelKey: 'preferences.fields.warehouse' },
 ]
 
-const baseItemColumns = [
+// Sale/Purchase invoices render a header-level description; orders currently do not.
+const documentGeneralFields = [
+    ...generalFields,
+    { key: 'description', labelKey: 'preferences.fields.description' },
+]
+
+const saleItemColumns = [
     { key: 'batch', labelKey: 'preferences.fields.batch' },
     { key: 'expiry', labelKey: 'preferences.fields.expiry' },
+    { key: 'colors', labelKey: 'preferences.fields.colors' },
+    { key: 'size', labelKey: 'preferences.fields.size' },
     { key: 'on_hand', labelKey: 'preferences.fields.on_hand' },
+    { key: 'reserved_out', labelKey: 'general.reserved_out' },
     { key: 'measure', labelKey: 'preferences.fields.measure' },
     { key: 'discount', labelKey: 'preferences.fields.discount' },
     { key: 'free', labelKey: 'preferences.fields.free' },
     { key: 'tax', labelKey: 'preferences.fields.tax' },
 ]
 
-const saleItemColumns = [
-    ...baseItemColumns.slice(0, 3),
-    { key: 'reserved_out', labelKey: 'general.reserved_out' },
-    ...baseItemColumns.slice(3),
-]
-
 const purchaseItemColumns = [
-    ...baseItemColumns.slice(0, 3),
+    { key: 'batch', labelKey: 'preferences.fields.batch' },
+    { key: 'expiry', labelKey: 'preferences.fields.expiry' },
+    { key: 'colors', labelKey: 'preferences.fields.colors' },
+    { key: 'size', labelKey: 'preferences.fields.size' },
+    { key: 'on_hand', labelKey: 'preferences.fields.on_hand' },
     { key: 'reserved_in', labelKey: 'general.reserved_in' },
-    ...baseItemColumns.slice(3),
+    { key: 'measure', labelKey: 'preferences.fields.measure' },
+    { key: 'discount', labelKey: 'preferences.fields.discount' },
+    { key: 'free', labelKey: 'preferences.fields.free' },
+    { key: 'tax', labelKey: 'preferences.fields.tax' },
 ]
 
 const saleOrderItemColumns = [
@@ -82,6 +92,23 @@ const saleOrderItemColumns = [
     { key: 'free', labelKey: 'preferences.fields.free' },
     { key: 'size', labelKey: 'preferences.fields.size' },
     { key: 'category', labelKey: 'preferences.fields.category' },
+]
+
+// Purchase orders render the same item columns as sale orders.
+const purchaseOrderItemColumns = saleOrderItemColumns
+
+// Return documents pick items from an existing bill, so the editable header is
+// small and the line grid only shows identity columns (batch / colour / size).
+const returnGeneralFields = [
+    { key: 'number', labelKey: 'preferences.fields.number' },
+    { key: 'date', labelKey: 'preferences.fields.date' },
+    { key: 'description', labelKey: 'preferences.fields.description' },
+]
+
+const returnItemColumns = [
+    { key: 'batch', labelKey: 'preferences.fields.batch' },
+    { key: 'colors', labelKey: 'preferences.fields.colors' },
+    { key: 'size', labelKey: 'preferences.fields.size' },
 ]
 
 const itemManagementFields = [
@@ -121,7 +148,7 @@ const receiptPaymentFields = [
  * -------------------------------------------------------------------------- */
 const SCHEMAS = {
     sale: [
-        { type: 'toggles', group: 'general_fields', titleKey: 'preferences.sale.general_fields', items: generalFields },
+        { type: 'toggles', group: 'general_fields', titleKey: 'preferences.sale.general_fields', items: documentGeneralFields },
         { type: 'toggles', group: 'item_columns', titleKey: 'preferences.sale.item_columns', items: saleItemColumns },
         {
             type: 'fields', titleKey: 'general.settings', items: [
@@ -153,8 +180,12 @@ const SCHEMAS = {
             ]
         },
     ],
+    sale_return: [
+        { type: 'toggles', group: 'general_fields', titleKey: 'preferences.sale.general_fields', items: returnGeneralFields },
+        { type: 'toggles', group: 'item_columns', titleKey: 'preferences.sale.item_columns', items: returnItemColumns },
+    ],
     purchase: [
-        { type: 'toggles', group: 'general_fields', titleKey: 'preferences.purchase.general_fields', items: generalFields },
+        { type: 'toggles', group: 'general_fields', titleKey: 'preferences.purchase.general_fields', items: documentGeneralFields },
         { type: 'toggles', group: 'item_columns', titleKey: 'preferences.purchase.item_columns', items: purchaseItemColumns },
         {
             type: 'fields', titleKey: 'general.settings', items: [
@@ -170,6 +201,22 @@ const SCHEMAS = {
                 { key: 'show_attachments', type: 'switch', labelKey: 'preferences.purchase.show_attachments' },
             ]
         },
+    ],
+    purchase_order: [
+        { type: 'toggles', group: 'general_fields', titleKey: 'preferences.purchase.general_fields', items: generalFields },
+        { type: 'toggles', group: 'item_columns', titleKey: 'preferences.purchase.item_columns', items: purchaseOrderItemColumns },
+        {
+            type: 'fields', titleKey: 'general.settings', items: [
+                { key: 'invoice_prefix', type: 'text', labelKey: 'preferences.purchase.invoice_prefix' },
+                { key: 'start_number', type: 'number', labelKey: 'preferences.purchase.start_number', min: 1 },
+                { key: 'due_days', type: 'number', labelKey: 'preferences.purchase.due_days', min: 0 },
+                { key: 'terms', type: 'textarea', labelKey: 'preferences.purchase.terms' },
+            ]
+        },
+    ],
+    purchase_return: [
+        { type: 'toggles', group: 'general_fields', titleKey: 'preferences.purchase.general_fields', items: returnGeneralFields },
+        { type: 'toggles', group: 'item_columns', titleKey: 'preferences.purchase.item_columns', items: returnItemColumns },
     ],
     item_management: [
         { type: 'toggles', group: 'visible_fields', titleKey: 'preferences.item_management.visible_fields', items: itemManagementFields },

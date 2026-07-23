@@ -808,6 +808,10 @@ const purchasePrefs = reactive(JSON.parse(JSON.stringify(user_preferences.value?
 if (!purchasePrefs.general_fields || typeof purchasePrefs.general_fields !== 'object') purchasePrefs.general_fields = {}
 if (!purchasePrefs.item_columns || typeof purchasePrefs.item_columns !== 'object') purchasePrefs.item_columns = {}
 if (purchasePrefs.item_columns.reserved_in === undefined) purchasePrefs.item_columns.reserved_in = true
+// Colour, size and header description are shown by default for backward compatibility.
+if (purchasePrefs.item_columns.colors === undefined) purchasePrefs.item_columns.colors = true
+if (purchasePrefs.item_columns.size === undefined) purchasePrefs.item_columns.size = true
+if (purchasePrefs.general_fields.description === undefined) purchasePrefs.general_fields.description = true
 const general_fields = purchasePrefs.general_fields
 const localColumns = purchasePrefs.item_columns
 const purchase_preferences = purchasePrefs
@@ -921,8 +925,8 @@ useFormGuard(form)
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-32" v-if="localColumns.batch">{{ t(spec_text) }}</th>
                             <th class="px-1 py-1 w-36" v-if="localColumns.expiry">{{ t('general.expire_date') }}</th>
-                            <th class="px-1 py-1 w-32">{{ t('item.color') }}</th>
-                            <th class="px-1 py-1 w-28">{{ t('item.size') }}</th>
+                            <th class="px-1 py-1 w-32" v-if="localColumns.colors">{{ t('item.color') }}</th>
+                            <th class="px-1 py-1 w-28" v-if="localColumns.size">{{ t('item.size') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-24" v-if="localColumns.on_hand">{{ t('general.on_hand') }}</th>
                             <th class="px-1 py-1 w-24" v-if="localColumns.reserved_in">{{ t('general.reserved_in') }}</th>
@@ -971,7 +975,7 @@ useFormGuard(form)
                                 popover="top-left"
                                 :error="form.errors?.[`item_list.${index}.expire_date`]"   />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td v-if="localColumns.colors" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
                                     v-model="item.color"
                                     :options="colorOptions"
@@ -999,7 +1003,7 @@ useFormGuard(form)
                                     </template>
                                 </NextSelect>
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td v-if="localColumns.size" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
                                     v-model="item.selected_size"
                                     :options="sizeOptions"
@@ -1101,9 +1105,11 @@ useFormGuard(form)
                             <td></td>
                             <!-- Item total centered across item column -->
                             <td class="text-center">{{ totalRows }}</td>
-                            <!-- Batch, Expiry blank -->
+                            <!-- Batch, Expiry, Colour, Size blank -->
                             <td v-if="localColumns.batch"></td>
                             <td v-if="localColumns.expiry"></td>
+                            <td v-if="localColumns.colors"></td>
+                            <td v-if="localColumns.size"></td>
                             <!-- Qty total centered -->
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
                             <!-- On hand blank -->
