@@ -306,7 +306,7 @@ class User extends Authenticatable
             'account' => true,
         ],
         'purchase_order' => [
-            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'store' => true],
+            'general_fields' => ['number' => true, 'date' => true, 'currency' => true, 'type' => false, 'warehouse' => true],
             'item_columns' => [
                 'packing' => false,
                 'colors' => false,

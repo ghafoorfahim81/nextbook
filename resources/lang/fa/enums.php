@@ -164,5 +164,11 @@ return [
         'duplicate_order' => 'سفارش تکراری',
         'other' => 'سایر',
     ],
+    'purchase_order_status' => [
+        'draft' => 'پیش‌نویس',
+        'posted' => 'ثبت شده',
+        'completed' => 'تکمیل شده',
+        'cancelled' => 'لغو شده',
+    ],
 ];
 

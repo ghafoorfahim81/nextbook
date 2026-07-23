@@ -34,6 +34,7 @@ class Purchase extends Model
     protected $fillable = [
         'number',
         'supplier_id',
+        'purchase_order_id',
         'date',
         'discount',
         'discount_type',
@@ -56,6 +57,7 @@ class Purchase extends Model
     {
         return [
             'supplier_id' => 'string',
+            'purchase_order_id' => 'string',
             'date' => 'date',
             'discount' => 'float',
             'bank_account_id' => 'string',
@@ -98,6 +100,11 @@ class Purchase extends Model
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Ledger\Ledger::class);
+    }
+
+    public function purchaseOrder(): BelongsTo
+    {
+        return $this->belongsTo(PurchaseOrder::class);
     }
 
     public function transaction(): HasOne

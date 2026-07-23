@@ -22,6 +22,7 @@ import NextDate from '@/Components/next/NextDatePicker.vue'
 import { useColors } from '@/composables/useColors';
 import { Trash2 } from 'lucide-vue-next';
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
+import PurchaseOrderPickerDialog from '@/Components/next/PurchaseOrderPickerDialog.vue'
 import { useLazyProps } from '@/composables/useLazyProps'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
 const { t } = useI18n();
@@ -45,6 +46,7 @@ const props = defineProps({
     user_preferences: {type: Object, required: true},
     bankAccounts: {type: Object, required: true},
     sizes: {type: [Array, Object], required: false, default: () => ([])},
+    purchaseOrderId: {type: String, default: null},
 })
 
 // Purchases bring new stock in, so any colour/size may be received.
@@ -102,6 +104,7 @@ const form = useForm({
     status: '',
     warehouse_id: '',
     selected_warehouse: '',
+    purchase_order_id: '',
     item_list:[],
     items: Array.from({ length: 6 }, buildEmptyRow),
     attachments: [],
@@ -275,6 +278,91 @@ const handleResetPayment = () => {
         note: '',
     }
 }
+// Purchase Order conversion: selecting a supplier offers that supplier's posted,
+// not-yet-completed purchase orders for autofill via a picker dialog.
+const pickerOpen = ref(false)
+const eligiblePurchaseOrders = ref([])
+const skipEligibilityCheck = ref(false)
+
+const loadEligiblePurchaseOrders = async (supplierId) => {
+    if (!supplierId) return
+    try {
+        const response = await axios.get(route('purchase-orders.eligible'), { params: { supplier_id: supplierId } })
+        eligiblePurchaseOrders.value = response.data?.purchase_orders || []
+        if (eligiblePurchaseOrders.value.length > 0) {
+            pickerOpen.value = true
+        }
+    } catch (error) {
+        console.error('Failed to load eligible purchase orders', error)
+    }
+}
+
+const applyPurchaseOrderToForm = (purchaseOrderId, payload) => {
+    const { purchase_order: header, items } = payload
+
+    skipEligibilityCheck.value = true
+    form.purchase_order_id = purchaseOrderId
+    form.supplier_id = header.supplier_id
+    form.selected_ledger = props.ledgers?.data?.find((ledger) => ledger.id === header.supplier_id)
+        || { id: header.supplier_id, name: header.supplier_name }
+
+    if (header.currency_id) {
+        const currency = props.currencies?.data?.find((c) => c.id === header.currency_id)
+        if (currency) {
+            form.selected_currency = currency
+            form.currency_id = currency.id
+        }
+    }
+    if (header.rate) form.rate = header.rate
+    if (header.warehouse_id) {
+        const warehouse = props.warehouses?.data?.find((w) => w.id === header.warehouse_id)
+        if (warehouse) {
+            form.selected_warehouse = warehouse
+            form.warehouse_id = warehouse.id
+        }
+    }
+    form.discount = header.discount || ''
+    form.discount_type = header.discount_type || 'percentage'
+    form.description = header.note || ''
+
+    form.items = items.map((item) => ({
+        item_id: item.item_id,
+        selected_item: { id: item.item_id, name: item.item_name },
+        quantity: item.quantity,
+        unit_measure_id: item.unit_measure_id,
+        selected_measure: { id: item.unit_measure_id, name: item.unit_measure_name, unit: 1 },
+        available_measures: [],
+        batch: item.batch || '',
+        selected_batch: null,
+        // Carry the ordered colour/size straight onto the purchase line.
+        color: item.color || null,
+        size_id: item.size_id || null,
+        selected_size: item.size_id ? { id: item.size_id, name: item.size_name } : null,
+        expire_date: item.expire_date || '',
+        unit_price: item.unit_price,
+        base_unit_price: item.unit_price,
+        on_hand: '',
+        reserved_out: '',
+        reserved_in: '',
+        available: '',
+        item_discount: item.discount || '',
+        free: item.free || '',
+        tax: '',
+    }))
+
+    setTimeout(() => { skipEligibilityCheck.value = false }, 0)
+}
+
+const handlePurchaseOrderPicked = async (purchaseOrderId) => {
+    pickerOpen.value = false
+    try {
+        const response = await axios.get(route('purchase-orders.for-conversion', purchaseOrderId))
+        applyPurchaseOrderToForm(purchaseOrderId, response.data)
+    } catch (error) {
+        console.error('Failed to load purchase order for conversion', error)
+    }
+}
+
 const handleSelectChange = (field, value) => {
 
     if(field === 'currency_id') {
@@ -286,6 +374,10 @@ const handleSelectChange = (field, value) => {
         }
     }
     form[field] = value.id;
+
+    if (field === 'supplier_id' && !skipEligibilityCheck.value) {
+        loadEligiblePurchaseOrders(value.id)
+    }
 };
 
 
@@ -410,6 +502,10 @@ onMounted(() => {
     // Auto-generate bill number: latest + 1
     ;(async () => {
     })()
+
+    if (props.purchaseOrderId) {
+        handlePurchaseOrderPicked(props.purchaseOrderId)
+    }
 })
 onUnmounted(() => {
     if (sidebar) {
@@ -746,6 +842,12 @@ useFormGuard(form)
             pref-group="purchase"
             :prefs="purchasePrefs"
             :title="t('preferences.tabs.purchase')"
+        />
+        <PurchaseOrderPickerDialog
+            :open="pickerOpen"
+            :purchase-orders="eligiblePurchaseOrders"
+            @update:open="(value) => pickerOpen = value"
+            @select="handlePurchaseOrderPicked"
         />
         <form @submit.prevent="handleSubmitAction(false)">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative ">

@@ -202,6 +202,11 @@ const reversePurchase = (reason) => {
                 <legend class="px-2 flex items-center gap-1.5">
                     <span class="text-sm font-semibold text-violet-500">{{ t('purchase.purchase') }} #{{ purchaseData.number }}</span>
                     <Badge :class="statusBadgeClasses">{{ getStatusLabel(purchaseData.status) }}</Badge>
+                    <a v-if="purchaseData.purchase_order_id" :href="route('purchase-orders.show', purchaseData.purchase_order_id)">
+                        <Badge class="border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300 hover:underline">
+                            {{ t('purchase_order.purchase_order') }} #{{ purchaseData.purchase_order_number }}
+                        </Badge>
+                    </a>
                 </legend>
                 <div class="mb-4 flex items-center gap-2">
                     <FileText class="h-5 w-5 text-violet-500" />
@@ -223,6 +228,14 @@ const reversePurchase = (reason) => {
                     <div class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground"><DollarSign class="h-3 w-3" />{{ t('general.total') }}</div>
                         <div class="text-sm font-medium text-foreground">{{ currencySymbol }} {{ formattedGrandTotal }}</div>
+                    </div>
+                    <div v-if="purchaseData.purchase_order_id" class="space-y-1.5">
+                        <div class="flex items-center gap-2 text-xs text-muted-foreground"><FileCheck class="h-3 w-3" />{{ t('purchase_order.purchase_order') }}</div>
+                        <div class="text-sm font-medium text-foreground">
+                            <a :href="route('purchase-orders.show', purchaseData.purchase_order_id)" class="text-violet-600 underline dark:text-violet-400">
+                                #{{ purchaseData.purchase_order_number }}
+                            </a>
+                        </div>
                     </div>
                     <div class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground"><User class="h-3 w-3" />{{ t('general.created_by') }}</div>

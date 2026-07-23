@@ -61,6 +61,7 @@
   },
   "purchase": {
     "purchase": "خرید",
+    "purchase_order": "سفارش خرید",
     "purchase_return": "برگشت خرید"
   },
   "sale": {
