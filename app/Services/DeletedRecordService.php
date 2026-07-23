@@ -33,11 +33,13 @@ use App\Models\Payment\Payment;
 use App\Models\Purchase\Purchase;
 use App\Models\Purchase\PurchaseItem;
 use App\Models\Purchase\PurchaseOrder;
+use App\Models\Purchase\PurchaseQuotation;
 use App\Models\Purchase\PurchaseReturn;
 use App\Models\Receipt\Receipt;
 use App\Models\Sale\Sale;
 use App\Models\Sale\SaleItem;
 use App\Models\Sale\SaleOrder;
+use App\Models\Sale\SaleQuotation;
 use App\Models\Sale\SaleReturn;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
@@ -319,6 +321,20 @@ class DeletedRecordService
             'sale_orders' => [
                 'label' => 'Sale Orders',
                 'model' => SaleOrder::class,
+                'title' => fn (Model $record) => $record->number ?: $record->note ?: $record->id,
+                'restore' => fn (Model $record) => $this->restoreSimpleRelations($record, ['items']),
+                'force_delete' => fn (Model $record) => $this->forceDeleteSimpleRelations($record, ['items']),
+            ],
+            'purchase_quotations' => [
+                'label' => 'Purchase Quotations',
+                'model' => PurchaseQuotation::class,
+                'title' => fn (Model $record) => $record->number ?: $record->note ?: $record->id,
+                'restore' => fn (Model $record) => $this->restoreSimpleRelations($record, ['items']),
+                'force_delete' => fn (Model $record) => $this->forceDeleteSimpleRelations($record, ['items']),
+            ],
+            'sale_quotations' => [
+                'label' => 'Sale Quotations',
+                'model' => SaleQuotation::class,
                 'title' => fn (Model $record) => $record->number ?: $record->note ?: $record->id,
                 'restore' => fn (Model $record) => $this->restoreSimpleRelations($record, ['items']),
                 'force_delete' => fn (Model $record) => $this->forceDeleteSimpleRelations($record, ['items']),

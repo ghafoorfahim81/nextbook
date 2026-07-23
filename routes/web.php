@@ -254,6 +254,26 @@ Route::middleware([
         ->name('sale-orders.force-delete')
         ->withTrashed();
 
+    // Purchase Quotations (standalone quotation documents)
+    Route::get('/purchase-quotations/{purchase_quotation}/print', [\App\Http\Controllers\Purchase\PurchaseQuotationController::class, 'print'])->name('purchase-quotations.print');
+    Route::resource('/purchase-quotations', \App\Http\Controllers\Purchase\PurchaseQuotationController::class);
+    Route::post('/purchase-quotations/{purchase_quotation}/post', [\App\Http\Controllers\Purchase\PurchaseQuotationController::class, 'post'])->name('purchase-quotations.post');
+    Route::post('/purchase-quotations/{purchase_quotation}/cancel', [\App\Http\Controllers\Purchase\PurchaseQuotationController::class, 'cancel'])->name('purchase-quotations.cancel');
+    Route::patch('/purchase-quotations/{purchase_quotation}/restore', [\App\Http\Controllers\Purchase\PurchaseQuotationController::class, 'restore'])->name('purchase-quotations.restore')->withTrashed();
+    Route::delete('/purchase-quotations/{purchase_quotation}/force-delete', [\App\Http\Controllers\Purchase\PurchaseQuotationController::class, 'forceDelete'])
+        ->name('purchase-quotations.force-delete')
+        ->withTrashed();
+
+    // Sale Quotations (standalone quotation documents)
+    Route::get('/sale-quotations/{sale_quotation}/print', [\App\Http\Controllers\Sale\SaleQuotationController::class, 'print'])->name('sale-quotations.print');
+    Route::resource('/sale-quotations', \App\Http\Controllers\Sale\SaleQuotationController::class);
+    Route::post('/sale-quotations/{sale_quotation}/post', [\App\Http\Controllers\Sale\SaleQuotationController::class, 'post'])->name('sale-quotations.post');
+    Route::post('/sale-quotations/{sale_quotation}/cancel', [\App\Http\Controllers\Sale\SaleQuotationController::class, 'cancel'])->name('sale-quotations.cancel');
+    Route::patch('/sale-quotations/{sale_quotation}/restore', [\App\Http\Controllers\Sale\SaleQuotationController::class, 'restore'])->name('sale-quotations.restore')->withTrashed();
+    Route::delete('/sale-quotations/{sale_quotation}/force-delete', [\App\Http\Controllers\Sale\SaleQuotationController::class, 'forceDelete'])
+        ->name('sale-quotations.force-delete')
+        ->withTrashed();
+
 
     // Company routes
     Route::get('/company', [\App\Http\Controllers\CompanyController::class, 'show'])
