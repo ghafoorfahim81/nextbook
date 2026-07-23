@@ -223,6 +223,14 @@ class RolePermissionSeeder extends Seeder
             'purchase_returns.approve',
             'purchase_returns.print',
 
+            // Purchase Orders
+            'purchase_orders.view_any',
+            'purchase_orders.view',
+            'purchase_orders.create',
+            'purchase_orders.update',
+            'purchase_orders.approve',
+            'purchase_orders.print',
+
             // Sales
             'sales.view_any',
             'sales.view',

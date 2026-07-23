@@ -234,6 +234,16 @@ Route::middleware([
         ->name('purchase-returns.force-delete')
         ->withTrashed();
 
+    Route::get('/purchase-orders/eligible', [\App\Http\Controllers\Purchase\PurchaseOrderController::class, 'eligibleForLedger'])->name('purchase-orders.eligible');
+    Route::get('/purchase-orders/{purchase_order}/for-conversion', [\App\Http\Controllers\Purchase\PurchaseOrderController::class, 'forConversion'])->name('purchase-orders.for-conversion');
+    Route::resource('/purchase-orders', \App\Http\Controllers\Purchase\PurchaseOrderController::class);
+    Route::post('/purchase-orders/{purchase_order}/post', [\App\Http\Controllers\Purchase\PurchaseOrderController::class, 'post'])->name('purchase-orders.post');
+    Route::post('/purchase-orders/{purchase_order}/cancel', [\App\Http\Controllers\Purchase\PurchaseOrderController::class, 'cancel'])->name('purchase-orders.cancel');
+    Route::patch('/purchase-orders/{purchase_order}/restore', [\App\Http\Controllers\Purchase\PurchaseOrderController::class, 'restore'])->name('purchase-orders.restore')->withTrashed();
+    Route::delete('/purchase-orders/{purchase_order}/force-delete', [\App\Http\Controllers\Purchase\PurchaseOrderController::class, 'forceDelete'])
+        ->name('purchase-orders.force-delete')
+        ->withTrashed();
+
     Route::get('/sale-orders/eligible', [\App\Http\Controllers\Sale\SaleOrderController::class, 'eligibleForLedger'])->name('sale-orders.eligible');
     Route::get('/sale-orders/{sale_order}/for-conversion', [\App\Http\Controllers\Sale\SaleOrderController::class, 'forConversion'])->name('sale-orders.for-conversion');
     Route::resource('/sale-orders', \App\Http\Controllers\Sale\SaleOrderController::class);

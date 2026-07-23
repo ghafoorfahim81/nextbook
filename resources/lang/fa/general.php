@@ -24,6 +24,7 @@ return [
         'owner' => 'مالک',
         'payment' => 'پرداخت',
         'purchase' => 'خرید',
+        'purchase_order' => 'سفارش خرید',
         'purchase_return' => 'برگشت خرید',
         'receipt' => 'رسید',
         'role' => 'نقش',

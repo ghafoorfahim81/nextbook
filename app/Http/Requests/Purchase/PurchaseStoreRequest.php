@@ -22,6 +22,7 @@ class PurchaseStoreRequest extends FormRequest
         return [
             'number' => ['required', 'integer', 'min:1'],
             'supplier_id' => ['required', 'string', 'exists:ledgers,id'],
+            'purchase_order_id' => ['nullable', 'string', 'exists:purchase_orders,id'],
             'date' => ['required', 'date'],
             'transaction_total' => ['required', 'numeric'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],

@@ -61,6 +61,7 @@
   },
   "purchase": {
     "purchase": "Purchase",
+    "purchase_order": "Purchase Order",
     "purchase_return": "Purchase Return"
   },
   "sale": {

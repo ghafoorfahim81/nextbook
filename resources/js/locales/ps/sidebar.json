@@ -43,6 +43,7 @@
   },
   "purchase": {
     "purchase": "پېرود",
+    "purchase_order": "د پیرودنې امر",
     "purchase_return": "د پېرود ستنول"
   },
   "sale": {

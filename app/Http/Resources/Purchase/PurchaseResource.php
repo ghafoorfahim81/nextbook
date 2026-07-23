@@ -25,6 +25,8 @@ class PurchaseResource extends JsonResource
             'supplier_id' => $this->supplier_id,
             'supplier' => $this->whenLoaded('supplier'),
             'supplier_name' => $this->supplier?->name,
+            'purchase_order_id' => $this->purchase_order_id,
+            'purchase_order_number' => $this->whenLoaded('purchaseOrder', fn () => $this->purchaseOrder?->number),
             'date' => $dateConversionService->toDisplay($this->date),
             'due_date' => $dateConversionService->toDisplay($this->due_date),
             'updated_at' => $dateConversionService->toDisplay($this->updated_at?->toDateString()),

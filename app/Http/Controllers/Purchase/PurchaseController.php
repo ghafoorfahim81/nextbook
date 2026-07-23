@@ -7,6 +7,8 @@ use App\Http\Requests\Purchase\PurchaseStoreRequest;
 use App\Http\Requests\Purchase\PurchaseUpdateRequest;
 use App\Http\Resources\Purchase\PurchaseResource;
 use App\Models\Purchase\Purchase;
+use App\Models\Purchase\PurchaseOrder;
+use App\Enums\PurchaseOrderStatus;
 use App\Services\BillAllocationService;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
@@ -89,6 +91,7 @@ class PurchaseController extends Controller
         return inertia('Purchase/Purchases/Create', [
             'purchaseNumber' => $purchaseNumber,
             'bankAccounts' => $bankAccounts,
+            'purchaseOrderId' => $request->query('purchase_order_id'),
         ]);
     }
 
@@ -111,6 +114,19 @@ class PurchaseController extends Controller
             $validated['status'] = $documentStatus;
 
             $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+
+            if (!empty($validated['purchase_order_id'])) {
+                $purchaseOrder = PurchaseOrder::where('id', $validated['purchase_order_id'])->lockForUpdate()->first();
+
+                abort_unless(
+                    $purchaseOrder
+                        && $purchaseOrder->status === PurchaseOrderStatus::POSTED->value
+                        && $purchaseOrder->supplier_id === $validated['supplier_id'],
+                    422,
+                    'The selected purchase order is no longer available for conversion.'
+                );
+            }
+
             $purchase = Purchase::create($validated);
 
             if ($request->hasFile('attachments')) {
@@ -295,6 +311,9 @@ class PurchaseController extends Controller
 
             // Create accounting transactions
 
+            if ($documentStatus === TransactionStatus::POSTED->value) {
+                $this->markPurchaseOrderCompleted($validated['purchase_order_id'] ?? null);
+            }
 
             return $purchase;
         });
@@ -314,6 +333,7 @@ class PurchaseController extends Controller
             'items.item',
             'items.unitMeasure',
             'supplier',
+            'purchaseOrder:id,number',
             'transaction.currency',
             'transaction.originalTransaction',
             'transaction.reversalTransaction',
@@ -848,9 +868,27 @@ class PurchaseController extends Controller
                 'status' => TransactionStatus::POSTED->value,
                 'updated_by' => auth()->id(),
             ]);
+
+            $this->markPurchaseOrderCompleted($purchase->purchase_order_id);
         });
 
         return redirect()->back()->with('success', __('general.updated_successfully', ['resource' => __('general.resource.purchase')]));
+    }
+
+    /**
+     * When a Purchase created from a Purchase Order gets posted, the order is fully consumed
+     * (whole-order conversion only) so it flips to Completed to prevent reuse.
+     */
+    private function markPurchaseOrderCompleted(?string $purchaseOrderId): void
+    {
+        if (!$purchaseOrderId) {
+            return;
+        }
+
+        PurchaseOrder::where('id', $purchaseOrderId)->update([
+            'status' => PurchaseOrderStatus::COMPLETED->value,
+            'updated_by' => auth()->id(),
+        ]);
     }
 
     public function reverse(Request $request, Purchase $purchase, TransactionService $transactionService)
