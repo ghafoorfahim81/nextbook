@@ -1,20 +1,32 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import { useFormGuard } from '@/composables/useFormGuard'
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, reactive, computed, watch, onMounted } from 'vue';
 import axios from 'axios'
-import { useForm } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
+import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { useI18n } from 'vue-i18n';
 import { useColors } from '@/composables/useColors';
 
 const { t } = useI18n();
 const { resolveColor } = useColors();
+const page = usePage();
+
+// Reactive copy of the purchase_return preferences so the settings panel and form stay in sync.
+const userPreferences = computed(() => page.props.user_preferences ?? {});
+const returnPrefs = reactive(JSON.parse(JSON.stringify(userPreferences.value?.purchase_return ?? {})));
+if (!returnPrefs.general_fields || typeof returnPrefs.general_fields !== 'object') returnPrefs.general_fields = {};
+if (!returnPrefs.item_columns || typeof returnPrefs.item_columns !== 'object') returnPrefs.item_columns = {};
+if (returnPrefs.general_fields.description === undefined) returnPrefs.general_fields.description = true;
+const general_fields = returnPrefs.general_fields;
+const localColumns = returnPrefs.item_columns;
+const showPreferencesPanel = ref(false);
 
 const props = defineProps({
     purchaseReturnNumber: { type: [String, Number], required: true },
@@ -108,7 +120,19 @@ useFormGuard(form)
 
 <template>
     <AppLayout :title="t('general.create', { name: t('purchase_return.purchase_return') })">
-        <FormPageToolbar back-route="purchase-returns.index" module="purchase_returns" />
+        <FormPageToolbar
+            back-route="purchase-returns.index"
+            module="purchase_returns"
+            show-preferences
+            @preferences="showPreferencesPanel = true"
+        />
+        <FormPreferencesPanel
+            module="purchase_return"
+            v-model:open="showPreferencesPanel"
+            pref-group="purchase_return"
+            :prefs="returnPrefs"
+            :title="t('general.settings')"
+        />
         <form @submit.prevent="handleSubmit">
             <div class="mb-5 rounded-xl border border-violet-500 p-4 shadow-sm relative">
                 <div class="absolute -top-3 ltr:left-3 rtl:right-3 bg-card px-2 text-sm font-semibold text-muted-foreground text-violet-500">
@@ -129,8 +153,8 @@ useFormGuard(form)
                         :searchable="true"
                         :search-fields="['number', 'supplier_name', 'label']"
                     />
-                    <NextInput is-required type="number" :error="form.errors?.number" v-model="form.number" :label="t('general.bill_number')" />
-                    <NextDate v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
+                    <NextInput v-if="general_fields.number !== false" is-required type="number" :error="form.errors?.number" v-model="form.number" :label="t('general.bill_number')" />
+                    <NextDate v-if="general_fields.date !== false" v-model="form.date" :current-date="true" :error="form.errors?.date" :placeholder="t('general.enter', { text: t('general.date') })" :label="t('general.date')" />
                     <NextSelect
                         :options="reasons"
                         v-model="form.reason"
@@ -140,7 +164,7 @@ useFormGuard(form)
                         :floating-text="t('purchase_return.reason')"
                         :error="form.errors?.reason"
                     />
-                    <div class="md:col-span-2">
+                    <div class="md:col-span-2" v-if="general_fields.description !== false">
                         <NextTextarea v-model="form.description" :label="t('general.description')" />
                     </div>
                 </div>
@@ -158,9 +182,9 @@ useFormGuard(form)
                         <tr class="rounded-xl text-muted-foreground font-semibold text-sm text-violet-500">
                             <th class="px-2 py-2 w-8 text-center">#</th>
                             <th class="px-2 py-2 w-56 text-left">{{ t('item.item') }}</th>
-                            <th class="px-2 py-2 w-28">{{ t('general.batch') }}</th>
-                            <th class="px-2 py-2 w-28">{{ t('item.color') }}</th>
-                            <th class="px-2 py-2 w-24">{{ t('item.size') }}</th>
+                            <th class="px-2 py-2 w-28" v-if="localColumns.batch">{{ t('general.batch') }}</th>
+                            <th class="px-2 py-2 w-28" v-if="localColumns.colors">{{ t('item.color') }}</th>
+                            <th class="px-2 py-2 w-24" v-if="localColumns.size">{{ t('item.size') }}</th>
                             <th class="px-2 py-2 w-24 text-right">{{ t('purchase_return.original_quantity') }}</th>
                             <th class="px-2 py-2 w-24 text-right">{{ t('purchase_return.returned_quantity') }}</th>
                             <th class="px-2 py-2 w-24 text-right">{{ t('purchase_return.remaining_quantity') }}</th>
@@ -177,9 +201,9 @@ useFormGuard(form)
                                 <div class="font-medium">{{ row.item_name }}</div>
                                 <div class="text-xs text-muted-foreground">{{ row.warehouse_name }}</div>
                             </td>
-                            <td class="px-2 py-2">{{ row.batch || '-' }}</td>
-                            <td class="px-2 py-2"><span v-if="resolveColor(row.color)" class="flex items-center gap-1.5"><span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: resolveColor(row.color).hex }" />{{ resolveColor(row.color).name }}</span><span v-else>-</span></td>
-                            <td class="px-2 py-2">{{ row.size_name || '-' }}</td>
+                            <td class="px-2 py-2" v-if="localColumns.batch">{{ row.batch || '-' }}</td>
+                            <td class="px-2 py-2" v-if="localColumns.colors"><span v-if="resolveColor(row.color)" class="flex items-center gap-1.5"><span class="h-3 w-3 shrink-0 rounded-full border border-muted-foreground/40" :style="{ backgroundColor: resolveColor(row.color).hex }" />{{ resolveColor(row.color).name }}</span><span v-else>-</span></td>
+                            <td class="px-2 py-2" v-if="localColumns.size">{{ row.size_name || '-' }}</td>
                             <td class="px-2 py-2 text-right">{{ row.original_quantity }}</td>
                             <td class="px-2 py-2 text-right">{{ row.returned_quantity }}</td>
                             <td class="px-2 py-2 text-right">{{ row.remaining_quantity }}</td>

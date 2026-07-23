@@ -58,6 +58,10 @@ const salePrefs = reactive(JSON.parse(JSON.stringify(user_preferences.value?.sal
 if (!salePrefs.general_fields || typeof salePrefs.general_fields !== 'object') salePrefs.general_fields = {}
 if (!salePrefs.item_columns || typeof salePrefs.item_columns !== 'object') salePrefs.item_columns = {}
 if (salePrefs.item_columns.reserved_out === undefined) salePrefs.item_columns.reserved_out = true
+// Colour, size and header description are shown by default for backward compatibility.
+if (salePrefs.item_columns.colors === undefined) salePrefs.item_columns.colors = true
+if (salePrefs.item_columns.size === undefined) salePrefs.item_columns.size = true
+if (salePrefs.general_fields.description === undefined) salePrefs.general_fields.description = true
 const general_fields = salePrefs.general_fields
 const localColumns = salePrefs.item_columns
 const sale_preferences = salePrefs
@@ -1094,8 +1098,8 @@ useFormGuard(form)
                             <th class="px-1 py-1 w-40 min-w-64">{{ t('item.item') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-32" v-if="localColumns.batch">{{ t(spec_text) }}</th>
                             <th class="px-1 py-1 w-36" v-if="localColumns.expiry">{{ t('general.expire_date') }}</th>
-                            <th class="px-1 py-1 w-32">{{ t('item.color') }}</th>
-                            <th class="px-1 py-1 w-28">{{ t('item.size') }}</th>
+                            <th class="px-1 py-1 w-32" v-if="localColumns.colors">{{ t('item.color') }}</th>
+                            <th class="px-1 py-1 w-28" v-if="localColumns.size">{{ t('item.size') }}</th>
                             <th class="px-1 py-1 w-16">{{ t('general.qty') }} <span class="text-red-500">*</span></th>
                             <th class="px-1 py-1 w-24" v-if="localColumns.on_hand">{{ t('general.on_hand') }}</th>
                             <th class="px-1 py-1 w-24" v-if="localColumns.reserved_out">{{ t('general.reserved_out') }}</th>
@@ -1152,7 +1156,7 @@ useFormGuard(form)
                                  disabled='true'
                                 :error="form.errors?.[`item_list.${index}.expire_date`]"   />
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td v-if="localColumns.colors" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
                                     v-model="item.color"
                                     :options="variantColorOptions(index)"
@@ -1181,7 +1185,7 @@ useFormGuard(form)
                                     </template>
                                 </NextSelect>
                             </td>
-                            <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
+                            <td v-if="localColumns.size" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                                 <NextSelect
                                     v-model="item.selected_size"
                                     :options="variantSizeOptions(index)"
@@ -1292,8 +1296,8 @@ useFormGuard(form)
                             <!-- Batch, Expiry, Colour, Size blank -->
                             <td v-if="localColumns.batch"></td>
                             <td v-if="localColumns.expiry"></td>
-                            <td></td>
-                            <td></td>
+                            <td v-if="localColumns.colors"></td>
+                            <td v-if="localColumns.size"></td>
                             <!-- Qty total centered -->
                             <td class="text-center">{{ totalQuantity || 0 }}</td>
                             <!-- On hand blank -->
