@@ -91,6 +91,10 @@ Route::middleware([
     Route::delete('/categories/{category}/force-delete', [\App\Http\Controllers\Administration\CategoryController::class, 'forceDelete'])
         ->name('categories.force-delete')
         ->withTrashed();
+    Route::resource('/customer-groups', \App\Http\Controllers\Administration\CustomerGroupController::class)
+        ->except(['create', 'edit']);
+    Route::resource('/payment-terms', \App\Http\Controllers\Administration\PaymentTermController::class)
+        ->except(['create', 'edit']);
     Route::resource('/warehouses', \App\Http\Controllers\Administration\WarehouseController::class);
     Route::patch('/warehouses/{warehouse}/restore', [\App\Http\Controllers\Administration\WarehouseController::class, 'restore'])->name('warehouses.restore')->withTrashed();
     Route::delete('/warehouses/{warehouse}/force-delete', [\App\Http\Controllers\Administration\WarehouseController::class, 'forceDelete'])

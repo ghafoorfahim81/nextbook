@@ -1,1 +1,12 @@
-﻿{}
+﻿{
+  "customer_group": "د پېرودونکو ډله",
+  "payment_term": "د تادیې شرط",
+  "country": "هېواد",
+  "province": "ولایت",
+  "whatsapp_number": "د واټس‌اپ شمېره",
+  "credit_limit": "د پور حد",
+  "credit_limit_status": "د پور حد حالت",
+  "credit_limit_block": "بند",
+  "credit_limit_indicate": "خبرتیا",
+  "discount": "تخفیف"
+}

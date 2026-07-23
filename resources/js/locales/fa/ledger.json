@@ -9,5 +9,15 @@
         "customer": "مشتری",
         "customers": "مشتریان"
     },
-    "contact_person": "شخصی ارتباطی"
+    "contact_person": "شخصی ارتباطی",
+    "customer_group": "گروه مشتری",
+    "payment_term": "شرایط پرداخت",
+    "country": "کشور",
+    "province": "ولایت",
+    "whatsapp_number": "شماره واتساپ",
+    "credit_limit": "حد اعتبار",
+    "credit_limit_status": "وضعیت حد اعتبار",
+    "credit_limit_block": "مسدود",
+    "credit_limit_indicate": "نمایش",
+    "discount": "تخفیف"
 }

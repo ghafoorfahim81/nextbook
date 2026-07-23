@@ -29,6 +29,8 @@
   },
   "administration": {
     "category": "Category",
+    "customer_group": "Customer Group",
+    "payment_term": "Payment Term",
     "currency": "Currency",
     "currency_rate_update": "Currency Rate Updates",
     "unit_measure": "Unit Measure",

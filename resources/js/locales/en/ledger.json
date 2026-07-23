@@ -9,5 +9,15 @@
         "customer": "Customer",
         "customers": "Customers"
     },
-    "contact_person": "Contact Person"
+    "contact_person": "Contact Person",
+    "customer_group": "Customer Group",
+    "payment_term": "Payment Term",
+    "country": "Country",
+    "province": "Province",
+    "whatsapp_number": "WhatsApp Number",
+    "credit_limit": "Credit Limit",
+    "credit_limit_status": "Credit Limit Status",
+    "credit_limit_block": "Block",
+    "credit_limit_indicate": "Indicate",
+    "discount": "Discount"
 }

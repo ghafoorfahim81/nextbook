@@ -14,6 +14,10 @@ use App\Models\Account\Account;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Branch;
+use App\Models\Administration\Country;
+use App\Models\Administration\CustomerGroup;
+use App\Models\Administration\PaymentTerm;
+use App\Models\Administration\Province;
 use App\Http\Resources\Purchase\PurchaseResource;
 use App\Http\Resources\Payment\PaymentResource;
 use Illuminate\Http\Request;
@@ -53,7 +57,7 @@ class SupplierController extends Controller
         $suppliers = Ledger::search($request->query('search'))
             ->where('type', $type) // Filter by type
             ->filter($filters)
-            ->with(['currency', 'branch'])
+            ->with(['currency', 'branch', 'group', 'country', 'province'])
             ->withStatementTotals()
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -83,6 +87,11 @@ class SupplierController extends Controller
         return inertia('Ledgers/Suppliers/Create', [
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
             'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
+            'customerGroups' => CustomerGroup::query()->orderBy('name_en')->get(),
+            'paymentTerms' => PaymentTerm::query()->orderBy('name')->get(),
+            'countries' => Country::query()->orderBy('name_en')->get(),
+            'provinces' => Province::query()->orderBy('name_en')->get(),
+            'nextCode' => $this->nextCode(),
             'accountTypes' => [],
         ]);
     }
@@ -94,11 +103,12 @@ class SupplierController extends Controller
     {
         $validated = $request->validated();
         $validated['type'] = 'supplier';
+        $validated['code'] = $validated['code'] ?: $this->nextCode();
         $validated['is_active'] = $validated['is_active'] ?? true;
         $ledger = Ledger::create($validated);
         $glAccounts = Cache::get('gl_accounts');
         $transactionService = app(TransactionService::class);
-        if ($validated['opening_currency_id'] && $validated['amount'] && $validated['amount'] > 0) {
+        if ($validated['currency_id'] && $validated['amount'] && $validated['amount'] > 0) {
 
             $equityId = $glAccounts['opening-balance-equity'];
             $apId = $glAccounts['account-payable'];
@@ -107,7 +117,7 @@ class SupplierController extends Controller
 
             $transaction = $transactionService->post(
                 header: [
-                    'currency_id' => $validated['opening_currency_id'],
+                    'currency_id' => $validated['currency_id'],
                     'rate' => (float) $validated['rate'],
                     'date' => now()->toDateString(),
                     'reference_type' => Ledger::class,
@@ -116,12 +126,12 @@ class SupplierController extends Controller
                 ],
                 lines: [
                 ['account_id' => $equityId, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for supplier ' . $ledger->name,
-                'remark_fa' => 'موجودی اولیه برای تامین کننده ' . $ledger->name,
-                'remark_ps' =>'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
+                'remark_fa' => 'Ù…ÙˆØ¬ÙˆØ¯ÛŒ Ø§ÙˆÙ„ÛŒÙ‡ Ø¨Ø±Ø§ÛŒ ØªØ§Ù…ÛŒÙ† Ú©Ù†Ù†Ø¯Ù‡ ' . $ledger->name,
+                'remark_ps' =>'Ø¯'. ' '. $ledger->name.' '.'Ø¯ Ù¾Ø±Ø§Ù†ÛŒØ³ØªÙ„Ùˆ Ø¨ÛŒÙ„Ø§Ù†Ø³ ',
                 ],
                 ['account_id' => $apId, 'ledger_id' => $ledger->id, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for supplier ' . $ledger->name,
-                'remark_fa' => 'موجودی اولیه برای تامین کننده ' . $ledger->name,
-                'remark_ps' =>'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
+                'remark_fa' => 'Ù…ÙˆØ¬ÙˆØ¯ÛŒ Ø§ÙˆÙ„ÛŒÙ‡ Ø¨Ø±Ø§ÛŒ ØªØ§Ù…ÛŒÙ† Ú©Ù†Ù†Ø¯Ù‡ ' . $ledger->name,
+                'remark_ps' =>'Ø¯'. ' '. $ledger->name.' '.'Ø¯ Ù¾Ø±Ø§Ù†ÛŒØ³ØªÙ„Ùˆ Ø¨ÛŒÙ„Ø§Ù†Ø³ ',
                 ],
             ]);
             $transaction->opening()->create([
@@ -146,6 +156,12 @@ class SupplierController extends Controller
     {
         $supplier->load([
             'currency',
+            'group',
+            'paymentTerm',
+            'country',
+            'province',
+            'createdBy',
+            'updatedBy',
             'opening',
             'opening.transaction.currency',
             'opening.transaction.lines',
@@ -240,9 +256,14 @@ class SupplierController extends Controller
      */
     public function edit(Request $request, Ledger $supplier)
     {
-        $supplier->load(['currency', 'opening', 'opening.transaction.currency','opening.transaction.lines']);
+        $supplier->load(['currency', 'group', 'paymentTerm', 'country', 'province', 'opening', 'opening.transaction.currency', 'opening.transaction.lines']);
         return inertia('Ledgers/Suppliers/Edit', [
             'supplier' => new LedgerResource($supplier),
+            'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
+            'customerGroups' => CustomerGroup::query()->orderBy('name_en')->get(),
+            'paymentTerms' => PaymentTerm::query()->orderBy('name')->get(),
+            'countries' => Country::query()->orderBy('name_en')->get(),
+            'provinces' => Province::query()->orderBy('name_en')->get(),
         ]);
     }
 
@@ -333,7 +354,7 @@ class SupplierController extends Controller
         }
 
 
-        if ($validated['amount'] && $validated['amount'] > 0 && $validated['opening_currency_id'] && $validated['rate']) {  // Update existing opening balances
+        if ($validated['amount'] && $validated['amount'] > 0 && $validated['currency_id'] && $validated['rate']) {  // Update existing opening balances
             $glAccounts = Cache::get('gl_accounts');
             $equityId = $glAccounts['opening-balance-equity'];
             $apId = $glAccounts['account-payable'];
@@ -342,7 +363,7 @@ class SupplierController extends Controller
 
             $transaction = $transactionService->post(
                 header: [
-                    'currency_id' => $validated['opening_currency_id'],
+                    'currency_id' => $validated['currency_id'],
                     'rate' => (float) $validated['rate'],
                     'date' => now()->toDateString(),
                     'reference_type' => Ledger::class,
@@ -351,12 +372,12 @@ class SupplierController extends Controller
                 ],
                 lines: [
                     ['account_id' => $equityId, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for supplier ' . $supplier->name,
-                'remark_fa' => 'موجودی اولیه برای تامین کننده ' . $supplier->name,
-                'remark_ps' =>'د'. ' '. $supplier->name.' '.'د پرانیستلو بیلانس ',
+                'remark_fa' => 'Ù…ÙˆØ¬ÙˆØ¯ÛŒ Ø§ÙˆÙ„ÛŒÙ‡ Ø¨Ø±Ø§ÛŒ ØªØ§Ù…ÛŒÙ† Ú©Ù†Ù†Ø¯Ù‡ ' . $supplier->name,
+                'remark_ps' =>'Ø¯'. ' '. $supplier->name.' '.'Ø¯ Ù¾Ø±Ø§Ù†ÛŒØ³ØªÙ„Ùˆ Ø¨ÛŒÙ„Ø§Ù†Ø³ ',
                 ],
                 ['account_id' => $apId, 'debit' => 0, 'ledger_id' => $supplier->id, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for supplier ' . $supplier->name,
-                'remark_fa' => 'موجودی اولیه برای تامین کننده ' . $supplier->name,
-                'remark_ps' =>'د'. ' '. $supplier->name.' '.'د پرانیستلو بیلانس ',
+                'remark_fa' => 'Ù…ÙˆØ¬ÙˆØ¯ÛŒ Ø§ÙˆÙ„ÛŒÙ‡ Ø¨Ø±Ø§ÛŒ ØªØ§Ù…ÛŒÙ† Ú©Ù†Ù†Ø¯Ù‡ ' . $supplier->name,
+                'remark_ps' =>'Ø¯'. ' '. $supplier->name.' '.'Ø¯ Ù¾Ø±Ø§Ù†ÛŒØ³ØªÙ„Ùˆ Ø¨ÛŒÙ„Ø§Ù†Ø³ ',
                 ],
             ]);
 
@@ -479,5 +500,18 @@ class SupplierController extends Controller
             ],
             'rows' => $rows,
         ]);
+    }
+
+    protected function nextCode(): string
+    {
+        $latest = Ledger::query()
+            ->where('type', 'supplier')
+            ->where('branch_id', auth()->user()?->branch_id)
+            ->where('code', 'like', 'SUP-%')
+            ->max('code');
+
+        $number = $latest ? ((int) str_replace('SUP-', '', $latest)) + 1 : 1;
+
+        return 'SUP-' . str_pad((string) $number, 6, '0', STR_PAD_LEFT);
     }
 }

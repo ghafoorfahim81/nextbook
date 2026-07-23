@@ -605,6 +605,8 @@ const navMain = computed(() => [
         icon: SlidersHorizontal,
         items: [
             { title: t('sidebar.administration.category'), url: '/categories', permission: 'categories.view_any' },
+            { title: t('sidebar.administration.customer_group'), url: '/customer-groups', permission: 'customer_groups.view_any' },
+            { title: t('sidebar.administration.payment_term'), url: '/payment-terms', permission: 'payment_terms.view_any' },
             { title: t('sidebar.administration.currency'), url: '/currencies', permission: 'currencies.view_any' },
             { title: t('sidebar.administration.currency_rate_update'), url: '/currency-rate-updates', permission: 'currencies.view_any' },
             { title: t('sidebar.administration.unit_measure'), url: '/unit-measures', permission: 'unit_measures.view_any' },
