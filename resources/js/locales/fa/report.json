@@ -98,7 +98,12 @@
     "gross_profit": "سود ناخالص",
     "total_expenses": "مجموع مصارف",
     "net_profit": "سود خالص",
-    "expense_count": "مصارف"
+    "expense_count": "مصارف",
+    "current": "جاری (۰-۳۰)",
+    "days_31_60": "۳۱-۶۰ روز",
+    "days_61_90": "۶۱-۹۰ روز",
+    "days_90_plus": "۹۰+ روز",
+    "total_outstanding": "مجموع معوق"
   },
   "columns": {
     "no": "شماره",
@@ -177,7 +182,12 @@
     "reason": "دلیل",
     "unit_cost": "قیمت فی واحد",
     "total_cost": "مجموع قیمت",
-    "notes": "یادداشت"
+    "notes": "یادداشت",
+    "current": "جاری (۰-۳۰)",
+    "days_31_60": "۳۱-۶۰ روز",
+    "days_61_90": "۶۱-۹۰ روز",
+    "days_90_plus": "۹۰+ روز",
+    "total_outstanding": "مجموع معوق"
   },
   "view_types": {
     "general": "عمومی",
@@ -207,6 +217,14 @@
     "supplier_statement": {
       "label": "صورت‌حساب تأمین‌کننده",
       "description": "گردش‌ها و مانده‌های ثبت‌شده تأمین‌کننده."
+    },
+    "aged_receivables": {
+      "label": "مطالبات بر اساس سن",
+      "description": "مانده‌های معوق مشتریان بر اساس سن تا تاریخ انتخاب‌شده."
+    },
+    "aged_payables": {
+      "label": "بدهی‌ها بر اساس سن",
+      "description": "مانده‌های معوق تأمین‌کنندگان بر اساس سن تا تاریخ انتخاب‌شده."
     },
     "receipt_report": {
       "label": "گزارش رسید",

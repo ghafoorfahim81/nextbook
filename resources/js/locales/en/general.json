@@ -262,5 +262,11 @@
   "attachment_invalid_type": "Invalid file type. Supported types are: {extensions}.",
   "duplicate_item_detected": "Duplicate item detected",
   "duplicate_item_detected_description": "Item with {batchText} and {expiryText} already exists.",
-  "unselect": "Unselect"
+  "unselect": "Unselect",
+  "scan_barcode": "Scan barcode",
+  "scan_barcode_hint": "Enter adds a line · F2 focuses here · Ctrl+S saves",
+  "barcode_not_found": "No item found for barcode \"{code}\"",
+  "barcode_lookup_failed": "Barcode lookup failed",
+  "select_warehouse_first": "Select a warehouse first",
+  "select_ledger_first": "Select a customer or supplier first"
 }

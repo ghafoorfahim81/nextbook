@@ -90,6 +90,23 @@ const handleConfirmDialogClose = (value) => {
     confirmOpen.value = value
     if (!value) pendingAction.value = null
 }
+
+/**
+ * Programmatic "Save" that honours the confirm-before-save preference exactly like
+ * clicking the create button. Exposed so pages can trigger it from a keyboard
+ * shortcut (e.g. Ctrl+S) without bypassing the confirmation dialog.
+ */
+const submitCreate = () => {
+    if (isDisabled.value) return
+    if (confirmOnSave.value) {
+        pendingAction.value = 'create'
+        confirmOpen.value = true
+        return
+    }
+    runAction('create')
+}
+
+defineExpose({ submitCreate })
 </script>
 
 <template>

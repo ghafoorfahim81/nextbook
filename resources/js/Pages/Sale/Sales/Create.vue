@@ -20,7 +20,7 @@ import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import { useColors } from '@/composables/useColors'
-import { Trash2 } from 'lucide-vue-next';
+import { Trash2, ScanBarcode } from 'lucide-vue-next';
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { useLazyProps } from '@/composables/useLazyProps'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
@@ -1003,6 +1003,77 @@ const addRow = () => {
     })
 }
 
+/* ---------------- BARCODE SCAN & KEYBOARD SHORTCUTS ----------------
+ * A hardware scanner types the code then sends Enter. We look the item up by
+ * barcode in the current warehouse and either bump the quantity of the matching
+ * line or drop it into the first empty row, then return focus to the field so the
+ * next scan needs no mouse. Ctrl/Cmd+S saves; F2 / Alt+B jumps to the scanner. */
+const barcode = ref('')
+const barcodeRef = ref(null)
+const focusBarcode = () => barcodeRef.value?.focus?.()
+
+const handleBarcodeScan = async () => {
+    const code = String(barcode.value || '').trim()
+    barcode.value = ''
+    if (!code) return
+    if (!form.selected_ledger) {
+        toast({ title: t('general.select_ledger_first'), variant: 'destructive' })
+        return
+    }
+    if (!form.warehouse_id) {
+        toast({ title: t('general.select_warehouse_first'), variant: 'destructive' })
+        return
+    }
+    try {
+        const { data } = await axios.get(route('search.items-list'), {
+            params: { warehouse_id: form.warehouse_id, search: code, limit: 10 },
+        })
+        const results = data?.data || []
+        let item = results.find(i => String(i.barcode ?? '').trim() === code)
+        if (!item && results.length === 1) item = results[0]
+        if (!item) {
+            notifySound('error')
+            toast({ title: t('general.barcode_not_found', { code }), variant: 'destructive' })
+            return
+        }
+        // A plain (non-variant) line for the same item just increments.
+        const existing = form.items.find(r => r.selected_item && r.item_id === item.id && !r.color && !r.size_id)
+        if (existing) {
+            existing.quantity = toNum(existing.quantity, 0) + 1
+        } else {
+            let idx = form.items.findIndex(r => !r.selected_item)
+            if (idx === -1) { addRow(); idx = form.items.length - 1 }
+            form.items[idx].selected_item = item
+            await handleItemChange(idx, item)
+            form.items[idx].quantity = 1
+        }
+        notifySound('success')
+    } catch (error) {
+        console.error('Barcode scan failed', error)
+        notifySound('error')
+        toast({ title: t('general.barcode_lookup_failed'), variant: 'destructive' })
+    } finally {
+        focusBarcode()
+    }
+}
+
+const submitButtonsRef = ref(null)
+
+const handleGlobalKeydown = (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault()
+        // Route through SubmitButtons so the confirm-before-save preference is honoured.
+        if (!form.processing) submitButtonsRef.value?.submitCreate?.()
+        return
+    }
+    if (e.key === 'F2' || (e.altKey && (e.key === 'b' || e.key === 'B'))) {
+        e.preventDefault()
+        focusBarcode()
+    }
+}
+onMounted(() => window.addEventListener('keydown', handleGlobalKeydown))
+onUnmounted(() => window.removeEventListener('keydown', handleGlobalKeydown))
+
 
 useFormGuard(form)
 </script>
@@ -1089,6 +1160,20 @@ useFormGuard(form)
                     :error="form.errors?.description"
                 />
             </div>
+            </div>
+            <!-- Barcode scanner: scan to add or increment a line, hands-free -->
+            <div class="mb-2 flex flex-wrap items-center gap-3">
+                <ScanBarcode class="h-5 w-5 shrink-0 text-violet-500" />
+                <div class="w-full max-w-xs">
+                    <NextInput
+                        ref="barcodeRef"
+                        v-model="barcode"
+                        :label="t('general.scan_barcode')"
+                        :disabled="!form.selected_ledger || !form.warehouse_id"
+                        @keydown.enter.prevent="handleBarcodeScan"
+                    />
+                </div>
+                <span class="hidden text-xs text-muted-foreground sm:inline">{{ t('general.scan_barcode_hint') }}</span>
             </div>
             <div class="rounded-md border bg-card shadow-sm border-violet-500">
                 <table class="w-full table-fixed min-w-[1200px] sale-table border-separate">
@@ -1208,6 +1293,7 @@ useFormGuard(form)
                                     type="number" step="any"
                                     inputmode="decimal"
                                     :error="form.errors?.[`item_list.${index}.quantity`]"
+                                    @keydown.enter.prevent="focusBarcode"
                                 />
                             </td>
                             <td class="text-center" v-if="localColumns.on_hand">
@@ -1400,7 +1486,7 @@ useFormGuard(form)
                 <AttachmentUploader v-model="form.attachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" />
             </div>
 
-            <SubmitButtons module="sale"
+            <SubmitButtons ref="submitButtonsRef" module="sale"
                 :create-label="t('general.create')"
                 :create-and-new-label="t('general.create_and_new')"
                 :save-and-print-label="t('general.save_and_print')"

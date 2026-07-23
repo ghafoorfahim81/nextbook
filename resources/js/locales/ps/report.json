@@ -98,7 +98,12 @@
     "gross_profit": "ناخالصه ګټه",
     "total_expenses": "ټول لګښتونه",
     "net_profit": "خالصه ګټه",
-    "expense_count": "لګښتونه"
+    "expense_count": "لګښتونه",
+    "current": "روان (۰-۳۰)",
+    "days_31_60": "۳۱-۶۰ ورځې",
+    "days_61_90": "۶۱-۹۰ ورځې",
+    "days_90_plus": "۹۰+ ورځې",
+    "total_outstanding": "ټول پاتې"
   },
   "columns": {
     "no": "شماره",
@@ -176,7 +181,12 @@
     "reason": "دلیل",
     "unit_cost": "د واحد بیه",
     "total_cost": "ټوله بیه",
-    "notes": "یادښت"
+    "notes": "یادښت",
+    "current": "روان (۰-۳۰)",
+    "days_31_60": "۳۱-۶۰ ورځې",
+    "days_61_90": "۶۱-۹۰ ورځې",
+    "days_90_plus": "۹۰+ ورځې",
+    "total_outstanding": "ټول پاتې"
   },
   "view_types": {
     "general": "عمومي لید",
@@ -206,6 +216,14 @@
     "supplier_statement": {
       "label": "د عرضه کوونکي صورت",
       "description": "د عرضه کوونکي ثبت شوي حرکتونه او بیلانسونه."
+    },
+    "aged_receivables": {
+      "label": "د سن له مخې مطالبات",
+      "description": "د پیرودونکو پاتې بیلانسونه د ټاکل شوې نیټې پورې د سن له مخې."
+    },
+    "aged_payables": {
+      "label": "د سن له مخې پورونه",
+      "description": "د عرضه‌کوونکو پاتې بیلانسونه د ټاکل شوې نیټې پورې د سن له مخې."
     },
     "receipt_report": {
       "label": "د رسید راپور",

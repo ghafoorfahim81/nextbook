@@ -265,6 +265,12 @@
     "attachment_invalid_type": "نوع فایل نامعتبر است. انواع پشتیبانی شده عبارتند از: {extensions}.",
     "duplicate_item_detected": "آیتم تکراری یافت شد",
     "duplicate_item_detected_description": "آیتم مشابه با {batchText} و {expiryText} قبلاً وجود دارد.",
-    "unselect": "لغو انتخاب"
+    "unselect": "لغو انتخاب",
+    "scan_barcode": "اسکن بارکد",
+    "scan_barcode_hint": "Enter افزودن ردیف · F2 تمرکز اینجا · Ctrl+S ذخیره",
+    "barcode_not_found": "کالایی برای بارکد «{code}» یافت نشد",
+    "barcode_lookup_failed": "جستجوی بارکد ناموفق بود",
+    "select_warehouse_first": "ابتدا انبار را انتخاب کنید",
+    "select_ledger_first": "ابتدا مشتری یا تأمین‌کننده را انتخاب کنید"
 }
 
