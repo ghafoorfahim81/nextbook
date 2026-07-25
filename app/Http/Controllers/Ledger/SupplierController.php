@@ -22,6 +22,7 @@ use App\Http\Resources\Purchase\PurchaseResource;
 use App\Http\Resources\Payment\PaymentResource;
 use Illuminate\Http\Request;
 use App\Services\TransactionService;
+use App\Services\AttachmentService;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Resources\Sale\SaleResource;
 use App\Models\Ledger\LedgerTransaction;
@@ -99,13 +100,19 @@ class SupplierController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(LedgerStoreRequest $request)
+    public function store(LedgerStoreRequest $request, AttachmentService $attachmentService)
     {
         $validated = $request->validated();
         $validated['type'] = 'supplier';
         $validated['code'] = $validated['code'] ?: $this->nextCode();
         $validated['is_active'] = $validated['is_active'] ?? true;
-        $ledger = Ledger::create($validated);
+        if ($request->hasFile('photo')) {
+            $validated['photo'] = $request->file('photo')->store('ledgers/photos', 'public');
+        }
+        $ledger = Ledger::create(\Illuminate\Support\Arr::except($validated, ['attachments']));
+        if ($request->hasFile('attachments')) {
+            $attachmentService->store($ledger, $request->file('attachments'));
+        }
         $glAccounts = Cache::get('gl_accounts');
         $transactionService = app(TransactionService::class);
         if ($validated['currency_id'] && $validated['amount'] && $validated['amount'] > 0) {
@@ -154,6 +161,9 @@ class SupplierController extends Controller
      */
     public function show(Request $request, Ledger $supplier)
     {
+        // Only the relations the Show page renders — the supplier's whole
+        // transaction-line history was eager-loaded before, making high-volume
+        // supplier pages very slow.
         $supplier->load([
             'currency',
             'group',
@@ -165,28 +175,74 @@ class SupplierController extends Controller
             'opening',
             'opening.transaction.currency',
             'opening.transaction.lines',
-            'transactionLines.transaction',
-            'transactionLines.transaction.currency',
+            'attachments',
         ]);
 
-        $purchases = $supplier->purchases->load('transaction.currency');
-        $receipts = $supplier->receipts->load('transaction.currency');
-        $payments = $supplier->payments->load('transaction.currency');
+        $lists = $this->transactionLists($supplier);
+
         if ($request->expectsJson()) {
             return response()->json([
                 'supplier' => new LedgerResource($supplier),
-                'purchases' => PurchaseResource::collection($purchases),
-                'receipts' => ReceiptResource::collection($receipts),
-                'payments' => PaymentResource::collection($payments),
+                ...$lists,
             ]);
         }
 
         return inertia('Ledgers/Suppliers/Show', [
             'supplier' => new LedgerResource($supplier),
-            'purchases' => PurchaseResource::collection($purchases),
-            'receipts' => ReceiptResource::collection($receipts),
-            'payments' => PaymentResource::collection($payments),
+            ...$lists,
         ]);
+    }
+
+    /**
+     * Lightweight purchase/receipt/payment rows for the supplier Show page, avoiding
+     * the heavy per-row work full resources do (which the summary tables never use).
+     *
+     * @return array{purchases: array, receipts: array, payments: array}
+     */
+    protected function transactionLists(Ledger $ledger): array
+    {
+        $dateService = app(\App\Services\DateConversionService::class);
+
+        $typeLabel = function ($type) {
+            if ($type instanceof \App\Enums\SalePurchaseType) {
+                return $type->getLabel();
+            }
+            return \App\Enums\SalePurchaseType::tryFrom((string) $type)?->getLabel() ?? $type;
+        };
+
+        $purchases = $ledger->purchases()
+            ->with(['items:id,purchase_id,quantity,unit_price,discount,tax'])
+            ->orderByDesc('date')->orderByDesc('id')->get()
+            ->map(fn ($p) => [
+                'id' => $p->id,
+                'number' => $p->number,
+                'date' => $dateService->toDisplay($p->date),
+                'type' => $typeLabel($p->type),
+                'amount' => $p->purchaseTotal(),
+                'payment_status' => $p->payment_status?->value,
+                'payment_status_label' => $p->payment_status?->getLabel(),
+                'description' => $p->description,
+            ])->all();
+
+        $mapMovement = fn ($m) => [
+            'id' => $m->id,
+            'number' => $m->number,
+            'date' => $dateService->toDisplay($m->date),
+            'amount' => $m->amount,
+            'currency_code' => $m->transaction?->currency?->code,
+            'rate' => $m->transaction?->rate ?? 0,
+            'payment_mode' => $m->payment_mode?->value,
+            'payment_mode_label' => $m->payment_mode?->getLabel(),
+            'narration' => $m->narration,
+        ];
+
+        $receipts = $ledger->receipts()->with('transaction.currency')
+            ->orderByDesc('date')->orderByDesc('id')->get()->map($mapMovement)->all();
+
+        $payments = $ledger->payments()->with('transaction.currency')
+            ->orderByDesc('date')->orderByDesc('id')->get()->map($mapMovement)->all();
+
+        return compact('purchases', 'receipts', 'payments');
     }
 
     public function export(
@@ -256,7 +312,7 @@ class SupplierController extends Controller
      */
     public function edit(Request $request, Ledger $supplier)
     {
-        $supplier->load(['currency', 'group', 'paymentTerm', 'country', 'province', 'opening', 'opening.transaction.currency', 'opening.transaction.lines']);
+        $supplier->load(['currency', 'group', 'paymentTerm', 'country', 'province', 'opening', 'opening.transaction.currency', 'opening.transaction.lines', 'attachments']);
         return inertia('Ledgers/Suppliers/Edit', [
             'supplier' => new LedgerResource($supplier),
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
@@ -335,15 +391,44 @@ class SupplierController extends Controller
         };
     }
 
+    public function updatePhoto(Request $request, Ledger $supplier)
+    {
+        $this->authorize('update', $supplier);
+        abort_unless($supplier->type?->value === 'supplier', 404);
+
+        $request->validate([
+            'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        if ($supplier->photo) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($supplier->photo);
+        }
+
+        $supplier->update([
+            'photo' => $request->file('photo')->store('ledgers/photos', 'public'),
+        ]);
+
+        return back();
+    }
+
     /**
      * Update the specified resource in storage.
      */
-    public function update(LedgerUpdateRequest $request, Ledger $supplier)
+    public function update(LedgerUpdateRequest $request, Ledger $supplier, AttachmentService $attachmentService)
     {
 
         $validated = $request->validated();
         $validated['is_active'] = $validated['is_active'] ?? true;
-        $supplier->update($validated);
+        if ($request->hasFile('photo')) {
+            if ($supplier->photo) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($supplier->photo);
+            }
+            $validated['photo'] = $request->file('photo')->store('ledgers/photos', 'public');
+        }
+        $supplier->update(\Illuminate\Support\Arr::except($validated, ['attachments', 'photo']) + (isset($validated['photo']) ? ['photo' => $validated['photo']] : []));
+        if ($request->hasFile('attachments')) {
+            $attachmentService->store($supplier, $request->file('attachments'));
+        }
 
         // Remove existing opening balances
 

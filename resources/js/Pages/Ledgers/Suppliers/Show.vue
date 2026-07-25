@@ -9,6 +9,8 @@ import { useAuth } from '@/composables/useAuth';
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue';
 import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus';
 import { getCreditSummary } from '@/composables/useCreditLimit';
+import AttachmentList from '@/Components/AttachmentList.vue';
+import PhotoUpload from '@/Components/next/PhotoUpload.vue';
 
 const props = defineProps({
     supplier: { type: Object, required: true },
@@ -30,6 +32,8 @@ const paymentRows = computed(() => props.payments?.data ?? props.payments ?? [])
 
 const activeMainTab = ref('general');
 const activeTxnTab = ref('purchases');
+const photo = ref(null);
+const photoError = ref('');
 
 const formatAmount = (value) => {
     if (value === null || value === undefined) return '-';
@@ -48,6 +52,19 @@ const openPrint = (routeName, id) => {
 
 const openTransaction = (routeName, id) => {
     if (routeName && id) router.visit(route(routeName, id));
+};
+
+const uploadPhoto = (file) => {
+    if (!file || !supplierData.value.id) return;
+
+    photo.value = file;
+    photoError.value = '';
+    router.post(route('suppliers.photo.update', supplierData.value.id), { photo: file }, {
+        forceFormData: true,
+        preserveScroll: true,
+        onError: (errors) => { photoError.value = errors.photo ?? ''; },
+        onFinish: () => { photo.value = null; },
+    });
 };
 
 const creditTermsLabel = (terms) => {
@@ -179,31 +196,21 @@ const supplierMovementColumns = computed(() => [
                     <div class="space-y-4 lg:self-start">
                         <!-- Profile card -->
                         <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-5 flex flex-col items-center gap-3">
-                            <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white text-2xl font-bold">
-                                {{ (supplierData.name || '').charAt(0).toUpperCase() }}
+                            <PhotoUpload
+                                v-if="can('suppliers.update')"
+                                :model-value="photo"
+                                :current="supplierData.photo_url"
+                                :error="photoError"
+                                :show-remove="false"
+                                @update:model-value="uploadPhoto"
+                            />
+                            <div v-else class="w-20 h-20 overflow-hidden rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white text-2xl font-bold">
+                                <img v-if="supplierData.photo_url" :src="supplierData.photo_url" alt="" class="h-full w-full object-cover" />
+                                <template v-else>{{ (supplierData.name || '').charAt(0).toUpperCase() }}</template>
                             </div>
                             <div class="text-center">
                                 <div class="text-lg font-semibold text-primary">{{ supplierData.name }}</div>
                                 <div class="mt-1 text-xs text-muted-foreground/70">{{ t('ledger.supplier.supplier') }}</div>
-                            </div>
-                            <div class="flex items-center gap-2 pt-1">
-                                <button
-                                    v-if="can('suppliers.update') && supplierData.id"
-                                    type="button"
-                                    class="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
-                                    :title="t('datatable.edit')"
-                                    @click="router.visit(route('suppliers.edit', supplierData.id))"
-                                >
-                                    <SquarePen class="h-4 w-4" />
-                                </button>
-                                <button
-                                    type="button"
-                                    class="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-muted/70"
-                                    :title="t('general.back')"
-                                    @click="router.visit(route('suppliers.index'))"
-                                >
-                                    <ArrowLeft class="h-4 w-4" />
-                                </button>
                             </div>
                         </div>
 
@@ -213,18 +220,30 @@ const supplierMovementColumns = computed(() => [
                                 <Hash class="h-4 w-4 shrink-0 text-violet-500" />
                                 <span class="text-sm font-medium text-foreground">{{ supplierData.code || '-' }}</span>
                             </div>
-                            <div class="flex items-center gap-3 px-4 py-2.5">
+                            <a
+                                :href="supplierData.phone_no ? `tel:${supplierData.phone_no}` : undefined"
+                                class="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
+                            >
                                 <Phone class="h-4 w-4 shrink-0 text-emerald-500" />
                                 <span class="text-sm text-foreground">{{ supplierData.phone_no || '-' }}</span>
-                            </div>
-                            <div v-if="supplierData.whatsapp_number" class="flex items-center gap-3 px-4 py-2.5">
+                            </a>
+                            <a
+                                v-if="supplierData.whatsapp_number"
+                                :href="`https://wa.me/${String(supplierData.whatsapp_number).replace(/[^0-9]/g, '')}`"
+                                target="_blank"
+                                rel="noopener"
+                                class="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
+                            >
                                 <MessageCircle class="h-4 w-4 shrink-0 text-green-500" />
                                 <span class="text-sm text-foreground">{{ supplierData.whatsapp_number }}</span>
-                            </div>
-                            <div class="flex items-center gap-3 px-4 py-2.5">
+                            </a>
+                            <a
+                                :href="supplierData.email ? `mailto:${supplierData.email}` : undefined"
+                                class="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
+                            >
                                 <Mail class="h-4 w-4 shrink-0 text-blue-500" />
                                 <span class="truncate text-sm text-foreground">{{ supplierData.email || '-' }}</span>
-                            </div>
+                            </a>
                         </div>
 
                         <!-- Statement card -->
@@ -348,6 +367,29 @@ const supplierMovementColumns = computed(() => [
                             <div class="mt-1 text-lg font-bold" :class="creditSummary.classes.text">{{ formatAmount(creditSummary.available) }} {{ currencyCode }}</div>
                         </div>
                     </div>
+                    <!-- Utilization bar: how much of the limit is used -->
+                    <div class="mt-4">
+                        <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+                            <div
+                                class="h-full rounded-full transition-all"
+                                :class="creditSummary.level === 'red' ? 'bg-red-500' : creditSummary.level === 'yellow' ? 'bg-amber-500' : 'bg-green-500'"
+                                :style="{ width: Math.min(100, Math.max(0, creditSummary.limit > 0 ? (creditSummary.used / creditSummary.limit) * 100 : 0)) + '%' }"
+                            ></div>
+                        </div>
+                        <div class="mt-1 flex justify-between text-xs text-muted-foreground">
+                            <span>{{ t('ledger.used') }}: {{ formatAmount(creditSummary.used) }}</span>
+                            <span>{{ Math.round(creditSummary.limit > 0 ? (creditSummary.used / creditSummary.limit) * 100 : 0) }}%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attachments -->
+                <div
+                    v-if="supplierData.attachments && supplierData.attachments.length"
+                    class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-5"
+                >
+                    <h3 class="mb-3 text-sm font-semibold text-foreground">{{ t('general.attachments') }}</h3>
+                    <AttachmentList :items="supplierData.attachments" />
                 </div>
 
                 <!-- Purchases / Receipts / Payments tables -->

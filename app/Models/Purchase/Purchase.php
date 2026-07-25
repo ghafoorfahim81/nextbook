@@ -117,6 +117,23 @@ class Purchase extends Model
         return $this->hasMany(\App\Models\Purchase\PurchaseItem::class);
     }
 
+    /**
+     * Net purchase amount (goods − item discounts − bill discount), mirroring the
+     * calculation used in PurchaseResource. Requires the `items` relation loaded.
+     */
+    public function purchaseTotal(): float
+    {
+        return (float) $this->items->sum(function ($item) {
+            $rowTotal = (float) $item->quantity * (float) $item->unit_price;
+            $itemDiscount = (float) ($item->discount ?? 0);
+            $billDiscount = $this->discount_type === 'percentage'
+                ? $rowTotal * ((float) $this->discount / 100)
+                : (float) ($this->discount ?? 0);
+
+            return $rowTotal - $itemDiscount - $billDiscount;
+        });
+    }
+
     public function landedCosts(): BelongsToMany
     {
         return $this->belongsToMany(\App\Models\Inventory\LandedCost::class, 'landed_cost_purchases')

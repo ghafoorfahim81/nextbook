@@ -16,6 +16,8 @@ class LedgerResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'photo' => $this->photo,
+            'photo_url' => $this->photo_url,
             'code' => $this->code,
             'address' => $this->address,
             'contact_person' => $this->contact_person,
@@ -46,6 +48,9 @@ class LedgerResource extends JsonResource
             'opening' => $this->relationLoaded('opening') && $this->opening
                 ? new LedgerOpeningResource($this->opening)
                 : null,
+            'attachments' => \App\Http\Resources\AttachmentResource::collection(
+                $this->whenLoaded('attachments')
+            ),
         ];
     }
 }

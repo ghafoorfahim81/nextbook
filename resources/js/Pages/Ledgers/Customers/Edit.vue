@@ -9,6 +9,7 @@ import NextTextarea from "@/Components/next/NextTextarea.vue";
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { Switch } from '@/Components/ui/switch';
 import { Label } from '@/Components/ui/label';
+import AttachmentUploader from '@/Components/AttachmentUploader.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
@@ -33,7 +34,16 @@ const form = useForm({
     currency_id: props.customer.data.currency_id,
     rate: props.customer.data?.opening?.rate,
     amount: props.customer.data?.opening?.amount??0,
+    attachments: [],
 })
+
+const existingAttachments = ref(props.customer.data?.attachments ?? [])
+const removeExistingAttachment = (id) => {
+    router.delete(route('attachments.destroy', id), {
+        preserveScroll: true,
+        onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id) },
+    })
+}
 
 watch(props.homeCurrency, (list) => {
     if (props.homeCurrency && !form.currency_id) {
@@ -132,6 +142,9 @@ useFormGuard(form)
                                 <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
                             </div>
                         </div>
+                    </div>
+                    <div class="mt-4">
+                        <AttachmentUploader v-model="form.attachments" :existing="existingAttachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" @remove-existing="removeExistingAttachment" />
                     </div>
                 </div>
             </div>

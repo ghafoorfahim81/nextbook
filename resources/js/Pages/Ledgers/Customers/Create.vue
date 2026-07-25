@@ -8,6 +8,7 @@ import SubmitButtons from '@/Components/SubmitButtons.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { Switch } from '@/Components/ui/switch';
 import { Label } from '@/Components/ui/label';
+import AttachmentUploader from '@/Components/AttachmentUploader.vue';
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
@@ -50,6 +51,7 @@ const form = useForm({
     whatsapp_number: '',
     amount: '',
     rate: '',
+    attachments: [],
 })
 
 watch(props.homeCurrency, (list) => {
@@ -169,6 +171,9 @@ useFormGuard(form)
                                 <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
                             </div>
                         </div>
+                    </div>
+                    <div class="mt-4">
+                        <AttachmentUploader v-model="form.attachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" />
                     </div>
                 </div>
             </div>
