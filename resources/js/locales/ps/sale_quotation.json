@@ -1,0 +1,11 @@
+{
+    "sale_quotation": "د خرڅلاو کوټیشن",
+    "sale_quotations": "د خرڅلاو کوټیشنونه",
+    "valid_until": "اعتبار تر",
+    "quotation_total": "د کوټیشن ټول",
+    "item_count": "توکي",
+    "post_sale_quotation": "د خرڅلاو کوټیشن ثبتول",
+    "cancel_sale_quotation": "د خرڅلاو کوټیشن لغوه کول",
+    "post_sale_quotation_description": "دا کوټیشن نهایي کوي. ثبت شوي کوټیشنونه نه شي سمېدلی.",
+    "cancel_sale_quotation_description": "دا د خرڅلاو کوټیشن لغوه کوي."
+}

@@ -64,6 +64,7 @@
   "purchase": {
     "purchase": "Purchase",
     "purchase_order": "Purchase Order",
+    "purchase_quotation": "Purchase Quotation",
     "purchase_return": "Purchase Return"
   },
   "sale": {
@@ -74,7 +75,8 @@
     "sale_created_successfully": "Sale created successfully",
     "sale_updated_successfully": "Sale updated successfully",
     "sale_return": "Sale Return",
-    "sale_order": "Sale Order"
+    "sale_order": "Sale Order",
+    "sale_quotation": "Sale Quotation"
   },
   "ledger": {
     "customer": "Customer",

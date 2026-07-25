@@ -268,5 +268,7 @@
   "barcode_not_found": "No item found for barcode \"{code}\"",
   "barcode_lookup_failed": "Barcode lookup failed",
   "select_warehouse_first": "Select a warehouse first",
-  "select_ledger_first": "Select a customer or supplier first"
+  "select_ledger_first": "Select a customer or supplier first",
+  "error_creating_sale_quotation": "Failed to create sale quotation",
+  "error_creating_purchase_quotation": "Failed to create purchase quotation"
 }

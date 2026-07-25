@@ -450,8 +450,17 @@ const statusBadgeClass = (status) => {
     }
 }
 
+// Requests triggered from within the table (search, sort, filter, paginate)
+// carry this header so the global BookLoader overlay skips them — the table
+// renders its own skeleton loader for these in-place refreshes.
+const DATATABLE_REQUEST_HEADERS = { 'X-DataTable-Refresh': '1' }
+
+// Wait until the user pauses typing before firing a search, so we don't send a
+// request on every keystroke while a word is still being typed.
+const SEARCH_DEBOUNCE_MS = 1000
+
 // Search handling
-const debouncedSearch = debounce(() => updateFilters(), 300)
+const debouncedSearch = debounce(() => updateFilters(), SEARCH_DEBOUNCE_MS)
 
 const updateFilters = () => {
     router.get(
@@ -466,6 +475,7 @@ const updateFilters = () => {
         {
             preserveState: true,
             preserveScroll: true,
+            headers: DATATABLE_REQUEST_HEADERS,
             onStart: () => { loading.value = true },
             onFinish: () => { loading.value = false },
         }
@@ -501,6 +511,7 @@ const changePage = (page) => {
         {
             preserveState: true,
             preserveScroll: true,
+            headers: DATATABLE_REQUEST_HEADERS,
             onStart: () => { loading.value = true },
             onFinish: () => { loading.value = false },
         }
@@ -531,6 +542,7 @@ const applyAdvancedFilters = () => {
         {
             preserveState: true,
             preserveScroll: true,
+            headers: DATATABLE_REQUEST_HEADERS,
             onStart: () => { loading.value = true },
             onFinish: () => { loading.value = false },
         }

@@ -28,8 +28,21 @@ function isSamePageReportsRefresh(event) {
     }
 }
 
+// The DataTable component refreshes itself in place for search, sort, filter and
+// pagination, and renders its own skeleton loader for those. It tags those
+// requests with an X-DataTable-Refresh header so we can skip the full-screen
+// BookLoader overlay and avoid doubling up two loaders.
+function isDataTableRefresh(event) {
+    try {
+        const headers = event?.detail?.visit?.headers ?? {}
+        return headers['X-DataTable-Refresh'] === '1'
+    } catch {
+        return false
+    }
+}
+
 function handleStart(event) {
-    if (isSamePageReportsRefresh(event)) return
+    if (isSamePageReportsRefresh(event) || isDataTableRefresh(event)) return
 
     clearTimeout(hideTimer)
     clearTimeout(showTimer)

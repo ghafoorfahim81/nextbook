@@ -552,6 +552,7 @@ const navMain = computed(() => [
         items: [
             { title: t('sidebar.purchase.purchase'), url: '/purchases', permission: 'purchases.view_any' },
             { title: t('sidebar.purchase.purchase_order'), url: '/purchase-orders', permission: 'purchase_orders.view_any' },
+            { title: t('sidebar.purchase.purchase_quotation'), url: '/purchase-quotations', permission: 'purchase_quotations.view_any' },
             { title: t('sidebar.purchase.purchase_return'), url: '/purchase-returns', permission: 'purchase_returns.view_any' },
         ],
     },
@@ -563,6 +564,7 @@ const navMain = computed(() => [
         items: [
             { title: t('sidebar.sale.sale'), url: '/sales', permission: 'sales.view_any' },
             { title: t('sidebar.sale.sale_order'), url: '/sale-orders', permission: 'sale_orders.view_any' },
+            { title: t('sidebar.sale.sale_quotation'), url: '/sale-quotations', permission: 'sale_quotations.view_any' },
             { title: t('sidebar.sale.sale_return'), url: '/sale-returns', permission: 'sale_returns.view_any' },
         ],
     },

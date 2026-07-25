@@ -73,11 +73,48 @@ class PaymentController extends Controller
         $latest = Payment::max('number') > 0 ? Payment::max('number') + 1 : 1;
         return inertia('Payments/Create', [
             'latestNumber' => $latest,
+            // When opened from a customer/supplier page (?ledger_id=...), preselect that
+            // ledger even though the ledger options are loaded on demand via search.
+            'preselectedLedger' => $this->resolvePreselectedLedger($request->query('ledger_id')),
             'paymentModes' => collect(PaymentMode::cases())->map(fn (PaymentMode $mode) => [
                 'id' => $mode->value,
                 'name' => $mode->getLabel(),
             ])->values(),
         ]);
+    }
+
+    /**
+     * Load a single ledger by id (if given) as a select option, so a payment form
+     * opened from a customer/supplier page can preselect it. Returns null when no/invalid
+     * id is supplied.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function resolvePreselectedLedger(?string $ledgerId): ?array
+    {
+        if (! $ledgerId) {
+            return null;
+        }
+
+        $ledger = Ledger::query()
+            ->select([
+                'id',
+                'name',
+                'code',
+                'type',
+                'email',
+                'phone_no',
+                'address',
+                'currency_id',
+                'is_active',
+                'branch_id',
+            ])
+            ->withStatementTotals()
+            ->find($ledgerId);
+
+        return $ledger
+            ? \App\Http\Resources\Ledger\LedgerOptionResource::make($ledger)->resolve()
+            : null;
     }
 
     public function latestNumber(Request $request)

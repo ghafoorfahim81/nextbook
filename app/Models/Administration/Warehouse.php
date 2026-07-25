@@ -87,7 +87,11 @@ class Warehouse extends Model
 
     public static function main()
     {
-        return self::where('is_main', true)->first();
+        // Prefer an active main warehouse; only fall back to an inactive one if no
+        // active main exists, so a stray inactive duplicate never wins.
+        return self::where('is_main', true)
+            ->orderByDesc('is_active')
+            ->first();
     }
 }
 

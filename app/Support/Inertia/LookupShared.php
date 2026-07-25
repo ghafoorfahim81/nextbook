@@ -72,7 +72,16 @@ final class LookupShared
             CacheKey::forCompanyBranchLocale($request, 'warehouses'),
             $cacheDuration,
             fn() => WarehouseResource::collection(
-                Warehouse::query()->orderBy('created_at','desc')->limit(10)->get()
+                Warehouse::query()
+                    // Only active warehouses are selectable; an inactive duplicate must
+                    // never leak into the dropdown or be picked as the default.
+                    ->where('is_active', true)
+                    // Keep the main warehouse first so forms default to it deterministically
+                    // even when several warehouses share a name.
+                    ->orderByDesc('is_main')
+                    ->orderBy('created_at','desc')
+                    ->limit(10)
+                    ->get()
             )
         );
 
