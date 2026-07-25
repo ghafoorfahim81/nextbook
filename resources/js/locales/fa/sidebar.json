@@ -64,6 +64,7 @@
   "purchase": {
     "purchase": "خرید",
     "purchase_order": "سفارش خرید",
+    "purchase_quotation": "پیش‌فاکتور خرید",
     "purchase_return": "برگشت خرید"
   },
   "sale": {
@@ -74,7 +75,8 @@
     "sale_created_successfully": "فروش با موفقیت ایجاد شد",
     "sale_updated_successfully": "فروش با موفقیت بروزرسانی شد",
     "sale_return": "برگشت فروش",
-    "sale_order": "سفارش فروش"
+    "sale_order": "سفارش فروش",
+    "sale_quotation": "پیش‌فاکتور فروش"
   },
   "ledger": {
     "customer": "مشتری",

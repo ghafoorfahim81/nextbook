@@ -202,6 +202,8 @@
   "barcode_not_found": "د «{code}» بارکوډ لپاره توکی ونه موندل شو",
   "barcode_lookup_failed": "د بارکوډ لټون ناکام شو",
   "select_warehouse_first": "لومړی ګودام وټاکئ",
-  "select_ledger_first": "لومړی پیرودونکی یا عرضه‌کوونکی وټاکئ"
+  "select_ledger_first": "لومړی پیرودونکی یا عرضه‌کوونکی وټاکئ",
+  "error_creating_sale_quotation": "د خرڅلاو کوټیشن جوړول ناکام شو",
+  "error_creating_purchase_quotation": "د پیرودنې کوټیشن جوړول ناکام شو"
 }
 

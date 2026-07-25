@@ -271,6 +271,8 @@
     "barcode_not_found": "کالایی برای بارکد «{code}» یافت نشد",
     "barcode_lookup_failed": "جستجوی بارکد ناموفق بود",
     "select_warehouse_first": "ابتدا انبار را انتخاب کنید",
-    "select_ledger_first": "ابتدا مشتری یا تأمین‌کننده را انتخاب کنید"
+    "select_ledger_first": "ابتدا مشتری یا تأمین‌کننده را انتخاب کنید",
+    "error_creating_sale_quotation": "ایجاد پیش‌فاکتور فروش ناموفق بود",
+    "error_creating_purchase_quotation": "ایجاد پیش‌فاکتور خرید ناموفق بود"
 }
 

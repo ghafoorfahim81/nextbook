@@ -138,6 +138,13 @@ const applyCreateDefaults = ({ number = page.props.latestNumber ?? form.number }
     form.currency_id = base.id
     form.rate = base.exchange_rate
   }
+
+  // Ledger passed via the URL (e.g. from a customer/supplier page) is preselected.
+  const presetLedger = page.props.preselectedLedger?.data ?? page.props.preselectedLedger ?? null
+  if (presetLedger?.id) {
+    form.selected_ledger = presetLedger
+    form.ledger_id = presetLedger.id
+  }
 }
 
 function handleSelectChange(field, value) {

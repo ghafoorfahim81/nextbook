@@ -48,6 +48,8 @@ const props = defineProps({
     user_preferences: {type: Object, required: true},
     bankAccounts: {type: Object, required: true},
     saleOrderId: {type: String, default: null},
+    // Customer to preselect when arriving from a customer's page (?customer_id=...).
+    preselectedLedger: {type: Object, default: null},
 
 })
 
@@ -137,11 +139,21 @@ const resolveDefaultSaleType = () => props.salePurchaseTypes?.find((type) => typ
 const resolveDefaultWarehouse = () => props.warehouses?.data?.find((warehouse) => warehouse.is_main === true) ?? null
 const resolveDefaultBankAccount = () => props.bankAccounts?.find((account) => account.slug === 'cash-in-hand') ?? null
 
+const resolvePreselectedLedger = () => props.preselectedLedger?.data ?? props.preselectedLedger ?? null
+
 const applyCreateDefaults = ({ number = props.saleNumber } = {}) => {
     const defaultLedger = resolveDefaultLedger()
     if (defaultLedger) {
         form.selected_ledger = defaultLedger
         form.customer_id = defaultLedger.id
+    }
+
+    // A customer passed via the URL (e.g. from the customer page) wins over the
+    // CASH-CUST default so the form opens with that customer already selected.
+    const presetLedger = resolvePreselectedLedger()
+    if (presetLedger?.id) {
+        form.selected_ledger = presetLedger
+        form.customer_id = presetLedger.id
     }
 
     const defaultCurrency = resolveDefaultCurrency()

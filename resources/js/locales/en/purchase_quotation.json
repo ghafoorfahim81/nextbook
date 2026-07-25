@@ -1,0 +1,11 @@
+{
+    "purchase_quotation": "Purchase Quotation",
+    "purchase_quotations": "Purchase Quotations",
+    "valid_until": "Valid Until",
+    "quotation_total": "Quotation Total",
+    "item_count": "Items",
+    "post_purchase_quotation": "Post Purchase Quotation",
+    "cancel_purchase_quotation": "Cancel Purchase Quotation",
+    "post_purchase_quotation_description": "This marks the quotation as finalized. Posted quotations cannot be edited.",
+    "cancel_purchase_quotation_description": "This cancels the purchase quotation."
+}

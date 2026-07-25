@@ -130,5 +130,15 @@ return [
         'completed' => 'بشپړ شوی',
         'cancelled' => 'لغوه شوی',
     ],
+    'sale_quotation_status' => [
+        'draft' => 'مسوده',
+        'posted' => 'ثبت شوی',
+        'cancelled' => 'لغوه شوی',
+    ],
+    'purchase_quotation_status' => [
+        'draft' => 'مسوده',
+        'posted' => 'ثبت شوی',
+        'cancelled' => 'لغوه شوی',
+    ],
 ];
 

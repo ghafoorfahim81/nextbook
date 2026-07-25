@@ -1,0 +1,11 @@
+{
+    "sale_quotation": "Sale Quotation",
+    "sale_quotations": "Sale Quotations",
+    "valid_until": "Valid Until",
+    "quotation_total": "Quotation Total",
+    "item_count": "Items",
+    "post_sale_quotation": "Post Sale Quotation",
+    "cancel_sale_quotation": "Cancel Sale Quotation",
+    "post_sale_quotation_description": "This marks the quotation as finalized. Posted quotations cannot be edited.",
+    "cancel_sale_quotation_description": "This cancels the sale quotation."
+}

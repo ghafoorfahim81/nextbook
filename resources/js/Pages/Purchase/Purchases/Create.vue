@@ -47,6 +47,8 @@ const props = defineProps({
     bankAccounts: {type: Object, required: true},
     sizes: {type: [Array, Object], required: false, default: () => ([])},
     purchaseOrderId: {type: String, default: null},
+    // Supplier to preselect when arriving from a supplier's page (?supplier_id=...).
+    preselectedLedger: {type: Object, default: null},
 })
 
 // Purchases bring new stock in, so any colour/size may be received.
@@ -139,6 +141,14 @@ const applyCreateDefaults = ({ number = props.purchaseNumber } = {}) => {
     if (defaultBankAccount) {
         form.selected_bank_account = defaultBankAccount
         form.bank_account_id = defaultBankAccount.id
+    }
+
+    // A supplier passed via the URL (e.g. from the supplier page) opens the form
+    // with that supplier already selected.
+    const presetLedger = props.preselectedLedger?.data ?? props.preselectedLedger ?? null
+    if (presetLedger?.id) {
+        form.selected_ledger = presetLedger
+        form.supplier_id = presetLedger.id
     }
 
     form.number = number

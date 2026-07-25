@@ -169,4 +169,14 @@ return [
         'completed' => 'Completed',
         'cancelled' => 'Cancelled',
     ],
+    'sale_quotation_status' => [
+        'draft' => 'Draft',
+        'posted' => 'Posted',
+        'cancelled' => 'Cancelled',
+    ],
+    'purchase_quotation_status' => [
+        'draft' => 'Draft',
+        'posted' => 'Posted',
+        'cancelled' => 'Cancelled',
+    ],
 ];

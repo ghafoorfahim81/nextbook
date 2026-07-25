@@ -92,7 +92,44 @@ class PurchaseController extends Controller
             'purchaseNumber' => $purchaseNumber,
             'bankAccounts' => $bankAccounts,
             'purchaseOrderId' => $request->query('purchase_order_id'),
+            // When navigating here from a supplier's page (?supplier_id=...), preselect
+            // that supplier even if it falls outside the capped ledger option list.
+            'preselectedLedger' => $this->resolvePreselectedLedger($request->query('supplier_id')),
         ]);
+    }
+
+    /**
+     * Load a single ledger by id (if given) as a select option, so a purchase form
+     * opened from a supplier page can preselect it regardless of the capped option
+     * list. Returns null when no/invalid id is supplied.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function resolvePreselectedLedger(?string $ledgerId): ?array
+    {
+        if (! $ledgerId) {
+            return null;
+        }
+
+        $ledger = Ledger::query()
+            ->select([
+                'id',
+                'name',
+                'code',
+                'type',
+                'email',
+                'phone_no',
+                'address',
+                'currency_id',
+                'is_active',
+                'branch_id',
+            ])
+            ->withStatementTotals()
+            ->find($ledgerId);
+
+        return $ledger
+            ? \App\Http\Resources\Ledger\LedgerOptionResource::make($ledger)->resolve()
+            : null;
     }
 
     public function store(

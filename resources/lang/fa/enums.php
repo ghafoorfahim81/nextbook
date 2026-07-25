@@ -170,5 +170,15 @@ return [
         'completed' => 'تکمیل شده',
         'cancelled' => 'لغو شده',
     ],
+    'sale_quotation_status' => [
+        'draft' => 'پیش‌نویس',
+        'posted' => 'ثبت شده',
+        'cancelled' => 'لغو شده',
+    ],
+    'purchase_quotation_status' => [
+        'draft' => 'پیش‌نویس',
+        'posted' => 'ثبت شده',
+        'cancelled' => 'لغو شده',
+    ],
 ];
 

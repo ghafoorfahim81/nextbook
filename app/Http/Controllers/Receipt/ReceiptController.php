@@ -74,6 +74,9 @@ class ReceiptController extends Controller
         $latest = Receipt::max('number') > 0 ? Receipt::max('number') + 1 : 1;
         return inertia('Receipts/Create', [
             'latestNumber' => $latest,
+            // When opened from a customer/supplier page (?ledger_id=...), preselect that
+            // ledger even if it falls outside the capped ledger option list.
+            'preselectedLedger' => $this->resolvePreselectedLedger($request->query('ledger_id')),
             'paymentModes' => collect(PaymentMode::cases())->map(fn (PaymentMode $mode) => [
                 'id' => $mode->value,
                 'name' => $mode->getLabel(),
@@ -100,6 +103,40 @@ class ReceiptController extends Controller
                         ->get()
                 )
         ]);
+    }
+
+    /**
+     * Load a single ledger by id (if given) as a select option, so a receipt form
+     * opened from a customer/supplier page can preselect it regardless of the capped
+     * option list. Returns null when no/invalid id is supplied.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function resolvePreselectedLedger(?string $ledgerId): ?array
+    {
+        if (! $ledgerId) {
+            return null;
+        }
+
+        $ledger = Ledger::query()
+            ->select([
+                'id',
+                'name',
+                'code',
+                'type',
+                'email',
+                'phone_no',
+                'address',
+                'currency_id',
+                'is_active',
+                'branch_id',
+            ])
+            ->withStatementTotals()
+            ->find($ledgerId);
+
+        return $ledger
+            ? \App\Http\Resources\Ledger\LedgerOptionResource::make($ledger)->resolve()
+            : null;
     }
 
     public function store(

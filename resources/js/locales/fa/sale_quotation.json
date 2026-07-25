@@ -1,0 +1,11 @@
+{
+    "sale_quotation": "پیش‌فاکتور فروش",
+    "sale_quotations": "پیش‌فاکتورهای فروش",
+    "valid_until": "معتبر تا",
+    "quotation_total": "مجموع پیش‌فاکتور",
+    "item_count": "اقلام",
+    "post_sale_quotation": "ثبت پیش‌فاکتور فروش",
+    "cancel_sale_quotation": "لغو پیش‌فاکتور فروش",
+    "post_sale_quotation_description": "این پیش‌فاکتور را نهایی می‌کند. پیش‌فاکتورهای ثبت‌شده قابل ویرایش نیستند.",
+    "cancel_sale_quotation_description": "این پیش‌فاکتور فروش را لغو می‌کند."
+}

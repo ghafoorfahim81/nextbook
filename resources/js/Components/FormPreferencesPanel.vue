@@ -184,6 +184,16 @@ const SCHEMAS = {
         { type: 'toggles', group: 'general_fields', titleKey: 'preferences.sale.general_fields', items: returnGeneralFields },
         { type: 'toggles', group: 'item_columns', titleKey: 'preferences.sale.item_columns', items: returnItemColumns },
     ],
+    sale_quotation: [
+        { type: 'toggles', group: 'general_fields', titleKey: 'preferences.sale.general_fields', items: generalFields },
+        { type: 'toggles', group: 'item_columns', titleKey: 'preferences.sale.item_columns', items: saleOrderItemColumns },
+        {
+            type: 'fields', titleKey: 'general.settings', items: [
+                { key: 'invoice_prefix', type: 'text', labelKey: 'preferences.sale.invoice_prefix' },
+                { key: 'start_number', type: 'number', labelKey: 'preferences.sale.start_number', min: 1 },
+            ]
+        },
+    ],
     purchase: [
         { type: 'toggles', group: 'general_fields', titleKey: 'preferences.purchase.general_fields', items: documentGeneralFields },
         { type: 'toggles', group: 'item_columns', titleKey: 'preferences.purchase.item_columns', items: purchaseItemColumns },
@@ -217,6 +227,16 @@ const SCHEMAS = {
     purchase_return: [
         { type: 'toggles', group: 'general_fields', titleKey: 'preferences.purchase.general_fields', items: returnGeneralFields },
         { type: 'toggles', group: 'item_columns', titleKey: 'preferences.purchase.item_columns', items: returnItemColumns },
+    ],
+    purchase_quotation: [
+        { type: 'toggles', group: 'general_fields', titleKey: 'preferences.purchase.general_fields', items: generalFields },
+        { type: 'toggles', group: 'item_columns', titleKey: 'preferences.purchase.item_columns', items: purchaseOrderItemColumns },
+        {
+            type: 'fields', titleKey: 'general.settings', items: [
+                { key: 'invoice_prefix', type: 'text', labelKey: 'preferences.purchase.invoice_prefix' },
+                { key: 'start_number', type: 'number', labelKey: 'preferences.purchase.start_number', min: 1 },
+            ]
+        },
     ],
     item_management: [
         { type: 'toggles', group: 'visible_fields', titleKey: 'preferences.item_management.visible_fields', items: itemManagementFields },
