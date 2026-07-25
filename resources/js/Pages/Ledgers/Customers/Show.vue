@@ -4,7 +4,7 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3';
 import { Button } from '@/Components/ui/button';
-import { ArrowLeft, SquarePen, Printer } from 'lucide-vue-next';
+import { ArrowLeft, SquarePen, Printer, Hash, Mail, Phone, MessageCircle } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue';
 import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus';
@@ -176,46 +176,75 @@ const customerMovementColumns = computed(() => [
 
             <!-- GENERAL TAB -->
             <div v-if="activeMainTab === 'general'" class="space-y-4">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <!-- Left: avatar + statement -->
-                    <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-4 flex flex-col items-center gap-4">
-                        <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white text-2xl font-bold">
-                            {{ (customerData.name || '').charAt(0).toUpperCase() }}
-                        </div>
-                        <div class="text-center">
-                            <div class="text-lg font-semibold text-primary">
-                                {{ customerData.name }}
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:items-start">
+                    <!-- Left column: profile, contact and statement cards -->
+                    <div class="space-y-4 lg:self-start">
+                        <!-- Profile card -->
+                        <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-5 flex flex-col items-center gap-3">
+                            <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white text-2xl font-bold">
+                                {{ (customerData.name || '').charAt(0).toUpperCase() }}
                             </div>
-                            <div class="text-xs text-muted-foreground mt-1">
-                                {{ customerData.code }}
+                            <div class="text-center">
+                                <div class="text-lg font-semibold text-primary">{{ customerData.name }}</div>
+                                <div class="mt-1 text-xs text-muted-foreground/70">{{ t('ledger.customer.customer') }}</div>
                             </div>
-                            <div class="mt-2 text-xs text-muted-foreground/70">
-                                {{ t('ledger.customer.customer') }}
+                            <div class="flex items-center gap-2 pt-1">
+                                <button
+                                    v-if="can('customers.update') && customerData.id"
+                                    type="button"
+                                    class="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+                                    :title="t('datatable.edit')"
+                                    @click="router.visit(route('customers.edit', customerData.id))"
+                                >
+                                    <SquarePen class="h-4 w-4" />
+                                </button>
+                                <button
+                                    type="button"
+                                    class="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors hover:bg-muted/70"
+                                    :title="t('general.back')"
+                                    @click="router.visit(route('customers.index'))"
+                                >
+                                    <ArrowLeft class="h-4 w-4" />
+                                </button>
                             </div>
                         </div>
 
-                        <!-- Statement summary -->
-                        <div class="w-full grid grid-cols-3 gap-2 mt-4">
-                            <div class="border border-border rounded-lg px-3 py-2 text-center bg-background">
-                                <div class="text-xs text-muted-foreground">{{ t('general.credit') }}</div>
-                                <div class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                                    {{  (statement.total_credit) }}
-                                </div>
+                        <!-- Contact card -->
+                        <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border divide-y divide-border overflow-hidden">
+                            <div class="flex items-center gap-3 px-4 py-2.5">
+                                <Hash class="h-4 w-4 shrink-0 text-violet-500" />
+                                <span class="text-sm font-medium text-foreground">{{ customerData.code || '-' }}</span>
                             </div>
-                            <div class="border border-border rounded-lg px-3 py-2 text-center bg-background">
-                                <div class="text-xs text-muted-foreground">{{ t('general.debit') }}</div>
-                                <div class="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                                    {{  (statement.total_debit) }}
-                                </div>
+                            <div class="flex items-center gap-3 px-4 py-2.5">
+                                <Phone class="h-4 w-4 shrink-0 text-emerald-500" />
+                                <span class="text-sm text-foreground">{{ customerData.phone_no || '-' }}</span>
                             </div>
-                            <div class="border border-border rounded-lg px-3 py-2 text-center bg-background">
-                                <div class="text-xs text-muted-foreground">{{ t('general.balance') }}</div>
-                                <div class="text-sm font-semibold"
-                                    :class="statement.balance_nature === 'cr'
-                                        ? 'text-emerald-600 dark:text-emerald-400'
-                                        : 'text-blue-600 dark:text-blue-400'">
-                                    {{  (statement.balance) }}
-                                </div>
+                            <div v-if="customerData.whatsapp_number" class="flex items-center gap-3 px-4 py-2.5">
+                                <MessageCircle class="h-4 w-4 shrink-0 text-green-500" />
+                                <span class="text-sm text-foreground">{{ customerData.whatsapp_number }}</span>
+                            </div>
+                            <div class="flex items-center gap-3 px-4 py-2.5">
+                                <Mail class="h-4 w-4 shrink-0 text-blue-500" />
+                                <span class="truncate text-sm text-foreground">{{ customerData.email || '-' }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Statement card -->
+                        <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border divide-y divide-border overflow-hidden">
+                            <div class="flex items-center justify-between px-4 py-2.5">
+                                <span class="text-sm text-muted-foreground">{{ t('general.credit') }}</span>
+                                <span class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{{ statement.total_credit }}</span>
+                            </div>
+                            <div class="flex items-center justify-between px-4 py-2.5">
+                                <span class="text-sm text-muted-foreground">{{ t('general.debit') }}</span>
+                                <span class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{ statement.total_debit }}</span>
+                            </div>
+                            <div class="flex items-center justify-between px-4 py-2.5">
+                                <span class="text-sm text-muted-foreground">{{ t('general.balance') }}</span>
+                                <span
+                                    class="text-sm font-semibold"
+                                    :class="statement.balance_nature === 'cr' ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'"
+                                >{{ statement.balance }}</span>
                             </div>
                         </div>
                     </div>
