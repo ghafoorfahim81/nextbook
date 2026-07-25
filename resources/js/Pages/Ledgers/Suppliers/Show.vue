@@ -8,6 +8,7 @@ import { ArrowLeft, SquarePen, Printer } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue';
 import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus';
+import { getCreditSummary } from '@/composables/useCreditLimit';
 
 const props = defineProps({
     supplier: { type: Object, required: true },
@@ -49,11 +50,15 @@ const openTransaction = (routeName, id) => {
     if (routeName && id) router.visit(route(routeName, id));
 };
 
-const creditLimitStatusLabel = (status) => {
-    if (status === 'Block') return t('ledger.credit_limit_block');
-    if (status === 'Indicate') return t('ledger.credit_limit_indicate');
+const creditTermsLabel = (terms) => {
+    if (terms === 'strict') return t('ledger.credit_terms_strict');
+    if (terms === 'warning') return t('ledger.credit_terms_warning');
+    if (terms === 'flexible') return t('ledger.credit_terms_flexible');
     return '-';
 };
+
+const currencyCode = computed(() => supplierData.value.currency?.code || supplierData.value.currency?.name || '');
+const creditSummary = computed(() => getCreditSummary(supplierData.value));
 
 const createTransactionRoute = (type) => {
     const id = supplierData.value.id;
@@ -261,8 +266,8 @@ const supplierMovementColumns = computed(() => [
                                 <div class="font-medium text-foreground">{{ supplierData.credit_limit ?? '-' }}</div>
                             </div>
                             <div>
-                                <div class="text-xs text-muted-foreground">{{ t('ledger.credit_limit_status') }}</div>
-                                <div class="font-medium text-foreground">{{ creditLimitStatusLabel(supplierData.credit_limit_status) }}</div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.credit_terms') }}</div>
+                                <div class="font-medium text-foreground">{{ creditTermsLabel(supplierData.credit_terms) }}</div>
                             </div>
                             <div>
                                 <div class="text-xs text-muted-foreground">{{ t('ledger.discount') }}</div>
@@ -284,6 +289,34 @@ const supplierMovementColumns = computed(() => [
                                 <div class="text-xs text-muted-foreground">{{ t('general.updated_by') }}</div>
                                 <div class="font-medium text-foreground">{{ supplierData.updated_by?.name || '-' }}</div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Credit summary (only when credit limit tracking is enabled) -->
+                <div
+                    v-if="creditSummary.enabled"
+                    class="rounded-xl border p-5 shadow-sm"
+                    :class="creditSummary.classes.card"
+                >
+                    <div class="mb-4 flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-foreground">{{ t('ledger.supplier_credit_summary') }}</h3>
+                        <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium" :class="creditSummary.classes.badge">
+                            {{ creditSummary.classes.dot }} {{ creditTermsLabel(creditSummary.terms) }}
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div>
+                            <div class="text-xs text-muted-foreground">{{ t('ledger.supplier_credit_limit') }}</div>
+                            <div class="mt-1 text-lg font-semibold text-foreground">{{ formatAmount(creditSummary.limit) }} {{ currencyCode }}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-muted-foreground">{{ t('ledger.current_payable') }}</div>
+                            <div class="mt-1 text-lg font-semibold text-foreground">{{ formatAmount(creditSummary.used) }} {{ currencyCode }}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-muted-foreground">{{ t('ledger.available_credit') }}</div>
+                            <div class="mt-1 text-lg font-bold" :class="creditSummary.classes.text">{{ formatAmount(creditSummary.available) }} {{ currencyCode }}</div>
                         </div>
                     </div>
                 </div>

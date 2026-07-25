@@ -7,7 +7,7 @@ use App\Models\Administration\Country;
 use App\Models\Administration\CustomerGroup;
 use App\Models\Administration\PaymentTerm;
 use App\Models\Administration\Province;
-use App\Enums\CreditLimitStatus;
+use App\Enums\CreditTerms;
 use App\Models\Ledger\LedgerOpening;
 use App\Models\Sale\Sale;
 use App\Models\Receipt\Receipt;
@@ -145,7 +145,8 @@ class Ledger extends Model
         'country_id',
         'province_id',
         'credit_limit',
-        'credit_limit_status',
+        'credit_limit_enabled',
+        'credit_terms',
         'discount',
         'whatsapp_number',
         'is_main',
@@ -169,8 +170,9 @@ class Ledger extends Model
             'country_id' => 'string',
             'province_id' => 'string',
             'credit_limit' => 'double',
+            'credit_limit_enabled' => 'boolean',
             'discount' => 'double',
-            'credit_limit_status' => CreditLimitStatus::class,
+            'credit_terms' => CreditTerms::class,
             'created_by' => 'string',
             'updated_by' => 'string',
             'branch_id' => 'string',

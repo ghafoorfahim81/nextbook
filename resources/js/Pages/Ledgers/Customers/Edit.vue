@@ -7,6 +7,8 @@ import NextPhoneInput from '@/Components/next/NextPhoneInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from "@/Components/next/NextTextarea.vue";
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
+import { Switch } from '@/Components/ui/switch';
+import { Label } from '@/Components/ui/label';
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
@@ -100,8 +102,24 @@ useFormGuard(form)
                     <NextSelect :options="paymentTerms" v-model="form.payment_term_id" label-key="name" value-key="id" :floating-text="t('ledger.payment_term')" :searchable="true" />
                     <NextSelect :options="countries" v-model="form.country_id" label-key="localized_name" value-key="id" :floating-text="t('ledger.country')" :searchable="true" />
                     <NextSelect :options="provinces.filter((province) => !form.country_id || province.country_id === form.country_id)" v-model="form.province_id" label-key="localized_name" value-key="id" :floating-text="t('ledger.province')" :searchable="true" />
-                    <NextInput type="number" step="any" :label="t('ledger.credit_limit')" v-model="form.credit_limit" :error="form.errors?.credit_limit" />
-                    <NextSelect :options="[{ id: 'Block', name: t('ledger.credit_limit_block') }, { id: 'Indicate', name: t('ledger.credit_limit_indicate') }]" v-model="form.credit_limit_status" label-key="name" value-key="id" :floating-text="t('ledger.credit_limit_status')" />
+                    <div class="flex items-center gap-2">
+                        <Switch id="credit_limit_enabled" v-model="form.credit_limit_enabled" />
+                        <Label for="credit_limit_enabled" class="cursor-pointer">{{ t('ledger.credit_limit_enabled') }}</Label>
+                    </div>
+                    <NextInput v-if="form.credit_limit_enabled" type="number" step="any" :label="t('ledger.credit_limit')" v-model="form.credit_limit" :error="form.errors?.credit_limit" />
+                    <NextSelect
+                        v-if="form.credit_limit_enabled"
+                        :options="[
+                            { id: 'strict', name: t('ledger.credit_terms_strict') },
+                            { id: 'warning', name: t('ledger.credit_terms_warning') },
+                            { id: 'flexible', name: t('ledger.credit_terms_flexible') },
+                        ]"
+                        v-model="form.credit_terms"
+                        label-key="name"
+                        value-key="id"
+                        :clearable="false"
+                        :floating-text="t('ledger.credit_terms')"
+                    />
                     <NextInput type="number" step="any" :label="t('ledger.discount')" v-model="form.discount" :error="form.errors?.discount" />
                 </div>
 

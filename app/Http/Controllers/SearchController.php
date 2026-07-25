@@ -172,10 +172,14 @@ class SearchController extends Controller
                 'phone_no',
                 'address',
                 'currency_id',
+                'discount',
+                'credit_limit',
+                'credit_limit_enabled',
+                'credit_terms',
                 'is_active',
                 'branch_id',
             ])
-            ->withStatementTotals() 
+            ->withStatementTotals()
             ->where('is_active', true)
             ->where(function ($q) use ($searchTerm, $fields) {
                 foreach ($fields as $field) {

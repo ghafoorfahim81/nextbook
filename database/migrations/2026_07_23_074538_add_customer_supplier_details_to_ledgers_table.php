@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\CreditLimitStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -15,8 +14,11 @@ return new class extends Migration
             $table->ulid('country_id')->nullable()->index()->after('payment_term_id');
             $table->ulid('province_id')->nullable()->index()->after('country_id');
             $table->double('credit_limit')->nullable()->after('province_id');
-            $table->enum('credit_limit_status', CreditLimitStatus::values())
-                ->default(CreditLimitStatus::INDICATE->value)
+            // Original values; later renamed to `credit_terms` with strict/warning/flexible
+            // in a follow-up migration. Kept literal here so this migration has no enum-class
+            // dependency (the enum class was renamed/replaced afterwards).
+            $table->enum('credit_limit_status', ['Block', 'Indicate'])
+                ->default('Indicate')
                 ->after('credit_limit');
             $table->double('discount')->nullable()->after('credit_limit_status');
             $table->string('whatsapp_number')->nullable()->after('phone_no');

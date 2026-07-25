@@ -25,6 +25,7 @@ import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import PurchaseOrderPickerDialog from '@/Components/next/PurchaseOrderPickerDialog.vue'
 import { useLazyProps } from '@/composables/useLazyProps'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
+import { getCreditSummary } from '@/composables/useCreditLimit'
 const { t } = useI18n();
 const showFilter = () => {
     showFilter.value = true;
@@ -149,6 +150,8 @@ const applyCreateDefaults = ({ number = props.purchaseNumber } = {}) => {
     if (presetLedger?.id) {
         form.selected_ledger = presetLedger
         form.supplier_id = presetLedger.id
+        // Prefill the bill discount from the preselected supplier's default discount.
+        applyLedgerBillDiscount(presetLedger)
     }
 
     form.number = number
@@ -272,6 +275,17 @@ watch(() => form.selected_purchase_type, (newType) => {
 const submitAction = ref(null);
 
 const handleSubmitAction = (createAndNew = false) => {
+    // A strict supplier credit term blocks the purchase when it exceeds available
+    // credit, even via keyboard shortcuts that bypass the disabled buttons.
+    if (creditBlocked.value) {
+        toast({
+            title: t('general.error'),
+            description: t('ledger.exceeds_available_credit', { amount: `${formatMoney(creditInfo.value.overBy)} ${baseCurrencyCode.value}` }),
+            variant: 'destructive',
+        })
+        return;
+    }
+
     const isCreateAndNew = createAndNew === true;
     submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
     handleSubmit(isCreateAndNew);
@@ -385,10 +399,20 @@ const handleSelectChange = (field, value) => {
     }
     form[field] = value.id;
 
-    if (field === 'supplier_id' && !skipEligibilityCheck.value) {
-        loadEligiblePurchaseOrders(value.id)
+    if (field === 'supplier_id') {
+        applyLedgerBillDiscount(value)
+        if (!skipEligibilityCheck.value) {
+            loadEligiblePurchaseOrders(value.id)
+        }
     }
 };
+
+// Prefill the bill discount (%) from the selected supplier's default discount.
+const applyLedgerBillDiscount = (ledger) => {
+    const disc = Number(ledger?.discount)
+    form.discount = Number.isFinite(disc) && disc > 0 ? disc : ''
+    form.discount_type = 'percentage'
+}
 
 
 function handleSubmit(createAndNew = false) {
@@ -650,6 +674,20 @@ const hasDuplicateRows = computed(() => {
     }
     return false
 })
+
+// --- Credit limit ---------------------------------------------------------
+// Purchase is the mirror of sale: the supplier's credit limit is what THEY allow
+// us, checked against what we owe them (payable) plus this bill's total (home currency).
+// form.transaction_total is only set at submit time, so recompute the live net total.
+const orderBaseTotal = computed(() => {
+    const net = (Number(goodsTotal.value) || 0) - (Number(totalDiscount.value) || 0) + (Number(totalTax.value) || 0)
+    const rate = Number(form.rate) || 1
+    return net * rate
+})
+const creditInfo = computed(() => getCreditSummary(form.selected_ledger, orderBaseTotal.value))
+const creditBlocked = computed(() => creditInfo.value.blockSubmit)
+const baseCurrencyCode = computed(() => props.currencies?.data?.find((c) => c.is_base_currency)?.code || '')
+const formatMoney = (v) => Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 watch(hasDuplicateRows, (hasDuplicates) => {
     if (!hasDuplicates && duplicateToast.value) {
@@ -999,6 +1037,29 @@ useFormGuard(form)
                 />
             </div>
             </div>
+
+            <!-- Credit limit banner for the selected supplier -->
+            <div
+                v-if="creditInfo.enabled"
+                class="mb-3 rounded-lg border px-4 py-2.5 text-sm"
+                :class="creditInfo.classes.card"
+            >
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <span class="font-semibold text-foreground">{{ form.selected_ledger?.name }}</span>
+                    <span class="text-muted-foreground">{{ t('ledger.supplier_credit_limit') }}: <span class="font-medium text-foreground">{{ formatMoney(creditInfo.limit) }}</span></span>
+                    <span class="text-muted-foreground">{{ t('ledger.current_payable') }}: <span class="font-medium text-foreground">{{ formatMoney(creditInfo.used) }}</span></span>
+                    <span class="text-muted-foreground">{{ t('ledger.available_credit') }}: <span class="font-semibold" :class="creditInfo.classes.text">{{ formatMoney(creditInfo.available) }} {{ baseCurrencyCode }}</span></span>
+                    <span>{{ creditInfo.classes.dot }}</span>
+                </div>
+                <div
+                    v-if="creditInfo.exceeded"
+                    class="mt-1 font-medium"
+                    :class="creditInfo.terms === 'strict' ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'"
+                >
+                    ⚠️ {{ t('ledger.exceeds_available_credit', { amount: `${formatMoney(creditInfo.overBy)} ${baseCurrencyCode}` }) }}
+                </div>
+            </div>
+
             <!-- Barcode scanner: scan to add or increment a line, hands-free -->
             <div class="mb-2 flex flex-wrap items-center gap-3">
                 <ScanBarcode class="h-5 w-5 shrink-0 text-violet-500" />
@@ -1316,7 +1377,7 @@ useFormGuard(form)
                 :creating-label="t('general.creating', { name: t('purchase.purchase') })"
                 :create-loading="createLoading"
                 :create-and-new-loading="createAndNewLoading"
-                :disabled="hasDuplicateRows"
+                :disabled="hasDuplicateRows || creditBlocked"
                 @create-and-new="handleSubmitAction(true)"
                 @cancel="() => $inertia.visit(route('purchases.index'))"
             />
