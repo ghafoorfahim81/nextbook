@@ -11,6 +11,7 @@ use App\Enums\CreditTerms;
 use App\Models\Ledger\LedgerOpening;
 use App\Models\Sale\Sale;
 use App\Models\Receipt\Receipt;
+use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
@@ -35,9 +36,21 @@ use App\Traits\BranchSpecific;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 class Ledger extends Model
 {
-    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     // ... your existing code ...
+
+    /**
+     * Public URL for the profile photo (null when none is set).
+     */
+    protected function photoUrl(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->photo
+                ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->photo)
+                : null,
+        );
+    }
 
     /**
      * Statement accessor
@@ -133,6 +146,7 @@ class Ledger extends Model
      */
     protected $fillable = [
         'name',
+        'photo',
         'code',
         'address',
         'contact_person',
