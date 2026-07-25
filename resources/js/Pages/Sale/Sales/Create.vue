@@ -25,6 +25,7 @@ import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { useLazyProps } from '@/composables/useLazyProps'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
 import SaleOrderPickerDialog from '@/Components/next/SaleOrderPickerDialog.vue'
+import { getCreditSummary } from '@/composables/useCreditLimit'
 const { t } = useI18n();
 const { resolveColor } = useColors();
 const showFilter = () => {
@@ -155,6 +156,9 @@ const applyCreateDefaults = ({ number = props.saleNumber } = {}) => {
         form.selected_ledger = presetLedger
         form.customer_id = presetLedger.id
     }
+
+    // Prefill the bill discount from whichever customer ended up selected.
+    applyLedgerBillDiscount(form.selected_ledger)
 
     const defaultCurrency = resolveDefaultCurrency()
     if (defaultCurrency) {
@@ -316,6 +320,17 @@ const createAndNewLoading = computed(() => form.processing && submitAction.value
 const saveAndPrintLoading = computed(() => form.processing && submitAction.value === 'create_and_print');
 
 const handleSubmitAction = (action = 'create') => {
+    // A strict credit term blocks the sale when it exceeds available credit,
+    // even via keyboard shortcuts that bypass the disabled buttons.
+    if (creditBlocked.value) {
+        toast({
+            title: t('general.error'),
+            description: t('ledger.exceeds_available_credit', { amount: `${formatMoney(creditInfo.value.overBy)} ${baseCurrencyCode.value}` }),
+            variant: 'destructive',
+        })
+        return;
+    }
+
     submitAction.value = action;
 
     if (action === 'create_and_print') {
@@ -438,10 +453,20 @@ const handleSelectChange = (field, value) => {
     }
     form[field] = value.id;
 
-    if (field === 'customer_id' && !skipEligibilityCheck.value) {
-        loadEligibleSaleOrders(value.id)
+    if (field === 'customer_id') {
+        applyLedgerBillDiscount(value)
+        if (!skipEligibilityCheck.value) {
+            loadEligibleSaleOrders(value.id)
+        }
     }
 };
+
+// Prefill the bill discount (%) from the selected customer's default discount.
+const applyLedgerBillDiscount = (ledger) => {
+    const disc = Number(ledger?.discount)
+    form.discount = Number.isFinite(disc) && disc > 0 ? disc : ''
+    form.discount_type = 'percentage'
+}
 
 
 function finalizePrint(page) {
@@ -790,6 +815,22 @@ const hasDuplicateRows = computed(() => {
     }
     return false
 })
+
+// --- Credit limit ---------------------------------------------------------
+// Order total converted to the home currency (credit limits are stored in home
+// currency), so it can be compared against the customer's available credit.
+// NB: form.transaction_total is only filled in at submit time, so we recompute
+// the live net total here (same formula that becomes transaction_total).
+const orderBaseTotal = computed(() => {
+    const net = (Number(goodsTotal.value) || 0) - (Number(totalDiscount.value) || 0) + (Number(totalTax.value) || 0)
+    const rate = Number(form.rate) || 1
+    return net * rate
+})
+const creditInfo = computed(() => getCreditSummary(form.selected_ledger, orderBaseTotal.value))
+// A strict customer whose order exceeds available credit blocks submission.
+const creditBlocked = computed(() => creditInfo.value.blockSubmit)
+const baseCurrencyCode = computed(() => props.currencies?.data?.find((c) => c.is_base_currency)?.code || '')
+const formatMoney = (v) => Number(v || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 watch(hasDuplicateRows, (hasDuplicates) => {
     if (!hasDuplicates && duplicateToast.value) {
@@ -1173,6 +1214,29 @@ useFormGuard(form)
                 />
             </div>
             </div>
+
+            <!-- Credit limit banner for the selected customer -->
+            <div
+                v-if="creditInfo.enabled"
+                class="mb-3 rounded-lg border px-4 py-2.5 text-sm"
+                :class="creditInfo.classes.card"
+            >
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <span class="font-semibold text-foreground">{{ form.selected_ledger?.name }}</span>
+                    <span class="text-muted-foreground">{{ t('ledger.credit_limit') }}: <span class="font-medium text-foreground">{{ formatMoney(creditInfo.limit) }}</span></span>
+                    <span class="text-muted-foreground">{{ t('ledger.used') }}: <span class="font-medium text-foreground">{{ formatMoney(creditInfo.used) }}</span></span>
+                    <span class="text-muted-foreground">{{ t('ledger.available_credit') }}: <span class="font-semibold" :class="creditInfo.classes.text">{{ formatMoney(creditInfo.available) }} {{ baseCurrencyCode }}</span></span>
+                    <span>{{ creditInfo.classes.dot }}</span>
+                </div>
+                <div
+                    v-if="creditInfo.exceeded"
+                    class="mt-1 font-medium"
+                    :class="creditInfo.terms === 'strict' ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'"
+                >
+                    ⚠️ {{ t('ledger.exceeds_available_credit', { amount: `${formatMoney(creditInfo.overBy)} ${baseCurrencyCode}` }) }}
+                </div>
+            </div>
+
             <!-- Barcode scanner: scan to add or increment a line, hands-free -->
             <div class="mb-2 flex flex-wrap items-center gap-3">
                 <ScanBarcode class="h-5 w-5 shrink-0 text-violet-500" />
@@ -1508,7 +1572,7 @@ useFormGuard(form)
                 :create-and-new-loading="createAndNewLoading"
                 :save-and-print-loading="saveAndPrintLoading"
                 :show-save-and-print="true"
-                :disabled="hasDuplicateRows"
+                :disabled="hasDuplicateRows || creditBlocked"
                 @create-and-new="handleSubmitAction('create_and_new')"
                 @save-and-print="handleSubmitAction('create_and_print')"
                 @cancel="() => $inertia.visit(route('sales.index'))"

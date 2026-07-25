@@ -92,6 +92,9 @@ class ReceiptController extends Controller
                             'phone_no',
                             'address',
                             'currency_id',
+                            'credit_limit',
+                            'credit_limit_enabled',
+                            'credit_terms',
                             'is_active',
                             'branch_id',
                         ])
@@ -128,6 +131,9 @@ class ReceiptController extends Controller
                 'phone_no',
                 'address',
                 'currency_id',
+                'credit_limit',
+                'credit_limit_enabled',
+                'credit_terms',
                 'is_active',
                 'branch_id',
             ])

@@ -26,7 +26,11 @@ class LedgerOptionResource extends JsonResource
             'email' => $this->email,
             'phone_no' => $this->phone_no,
             'address' => $this->address,
-            'currency_id' => $this->currency_id, 
+            'currency_id' => $this->currency_id,
+            'discount' => $this->discount,
+            'credit_limit' => $this->credit_limit,
+            'credit_limit_enabled' => (bool) $this->credit_limit_enabled,
+            'credit_terms' => $this->credit_terms?->value,
             'statement' => [
                 'balance' => $balanceAmount,
                 'balance_amount' => $balanceAmount,
