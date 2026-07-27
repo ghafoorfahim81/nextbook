@@ -326,7 +326,7 @@ onMounted(() => {
             <!-- Records table -->
             <div class="rounded-xl border border-border bg-card overflow-hidden">
                 <!-- Tabs + export -->
-                <div class="px-4 pt-3 flex items-center justify-between gap-3 border-b border-border bg-background">
+                <div class="px-4 pt-3 pb-1 flex items-center justify-between gap-3 border-b border-border bg-background">
                     <div class="flex gap-2">
                         <button class="px-3 py-2 text-sm rounded-t-md border-b-2"
                             :class="activeTab === 'in' ? 'border-violet-500 text-violet-600 font-bold' : 'border-transparent text-muted-foreground hover:text-foreground'"
@@ -339,9 +339,11 @@ onMounted(() => {
                             {{ t('item.out_records') }}
                         </button>
                     </div>
-                    <button
-                        class="inline-flex items-center gap-2 rounded-md bg-violet-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-violet-600 disabled:opacity-60"
+                    <Button
+                    class="h-9 border-green-800 text-green-600 hover:bg-green-700 hover:text-white"
                         :disabled="loading || !itemData.id"
+                        variant="outline"
+                        size="sm"
                         @click="exportCurrentRecords">
                         <Download class="h-3.5 w-3.5" />
                         {{ activeTab === 'in' ? t('item.export_in_records') : t('item.export_out_records') }}
