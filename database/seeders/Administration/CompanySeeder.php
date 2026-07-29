@@ -42,7 +42,7 @@ class CompanySeeder extends Seeder
             'calendar_type' => CalendarType::GREGORIAN,
             'locale' => Locale::EN,
             'working_style' => WorkingStyle::NORMAL,
-            'business_type' => BusinessType::PHARMACY_SHOP,
+            'business_type' => BusinessType::PHARMACY,
             'currency_id' => $currencyId,
         ]);
         $user = \App\Models\User::withoutGlobalScopes()->where('name', 'admin')->first();

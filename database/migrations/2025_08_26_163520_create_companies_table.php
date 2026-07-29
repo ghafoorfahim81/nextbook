@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('logo')->nullable();
             $table->enum('calendar_type', CalendarType::values())->nullable()->default(CalendarType::JALALI->value);
             $table->enum('working_style', WorkingStyle::values())->nullable()->default(WorkingStyle::NORMAL->value);
-            $table->enum('business_type', BusinessType::values())->nullable()->default(BusinessType::PHARMACY_SHOP->value);
+            $table->enum('business_type', BusinessType::values())->nullable()->default(BusinessType::PHARMACY->value);
             $table->enum('locale', Locale::values())->nullable()->default(Locale::EN->value);
             $table->ulid('currency_id')->index();
             $table->enum('costing_method', CostingMethod::values())->nullable()->default(CostingMethod::FIFO->value);

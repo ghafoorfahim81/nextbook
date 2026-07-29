@@ -37,7 +37,7 @@ class CompanyFactory extends Factory
             'logo' => null,
             'calendar_type' => CalendarType::JALALI->value,
             'working_style' => WorkingStyle::NORMAL->value,
-            'business_type' => BusinessType::PHARMACY_SHOP->value,
+            'business_type' => BusinessType::PHARMACY->value,
             'locale' => Locale::EN->value,
             'currency_id' => Currency::factory(),
             'costing_method' => CostingMethod::FIFO->value,
