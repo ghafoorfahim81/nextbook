@@ -4,38 +4,44 @@ namespace App\Enums;
 
 enum BusinessType: string
 {
-    case PHARMACY_SHOP = 'pharmacy_shop';
-    case PHARMA_DISTRIBUTION = 'pharma_distribution';
-    case SUPERMARKET_GROCERY = 'supermarket_grocery';
+    case PHARMACY = 'pharmacy'; 
+    case SUPERMARKET = 'supermarket';
+    case MANUFACTURING = 'manufacturing';
+    case RETAIL = 'retail';
     case ACCOUNTING = 'accounting';
-    case AUTOMOBILE = 'automobile';
-    case BILLING_GENERAL = 'billing_general';
-    case BOOK_AUTHOR_PUBLISHER = 'book_author_publisher';
-    case GARMENT_SIZE_WISE = 'garment_size_wise';
-    case HOTEL_RESORTS = 'hotel_resorts';
+    case AUTOMOBILE = 'automobile'; 
+    case BOOK = 'book';
+    case CLOTHING = 'clothing'; 
+    case HOTEL = 'hotel';
+    case CARPET = 'carpet';
+    case ELECTRONICS = 'electronics';
+    case COMPUTER = 'computer';
     case JEWELLERY = 'jewellery';
-    case MOBILE_SERIAL_WISE = 'mobile_serial_wise';
-    case PHARMA_MANUFACTURING_BATCH = 'pharma_manufacturing_batch';
-    case PLY_CARPET_FEET_MTR_WISE = 'ply_carpet_feet_mtr_wise';
-    case RESTAURANT_TABLE_WISE = 'restaurant_table_wise';
+    case MOBILE = 'mobile';
+    case PHARMA_MANUFACTURING = 'pharma_manufacturing';
+    case PLY_CARPET = 'ply_carpet';
+    case RESTAURANT = 'restaurant';
 
     public function getLabel(): string
     {
         return match($this) {
-            self::PHARMACY_SHOP => __('enums.business_type.pharmacy_shop'),
-            self::PHARMA_DISTRIBUTION => __('enums.business_type.pharma_distribution'),
-            self::SUPERMARKET_GROCERY => __('enums.business_type.supermarket_grocery'),
+            self::PHARMACY => __('enums.business_type.pharmacy'),
+            self::SUPERMARKET => __('enums.business_type.supermarket'),
+            self::MANUFACTURING => __('enums.business_type.manufacturing'),
+            self::RETAIL => __('enums.business_type.retail'),
             self::ACCOUNTING => __('enums.business_type.accounting'),
             self::AUTOMOBILE => __('enums.business_type.automobile'),
-            self::BILLING_GENERAL => __('enums.business_type.billing_general'),
-            self::BOOK_AUTHOR_PUBLISHER => __('enums.business_type.book_author_publisher'),
-            self::GARMENT_SIZE_WISE => __('enums.business_type.garment_size_wise'),
-            self::HOTEL_RESORTS => __('enums.business_type.hotel_resorts'),
+            self::BOOK => __('enums.business_type.book'),
+            self::CLOTHING => __('enums.business_type.clothing'),
+            self::HOTEL => __('enums.business_type.hotel'),
+            self::CARPET => __('enums.business_type.carpet'),
+            self::ELECTRONICS => __('enums.business_type.electronics'),
+            self::COMPUTER => __('enums.business_type.computer'),
             self::JEWELLERY => __('enums.business_type.jewellery'),
-            self::MOBILE_SERIAL_WISE => __('enums.business_type.mobile_serial_wise'),
-            self::PHARMA_MANUFACTURING_BATCH => __('enums.business_type.pharma_manufacturing_batch'),
-            self::PLY_CARPET_FEET_MTR_WISE => __('enums.business_type.ply_carpet_feet_mtr_wise'),
-            self::RESTAURANT_TABLE_WISE => __('enums.business_type.restaurant_table_wise'),
+            self::MOBILE => __('enums.business_type.mobile'),
+            self::PHARMA_MANUFACTURING => __('enums.business_type.pharma_manufacturing'),
+            self::PLY_CARPET => __('enums.business_type.ply_carpet'),
+            self::RESTAURANT => __('enums.business_type.restaurant'),
         };
     }
 
