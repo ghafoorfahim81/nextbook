@@ -163,7 +163,7 @@ const switchTab = (tab) => {
     if (tab === 'out' && outRecords.value.length === 0) loadMore();
 };
 
-const exportCurrentRecords = () => {
+const    = () => {
     const routeName = activeTab.value === 'in' ? 'items.in-records.export' : 'items.out-records.export';
     window.location.href = route(routeName, itemData.value.id);
 };
@@ -344,7 +344,7 @@ onMounted(() => {
                         :disabled="loading || !itemData.id"
                         variant="outline"
                         size="sm"
-                        @click="exportCurrentRecords">
+                        @click="  ">
                         <Download class="h-3.5 w-3.5" />
                         {{ activeTab === 'in' ? t('item.export_in_records') : t('item.export_out_records') }}
                     </button>
