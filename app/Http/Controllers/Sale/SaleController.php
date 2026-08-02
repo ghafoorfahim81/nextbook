@@ -392,7 +392,9 @@ class SaleController extends Controller
 
     public function show(Request $request, Sale $sale)
     {
-        $sale->load(['items.item', 'items.unitMeasure', 'customer', 'transaction.currency', 'createdBy', 'updatedBy']);
+        // transaction.lines is required: SaleResource derives receivable_amount / old_balance
+        // from the customer ledger lines of this sale's transaction.
+        $sale->load(['items.item', 'items.unitMeasure', 'customer', 'transaction.currency', 'transaction.lines', 'createdBy', 'updatedBy']);
 
         $resource = new SaleResource($sale);
 
