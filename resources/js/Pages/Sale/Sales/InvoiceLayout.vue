@@ -152,7 +152,6 @@ const itemDiscountTotal = computed(() => rows.value.reduce((sum, item) => sum + 
 const billDiscountRaw = computed(() => toNumber(props.invoice?.discount))
 const billDiscountAmount = computed(() => props.invoice?.discount_type === 'percentage' ? subtotal.value * (billDiscountRaw.value / 100) : billDiscountRaw.value)
 const totalDiscount = computed(() => itemDiscountTotal.value + billDiscountAmount.value)
-const invoiceTotal = computed(() => subtotal.value - totalDiscount.value)
 const remainingAmount = computed(() => toNumber(props.invoice?.remaining_amount ?? props.invoice?.receivable_amount))
 const oldBalance = computed(() => toNumber(props.invoice?.old_balance))
 const summaryRows = computed(() => [
@@ -160,7 +159,8 @@ const summaryRows = computed(() => [
   { label: t('invoice.discount'), value: formatNumber(totalDiscount.value) },
   { label: t('invoice.old_balance'), value: formatOldBalanceAmount(oldBalance.value) },
   { label: t('invoice.remaining_amount'), value: formatNumber(remainingAmount.value) },
-  { label: t('invoice.total_due'), value: formatNumber(invoiceTotal.value+oldBalance.value), strong: true },
+  // Total due = what is still owed on this invoice (after any payment taken at sale time) + prior balance
+  { label: t('invoice.total_due'), value: formatNumber(remainingAmount.value + oldBalance.value), strong: true },
 ])
 
 const signatureLabel = computed(() => t('invoice.signature'))

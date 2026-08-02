@@ -502,6 +502,8 @@ class SaleController extends Controller
 
     public function show(Request $request, Sale $sale)
     {
+        // transaction.lines is required: SaleResource derives receivable_amount / old_balance
+        // from the customer ledger lines of this sale's transaction.
         $sale->load([
             'items.item',
             'items.unitMeasure',
@@ -510,10 +512,16 @@ class SaleController extends Controller
             'transaction.currency',
             'transaction.originalTransaction',
             'transaction.reversalTransaction',
+            'transaction.lines',
             'createdBy',
             'updatedBy',
             'attachments',
         ]);
+        // transaction.lines is required: SaleResource derives receivable_amount / old_balance
+        // from the customer ledger lines of this sale's transaction.
+        // $sale->load(['items.item', 'items.unitMeasure', 'customer', 'transaction.currency', 'transaction.lines', 'createdBy', 'updatedBy']);
+
+        // $sale->load(['items.item', 'items.unitMeasure', 'customer', 'transaction.currency', 'transaction.lines', 'createdBy', 'updatedBy']);
 
         $resource = new SaleResource($sale);
 
