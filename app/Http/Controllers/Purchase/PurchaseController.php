@@ -111,6 +111,10 @@ class PurchaseController extends Controller
             }, $validated['item_list']);
             $purchase->items()->createMany($validated['item_list']);
             $lines = [];
+            // Document amounts (purchase_items.unit_price, GL lines) stay in the transaction
+            // currency — reports convert them with transactions.rate. Stock costing has no
+            // currency of its own, so unit_cost must be stored in the home currency.
+            $rate = $this->transactionRate($validated);
             foreach ($validated['item_list'] as $item) {
                 $quantity = (float) $item['quantity'];
                 $unitPrice = (float) $item['unit_price'];
@@ -134,7 +138,7 @@ class PurchaseController extends Controller
                     'unit_measure_id' => $item['unit_measure_id'], // from item form
                     'quantity'        => $quantity,
                     'source'          => StockSourceType::PURCHASE->value,
-                    'unit_cost'       => (float) $item['unit_price'],
+                    'unit_cost'       => $unitPrice * $rate,
                     'status'          => StockStatus::DRAFT->value,
                     'batch'           => $item['batch'] ?? null,
                     'date'            => $validated['date'],
@@ -397,6 +401,8 @@ class PurchaseController extends Controller
             $lines = [];
             $glAccounts = Cache::get('gl_accounts');
             $discountTotal = (float) $request->input('discount_total', 0);
+            // See store(): GL lines stay in the transaction currency, stock cost is home currency.
+            $rate = $this->transactionRate($validated);
 
             foreach ($validated['item_list'] as $item) {
                 $quantity = (float) $item['quantity'];
@@ -410,7 +416,7 @@ class PurchaseController extends Controller
                     'unit_measure_id' => $item['unit_measure_id'],
                     'quantity'        => $quantity,
                     'source'          => StockSourceType::PURCHASE->value,
-                    'unit_cost'       => $unitPrice,
+                    'unit_cost'       => $unitPrice * $rate,
                     'status'          => StockStatus::DRAFT->value,
                     'batch'           => $item['batch'] ?? null,
                     'date'            => $validated['date'],
@@ -556,6 +562,18 @@ class PurchaseController extends Controller
 
 
         return redirect()->route('purchases.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.purchase')]));
+    }
+
+    /**
+     * Home-currency multiplier for the transaction: 1 unit of the selected currency
+     * equals `rate` units of the company currency. Falls back to 1 so a missing or
+     * zeroed rate can never wipe out stock cost.
+     */
+    private function transactionRate(array $validated): float
+    {
+        $rate = (float) ($validated['rate'] ?? 1);
+
+        return $rate > 0 ? $rate : 1.0;
     }
 
     private function rebuildStockStateForCombos(array $combos): void

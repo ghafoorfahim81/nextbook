@@ -79,6 +79,8 @@
   "order": "Order",
   "order_by": "Order by",
   "rate": "Rate",
+  "currency": "Currency",
+  "exchange_rate": "Exchange Rate",
   "price": "Price",
   "total": "Total",
   "phone": "Phone",

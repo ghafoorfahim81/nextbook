@@ -27,7 +27,7 @@ class SaleStoreRequest extends FormRequest
             'date' => ['nullable', 'date'],
             'transaction_total' => ['required', 'numeric'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
-            'rate' => ['nullable', 'numeric'],
+            'rate' => ['nullable', 'numeric', 'gt:0'],
             'sale_type' => ['nullable', 'string', Rule::in(SalePurchaseType::values())],
             'due_date' => ['nullable', 'date'],
             'bank_account_id' => ['nullable', 'string', 'exists:accounts,id'],

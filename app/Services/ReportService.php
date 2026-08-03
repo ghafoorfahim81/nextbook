@@ -459,7 +459,11 @@ class ReportService
         $grossSql = '(SELECT COALESCE(SUM(si2.quantity * si2.unit_price), 0) FROM sale_items si2 WHERE si2.sale_id = s.id AND si2.deleted_at IS NULL)';
         $discSql  = '(SELECT COALESCE(SUM(si2.discount), 0) FROM sale_items si2 WHERE si2.sale_id = s.id AND si2.deleted_at IS NULL)';
         $taxSql   = '(SELECT COALESCE(SUM(si2.tax), 0) FROM sale_items si2 WHERE si2.sale_id = s.id AND si2.deleted_at IS NULL)';
-        $netSql   = "($grossSql - $discSql + $taxSql - CASE WHEN s.discount_type = 'percentage' THEN $grossSql * COALESCE(s.discount, 0) / 100 ELSE COALESCE(s.discount, 0) END)";
+        $documentNetSql = "($grossSql - $discSql + $taxSql - CASE WHEN s.discount_type = 'percentage' THEN $grossSql * COALESCE(s.discount, 0) / 100 ELSE COALESCE(s.discount, 0) END)";
+        // sale_items.unit_price is in the sale's own currency. Summing rows across
+        // currencies is only meaningful in home currency, which is what the rest of
+        // the reports (P&L, balance sheet) show.
+        $netSql = "($documentNetSql * COALESCE(t.rate, 1))";
 
         $query = DB::table('sales as s')
             ->leftJoin('ledgers as l', function ($join) use ($branchId) {
@@ -566,7 +570,8 @@ class ReportService
 
         $summaryRow = (clone $query)
             ->selectRaw('COALESCE(SUM(si.quantity), 0) as total_quantity')
-            ->selectRaw('COALESCE(SUM(si.quantity * si.unit_price), 0) as total_amount')
+            // Restated in home currency so rows from different sale currencies can be summed.
+            ->selectRaw('COALESCE(SUM(si.quantity * si.unit_price * COALESCE(t.rate, 1)), 0) as total_amount')
             ->first();
 
         $query
@@ -580,8 +585,8 @@ class ReportService
             ->selectRaw('i.code as code')
             ->selectRaw('um.name as unit_measure')
             ->selectRaw('si.quantity as quantity')
-            ->selectRaw('si.unit_price as unit_price')
-            ->selectRaw('COALESCE(si.quantity * si.unit_price, 0) as total_amount');
+            ->selectRaw('si.unit_price * COALESCE(t.rate, 1) as unit_price')
+            ->selectRaw('COALESCE(si.quantity * si.unit_price * COALESCE(t.rate, 1), 0) as total_amount');
 
         return $this->paginateReport(
             $query,
@@ -619,7 +624,10 @@ class ReportService
         $grossSql = '(SELECT COALESCE(SUM(pi2.quantity * pi2.unit_price), 0) FROM purchase_items pi2 WHERE pi2.purchase_id = p.id AND pi2.deleted_at IS NULL)';
         $discSql  = '(SELECT COALESCE(SUM(pi2.discount), 0) FROM purchase_items pi2 WHERE pi2.purchase_id = p.id AND pi2.deleted_at IS NULL)';
         $taxSql   = '(SELECT COALESCE(SUM(pi2.tax), 0) FROM purchase_items pi2 WHERE pi2.purchase_id = p.id AND pi2.deleted_at IS NULL)';
-        $netSql   = "($grossSql - $discSql + $taxSql - CASE WHEN p.discount_type = 'percentage' THEN $grossSql * COALESCE(p.discount, 0) / 100 ELSE COALESCE(p.discount, 0) END)";
+        $documentNetSql = "($grossSql - $discSql + $taxSql - CASE WHEN p.discount_type = 'percentage' THEN $grossSql * COALESCE(p.discount, 0) / 100 ELSE COALESCE(p.discount, 0) END)";
+        // See getSalesGeneralReport(): purchase_items.unit_price is in the purchase's
+        // own currency, so it has to be restated in home currency before summing.
+        $netSql = "($documentNetSql * COALESCE(t.rate, 1))";
 
         $query = DB::table('purchases as p')
             ->leftJoin('transactions as t', function ($join) use ($branchId) {
@@ -720,7 +728,8 @@ class ReportService
 
         $summaryRow = (clone $query)
             ->selectRaw('COALESCE(SUM(pi.quantity), 0) as total_quantity')
-            ->selectRaw('COALESCE(SUM(pi.quantity * pi.unit_price), 0) as total_amount')
+            // Restated in home currency so rows from different purchase currencies can be summed.
+            ->selectRaw('COALESCE(SUM(pi.quantity * pi.unit_price * COALESCE(t.rate, 1)), 0) as total_amount')
             ->first();
 
         $query
@@ -732,8 +741,8 @@ class ReportService
             ->selectRaw("COALESCE(l.name, '-') as supplier")
             ->selectRaw('i.name as item')
             ->selectRaw('pi.quantity as quantity')
-            ->selectRaw('pi.unit_price as unit_price')
-            ->selectRaw('COALESCE(pi.quantity * pi.unit_price, 0) as total_amount');
+            ->selectRaw('pi.unit_price * COALESCE(t.rate, 1) as unit_price')
+            ->selectRaw('COALESCE(pi.quantity * pi.unit_price * COALESCE(t.rate, 1), 0) as total_amount');
 
         return $this->paginateReport(
             $query,
