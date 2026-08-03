@@ -34,7 +34,7 @@ class PurchaseUpdateRequest extends FormRequest
             'purchase_type' => ['nullable', 'string', Rule::in(SalePurchaseType::values())],
             'transaction_total' => ['required', 'numeric'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
-            'rate' => ['nullable', 'numeric'],
+            'rate' => ['nullable', 'numeric', 'gt:0'],
             'due_date' => ['nullable', 'date'],
             'item_list' => ['required', 'array'],
             'item_list.*.item_id' => ['required', 'string', 'exists:items,id'],

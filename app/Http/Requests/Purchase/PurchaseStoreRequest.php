@@ -25,7 +25,7 @@ class PurchaseStoreRequest extends FormRequest
             'date' => ['required', 'date'],
             'transaction_total' => ['required', 'numeric'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
-            'rate' => ['nullable', 'numeric'],
+            'rate' => ['nullable', 'numeric', 'gt:0'],
             'bank_account_id' => ['nullable', 'string', 'exists:accounts,id'],
             'purchase_type' => ['nullable', 'string'],
             'due_date' => ['nullable', 'date'],

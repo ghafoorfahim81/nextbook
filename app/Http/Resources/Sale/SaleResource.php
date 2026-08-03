@@ -27,11 +27,15 @@ class SaleResource extends JsonResource
         $customerStatement = !$isListing && $this->relationLoaded('customer') && $this->customer
             ? $this->customer->statement
             : null;
+        // Transaction lines are already in the sale's currency. receivable_amount is
+        // rendered beside `amount` and subtracted from it, so it stays in that currency.
+        // old_balance is a ledger-wide figure that can span several currencies, so it is
+        // the one value here that has to be home currency.
         $ledgerEffect = $transactionLines
             ->where('ledger_id', $this->customer_id)
-            ->sum(fn ($line) => ((float) $line->debit - (float) $line->credit) * $transactionRate);
+            ->sum(fn ($line) => (float) $line->debit - (float) $line->credit);
         $remainingAmount = abs((float) $ledgerEffect);
-        $oldNetBalance = (float) data_get($customerStatement, 'net_balance', 0) - (float) $ledgerEffect;
+        $oldNetBalance = (float) data_get($customerStatement, 'net_balance', 0) - ($ledgerEffect * $transactionRate);
         $items = $this->relationLoaded('items') ? $this->items : collect();
         // `transactions` has no `amount` column — always compute from items when loaded. 
         $warehouse = $this->relationLoaded('items') ? $this->warehouse() : null;
@@ -42,9 +46,10 @@ class SaleResource extends JsonResource
         $totalCostValue = null;
         $totalProfitValue = null;
         if (!$isListing && $items->isNotEmpty()) {
+            // net_unit_cost is home currency; revenue below is in the sale's currency.
             $totalCostValue = $items->sum(
                 fn ($item) => (float) ($item->net_unit_cost ?? 0) * (float) $item->quantity
-            );
+            ) / ($transactionRate ?: 1);
 
             $totalRevenue = $items->sum(function ($item) {
                 return (float) $item->quantity * (float) $item->unit_price
@@ -97,10 +102,13 @@ class SaleResource extends JsonResource
             'warehouse_id' => $warehouse?->id,
             'currency_id' => $this->transaction?->currency_id,
             'rate' => $this->transaction?->rate,
+            // additional() must be set on each item — on a collection it lands on the
+            // wrapper and never reaches SaleItemResource::toArray().
             'items' => $this->whenLoaded('items', fn () =>
-                SaleItemResource::collection($this->items)->additional([
+                $this->items->map(fn ($item) => (new SaleItemResource($item))->additional([
                     'saleNumber' => $this->number,
-                ])
+                    'rate' => $transactionRate,
+                ]))
             ),
             'item_list' => $this->whenLoaded('items', $this->items->map(function ($item) use ($dateConversionService) {
                 return [

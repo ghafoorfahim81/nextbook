@@ -20,6 +20,7 @@ import NextDate from '@/Components/next/NextDatePicker.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import { Trash2 } from 'lucide-vue-next';
 import { useLazyProps } from '@/composables/useLazyProps';
+import { toDocumentCurrency } from '@/utils/currency';
 
 const { t } = useI18n();
 const { toast } = useToast();
@@ -422,7 +423,7 @@ const handleItemChange = (index, selectedItem) => {
 
     const baseUnit = Number(selectedItem.unitMeasure?.unit) || 1;
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit;
-    row.unit_price = Number(((toNum(row.base_unit_price, 0) * selectedUnit * toNum(form.rate, 1)) / baseUnit).toFixed(decimalPlaces.value));
+    row.unit_price = Number(toDocumentCurrency((toNum(row.base_unit_price, 0) * selectedUnit) / baseUnit, form.rate).toFixed(decimalPlaces.value));
     row.selected_item = selectedItem;
 
     if (index === form.items.length - 1) form.items.push(buildEmptyRow());
@@ -484,7 +485,7 @@ watch(() => form.rate, (newRate) => {
         const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1;
         const selectedUnit = Number(row.selected_measure?.unit) || baseUnit;
         const baseUnitPrice = toNum(row.base_unit_price ?? row.selected_item?.sale_price, 0);
-        row.unit_price = (baseUnitPrice * selectedUnit * toNum(newRate, 1)) / baseUnit;
+        row.unit_price = toDocumentCurrency((baseUnitPrice * selectedUnit) / baseUnit, newRate);
     });
 });
 
@@ -493,7 +494,7 @@ const displayedAverageCost = (row) => {
 
     const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1;
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit;
-    return (toNum(row.selected_item?.avg_cost, 0) * selectedUnit * toNum(form.rate, 1)) / baseUnit;
+    return toDocumentCurrency((toNum(row.selected_item?.avg_cost, 0) * selectedUnit) / baseUnit, form.rate);
 };
 
 const getLossWarning = (row) => {
@@ -857,7 +858,7 @@ onUnmounted(() => {
                                         const baseUnit = Number(form.items[index]?.selected_item?.unitMeasure?.unit) || 1;
                                         const selectedUnit = Number(measure?.unit) || baseUnit;
                                         const baseUnitPrice = Number(form.items[index]?.base_unit_price) || 0;
-                                        form.items[index].unit_price = (baseUnitPrice * selectedUnit * form.rate) / baseUnit;
+                                        form.items[index].unit_price = toDocumentCurrency((baseUnitPrice * selectedUnit) / baseUnit, form.rate);
                                         form.items[index].unit_measure_id = measure?.id || '';
                                         notifyIfDuplicate(index);
                                     }"

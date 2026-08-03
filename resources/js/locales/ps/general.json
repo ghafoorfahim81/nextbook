@@ -77,6 +77,8 @@
   "order": "امر",
   "order_by": "امر په",
   "rate": "نرخ",
+  "currency": "اسعارو",
+  "exchange_rate": "د تبادلې نرخ",
   "price": "بیه",
   "total": "ټول",
   "phone": "ټیلیفون",

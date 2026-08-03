@@ -79,6 +79,8 @@
   "order": "ترتیب",
   "order_by": "ترتیب بر اساس",
   "rate": "نرخ",
+  "currency": "ارز",
+  "exchange_rate": "نرخ تبادله",
   "price": "قیمت",
   "total": "جمله",
   "phone": "تلفن",

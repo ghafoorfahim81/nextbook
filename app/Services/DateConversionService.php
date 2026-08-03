@@ -40,10 +40,13 @@ class DateConversionService
             $isJalaliInput = $year >= 1300 && $year <= 1499;
         }
 
-        // Convert when:
-        // - company calendar is explicitly Jalali, OR
-        // - the incoming value clearly looks like a Jalali year
-        $result = ($this->calendarType === 'jalali' || $isJalaliInput)
+        // Convert only when the value actually looks Jalali (year 13xx–14xx). Keying off
+        // the company calendar alone is not safe: callers legitimately pass an already
+        // converted date (e.g. a controller converts, then hands the value to a service
+        // that converts again), and re-running the Jalali conversion on a Gregorian year
+        // silently throws the date ~600 years forward. The year-range test makes this
+        // method idempotent, which is what every call site assumes.
+        $result = $isJalaliInput
             ? $this->jalaliToGregorian($cleanedDate)
             : $this->formatGregorianDate($cleanedDate); // Format Gregorian dates too
 
