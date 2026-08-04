@@ -18,8 +18,11 @@ class SaleItemResource extends JsonResource
     {
         $dateConversionService = app(\App\Services\DateConversionService::class);
 
-        // net_unit_cost stores the avg_cost (in the sale's selected unit) captured at sale time.
-        $unitCost = (float) ($this->net_unit_cost ?? 0.0);
+        // net_unit_cost stores the avg_cost (in the sale's selected unit) captured at sale
+        // time, always in the home currency. Prices on this row are in the sale's currency,
+        // so the cost has to be restated at the sale's rate before it can be subtracted.
+        $rate = (float) ($this->additional['rate'] ?? 1) ?: 1.0;
+        $unitCost = (float) ($this->net_unit_cost ?? 0.0) / $rate;
         // Use the sale number passed from SaleResource to avoid lazy-loading $this->sale.
         $saleNumber = $this->additional['saleNumber'] ?? $this->sale_id;
 

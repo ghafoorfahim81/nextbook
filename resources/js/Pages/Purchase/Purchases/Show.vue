@@ -3,10 +3,11 @@ import AppLayout from '@/Layouts/Layout.vue'
 import AttachmentList from '@/Components/AttachmentList.vue';
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { router, useForm } from '@inertiajs/vue3';
+import { router, useForm, usePage } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import { Package2, FileText, User, Calendar, DollarSign, FileCheck, CheckCircle2, XCircle, RotateCcw } from 'lucide-vue-next';
+import { Package2, FileText, User, Calendar, DollarSign, FileCheck, CheckCircle2, XCircle, ArrowLeft, ArrowLeftRight,RotateCcw, Coins, SquarePen, Download } from 'lucide-vue-next';
+import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
 import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
@@ -24,6 +25,7 @@ const props = defineProps({
     originalDoc: { type: Object, default: null },
 });
 
+const page = usePage();
 const purchaseData = computed(() => props.purchase?.data ?? props.purchase ?? {});
 
 const totalAmount = computed(() =>
@@ -96,6 +98,20 @@ const returnStatusBadgeClasses = (status) => {
 };
 const postDialogOpen = ref(false);
 const reverseDialogOpen = ref(false);
+const currency = computed(() => purchaseData.value.transaction?.currency ?? null);
+// const currencySymbol = computed(() => currency.value?.symbol || '');
+const currencyCode = computed(() => currency.value?.code || '');
+const currencyLabel = computed(() =>
+    [currencyCode.value, currency.value?.name].filter(Boolean).join(' — ') || '-'
+);
+
+const exchangeRate = computed(() => Number(purchaseData.value.rate ?? purchaseData.value.transaction?.rate ?? 1));
+// Base currency posts at rate 1; only a foreign currency needs the rate and the
+// home-currency equivalent spelled out.
+const isForeignCurrency = computed(() => exchangeRate.value !== 1 && !currency.value?.is_base_currency);
+const baseCurrencyCode = computed(() => page.props?.homeCurrency?.code || '');
+const formattedRate = computed(() => exchangeRate.value.toLocaleString(undefined, { maximumFractionDigits: 4 }));
+const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value).toFixed(2));
 
 const form = useForm({ status: purchaseData.value.status || '' });
 
@@ -226,8 +242,22 @@ const reversePurchase = (reason) => {
                         <div class="text-sm font-medium text-foreground">{{ purchaseData.type || '-' }}</div>
                     </div>
                     <div class="space-y-1.5">
+                        <div class="flex items-center gap-2 text-xs text-muted-foreground"><Coins class="h-3 w-3" />{{ t('general.currency') }}</div>
+                        <div class="text-sm font-medium text-foreground">{{ currencyLabel }}</div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2 text-xs text-muted-foreground"><ArrowLeftRight class="h-3 w-3" />{{ t('general.exchange_rate') }}</div>
+                        <div class="text-sm font-medium text-foreground">
+                            <template v-if="isForeignCurrency">1 {{ currencyCode }} = {{ formattedRate }} {{ baseCurrencyCode }}</template>
+                            <template v-else>{{ formattedRate }}</template>
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground"><DollarSign class="h-3 w-3" />{{ t('general.total') }}</div>
                         <div class="text-sm font-medium text-foreground">{{ currencySymbol }} {{ formattedGrandTotal }}</div>
+                        <div v-if="isForeignCurrency" class="text-xs text-muted-foreground">
+                            ≈ {{ formattedBaseTotal }} {{ baseCurrencyCode }}
+                        </div>
                     </div>
                     <div v-if="purchaseData.purchase_order_id" class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground"><FileCheck class="h-3 w-3" />{{ t('purchase_order.purchase_order') }}</div>

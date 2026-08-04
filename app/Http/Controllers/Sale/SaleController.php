@@ -220,7 +220,8 @@ class SaleController extends Controller
         $sale = DB::transaction(function () use ($request, $transactionService, $stockService, $validated, $activityLogService, $attachmentService) {
             $validated = $request->validated();
 
-            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+            $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : null;
+            $date = $validated['date'];
             $validated['type'] = $validated['sale_type'] ?? 'cash';
             $postImmediately = (bool) user_preference('transaction.sale_post_immediately', true);
             $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
@@ -270,6 +271,11 @@ class SaleController extends Controller
             $lines = [];
             $stockPayloads = [];
             $glAccounts = Cache::get('gl_accounts');
+            // Every transaction_line is expressed in the transaction's currency; reports
+            // multiply by transactions.rate to get home currency. Selling prices already
+            // come in that currency, but stock cost is always home currency, so COGS and
+            // the inventory credit have to be divided back down by the rate.
+            $rate = $this->transactionRate($validated);
             foreach ($validated['item_list'] as $item) {
                 $quantity = (float) $item['quantity'];
                 $unitPrice = (float) $item['unit_price'];
@@ -284,7 +290,8 @@ class SaleController extends Controller
 
                 $unitCost = (float) $item['net_unit_cost'];
                 $totalCost = $unitCost * $quantity;
-                $stockPayloads[] = [
+                $totalCostInTransactionCurrency = $totalCost / $rate;
+                $stockService->post([
                     'item_id'              => $item['item_id'],
                     'movement_type'        => StockMovementType::OUT->value,
                     'unit_measure_id'      => $item['unit_measure_id'],
@@ -302,7 +309,7 @@ class SaleController extends Controller
                     'branch_id'            => $sale->branch_id,
                     'reference_type'       => Sale::class,
                     'reference_id'         => $sale->id,
-                ];
+                ]);
 
                 if ($postImmediately) {
                     $stockService->post($stockPayloads[array_key_last($stockPayloads)]);
@@ -326,7 +333,7 @@ class SaleController extends Controller
                 $lines[] = [
                     'account_id' => $itemModel->cost_account_id,
                     'ledger_id'  => null,
-                    'debit'      => $totalCost,
+                    'debit'      => $totalCostInTransactionCurrency,
                     'credit'     => 0,
                     'remark'     => 'COGS for item: ' . $itemModel->name . ' #' . $sale->number,
                     'remark_fa' => 'هزینه محصول فروخته شد بابت '. ' '. $itemModel->name.' #'.$sale->number,
@@ -338,7 +345,7 @@ class SaleController extends Controller
                     'account_id' => $itemModel->asset_account_id,
                     'ledger_id'  => null,
                     'debit'      => 0,
-                    'credit'     => $totalCost,
+                    'credit'     => $totalCostInTransactionCurrency,
                     'remark'     => 'Inventory out for item: ' . $itemModel->name . ' #' . $sale->number,
                     'remark_fa'  => 'فروش جنس'. ' '. $itemModel->name.' #'.$sale->number,
                     'remark_ps'  => 'د'. ' '. $itemModel->name.' '.'د خرڅلاو #'.$sale->number,
@@ -744,6 +751,8 @@ class SaleController extends Controller
             $stockPayloads = [];
             $totalDiscount = (float) $request->input('discount_total', 0);
             $glAccounts = Cache::get('gl_accounts');
+            // See store(): cost is home currency, GL lines are transaction currency.
+            $rate = $this->transactionRate($validated);
 
             foreach ($validated['item_list'] as $item) {
                 $quantity = (float) $item['quantity'];
@@ -756,7 +765,8 @@ class SaleController extends Controller
                 }
                 $unitCost = (float) $item['net_unit_cost'];
                 $totalCost = $unitCost * $quantity;
-                $stockPayloads[] = [
+                $totalCostInTransactionCurrency = $totalCost / $rate;
+                $stockService->post([
                     'item_id'              => $item['item_id'],
                     'movement_type'        => StockMovementType::OUT->value,
                     'unit_measure_id'      => $item['unit_measure_id'],
@@ -774,7 +784,7 @@ class SaleController extends Controller
                     'branch_id'            => $sale->branch_id,
                     'reference_type'       => Sale::class,
                     'reference_id'         => $sale->id,
-                ];
+                ]);
 
                 $lines[] = [
                     'account_id' => $itemModel->income_account_id,
@@ -790,7 +800,7 @@ class SaleController extends Controller
                 $lines[] = [
                     'account_id' => $itemModel->cost_account_id,
                     'ledger_id'  => null,
-                    'debit'      => $totalCost,
+                    'debit'      => $totalCostInTransactionCurrency,
                     'credit'     => 0,
                     'remark'     => 'COGS for item ' . $itemModel->name . ' #' . $sale->number,
                     'remark_fa' => 'هزینه محصول فروخته شد بابت '. ' '. $itemModel->name.' #'.$sale->number,
@@ -802,7 +812,7 @@ class SaleController extends Controller
                     'account_id' => $itemModel->asset_account_id,
                     'ledger_id'  => null,
                     'debit'      => 0,
-                    'credit'     => $totalCost,
+                    'credit'     => $totalCostInTransactionCurrency,
                     'remark'     => 'Inventory out for item ' . $itemModel->name . ' #' . $sale->number,
                     'remark_fa'  => 'فروش جنس'. ' '. $itemModel->name.' #'.$sale->number,
                     'remark_ps'  => 'د'. ' '. $itemModel->name.' '.'د خرڅلاو #'.$sale->number,
@@ -1166,6 +1176,18 @@ class SaleController extends Controller
         }
 
         return (float) $movement->quantity * $unitFactors[$movement->unit_measure_id];
+    }
+
+    /**
+     * Home-currency multiplier for the transaction: 1 unit of the selected currency
+     * equals `rate` units of the company currency. Falls back to 1 so a missing or
+     * zeroed rate can never blow up the COGS conversion.
+     */
+    private function transactionRate(array $validated): float
+    {
+        $rate = (float) ($validated['rate'] ?? 1);
+
+        return $rate > 0 ? $rate : 1.0;
     }
 
     private function buildSaleItemCostLookup(array $items): array

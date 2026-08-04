@@ -109,7 +109,9 @@ class TransactionService
     {
         validator($header, [
             'currency_id'    => 'required|exists:currencies,id',
-            'rate'           => 'required|numeric|min:0',
+            // Reports read every amount as `line * transactions.rate`, so a rate of 0
+            // would silently value the whole voucher at nothing.
+            'rate'           => 'required|numeric|gt:0',
             'date'           => 'required|date',
             'voucher_number' => 'nullable',
             'reference_type' => 'nullable|string',
