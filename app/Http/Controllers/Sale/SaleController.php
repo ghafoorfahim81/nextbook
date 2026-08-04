@@ -517,11 +517,6 @@ class SaleController extends Controller
             'updatedBy',
             'attachments',
         ]);
-        // transaction.lines is required: SaleResource derives receivable_amount / old_balance
-        // from the customer ledger lines of this sale's transaction.
-        // $sale->load(['items.item', 'items.unitMeasure', 'customer', 'transaction.currency', 'transaction.lines', 'createdBy', 'updatedBy']);
-
-        // $sale->load(['items.item', 'items.unitMeasure', 'customer', 'transaction.currency', 'transaction.lines', 'createdBy', 'updatedBy']);
 
         $resource = new SaleResource($sale);
 
