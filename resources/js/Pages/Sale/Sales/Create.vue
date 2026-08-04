@@ -26,6 +26,7 @@ import { useLazyProps } from '@/composables/useLazyProps'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
 import SaleOrderPickerDialog from '@/Components/next/SaleOrderPickerDialog.vue'
 import { getCreditSummary } from '@/composables/useCreditLimit'
+import { toDocumentCurrency } from '@/utils/currency'
 const { t } = useI18n();
 const { resolveColor } = useColors();
 const showFilter = () => {
@@ -650,7 +651,7 @@ watch(() => form.rate, (newRate) => {
         const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
         const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
         const baseUnitPrice = Number(row.base_unit_price ?? row.selected_item?.unit_price ?? row.selected_item?.sale_price ?? 0)
-        row.unit_price = (baseUnitPrice * selectedUnit * (Number(newRate) || 0)) / baseUnit
+        row.unit_price = toDocumentCurrency((baseUnitPrice * selectedUnit) / baseUnit, newRate)
     })
 })
 
@@ -659,7 +660,7 @@ const displayedAverageCost = (row) => {
 
     const baseUnit = Number(row.selected_item?.unitMeasure?.unit) || 1
     const selectedUnit = Number(row.selected_measure?.unit) || baseUnit
-    return (toNum(row.selected_item?.avg_cost, 0) * selectedUnit * toNum(form.rate, 1)) / baseUnit
+    return toDocumentCurrency((toNum(row.selected_item?.avg_cost, 0) * selectedUnit) / baseUnit, form.rate)
 }
 
 const getLossWarning = (row) => {
@@ -742,7 +743,7 @@ const handleItemChange = async (index, selected_item) => {
 
     // Set the initial unit_price based on the base unit measure
     const baseUnit = Number(selected_item.unitMeasure?.unit) || 1
-    row.unit_price = Number(((row.base_unit_price * Number(row.selected_measure.unit)*form.rate)/baseUnit).toFixed(2));
+    row.unit_price = Number(toDocumentCurrency((row.base_unit_price * Number(row.selected_measure.unit)) / baseUnit, form.rate).toFixed(2));
 
     // Add a new empty row only when selecting into the last row
     if (index === form.items.length - 1) {
@@ -1391,7 +1392,7 @@ useFormGuard(form)
                                             const baseUnit = Number(form.items[index]?.selected_item?.unitMeasure?.unit) || 1
                                             const selectedUnit = Number(measure?.unit) || baseUnit
                                             const baseUnitPrice = Number(form.items[index]?.base_unit_price) || 0
-                                            form.items[index].unit_price = (baseUnitPrice * selectedUnit*form.rate)/baseUnit;
+                                            form.items[index].unit_price = toDocumentCurrency((baseUnitPrice * selectedUnit) / baseUnit, form.rate);
 
                                         notifyIfDuplicate(index)
                                     }"

@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n';
 import { router, usePage } from '@inertiajs/vue3';
 import { Badge } from '@/Components/ui/badge';
 import { Button } from '@/Components/ui/button';
-import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp } from 'lucide-vue-next';
+import { Package2, FileText, User, Calendar, DollarSign, FileCheck, TrendingUp, ArrowLeft, ArrowLeftRight, Coins, Printer, SquarePen, Download } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
@@ -25,6 +25,7 @@ const props = defineProps({
     originalDoc: { type: Object, default: null },
 });
 
+const page = usePage();
 const saleData = computed(() => props.sale?.data ?? props.sale ?? {});
 
 const totalAmount = computed(() =>
@@ -119,6 +120,20 @@ const reverseSale = (reason) => {
         onSuccess: () => { reverseDialogOpen.value = false },
     });
 };
+const currency = computed(() => saleData.value.transaction?.currency ?? null);
+// const currencySymbol = computed(() => currency.value?.symbol || '');
+const currencyCode = computed(() => currency.value?.code || '');
+const currencyLabel = computed(() =>
+    [currencyCode.value, currency.value?.name].filter(Boolean).join(' — ') || '-'
+);
+
+const exchangeRate = computed(() => Number(saleData.value.rate ?? saleData.value.transaction?.rate ?? 1));
+// Base currency posts at rate 1; only a foreign currency needs the rate and the
+// home-currency equivalent spelled out.
+const isForeignCurrency = computed(() => exchangeRate.value !== 1 && !currency.value?.is_base_currency);
+const baseCurrencyCode = computed(() => page.props?.homeCurrency?.code || '');
+const formattedRate = computed(() => exchangeRate.value.toLocaleString(undefined, { maximumFractionDigits: 4 }));
+const formattedBaseTotal = computed(() => (grandTotal.value * exchangeRate.value).toFixed(2));
 </script>
 
 <template>
@@ -194,9 +209,27 @@ const reverseSale = (reason) => {
                     </div>
                     <div class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Coins class="h-3 w-3" />{{ t('general.currency') }}
+                        </div>
+                        <div class="text-sm font-medium text-foreground">{{ currencyLabel }}</div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2 text-xs text-muted-foreground">
+                            <ArrowLeftRight class="h-3 w-3" />{{ t('general.exchange_rate') }}
+                        </div>
+                        <div class="text-sm font-medium text-foreground">
+                            <template v-if="isForeignCurrency">1 {{ currencyCode }} = {{ formattedRate }} {{ baseCurrencyCode }}</template>
+                            <template v-else>{{ formattedRate }}</template>
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2 text-xs text-muted-foreground">
                             <DollarSign class="h-3 w-3" />{{ t('general.amount') }}
                         </div>
                         <div class="text-sm font-medium text-foreground">{{ currencySymbol }} {{ formattedGrandTotal }}</div>
+                        <div v-if="isForeignCurrency" class="text-xs text-muted-foreground">
+                            ≈ {{ formattedBaseTotal }} {{ baseCurrencyCode }}
+                        </div>
                     </div>
                     <div v-if="saleData.sale_order_id" class="space-y-1.5">
                         <div class="flex items-center gap-2 text-xs text-muted-foreground">
