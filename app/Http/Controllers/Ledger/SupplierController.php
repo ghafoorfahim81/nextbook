@@ -103,6 +103,8 @@ class SupplierController extends Controller
 
             abort_unless($equityId && $apId, 500, 'System accounts (AR/AP) are missing.');
 
+            $remark = trim((string) ($validated['remark'] ?? ''));
+
             $transaction = $transactionService->post(
                 header: [
                     'currency_id' => $validated['opening_currency_id'],
@@ -117,9 +119,10 @@ class SupplierController extends Controller
                 'remark_fa' => 'موجودی اولیه برای تامین کننده ' . $ledger->name,
                 'remark_ps' =>'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
                 ],
-                ['account_id' => $apId, 'ledger_id' => $ledger->id, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for supplier ' . $ledger->name,
-                'remark_fa' => 'موجودی اولیه برای تامین کننده ' . $ledger->name,
-                'remark_ps' =>'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
+                ['account_id' => $apId, 'ledger_id' => $ledger->id, 'debit' => 0, 'credit' => (float) $validated['amount'],
+                'remark' => $remark !== '' ? $remark : 'Opening balance for supplier ' . $ledger->name,
+                'remark_fa' => $remark !== '' ? $remark : 'موجودی اولیه برای تامین کننده ' . $ledger->name,
+                'remark_ps' => $remark !== '' ? $remark : 'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
                 ],
             ]);
             $transaction->opening()->create([
@@ -338,6 +341,8 @@ class SupplierController extends Controller
             $transactionService = app(TransactionService::class);
             abort_unless($equityId && $apId, 500, 'System accounts (AR/AP) are missing.');
 
+            $remark = trim((string) ($validated['remark'] ?? ''));
+
             $transaction = $transactionService->post(
                 header: [
                     'currency_id' => $validated['opening_currency_id'],
@@ -352,9 +357,10 @@ class SupplierController extends Controller
                 'remark_fa' => 'موجودی اولیه برای تامین کننده ' . $supplier->name,
                 'remark_ps' =>'د'. ' '. $supplier->name.' '.'د پرانیستلو بیلانس ',
                 ],
-                ['account_id' => $apId, 'debit' => 0, 'ledger_id' => $supplier->id, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for supplier ' . $supplier->name,
-                'remark_fa' => 'موجودی اولیه برای تامین کننده ' . $supplier->name,
-                'remark_ps' =>'د'. ' '. $supplier->name.' '.'د پرانیستلو بیلانس ',
+                ['account_id' => $apId, 'debit' => 0, 'ledger_id' => $supplier->id, 'credit' => (float) $validated['amount'],
+                'remark' => $remark !== '' ? $remark : 'Opening balance for supplier ' . $supplier->name,
+                'remark_fa' => $remark !== '' ? $remark : 'موجودی اولیه برای تامین کننده ' . $supplier->name,
+                'remark_ps' => $remark !== '' ? $remark : 'د'. ' '. $supplier->name.' '.'د پرانیستلو بیلانس ',
                 ],
             ]);
 

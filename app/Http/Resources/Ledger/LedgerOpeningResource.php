@@ -22,6 +22,7 @@ class LedgerOpeningResource extends JsonResource
                 'currency' => null,
                 'date' => null,
                 'type' => null,
+                'remark' => null,
                 'transaction' => null,
             ];
         }
@@ -30,10 +31,16 @@ class LedgerOpeningResource extends JsonResource
         $transaction = $this->transaction;
         $firstLine = $transaction?->lines?->first();
 
+        // The receivable (customer) / payable (supplier) line carries the user supplied remark.
+        $ledgerLine = $transaction?->lines?->first(fn ($line) => filled($line->ledger_id));
+
         return [
             'id' => $this->id,
             'amount' => ($firstLine?->credit ?? 0) > 0 ? ($firstLine?->credit ?? 0) : ($firstLine?->debit ?? 0),
             'lines' => $transaction?->lines ?? [],
+            'remark' => $ledgerLine
+                ? ($ledgerLine->{'remark_' . app()->getLocale()} ?? $ledgerLine->remark)
+                : $transaction?->remark,
             'rate' => $transaction?->rate,
             'currency_id' => $transaction?->currency_id,
             'currency' => $transaction?->currency,

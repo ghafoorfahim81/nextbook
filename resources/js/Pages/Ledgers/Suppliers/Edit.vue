@@ -27,6 +27,7 @@ const form = useForm({
     opening_currency_id: props.supplier.data?.opening?.currency_id,
     rate: props.supplier.data?.opening?.rate,
     amount: props.supplier.data?.opening?.amount??0,
+    remark: props.supplier.data?.opening?.remark??'',
 })
 
 watch(props.homeCurrency, (list) => {
@@ -99,7 +100,7 @@ const handleSelectChange = (field, value) => {
                     <div class="pt-2">
                         <span class="font-bold">{{ t('item.opening') }}</span>
                         <div class="mt-3 space-y-3">
-                            <div class="grid grid-cols-3 gap-2">
+                            <div class="grid grid-cols-4 gap-2">
                                 <NextSelect
                                 :options="currencies.data"
                                 v-model="form.selected_opening_currency"
@@ -115,6 +116,7 @@ const handleSelectChange = (field, value) => {
                                  />
                                 <NextInput placeholder="Rate" :disabled="form.opening_currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
                                 <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
+                                <NextInput :placeholder="t('general.enter', { text: t('general.remark') })" :error="form.errors?.remark" v-model="form.remark" :label="t('general.remark')" />
                             </div>
                         </div>
                     </div>
