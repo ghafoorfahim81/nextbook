@@ -96,11 +96,11 @@
     "opening_lock_warning_description": "برخی از موجودی های این کالا قفل شده اند. به دلیل اینکه این رکوردها قبلا استفاده شده اند و شما نمیتوانید آنها را تصحیح کنید.",
     "batch_warning": "اگر گزینه دارای بچ را فعال کردید, دیگر نمیتوانید آن را تصحیح کنید.",
     "expiry_warning": "اگر گزینه دارای تاریخ انقضا را فعال کردید, دیگر نمیتوانید آن را تصحیح کنید.",
-    "opening_warning":{
+    "opening_warning": {
         "title": "هشدار موجودی کالا",
         "description": "موجودی را با دقت وارد کنید. اگر مقدار موجودی یا بچ یا تاریخ انقضا را اشتباه وارد کنید، شما نمیتوانید آنها را بعد از استفاده تصحیح کنید."
     },
-    "opening_key_points":{
+    "opening_key_points": {
         "1": "مقدار واقعی موجودی را وارد کنید.",
         "2": "اگر مقدار موجودی یا بچ یا تاریخ انقضا را اشتباه وارد کنید، شما نمیتوانید آنها را بعد از استفاده تصحیح کنید.",
         "3": "گدام/انبار موجودی را با دقت انتخاب کنید.",
@@ -123,5 +123,79 @@
     "out_of_stock": "ناموجود",
     "stock_by_warehouse": "موجودی بر اساس گدام",
     "reserved": "رزرو شده",
-    "available": "قابل دسترس"
+    "available": "قابل دسترس",
+    "variants": "انواع",
+    "variant_attributes": "ویژگی‌ها",
+    "add_variant": "افزودن نوع",
+    "add_attribute_placeholder": "مثلاً رنگ، رم",
+    "default_variant": "پیش‌فرض",
+    "make_default_variant": "تعیین به عنوان نوع پیش‌فرض",
+    "variant_hint": "نوع ستاره‌دار زمانی استفاده می‌شود که نوع مشخصی انتخاب نشده باشد. هر نوع کد، بارکد و قیمت خود را دارد.",
+    "is_serial_tracked": "پیگیری سریال / IMEI",
+    "serial_warning": "هر واحد به صورت جداگانه با شماره سریال و قیمت تمام‌شدهٔ خود ثبت می‌شود.",
+    "validation": {
+        "single_default_variant": "تنها یک نوع می‌تواند پیش‌فرض باشد.",
+        "duplicate_variant": "نوع دیگری با همین ویژگی‌ها وجود دارد.",
+        "duplicate_variant_field": "این :field توسط نوع دیگری استفاده شده است.",
+        "opening_price_required": "در صورت وارد کردن مقدار اولیه، قیمت واحد الزامی است.",
+        "opening_warehouse_required": "در صورت وارد کردن مقدار اولیه، انتخاب گدام الزامی است."
+    },
+    "spec": {
+        "batch": "بچ",
+        "lot": "لات",
+        "expiry": "تاریخ انقضا"
+    },
+    "description": "توضیحات",
+    "model": "مودل / شماره ستایل",
+    "manufacturer": "تولیدکننده",
+    "country_of_origin": "کشور مبدا",
+    "hs_code": "کد HS",
+    "warranty_months": "ګرنټی (ماه)",
+    "shelf_life_days": "مدت ماندگاری (روز)",
+    "min_shelf_life_percent": "حداقل ماندگاری هنگام تحویل (٪)",
+    "storage_zone": "محل نگهداری",
+    "requires_prescription": "نیاز به نسخه",
+    "is_controlled": "مادهٔ کنترل‌شده",
+    "reorder_quantity": "مقدار سفارش مجدد",
+    "lead_time_days": "مدت تحویل (روز)",
+    "default_warehouse": "گدام پیش‌فرض",
+    "weight": "وزن",
+    "dimensions": "ابعاد",
+    "length": "طول",
+    "width": "عرض",
+    "height": "ارتفاع",
+    "is_active": "فعال",
+    "is_stockable": "دارای موجودی",
+    "is_sellable": "قابل فروش",
+    "is_purchasable": "قابل خرید",
+    "is_weighted": "فروش بر اساس وزن",
+    "allow_negative_stock": "اجازهٔ موجودی منفی",
+    "costing_method": "روش قیمت تمام‌شده",
+    "pricing_method": "روش قیمت‌گذاری",
+    "accounts": "حساب‌ها",
+    "section": {
+        "identity": "شناسه",
+        "classification": "دسته‌بندی",
+        "pricing": "قیمت‌گذاری",
+        "stock_control": "کنترل موجودی",
+        "physical": "مشخصات فزیکی",
+        "compliance": "منبع و مطابقت",
+        "behaviour": "رفتار",
+        "tracking": "پیگیری"
+    },
+    "storage_zones": {
+        "ambient": "عادی",
+        "chilled": "سرد",
+        "frozen": "منجمد"
+    },
+    "hint": {
+        "is_stockable": "برای خدماتی که موجودی ندارند، غیرفعال کنید.",
+        "is_sellable": "در اسناد فروش نمایش داده می‌شود.",
+        "is_purchasable": "در اسناد خرید نمایش داده می‌شود.",
+        "is_weighted": "مقدار به جای تعداد، به صورت وزن وارد می‌شود.",
+        "allow_negative_stock": "اجازهٔ صدور بیش از موجودی موجود.",
+        "min_shelf_life_percent": "اجناسی که کمتر از این مقدار عمر باقی‌مانده دارند رد شوند.",
+        "shelf_life_days": "برای تکمیل خودکار تاریخ انقضا هنگام تحویل استفاده می‌شود.",
+        "lead_time_days": "روزهای بین سفارش و دریافت، برای محاسبهٔ نقطهٔ سفارش مجدد."
+    }
 }

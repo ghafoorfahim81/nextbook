@@ -5,6 +5,7 @@ import { computed } from 'vue'
 import { useDeleteResource } from '@/composables/useDeleteResource.js'
 import { useI18n } from 'vue-i18n'
 import { router } from '@inertiajs/vue3'
+import { useBusinessProfile } from '@/composables/useBusinessProfile'
 const { t } = useI18n()
 
 const props = defineProps({
@@ -13,15 +14,21 @@ const props = defineProps({
   filterOptions: Object,
 })
 
+const { showsField, showsSection } = useBusinessProfile()
+
+// Columns follow the trade: a garment shop wants a variant count, a pharmacy
+// wants the generic name, and neither wants the other's column.
 const columns = computed(() => ([
-  { key: 'name', label: t('general.name'),sortable:true },
-  { key: 'code', label: t('admin.currency.code'),sortable:true },
+  { key: 'name', label: t('general.name'), sortable: true },
+  { key: 'code', label: t('admin.currency.code'), sortable: true },
+  ...(showsField('sku') ? [{ key: 'sku', label: t('item.sku') }] : []),
   { key: 'category', label: t('admin.category.category') },
   { key: 'measure', label: t('admin.unit_measure.unit_measure') },
-  { key: 'brand_name', label: t('admin.brand.brand') },
-  { key: 'avg_cost', label: t('item.cost'),sortable:true },
+  ...(showsField('brand') ? [{ key: 'brand_name', label: t('admin.brand.brand') }] : []),
+  ...(showsSection('variants') ? [{ key: 'variants_count', label: t('item.variants') }] : []),
+  { key: 'avg_cost', label: t('item.cost'), sortable: true },
   { key: 'on_hand', label: t('general.on_hand') },
-  { key: 'sale_price', label: t('item.sale_price'),sortable:true },
+  { key: 'sale_price', label: t('item.sale_price'), sortable: true },
   { key: 'actions', label: t('general.actions') },
 ]))
 

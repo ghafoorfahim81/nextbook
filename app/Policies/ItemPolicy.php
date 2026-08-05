@@ -37,6 +37,22 @@ class ItemPolicy extends BasePolicy
         return $this->hasPermission($user, 'items.delete')
             && $this->sameBranch($user, $item);
     }
+
+    /**
+     * `authorizeResource` only covers the seven RESTful actions, so restore
+     * and forceDelete were reachable by any authenticated user.
+     */
+    public function restore(User $user, Item $item): bool
+    {
+        return $this->hasPermission($user, 'items.delete')
+            && $this->sameBranch($user, $item);
+    }
+
+    public function forceDelete(User $user, Item $item): bool
+    {
+        return $this->hasPermission($user, 'items.delete')
+            && $this->sameBranch($user, $item);
+    }
 }
 
 

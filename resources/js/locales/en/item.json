@@ -94,13 +94,13 @@
     "size_warning": "If you enable size tracking, you can't edit it once it is created.",
     "opening_lock_warning": "Opening Lock Warning",
     "opening_lock_warning_description": "Some of the openings of this item are locked. Because this records are already in use and you can't edit them.",
-    "opening_warning":{
+    "opening_warning": {
         "title": "Opening Warning",
         "description": "Be careful to enter real opening quantities. If you enter wrong quantities, you can't edit them after they are used."
     },
     "batch_warning": "If you enable batch tracking, you can't edit it once it is created.",
     "expiry_warning": "If you enable expiry tracking, you can't edit it once it is created.",
-    "opening_key_points":{
+    "opening_key_points": {
         "1": "Be careful to enter real opening quantities.",
         "2": "If you enter wrong quantities, you can't edit them after they are used.",
         "3": "Be careful to select the correct warehouse.",
@@ -123,5 +123,79 @@
     "out_of_stock": "Out of Stock",
     "stock_by_warehouse": "Stock by Warehouse",
     "reserved": "Reserved",
-    "available": "Available"
+    "available": "Available",
+    "variants": "Variants",
+    "variant_attributes": "Attributes",
+    "add_variant": "Add Variant",
+    "add_attribute_placeholder": "e.g. color, ram",
+    "default_variant": "Default",
+    "make_default_variant": "Set as default variant",
+    "variant_hint": "The starred variant is used when no specific one is chosen. Each variant has its own SKU, barcode and price.",
+    "is_serial_tracked": "Serial / IMEI Tracked",
+    "serial_warning": "Each unit is recorded individually with its own serial number and cost.",
+    "validation": {
+        "single_default_variant": "Only one variant can be the default.",
+        "duplicate_variant": "Another variant already has these attributes.",
+        "duplicate_variant_field": "This :field is used by another variant.",
+        "opening_price_required": "A unit price is required when an opening quantity is entered.",
+        "opening_warehouse_required": "A warehouse is required when an opening quantity is entered."
+    },
+    "spec": {
+        "batch": "Batch",
+        "lot": "Lot",
+        "expiry": "Expiry"
+    },
+    "description": "Description",
+    "model": "Model / Style No.",
+    "manufacturer": "Manufacturer",
+    "country_of_origin": "Country of Origin",
+    "hs_code": "HS Code",
+    "warranty_months": "Warranty (Months)",
+    "shelf_life_days": "Shelf Life (Days)",
+    "min_shelf_life_percent": "Min. Shelf Life on Receipt (%)",
+    "storage_zone": "Storage Zone",
+    "requires_prescription": "Requires Prescription",
+    "is_controlled": "Controlled Substance",
+    "reorder_quantity": "Reorder Quantity",
+    "lead_time_days": "Lead Time (Days)",
+    "default_warehouse": "Default Warehouse",
+    "weight": "Weight",
+    "dimensions": "Dimensions",
+    "length": "Length",
+    "width": "Width",
+    "height": "Height",
+    "is_active": "Active",
+    "is_stockable": "Stockable",
+    "is_sellable": "Sellable",
+    "is_purchasable": "Purchasable",
+    "is_weighted": "Sold by Weight",
+    "allow_negative_stock": "Allow Negative Stock",
+    "costing_method": "Costing Method",
+    "pricing_method": "Pricing Method",
+    "accounts": "Accounts",
+    "section": {
+        "identity": "Identity",
+        "classification": "Classification",
+        "pricing": "Pricing",
+        "stock_control": "Stock Control",
+        "physical": "Physical",
+        "compliance": "Sourcing & Compliance",
+        "behaviour": "Behaviour",
+        "tracking": "Tracking"
+    },
+    "storage_zones": {
+        "ambient": "Ambient",
+        "chilled": "Chilled",
+        "frozen": "Frozen"
+    },
+    "hint": {
+        "is_stockable": "Uncheck for services that hold no stock.",
+        "is_sellable": "Appears in sales documents.",
+        "is_purchasable": "Appears in purchase documents.",
+        "is_weighted": "Quantity is entered as a weight rather than a count.",
+        "allow_negative_stock": "Permit issuing more than is on hand.",
+        "min_shelf_life_percent": "Reject deliveries arriving with less life remaining than this.",
+        "shelf_life_days": "Used to fill the expiry date automatically on receipt.",
+        "lead_time_days": "Days between ordering and receiving, used for reorder points."
+    }
 }

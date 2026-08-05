@@ -10,6 +10,9 @@ import { COLOR_OPTIONS } from '@/constants/colors'
 import NextDatePicker from '@/Components/next/NextDatePicker.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
+import VariantEditor from '@/Components/inventory/VariantEditor.vue'
+import ItemDetailFields from '@/Components/inventory/ItemDetailFields.vue'
+import { useBusinessProfile } from '@/composables/useBusinessProfile'
 import { Info, Trash2,AlertCircleIcon, CheckCircle2Icon, PopcornIcon } from 'lucide-vue-next'
 import { Popover, PopoverTrigger, PopoverContent } from '@/Components/ui/popover'
 import { useI18n } from 'vue-i18n'
@@ -33,9 +36,10 @@ const props = defineProps({
     otherCurrentAssetsAccounts:{ type:Object, required: true},
     incomeAccounts:{ type:Object, required: true},
     costAccounts:{ type:Object, required: true},
-}) 
+    costingMethods: { type: [Array, Object], default: () => [] },
+    pricingMethods: { type: [Array, Object], default: () => [] },
+})
 
-console.log('this is the item', props.item.data)
 const { t } = useI18n()
 const warehouses = computed(() => props.warehouses?.data ?? props.warehouses ?? [])
 const unitMeasures = computed(() => props.unitMeasures?.data ?? props.unitMeasures ?? [])
@@ -43,6 +47,8 @@ const categories = computed(() => props.categories?.data ?? props.categories ?? 
 const brands = computed(() => props.brands?.data ?? props.brands ?? [])
 const sizes = computed(() => props.sizes?.data ?? props.sizes ?? [])
 const itemTypes = computed(() => props.itemTypes?.data ?? props.itemTypes ?? [])
+const costingMethods = computed(() => props.costingMethods?.data ?? props.costingMethods ?? [])
+const pricingMethods = computed(() => props.pricingMethods?.data ?? props.pricingMethods ?? [])
 const otherCurrentAssetsAccounts = computed(() => props.otherCurrentAssetsAccounts?.data ?? props.otherCurrentAssetsAccounts ?? [])
 const incomeAccounts = computed(() => props.incomeAccounts?.data ?? props.incomeAccounts ?? [])
 const costAccounts = computed(() => props.costAccounts?.data ?? props.costAccounts ?? [])
@@ -70,6 +76,37 @@ const form = useForm({
             status: o.status
         }))
         : [{ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null, warehouse: null, color: null, size_id: null, status: null }],
+
+    // Variants come back from ItemResource; fall back to a single default row
+    // for items created before the variant migration ran.
+    variants: props.item.data.variants?.length
+        ? props.item.data.variants.map((v, index) => ({
+            id: v.id,
+            attributes: { ...(v.attributes ?? {}) },
+            name: v.name ?? '',
+            sku: v.sku ?? '',
+            barcode: v.barcode ?? '',
+            sale_price: v.sale_price ?? '',
+            purchase_price: v.purchase_price ?? '',
+            minimum_stock: v.minimum_stock ?? '',
+            is_default: Boolean(v.is_default),
+            is_active: v.is_active !== false,
+            sort_order: v.sort_order ?? index,
+        }))
+        : [{
+            id: null,
+            attributes: {},
+            name: '',
+            sku: props.item.data.sku ?? '',
+            barcode: props.item.data.barcode ?? '',
+            sale_price: props.item.data.sale_price ?? '',
+            purchase_price: props.item.data.purchase_price ?? '',
+            minimum_stock: props.item.data.minimum_stock ?? '',
+            is_default: true,
+            is_active: true,
+            sort_order: 0,
+        }],
+
     attachments: [],
 })
 
@@ -201,8 +238,11 @@ const user_preferences = computed(() => props.user_preferences?.data ?? props.us
 // Single reactive copy of the item-management preferences so the panel and form stay in sync live.
 const itemPrefs = reactive(JSON.parse(JSON.stringify(user_preferences.value?.item_management ?? {})))
 if (!itemPrefs.visible_fields || typeof itemPrefs.visible_fields !== 'object') itemPrefs.visible_fields = {}
-const visibleFields = computed(() => itemPrefs.visible_fields)
-const specText = computed(() => itemPrefs.spec_text ?? '')
+
+// Trade profile first, then the owner's per-field overrides on top.
+const { fields: profileFields, showsSection, specLabel } = useBusinessProfile()
+const visibleFields = computed(() => ({ ...profileFields.value, ...itemPrefs.visible_fields }))
+const specText = computed(() => itemPrefs.spec_text || t(`item.spec.${specLabel.value}`))
 const showPreferencesPanel = ref(false)
 
 const isBarcodePopoverOpen = ref(false)
@@ -283,8 +323,10 @@ useFormGuard(form)
                     <NextInput is-required :label="t('admin.currency.code')" v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
                     <NextInput v-if="visibleFields.generic_name" :label="t('item.generic_name')" v-model="form.generic_name" :error="form.errors?.generic_name" :placeholder="t('general.enter', { text: t('item.generic_name') })" />
                     <NextInput :label="t('item.packing')" v-if="visibleFields.packing" v-model="form.packing" :error="form.errors?.packing" :placeholder="t('general.enter', { text: t('item.packing') })" />
+                    <NextInput :label="t('item.description')" v-if="visibleFields.description" v-model="form.description" :error="form.errors?.description" :placeholder="t('general.enter', { text: t('item.description') })" />
                     <NextInput :label="t('item.photo')" v-if="visibleFields.photo" type="file"  @input="onPhotoChange" :error="form.errors?.photo" :placeholder="t('general.enter', { text: t('item.photo') })" />
                     <NextSelect
+                        v-show="visibleFields.unit_measure"
                         v-model="form.selected_unit_measure"
                         :options="unitMeasures"
                         @update:modelValue="(value) => handleSelectChange('unit_measure_id', value)"
@@ -348,6 +390,7 @@ useFormGuard(form)
                     />
                     <NextInput v-show="visibleFields.sku" :label="t('item.sku')" v-model="form.sku" :error="form.errors?.sku" :placeholder="t('general.enter', { text: t('item.sku') })" />
                     <NextSelect
+                        v-show="visibleFields.category"
                         v-model="form.selected_category"
                         @update:modelValue="(value) => handleSelectChange('category_id', value)"
                         :options="categories"
@@ -481,7 +524,32 @@ useFormGuard(form)
                                 <p class="text-sm text-muted-foreground">{{ t('item.size_warning') }}</p>
                             </div>
                         </label>
+                        <label v-show="visibleFields.is_serial_tracked" class="flex items-start gap-3 rounded-lg border p-3 opacity-70 cursor-not-allowed">
+                            <Checkbox class="mt-0.5" disabled :checked="form.is_serial_tracked" @update:checked="(v) => form.is_serial_tracked = v" />
+                            <div>
+                                <p class="font-semibold text-sm">{{ t('item.is_serial_tracked') }}</p>
+                                <p class="text-sm text-muted-foreground">{{ t('item.serial_warning') }}</p>
+                            </div>
+                        </label>
                     </div>
+                </div>
+
+                <div class="mt-4">
+                    <VariantEditor
+                        v-model="form.variants"
+                        :errors="form.errors"
+                        :enabled="showsSection('variants')"
+                    />
+                </div>
+
+                <div class="mt-4">
+                    <ItemDetailFields
+                        :form="form"
+                        :visible-fields="visibleFields"
+                        :warehouses="warehouses"
+                        :costing-methods="costingMethods"
+                        :pricing-methods="pricingMethods"
+                    />
                 </div>
                 <div class="mt-2" v-if="showOpeningWarning">
                     <div class="w-full max-w-md">

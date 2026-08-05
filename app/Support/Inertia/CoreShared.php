@@ -4,6 +4,7 @@ namespace App\Support\Inertia;
 
 use App\Models\Administration\Branch;
 use App\Services\NotificationService;
+use App\Support\BusinessProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -92,6 +93,15 @@ final class CoreShared
                 'print_url' => fn() => $request->session()->get('print_url'),
             ],
             'user_preferences' => $userPreferences,
+            // Which item fields, sections and tracking defaults this trade
+            // uses. Cached per user because it derives from the company.
+            'business_profile' => $user
+                ? Cache::remember(
+                    CacheKey::forUser($request, 'business_profile'),
+                    $cacheDuration,
+                    fn() => BusinessProfile::for($user->company)->toArray()
+                )
+                : null,
             'notification_center' => $user
                 ? app(NotificationService::class)->getNotificationCenter($user)
                 : ['unread_count' => 0, 'items' => []],

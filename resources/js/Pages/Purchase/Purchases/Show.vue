@@ -12,7 +12,6 @@ import { useToast } from '@/Components/ui/toast/use-toast';
 import TransactionActionDialog from '@/Components/TransactionActionDialog.vue';
 import ShowPageToolbar from '@/Components/ShowPageToolbar.vue';
 import { useColors } from '@/composables/useColors';
-import { useAuth } from '@/composables/useAuth';
 
 const { t } = useI18n();
 const { resolveColor } = useColors();

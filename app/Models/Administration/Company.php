@@ -43,6 +43,7 @@ class Company extends Model
         'calendar_type',
         'working_style',
         'business_type',
+        'preferences',
         'locale',
         'currency_id',
         'costing_method',
@@ -66,6 +67,7 @@ class Company extends Model
             'calendar_type' => CalendarType::class,
             'working_style' => WorkingStyle::class,
             'business_type' => BusinessType::class,
+            'preferences' => 'array',
             'locale' => Locale::class,
             'costing_method' => CostingMethod::class,
         ];

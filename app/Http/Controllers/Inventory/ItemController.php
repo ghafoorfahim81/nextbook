@@ -33,6 +33,10 @@ use App\Models\Purchase\Purchase;
 use App\Models\Sale\Sale;
 use App\Services\SpreadsheetExportService;
 use App\Services\AttachmentService;
+use App\Services\ItemVariantService;
+use App\Support\BusinessProfile;
+use App\Enums\CostingMethod;
+use App\Enums\PricingMethod;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 class ItemController extends Controller
 {
@@ -129,15 +133,21 @@ class ItemController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $items = Item::search($request->query('search'))
+        // Eager load and aggregate up front: the list resource previously ran
+        // a SUM per row for on-hand, plus lazy loads for unit/category/brand.
+        $items = Item::query()
+            ->with(['unitMeasure:id,name', 'category:id,name', 'brand:id,name'])
+            ->withSum('stockBalances as on_hand', 'quantity')
+            ->withCount('variants')
+            ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
 
-
         return inertia('Inventories/Items/Index', [
             'items' => ItemListResource::collection($items),
+            'businessProfile' => BusinessProfile::current()->toArray(),
             'filterOptions' => [
                 'itemTypes' => collect(ItemType::cases())->map(fn ($c) => [
                     'id' => $c->value,
@@ -176,15 +186,44 @@ class ItemController extends Controller
             'otherCurrentAssetsAccounts' => $otherCurrentAssetsAccounts,
             'incomeAccounts' => $incomeAccounts,
             'costAccounts' => $costAccounts,
+            'businessProfile' => BusinessProfile::current()->toArray(),
+            ...$this->methodOptions(),
         ]);
+    }
+
+    /**
+     * Costing and pricing method choices for the item form. Only rendered for
+     * trades whose profile switches those fields on.
+     */
+    protected function methodOptions(): array
+    {
+        return [
+            'costingMethods' => collect(CostingMethod::cases())
+                ->map(fn ($c) => ['id' => $c->value, 'name' => $c->getLabel()])
+                ->values(),
+            'pricingMethods' => collect(PricingMethod::cases())
+                ->map(fn ($c) => ['id' => $c->value, 'name' => $c->getLabel()])
+                ->values(),
+        ];
     }
     public function store(ItemStoreRequest $request, AttachmentService $attachmentService)
     {
         $validated = $request->validated();
-        $validated['item_type'] = $validated['item_type']??ItemType::INVENTORY_MATERIALS->value;
-        DB::transaction(function () use ($validated, $request, $attachmentService) {
+        $validated['item_type'] = $validated['item_type'] ?? ItemType::INVENTORY_MATERIALS->value;
+
+        if ($request->hasFile('photo')) {
+            $validated['photo'] = $request->file('photo')->store('items', 'public');
+        }
+
+        $variants = $validated['variants'] ?? [];
+
+        DB::transaction(function () use ($validated, $variants, $request, $attachmentService) {
             // 1) Create item
             $item = Item::create($validated);
+
+            // 2) Variants — always at least one, so variant_id is never null
+            // on anything downstream.
+            app(ItemVariantService::class)->sync($item, $variants);
 
             if ($request->hasFile('attachments')) {
                 $attachmentService->store($item, $request->file('attachments'));
@@ -273,7 +312,11 @@ class ItemController extends Controller
 
     public function show(Request $request, Item $item)
     {
-        $item->load('assetAccount', 'incomeAccount', 'costAccount', 'createdBy', 'updatedBy', 'brand', 'size', 'stocks', 'attachments');
+        $item->load(
+            'assetAccount', 'incomeAccount', 'costAccount',
+            'createdBy', 'updatedBy', 'brand', 'size', 'stocks', 'attachments',
+            'variants.stockBalances',
+        );
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -450,29 +493,41 @@ class ItemController extends Controller
 
     public function edit(Request $request, Item $item)
     {
-        $item = Item::with('unitMeasure', 'brand', 'category', 'size', 'assetAccount', 'incomeAccount', 'costAccount', 'openings.warehouse', 'openings.size', 'attachments')->find($item->id);
+        $item = Item::with(
+            'unitMeasure', 'brand', 'category', 'size',
+            'assetAccount', 'incomeAccount', 'costAccount',
+            'openings.warehouse', 'openings.size', 'attachments',
+            'variants',
+        )->find($item->id);
+
         $accountModel = new Account();
         $otherCurrentAssetsAccounts = $accountModel->getAccountsByAccountTypeSlug('other-current-asset');
         $incomeAccounts = $accountModel->getAccountsByAccountTypeSlug('income');
         $costAccounts = $accountModel->getAccountsByAccountTypeSlug('cost-of-goods-sold');
+
         return inertia('Inventories/Items/Edit', [
             'item' => new ItemResource($item),
             'otherCurrentAssetsAccounts' => $otherCurrentAssetsAccounts,
             'incomeAccounts' => $incomeAccounts,
             'costAccounts' => $costAccounts,
+            'businessProfile' => BusinessProfile::current()->toArray(),
+            ...$this->methodOptions(),
         ]);
     }
 
     public function update(ItemUpdateRequest $request, Item $item, AttachmentService $attachmentService)
     {
         $validated = $request->validated();
-        // Handle photo update
-        // dd($request->all());
+
+        // The `photo` column did not exist until this refactor, so this
+        // assignment used to throw as soon as anyone uploaded one.
         if ($request->hasFile('photo')) {
-            $path = $request->file('photo')->store('items', 'public');
-            $validated['photo'] = $path;
+            $validated['photo'] = $request->file('photo')->store('items', 'public');
         }
-        DB::transaction(function () use ($validated, $item, $request, $attachmentService) {
+
+        $variants = $validated['variants'] ?? [];
+
+        DB::transaction(function () use ($validated, $variants, $item, $request, $attachmentService) {
             if ($request->hasFile('attachments')) {
                 $attachmentService->store($item, $request->file('attachments'));
             }
@@ -485,6 +540,9 @@ class ItemController extends Controller
 
             // 1) Update item
             $item->update($validated);
+
+            // 2) Variants
+            app(ItemVariantService::class)->sync($item, $variants);
 
             // 2) Handle openings
             // $openings = collect($validated['openings'] ?? []);
@@ -599,36 +657,34 @@ class ItemController extends Controller
                 ]);
             }
 
-            DB::transaction(function () use ($item) {
-                // Delete openings with their stocks (with existence checks)
-
-                $stockMovement = StockMovement::where('item_id', $item->id)
+            // Posted stock cannot be unwound by deleting the item. This check
+            // used to sit inside the transaction closure and `return` a
+            // redirect, whose value was discarded — so the closure exited
+            // before $item->delete(), and the user was told the item had been
+            // deleted when it had not.
+            $hasPostedMovements = StockMovement::where('item_id', $item->id)
                 ->where('status', StockStatus::POSTED->value)
-                ->get();
-                if($stockMovement->count() > 0) {
-                    return redirect()->back()->with([
-                        'error' => __('general.cannot_delete_item_with_posted_stock_movements'),
-                        'title' => __('general.posted_stock_movements_found'),
-                    ]);
-                }
-                else{
-                    $stockMovement = StockMovement::where('item_id', $item->id)
+                ->exists();
+
+            if ($hasPostedMovements) {
+                return redirect()->back()->with([
+                    'error' => __('general.cannot_delete_item_with_posted_stock_movements'),
+                    'title' => __('general.posted_stock_movements_found'),
+                ]);
+            }
+
+            DB::transaction(function () use ($item) {
+                StockMovement::where('item_id', $item->id)
                     ->where('status', StockStatus::DRAFT->value)
-                    ->get();
-                    if($stockMovement->count() > 0) {
-                        $stockMovement->each(function ($movement) {
-                            $movement->delete();
-                        });
-                    }
-                    $stockBalance = StockBalance::where('item_id', $item->id)
+                    ->get()
+                    ->each(fn ($movement) => $movement->delete());
+
+                StockBalance::where('item_id', $item->id)
                     ->where('status', StockStatus::DRAFT->value)
-                    ->get();
-                    if($stockBalance->count() > 0) {
-                        $stockBalance->each(function ($balance) {
-                            $balance->delete();
-                        });
-                    }
-                }
+                    ->get()
+                    ->each(fn ($balance) => $balance->delete());
+
+                $item->variants()->get()->each(fn ($variant) => $variant->delete());
 
                 // Delete opening transactions with their related models
                 $openingTransaction = $item->openingTransaction()->first();
@@ -658,6 +714,8 @@ class ItemController extends Controller
     }
     public function restore(Request $request, Item $item)
     {
+        $this->authorize('restore', $item);
+
         try {
             DB::transaction(function () use ($item) {
                 // Restore the main item first
@@ -692,6 +750,8 @@ class ItemController extends Controller
     // force delete item
     public function forceDelete(Request $request, Item $item)
     {
+        $this->authorize('forceDelete', $item);
+
         try {
             DB::transaction(function () use ($item) {
                 // Force delete openings with their stocks

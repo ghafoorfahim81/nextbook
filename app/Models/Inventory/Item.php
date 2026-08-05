@@ -17,10 +17,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Enums\CostingMethod;
 use App\Enums\ItemType;
+use App\Enums\PricingMethod;
 use App\Models\Inventory\StockBalance;
 use App\Traits\HasUserTracking;
 use App\Models\Transaction\Transaction;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Enums\StockSourceType;
 class Item extends Model
@@ -71,6 +74,41 @@ class Item extends Model
         'branch_id',
         'created_by',
         'updated_by',
+
+        // Behaviour flags — a business type is a combination of these.
+        'is_active',
+        'is_stockable',
+        'is_sellable',
+        'is_purchasable',
+        'is_serial_tracked',
+        'is_weighted',
+        'has_variants',
+        'allow_negative_stock',
+
+        'costing_method',
+        'pricing_method',
+
+        'description',
+        'weight',
+        'length',
+        'width',
+        'height',
+
+        'manufacturer',
+        'model',
+        'country_of_origin',
+        'hs_code',
+        'warranty_months',
+        'shelf_life_days',
+        'min_shelf_life_percent',
+        'storage_zone',
+        'requires_prescription',
+        'is_controlled',
+
+        'reorder_quantity',
+        'lead_time_days',
+        'default_warehouse_id',
+        'attributes',
     ];
 
     /**
@@ -104,6 +142,32 @@ class Item extends Model
             'is_expiry_tracked' => 'boolean',
             'is_color_tracked' => 'boolean',
             'is_size_tracked' => 'boolean',
+
+            'is_active' => 'boolean',
+            'is_stockable' => 'boolean',
+            'is_sellable' => 'boolean',
+            'is_purchasable' => 'boolean',
+            'is_serial_tracked' => 'boolean',
+            'is_weighted' => 'boolean',
+            'has_variants' => 'boolean',
+            'allow_negative_stock' => 'boolean',
+            'requires_prescription' => 'boolean',
+            'is_controlled' => 'boolean',
+
+            'costing_method' => CostingMethod::class,
+            'pricing_method' => PricingMethod::class,
+
+            'weight' => 'decimal:4',
+            'length' => 'decimal:4',
+            'width' => 'decimal:4',
+            'height' => 'decimal:4',
+            'reorder_quantity' => 'decimal:4',
+            'warranty_months' => 'integer',
+            'shelf_life_days' => 'integer',
+            'min_shelf_life_percent' => 'integer',
+            'lead_time_days' => 'integer',
+            'default_warehouse_id' => 'string',
+            'attributes' => 'array',
         ];
     }
 
@@ -230,6 +294,50 @@ class Item extends Model
     public function stockBalances()
     {
         return $this->hasMany(StockBalance::class);
+    }
+
+    /**
+     * Sellable products under this catalogue entry. Every item has at least
+     * one, so callers never need a null check.
+     */
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ItemVariant::class)->orderBy('sort_order');
+    }
+
+    public function defaultVariant(): HasOne
+    {
+        return $this->hasOne(ItemVariant::class)->where('is_default', true);
+    }
+
+    public function lots(): HasMany
+    {
+        return $this->hasMany(StockLot::class);
+    }
+
+    public function pieces(): HasMany
+    {
+        return $this->hasMany(StockPiece::class);
+    }
+
+    public function defaultWarehouse(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Administration\Warehouse::class, 'default_warehouse_id');
+    }
+
+    /**
+     * Costing falls back to the company setting: a jewellery shop sells gold
+     * (specific) and gift boxes (weighted average) from the same catalogue.
+     */
+    public function effectiveCostingMethod(): CostingMethod
+    {
+        if ($this->costing_method instanceof CostingMethod) {
+            return $this->costing_method;
+        }
+
+        $companyDefault = \Illuminate\Support\Facades\Cache::get('costing_method');
+
+        return CostingMethod::tryFrom((string) $companyDefault) ?? CostingMethod::WEIGHTED_AVERAGE;
     }
 
     public function onHand(): string
