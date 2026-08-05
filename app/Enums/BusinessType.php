@@ -4,14 +4,15 @@ namespace App\Enums;
 
 enum BusinessType: string
 {
-    case PHARMACY = 'pharmacy'; 
+    case PHARMACY = 'pharmacy';
     case SUPERMARKET = 'supermarket';
+    case GROCERY = 'grocery';
     case MANUFACTURING = 'manufacturing';
     case RETAIL = 'retail';
     case ACCOUNTING = 'accounting';
-    case AUTOMOBILE = 'automobile'; 
+    case AUTOMOBILE = 'automobile';
     case BOOK = 'book';
-    case CLOTHING = 'clothing'; 
+    case CLOTHING = 'clothing';
     case HOTEL = 'hotel';
     case CARPET = 'carpet';
     case ELECTRONICS = 'electronics';
@@ -20,13 +21,14 @@ enum BusinessType: string
     case MOBILE = 'mobile';
     case PHARMA_MANUFACTURING = 'pharma_manufacturing';
     case PLY_CARPET = 'ply_carpet';
-    case RESTAURANT = 'restaurant';
+    // case RESTAURANT = 'restaurant';
 
     public function getLabel(): string
     {
         return match($this) {
             self::PHARMACY => __('enums.business_type.pharmacy'),
             self::SUPERMARKET => __('enums.business_type.supermarket'),
+            self::GROCERY => __('enums.business_type.grocery'),
             self::MANUFACTURING => __('enums.business_type.manufacturing'),
             self::RETAIL => __('enums.business_type.retail'),
             self::ACCOUNTING => __('enums.business_type.accounting'),
@@ -41,12 +43,12 @@ enum BusinessType: string
             self::MOBILE => __('enums.business_type.mobile'),
             self::PHARMA_MANUFACTURING => __('enums.business_type.pharma_manufacturing'),
             self::PLY_CARPET => __('enums.business_type.ply_carpet'),
-            self::RESTAURANT => __('enums.business_type.restaurant'),
+            // self::RESTAURANT => __('enums.business_type.restaurant'),
         };
     }
 
     public static function values(): array
     {
         return array_column(self::cases(), 'value');
-    } 
+    }
 }

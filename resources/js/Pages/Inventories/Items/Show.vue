@@ -12,10 +12,12 @@ import {
     Building, Target, User, Download, ArrowLeft, SquarePen, HandCoins
 } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
+import { useBusinessProfile } from '@/composables/useBusinessProfile';
 import JsBarcode from 'jsbarcode';
 import { COLOR_OPTIONS } from '@/constants/colors';
 
 const { t } = useI18n();
+const { showsSection } = useBusinessProfile();
 const { can } = useAuth();
 
 const props = defineProps({
@@ -106,6 +108,8 @@ const trackingFlags = computed(() => [
 
 const stockRows = computed(() => props.stockByWarehouse ?? []);
 
+const variantRows = computed(() => itemData.value?.variants ?? []);
+
 const formatQty = (value) => Number(value ?? 0).toLocaleString(undefined, { maximumFractionDigits: 4 });
 const formatMoney = (value) => Number(value ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -163,7 +167,7 @@ const switchTab = (tab) => {
     if (tab === 'out' && outRecords.value.length === 0) loadMore();
 };
 
-const    = () => {
+const exportCurrentRecords = () => {
     const routeName = activeTab.value === 'in' ? 'items.in-records.export' : 'items.out-records.export';
     window.location.href = route(routeName, itemData.value.id);
 };
@@ -286,6 +290,55 @@ onMounted(() => {
                         <div><p class="text-xs text-muted-foreground">{{ t('item.stock_value') }}</p><p class="text-sm font-medium text-foreground">{{ itemData.stock_value ?? '—' }}</p></div>
                     </div>
                 </div>
+
+                <!-- Variants: only meaningful when the trade uses them -->
+                <template v-if="showsSection('variants') && variantRows.length">
+                    <hr class="my-4 border-border" />
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="bg-violet-500 text-white p-1.5 rounded"><Tag class="w-4 h-4" /></div>
+                        <h3 class="text-sm font-semibold text-foreground">{{ t('item.variants') }}</h3>
+                    </div>
+                    <div class="rounded-lg border border-border overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="bg-muted/60 text-muted-foreground">
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('general.name') }}</th>
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.sku') }}</th>
+                                    <th class="py-2 px-3 text-start font-medium whitespace-nowrap">{{ t('item.barcode') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('item.sale_price') }}</th>
+                                    <th class="py-2 px-3 text-end font-medium whitespace-nowrap">{{ t('general.on_hand') }}</th>
+                                    <th class="py-2 px-3 text-center font-medium whitespace-nowrap">{{ t('general.status') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="variant in variantRows"
+                                    :key="variant.id"
+                                    class="border-t border-border/60 hover:bg-muted/40 transition"
+                                >
+                                    <td class="py-2 px-3 whitespace-nowrap font-medium text-foreground">
+                                        {{ variant.display_name || '—' }}
+                                        <span v-if="variant.is_default" class="ms-1 text-xs text-amber-500">★</span>
+                                    </td>
+                                    <td class="py-2 px-3 whitespace-nowrap text-muted-foreground">{{ variant.sku || '—' }}</td>
+                                    <td class="py-2 px-3 whitespace-nowrap text-muted-foreground">{{ variant.barcode || '—' }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap text-foreground">{{ formatMoney(variant.sale_price) }}</td>
+                                    <td class="py-2 px-3 text-end whitespace-nowrap font-semibold text-foreground">{{ formatQty(variant.on_hand) }}</td>
+                                    <td class="py-2 px-3 text-center whitespace-nowrap">
+                                        <span
+                                            class="rounded-full border px-2 py-0.5 text-xs"
+                                            :class="variant.is_active
+                                                ? 'border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400'
+                                                : 'border-muted-foreground/30 bg-muted text-muted-foreground'"
+                                        >
+                                            {{ variant.is_active ? t('general.active') : t('general.inactive') }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
 
                 <!-- Stock by warehouse -->
                 <template v-if="stockRows.length">

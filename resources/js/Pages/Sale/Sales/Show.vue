@@ -25,7 +25,6 @@ const props = defineProps({
     originalDoc: { type: Object, default: null },
 });
 
-const page = usePage();
 const saleData = computed(() => props.sale?.data ?? props.sale ?? {});
 
 const totalAmount = computed(() =>

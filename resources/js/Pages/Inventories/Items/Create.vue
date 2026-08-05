@@ -11,6 +11,9 @@ import SubmitButtons from '@/Components/SubmitButtons.vue'
 import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
+import VariantEditor from '@/Components/inventory/VariantEditor.vue'
+import ItemDetailFields from '@/Components/inventory/ItemDetailFields.vue'
+import { useBusinessProfile } from '@/composables/useBusinessProfile'
 import { useI18n } from 'vue-i18n';
 import { toast } from 'vue-sonner';
 import JsBarcode from 'jsbarcode'
@@ -43,6 +46,8 @@ const props = defineProps({
     otherCurrentAssetsAccounts:{ type:Object, required: true},
     incomeAccounts:{ type:Object, required: true},
     costAccounts:{ type:Object, required: true},
+    costingMethods: { type: [Array, Object], default: () => [] },
+    pricingMethods: { type: [Array, Object], default: () => [] },
 })
 
 // normalize lists whether they're paginated or not
@@ -55,6 +60,8 @@ const otherCurrentAssetsAccounts = computed(() => props.otherCurrentAssetsAccoun
 const incomeAccounts = computed(() => props.incomeAccounts?.data ?? props.incomeAccounts ?? [])
 const costAccounts = computed(() => props.costAccounts?.data ?? props.costAccounts ?? [])
 const itemTypes = computed(() => props.itemTypes?.data ?? props.itemTypes ?? [])
+const costingMethods = computed(() => props.costingMethods?.data ?? props.costingMethods ?? [])
+const pricingMethods = computed(() => props.pricingMethods?.data ?? props.pricingMethods ?? [])
 // Format code with leading zeros based on the number
 const formatCode = (number) => {
     const num = Number(number);
@@ -71,8 +78,13 @@ const user_preferences = computed(() => props.user_preferences?.data ?? props.us
 // Single reactive copy of the item-management preferences so the panel and form stay in sync live.
 const itemPrefs = reactive(JSON.parse(JSON.stringify(user_preferences.value?.item_management ?? {})))
 if (!itemPrefs.visible_fields || typeof itemPrefs.visible_fields !== 'object') itemPrefs.visible_fields = {}
-const visibleFields = computed(() => itemPrefs.visible_fields)
-const specText = computed(() => itemPrefs.spec_text ?? '')
+
+// Which fields this trade uses, resolved server-side from the company's
+// business type. User preferences layer on top, so an owner can still switch
+// an individual field on or off without leaving the profile.
+const { fields: profileFields, showsSection, specLabel, applyDefaults } = useBusinessProfile()
+const visibleFields = computed(() => ({ ...profileFields.value, ...itemPrefs.visible_fields }))
+const specText = computed(() => itemPrefs.spec_text || t(`item.spec.${specLabel.value}`))
 const showPreferencesPanel = ref(false)
 
 const createOpeningRow = (warehouse = null) => ({
@@ -127,9 +139,55 @@ const form = useForm({
     is_expiry_tracked: false,
     is_color_tracked: false,
     is_size_tracked: false,
+    is_serial_tracked: false,
+    is_weighted: false,
+    has_variants: false,
+    is_active: true,
+    is_stockable: true,
+    is_sellable: true,
+    is_purchasable: true,
+    requires_prescription: false,
+    is_controlled: false,
+
+    description: '',
+    weight: '',
+    length: '',
+    width: '',
+    height: '',
+    manufacturer: '',
+    model: '',
+    country_of_origin: '',
+    hs_code: '',
+    warranty_months: '',
+    shelf_life_days: '',
+    min_shelf_life_percent: '',
+    storage_zone: '',
+    reorder_quantity: '',
+    lead_time_days: '',
+
+    // Every item carries at least one variant, so variant_id is never null
+    // downstream. Trades with no choices keep this single default row.
+    variants: [{
+        id: null,
+        attributes: {},
+        name: '',
+        sku: '',
+        barcode: '',
+        sale_price: '',
+        purchase_price: '',
+        minimum_stock: '',
+        is_default: true,
+        is_active: true,
+        sort_order: 0,
+    }],
+
     attachments: [],
     openings: [createOpeningRow()],
 })
+
+// Pre-set the tracking flags this trade uses — a pharmacy gets batch and
+// expiry without the operator having to remember.
+applyDefaults(form)
 
 // Full color palette, translated, for the per-opening color picker.
 const itemColorOptions = computed(() => COLOR_OPTIONS.map(o => ({
@@ -532,7 +590,9 @@ useFormGuard(form)
                 <NextInput v-show="visibleFields.code" :label="t('admin.currency.code')" disabled="true"  v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
                 <NextInput v-show="visibleFields.generic_name" :label="t('item.generic_name')" v-model="form.generic_name" :error="form.errors?.generic_name" :placeholder="t('general.enter', { text: t('item.generic_name') })" />
                 <NextInput v-show="visibleFields.packing" :label="t('item.packing')" v-model="form.packing" :error="form.errors?.packing" :placeholder="t('general.enter', { text: t('item.packing') })" />
+                <NextInput v-show="visibleFields.description" :label="t('item.description')" v-model="form.description" :error="form.errors?.description" :placeholder="t('general.enter', { text: t('item.description') })" />
                 <NextSelect
+                    v-show="visibleFields.unit_measure"
                     v-model="form.selected_unit_measure"
                     :options="unitMeasures"
                     @update:modelValue="(value) => handleSelectChange('unit_measure_id', value)"
@@ -558,6 +618,7 @@ useFormGuard(form)
                 />
                 <NextInput v-show="visibleFields.sku" :label="t('item.sku')" v-model="form.sku" :error="form.errors?.sku" :placeholder="t('general.enter', { text: t('item.sku') })" />
                 <NextSelect
+                    v-show="visibleFields.category"
                     :options="categories"
                     v-model="form.selected_category"
                     @update:modelValue="(value) => handleSelectChange('category_id', value)"
@@ -732,7 +793,32 @@ useFormGuard(form)
                             <p class="text-sm text-muted-foreground">{{ t('item.size_warning') }}</p>
                         </div>
                     </label>
+                    <label v-show="visibleFields.is_serial_tracked" class="flex items-start gap-3 rounded-lg border p-3 cursor-pointer">
+                        <Checkbox class="mt-0.5" :checked="form.is_serial_tracked" @update:checked="(v) => form.is_serial_tracked = v" />
+                        <div>
+                            <p class="font-semibold text-sm">{{ t('item.is_serial_tracked') }}</p>
+                            <p class="text-sm text-muted-foreground">{{ t('item.serial_warning') }}</p>
+                        </div>
+                    </label>
                 </div>
+            </div>
+
+            <div class="mt-4">
+                <VariantEditor
+                    v-model="form.variants"
+                    :errors="form.errors"
+                    :enabled="showsSection('variants')"
+                />
+            </div>
+
+            <div class="mt-4">
+                <ItemDetailFields
+                    :form="form"
+                    :visible-fields="visibleFields"
+                    :warehouses="warehouses"
+                    :costing-methods="costingMethods"
+                    :pricing-methods="pricingMethods"
+                />
             </div>
             <div class="mt-2">
                 <div class="w-full flex justify-center items-center  w-3/4">

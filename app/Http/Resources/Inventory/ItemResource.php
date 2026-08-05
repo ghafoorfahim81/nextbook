@@ -64,6 +64,46 @@ class ItemResource extends JsonResource
             'sku' => $this->sku,
             'item_type' => $this->item_type ? $this->item_type?->getLabel() : null,
             'item_type_id' => $this->item_type,
+
+            // --- Behaviour flags -------------------------------------------
+            'is_active' => (bool) $this->is_active,
+            'is_stockable' => (bool) $this->is_stockable,
+            'is_sellable' => (bool) $this->is_sellable,
+            'is_purchasable' => (bool) $this->is_purchasable,
+            'is_serial_tracked' => (bool) $this->is_serial_tracked,
+            'is_weighted' => (bool) $this->is_weighted,
+            'has_variants' => (bool) $this->has_variants,
+            'allow_negative_stock' => (bool) $this->allow_negative_stock,
+            'requires_prescription' => (bool) $this->requires_prescription,
+            'is_controlled' => (bool) $this->is_controlled,
+
+            'costing_method' => $this->costing_method?->value,
+            'pricing_method' => $this->pricing_method?->value,
+
+            // --- Physical ---------------------------------------------------
+            'description' => $this->description,
+            'photo' => $this->photo,
+            'weight' => $this->weight,
+            'length' => $this->length,
+            'width' => $this->width,
+            'height' => $this->height,
+
+            // --- Sourcing & compliance ---------------------------------------
+            'manufacturer' => $this->manufacturer,
+            'model' => $this->model,
+            'country_of_origin' => $this->country_of_origin,
+            'hs_code' => $this->hs_code,
+            'warranty_months' => $this->warranty_months,
+            'shelf_life_days' => $this->shelf_life_days,
+            'min_shelf_life_percent' => $this->min_shelf_life_percent,
+            'storage_zone' => $this->storage_zone,
+
+            // --- Planning ----------------------------------------------------
+            'reorder_quantity' => $this->reorder_quantity,
+            'lead_time_days' => $this->lead_time_days,
+            'default_warehouse_id' => $this->default_warehouse_id,
+
+            'variants' => ItemVariantResource::collection($this->whenLoaded('variants')),
             // Calculate total in quantity in item's base unit
             // Only provide stock_count and stock_out_count if 'stocks' relation is loaded
             'stock_count' => $this->whenLoaded('stocks', function () {

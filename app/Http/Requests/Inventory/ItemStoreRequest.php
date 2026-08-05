@@ -3,67 +3,75 @@
 namespace App\Http\Requests\Inventory;
 
 use App\Enums\ItemType;
+use App\Http\Requests\Inventory\Concerns\ValidatesItemPayload;
+use App\Support\BusinessProfile;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class ItemStoreRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
+    use ValidatesItemPayload;
+
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     */
     public function rules(): array
     {
+        return array_merge(
+            $this->itemRules(),
+            $this->variantRules(),
+            $this->openingRules(),
+        );
+    }
 
-        return [
-            'name' => ['required', 'string', 'unique:items,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'code' => ['required', 'string', 'unique:items,code,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'item_type' => ['nullable', 'string', Rule::in(ItemType::values()) ?? ItemType::INVENTORY_MATERIALS->value],
-            'sku' => ['nullable', 'string', 'unique:items,sku,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'is_batch_tracked' => ['nullable', 'boolean'],
-            'is_expiry_tracked' => ['nullable', 'boolean'],
-            'is_color_tracked' => ['nullable', 'boolean'],
-            'is_size_tracked' => ['nullable', 'boolean'],
-            'generic_name' => ['nullable', 'string'],
-            'packing' => ['nullable', 'string'],
-            'barcode' => ['nullable', 'string'],
-            'unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
-            'brand_id' => ['nullable', 'string', 'exists:brands,id'],
-            'category_id' => ['nullable', 'string', 'exists:categories,id'],
-            'asset_account_id' => ['required', 'string', 'exists:accounts,id'],
-            'income_account_id' => ['required', 'string', 'exists:accounts,id'],
-            'cost_account_id' => ['required', 'string', 'exists:accounts,id'],
-            'minimum_stock' => ['nullable', 'numeric'],
-            'maximum_stock' => ['nullable', 'numeric'],
-            'colors' => ['nullable', 'array'],
-            'size_id' => ['nullable', 'string', 'exists:sizes,id'],
-            'purchase_price' => ['nullable', 'numeric'],
-            'cost' => ['nullable', 'numeric'],
-            'sale_price' => ['nullable', 'numeric'],
-            'margin_percentage' => ['nullable', 'numeric', 'required_with:sale_price<0'],
-            'rate_a' => ['nullable', 'numeric'],
-            'rate_b' => ['nullable', 'numeric'],
-            'rate_c' => ['nullable', 'numeric'],
-            'rack_no' => ['nullable', 'string'],
-            'fast_search' => ['nullable', 'string'],
-            'openings' => ['nullable', 'array'],
-            'openings.*.batch' => ['nullable', 'string'],
-            'openings.*.expire_date' => ['nullable', 'string'],
-            'openings.*.quantity' => ['nullable', 'numeric'],
-            'openings.*.unit_price' => ['nullable', 'numeric','required_with:openings.*.quantity>0'], 
-            'openings.*.warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
-            'openings.*.color' => ['nullable', 'string'],
-            'openings.*.size_id' => ['nullable', 'string', 'exists:sizes,id'],
-            'attachments' => ['nullable', 'array'],
-            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
+    /**
+     * Fill in what the form does not send.
+     *
+     * Tracking defaults come from the company's trade, so a pharmacy gets
+     * batch and expiry switched on without the operator remembering to tick
+     * them, and a garment shop never sees the option at all.
+     */
+    protected function prepareForValidation(): void
+    {
+        $profile = BusinessProfile::current();
+        $merge = [];
 
-        ];
+        if (blank($this->input('item_type'))) {
+            $merge['item_type'] = ItemType::INVENTORY_MATERIALS->value;
+        }
+
+        foreach ($profile->defaults() as $flag => $value) {
+            if ($this->input($flag) === null) {
+                $merge[$flag] = $value;
+            }
+        }
+
+        // Every item carries at least one variant. A trade with no choices
+        // still gets one, empty, so variant_id is never null downstream.
+        if (blank($this->input('variants'))) {
+            $merge['variants'] = [[
+                'attributes' => [],
+                'sku' => $this->input('sku'),
+                'barcode' => $this->input('barcode'),
+                'sale_price' => $this->input('sale_price'),
+                'purchase_price' => $this->input('purchase_price'),
+                'minimum_stock' => $this->input('minimum_stock'),
+                'maximum_stock' => $this->input('maximum_stock'),
+                'is_default' => true,
+                'is_active' => true,
+                'sort_order' => 0,
+            ]];
+        }
+
+        if (! empty($merge)) {
+            $this->merge($merge);
+        }
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $this->applyPayloadChecks($validator);
     }
 }
