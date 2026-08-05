@@ -99,6 +99,8 @@ class CustomerController extends Controller
 
             abort_unless($arId && $equityId, 500, 'System accounts (AR/AP) are missing.');
 
+            $remark = trim((string) ($validated['remark'] ?? ''));
+
             $transaction = $transactionService->post(
                 header: [
                     'currency_id' => $validated['opening_currency_id'],
@@ -110,9 +112,9 @@ class CustomerController extends Controller
                 ],
                 lines: [
                 ['account_id' => $arId, 'ledger_id' => $ledger->id, 'debit' => (float) $validated['amount'], 'credit' => 0,
-                'remark' => 'Opening balance for customer ' . $ledger->name,
-                'remark_fa' => 'موجودی اولیه برای مشتری ' . $ledger->name,
-                'remark_ps' =>'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
+                'remark' => $remark !== '' ? $remark : 'Opening balance for customer ' . $ledger->name,
+                'remark_fa' => $remark !== '' ? $remark : 'موجودی اولیه برای مشتری ' . $ledger->name,
+                'remark_ps' => $remark !== '' ? $remark : 'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
             ],
                 ['account_id' => $equityId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $ledger->name,
                 'remark_fa' => 'موجودی اولیه برای مشتری ' . $ledger->name,
@@ -337,6 +339,8 @@ class CustomerController extends Controller
             $transactionService = app(TransactionService::class);
             abort_unless($arId && $equityId, 500, 'System accounts (AR/AP) are missing.');
 
+            $remark = trim((string) ($validated['remark'] ?? ''));
+
             $transaction = $transactionService->post(
                 header: [
                     'currency_id' => $validated['opening_currency_id'],
@@ -348,9 +352,9 @@ class CustomerController extends Controller
                 ],
                 lines: [
                 ['account_id' => $arId, 'ledger_id' => $customer->id, 'debit' => (float) $validated['amount'], 'credit' => 0,
-                'remark' => 'Opening balance for customer ' . $customer->name,
-                'remark_fa' => 'موجودی اولیه برای مشتری ' . $customer->name,
-                'remark_ps' =>'د'. ' '. $customer->name.' '.'د پرانیستلو بیلانس ',
+                'remark' => $remark !== '' ? $remark : 'Opening balance for customer ' . $customer->name,
+                'remark_fa' => $remark !== '' ? $remark : 'موجودی اولیه برای مشتری ' . $customer->name,
+                'remark_ps' => $remark !== '' ? $remark : 'د'. ' '. $customer->name.' '.'د پرانیستلو بیلانس ',
                 ],
                 ['account_id' => $equityId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $customer->name,
                 'remark_fa' => 'موجودی اولیه برای مشتری ' . $customer->name,
