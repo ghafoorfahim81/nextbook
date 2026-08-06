@@ -38,11 +38,17 @@
     "warehouse": "Warehouse",
     "currency": "Currency",
     "type": "Transaction type",
+    "balance_type": "Balance type",
     "expense_category": "Expense category",
     "expense_account": "Expense account",
     "per_page": "Rows",
     "apply": "Apply filters",
     "reset": "Reset"
+  },
+  "balance_types": {
+    "all": "All",
+    "debtor": "Debtor",
+    "creditor": "Creditor"
   },
   "table": {
     "results": "Results",
@@ -93,7 +99,10 @@
     "gross_profit": "Gross profit",
     "total_expenses": "Total expenses",
     "net_profit": "Net profit",
-    "expense_count": "Expenses"
+    "expense_count": "Expenses",
+    "party_count": "Parties",
+    "total_debtor": "Total receivable",
+    "total_creditor": "Total payable"
   },
   "columns": {
     "no": "No.",
@@ -165,7 +174,9 @@
     "category": "Category",
     "expense_account": "Expense account",
     "bank_account": "Bank / Cash account",
-    "remark": "Remark"
+    "remark": "Remark",
+    "party_name": "Party",
+    "balance_type": "Balance type"
   },
   "view_types": {
     "general": "General view",
@@ -190,11 +201,11 @@
     },
     "customer_statement": {
       "label": "Customer statement",
-      "description": "Posted customer movements and balances."
+      "description": "All customer balances by default, or a full ledger statement for a selected customer."
     },
     "supplier_statement": {
       "label": "Supplier statement",
-      "description": "Posted supplier movements and balances."
+      "description": "All supplier balances by default, or a full ledger statement for a selected supplier."
     },
     "receipt_report": {
       "label": "Receipt report",
