@@ -38,11 +38,17 @@
     "warehouse": "انبار",
     "currency": "ارز",
     "type": "نوع معامله",
+    "balance_type": "نوع مانده",
     "expense_category": "دسته‌بندی مصرف",
     "expense_account": "حساب مصرف",
     "per_page": "تعداد سطر",
     "apply": "اعمال فیلترها",
     "reset": "بازنشانی"
+  },
+  "balance_types": {
+    "all": "همه",
+    "debtor": "بدهکار",
+    "creditor": "بستانکار"
   },
   "table": {
     "results": "نتایج",
@@ -93,7 +99,10 @@
     "gross_profit": "سود ناخالص",
     "total_expenses": "مجموع مصارف",
     "net_profit": "سود خالص",
-    "expense_count": "مصارف"
+    "expense_count": "مصارف",
+    "party_count": "تعداد طرف حساب",
+    "total_debtor": "مجموع طلب",
+    "total_creditor": "مجموع بدهی"
   },
   "columns": {
     "no": "شماره",
@@ -165,7 +174,9 @@
     "category": "دسته‌بندی",
     "expense_account": "حساب مصرف",
     "bank_account": "حساب بانکی / نقدی",
-    "remark": "ملاحظات"
+    "remark": "ملاحظات",
+    "party_name": "طرف حساب",
+    "balance_type": "نوع مانده"
   },
   "view_types": {
     "general": "عمومی",
@@ -190,11 +201,11 @@
     },
     "customer_statement": {
       "label": "صورت‌حساب مشتری",
-      "description": "گردش‌ها و مانده‌های ثبت‌شده مشتری."
+      "description": "به صورت پیش‌فرض مانده همه مشتریان، یا صورت‌حساب کامل مشتری انتخاب‌شده."
     },
     "supplier_statement": {
       "label": "صورت‌حساب تأمین‌کننده",
-      "description": "گردش‌ها و مانده‌های ثبت‌شده تأمین‌کننده."
+      "description": "به صورت پیش‌فرض مانده همه تأمین‌کنندگان، یا صورت‌حساب کامل تأمین‌کننده انتخاب‌شده."
     },
     "receipt_report": {
       "label": "گزارش رسید",

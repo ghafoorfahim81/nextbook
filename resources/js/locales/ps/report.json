@@ -38,11 +38,17 @@
     "warehouse": "ګودام",
     "currency": "اسعار",
     "type": "د راکړې ورکړې ډول",
+    "balance_type": "د بیلانس ډول",
     "expense_category": "د لګښت کټګوري",
     "expense_account": "د لګښت حساب",
     "per_page": "قطارونه",
     "apply": "فلټرونه پلي کړئ",
     "reset": "بیا تنظیم"
+  },
+  "balance_types": {
+    "all": "ټول",
+    "debtor": "پوروړی",
+    "creditor": "پورورکوونکی"
   },
   "table": {
     "results": "پایلې",
@@ -93,7 +99,10 @@
     "gross_profit": "ناخالصه ګټه",
     "total_expenses": "ټول لګښتونه",
     "net_profit": "خالصه ګټه",
-    "expense_count": "لګښتونه"
+    "expense_count": "لګښتونه",
+    "party_count": "د طرفونو شمېر",
+    "total_debtor": "ټول ترلاسه کېدونکي",
+    "total_creditor": "ټول ورکړونکي"
   },
   "columns": {
     "no": "شماره",
@@ -164,7 +173,9 @@
     "category": "کټګوري",
     "expense_account": "د لګښت حساب",
     "bank_account": "د بانک / نغدي حساب",
-    "remark": "یادښت"
+    "remark": "یادښت",
+    "party_name": "طرف",
+    "balance_type": "د بیلانس ډول"
   },
   "view_types": {
     "general": "عمومي لید",
@@ -189,11 +200,11 @@
     },
     "customer_statement": {
       "label": "د پېرېدونکي صورت",
-      "description": "د پېرېدونکي ثبت شوي حرکتونه او بیلانسونه."
+      "description": "په ډیفالټ توګه د ټولو پېرېدونکو بیلانسونه، یا د ټاکل شوي پېرېدونکي بشپړ صورت."
     },
     "supplier_statement": {
       "label": "د عرضه کوونکي صورت",
-      "description": "د عرضه کوونکي ثبت شوي حرکتونه او بیلانسونه."
+      "description": "په ډیفالټ توګه د ټولو عرضه کوونکو بیلانسونه، یا د ټاکل شوي عرضه کوونکي بشپړ صورت."
     },
     "receipt_report": {
       "label": "د رسید راپور",
