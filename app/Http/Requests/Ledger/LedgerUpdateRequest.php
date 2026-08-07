@@ -41,6 +41,7 @@ class LedgerUpdateRequest extends FormRequest
             'whatsapp_number' => ['nullable', 'digits_between:1,10'],
             'rate' => ['nullable', 'numeric'],
             'amount' => ['nullable', 'numeric'],
+            'remark' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
         ];
     }

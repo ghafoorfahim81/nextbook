@@ -79,6 +79,7 @@ function normalizeFilters(filters) {
     size_id: filters.size_id || '',
     type: filters.type || '',
     reason: filters.reason || '',
+    balance_type: filters.balance_type || 'all',
     category_id: filters.category_id || '',
     expense_account_id: filters.expense_account_id || '',
     view_type: filters.view_type || 'general',
@@ -95,6 +96,48 @@ const VIEW_TYPES = [
 const isViewToggleReport = computed(() =>
   ['sales_report', 'purchase_report'].includes(localFilters.value.report),
 )
+
+// Party statements list every party when none is selected, and drill into a single
+// party ledger when one is. Columns/summary follow whichever mode the server returned.
+const isPartySummaryMode = computed(() => props.result.meta?.mode !== 'detail')
+
+const partyStatementSummary = computed(() => (isPartySummaryMode.value
+  ? [
+      { key: 'party_count', label: t('report.summary.party_count'), type: 'integer' },
+      { key: 'total_debit', label: t('report.summary.total_debit'), type: 'money' },
+      { key: 'total_credit', label: t('report.summary.total_credit'), type: 'money' },
+      { key: 'total_debtor', label: t('report.summary.total_debtor'), type: 'money' },
+      { key: 'total_creditor', label: t('report.summary.total_creditor'), type: 'money' },
+      { key: 'balance_label', label: t('report.summary.balance'), type: 'text' },
+    ]
+  : [
+      { key: 'total_debit', label: t('report.summary.total_debit'), type: 'money' },
+      { key: 'total_credit', label: t('report.summary.total_credit'), type: 'money' },
+      { key: 'balance_label', label: t('report.summary.balance'), type: 'text' },
+    ]))
+
+function partyStatementColumns(partyLabel) {
+  if (isPartySummaryMode.value) {
+    return [
+      { key: 'party_name', label: partyLabel },
+      { key: 'opening_balance', label: t('report.columns.opening_balance'), type: 'balance', align: 'right' },
+      { key: 'debit', label: t('report.columns.debit'), type: 'money', align: 'right' },
+      { key: 'credit', label: t('report.columns.credit'), type: 'money', align: 'right' },
+      { key: 'closing_balance', label: t('report.columns.closing_balance'), type: 'balance', align: 'right' },
+      { key: 'balance_type', label: t('report.columns.balance_type') },
+    ]
+  }
+
+  return [
+    { key: 'date', label: t('report.columns.date') },
+    { key: 'reference', label: t('report.columns.reference') },
+    { key: 'description', label: t('report.columns.description') },
+    { key: 'debit', label: t('report.columns.debit'), type: 'money', align: 'right' },
+    { key: 'credit', label: t('report.columns.credit'), type: 'money', align: 'right' },
+    { key: 'running_balance', label: t('report.columns.running_balance'), type: 'money', align: 'right' },
+    { key: 'balance', label: t('report.columns.balance'), align: 'right' },
+  ]
+}
 
 const reportDefinitions = computed(() => ({
   trial_balance: {
@@ -220,44 +263,20 @@ const reportDefinitions = computed(() => ({
   customer_statement: {
     label: t('report.reports.customer_statement.label'),
     description: t('report.reports.customer_statement.description'),
-    filters: ['customer_id'],
+    filters: isPartySummaryMode.value ? ['customer_id', 'balance_type'] : ['customer_id'],
     group: 'party',
     icon: Users,
-    summary: [
-      { key: 'total_debit', label: t('report.summary.total_debit'), type: 'money' },
-      { key: 'total_credit', label: t('report.summary.total_credit'), type: 'money' },
-      { key: 'balance_label', label: t('report.summary.balance'), type: 'text' },
-    ],
-    columns: [
-      { key: 'date', label: t('report.columns.date') },
-      { key: 'reference', label: t('report.columns.reference') },
-      { key: 'description', label: t('report.columns.description') },
-      { key: 'debit', label: t('report.columns.debit'), type: 'money', align: 'right' },
-      { key: 'credit', label: t('report.columns.credit'), type: 'money', align: 'right' },
-      { key: 'running_balance', label: t('report.columns.running_balance'), type: 'money', align: 'right' },
-      { key: 'balance', label: t('report.columns.balance'), align: 'right' },
-    ],
+    summary: partyStatementSummary.value,
+    columns: partyStatementColumns(t('report.columns.customer')),
   },
   supplier_statement: {
     label: t('report.reports.supplier_statement.label'),
     description: t('report.reports.supplier_statement.description'),
-    filters: ['supplier_id'],
+    filters: isPartySummaryMode.value ? ['supplier_id', 'balance_type'] : ['supplier_id'],
     group: 'party',
     icon: Truck,
-    summary: [
-      { key: 'total_debit', label: t('report.summary.total_debit'), type: 'money' },
-      { key: 'total_credit', label: t('report.summary.total_credit'), type: 'money' },
-      { key: 'balance_label', label: t('report.summary.balance'), type: 'text' },
-    ],
-    columns: [
-      { key: 'date', label: t('report.columns.date') },
-      { key: 'reference', label: t('report.columns.reference') },
-      { key: 'description', label: t('report.columns.description') },
-      { key: 'debit', label: t('report.columns.debit'), type: 'money', align: 'right' },
-      { key: 'credit', label: t('report.columns.credit'), type: 'money', align: 'right' },
-      { key: 'running_balance', label: t('report.columns.running_balance'), type: 'money', align: 'right' },
-      { key: 'balance', label: t('report.columns.balance'), align: 'right' },
-    ],
+    summary: partyStatementSummary.value,
+    columns: partyStatementColumns(t('report.columns.supplier')),
   },
   aged_receivables: {
     label: t('report.reports.aged_receivables.label'),
@@ -842,6 +861,7 @@ function resetFilters() {
     warehouse_id: '',
     type: '',
     reason: '',
+    balance_type: 'all',
     category_id: '',
     expense_account_id: '',
     view_type: localFilters.value.view_type,
@@ -871,6 +891,7 @@ function selectReport(reportKey) {
     warehouse_id: '',
     type: '',
     reason: '',
+    balance_type: 'all',
     category_id: '',
     expense_account_id: '',
     view_type: 'general',

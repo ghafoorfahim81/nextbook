@@ -30,6 +30,7 @@ const showSize = computed(() => props.activeDefinition.filters.includes('size_id
 const showCurrency = computed(() => props.activeDefinition.filters.includes('currency_id'))
 const showType = computed(() => props.activeDefinition.filters.includes('type'))
 const showReason = computed(() => props.activeDefinition.filters.includes('reason'))
+const showBalanceType = computed(() => props.activeDefinition.filters.includes('balance_type'))
 const showExpenseCategory = computed(() => props.activeDefinition.filters.includes('category_id'))
 const showExpenseAccount = computed(() => props.activeDefinition.filters.includes('expense_account_id'))
 
@@ -69,6 +70,11 @@ const colorFilterOptions = computed(() => [
 const currencyOptions = computed(() => withPlaceholder(props.options.currencies, t('report.filters.currency')))
 const typeOptions = computed(() => withPlaceholder(props.options.sale_types, t('report.filters.type')))
 const reasonOptions = computed(() => withPlaceholder(props.options.stock_adjustment_reasons, t('report.filters.reason')))
+const balanceTypeOptions = computed(() => props.options.balance_types || [
+  { id: 'all', name: t('report.balance_types.all') },
+  { id: 'debtor', name: t('report.balance_types.debtor') },
+  { id: 'creditor', name: t('report.balance_types.creditor') },
+])
 const expenseCategoryOptions = computed(() => withPlaceholder(props.options.expense_categories, t('report.filters.expense_category')))
 const expenseAccountOptions = computed(() => withPlaceholder(props.options.expense_accounts, t('report.filters.expense_account')))
 
@@ -93,6 +99,7 @@ function setReport(report) {
     supplier_id: '',
     item_id: '',
     account_id: '',
+    balance_type: 'all',
     category_id: '',
     expense_account_id: '',
     warehouse_id: '',
@@ -114,8 +121,8 @@ function setReport(report) {
     </div>
 
     <div class="space-y-4 p-5">
-      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4"> 
-        <div v-if="showReportSelect">  
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div v-if="showReportSelect">
           <NextSelect
             :floating-text="t('report.filters.report')"
             :model-value="filters.report"
@@ -124,7 +131,7 @@ function setReport(report) {
             value-key="key"
             :clearable="false"
             @update:modelValue="setReport"
-          /> 
+          />
         </div>
         <div v-if="isSuperAdmin">
           <NextSelect
@@ -135,7 +142,7 @@ function setReport(report) {
           label-key="name"
           value-key="id"
           @update:modelValue="setFilter('branch_id', $event)"
-        />   
+        />
         </div>
           <NextSelect
             :floating-text="t('report.filters.per_page')"
@@ -146,11 +153,11 @@ function setReport(report) {
             :clearable="false"
             :empty-value="15"
             @update:modelValue="setFilter('per_page', Number($event))"
-          /> 
+          />
           <NextDate v-model="filters.date_from"  :label="t('general.date')" :placeholder="t('general.enter', { text: t('report.filters.date_from') })" />
-       
+
           <NextDate v-model="filters.date_to"   :label="t('general.date')" :placeholder="t('general.enter', { text: t('report.filters.date_to') })" />
-       
+
 
         <div v-if="showLedger">
           <NextSelect
@@ -188,7 +195,7 @@ function setReport(report) {
             :model-value="filters.item_id"
             :options="itemOptions"
             @update:modelValue="setFilter('item_id', $event)"
-          /> 
+          />
           </div>
         <div v-if="showAccount">
           <NextSelect
@@ -218,6 +225,15 @@ function setReport(report) {
             label-key="name"
             value-key="id"
             @update:modelValue="setFilter('reason', $event)"
+        <div v-if="showBalanceType">
+          <NextSelect
+            :floating-text="t('report.filters.balance_type')"
+            :model-value="filters.balance_type || 'all'"
+            :options="balanceTypeOptions"
+            label-key="name"
+            value-key="id"
+            :clearable="false"
+            @update:modelValue="setFilter('balance_type', $event || 'all')"
           />
         </div>
         <div v-if="showCurrency">
