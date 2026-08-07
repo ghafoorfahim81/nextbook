@@ -13,6 +13,7 @@ return new class extends Migration
         $businessTypes = [
             'pharmacy',
             'supermarket',
+            'grocery',
             'manufacturing',
             'retail',
             'accounting',

@@ -135,15 +135,16 @@ function setReport(report) {
         </div>
         <div v-if="isSuperAdmin">
           <NextSelect
-          :floating-text="t('report.filters.branch')"
-          :model-value="filters.branch_id"
-          :options="branchOptions"
-          :clearable="false"
-          label-key="name"
-          value-key="id"
-          @update:modelValue="setFilter('branch_id', $event)"
-        />
+            :floating-text="t('report.filters.branch')"
+            :model-value="filters.branch_id"
+            :options="branchOptions"
+            :clearable="false"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('branch_id', $event)"
+          />
         </div>
+        <div>
           <NextSelect
             :floating-text="t('report.filters.per_page')"
             :model-value="filters.per_page"
@@ -154,11 +155,13 @@ function setReport(report) {
             :empty-value="15"
             @update:modelValue="setFilter('per_page', Number($event))"
           />
-          <NextDate v-model="filters.date_from"  :label="t('general.date')" :placeholder="t('general.enter', { text: t('report.filters.date_from') })" />
-
-          <NextDate v-model="filters.date_to"   :label="t('general.date')" :placeholder="t('general.enter', { text: t('report.filters.date_to') })" />
-
-
+        </div>
+        <div>
+          <NextDate v-model="filters.date_from" :label="t('general.date')" :placeholder="t('general.enter', { text: t('report.filters.date_from') })" />
+        </div>
+        <div>
+          <NextDate v-model="filters.date_to" :label="t('general.date')" :placeholder="t('general.enter', { text: t('report.filters.date_to') })" />
+        </div>
         <div v-if="showLedger">
           <NextSelect
             :floating-text="t('report.filters.ledger')"
@@ -168,8 +171,8 @@ function setReport(report) {
             value-key="id"
             @update:modelValue="setFilter('ledger_id', $event)"
           />
-          </div>
-          <div v-if="showCustomer">
+        </div>
+        <div v-if="showCustomer">
           <NextSelect
             :floating-text="t('report.filters.customer')"
             :model-value="filters.customer_id"
@@ -178,8 +181,8 @@ function setReport(report) {
             value-key="id"
             @update:modelValue="setFilter('customer_id', $event)"
           />
-          </div>
-          <div v-if="showSupplier">
+        </div>
+        <div v-if="showSupplier">
           <NextSelect
             :floating-text="t('report.filters.supplier')"
             :model-value="filters.supplier_id"
@@ -188,15 +191,15 @@ function setReport(report) {
             value-key="id"
             @update:modelValue="setFilter('supplier_id', $event)"
           />
-          </div>
-          <div v-if="showItem">
+        </div>
+        <div v-if="showItem">
           <NextSelect
             :floating-text="t('report.filters.item')"
             :model-value="filters.item_id"
             :options="itemOptions"
             @update:modelValue="setFilter('item_id', $event)"
           />
-          </div>
+        </div>
         <div v-if="showAccount">
           <NextSelect
             :floating-text="t('report.filters.account')"
@@ -225,6 +228,8 @@ function setReport(report) {
             label-key="name"
             value-key="id"
             @update:modelValue="setFilter('reason', $event)"
+          />
+        </div>
         <div v-if="showBalanceType">
           <NextSelect
             :floating-text="t('report.filters.balance_type')"
