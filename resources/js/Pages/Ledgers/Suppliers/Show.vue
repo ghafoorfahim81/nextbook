@@ -506,11 +506,12 @@ const supplierMovementColumns = computed(() => [
                             <th class="py-2 pr-4">{{ t('general.rate') }}</th>
                             <th class="py-2 pr-4">{{ t('general.type') }}</th>
                             <th class="py-2 pr-4">{{ t('general.date') }}</th>
+                            <th class="py-2 pr-4">{{ t('general.remark') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-if="!openings.length">
-                            <td colspan="5" class="py-4 text-center text-muted-foreground">
+                            <td colspan="6" class="py-4 text-center text-muted-foreground">
                                 {{ t('general.no_data_found') }}
                             </td>
                         </tr>
@@ -524,6 +525,7 @@ const supplierMovementColumns = computed(() => [
                             <td class="py-2 pr-4">{{ opening.rate }}</td>
                             <td class="py-2 pr-4 capitalize">{{ opening.type }}</td>
                             <td class="py-2 pr-4">{{ opening.date }}</td>
+                            <td class="py-2 pr-4">{{ opening.remark || '-' }}</td>
                         </tr>
                     </tbody>
                 </table>

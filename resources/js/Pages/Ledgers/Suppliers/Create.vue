@@ -54,6 +54,7 @@ const form = useForm({
     amount: '',
     rate: '',
     attachments: [],
+    remark: '',
 })
 
 watch(props.homeCurrency, (list) => {
@@ -65,7 +66,7 @@ watch(props.homeCurrency, (list) => {
 const submitAction = ref(null);
 const createLoading = computed(() => form.processing && submitAction.value === 'create');
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new');
- 
+
 const handleSubmitAction = (createAndNew = false) => {
     const isCreateAndNew = createAndNew === true;
     submitAction.value = isCreateAndNew ? 'create_and_new' : 'create';
@@ -78,7 +79,7 @@ const handleSubmitAction = (createAndNew = false) => {
                 class: 'bg-green-600',
             });
             if (isCreateAndNew) {
-                form.reset(); 
+                form.reset();
                 form.transform((d) => d); // Reset transform to identity
             }
         },
@@ -171,6 +172,7 @@ useFormGuard(form)
                             <div class="grid grid-cols-2 gap-2">
                                 <NextInput placeholder="Rate" :disabled="form.currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
                                 <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
+                                <NextInput :placeholder="t('general.enter', { text: t('general.remark') })" :error="form.errors?.remark" v-model="form.remark" :label="t('general.remark')" />
                             </div>
                         </div>
                     </div>

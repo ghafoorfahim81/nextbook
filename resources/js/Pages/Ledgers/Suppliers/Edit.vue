@@ -35,6 +35,7 @@ const form = useForm({
     rate: props.supplier.data?.opening?.rate,
     amount: props.supplier.data?.opening?.amount??0,
     attachments: [],
+    remark: props.supplier.data?.opening?.remark??'',
 })
 
 const existingAttachments = ref(props.supplier.data?.attachments ?? [])
@@ -140,6 +141,7 @@ useFormGuard(form)
                             <div class="grid grid-cols-2 gap-2">
                                 <NextInput placeholder="Rate" :disabled="form.currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
                                 <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
+                                <NextInput :placeholder="t('general.enter', { text: t('general.remark') })" :error="form.errors?.remark" v-model="form.remark" :label="t('general.remark')" />
                             </div>
                         </div>
                     </div>

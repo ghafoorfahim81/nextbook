@@ -112,7 +112,9 @@ class ReportService
                 ->all(),
             'rows' => $rows->map(fn ($row) => collect($row)->only($headings)->all())->all(),
         ];
-    }    public function getReportData(array $filters): array
+    }
+
+    public function getReportData(array $filters): array
     {
         return match ($filters['report']) {
             'trial_balance' => $this->getTrialBalance($filters),
@@ -231,41 +233,28 @@ class ReportService
 
     public function getCustomerStatement(array $filters): array
     {
-        if (! $filters['customer_id']) {
-            return $this->emptyResult('customer_required');
-        }
-
-        $query = $this->ledgerStatementQuery($filters, $filters['customer_id'], LedgerType::CUSTOMER->value)
-            ->addSelect(DB::raw('COALESCE(t.voucher_number, \'-\') as reference'));
-
-        $summary = $this->ledgerStatementSummary($filters, $filters['customer_id'], LedgerType::CUSTOMER->value);
-
-        return $this->paginateReport(
-            $query,
-            $filters,
-            fn ($row) => [
-                'date' => $this->displayDate($row->date),
-                'reference' => $row->reference,
-                'description' => $row->description,
-                'debit' => $this->moneyValue($row->debit),
-                'credit' => $this->moneyValue($row->credit),
-                'running_balance' => $this->moneyValue($row->running_balance),
-                'balance' => $this->formatBalance($row->running_balance),
-            ],
-            $summary,
-        );
+        return $this->getPartyStatement($filters, LedgerType::CUSTOMER->value, $filters['customer_id'] ?? null);
     }
 
     public function getSupplierStatement(array $filters): array
     {
-        if (! $filters['supplier_id']) {
-            return $this->emptyResult('supplier_required');
+        return $this->getPartyStatement($filters, LedgerType::SUPPLIER->value, $filters['supplier_id'] ?? null);
+    }
+
+    /**
+     * Party statements render in two modes: a per-party ledger detail when a party is
+     * selected, and a summary of every party with movement/balance when none is.
+     */
+    protected function getPartyStatement(array $filters, string $ledgerType, ?string $partyId): array
+    {
+        if (! $partyId) {
+            return $this->partyBalanceSummary($filters, $ledgerType);
         }
 
-        $query = $this->ledgerStatementQuery($filters, $filters['supplier_id'], LedgerType::SUPPLIER->value)
+        $query = $this->ledgerStatementQuery($filters, $partyId, $ledgerType)
             ->addSelect(DB::raw('COALESCE(t.voucher_number, \'-\') as reference'));
 
-        $summary = $this->ledgerStatementSummary($filters, $filters['supplier_id'], LedgerType::SUPPLIER->value);
+        $summary = $this->ledgerStatementSummary($filters, $partyId, $ledgerType);
 
         return $this->paginateReport(
             $query,
@@ -280,7 +269,105 @@ class ReportService
                 'balance' => $this->formatBalance($row->running_balance),
             ],
             $summary,
+            ['mode' => 'detail'],
         );
+    }
+
+    protected function partyBalanceSummary(array $filters, string $ledgerType): array
+    {
+        $balanceType = $this->normalizeBalanceType($filters['balance_type'] ?? null);
+        $query = $this->partyBalanceSummaryQuery($filters, $ledgerType, $balanceType);
+
+        $totals = DB::query()
+            ->fromSub(clone $query, 'party_balances')
+            ->selectRaw('COUNT(*) as party_count')
+            ->selectRaw('COALESCE(SUM(debit), 0) as total_debit')
+            ->selectRaw('COALESCE(SUM(credit), 0) as total_credit')
+            ->selectRaw('COALESCE(SUM(closing_balance), 0) as balance')
+            ->selectRaw('COALESCE(SUM(CASE WHEN closing_balance > 0 THEN closing_balance ELSE 0 END), 0) as total_debtor')
+            ->selectRaw('COALESCE(SUM(CASE WHEN closing_balance < 0 THEN -closing_balance ELSE 0 END), 0) as total_creditor')
+            ->first();
+
+        return $this->paginateReport(
+            $query->orderBy('l.name'),
+            $filters,
+            fn ($row) => [
+                'party_name' => $row->party_name,
+                'opening_balance' => $this->moneyValue($row->opening_balance),
+                'debit' => $this->moneyValue($row->debit),
+                'credit' => $this->moneyValue($row->credit),
+                'closing_balance' => $this->moneyValue($row->closing_balance),
+                'balance_type' => $this->balanceTypeLabel($row->closing_balance),
+            ],
+            [
+                'party_count' => (int) ($totals?->party_count ?? 0),
+                'total_debit' => $this->moneyValue($totals?->total_debit),
+                'total_credit' => $this->moneyValue($totals?->total_credit),
+                'total_debtor' => $this->moneyValue($totals?->total_debtor),
+                'total_creditor' => $this->moneyValue($totals?->total_creditor),
+                'balance' => $this->moneyValue($totals?->balance),
+                'balance_label' => $this->formatBalance($totals?->balance),
+            ],
+            [
+                'mode' => 'summary',
+                'balance_type' => $balanceType,
+            ],
+        );
+    }
+
+    protected function partyBalanceSummaryQuery(array $filters, string $ledgerType, string $balanceType): Builder
+    {
+        $closingBalance = 'COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0)';
+
+        // Left joins so every party is listed, including ones with no postings yet.
+        $query = DB::table('ledgers as l')
+            ->leftJoin('transaction_lines as tl', function ($join) {
+                $join->on('tl.ledger_id', '=', 'l.id')
+                    ->whereNull('tl.deleted_at');
+            })
+            ->leftJoin('transactions as t', function ($join) use ($filters) {
+                $join->on('t.id', '=', 'tl.transaction_id')
+                    ->where('t.branch_id', '=', $filters['branch_id'])
+                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->where('t.date', '<=', $filters['date_to'])
+                    ->whereNull('t.deleted_at');
+            })
+            ->where('l.branch_id', $filters['branch_id'])
+            ->where('l.type', $ledgerType)
+            ->whereNull('l.deleted_at')
+            ->groupBy('l.id', 'l.name')
+            ->selectRaw('l.id as party_id')
+            ->selectRaw('l.name as party_name')
+            ->selectRaw("COALESCE(SUM(CASE WHEN t.date < ? THEN (tl.debit - tl.credit) * t.rate ELSE 0 END), 0) as opening_balance", [$filters['date_from']])
+            ->selectRaw("COALESCE(SUM(CASE WHEN t.date >= ? THEN tl.debit * t.rate ELSE 0 END), 0) as debit", [$filters['date_from']])
+            ->selectRaw("COALESCE(SUM(CASE WHEN t.date >= ? THEN tl.credit * t.rate ELSE 0 END), 0) as credit", [$filters['date_from']])
+            ->selectRaw("{$closingBalance} as closing_balance");
+
+        return match ($balanceType) {
+            'debtor' => $query->havingRaw("{$closingBalance} > 0.005"),
+            'creditor' => $query->havingRaw("{$closingBalance} < -0.005"),
+            default => $query,
+        };
+    }
+
+    protected function normalizeBalanceType(mixed $value): string
+    {
+        return in_array($value, ['debtor', 'creditor'], true) ? (string) $value : 'all';
+    }
+
+    protected function balanceTypeLabel(mixed $balance): string
+    {
+        $amount = $this->moneyValue($balance);
+
+        if ($amount > 0) {
+            return $this->reportTranslation('balance_types.debtor', 'Debtor');
+        }
+
+        if ($amount < 0) {
+            return $this->reportTranslation('balance_types.creditor', 'Creditor');
+        }
+
+        return '-';
     }
 
     public function getAgedReceivables(array $filters): array
@@ -649,7 +736,7 @@ class ReportService
             ->selectRaw('s.status')
             ->selectRaw('s.payment_status')
             ->selectRaw("$netSql as amount");
-    
+
 
         return $this->paginateReport(
             $query,
@@ -803,7 +890,7 @@ class ReportService
             ->selectRaw('COUNT(DISTINCT p.id) as total_purchases')
             ->selectRaw("COALESCE(SUM($netSql), 0) as total_amount")
             ->first();
-    
+
 
         $query
             ->orderByDesc('p.date')
@@ -2968,7 +3055,12 @@ class ReportService
         return match ($reportKey) {
             'trial_balance' => ['ledger_id', 'ledger_name', 'total_debit', 'total_credit', 'balance', 'balance_label'],
             'general_ledger' => ['date', 'transaction_number', 'reference_type', 'description', 'debit', 'credit', 'running_balance', 'running_balance_label'],
-            'customer_statement', 'supplier_statement' => ['date', 'reference', 'description', 'debit', 'credit', 'running_balance', 'balance'],
+            'customer_statement' => filled($filters['customer_id'] ?? null)
+                ? ['date', 'reference', 'description', 'debit', 'credit', 'running_balance', 'balance']
+                : ['party_name', 'opening_balance', 'debit', 'credit', 'closing_balance', 'balance_type'],
+            'supplier_statement' => filled($filters['supplier_id'] ?? null)
+                ? ['date', 'reference', 'description', 'debit', 'credit', 'running_balance', 'balance']
+                : ['party_name', 'opening_balance', 'debit', 'credit', 'closing_balance', 'balance_type'],
             'aged_receivables' => ['customer', 'current', 'days_31_60', 'days_61_90', 'days_90_plus', 'total_outstanding'],
             'aged_payables' => ['supplier', 'current', 'days_31_60', 'days_61_90', 'days_90_plus', 'total_outstanding'],
             'receipt_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'amount_received'],
@@ -3236,6 +3328,7 @@ class ReportService
             'size_id' => $this->nullableString($filters['size_id'] ?? null),
             'reason' => $this->nullableString($filters['reason'] ?? null),
             'type' => $this->nullableString($filters['type'] ?? null),
+            'balance_type' => $this->normalizeBalanceType($filters['balance_type'] ?? null),
             'category_id' => $this->nullableString($filters['category_id'] ?? null),
             'expense_account_id' => $this->nullableString($filters['expense_account_id'] ?? null),
             'view_type' => in_array($filters['view_type'] ?? '', ['general', 'itemwise'], true) ? $filters['view_type'] : 'itemwise',
@@ -3321,6 +3414,11 @@ class ReportService
             'stock_adjustment_reasons' => collect(StockAdjustmentReason::cases())
                 ->map(fn ($case) => ['id' => $case->value, 'name' => $case->getLabel()])
                 ->all(),
+            'balance_types' => [
+                ['id' => 'all', 'name' => $this->reportTranslation('balance_types.all', 'All')],
+                ['id' => 'debtor', 'name' => $this->reportTranslation('balance_types.debtor', 'Debtor')],
+                ['id' => 'creditor', 'name' => $this->reportTranslation('balance_types.creditor', 'Creditor')],
+            ],
             'expense_categories' => DB::table('expense_categories')
                 ->whereNull('deleted_at')
                 ->orderBy('name')
