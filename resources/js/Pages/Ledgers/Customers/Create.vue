@@ -19,11 +19,15 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+    nextCode: {
+        type: String,
+        default: '',
+    },
 });
 
 const form = useForm({
     name: '',
-    code: '',
+    code: props.nextCode,
     phone_no: '',
     contact_person: '',
     email: '',
