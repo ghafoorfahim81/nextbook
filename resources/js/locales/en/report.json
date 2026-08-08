@@ -5,6 +5,7 @@
   "active_report": "Selected report",
   "back_to_reports": "Back to reports",
   "export_excel": "Export Excel",
+  "export_pdf": "Export PDF",
   "snapshot_note": "This report is based on the current stock snapshot.",
   "company_name": "Company name",
   "exported_on": "Exported on",

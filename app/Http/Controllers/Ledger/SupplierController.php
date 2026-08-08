@@ -18,6 +18,7 @@ use App\Models\Administration\Branch;
 use App\Http\Resources\Purchase\PurchaseResource;
 use App\Http\Resources\Payment\PaymentResource;
 use Illuminate\Http\Request;
+use App\Services\LedgerOpeningService;
 use App\Services\LedgerStatementService;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\Cache;
@@ -30,8 +31,9 @@ use App\Support\Inertia\CacheKey;
 use App\Models\User;
 use Illuminate\Support\Str;
 use App\Services\SpreadsheetExportService;
+use App\Services\PdfExportService;
 use Illuminate\Validation\Rule;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class SupplierController extends Controller
 {
@@ -93,49 +95,16 @@ class SupplierController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(LedgerStoreRequest $request)
+    public function store(LedgerStoreRequest $request, LedgerOpeningService $ledgerOpeningService)
     {
         $validated = $request->validated();
         $validated['type'] = 'supplier';
         $validated['code'] = $validated['code'] ?: $this->nextCode($request->user()?->branch_id);
         $validated['is_active'] = $validated['is_active'] ?? true;
         $ledger = Ledger::create($validated);
-        $glAccounts = Cache::get('gl_accounts');
-        $transactionService = app(TransactionService::class);
-        if ($validated['opening_currency_id'] && $validated['amount'] && $validated['amount'] > 0) {
 
-            $equityId = $glAccounts['opening-balance-equity'];
-            $apId = $glAccounts['account-payable'];
+        $ledgerOpeningService->sync($ledger, $validated['openings'] ?? []);
 
-            abort_unless($equityId && $apId, 500, 'System accounts (AR/AP) are missing.');
-
-            $remark = trim((string) ($validated['remark'] ?? ''));
-
-            $transaction = $transactionService->post(
-                header: [
-                    'currency_id' => $validated['opening_currency_id'],
-                    'rate' => (float) $validated['rate'],
-                    'date' => now()->toDateString(),
-                    'reference_type' => Ledger::class,
-                    'reference_id' => $ledger->id,
-                    'remark' => 'Opening balance for supplier ' . $ledger->name,
-                ],
-                lines: [
-                ['account_id' => $equityId, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for supplier ' . $ledger->name,
-                'remark_fa' => 'موجودی اولیه برای تامین کننده ' . $ledger->name,
-                'remark_ps' =>'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
-                ],
-                ['account_id' => $apId, 'ledger_id' => $ledger->id, 'debit' => 0, 'credit' => (float) $validated['amount'],
-                'remark' => $remark !== '' ? $remark : 'Opening balance for supplier ' . $ledger->name,
-                'remark_fa' => $remark !== '' ? $remark : 'موجودی اولیه برای تامین کننده ' . $ledger->name,
-                'remark_ps' => $remark !== '' ? $remark : 'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
-                ],
-            ]);
-            $transaction->opening()->create([
-                'ledgerable_id' => $ledger->id,
-                'ledgerable_type' => 'ledger',
-            ]);
-        }
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         if ($request->boolean('stay') || $request->boolean('create_and_new')) {
             return to_route('suppliers.create')
@@ -153,9 +122,9 @@ class SupplierController extends Controller
     {
         $supplier->load([
             'currency',
-            'opening',
-            'opening.transaction.currency',
-            'opening.transaction.lines',
+            'openings',
+            'openings.transaction.currency',
+            'openings.transaction.lines',
             'transactionLines.transaction',
             'transactionLines.transaction.currency',
         ]);
@@ -189,14 +158,17 @@ class SupplierController extends Controller
         Request $request,
         Ledger $supplier,
         SpreadsheetExportService $spreadsheetExportService,
-    ): BinaryFileResponse {
+        PdfExportService $pdfExportService,
+    ): SymfonyResponse {
         $this->authorize('view', $supplier);
 
         $validated = $request->validate([
             'list' => ['nullable', 'string', Rule::in(['purchases', 'receipts', 'payments', 'statement'])],
+            'format' => ['nullable', 'string', Rule::in(['xlsx', 'pdf'])],
         ]);
 
         $list = $validated['list'] ?? 'purchases';
+        $format = $validated['format'] ?? 'xlsx';
         $supplier->loadMissing(['currency', 'branch']);
 
         $translate = fn (string $group, string $key, string $fallback = '') => $spreadsheetExportService->localeTranslation($group, $key, $fallback);
@@ -221,7 +193,7 @@ class SupplierController extends Controller
         $entityLabel = $spreadsheetExportService->localeTranslation('ledger', 'supplier.supplier', 'Supplier');
         $sheetTitle = $entityLabel . ' ' . $moduleLabel;
 
-        return $spreadsheetExportService->download([
+        $payload = [
             'filename' => Str::slug($supplier->name . '-' . $sheetTitle) . '-' . now()->format('Ymd-His') . '.xlsx',
             'sheet_name' => $sheetTitle,
             'sheet_title' => $sheetTitle,
@@ -254,7 +226,11 @@ class SupplierController extends Controller
                 ],
             },
             'rows' => $rows,
-        ]);
+        ];
+
+        return $format === 'pdf'
+            ? $pdfExportService->download($payload)
+            : $spreadsheetExportService->download($payload);
     }
 
     /**
@@ -262,7 +238,7 @@ class SupplierController extends Controller
      */
     public function edit(Request $request, Ledger $supplier)
     {
-        $supplier->load(['currency', 'opening', 'opening.transaction.currency','opening.transaction.lines']);
+        $supplier->load(['currency', 'openings', 'openings.transaction.currency', 'openings.transaction.lines']);
         return inertia('Ledgers/Suppliers/Edit', [
             'supplier' => new LedgerResource($supplier),
         ]);
@@ -341,57 +317,17 @@ class SupplierController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(LedgerUpdateRequest $request, Ledger $supplier)
+    public function update(LedgerUpdateRequest $request, Ledger $supplier, LedgerOpeningService $ledgerOpeningService)
     {
 
         $validated = $request->validated();
         $validated['is_active'] = $validated['is_active'] ?? true;
         $supplier->update($validated);
 
-        // Remove existing opening balances
+        // Openings are rebuilt wholesale rather than diffed: the form always posts
+        // the party's complete set, one row per currency.
+        $ledgerOpeningService->sync($supplier, $validated['openings'] ?? []);
 
-        if($supplier->opening) {
-            TransactionLine::where('transaction_id',$supplier->opening->transaction_id)->forceDelete();
-            $supplier->opening->forceDelete();
-            $supplier->opening->transaction()->forceDelete();
-        }
-
-
-        if ($validated['amount'] && $validated['amount'] > 0 && $validated['opening_currency_id'] && $validated['rate']) {  // Update existing opening balances
-            $glAccounts = Cache::get('gl_accounts');
-            $equityId = $glAccounts['opening-balance-equity'];
-            $apId = $glAccounts['account-payable'];
-            $transactionService = app(TransactionService::class);
-            abort_unless($equityId && $apId, 500, 'System accounts (AR/AP) are missing.');
-
-            $remark = trim((string) ($validated['remark'] ?? ''));
-
-            $transaction = $transactionService->post(
-                header: [
-                    'currency_id' => $validated['opening_currency_id'],
-                    'rate' => (float) $validated['rate'],
-                    'date' => now()->toDateString(),
-                    'reference_type' => Ledger::class,
-                    'reference_id' => $supplier->id,
-                    'remark' => 'Opening balance for supplier ' . $supplier->name,
-                ],
-                lines: [
-                    ['account_id' => $equityId, 'debit' => (float) $validated['amount'], 'credit' => 0, 'remark' => 'Opening balance for supplier ' . $supplier->name,
-                'remark_fa' => 'موجودی اولیه برای تامین کننده ' . $supplier->name,
-                'remark_ps' =>'د'. ' '. $supplier->name.' '.'د پرانیستلو بیلانس ',
-                ],
-                ['account_id' => $apId, 'debit' => 0, 'ledger_id' => $supplier->id, 'credit' => (float) $validated['amount'],
-                'remark' => $remark !== '' ? $remark : 'Opening balance for supplier ' . $supplier->name,
-                'remark_fa' => $remark !== '' ? $remark : 'موجودی اولیه برای تامین کننده ' . $supplier->name,
-                'remark_ps' => $remark !== '' ? $remark : 'د'. ' '. $supplier->name.' '.'د پرانیستلو بیلانس ',
-                ],
-            ]);
-
-            $transaction->opening()->create([
-                'ledgerable_id' => $supplier->id,
-                'ledgerable_type' => 'ledger',
-            ]);
-        }
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
         return to_route('suppliers.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.supplier')]));
     }
@@ -402,14 +338,14 @@ class SupplierController extends Controller
     public function destroy(Request $request, Ledger $supplier)
     {
 
-        $openingTransactionId = $supplier->opening?->transaction_id;
+        $openingTransactionIds = $supplier->openings()->pluck('transaction_id')->filter()->all();
 
-        // Allow delete only when customer has no transactions OR only opening transaction.
+        // Allow delete only when supplier has no transactions OR only opening transactions.
         $hasNonOpeningTransactions = TransactionLine::query()
             ->where('ledger_id', $supplier->id)
             ->when(
-                $openingTransactionId,
-                fn ($q) => $q->where('transaction_id', '!=', $openingTransactionId),
+                $openingTransactionIds !== [],
+                fn ($q) => $q->whereNotIn('transaction_id', $openingTransactionIds),
                 fn ($q) => $q // no opening found -> any transaction means blocked
             )
             ->exists();
@@ -418,12 +354,12 @@ class SupplierController extends Controller
             return back()->with('error', __('Cannot delete customer: this customer has transactions. Please remove related transactions first.'));
         }
 
-        DB::transaction(function () use ($supplier, $openingTransactionId) {
-            if ($openingTransactionId) {
+        DB::transaction(function () use ($supplier, $openingTransactionIds) {
+            if ($openingTransactionIds !== []) {
                 // Delete the whole opening transaction (both lines) and the opening record.
-                TransactionLine::where('transaction_id', $openingTransactionId)->delete();
-                Transaction::where('id', $openingTransactionId)->delete();
-                $supplier->opening()->delete();
+                TransactionLine::whereIn('transaction_id', $openingTransactionIds)->delete();
+                Transaction::whereIn('id', $openingTransactionIds)->delete();
+                $supplier->openings()->delete();
             }
 
             $supplier->delete();
@@ -433,14 +369,13 @@ class SupplierController extends Controller
     }
     public function restore(Request $request, Ledger $supplier)
     {
-        $opening = $supplier->opening()->withTrashed()->first();
-        $openingTransactionId = $opening?->transaction_id;
+        $openingTransactionIds = $supplier->openings()->withTrashed()->pluck('transaction_id')->filter()->all();
 
-        DB::transaction(function () use ($supplier, $openingTransactionId) {
-            if ($openingTransactionId) {
-                Transaction::withTrashed()->where('id', $openingTransactionId)->restore();
-                TransactionLine::withTrashed()->where('transaction_id', $openingTransactionId)->restore();
-                $supplier->opening()->withTrashed()->restore();
+        DB::transaction(function () use ($supplier, $openingTransactionIds) {
+            if ($openingTransactionIds !== []) {
+                Transaction::withTrashed()->whereIn('id', $openingTransactionIds)->restore();
+                TransactionLine::withTrashed()->whereIn('transaction_id', $openingTransactionIds)->restore();
+                $supplier->openings()->withTrashed()->restore();
             }
 
             $supplier->restore();

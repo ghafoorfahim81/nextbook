@@ -188,6 +188,16 @@ class Ledger extends Model
         return $this->belongsTo(Branch::class);
     }
 
+    /**
+     * A ledger holds one opening per currency: `transactions.currency_id` is a
+     * single currency for the whole voucher, so a customer owing 100 USD and
+     * 10,000 AFN is two openings, each pointing at its own posted transaction.
+     */
+    public function openings()
+    {
+        return $this->morphMany(LedgerOpening::class, 'ledgerable');
+    }
+
     public function opening()
     {
         return $this->morphOne(LedgerOpening::class, 'ledgerable');

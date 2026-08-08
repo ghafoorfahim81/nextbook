@@ -5,6 +5,7 @@
   "active_report": "ټاکل شوی راپور",
   "back_to_reports": "راپورونو ته بېرته",
   "export_excel": "اکسل ته صادرول",
+  "export_pdf": "پی‌ډي‌اف ته صادرول",
   "snapshot_note": "دا راپور د موجوده سټاک د انځور پر بنسټ جوړ شوی دی.",
   "company_name": "نام شرکت",
   "exported_on": "تاریخ خروجی",

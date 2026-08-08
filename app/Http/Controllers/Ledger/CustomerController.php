@@ -17,6 +17,7 @@ use App\Models\Transaction\Transaction;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Branch;
 use Illuminate\Http\Request;
+use App\Services\LedgerOpeningService;
 use App\Services\LedgerStatementService;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\Cache;
@@ -27,8 +28,9 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use App\Services\SpreadsheetExportService;
+use App\Services\PdfExportService;
 use Illuminate\Validation\Rule;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 class CustomerController extends Controller
 {
     use BuildsLedgerStatement;
@@ -89,49 +91,16 @@ class CustomerController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(LedgerStoreRequest $request)
+    public function store(LedgerStoreRequest $request, LedgerOpeningService $ledgerOpeningService)
     {
         $validated = $request->validated();
         $validated['type'] = 'customer';
         $validated['code'] = $validated['code'] ?: $this->nextCode($request->user()?->branch_id);
         $validated['is_active'] = $validated['is_active'] ?? true;
         $ledger = Ledger::create($validated);
-        $glAccounts = Cache::get('gl_accounts');
-        $transactionService = app(TransactionService::class);
-        if ($validated['opening_currency_id'] && $validated['amount'] && $validated['amount'] > 0) {
 
-            $arId = $glAccounts['account-receivable'];
-            $equityId = $glAccounts['opening-balance-equity'];
+        $ledgerOpeningService->sync($ledger, $validated['openings'] ?? []);
 
-            abort_unless($arId && $equityId, 500, 'System accounts (AR/AP) are missing.');
-
-            $remark = trim((string) ($validated['remark'] ?? ''));
-
-            $transaction = $transactionService->post(
-                header: [
-                    'currency_id' => $validated['opening_currency_id'],
-                    'rate' => (float) $validated['rate'],
-                    'date' => Carbon::now()->toDateString(),
-                    'reference_type' => Ledger::class,
-                    'reference_id' => $ledger->id,
-                    'remark' => 'Opening balance for customer ' . $ledger->name,
-                ],
-                lines: [
-                ['account_id' => $arId, 'ledger_id' => $ledger->id, 'debit' => (float) $validated['amount'], 'credit' => 0,
-                'remark' => $remark !== '' ? $remark : 'Opening balance for customer ' . $ledger->name,
-                'remark_fa' => $remark !== '' ? $remark : 'موجودی اولیه برای مشتری ' . $ledger->name,
-                'remark_ps' => $remark !== '' ? $remark : 'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
-            ],
-                ['account_id' => $equityId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $ledger->name,
-                'remark_fa' => 'موجودی اولیه برای مشتری ' . $ledger->name,
-                'remark_ps' =>'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
-                ],
-            ]);
-            $transaction->opening()->create([
-                'ledgerable_id' => $ledger->id,
-                'ledgerable_type' => 'ledger',
-            ]);
-        }
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
 
@@ -152,9 +121,9 @@ class CustomerController extends Controller
     {
         $customer->load([
             'currency',
-            'opening',
-            'opening.transaction.currency',
-            'opening.transaction.lines',
+            'openings',
+            'openings.transaction.currency',
+            'openings.transaction.lines',
             'transactionLines.transaction',
             'transactionLines.transaction.currency',
         ]);
@@ -188,14 +157,17 @@ class CustomerController extends Controller
         Request $request,
         Ledger $customer,
         SpreadsheetExportService $spreadsheetExportService,
-    ): BinaryFileResponse {
+        PdfExportService $pdfExportService,
+    ): SymfonyResponse {
         $this->authorize('view', $customer);
 
         $validated = $request->validate([
             'list' => ['nullable', 'string', Rule::in(['sales', 'receipts', 'payments', 'statement'])],
+            'format' => ['nullable', 'string', Rule::in(['xlsx', 'pdf'])],
         ]);
 
         $list = $validated['list'] ?? 'sales';
+        $format = $validated['format'] ?? 'xlsx';
         $customer->loadMissing(['currency', 'branch']);
 
         $translate = fn (string $group, string $key, string $fallback = '') => $spreadsheetExportService->localeTranslation($group, $key, $fallback);
@@ -220,7 +192,7 @@ class CustomerController extends Controller
         $entityLabel = $spreadsheetExportService->localeTranslation('ledger', 'customer.customer', 'Customer');
         $sheetTitle = $entityLabel . ' ' . $moduleLabel;
 
-        return $spreadsheetExportService->download([
+        $payload = [
             'filename' => Str::slug($customer->name . '-' . $sheetTitle) . '-' . now()->format('Ymd-His') . '.xlsx',
             'sheet_name' => $sheetTitle,
             'sheet_title' => $sheetTitle,
@@ -253,7 +225,11 @@ class CustomerController extends Controller
                 ],
             },
             'rows' => $rows,
-        ]);
+        ];
+
+        return $format === 'pdf'
+            ? $pdfExportService->download($payload)
+            : $spreadsheetExportService->download($payload);
     }
 
     /**
@@ -261,7 +237,7 @@ class CustomerController extends Controller
      */
     public function edit(Ledger $customer)
     {
-        $customer->load(['currency', 'opening', 'opening.transaction.currency','opening.transaction.lines']);
+        $customer->load(['currency', 'openings', 'openings.transaction.currency', 'openings.transaction.lines']);
         return inertia('Ledgers/Customers/Edit', [
             'customer' => new LedgerResource($customer),
         ]);
@@ -340,56 +316,15 @@ class CustomerController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(LedgerUpdateRequest $request, Ledger $customer)
+    public function update(LedgerUpdateRequest $request, Ledger $customer, LedgerOpeningService $ledgerOpeningService)
     {
         $validated = $request->validated();
         $validated['is_active'] = $validated['is_active'] ?? true;
         $customer->update($validated);
 
-        // Remove existing opening balances
-
-        if($customer->opening) {
-            TransactionLine::where('transaction_id',$customer->opening->transaction_id)->forceDelete();
-            $customer->opening->forceDelete();
-            $customer->opening->transaction()->forceDelete();
-        }
-
-
-        if ($validated['amount'] && $validated['amount'] > 0 && $validated['opening_currency_id'] && $validated['rate']) {  // Update existing opening balances
-            $glAccounts = Cache::get('gl_accounts');
-            $arId = $glAccounts['account-receivable'];
-            $equityId = $glAccounts['opening-balance-equity'];
-            $transactionService = app(TransactionService::class);
-            abort_unless($arId && $equityId, 500, 'System accounts (AR/AP) are missing.');
-
-            $remark = trim((string) ($validated['remark'] ?? ''));
-
-            $transaction = $transactionService->post(
-                header: [
-                    'currency_id' => $validated['opening_currency_id'],
-                    'rate' => (float) $validated['rate'],
-                    'date' => Carbon::now()->toDateString(),
-                    'reference_type' => Ledger::class,
-                    'reference_id' => $customer->id,
-                    'remark' => 'Opening balance for customer ' . $customer->name,
-                ],
-                lines: [
-                ['account_id' => $arId, 'ledger_id' => $customer->id, 'debit' => (float) $validated['amount'], 'credit' => 0,
-                'remark' => $remark !== '' ? $remark : 'Opening balance for customer ' . $customer->name,
-                'remark_fa' => $remark !== '' ? $remark : 'موجودی اولیه برای مشتری ' . $customer->name,
-                'remark_ps' => $remark !== '' ? $remark : 'د'. ' '. $customer->name.' '.'د پرانیستلو بیلانس ',
-                ],
-                ['account_id' => $equityId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $customer->name,
-                'remark_fa' => 'موجودی اولیه برای مشتری ' . $customer->name,
-                'remark_ps' =>'د'. ' '. $customer->name.' '.'د پرانیستلو بیلانس ',
-                ],
-            ]);
-
-            $transaction->opening()->create([
-                'ledgerable_id' => $customer->id,
-                'ledgerable_type' => 'ledger',
-            ]);
-        }
+        // Openings are rebuilt wholesale rather than diffed: the form always posts
+        // the party's complete set, one row per currency.
+        $ledgerOpeningService->sync($customer, $validated['openings'] ?? []);
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
@@ -403,14 +338,14 @@ class CustomerController extends Controller
 
     public function destroy(Request $request, Ledger $customer)
     {
-        $openingTransactionId = $customer->opening?->transaction_id;
+        $openingTransactionIds = $customer->openings()->pluck('transaction_id')->filter()->all();
 
-        // Allow delete only when customer has no transactions OR only opening transaction.
+        // Allow delete only when customer has no transactions OR only opening transactions.
         $hasNonOpeningTransactions = TransactionLine::query()
             ->where('ledger_id', $customer->id)
             ->when(
-                $openingTransactionId,
-                fn ($q) => $q->where('transaction_id', '!=', $openingTransactionId),
+                $openingTransactionIds !== [],
+                fn ($q) => $q->whereNotIn('transaction_id', $openingTransactionIds),
                 fn ($q) => $q // no opening found -> any transaction means blocked
             )
             ->exists();
@@ -419,12 +354,12 @@ class CustomerController extends Controller
             return back()->with('error', __('Cannot delete customer: this customer has transactions. Please remove related transactions first.'));
         }
 
-        DB::transaction(function () use ($customer, $openingTransactionId) {
-            if ($openingTransactionId) {
+        DB::transaction(function () use ($customer, $openingTransactionIds) {
+            if ($openingTransactionIds !== []) {
                 // Delete the whole opening transaction (both lines) and the opening record.
-                TransactionLine::where('transaction_id', $openingTransactionId)->delete();
-                Transaction::where('id', $openingTransactionId)->delete();
-                $customer->opening()->delete();
+                TransactionLine::whereIn('transaction_id', $openingTransactionIds)->delete();
+                Transaction::whereIn('id', $openingTransactionIds)->delete();
+                $customer->openings()->delete();
             }
 
             $customer->delete();
@@ -439,14 +374,13 @@ class CustomerController extends Controller
 
     public function restore(Request $request, Ledger $customer)
     {
-        $opening = $customer->opening()->withTrashed()->first();
-        $openingTransactionId = $opening?->transaction_id;
+        $openingTransactionIds = $customer->openings()->withTrashed()->pluck('transaction_id')->filter()->all();
 
-        DB::transaction(function () use ($customer, $openingTransactionId) {
-            if ($openingTransactionId) {
-                Transaction::withTrashed()->where('id', $openingTransactionId)->restore();
-                TransactionLine::withTrashed()->where('transaction_id', $openingTransactionId)->restore();
-                $customer->opening()->withTrashed()->restore();
+        DB::transaction(function () use ($customer, $openingTransactionIds) {
+            if ($openingTransactionIds !== []) {
+                Transaction::withTrashed()->whereIn('id', $openingTransactionIds)->restore();
+                TransactionLine::withTrashed()->whereIn('transaction_id', $openingTransactionIds)->restore();
+                $customer->openings()->withTrashed()->restore();
             }
 
             $customer->restore();

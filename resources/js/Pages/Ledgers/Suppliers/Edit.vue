@@ -4,11 +4,13 @@ import { Button } from '@/Components/ui/button';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from "@/Components/next/NextTextarea.vue";
+import LedgerOpeningRows from '@/Components/ledger/LedgerOpeningRows.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
 import { toast } from 'vue-sonner';
+import { buildOpeningRows } from '@/utils/ledgerOpenings';
 const props = defineProps({
     supplier: { type: Object, required: true },
     currencies: { type: Array, required: true },
@@ -22,12 +24,12 @@ const form = useForm({
     ...props.supplier.data,
     currency_id: props.supplier.data.currency_id,
     selected_currency: props.supplier.data?.currency,
-    currency_id: props.supplier.data.currency_id,
-    selected_opening_currency: props.supplier.data?.opening?.currency,
-    opening_currency_id: props.supplier.data?.opening?.currency_id,
-    rate: props.supplier.data?.opening?.rate,
-    amount: props.supplier.data?.opening?.amount??0,
-    remark: props.supplier.data?.opening?.remark??'',
+    // Every currency gets a row, pre-filled from the openings already posted.
+    openings: buildOpeningRows(
+        props.currencies,
+        props.supplier.data?.openings ?? [],
+        props.homeCurrency,
+    ),
 })
 
 watch(props.homeCurrency, (list) => {
@@ -50,19 +52,6 @@ const handleCancel = () => {
     router.visit(route('suppliers.index'))
 }
 
-const handleSelectChange = (field, value) => {
-    if(field === 'currency_id') {
-        form.rate = value?.exchange_rate??0;
-        form.currency_id = value?.id;
-    }
-    else if(field === 'opening_currency_id') {
-        form.rate = value?.exchange_rate??0;
-        form.opening_currency_id = value?.id;
-    }
-    else{
-        form[field] = value;
-    }
-};
 </script>
 
 <template>
@@ -96,31 +85,15 @@ const handleSelectChange = (field, value) => {
 
                 </div>
 
-                <div class="md:col-span-4 mt-4">
-                    <div class="pt-2">
-                        <span class="font-bold">{{ t('item.opening') }}</span>
-                        <div class="mt-3 space-y-3">
-                            <div class="grid grid-cols-4 gap-2">
-                                <NextSelect
-                                :options="currencies.data"
-                                v-model="form.selected_opening_currency"
-                                label-key="code"
-                                value-key="id"
-                                @update:modelValue="(value) => handleSelectChange('opening_currency_id', value)"
-                                :reduce="currency => currency"
-                                :floating-text="t('admin.currency.currency')"
-                                :error="form.errors?.opening_currency_id"
-                                :searchable="true"
-                                resource-type="currencies"
-                                :search-fields="['name', 'code', 'symbol']"
-                                 />
-                                <NextInput placeholder="Rate" :disabled="form.opening_currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
-                                <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
-                                <NextInput :placeholder="t('general.enter', { text: t('general.remark') })" :error="form.errors?.remark" v-model="form.remark" :label="t('general.remark')" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            </div>
+
+            <div class="mb-5">
+                <LedgerOpeningRows
+                    v-model="form.openings"
+                    :currencies="currencies"
+                    :home-currency="homeCurrency"
+                    :errors="form.errors"
+                />
             </div>
 
             <progress v-if="form.progress" :value="form.progress.percentage" max="100">

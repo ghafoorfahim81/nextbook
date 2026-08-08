@@ -5,7 +5,7 @@ import { router } from '@inertiajs/vue3'
 import { Button } from '@/Components/ui/button'
 import NextDate from '@/Components/next/NextDatePicker.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
-import { Download, RotateCcw, Search } from 'lucide-vue-next'
+import { Download, FileText, RotateCcw, Search } from 'lucide-vue-next'
 
 const props = defineProps({
   // The `ledgerStatement` payload built by LedgerStatementService.
@@ -87,9 +87,9 @@ const resetFilters = () => {
   applyFilters()
 }
 
-const exportStatement = () => {
+const exportStatement = (format = 'xlsx') => {
   if (!props.exportRouteName) return
-  const params = { [props.paramKey]: props.ledgerId, list: 'statement', ...queryPayload() }
+  const params = { [props.paramKey]: props.ledgerId, list: 'statement', format, ...queryPayload() }
   window.location.href = route(props.exportRouteName, params)
 }
 
@@ -127,9 +127,13 @@ const agingBuckets = computed(() => [
             <RotateCcw class="h-4 w-4" />
             {{ t('general.reset') }}
           </Button>
-          <Button v-if="exportRouteName" size="sm" variant="outline" class="gap-1.5" @click="exportStatement">
+          <Button v-if="exportRouteName" size="sm" variant="outline" class="gap-1.5" @click="exportStatement('xlsx')">
             <Download class="h-4 w-4" />
             {{ t('report.export_excel') }}
+          </Button>
+          <Button v-if="exportRouteName" size="sm" variant="outline" class="gap-1.5" @click="exportStatement('pdf')">
+            <FileText class="h-4 w-4" />
+            {{ t('report.export_pdf') }}
           </Button>
         </div>
       </div>
