@@ -489,13 +489,14 @@ class SupplierController extends Controller
 
     protected function nextCode(?string $branchId): string
     {
-        $latest = Ledger::query()
+        $latestNumber = Ledger::query()
             ->where('type', 'supplier')
             ->where('branch_id', $branchId)
-            ->where('code', 'like', 'SUP-%')
-            ->max('code');
+            ->whereRaw('code ~ ?', ['^(SUP-)?[0-9]+$'])
+            ->selectRaw("MAX(CAST(REGEXP_REPLACE(code, '^SUP-', '') AS INTEGER)) as max_code")
+            ->value('max_code');
 
-        $number = $latest ? ((int) str_replace('SUP-', '', $latest)) + 1 : 1;
+        $number = ((int) $latestNumber) + 1;
 
         return 'SUP-' . str_pad((string) $number, 3, '0', STR_PAD_LEFT);
     }
