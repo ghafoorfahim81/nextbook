@@ -505,6 +505,6 @@ class CustomerController extends Controller
 
         $number = $latest ? ((int) str_replace('CUST-', '', $latest)) + 1 : 1;
 
-        return 'CUST-' . str_pad((string) $number, 6, '0', STR_PAD_LEFT);
+        return 'CUST-' . str_pad((string) $number, 3, '0', STR_PAD_LEFT);
     }
 }
