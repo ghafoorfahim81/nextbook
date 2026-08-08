@@ -352,5 +352,19 @@
       "unit_measures": "د اندازې واحدونه",
       "warehouses": "ګودامونه"
     }
+  },
+  "statement": "صورت حساب",
+  "statement_period": "صورت له {from} څخه تر {to} پورې",
+  "statement_up_to": "صورت تر {to} پورې",
+  "home_currency": "بنسټیز اسعار",
+  "home_equivalent_note": "د بنسټیزو اسعارو معادل ({code})، د هرې معاملې په خپل نرخ",
+  "aging": {
+    "title": "د پور د عمر څېړنه",
+    "current": "روان",
+    "days_30": "۱ تر ۳۰ ورځې",
+    "days_60": "۳۱ تر ۶۰ ورځې",
+    "days_90": "۶۱ تر ۹۰ ورځې",
+    "days_90_plus": "له ۹۰ ورځو ډېر",
+    "unapplied_credit": "نه ځانګړی شوی کریډیټ"
   }
 }

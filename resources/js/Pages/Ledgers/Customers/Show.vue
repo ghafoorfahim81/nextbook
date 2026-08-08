@@ -7,12 +7,14 @@ import { Button } from '@/Components/ui/button';
 import { ArrowLeft, SquarePen, Printer } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue';
+import LedgerStatement from '@/Components/ledger/LedgerStatement.vue';
 
 const props = defineProps({
     customer: { type: Object, required: true },
     sales: { type: Object, required: false },
     receipts: { type: Object, required: false },
     payments: { type: Object, required: false },
+    ledgerStatement: { type: Object, required: false, default: () => ({}) },
 });
 
 const { t } = useI18n();
@@ -144,6 +146,16 @@ const customerMovementColumns = computed(() => [
                     @click="activeMainTab = 'opening'"
                 >
                     {{ t('item.opening') }}
+                </button>
+                <button
+                    type="button"
+                    class="px-4 py-2 -mb-px border-b-2 transition-colors"
+                    :class="activeMainTab === 'statement'
+                        ? 'border-primary text-primary font-semibold'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'"
+                    @click="activeMainTab = 'statement'"
+                >
+                    {{ t('report.statement') }}
                 </button>
             </div>
 
@@ -319,6 +331,16 @@ const customerMovementColumns = computed(() => [
                     </LedgerListTable>
                 </div>
             </div>
+
+            <!-- STATEMENT TAB -->
+            <LedgerStatement
+                v-else-if="activeMainTab === 'statement'"
+                :statement="ledgerStatement"
+                route-name="customers.show"
+                param-key="customer"
+                :ledger-id="customerData.id"
+                export-route-name="customers.export"
+            />
 
             <!-- OPENING TAB -->
             <div v-else class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-4">
