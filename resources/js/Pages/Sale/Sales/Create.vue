@@ -7,6 +7,7 @@ import axios from 'axios'
 import { useForm, usePage } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
+import BarcodeSearchInput from '@/Components/next/BarcodeSearchInput.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
 import PaymentDialog from '@/Components/next/PaymentDialog.vue';
@@ -1057,58 +1058,43 @@ const addRow = () => {
     })
 }
 
-/* ---------------- BARCODE SCAN & KEYBOARD SHORTCUTS ----------------
- * A hardware scanner types the code then sends Enter. We look the item up by
- * barcode in the current warehouse and either bump the quantity of the matching
- * line or drop it into the first empty row, then return focus to the field so the
- * next scan needs no mouse. Ctrl/Cmd+S saves; F2 / Alt+B jumps to the scanner. */
-const barcode = ref('')
+/* ---------------- BARCODE SCAN / ITEM SEARCH & KEYBOARD SHORTCUTS ----------------
+ * The field below doubles as a scanner target and an item autocomplete: a hardware
+ * scanner types the code then sends Enter, while typing a keyword lists partial
+ * matches to pick from. Either way we land here with the chosen item and either bump
+ * the quantity of the matching line or drop it into the first empty row, then return
+ * focus to the field so the next scan needs no mouse.
+ * Ctrl/Cmd+S saves; F2 / Alt+B jumps to the scanner. */
 const barcodeRef = ref(null)
 const focusBarcode = () => barcodeRef.value?.focus?.()
 
-const handleBarcodeScan = async () => {
-    const code = String(barcode.value || '').trim()
-    barcode.value = ''
-    if (!code) return
-    if (!form.selected_ledger) {
-        toast({ title: t('general.select_ledger_first'), variant: 'destructive' })
-        return
+const handleScannedItem = async (item) => {
+    if (!item) return
+    // A plain (non-variant) line for the same item just increments.
+    const existing = form.items.find(r => r.selected_item && r.item_id === item.id && !r.color && !r.size_id)
+    if (existing) {
+        existing.quantity = toNum(existing.quantity, 0) + 1
+    } else {
+        let idx = form.items.findIndex(r => !r.selected_item)
+        if (idx === -1) { addRow(); idx = form.items.length - 1 }
+        form.items[idx].selected_item = item
+        await handleItemChange(idx, item)
+        form.items[idx].quantity = 1
     }
-    if (!form.warehouse_id) {
-        toast({ title: t('general.select_warehouse_first'), variant: 'destructive' })
-        return
-    }
-    try {
-        const { data } = await axios.get(route('search.items-list'), {
-            params: { warehouse_id: form.warehouse_id, search: code, limit: 10 },
-        })
-        const results = data?.data || []
-        let item = results.find(i => String(i.barcode ?? '').trim() === code)
-        if (!item && results.length === 1) item = results[0]
-        if (!item) {
-            notifySound('error')
-            toast({ title: t('general.barcode_not_found', { code }), variant: 'destructive' })
-            return
-        }
-        // A plain (non-variant) line for the same item just increments.
-        const existing = form.items.find(r => r.selected_item && r.item_id === item.id && !r.color && !r.size_id)
-        if (existing) {
-            existing.quantity = toNum(existing.quantity, 0) + 1
-        } else {
-            let idx = form.items.findIndex(r => !r.selected_item)
-            if (idx === -1) { addRow(); idx = form.items.length - 1 }
-            form.items[idx].selected_item = item
-            await handleItemChange(idx, item)
-            form.items[idx].quantity = 1
-        }
-        notifySound('success')
-    } catch (error) {
-        console.error('Barcode scan failed', error)
-        notifySound('error')
-        toast({ title: t('general.barcode_lookup_failed'), variant: 'destructive' })
-    } finally {
-        focusBarcode()
-    }
+    notifySound('success')
+    focusBarcode()
+}
+
+const handleScanNotFound = (code) => {
+    notifySound('error')
+    toast({ title: t('general.barcode_not_found', { code }), variant: 'destructive' })
+    focusBarcode()
+}
+
+const handleScanError = () => {
+    notifySound('error')
+    toast({ title: t('general.barcode_lookup_failed'), variant: 'destructive' })
+    focusBarcode()
 }
 
 const submitButtonsRef = ref(null)
@@ -1238,16 +1224,18 @@ useFormGuard(form)
                 </div>
             </div>
 
-            <!-- Barcode scanner: scan to add or increment a line, hands-free -->
+            <!-- Barcode scanner / item search: scan or type to add or increment a line, hands-free -->
             <div class="mb-2 flex flex-wrap items-center gap-3">
                 <ScanBarcode class="h-5 w-5 shrink-0 text-violet-500" />
                 <div class="w-full max-w-xs">
-                    <NextInput
+                    <BarcodeSearchInput
                         ref="barcodeRef"
-                        v-model="barcode"
-                        :label="t('general.scan_barcode')"
-                        :disabled="!form.selected_ledger || !form.warehouse_id"
-                        @keydown.enter.prevent="handleBarcodeScan"
+                        :warehouse-id="form.warehouse_id"
+                        :disabled="!form.selected_ledger"
+                        :disabled-hint="t('general.select_ledger_first')"
+                        @select="handleScannedItem"
+                        @not-found="handleScanNotFound"
+                        @error="handleScanError"
                     />
                 </div>
                 <span class="hidden text-xs text-muted-foreground sm:inline">{{ t('general.scan_barcode_hint') }}</span>
