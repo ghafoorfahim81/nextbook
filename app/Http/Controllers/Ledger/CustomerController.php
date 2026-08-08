@@ -497,13 +497,14 @@ class CustomerController extends Controller
 
     protected function nextCode(?string $branchId): string
     {
-        $latest = Ledger::query()
+        $latestNumber = Ledger::query()
             ->where('type', 'customer')
             ->where('branch_id', $branchId)
-            ->where('code', 'like', 'CUST-%')
-            ->max('code');
+            ->whereRaw('code ~ ?', ['^(CUST-)?[0-9]+$'])
+            ->selectRaw("MAX(CAST(REGEXP_REPLACE(code, '^CUST-', '') AS INTEGER)) as max_code")
+            ->value('max_code');
 
-        $number = $latest ? ((int) str_replace('CUST-', '', $latest)) + 1 : 1;
+        $number = ((int) $latestNumber) + 1;
 
         return 'CUST-' . str_pad((string) $number, 3, '0', STR_PAD_LEFT);
     }
