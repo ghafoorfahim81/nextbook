@@ -331,7 +331,7 @@ class QuickCreateController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'type' => ['nullable', 'string', 'max:50'],
+            'type' => ['nullable', 'string', Rule::in(['customer', 'supplier'])],
             'email' => ['nullable', 'email'],
             'phone_no' => ['nullable', 'string'],
             'address' => ['nullable', 'string'],
@@ -342,6 +342,7 @@ class QuickCreateController extends Controller
             $validated['type'] = 'customer';
         }
 
+        $validated['code'] = $this->generateNextLedgerCode($validated['type']);
         $ledger = Ledger::create($validated);
         $this->forgetInertiaCache($request, ['ledgers']);
 
@@ -463,5 +464,23 @@ class QuickCreateController extends Controller
         }
 
         return (string) $number;
+    }
+
+    private function generateNextLedgerCode(string $type): string
+    {
+        $prefix = $type === 'customer' ? 'CUST-' : 'SUP-';
+        $codePattern = $type === 'customer'
+            ? '^(CUST-)?[0-9]+$'
+            : '^(SUP-)?[0-9]+$';
+
+        $latestNumber = Ledger::query()
+            ->where('type', $type)
+            ->whereRaw('code ~ ?', [$codePattern], 'and')
+            ->selectRaw("MAX(CAST(REGEXP_REPLACE(code, '^{$prefix}', '') AS INTEGER)) as max_code")
+            ->value('max_code');
+
+        $number = ((int) $latestNumber) + 1;
+
+        return $prefix . str_pad((string) $number, 3, '0', STR_PAD_LEFT);
     }
 }
