@@ -317,9 +317,9 @@
       "delete": "Deletes"
     },
     "columns": {
-    "no": "No.",
-    "section": "Section",
-    "account_name": "Account Name",
+      "no": "No.",
+      "section": "Section",
+      "account_name": "Account Name",
       "user": "User",
       "role": "Role",
       "total_activities": "Activities",
@@ -353,7 +353,19 @@
       "unit_measures": "Unit measures",
       "warehouses": "Warehouses"
     }
+  },
+  "statement": "Statement",
+  "statement_period": "Statement from {from} to {to}",
+  "statement_up_to": "Statement up to {to}",
+  "home_currency": "Home currency",
+  "home_equivalent_note": "Home-currency equivalent ({code}), converted at each transaction's own rate",
+  "aging": {
+    "title": "Aging",
+    "current": "Current",
+    "days_30": "1-30 days",
+    "days_60": "31-60 days",
+    "days_90": "61-90 days",
+    "days_90_plus": "90+ days",
+    "unapplied_credit": "Unapplied credit"
   }
 }
-
-
