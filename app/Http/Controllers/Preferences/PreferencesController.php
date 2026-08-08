@@ -197,7 +197,12 @@ class PreferencesController extends Controller
             Warehouse::query()->update(['is_active' => false]);
             Size::query()->update(['is_active' => false]);
             Currency::query()->update(['is_active' => false]);
-            Ledger::query()->whereIn('type', ['customer', 'supplier'])->update(['is_active' => false]);
+            // Customers and suppliers are transactional data, not installable defaults: an empty
+            // selection here would hide every party from the sale/purchase forms in one save, so
+            // leave their flags untouched and only apply an explicit selection.
+            if ($ledgerIds->isNotEmpty()) {
+                Ledger::query()->whereIn('type', ['customer', 'supplier'])->update(['is_active' => false]);
+            }
 
             if ($unitMeasureIds->isNotEmpty()) UnitMeasure::query()->whereIn('id', $unitMeasureIds)->update(['is_active' => true]);
             if ($categoryIds->isNotEmpty()) Category::query()->whereIn('id', $categoryIds)->update(['is_active' => true]);
