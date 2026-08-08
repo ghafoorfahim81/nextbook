@@ -72,11 +72,12 @@ class CustomerController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
         return inertia('Ledgers/Customers/Create', [
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
             'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
+            'nextCode' => $this->nextCode($request->user()?->branch_id),
             'accountTypes' => [],
         ]);
     }
@@ -88,6 +89,7 @@ class CustomerController extends Controller
     {
         $validated = $request->validated();
         $validated['type'] = 'customer';
+        $validated['code'] = $validated['code'] ?: $this->nextCode($request->user()?->branch_id);
         $validated['is_active'] = $validated['is_active'] ?? true;
         $ledger = Ledger::create($validated);
         $glAccounts = Cache::get('gl_accounts');
@@ -491,5 +493,18 @@ class CustomerController extends Controller
             ],
             'rows' => $rows,
         ]);
+    }
+
+    protected function nextCode(?string $branchId): string
+    {
+        $latest = Ledger::query()
+            ->where('type', 'customer')
+            ->where('branch_id', $branchId)
+            ->where('code', 'like', 'CUST-%')
+            ->max('code');
+
+        $number = $latest ? ((int) str_replace('CUST-', '', $latest)) + 1 : 1;
+
+        return 'CUST-' . str_pad((string) $number, 6, '0', STR_PAD_LEFT);
     }
 }

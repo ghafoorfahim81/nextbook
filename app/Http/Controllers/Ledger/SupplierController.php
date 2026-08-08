@@ -76,11 +76,12 @@ class SupplierController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
         return inertia('Ledgers/Suppliers/Create', [
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
             'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
+            'nextCode' => $this->nextCode($request->user()?->branch_id),
             'accountTypes' => [],
         ]);
     }
@@ -92,6 +93,7 @@ class SupplierController extends Controller
     {
         $validated = $request->validated();
         $validated['type'] = 'supplier';
+        $validated['code'] = $validated['code'] ?: $this->nextCode($request->user()?->branch_id);
         $validated['is_active'] = $validated['is_active'] ?? true;
         $ledger = Ledger::create($validated);
         $glAccounts = Cache::get('gl_accounts');
@@ -483,5 +485,18 @@ class SupplierController extends Controller
             ],
             'rows' => $rows,
         ]);
+    }
+
+    protected function nextCode(?string $branchId): string
+    {
+        $latest = Ledger::query()
+            ->where('type', 'supplier')
+            ->where('branch_id', $branchId)
+            ->where('code', 'like', 'SUP-%')
+            ->max('code');
+
+        $number = $latest ? ((int) str_replace('SUP-', '', $latest)) + 1 : 1;
+
+        return 'SUP-' . str_pad((string) $number, 6, '0', STR_PAD_LEFT);
     }
 }
