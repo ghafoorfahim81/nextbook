@@ -6,6 +6,7 @@ import axios from 'axios'
 import { useForm, usePage } from '@inertiajs/vue3';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
+import BarcodeSearchInput from '@/Components/next/BarcodeSearchInput.vue';
 import NextTextarea from '@/Components/next/NextTextarea.vue';
 import DiscountField from '@/Components/next/DiscountField.vue';
 import PaymentDialog from '@/Components/next/PaymentDialog.vue';
@@ -19,7 +20,7 @@ import { useSidebar } from '@/Components/ui/sidebar/utils';
 import { ToastAction } from '@/Components/ui/toast'
 import { useToast } from '@/Components/ui/toast/use-toast'
 import NextDate from '@/Components/next/NextDatePicker.vue'
-import { Trash2 } from 'lucide-vue-next';
+import { Trash2, ScanBarcode } from 'lucide-vue-next';
 import { useLazyProps } from '@/composables/useLazyProps'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
 import { toDocumentCurrency } from '@/utils/currency'
@@ -650,6 +651,54 @@ const addRow = () => {
         tax: '',
     })
 }
+
+/* ---------------- BARCODE SCAN / ITEM SEARCH ----------------
+ * The field above the table doubles as a scanner target and an item autocomplete: a
+ * hardware scanner types the code then sends Enter, while typing a keyword lists
+ * partial matches to pick from. Either way we land here with the chosen item and
+ * either bump the quantity of the matching line or drop it into the first empty row,
+ * then return focus to the field so the next scan needs no mouse.
+ * F2 / Alt+B jumps to the scanner from anywhere on the page. */
+const barcodeRef = ref(null)
+const focusBarcode = () => barcodeRef.value?.focus?.()
+
+const handleScannedItem = async (item) => {
+    if (!item) return
+    const existing = form.items.find(r => r.selected_item && r.item_id === item.id)
+    if (existing) {
+        existing.quantity = toNum(existing.quantity, 0) + 1
+    } else {
+        let idx = form.items.findIndex(r => !r.selected_item)
+        if (idx === -1) { addRow(); idx = form.items.length - 1 }
+        form.items[idx].selected_item = item
+        await handleItemChange(idx, item)
+        form.items[idx].quantity = 1
+    }
+    notifySound('success')
+    focusBarcode()
+}
+
+const handleScanNotFound = (code) => {
+    notifySound('error')
+    toast({ title: t('general.barcode_not_found', { code }), variant: 'destructive' })
+    focusBarcode()
+}
+
+const handleScanError = () => {
+    notifySound('error')
+    toast({ title: t('general.barcode_lookup_failed'), variant: 'destructive' })
+    focusBarcode()
+}
+
+const handleBarcodeShortcut = (e) => {
+    if (e.key === 'F2' || (e.altKey && (e.key === 'b' || e.key === 'B'))) {
+        e.preventDefault()
+        focusBarcode()
+    }
+}
+onMounted(() => window.addEventListener('keydown', handleBarcodeShortcut))
+onUnmounted(() => window.removeEventListener('keydown', handleBarcodeShortcut))
+
 const user_preferences = computed(() => props.user_preferences?.data ?? props.user_preferences ?? [])
 const general_fields = user_preferences.value?.purchase?.general_fields ?? {}
 const item_columns = user_preferences.value?.purchase?.item_columns ?? {}
@@ -749,6 +798,24 @@ const spec_text = item_management?.spec_text ?? 'batch'
                     :error="form.errors?.description"
                 />
             </div>
+            </div>
+
+            <!-- Barcode scanner / item search: scan or type to add or increment a line, hands-free -->
+            <div class="mb-2 flex flex-wrap items-center gap-3">
+                <ScanBarcode class="h-5 w-5 shrink-0 text-violet-500" />
+                <div class="w-full max-w-xs">
+                    <BarcodeSearchInput
+                        ref="barcodeRef"
+                        :warehouse-id="form.warehouse_id"
+                        :in-stock-only="false"
+                        :disabled="!form.selected_ledger"
+                        :disabled-hint="t('general.select_ledger_first')"
+                        @select="handleScannedItem"
+                        @not-found="handleScanNotFound"
+                        @error="handleScanError"
+                    />
+                </div>
+                <span class="hidden text-xs text-muted-foreground sm:inline">{{ t('general.scan_barcode_hint') }}</span>
             </div>
             <div class="rounded-xl border bg-card shadow-sm border-violet-500">
                 <table class="w-full table-fixed min-w-[1200px] purchase-table border-separate">

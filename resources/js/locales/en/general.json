@@ -225,5 +225,11 @@
   "unit_cost": "Unit Cost",
   "line_profit": "Profit / Loss",
   "reference_number": "Reference Number",
-  "english_name": "English Name"
+  "english_name": "English Name",
+  "scan_barcode": "Scan barcode",
+  "scan_or_search_item": "Scan barcode or search item",
+  "scan_barcode_hint": "Type to search · ↑↓ to pick · Enter adds a line · F2 focuses here",
+  "barcode_not_found": "No item found for barcode \"{code}\"",
+  "barcode_lookup_failed": "Barcode lookup failed",
+  "select_ledger_first": "Select a customer or supplier first"
 }

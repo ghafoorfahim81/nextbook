@@ -228,6 +228,12 @@
   "unit_cost": "هزینه واحد",
   "line_profit": "سود / ضرر",
   "reference_number": "شماره مرجع",
-  "english_name": "نام انگلیسی"
+  "english_name": "نام انگلیسی",
+  "scan_barcode": "اسکن بارکد",
+  "scan_or_search_item": "اسکن بارکد یا جستجوی کالا",
+  "scan_barcode_hint": "برای جستجو تایپ کنید · ↑↓ انتخاب · Enter افزودن ردیف · F2 تمرکز اینجا",
+  "barcode_not_found": "کالایی برای بارکد «{code}» یافت نشد",
+  "barcode_lookup_failed": "جستجوی بارکد ناموفق بود",
+  "select_ledger_first": "ابتدا مشتری یا تأمین‌کننده را انتخاب کنید"
 }
 

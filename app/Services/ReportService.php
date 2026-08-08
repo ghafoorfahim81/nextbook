@@ -62,10 +62,27 @@ class ReportService
         $filters = $this->normalizeFilters($rawFilters, $user);
 
         return [
-            'filters' => $filters,
+            // Reports query on Gregorian dates, but the picker renders in the company
+            // calendar: handing it a Gregorian string makes a Jalali picker read "2026-08-01"
+            // as Jalali. Send the dates in the display calendar instead — they come back on
+            // the next request and normalizeFilters() converts them to Gregorian again.
+            'filters' => $this->filtersForDisplay($filters),
             'reportOptions' => $this->reportOptions(),
             'filterOptions' => $this->filterOptions($filters['branch_id']),
             'result' => $this->getReportData($filters),
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $filters
+     * @return array<string, mixed>
+     */
+    protected function filtersForDisplay(array $filters): array
+    {
+        return [
+            ...$filters,
+            'date_from' => $this->dateConversionService->toDisplay($filters['date_from']) ?? $filters['date_from'],
+            'date_to' => $this->dateConversionService->toDisplay($filters['date_to']) ?? $filters['date_to'],
         ];
     }
 
