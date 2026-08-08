@@ -585,6 +585,7 @@ class PaymentController extends Controller
                 ? $p->transaction->lines->first()->debit
                 : $p->transaction?->lines->first()?->credit ?? 0),
             'currency'     => $p->transaction?->currency?->code ?? '-',
+            'rate'         => $p->transaction?->rate !== null ? (float) $p->transaction->rate : '-',
             'date'         => $p->date ? $this->dateConversionService->toDisplay($p->date) : '-',
         ])->all();
 
@@ -606,6 +607,7 @@ class PaymentController extends Controller
                 ['key' => 'payment_mode', 'label' => $t('general', 'payment_mode', 'Payment Mode'), 'width' => 16],
                 ['key' => 'amount',       'label' => $t('general', 'amount', 'Amount'), 'type' => 'money', 'align' => 'right', 'width' => 14],
                 ['key' => 'currency',     'label' => $t('admin', 'currency.currency', 'Currency'), 'width' => 10],
+                ['key' => 'rate',         'label' => $t('general', 'rate', 'Rate'), 'type' => 'money', 'align' => 'right', 'width' => 10],
                 ['key' => 'date',         'label' => $t('general', 'date', 'Date'), 'width' => 14],
             ],
             'rows' => $rows,

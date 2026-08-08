@@ -68,6 +68,7 @@ class PurchaseResource extends JsonResource
             'warehouse' => $this->warehouse(),
             'warehouse_id' => $this->warehouse()?->id,
             'currency_id' => $this->transaction?->currency_id,
+            'currency_code' => $this->transaction?->currency?->code,
             'rate' => $this->transaction?->rate,
             'items' => $this->whenLoaded('items', PurchaseItemResource::collection($this->items)),
             'item_list' => $this->whenLoaded('items', $this->items->map(function ($item) use ($dateConversionService) {

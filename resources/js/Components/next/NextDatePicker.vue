@@ -40,6 +40,7 @@
 import { computed, onMounted, ref } from 'vue'
 import VuePersianDatetimePicker from 'vue3-persian-datetime-picker'
 import { usePage } from '@inertiajs/vue3'
+import { alignDateToCalendar, formatGregorianDate, formatJalaliDate } from '@/utils/dateDefaults'
 
 const user = computed(() => usePage().props.auth?.user || null)
 
@@ -74,36 +75,6 @@ function normalizeDigits(value) {
         .replace(/[\u0660-\u0669]/g, digit => String(digit.charCodeAt(0) - 0x0660))
 }
 
-function formatGregorianDate(date) {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-
-    return `${year}-${month}-${day}`
-}
-
-function formatJalaliDate(date) {
-    try {
-        const parts = new Intl.DateTimeFormat('en-u-ca-persian', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-        }).formatToParts(date)
-
-        const year = parts.find(part => part.type === 'year')?.value
-        const month = parts.find(part => part.type === 'month')?.value
-        const day = parts.find(part => part.type === 'day')?.value
-
-        if (year && month && day) {
-            return `${year}-${month}-${day}`
-        }
-    } catch (e) {
-        // Fall back to Gregorian formatting when Intl Persian calendar is unavailable.
-    }
-
-    return formatGregorianDate(date)
-}
-
 function normalizeDateValue(value) {
     if (props.type !== 'date' || value === null || value === undefined || value === '') {
         return value
@@ -114,7 +85,12 @@ function normalizeDateValue(value) {
     }
 
     if (typeof value === 'string') {
-        return normalizeDigits(value).trim().replace(/\//g, '-')
+        const normalized = normalizeDigits(value).trim().replace(/\//g, '-')
+
+        // A value written in the other calendar (e.g. a Gregorian date straight from a
+        // controller) would be read by the picker as if it were already in this one, so
+        // convert it first. Values already in the right calendar pass through untouched.
+        return alignDateToCalendar(normalized, calendarType.value)
     }
 
     return value

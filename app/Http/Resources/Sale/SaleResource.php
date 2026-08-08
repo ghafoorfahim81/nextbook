@@ -104,6 +104,7 @@ class SaleResource extends JsonResource
             'warehouse' => $warehouse,
             'warehouse_id' => $warehouse?->id,
             'currency_id' => $this->transaction?->currency_id,
+            'currency_code' => $this->transaction?->currency?->code,
             'rate' => $this->transaction?->rate,
             // additional() must be set on each item — on a collection it lands on the
             // wrapper and never reaches SaleItemResource::toArray().

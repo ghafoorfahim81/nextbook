@@ -298,6 +298,8 @@ class SupplierController extends Controller
                     ['key' => 'date', 'label' => $spreadsheetExportService->localeTranslation('general', 'date', 'Date')],
                     ['key' => 'type', 'label' => $spreadsheetExportService->localeTranslation('general', 'type', 'Type')],
                     ['key' => 'amount', 'label' => $spreadsheetExportService->localeTranslation('general', 'amount', 'Amount'), 'type' => 'money', 'align' => 'right'],
+                    ['key' => 'currency', 'label' => $spreadsheetExportService->localeTranslation('admin', 'currency.currency', 'Currency')],
+                    ['key' => 'rate', 'label' => $spreadsheetExportService->localeTranslation('general', 'rate', 'Rate'), 'type' => 'money', 'align' => 'right'],
                     ['key' => 'status', 'label' => $spreadsheetExportService->localeTranslation('general', 'status', 'Status')],
                     ['key' => 'description', 'label' => $spreadsheetExportService->localeTranslation('general', 'description', 'Description')],
                 ],
@@ -333,6 +335,8 @@ class SupplierController extends Controller
                 'date' => $row['date'] ?? '-',
                 'type' => $row['type'] ?? '-',
                 'amount' => $row['amount'] ?? 0,
+                'currency' => $row['currency_code'] ?? data_get($row, 'transaction.currency.code') ?? '-',
+                'rate' => $row['rate'] ?? '-',
                 'status' => $row['payment_status_label'] ?? $row['payment_status'] ?? '-',
                 'description' => $row['description'] ?? '-',
             ];
