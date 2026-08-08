@@ -450,6 +450,7 @@ class ReceiptController extends Controller
                 ? $r->transaction->lines->first()->debit
                 : $r->transaction?->lines->first()?->credit ?? 0),
             'currency'     => $r->transaction?->currency?->code ?? '-',
+            'rate'         => $r->transaction?->rate !== null ? (float) $r->transaction->rate : '-',
             'date'         => $r->date ? $this->dateConversionService->toDisplay($r->date) : '-',
         ])->all();
 
@@ -471,6 +472,7 @@ class ReceiptController extends Controller
                 ['key' => 'payment_mode', 'label' => $t('general', 'payment_mode', 'Payment Mode'), 'width' => 16],
                 ['key' => 'amount',       'label' => $t('general', 'amount', 'Amount'), 'type' => 'money', 'align' => 'right', 'width' => 14],
                 ['key' => 'currency',     'label' => $t('admin', 'currency.currency', 'Currency'), 'width' => 10],
+                ['key' => 'rate',         'label' => $t('general', 'rate', 'Rate'), 'type' => 'money', 'align' => 'right', 'width' => 10],
                 ['key' => 'date',         'label' => $t('general', 'date', 'Date'), 'width' => 14],
             ],
             'rows' => $rows,

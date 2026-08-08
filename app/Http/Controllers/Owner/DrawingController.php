@@ -285,7 +285,7 @@ class DrawingController extends Controller
         $filters = (array) $request->input('filters', []);
 
         $drawings = Drawing::query()
-            ->with(['owner', 'transaction.lines.account'])
+            ->with(['owner', 'transaction.currency', 'transaction.lines.account'])
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection)
@@ -315,6 +315,8 @@ class DrawingController extends Controller
                 'bank_account'    => $creditLine?->account?->name ?? '-',
                 'drawing_account' => $debitLine?->account?->name ?? '-',
                 'amount'          => (float) $amount,
+                'currency'        => $d->transaction?->currency?->code ?? '-',
+                'rate'            => $d->transaction?->rate !== null ? (float) $d->transaction->rate : '-',
                 'narration'       => $d->narration ?? '-',
             ];
         })->all();
@@ -337,6 +339,8 @@ class DrawingController extends Controller
                 ['key' => 'bank_account',    'label' => $t('general', 'bank_account', 'Bank Account'), 'width' => 18],
                 ['key' => 'drawing_account', 'label' => $t('owner', 'drawing_account', 'Drawing Account'), 'width' => 18],
                 ['key' => 'amount',          'label' => $t('general', 'amount', 'Amount'), 'type' => 'money', 'align' => 'right', 'width' => 14],
+                ['key' => 'currency',        'label' => $t('admin', 'currency.currency', 'Currency'), 'width' => 10],
+                ['key' => 'rate',            'label' => $t('general', 'rate', 'Rate'), 'type' => 'money', 'align' => 'right', 'width' => 10],
                 ['key' => 'narration',       'label' => $t('general', 'remarks', 'Remarks'), 'width' => 20],
             ],
             'rows' => $rows,
