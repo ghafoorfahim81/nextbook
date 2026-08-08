@@ -43,11 +43,28 @@ const form = useForm({
     remark: '',
 })
 
-watch(props.homeCurrency, (list) => {
-    if (props.homeCurrency && !form.currency_id) {
-        form.currency_id = props.homeCurrency.id
+const applyHomeCurrencyDefaults = () => {
+    if (!props.homeCurrency) {
+        return;
     }
-}, { immediate: true })
+
+    if (!form.currency_id) {
+        form.currency_id = props.homeCurrency.id;
+    }
+
+    if (!form.opening_currency_id) {
+        form.selected_opening_currency = props.homeCurrency;
+        form.opening_currency_id = props.homeCurrency.id;
+        form.rate = props.homeCurrency.exchange_rate ?? 1;
+    }
+};
+
+watch(() => props.homeCurrency, applyHomeCurrencyDefaults, { immediate: true });
+watch(() => props.nextCode, (nextCode) => {
+    if (nextCode) {
+        form.code = nextCode;
+    }
+});
 
 const submitAction = ref(null);
 const createLoading = computed(() => form.processing && submitAction.value === 'create');
@@ -65,8 +82,10 @@ const handleSubmitAction = (createAndNew = false) => {
                 class: 'bg-green-600',
             });
             if (isCreateAndNew) {
-                form.reset(); 
-                form.transform((d) => d); // Reset transform to identity
+                form.reset();
+                form.code = props.nextCode;
+                applyHomeCurrencyDefaults();
+                form.transform((d) => d);
             }
         },
         // Any shared callbacks like onError can go here

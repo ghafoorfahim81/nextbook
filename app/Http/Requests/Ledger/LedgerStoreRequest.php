@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Ledger;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class LedgerStoreRequest extends FormRequest
 {
@@ -21,7 +22,14 @@ class LedgerStoreRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string'],
-            'code' => ['nullable', 'string'],
+            'code' => [
+                'nullable',
+                'string',
+                Rule::unique('ledgers', 'code')
+                    ->where(fn ($query) => $query
+                        ->where('branch_id', $this->user()?->branch_id)
+                        ->whereNull('deleted_at')),
+            ],
             'address' => ['nullable', 'string'],
             'contact_person' => ['nullable', 'string'],
             'phone_no' => ['nullable', 'string'],
