@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Ledger;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\BuildsLedgerStatement;
 use App\Http\Requests\Ledger\LedgerStoreRequest;
 use App\Http\Requests\Ledger\LedgerUpdateRequest;
 use App\Http\Resources\Ledger\LedgerResource;
@@ -17,6 +18,7 @@ use App\Models\Administration\Branch;
 use App\Http\Resources\Purchase\PurchaseResource;
 use App\Http\Resources\Payment\PaymentResource;
 use Illuminate\Http\Request;
+use App\Services\LedgerStatementService;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Resources\Sale\SaleResource;
@@ -33,6 +35,8 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class SupplierController extends Controller
 {
+    use BuildsLedgerStatement;
+
     public function __construct()
     {
         $this->authorizeResource(Ledger::class, 'supplier');
@@ -145,7 +149,7 @@ class SupplierController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Request $request, Ledger $supplier)
+    public function show(Request $request, Ledger $supplier, LedgerStatementService $statementService)
     {
         $supplier->load([
             'currency',
@@ -159,12 +163,16 @@ class SupplierController extends Controller
         $purchases = $supplier->purchases->load('transaction.currency');
         $receipts = $supplier->receipts->load('transaction.currency');
         $payments = $supplier->payments->load('transaction.currency');
+
+        $ledgerStatement = $statementService->build($supplier, $this->statementFilters($request));
+
         if ($request->expectsJson()) {
             return response()->json([
                 'supplier' => new LedgerResource($supplier),
                 'purchases' => PurchaseResource::collection($purchases),
                 'receipts' => ReceiptResource::collection($receipts),
                 'payments' => PaymentResource::collection($payments),
+                'ledgerStatement' => $ledgerStatement,
             ]);
         }
 
@@ -173,6 +181,7 @@ class SupplierController extends Controller
             'purchases' => PurchaseResource::collection($purchases),
             'receipts' => ReceiptResource::collection($receipts),
             'payments' => PaymentResource::collection($payments),
+            'ledgerStatement' => $ledgerStatement,
         ]);
     }
 
@@ -184,21 +193,28 @@ class SupplierController extends Controller
         $this->authorize('view', $supplier);
 
         $validated = $request->validate([
-            'list' => ['nullable', 'string', Rule::in(['purchases', 'receipts', 'payments'])],
+            'list' => ['nullable', 'string', Rule::in(['purchases', 'receipts', 'payments', 'statement'])],
         ]);
 
         $list = $validated['list'] ?? 'purchases';
         $supplier->loadMissing(['currency', 'branch']);
 
+        $translate = fn (string $group, string $key, string $fallback = '') => $spreadsheetExportService->localeTranslation($group, $key, $fallback);
+
         $rows = match ($list) {
             'receipts' => $this->exportReceiptRows($supplier),
             'payments' => $this->exportPaymentRows($supplier),
+            'statement' => $this->statementExportRows(
+                app(LedgerStatementService::class)->build($supplier, $this->statementFilters($request)),
+                $translate,
+            ),
             default => $this->exportPurchaseRows($supplier),
         };
 
         $moduleLabel = match ($list) {
             'receipts' => $spreadsheetExportService->localeTranslation('receipt', 'receipts', 'Receipts'),
             'payments' => $spreadsheetExportService->localeTranslation('payment', 'payments', 'Payments'),
+            'statement' => $spreadsheetExportService->localeTranslation('report', 'reports.supplier_statement.label', 'Supplier Statement'),
             default => $spreadsheetExportService->localeTranslation('purchase', 'purchases', 'Purchases'),
         };
 
@@ -216,6 +232,7 @@ class SupplierController extends Controller
             'include_row_number' => true,
             'row_number_label' => $spreadsheetExportService->localeTranslation('report', 'columns.no', 'No.'),
             'columns' => match ($list) {
+                'statement' => $this->statementExportColumns($translate),
                 'receipts', 'payments' => [
                     ['key' => 'number', 'label' => $spreadsheetExportService->localeTranslation('general', 'number', 'Number')],
                     ['key' => 'date', 'label' => $spreadsheetExportService->localeTranslation('general', 'date', 'Date')],

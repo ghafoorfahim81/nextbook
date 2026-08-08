@@ -353,5 +353,19 @@
       "unit_measures": "واحدهای اندازه‌گیری",
       "warehouses": "انبارها"
     }
+  },
+  "statement": "صورت‌حساب",
+  "statement_period": "صورت‌حساب از {from} تا {to}",
+  "statement_up_to": "صورت‌حساب تا {to}",
+  "home_currency": "ارز پایه",
+  "home_equivalent_note": "معادل به ارز پایه ({code})، بر اساس نرخ هر معامله",
+  "aging": {
+    "title": "تحلیل سنی مانده",
+    "current": "جاری",
+    "days_30": "۱ تا ۳۰ روز",
+    "days_60": "۳۱ تا ۶۰ روز",
+    "days_90": "۶۱ تا ۹۰ روز",
+    "days_90_plus": "بیش از ۹۰ روز",
+    "unapplied_credit": "بستانکاری تخصیص‌نیافته"
   }
 }
