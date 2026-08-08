@@ -37,7 +37,7 @@ class LedgerStoreRequest extends FormRequest
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'opening_currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric','required_with:opening_currency_id'],
-            'amount' => ['nullable', 'numeric','required_with:opening_currency_id'],
+            'amount' => ['nullable', 'numeric'],
             'remark' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
         ];
