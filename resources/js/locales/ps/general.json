@@ -163,6 +163,13 @@
   "unit_cost": "د واحد لګښت",
   "line_profit": "ګټه / زیان",
   "reference_number": "شماره مرجع",
-  "english_name": "نام انگلیسی"
+  "english_name": "نام انگلیسی",
+  "no_results": "هیڅ پایله ونه موندل شوه",
+  "scan_barcode": "بارکوډ سکن کړئ",
+  "scan_or_search_item": "بارکوډ سکن کړئ یا توکی ولټوئ",
+  "scan_barcode_hint": "د لټون لپاره ټایپ کړئ · ↑↓ ټاکنه · Enter کرښه زیاتوي · F2 دلته فوکس",
+  "barcode_not_found": "د «{code}» بارکوډ لپاره توکی ونه موندل شو",
+  "barcode_lookup_failed": "د بارکوډ لټون ناکام شو",
+  "select_ledger_first": "لومړی پیرودونکی یا عرضه‌کوونکی وټاکئ"
 }
 

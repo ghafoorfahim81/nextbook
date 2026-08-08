@@ -12,7 +12,7 @@ use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Http\Resources\Expense\ExpenseCategoryResource;
 use App\Http\Resources\Inventory\ItemResource;
 use App\Http\Resources\JournalEntry\JournalClassResource;
-use App\Http\Resources\Ledger\LedgerResource;
+use App\Http\Resources\Ledger\LedgerOptionResource;
 use App\Models\Account\Account;
 use App\Models\Administration\Brand;
 use App\Models\Administration\Category;
@@ -346,9 +346,11 @@ class QuickCreateController extends Controller
         $ledger = Ledger::create($validated);
         $this->forgetInertiaCache($request, ['ledgers']);
 
+        // Option resource, not LedgerResource: selects label ledgers as "name - CODE", and the
+        // freshly created option has to read the same as the ones already in the list.
         return response()->json([
             'success' => true,
-            'data' => (new LedgerResource($ledger))->resolve(),
+            'data' => (new LedgerOptionResource($ledger))->resolve(),
         ]);
     }
 
