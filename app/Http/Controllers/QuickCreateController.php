@@ -12,7 +12,7 @@ use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Http\Resources\Expense\ExpenseCategoryResource;
 use App\Http\Resources\Inventory\ItemResource;
 use App\Http\Resources\JournalEntry\JournalClassResource;
-use App\Http\Resources\Ledger\LedgerResource;
+use App\Http\Resources\Ledger\LedgerOptionResource;
 use App\Models\Account\Account;
 use App\Models\Administration\Brand;
 use App\Models\Administration\Category;
@@ -331,7 +331,7 @@ class QuickCreateController extends Controller
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'type' => ['nullable', 'string', 'max:50'],
+            'type' => ['nullable', 'string', Rule::in(['customer', 'supplier'])],
             'email' => ['nullable', 'email'],
             'phone_no' => ['nullable', 'string'],
             'address' => ['nullable', 'string'],
@@ -342,12 +342,15 @@ class QuickCreateController extends Controller
             $validated['type'] = 'customer';
         }
 
+        $validated['code'] = $this->generateNextLedgerCode($validated['type']);
         $ledger = Ledger::create($validated);
         $this->forgetInertiaCache($request, ['ledgers']);
 
+        // Option resource, not LedgerResource: selects label ledgers as "name - CODE", and the
+        // freshly created option has to read the same as the ones already in the list.
         return response()->json([
             'success' => true,
-            'data' => (new LedgerResource($ledger))->resolve(),
+            'data' => (new LedgerOptionResource($ledger))->resolve(),
         ]);
     }
 
@@ -463,5 +466,23 @@ class QuickCreateController extends Controller
         }
 
         return (string) $number;
+    }
+
+    private function generateNextLedgerCode(string $type): string
+    {
+        $prefix = $type === 'customer' ? 'CUST-' : 'SUP-';
+        $codePattern = $type === 'customer'
+            ? '^(CUST-)?[0-9]+$'
+            : '^(SUP-)?[0-9]+$';
+
+        $latestNumber = Ledger::query()
+            ->where('type', $type)
+            ->whereRaw('code ~ ?', [$codePattern], 'and')
+            ->selectRaw("MAX(CAST(REGEXP_REPLACE(code, '^{$prefix}', '') AS INTEGER)) as max_code")
+            ->value('max_code');
+
+        $number = ((int) $latestNumber) + 1;
+
+        return $prefix . str_pad((string) $number, 3, '0', STR_PAD_LEFT);
     }
 }
