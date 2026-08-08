@@ -31,6 +31,19 @@ class LedgerResource extends JsonResource
             'opening' => $this->relationLoaded('opening') && $this->opening
                 ? new LedgerOpeningResource($this->opening)
                 : null,
+            'openings' => $this->relationLoaded('openings')
+                ? LedgerOpeningResource::collection($this->openings)
+                : [],
+            // Openings are per-currency; this is their sum converted at each
+            // transaction's own rate, which is the figure the balance uses.
+            'openings_home_total' => $this->relationLoaded('openings')
+                ? round($this->openings->sum(function ($opening) {
+                    $line = $opening->transaction?->lines?->first();
+                    $amount = ($line?->credit ?? 0) > 0 ? $line->credit : ($line?->debit ?? 0);
+
+                    return (float) $amount * (float) ($opening->transaction?->rate ?? 1);
+                }), 4)
+                : 0,
         ];
     }
 }

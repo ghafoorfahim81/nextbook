@@ -3,12 +3,14 @@ import AppLayout from '@/Layouts/Layout.vue';
 import NextInput from '@/Components/next/NextInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
 import NextTextarea from "@/Components/next/NextTextarea.vue";
+import LedgerOpeningRows from '@/Components/ledger/LedgerOpeningRows.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
 import { toast } from 'vue-sonner';
+import { buildOpeningRows } from '@/utils/ledgerOpenings';
 const { t } = useI18n();
 
 
@@ -36,12 +38,13 @@ const form = useForm({
     address: '',
     currency_id: null,
     selected_currency: null,
-    selected_opening_currency: null,
-    opening_currency_id: null,
-    amount: '',
-    rate: '',
-    remark: '',
+    // One row per currency; blank rows are discarded server-side.
+    openings: buildOpeningRows(props.currencies, [], props.homeCurrency),
 })
+
+const resetOpeningRows = () => {
+    form.openings = buildOpeningRows(props.currencies, [], props.homeCurrency);
+};
 
 const applyHomeCurrencyDefaults = () => {
     if (!props.homeCurrency) {
@@ -51,15 +54,13 @@ const applyHomeCurrencyDefaults = () => {
     if (!form.currency_id) {
         form.currency_id = props.homeCurrency.id;
     }
-
-    if (!form.opening_currency_id) {
-        form.selected_opening_currency = props.homeCurrency;
-        form.opening_currency_id = props.homeCurrency.id;
-        form.rate = props.homeCurrency.exchange_rate ?? 1;
-    }
 };
 
-watch(() => props.homeCurrency, applyHomeCurrencyDefaults, { immediate: true });
+watch(() => props.homeCurrency, () => {
+    applyHomeCurrencyDefaults();
+    resetOpeningRows();
+}, { immediate: true });
+watch(() => props.currencies, resetOpeningRows);
 watch(() => props.nextCode, (nextCode) => {
     if (nextCode) {
         form.code = nextCode;
@@ -85,6 +86,7 @@ const handleSubmitAction = (createAndNew = false) => {
                 form.reset();
                 form.code = props.nextCode;
                 applyHomeCurrencyDefaults();
+                resetOpeningRows();
                 form.transform((d) => d);
             }
         },
@@ -103,21 +105,6 @@ const handleSubmitAction = (createAndNew = false) => {
 const handleCancel = () => {
     router.visit(route('suppliers.index'))
 }
-
-
-const handleSelectChange = (field, value) => {
-    if(field === 'currency_id') {
-        form.rate = value?.exchange_rate??0;
-        form.currency_id = value?.id;
-    }
-    else if(field === 'opening_currency_id') {
-        form.rate = value?.exchange_rate??0;
-        form.opening_currency_id = value?.id;
-    }
-    else{
-        form[field] = value;
-    }
-};
 </script>
 
 <template>
@@ -149,31 +136,15 @@ const handleSelectChange = (field, value) => {
                     />
 
                 </div>
-                <div class="md:col-span-3 mt-4">
-                    <div class="pt-2">
-                        <span class="font-bold">{{ t('item.opening') }}</span>
-                        <div class="mt-3">
-                            <div class="grid grid-cols-4 gap-2">
-                                <NextSelect
-                                :options="currencies.data"
-                                v-model="form.selected_opening_currency"
-                                label-key="code"
-                                value-key="id"
-                                @update:modelValue="(value) => handleSelectChange('opening_currency_id', value)"
-                                :reduce="currency => currency"
-                                :floating-text="t('admin.currency.currency')"
-                                :error="form.errors?.opening_currency_id"
-                                :searchable="true"
-                                resource-type="currencies"
-                                :search-fields="['name', 'code', 'symbol']"
-                                 />
-                                <NextInput placeholder="Rate" :disabled="form.opening_currency_id === homeCurrency.id" :error="form.errors?.rate" type="number" step="any" v-model="form.rate" :label="t('general.rate')" />
-                                <NextInput placeholder="Amount" :error="form.errors?.amount" type="number" step="any" v-model="form.amount" :label="t('general.amount')" />
-                                <NextInput :placeholder="t('general.enter', { text: t('general.remark') })" :error="form.errors?.remark" v-model="form.remark" :label="t('general.remark')" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            </div>
+
+            <div class="mb-5">
+                <LedgerOpeningRows
+                    v-model="form.openings"
+                    :currencies="currencies"
+                    :home-currency="homeCurrency"
+                    :errors="form.errors"
+                />
             </div>
 
             <progress v-if="form.progress" :value="form.progress.percentage" max="100">

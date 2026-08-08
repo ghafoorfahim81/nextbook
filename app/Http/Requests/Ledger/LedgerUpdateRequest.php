@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Ledger;
 
+use App\Http\Requests\Ledger\Concerns\ValidatesLedgerOpenings;
 use Illuminate\Foundation\Http\FormRequest;
 
 class LedgerUpdateRequest extends FormRequest
 {
+    use ValidatesLedgerOpenings;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -27,11 +30,8 @@ class LedgerUpdateRequest extends FormRequest
             'phone_no' => ['nullable', 'string'],
             'email' => ['nullable', 'email'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
-            'opening_currency_id' => ['nullable', 'string', 'exists:currencies,id'],
-            'rate' => ['nullable', 'numeric','required_with:opening_currency_id'],
-            'amount' => ['nullable', 'numeric'],
-            'remark' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
+            ...$this->openingRules(),
         ];
     }
 }

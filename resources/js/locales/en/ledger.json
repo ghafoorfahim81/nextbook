@@ -9,5 +9,13 @@
         "customer": "Customer",
         "customers": "Customers"
     },
-    "contact_person": "Contact Person"
+    "contact_person": "Contact Person",
+    "opening": {
+        "title": "Opening Balances",
+        "hint": "Enter an amount against each currency this party already owes or is owed in. Leave a currency blank to skip it.",
+        "home": "Home",
+        "home_equivalent": "Equivalent ({code})",
+        "currencies_used": "Currencies with a balance: {count}",
+        "total_note": "Total, converted to {code} at each row's rate"
+    }
 }
