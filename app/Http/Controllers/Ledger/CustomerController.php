@@ -79,7 +79,7 @@ class CustomerController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(Request $request)
     {
         return inertia('Ledgers/Customers/Create', [
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
@@ -88,7 +88,7 @@ class CustomerController extends Controller
             'paymentTerms' => PaymentTerm::query()->orderBy('name')->get(),
             'countries' => Country::query()->orderBy('name_en')->get(),
             'provinces' => Province::query()->orderBy('name_en')->get(),
-            'nextCode' => $this->nextCode(),
+            'nextCode' => $this->nextCode($request->user()?->branch_id),
             'accountTypes' => [],
         ]);
     }
@@ -100,7 +100,7 @@ class CustomerController extends Controller
     {
         $validated = $request->validated();
         $validated['type'] = 'customer';
-        $validated['code'] = $validated['code'] ?: $this->nextCode();
+        $validated['code'] = $validated['code'] ?: $this->nextCode($request->user()?->branch_id);
         $validated['is_active'] = $validated['is_active'] ?? true;
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('ledgers/photos', 'public');
@@ -602,16 +602,17 @@ class CustomerController extends Controller
         ]);
     }
 
-    protected function nextCode(): string
+    protected function nextCode(?string $branchId): string
     {
-        $latest = Ledger::query()
+        $latestNumber = Ledger::query()
             ->where('type', 'customer')
-            ->where('branch_id', auth()->user()?->branch_id)
-            ->where('code', 'like', 'CUST-%')
-            ->max('code');
+            ->where('branch_id', $branchId)
+            ->whereRaw('code ~ ?', ['^(CUST-)?[0-9]+$'])
+            ->selectRaw("MAX(CAST(REGEXP_REPLACE(code, '^CUST-', '') AS INTEGER)) as max_code")
+            ->value('max_code');
 
-        $number = $latest ? ((int) str_replace('CUST-', '', $latest)) + 1 : 1;
+        $number = ((int) $latestNumber) + 1;
 
-        return 'CUST-' . str_pad((string) $number, 6, '0', STR_PAD_LEFT);
+        return 'CUST-' . str_pad((string) $number, 3, '0', STR_PAD_LEFT);
     }
 }

@@ -40,6 +40,8 @@ class LedgerUpdateRequest extends FormRequest
             'discount' => ['nullable', 'numeric', 'min:0'],
             'whatsapp_number' => ['nullable', 'digits_between:1,10'],
             'rate' => ['nullable', 'numeric'],
+            'opening_currency_id' => ['nullable', 'string', 'exists:currencies,id'],
+            'rate' => ['nullable', 'numeric','required_with:opening_currency_id'],
             'amount' => ['nullable', 'numeric'],
             'remark' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
