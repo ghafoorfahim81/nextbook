@@ -190,8 +190,9 @@ class SupplierController extends Controller
             default => $spreadsheetExportService->localeTranslation('purchase', 'purchases', 'Purchases'),
         };
 
-        $entityLabel = $spreadsheetExportService->localeTranslation('ledger', 'supplier.supplier', 'Supplier');
-        $sheetTitle = $entityLabel . ' ' . $moduleLabel;
+        // Name the party in the heading rather than repeating the generic
+        // "Supplier" label, which the module label already carries.
+        $sheetTitle = $moduleLabel . ' ' . $supplier->name;
 
         $payload = [
             'filename' => Str::slug($supplier->name . '-' . $sheetTitle) . '-' . now()->format('Ymd-His') . '.xlsx',
