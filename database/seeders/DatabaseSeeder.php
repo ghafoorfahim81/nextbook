@@ -18,6 +18,7 @@ use Database\Seeders\Administration\UserSeeder;
 use Database\Seeders\Administration\CompanySeeder;
 use Database\Seeders\Account\AccountTypeSeeder;
 use Database\Seeders\Administration\CurrencySeeder;
+use Database\Seeders\Administration\ReferenceDataSeeder;
 use Database\Seeders\Inventory\ItemSeeder;
 use Database\Seeders\Ledger\LedgerSeeder;
 use Database\Seeders\Purchase\PurchaseSeeder;
@@ -46,6 +47,7 @@ class DatabaseSeeder extends Seeder
             // $this->call(BrandSeeder::class);
             $this->call(AccountTypeSeeder::class);
             $this->call(CurrencySeeder::class);
+            $this->call(ReferenceDataSeeder::class);
             $this->call(LedgerSeeder::class);
             $this->call(AccountSeeder::class);
             $this->call(RolePermissionSeeder::class);
@@ -59,6 +61,7 @@ class DatabaseSeeder extends Seeder
             $this->call(UserSeeder::class);
             $this->call(WarehouseSeeder::class);
             $this->call(CurrencySeeder::class);
+            $this->call(ReferenceDataSeeder::class);
             $this->call(UnitMeasureSeeder::class);
             $this->call(LedgerSeeder::class);
             $this->call(AccountTypeSeeder::class);

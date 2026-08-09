@@ -37,6 +37,8 @@ class RolePermissionSeeder extends Seeder
 
             'items',
             'categories',
+            'customer_groups',
+            'payment_terms',
             'currencies',
             'unit_measures',
             'sizes',

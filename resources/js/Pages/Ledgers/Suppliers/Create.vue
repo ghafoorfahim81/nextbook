@@ -1,18 +1,20 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
 import NextInput from '@/Components/next/NextInput.vue';
+import NextPhoneInput from '@/Components/next/NextPhoneInput.vue';
 import NextSelect from '@/Components/next/NextSelect.vue';
-import NextTextarea from "@/Components/next/NextTextarea.vue";
 import LedgerOpeningRows from '@/Components/ledger/LedgerOpeningRows.vue';
 import SubmitButtons from '@/Components/SubmitButtons.vue';
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
+import AttachmentUploader from '@/Components/AttachmentUploader.vue';
+import { Switch } from '@/Components/ui/switch';
+import { Label } from '@/Components/ui/label';
 import { useForm, router } from '@inertiajs/vue3';
 import { useI18n } from 'vue-i18n';
 import { ref, computed, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import { buildOpeningRows } from '@/utils/ledgerOpenings';
 const { t } = useI18n();
-
 
 const props = defineProps({
     currencies: {
@@ -23,6 +25,10 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+    customerGroups: { type: Array, default: () => [] },
+    paymentTerms: { type: Array, default: () => [] },
+    countries: { type: Array, default: () => [] },
+    provinces: { type: Array, default: () => [] },
     nextCode: {
         type: String,
         default: '',
@@ -33,14 +39,35 @@ const form = useForm({
     name: '',
     code: props.nextCode,
     phone_no: '',
+    whatsapp_number: '',
     contact_person: '',
     email: '',
     address: '',
     currency_id: null,
     selected_currency: null,
+    group_id: null,
+    payment_term_id: null,
+    country_id: null,
+    province_id: null,
+    credit_limit: null,
+    credit_limit_enabled: false,
+    credit_terms: 'warning',
+    discount: null,
+    attachments: [],
     // One row per currency; blank rows are discarded server-side.
     openings: buildOpeningRows(props.currencies, [], props.homeCurrency),
 })
+
+const creditTermOptions = computed(() => [
+    { id: 'strict', name: t('ledger.credit_terms_strict') },
+    { id: 'warning', name: t('ledger.credit_terms_warning') },
+    { id: 'flexible', name: t('ledger.credit_terms_flexible') },
+]);
+
+// Provinces are country-scoped; show only the ones belonging to the picked country.
+const availableProvinces = computed(() => props.provinces.filter(
+    (province) => !form.country_id || province.country_id === form.country_id,
+));
 
 const resetOpeningRows = () => {
     form.openings = buildOpeningRows(props.currencies, [], props.homeCurrency);
@@ -116,11 +143,12 @@ const handleCancel = () => {
                     {{ t('general.create', { name: t('ledger.supplier.supplier') }) }}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-                    <NextInput :label="t('general.name')" v-model="form.name" :error="form.errors?.name" :placeholder="t('general.enter', { text: t('general.name') })" />
+                    <NextInput is-required :label="t('general.name')" v-model="form.name" :error="form.errors?.name" :placeholder="t('general.enter', { text: t('general.name') })" />
                     <NextInput :label="t('admin.currency.code')" v-model="form.code" :error="form.errors?.code" :placeholder="t('general.enter', { text: t('admin.currency.code') })" />
                     <NextInput :label="t('ledger.contact_person')" v-model="form.contact_person" :error="form.errors?.contact_person" :placeholder="t('general.enter', { text: t('ledger.contact_person') })" />
                     <NextInput :label="t('general.email')" v-model="form.email" :error="form.errors?.email" :placeholder="t('general.enter', { text: t('general.email') })" />
-                    <NextInput :label="t('general.phone')" v-model="form.phone_no" :error="form.errors?.phone_no" :placeholder="t('general.enter', { text: t('general.phone') })" />
+                    <NextPhoneInput :label="t('general.phone')" v-model="form.phone_no" :error="form.errors?.phone_no" />
+                    <NextPhoneInput :label="t('ledger.whatsapp_number')" v-model="form.whatsapp_number" :error="form.errors?.whatsapp_number" />
                     <NextInput :label="t('general.address')" v-model="form.address" :error="form.errors?.address" :placeholder="t('general.enter', { text: t('general.address') })" />
                     <NextSelect
                         :options="currencies.data"
@@ -134,7 +162,30 @@ const handleCancel = () => {
                         :search-fields="['name', 'code', 'symbol']"
                         :error="form.errors.currency_id"
                     />
+                    <NextSelect :options="customerGroups" v-model="form.group_id" label-key="localized_name" value-key="id" :floating-text="t('ledger.customer_group')" :searchable="true" :error="form.errors?.group_id" />
+                    <NextSelect :options="paymentTerms" v-model="form.payment_term_id" label-key="name" value-key="id" :floating-text="t('ledger.payment_term')" :searchable="true" :error="form.errors?.payment_term_id" />
+                    <NextSelect :options="countries" v-model="form.country_id" label-key="localized_name" value-key="id" :floating-text="t('ledger.country')" :searchable="true" :error="form.errors?.country_id" />
+                    <NextSelect :options="availableProvinces" v-model="form.province_id" label-key="localized_name" value-key="id" :floating-text="t('ledger.province')" :searchable="true" :error="form.errors?.province_id" />
+                    <NextInput type="number" step="any" :label="t('ledger.discount')" v-model="form.discount" :error="form.errors?.discount" />
+                    <div class="flex items-center gap-2">
+                        <Switch id="credit_limit_enabled" v-model="form.credit_limit_enabled" />
+                        <Label for="credit_limit_enabled" class="cursor-pointer">{{ t('ledger.credit_limit_enabled') }}</Label>
+                    </div>
+                    <NextInput v-if="form.credit_limit_enabled" type="number" step="any" :label="t('ledger.credit_limit')" v-model="form.credit_limit" :error="form.errors?.credit_limit" />
+                    <NextSelect
+                        v-if="form.credit_limit_enabled"
+                        :options="creditTermOptions"
+                        v-model="form.credit_terms"
+                        label-key="name"
+                        value-key="id"
+                        :clearable="false"
+                        :floating-text="t('ledger.credit_terms')"
+                        :error="form.errors?.credit_terms"
+                    />
+                </div>
 
+                <div class="mt-4">
+                    <AttachmentUploader v-model="form.attachments" :label="t('general.attachments')" :error="form.errors['attachments.0']" />
                 </div>
             </div>
 

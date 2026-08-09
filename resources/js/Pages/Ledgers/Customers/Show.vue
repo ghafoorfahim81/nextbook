@@ -4,10 +4,14 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3';
 import { Button } from '@/Components/ui/button';
-import { ArrowLeft, SquarePen, Printer } from 'lucide-vue-next';
+import { ArrowLeft, SquarePen, Printer, Hash, Mail, Phone, MessageCircle } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue';
 import LedgerStatement from '@/Components/ledger/LedgerStatement.vue';
+import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus';
+import { getCreditSummary } from '@/composables/useCreditLimit';
+import AttachmentList from '@/Components/AttachmentList.vue';
+import PhotoUpload from '@/Components/next/PhotoUpload.vue';
 
 const props = defineProps({
     customer: { type: Object, required: true },
@@ -33,6 +37,8 @@ const paymentRows = computed(() => props.payments?.data ?? props.payments ?? [])
 
 const activeMainTab = ref('general');
 const activeTxnTab = ref('sales');
+const photo = ref(null);
+const photoError = ref('');
 
 const formatAmount = (value) => {
     if (value === null || value === undefined) return '-';
@@ -49,6 +55,43 @@ const openPrint = (routeName, id) => {
     window.open(route(routeName, id), '_blank');
 };
 
+const openTransaction = (routeName, id) => {
+    if (routeName && id) router.visit(route(routeName, id));
+};
+
+const uploadPhoto = (file) => {
+    if (!file || !customerData.value.id) return;
+
+    photo.value = file;
+    photoError.value = '';
+    router.post(route('customers.photo.update', customerData.value.id), { photo: file }, {
+        forceFormData: true,
+        preserveScroll: true,
+        onError: (errors) => { photoError.value = errors.photo ?? ''; },
+        onFinish: () => { photo.value = null; },
+    });
+};
+
+const creditTermsLabel = (terms) => {
+    if (terms === 'strict') return t('ledger.credit_terms_strict');
+    if (terms === 'warning') return t('ledger.credit_terms_warning');
+    if (terms === 'flexible') return t('ledger.credit_terms_flexible');
+    return '-';
+};
+
+const currencyCode = computed(() => customerData.value.currency?.code || customerData.value.currency?.name || '');
+const creditSummary = computed(() => getCreditSummary(customerData.value));
+
+const createTransactionRoute = (type) => {
+    const id = customerData.value.id;
+    const routes = {
+        sales: route('sales.create', { customer_id: id }),
+        receipts: route('receipts.create', { ledger_id: id }),
+        payments: route('payments.create', { ledger_id: id }),
+    };
+    return routes[type];
+};
+
 const customerSalesTableRows = computed(() => salesRows.value.map((row) => ({
     id: row.id,
     number: row.number || row.reference_id || row.id,
@@ -56,8 +99,10 @@ const customerSalesTableRows = computed(() => salesRows.value.map((row) => ({
     type: row.type || '-',
     amount: row.amount,
     status: row.payment_status_label || row.payment_status || '-',
+    payment_status: row.payment_status,
     description: row.description || '-',
     printRoute: 'sales.print',
+    showRoute: 'sales.show',
 })));
 
 const customerReceiptTableRows = computed(() => receiptRows.value.map((row) => ({
@@ -70,6 +115,7 @@ const customerReceiptTableRows = computed(() => receiptRows.value.map((row) => (
     payment_mode: row.payment_mode_label || row.payment_mode || '-',
     description: row.narration || row.description || '-',
     printRoute: 'receipts.print',
+    showRoute: 'receipts.show',
 })));
 
 const customerPaymentTableRows = computed(() => paymentRows.value.map((row) => ({
@@ -82,6 +128,7 @@ const customerPaymentTableRows = computed(() => paymentRows.value.map((row) => (
     payment_mode: row.payment_mode_label || row.payment_mode || '-',
     description: row.narration || row.description || '-',
     printRoute: 'payments.print',
+    showRoute: 'payments.show',
 })));
 
 const customerSalesColumns = computed(() => [
@@ -161,46 +208,77 @@ const customerMovementColumns = computed(() => [
 
             <!-- GENERAL TAB -->
             <div v-if="activeMainTab === 'general'" class="space-y-4">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <!-- Left: avatar + statement -->
-                    <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-4 flex flex-col items-center gap-4">
-                        <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white text-2xl font-bold">
-                            {{ (customerData.name || '').charAt(0).toUpperCase() }}
-                        </div>
-                        <div class="text-center">
-                            <div class="text-lg font-semibold text-primary">
-                                {{ customerData.name }}
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:items-start">
+                    <!-- Left column: profile, contact and statement cards -->
+                    <div class="space-y-4 lg:self-start">
+                        <!-- Profile card -->
+                        <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-5 flex flex-col items-center gap-3">
+                            <PhotoUpload
+                                v-if="can('customers.update')"
+                                :model-value="photo"
+                                :current="customerData.photo_url"
+                                :error="photoError"
+                                :show-remove="false"
+                                @update:model-value="uploadPhoto"
+                            />
+                            <div v-else class="w-20 h-20 overflow-hidden rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 flex items-center justify-center text-white text-2xl font-bold">
+                                <img v-if="customerData.photo_url" :src="customerData.photo_url" alt="" class="h-full w-full object-cover" />
+                                <template v-else>{{ (customerData.name || '').charAt(0).toUpperCase() }}</template>
                             </div>
-                            <div class="text-xs text-muted-foreground mt-1">
-                                {{ customerData.code }}
-                            </div>
-                            <div class="mt-2 text-xs text-muted-foreground/70">
-                                {{ t('ledger.customer.customer') }}
+                            <div class="text-center">
+                                <div class="text-lg font-semibold text-primary">{{ customerData.name }}</div>
+                                <div class="mt-1 text-xs text-muted-foreground/70">{{ t('ledger.customer.customer') }}</div>
                             </div>
                         </div>
 
-                        <!-- Statement summary -->
-                        <div class="w-full grid grid-cols-3 gap-2 mt-4">
-                            <div class="border border-border rounded-lg px-3 py-2 text-center bg-background">
-                                <div class="text-xs text-muted-foreground">{{ t('general.credit') }}</div>
-                                <div class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                                    {{  (statement.total_credit) }}
-                                </div>
-                            </div> 
-                            <div class="border border-border rounded-lg px-3 py-2 text-center bg-background">
-                                <div class="text-xs text-muted-foreground">{{ t('general.debit') }}</div>
-                                <div class="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                                    {{  (statement.total_debit) }}
-                                </div>
+                        <!-- Contact card -->
+                        <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border divide-y divide-border overflow-hidden">
+                            <div class="flex items-center gap-3 px-4 py-2.5">
+                                <Hash class="h-4 w-4 shrink-0 text-violet-500" />
+                                <span class="text-sm font-medium text-foreground">{{ customerData.code || '-' }}</span>
                             </div>
-                            <div class="border border-border rounded-lg px-3 py-2 text-center bg-background">
-                                <div class="text-xs text-muted-foreground">{{ t('general.balance') }}</div>
-                                <div class="text-sm font-semibold"
-                                    :class="statement.balance_nature === 'cr'
-                                        ? 'text-emerald-600 dark:text-emerald-400'
-                                        : 'text-blue-600 dark:text-blue-400'">
-                                    {{  (statement.balance) }} 
-                                </div>
+                            <a
+                                :href="customerData.phone_no ? `tel:${customerData.phone_no}` : undefined"
+                                class="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
+                            >
+                                <Phone class="h-4 w-4 shrink-0 text-emerald-500" />
+                                <span class="text-sm text-foreground">{{ customerData.phone_no || '-' }}</span>
+                            </a>
+                            <a
+                                v-if="customerData.whatsapp_number"
+                                :href="`https://wa.me/${String(customerData.whatsapp_number).replace(/[^0-9]/g, '')}`"
+                                target="_blank"
+                                rel="noopener"
+                                class="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
+                            >
+                                <MessageCircle class="h-4 w-4 shrink-0 text-green-500" />
+                                <span class="text-sm text-foreground">{{ customerData.whatsapp_number }}</span>
+                            </a>
+                            <a
+                                :href="customerData.email ? `mailto:${customerData.email}` : undefined"
+                                class="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
+                            >
+                                <Mail class="h-4 w-4 shrink-0 text-blue-500" />
+                                <span class="truncate text-sm text-foreground">{{ customerData.email || '-' }}</span>
+                            </a>
+                        </div>
+
+                        <!-- Statement card -->
+                        <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border divide-y divide-border overflow-hidden">
+                            <div class="flex items-center justify-between px-4 py-2.5">
+                                <span class="text-sm text-muted-foreground">{{ t('general.credit') }}</span>
+                                <span class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{{ statement.total_credit }}</span>
+                            </div>
+                            <div class="flex items-center justify-between px-4 py-2.5">
+                                <span class="text-sm text-muted-foreground">{{ t('general.debit') }}</span>
+                                <span class="text-sm font-semibold text-blue-600 dark:text-blue-400">{{ statement.total_debit }}</span>
+                            </div>
+                            <div class="flex items-center justify-between px-4 py-2.5">
+                                <span class="text-sm text-muted-foreground">{{ t('general.balance') }}</span>
+                                <span
+                                    class="text-sm font-semibold"
+                                    :class="statement.balance_nature === 'cr' ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'"
+                                >{{ statement.balance }}</span>
                             </div>
                         </div>
                     </div>
@@ -229,6 +307,38 @@ const customerMovementColumns = computed(() => [
                                 <div class="font-medium text-foreground">{{ customerData.currency?.name || '' }}</div>
                             </div>
                             <div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.customer_group') }}</div>
+                                <div class="font-medium text-foreground">{{ customerData.group?.localized_name || '-' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.payment_term') }}</div>
+                                <div class="font-medium text-foreground">{{ customerData.payment_term?.name || '-' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.country') }}</div>
+                                <div class="font-medium text-foreground">{{ customerData.country?.localized_name || '-' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.province') }}</div>
+                                <div class="font-medium text-foreground">{{ customerData.province?.localized_name || '-' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.whatsapp_number') }}</div>
+                                <div class="font-medium text-foreground">{{ customerData.whatsapp_number || '-' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.credit_limit') }}</div>
+                                <div class="font-medium text-foreground">{{ customerData.credit_limit ?? '-' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.credit_terms') }}</div>
+                                <div class="font-medium text-foreground">{{ creditTermsLabel(customerData.credit_terms) }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('ledger.discount') }}</div>
+                                <div class="font-medium text-foreground">{{ customerData.discount ?? '-' }}</div>
+                            </div>
+                            <div>
                                 <div class="text-xs text-muted-foreground">{{ t('general.branch') }}</div>
                                 <div class="font-medium text-foreground">{{ customerData.branch?.name || '' }}</div>
                             </div>
@@ -236,8 +346,67 @@ const customerMovementColumns = computed(() => [
                                 <div class="text-xs text-muted-foreground">{{ t('general.address') }}</div>
                                 <div class="font-medium text-foreground">{{ customerData.address }}</div>
                             </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('general.created_by') }}</div>
+                                <div class="font-medium text-foreground">{{ customerData.created_by?.name || '-' }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('general.updated_by') }}</div>
+                                <div class="font-medium text-foreground">{{ customerData.updated_by?.name || '-' }}</div>
+                            </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Credit summary (only when credit limit tracking is enabled) -->
+                <div
+                    v-if="creditSummary.enabled"
+                    class="rounded-xl border p-5 shadow-sm"
+                    :class="creditSummary.classes.card"
+                >
+                    <div class="mb-4 flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-foreground">{{ t('ledger.credit_summary') }}</h3>
+                        <span class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium" :class="creditSummary.classes.badge">
+                            {{ creditSummary.classes.dot }} {{ creditTermsLabel(creditSummary.terms) }}
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div>
+                            <div class="text-xs text-muted-foreground">{{ t('ledger.credit_limit') }}</div>
+                            <div class="mt-1 text-lg font-semibold text-foreground">{{ formatAmount(creditSummary.limit) }} {{ currencyCode }}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-muted-foreground">{{ t('ledger.current_balance') }}</div>
+                            <div class="mt-1 text-lg font-semibold text-foreground">{{ formatAmount(creditSummary.used) }} {{ currencyCode }}</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-muted-foreground">{{ t('ledger.available_credit') }}</div>
+                            <div class="mt-1 text-lg font-bold" :class="creditSummary.classes.text">{{ formatAmount(creditSummary.available) }} {{ currencyCode }}</div>
+                        </div>
+                    </div>
+                    <!-- Utilization bar: how much of the limit is used -->
+                    <div class="mt-4">
+                        <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+                            <div
+                                class="h-full rounded-full transition-all"
+                                :class="creditSummary.level === 'red' ? 'bg-red-500' : creditSummary.level === 'yellow' ? 'bg-amber-500' : 'bg-green-500'"
+                                :style="{ width: Math.min(100, Math.max(0, creditSummary.limit > 0 ? (creditSummary.used / creditSummary.limit) * 100 : 0)) + '%' }"
+                            ></div>
+                        </div>
+                        <div class="mt-1 flex justify-between text-xs text-muted-foreground">
+                            <span>{{ t('ledger.used') }}: {{ formatAmount(creditSummary.used) }}</span>
+                            <span>{{ Math.round(creditSummary.limit > 0 ? (creditSummary.used / creditSummary.limit) * 100 : 0) }}%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attachments -->
+                <div
+                    v-if="customerData.attachments && customerData.attachments.length"
+                    class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-5"
+                >
+                    <h3 class="mb-3 text-sm font-semibold text-foreground">{{ t('general.attachments') }}</h3>
+                    <AttachmentList :items="customerData.attachments" />
                 </div>
 
                 <!-- Sales / Receipts / Payments tables -->
@@ -283,12 +452,20 @@ const customerMovementColumns = computed(() => [
                         :empty-message="t('general.no_data_found')"
                         :export-url="exportUrl('sales')"
                         :export-label="t('report.export_excel')"
+                        :add-route="createTransactionRoute('sales')"
+                        :add-label="t('general.add_new')"
                         :row-number-label="t('report.columns.no')"
                         default-sort-key="date"
                         default-sort-direction="desc"
+                        @row-click="openTransaction($event.showRoute, $event.id)"
                     >
+                        <template #cell-status="{ row }">
+                            <span :class="[PAYMENT_STATUS_BADGE_BASE, paymentStatusBadgeClass(row.payment_status)]">
+                                {{ row.status }}
+                            </span>
+                        </template>
                         <template #cell-actions="{ row }">
-                            <Button variant="outline" size="icon" :title="t('datatable.print')" @click="openPrint(row.printRoute, row.id)">
+                            <Button variant="outline" size="icon" :title="t('datatable.print')" @click.stop="openPrint(row.printRoute, row.id)">
                                 <Printer class="h-4 w-4" />
                             </Button>
                         </template>
@@ -301,12 +478,15 @@ const customerMovementColumns = computed(() => [
                         :empty-message="t('general.no_data_found')"
                         :export-url="exportUrl('receipts')"
                         :export-label="t('report.export_excel')"
+                        :add-route="createTransactionRoute('receipts')"
+                        :add-label="t('general.add_new')"
                         :row-number-label="t('report.columns.no')"
                         default-sort-key="date"
                         default-sort-direction="desc"
+                        @row-click="openTransaction($event.showRoute, $event.id)"
                     >
                         <template #cell-actions="{ row }">
-                            <Button variant="outline" size="icon" :title="t('datatable.print')" @click="openPrint(row.printRoute, row.id)">
+                            <Button variant="outline" size="icon" :title="t('datatable.print')" @click.stop="openPrint(row.printRoute, row.id)">
                                 <Printer class="h-4 w-4" />
                             </Button>
                         </template>
@@ -319,12 +499,15 @@ const customerMovementColumns = computed(() => [
                         :empty-message="t('general.no_data_found')"
                         :export-url="exportUrl('payments')"
                         :export-label="t('report.export_excel')"
+                        :add-route="createTransactionRoute('payments')"
+                        :add-label="t('general.add_new')"
                         :row-number-label="t('report.columns.no')"
                         default-sort-key="date"
                         default-sort-direction="desc"
+                        @row-click="openTransaction($event.showRoute, $event.id)"
                     >
                         <template #cell-actions="{ row }">
-                            <Button variant="outline" size="icon" :title="t('datatable.print')" @click="openPrint(row.printRoute, row.id)">
+                            <Button variant="outline" size="icon" :title="t('datatable.print')" @click.stop="openPrint(row.printRoute, row.id)">
                                 <Printer class="h-4 w-4" />
                             </Button>
                         </template>

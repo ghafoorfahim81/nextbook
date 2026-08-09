@@ -19,6 +19,8 @@
   },
   "administration": {
     "category": "کټګوري",
+    "customer_group": "د پېرودونکو ډله",
+    "payment_term": "د تادیې شرط",
     "currency": "اسعار",
     "currency_rate_update": "د اسعارو نرخ تازه کول",
     "unit_measure": "یونټ اندازه",

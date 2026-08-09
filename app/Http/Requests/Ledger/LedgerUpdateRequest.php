@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Ledger;
 
+use App\Enums\CreditTerms;
 use App\Http\Requests\Ledger\Concerns\ValidatesLedgerOpenings;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class LedgerUpdateRequest extends FormRequest
 {
@@ -27,9 +29,21 @@ class LedgerUpdateRequest extends FormRequest
             'code' => ['nullable', 'string'],
             'address' => ['nullable', 'string'],
             'contact_person' => ['nullable', 'string'],
-            'phone_no' => ['nullable', 'string'],
+            'phone_no' => ['nullable', 'digits_between:1,10'],
             'email' => ['nullable', 'email'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
+            'group_id' => ['nullable', 'string', 'exists:customer_groups,id'],
+            'payment_term_id' => ['nullable', 'string', 'exists:payment_terms,id'],
+            'country_id' => ['nullable', 'string', 'exists:countries,id'],
+            'province_id' => ['nullable', 'string', 'exists:provinces,id'],
+            'credit_limit' => ['nullable', 'numeric', 'min:0'],
+            'credit_limit_enabled' => ['nullable', 'boolean'],
+            'credit_terms' => ['nullable', Rule::enum(CreditTerms::class)],
+            'discount' => ['nullable', 'numeric', 'min:0'],
+            'whatsapp_number' => ['nullable', 'digits_between:1,10'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
             'is_active' => ['nullable', 'boolean'],
             ...$this->openingRules(),
         ];

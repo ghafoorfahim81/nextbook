@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { Dialog, DialogContent } from '@/Components/ui/dialog'
 import { Button } from '@/Components/ui/button'
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue'
+import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus'
 import { Printer, UserStar } from 'lucide-vue-next'
 
 const { t } = useI18n()
@@ -71,6 +72,7 @@ const salesTableRows = computed(() => sales.value.map((row) => ({
   type: row.type || '-',
   amount: row.amount,
   status: row.payment_status_label || row.payment_status || '-',
+  payment_status: row.payment_status,
   description: row.description || '-',
   printRoute: 'sales.print',
 })))
@@ -293,6 +295,11 @@ const closeDialog = () => {
                   default-sort-key="date"
                   default-sort-direction="desc"
                 >
+                  <template #cell-status="{ row }">
+                    <span :class="[PAYMENT_STATUS_BADGE_BASE, paymentStatusBadgeClass(row.payment_status)]">
+                      {{ row.status }}
+                    </span>
+                  </template>
                   <template #cell-actions="{ row }">
                     <Button variant="outline" size="sm" class="gap-2" @click="openPrint(row.printRoute, row.id)">
                       <Printer class="h-4 w-4" />

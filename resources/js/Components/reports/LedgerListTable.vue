@@ -1,10 +1,11 @@
 <script setup>
-import { computed, useSlots } from 'vue'
+import { computed, ref, useSlots } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { Download, ArrowUpDown } from 'lucide-vue-next'
+import { Download, ArrowUpDown, Plus } from 'lucide-vue-next'
 import { Button } from '@/Components/ui/button'
 import { Input } from '@/Components/ui/input'
+import NextDate from '@/Components/next/NextDatePicker.vue'
 import ReportDataTable from '@/Components/reports/ReportDataTable.vue'
 import { useClientTable } from '@/composables/useClientTable'
 
@@ -21,11 +22,23 @@ const props = defineProps({
   searchPlaceholder: { type: String, default: '' },
   subtitle: { type: String, default: '' },
   title: { type: String, default: '' },
+  addLabel: { type: String, default: '' },
+  addRoute: { type: String, default: '' },
+  dateFromLabel: { type: String, default: '' },
+  dateToLabel: { type: String, default: '' },
 })
 
 const { t, locale } = useI18n()
+const emit = defineEmits(['row-click'])
 
 const slots = useSlots()
+const dateFrom = ref('')
+const dateTo = ref('')
+const filteredRows = computed(() => (props.rows || []).filter((row) => {
+  const date = row.date
+  return (!dateFrom.value || date >= dateFrom.value)
+    && (!dateTo.value || date <= dateTo.value)
+}))
 
 const {
   search,
@@ -35,7 +48,7 @@ const {
   paginatedRows,
   pagination,
   setPage,
-} = useClientTable(computed(() => props.rows), {
+} = useClientTable(filteredRows, {
   defaultSortKey: props.defaultSortKey,
   defaultSortDirection: props.defaultSortDirection,
   perPage: props.perPage,
@@ -61,6 +74,12 @@ const exportTable = () => {
 
   window.location.href = props.exportUrl
 }
+
+const visitAddRoute = () => {
+  if (props.addRoute) {
+    window.location.href = props.addRoute
+  }
+}
 </script>
 
 <template>
@@ -75,13 +94,19 @@ const exportTable = () => {
         </p>
       </div>
 
-      <Button v-if="exportUrl" class="gap-2" @click="exportTable">
-        <Download class="h-4 w-4" />
-        {{ exportButtonLabel }}
-      </Button>
+      <div class="flex gap-2">
+        <Button v-if="addRoute" variant="outline" class="gap-2" @click="visitAddRoute">
+          <Plus class="h-4 w-4" />
+          {{ addLabel || t('general.add_new') }}
+        </Button>
+        <Button v-if="exportUrl" class="gap-2" @click="exportTable">
+          <Download class="h-4 w-4" />
+          {{ exportButtonLabel }}
+        </Button>
+      </div>
     </div>
 
-    <div class="grid gap-3 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_auto_auto]">
+    <div class="grid gap-3 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_auto_auto_auto_auto]">
       <Input
         v-model="search"
         :placeholder="searchLabel"
@@ -97,6 +122,9 @@ const exportTable = () => {
           {{ option.label }}
         </option>
       </select>
+
+      <NextDate v-model="dateFrom" :placeholder="dateFromLabel || t('general.from')" />
+      <NextDate v-model="dateTo" :placeholder="dateToLabel || t('general.to')" />
 
       <Button variant="outline" class="gap-2" @click="sortDirection = sortDirection === 'asc' ? 'desc' : 'asc'">
         <ArrowUpDown class="h-4 w-4" />
@@ -120,7 +148,9 @@ const exportTable = () => {
       :pagination="pagination"
       :empty-message="emptyMessage"
       :row-number-label="rowNumberLabel"
+      :row-clickable="true"
       @page-change="setPage"
+      @row-click="emit('row-click', $event)"
     >
       <template
         v-for="column in customCellColumns"
