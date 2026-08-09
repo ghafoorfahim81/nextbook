@@ -189,8 +189,9 @@ class CustomerController extends Controller
             default => $spreadsheetExportService->localeTranslation('sale', 'sales', 'Sales'),
         };
 
-        $entityLabel = $spreadsheetExportService->localeTranslation('ledger', 'customer.customer', 'Customer');
-        $sheetTitle = $entityLabel . ' ' . $moduleLabel;
+        // Name the party in the heading rather than repeating the generic
+        // "Customer" label, which the module label already carries.
+        $sheetTitle = $moduleLabel . ' ' . $customer->name;
 
         $payload = [
             'filename' => Str::slug($customer->name . '-' . $sheetTitle) . '-' . now()->format('Ymd-His') . '.xlsx',
