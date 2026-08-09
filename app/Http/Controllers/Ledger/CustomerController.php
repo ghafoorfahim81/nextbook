@@ -16,10 +16,18 @@ use App\Models\Ledger\Ledger;
 use App\Models\Transaction\Transaction;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Branch;
+use App\Models\Administration\Country;
+use App\Models\Administration\CustomerGroup;
+use App\Models\Administration\PaymentTerm;
+use App\Models\Administration\Province;
 use Illuminate\Http\Request;
+use App\Services\AttachmentService;
+use App\Services\DateConversionService;
 use App\Services\LedgerOpeningService;
 use App\Services\LedgerStatementService;
 use App\Services\TransactionService;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Transaction\TransactionLine;
 use Illuminate\Support\Facades\DB;
@@ -55,6 +63,10 @@ class CustomerController extends Controller
         $customers = Ledger::search($request->query('search'))
             ->where('type', $type) // Filter by type
             ->filter($filters)
+            ->with(['currency', 'branch', 'group', 'country', 'province'])
+            // Feeds the `statement` accessor so the list doesn't run one aggregate
+            // query per row.
+            ->withStatementTotals()
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
@@ -83,6 +95,7 @@ class CustomerController extends Controller
         return inertia('Ledgers/Customers/Create', [
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
             'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
+            ...$this->referenceData(),
             'nextCode' => $this->nextCode($request->user()?->branch_id),
             'accountTypes' => [],
         ]);
@@ -91,13 +104,25 @@ class CustomerController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(LedgerStoreRequest $request, LedgerOpeningService $ledgerOpeningService)
-    {
+    public function store(
+        LedgerStoreRequest $request,
+        LedgerOpeningService $ledgerOpeningService,
+        AttachmentService $attachmentService,
+    ) {
         $validated = $request->validated();
         $validated['type'] = 'customer';
         $validated['code'] = $validated['code'] ?: $this->nextCode($request->user()?->branch_id);
         $validated['is_active'] = $validated['is_active'] ?? true;
-        $ledger = Ledger::create($validated);
+
+        if ($request->hasFile('photo')) {
+            $validated['photo'] = $request->file('photo')->store('ledgers/photos', 'public');
+        }
+
+        $ledger = Ledger::create(Arr::except($validated, ['attachments']));
+
+        if ($request->hasFile('attachments')) {
+            $attachmentService->store($ledger, $request->file('attachments'));
+        }
 
         $ledgerOpeningService->sync($ledger, $validated['openings'] ?? []);
 
@@ -119,38 +144,107 @@ class CustomerController extends Controller
      */
     public function show(Request $request, Ledger $customer, LedgerStatementService $statementService)
     {
+        // Only the relations the Show page actually renders — the customer's whole
+        // transaction-line history was being eager-loaded before, which made pages
+        // for high-volume customers extremely slow.
         $customer->load([
             'currency',
+            'group',
+            'paymentTerm',
+            'country',
+            'province',
+            'createdBy',
+            'updatedBy',
             'openings',
             'openings.transaction.currency',
             'openings.transaction.lines',
-            'transactionLines.transaction',
-            'transactionLines.transaction.currency',
+            'attachments',
         ]);
 
-        $sales = $customer->sales->load('transaction.currency','items');
-        $receipts = $customer->receipts->load('transaction.currency');
-        $payments = $customer->payments->load('transaction.currency');
+        $lists = $this->transactionLists($customer);
 
         $ledgerStatement = $statementService->build($customer, $this->statementFilters($request));
 
         if ($request->expectsJson()) {
             return response()->json([
                 'customer' => new LedgerResource($customer),
-                'sales' => SaleResource::collection($sales),
-                'receipts' => ReceiptResource::collection($receipts),
-                'payments' => PaymentResource::collection($payments),
+                ...$lists,
                 'ledgerStatement' => $ledgerStatement,
             ]);
         }
 
         return inertia('Ledgers/Customers/Show', [
             'customer' => new LedgerResource($customer),
-            'sales' => SaleResource::collection($sales),
-            'receipts' => ReceiptResource::collection($receipts),
-            'payments' => PaymentResource::collection($payments),
+            ...$lists,
             'ledgerStatement' => $ledgerStatement,
         ]);
+    }
+
+    /**
+     * Lightweight sale/receipt/payment rows for the ledger Show page. Building full
+     * resources here triggered heavy per-row work (profit/cost, warehouse lookups,
+     * N+1 on the customer relation) that the summary tables never display.
+     *
+     * @return array{sales: array, receipts: array, payments: array}
+     */
+    protected function transactionLists(Ledger $ledger): array
+    {
+        $dateService = app(DateConversionService::class);
+
+        $typeLabel = function ($type) {
+            if ($type instanceof \App\Enums\SalePurchaseType) {
+                return $type->getLabel();
+            }
+
+            return \App\Enums\SalePurchaseType::tryFrom((string) $type)?->getLabel() ?? $type;
+        };
+
+        $sales = $ledger->sales()
+            ->with(['items:id,sale_id,quantity,unit_price,discount,tax'])
+            ->orderByDesc('date')->orderByDesc('id')->get()
+            ->map(fn ($s) => [
+                'id' => $s->id,
+                'number' => $s->number,
+                'date' => $dateService->toDisplay($s->date),
+                'type' => $typeLabel($s->type),
+                'amount' => $s->saleTotal(),
+                'payment_status' => $s->payment_status?->value,
+                'payment_status_label' => $s->payment_status?->getLabel(),
+                'description' => $s->description,
+            ])->all();
+
+        $mapMovement = fn ($m) => [
+            'id' => $m->id,
+            'number' => $m->number,
+            'date' => $dateService->toDisplay($m->date),
+            'amount' => $m->amount,
+            'currency_code' => $m->transaction?->currency?->code,
+            'rate' => $m->transaction?->rate ?? 0,
+            'payment_mode' => $m->payment_mode?->value,
+            'payment_mode_label' => $m->payment_mode?->getLabel(),
+            'narration' => $m->narration,
+        ];
+
+        $receipts = $ledger->receipts()->with('transaction.currency')
+            ->orderByDesc('date')->orderByDesc('id')->get()->map($mapMovement)->all();
+
+        $payments = $ledger->payments()->with('transaction.currency')
+            ->orderByDesc('date')->orderByDesc('id')->get()->map($mapMovement)->all();
+
+        return compact('sales', 'receipts', 'payments');
+    }
+
+    /**
+     * Lookup lists shared by the customer create and edit forms.
+     */
+    protected function referenceData(): array
+    {
+        return [
+            'customerGroups' => CustomerGroup::query()->orderBy('name_en')->get(),
+            'paymentTerms' => PaymentTerm::query()->orderBy('name')->get(),
+            'countries' => Country::query()->orderBy('name_en')->get(),
+            'provinces' => Province::query()->orderBy('name_en')->get(),
+        ];
     }
 
     public function export(
@@ -238,9 +332,15 @@ class CustomerController extends Controller
      */
     public function edit(Ledger $customer)
     {
-        $customer->load(['currency', 'openings', 'openings.transaction.currency', 'openings.transaction.lines']);
+        $customer->load([
+            'currency', 'group', 'paymentTerm', 'country', 'province',
+            'openings', 'openings.transaction.currency', 'openings.transaction.lines',
+            'attachments',
+        ]);
+
         return inertia('Ledgers/Customers/Edit', [
             'customer' => new LedgerResource($customer),
+            ...$this->referenceData(),
         ]);
     }
 
@@ -315,13 +415,57 @@ class CustomerController extends Controller
     }
 
     /**
+     * Replace just the profile photo, from the inline uploader on the Show page.
+     */
+    public function updatePhoto(Request $request, Ledger $customer)
+    {
+        $this->authorize('update', $customer);
+        abort_unless($customer->type?->value === 'customer', 404);
+
+        $request->validate([
+            'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        if ($customer->photo) {
+            Storage::disk('public')->delete($customer->photo);
+        }
+
+        $customer->update([
+            'photo' => $request->file('photo')->store('ledgers/photos', 'public'),
+        ]);
+
+        return back();
+    }
+
+    /**
      * Update the specified resource in storage.
      */
-    public function update(LedgerUpdateRequest $request, Ledger $customer, LedgerOpeningService $ledgerOpeningService)
-    {
+    public function update(
+        LedgerUpdateRequest $request,
+        Ledger $customer,
+        LedgerOpeningService $ledgerOpeningService,
+        AttachmentService $attachmentService,
+    ) {
         $validated = $request->validated();
         $validated['is_active'] = $validated['is_active'] ?? true;
-        $customer->update($validated);
+
+        // A form without a new upload posts no `photo` key at all, so the existing
+        // one must not be cleared.
+        $attributes = Arr::except($validated, ['attachments', 'photo']);
+
+        if ($request->hasFile('photo')) {
+            if ($customer->photo) {
+                Storage::disk('public')->delete($customer->photo);
+            }
+
+            $attributes['photo'] = $request->file('photo')->store('ledgers/photos', 'public');
+        }
+
+        $customer->update($attributes);
+
+        if ($request->hasFile('attachments')) {
+            $attachmentService->store($customer, $request->file('attachments'));
+        }
 
         // Openings are rebuilt wholesale rather than diffed: the form always posts
         // the party's complete set, one row per currency.

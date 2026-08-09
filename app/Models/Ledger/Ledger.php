@@ -2,16 +2,24 @@
 
 namespace App\Models\Ledger;
 
+use App\Enums\CreditTerms;
 use App\Models\Administration\Branch;
+use App\Models\Administration\Country;
+use App\Models\Administration\CustomerGroup;
+use App\Models\Administration\PaymentTerm;
+use App\Models\Administration\Province;
 use App\Models\Ledger\LedgerOpening;
 use App\Models\Sale\Sale;
 use App\Models\Receipt\Receipt;
+use App\Traits\HasAttachments;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
+use App\Traits\HasUserTracking;
 use App\Traits\HasDynamicFilters;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,9 +37,21 @@ use App\Traits\BranchSpecific;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 class Ledger extends Model
 {
-    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, BranchSpecific, HasBranch, HasDependencyCheck, SoftDeletes;
+    use HasFactory, HasUlids, HasCache, HasSearch, HasSorting, HasDynamicFilters, HasUserAuditable, HasUserTracking, BranchSpecific, HasBranch, HasDependencyCheck, HasAttachments, SoftDeletes;
 
     // ... your existing code ...
+
+    /**
+     * Public URL for the profile photo (null when none is set).
+     */
+    protected function photoUrl(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->photo
+                ? Storage::disk('public')->url($this->photo)
+                : null,
+        );
+    }
 
     /**
      * Statement accessor
@@ -41,20 +61,28 @@ class Ledger extends Model
         return Attribute::make(
             get: function () {
 
-                // Calculate total debit and credit, multiplying each by its transaction's rate
-                $totals = TransactionLine::whereHas('transaction', function ($query) {
-                        $query->where('ledger_id', $this->id);
-                        //->where('status', 'posted');
-                    })
-                    ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
-                    ->selectRaw('
-                        SUM(transaction_lines.debit * transactions.rate) as total_debit,
-                        SUM(transaction_lines.credit * transactions.rate) as total_credit
-                    ')
-                    ->first();
+                // Prefer totals precomputed by scopeWithStatementTotals() so lists
+                // don't trigger one aggregate query per ledger.
+                if (array_key_exists('statement_total_debit', $this->attributes)
+                    && array_key_exists('statement_total_credit', $this->attributes)) {
+                    $totalDebit  = (float) $this->attributes['statement_total_debit'];
+                    $totalCredit = (float) $this->attributes['statement_total_credit'];
+                } else {
+                    // Calculate total debit and credit, multiplying each by its transaction's rate
+                    $totals = TransactionLine::whereHas('transaction', function ($query) {
+                            $query->where('ledger_id', $this->id);
+                            //->where('status', 'posted');
+                        })
+                        ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
+                        ->selectRaw('
+                            SUM(transaction_lines.debit * transactions.rate) as total_debit,
+                            SUM(transaction_lines.credit * transactions.rate) as total_credit
+                        ')
+                        ->first();
 
-                $totalDebit  = (float) ($totals->total_debit ?? 0);
-                $totalCredit = (float) ($totals->total_credit ?? 0);
+                    $totalDebit  = (float) ($totals->total_debit ?? 0);
+                    $totalCredit = (float) ($totals->total_credit ?? 0);
+                }
 
                 $netBalance = $totalDebit - $totalCredit;
 
@@ -98,7 +126,11 @@ class Ledger extends Model
                             ? "Customer owes you {$balanceAmount}"
                             : "You owe {$balanceAmount} to this customer"),
                     'account_type' => $this->type,
-
+                    // Sign from the company's point of view: a supplier we owe and a
+                    // customer who owes us both read as a negative position.
+                    'balance_type' => $isSupplier
+                        ? ($balanceNature === 'cr' ? '-' : '+')
+                        : ($balanceNature === 'dr' ? '-' : '+'),
                     'payable_amount' => $balanceNature === 'cr' ? $balanceAmount : 0,
                     'receivable_amount' => $balanceNature === 'dr' ? $balanceAmount : 0,
                 ];
@@ -114,6 +146,7 @@ class Ledger extends Model
      */
     protected $fillable = [
         'name',
+        'photo',
         'code',
         'address',
         'contact_person',
@@ -121,6 +154,15 @@ class Ledger extends Model
         'branch_id',
         'email',
         'currency_id',
+        'group_id',
+        'payment_term_id',
+        'country_id',
+        'province_id',
+        'credit_limit',
+        'credit_limit_enabled',
+        'credit_terms',
+        'discount',
+        'whatsapp_number',
         'is_main',
         'type',
         'is_active',
@@ -137,6 +179,14 @@ class Ledger extends Model
     {
         return [
             'currency_id' => 'string',
+            'group_id' => 'string',
+            'payment_term_id' => 'string',
+            'country_id' => 'string',
+            'province_id' => 'string',
+            'credit_limit' => 'double',
+            'credit_limit_enabled' => 'boolean',
+            'credit_terms' => CreditTerms::class,
+            'discount' => 'double',
             'created_by' => 'string',
             'updated_by' => 'string',
             'branch_id' => 'string',
@@ -155,6 +205,12 @@ class Ledger extends Model
 
     public function scopeWithStatementTotals(Builder $query): Builder
     {
+        // selectSub() would otherwise replace the implicit `*`, leaving the model
+        // with only the two aggregates when the caller selected no columns.
+        if (is_null($query->getQuery()->columns)) {
+            $query->select($query->qualifyColumn('*'));
+        }
+
         $lineTotals = DB::table('transaction_lines')
             ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
             ->whereColumn('transaction_lines.ledger_id', 'ledgers.id')
@@ -186,6 +242,26 @@ class Ledger extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(CustomerGroup::class, 'group_id');
+    }
+
+    public function paymentTerm(): BelongsTo
+    {
+        return $this->belongsTo(PaymentTerm::class);
+    }
+
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class);
+    }
+
+    public function province(): BelongsTo
+    {
+        return $this->belongsTo(Province::class);
     }
 
     /**

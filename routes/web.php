@@ -90,6 +90,10 @@ Route::middleware([
     Route::delete('/categories/{category}/force-delete', [\App\Http\Controllers\Administration\CategoryController::class, 'forceDelete'])
         ->name('categories.force-delete')
         ->withTrashed();
+    Route::resource('/customer-groups', \App\Http\Controllers\Administration\CustomerGroupController::class)
+        ->except(['create', 'edit']);
+    Route::resource('/payment-terms', \App\Http\Controllers\Administration\PaymentTermController::class)
+        ->except(['create', 'edit']);
     Route::resource('/warehouses', \App\Http\Controllers\Administration\WarehouseController::class);
     Route::patch('/warehouses/{warehouse}/restore', [\App\Http\Controllers\Administration\WarehouseController::class, 'restore'])->name('warehouses.restore')->withTrashed();
     Route::delete('/warehouses/{warehouse}/force-delete', [\App\Http\Controllers\Administration\WarehouseController::class, 'forceDelete'])
@@ -152,10 +156,12 @@ Route::middleware([
         ->name('ledgers.force-delete')
         ->withTrashed();
     Route::get('/suppliers/list-export', [\App\Http\Controllers\Ledger\SupplierController::class, 'exportList'])->name('suppliers.list-export');
+    Route::post('/suppliers/{supplier}/photo', [\App\Http\Controllers\Ledger\SupplierController::class, 'updatePhoto'])->name('suppliers.photo.update');
     Route::resource('/suppliers', \App\Http\Controllers\Ledger\SupplierController::class);
     Route::patch('/suppliers/{supplier}/restore', [\App\Http\Controllers\Ledger\SupplierController::class, 'restore'])->name('suppliers.restore')->withTrashed();
     Route::get('/suppliers/{supplier}/export', [\App\Http\Controllers\Ledger\SupplierController::class, 'export'])->name('suppliers.export');
     Route::get('/customers/list-export', [\App\Http\Controllers\Ledger\CustomerController::class, 'exportList'])->name('customers.list-export');
+    Route::post('/customers/{customer}/photo', [\App\Http\Controllers\Ledger\CustomerController::class, 'updatePhoto'])->name('customers.photo.update');
     Route::resource('/customers', \App\Http\Controllers\Ledger\CustomerController::class);
     Route::patch('/customers/{customer}/restore', [\App\Http\Controllers\Ledger\CustomerController::class, 'restore'])->name('customers.restore')->withTrashed();
     Route::get('/customers/{customer}/export', [\App\Http\Controllers\Ledger\CustomerController::class, 'export'])->name('customers.export');
@@ -232,6 +238,9 @@ Route::middleware([
         ->name('payments.force-delete')
         ->withTrashed();
     Route::get('/payments/{payment}/print', [\App\Http\Controllers\Payment\PaymentController::class, 'print'])->name('payments.print');
+
+    // Attachments (polymorphic, shared across modules)
+    Route::delete('/attachments/{attachment}', [\App\Http\Controllers\AttachmentController::class, 'destroy'])->name('attachments.destroy');
 
     // Account Transfers
     Route::get('/account-transfers/export', [\App\Http\Controllers\AccountTransfer\AccountTransferController::class, 'export'])->name('account-transfers.export');

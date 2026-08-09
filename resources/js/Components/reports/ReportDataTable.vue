@@ -10,10 +10,11 @@ const props = defineProps({
   pagination: { type: Object, required: true },
   emptyMessage: { type: String, required: true },
   rowNumberLabel: { type: String, default: '#' },
+  rowClickable: { type: Boolean, default: false },
   showRowNumber: { type: Boolean, default: true },
 })
 
-const emit = defineEmits(['page-change'])
+const emit = defineEmits(['page-change', 'row-click'])
 const { t } = useI18n()
 
 const displayColumns = computed(() => {
@@ -108,7 +109,13 @@ function formatValue(column, row) {
               {{ emptyMessage }}
             </TableCell>
           </TableRow>
-          <TableRow v-for="(row, index) in rows" :key="row.id || row.reference_id || index" class="border-border">
+          <TableRow
+            v-for="(row, index) in rows"
+            :key="row.id || row.reference_id || index"
+            class="border-border"
+            :class="rowClickable ? 'cursor-pointer hover:bg-muted/50' : ''"
+            @click="rowClickable && emit('row-click', row)"
+          >
             <TableCell
               v-for="column in displayColumns"
               :key="column.key"

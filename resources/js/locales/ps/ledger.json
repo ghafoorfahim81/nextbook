@@ -6,5 +6,26 @@
         "home_equivalent": "برابر ({code})",
         "currencies_used": "د بیلانس لرونکې اسعار: {count}",
         "total_note": "ټولټال، د هرې کرښې په نرخ سره {code} ته اړول شوی"
-    }
+    },
+    "customer_group": "د پېرودونکو ډله",
+    "payment_term": "د تادیې شرط",
+    "country": "هېواد",
+    "province": "ولایت",
+    "whatsapp_number": "د واټس‌اپ شمېره",
+    "credit_limit": "د پور حد",
+    "credit_limit_enabled": "د پور حد فعالول",
+    "profile_photo": "د پروفایل عکس",
+    "credit_terms": "د پور شرایط",
+    "credit_terms_strict": "سخت",
+    "credit_terms_warning": "خبرتیا",
+    "credit_terms_flexible": "نرم",
+    "credit_summary": "د پور لنډیز",
+    "supplier_credit_summary": "د عرضه‌کوونکي د پور لنډیز",
+    "supplier_credit_limit": "د عرضه‌کوونکي د پور حد",
+    "current_balance": "اوسنی بیلانس",
+    "current_payable": "اوسنی ورکړه",
+    "available_credit": "شته پور",
+    "used": "کارول‌شوی",
+    "exceeds_available_credit": "دا سفارش د شته پور څخه {amount} زیات دی",
+    "discount": "تخفیف"
 }

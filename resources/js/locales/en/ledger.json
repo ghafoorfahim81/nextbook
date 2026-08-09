@@ -1,11 +1,11 @@
 ﻿{
     "ledger": "Ledger",
     "ledgers": "Ledgers",
-    "supplier":{
+    "supplier": {
         "supplier": "Supplier",
         "suppliers": "Suppliers"
     },
-    "customer":{
+    "customer": {
         "customer": "Customer",
         "customers": "Customers"
     },
@@ -17,5 +17,26 @@
         "home_equivalent": "Equivalent ({code})",
         "currencies_used": "Currencies with a balance: {count}",
         "total_note": "Total, converted to {code} at each row's rate"
-    }
+    },
+    "customer_group": "Customer Group",
+    "payment_term": "Payment Term",
+    "country": "Country",
+    "province": "Province",
+    "whatsapp_number": "WhatsApp Number",
+    "credit_limit": "Credit Limit",
+    "credit_limit_enabled": "Credit Limit Enabled",
+    "profile_photo": "Profile Photo",
+    "credit_terms": "Credit Terms",
+    "credit_terms_strict": "Strict",
+    "credit_terms_warning": "Warning",
+    "credit_terms_flexible": "Flexible",
+    "credit_summary": "Credit Summary",
+    "supplier_credit_summary": "Supplier Credit Summary",
+    "supplier_credit_limit": "Supplier Credit Limit",
+    "current_balance": "Current Balance",
+    "current_payable": "Current Payable",
+    "available_credit": "Available Credit",
+    "used": "Used",
+    "exceeds_available_credit": "This order exceeds available credit by {amount}",
+    "discount": "Discount"
 }
