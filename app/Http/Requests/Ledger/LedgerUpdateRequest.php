@@ -4,12 +4,13 @@ namespace App\Http\Requests\Ledger;
 
 use App\Enums\CreditTerms;
 use App\Http\Requests\Ledger\Concerns\ValidatesLedgerOpenings;
+use App\Http\Requests\Ledger\Concerns\ValidatesPhoneNumbers;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class LedgerUpdateRequest extends FormRequest
 {
-    use ValidatesLedgerOpenings;
+    use ValidatesLedgerOpenings, ValidatesPhoneNumbers;
 
     /**
      * Determine if the user is authorized to make this request.
@@ -29,7 +30,7 @@ class LedgerUpdateRequest extends FormRequest
             'code' => ['nullable', 'string'],
             'address' => ['nullable', 'string'],
             'contact_person' => ['nullable', 'string'],
-            'phone_no' => ['nullable', 'digits_between:1,10'],
+            'phone_no' => $this->phoneRules(),
             'email' => ['nullable', 'email'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'group_id' => ['nullable', 'string', 'exists:customer_groups,id'],
@@ -40,12 +41,20 @@ class LedgerUpdateRequest extends FormRequest
             'credit_limit_enabled' => ['nullable', 'boolean'],
             'credit_terms' => ['nullable', Rule::enum(CreditTerms::class)],
             'discount' => ['nullable', 'numeric', 'min:0'],
-            'whatsapp_number' => ['nullable', 'digits_between:1,10'],
+            'whatsapp_number' => $this->phoneRules(),
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
             'is_active' => ['nullable', 'boolean'],
             ...$this->openingRules(),
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return $this->phoneMessages();
     }
 }

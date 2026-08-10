@@ -81,5 +81,6 @@ return [
     'current_period_profit_loss' => 'سود/زیان دوره جاری',
     'active' => 'فعال',
     'inactive' => 'غیرفعال',
+    'invalid_phone_number' => 'یک شماره تلفن بین‌المللی معتبر وارد کنید (۶ تا ۱۵ رقم، شامل کود کشور).',
 ];
 

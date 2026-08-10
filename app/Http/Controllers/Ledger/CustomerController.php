@@ -165,11 +165,16 @@ class CustomerController extends Controller
 
         $ledgerStatement = $statementService->build($customer, $this->statementFilters($request));
 
+        // Deliberately unfiltered: the profile card reports the party's standing
+        // position, not whatever window the statement tab is currently showing.
+        $currencyBalances = $statementService->balancesByCurrency($customer);
+
         if ($request->expectsJson()) {
             return response()->json([
                 'customer' => new LedgerResource($customer),
                 ...$lists,
                 'ledgerStatement' => $ledgerStatement,
+                'currencyBalances' => $currencyBalances,
             ]);
         }
 
@@ -177,6 +182,7 @@ class CustomerController extends Controller
             'customer' => new LedgerResource($customer),
             ...$lists,
             'ledgerStatement' => $ledgerStatement,
+            'currencyBalances' => $currencyBalances,
         ]);
     }
 
