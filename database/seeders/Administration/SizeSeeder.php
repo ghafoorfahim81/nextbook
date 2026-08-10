@@ -17,6 +17,12 @@ class SizeSeeder extends Seeder
 
         $sizes = Size::defaultSizes();
         foreach ($sizes as $size) {
+            $exists = Size::withoutGlobalScopes()
+                ->where('code', $size['code'])
+                ->exists();
+            if ($exists) {
+                continue;
+            }
             Size::create([
                 'name' => $size['name'],
                 'code' => $size['code'],

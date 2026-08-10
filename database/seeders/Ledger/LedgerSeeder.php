@@ -27,6 +27,14 @@ class LedgerSeeder extends Seeder
                 'created_by' => User::withoutGlobalScopes()->where('email', 'admin@nextbook.af')->first()->id,
             ],
         ];
-        Ledger::insert($ledgers);
+        foreach ($ledgers as $ledger) {
+            $exists = Ledger::withoutGlobalScopes()
+                ->where('code', $ledger['code'])
+                ->exists();
+            if ($exists) {
+                continue;
+            }
+            Ledger::create($ledger);
+        }
     }
 }

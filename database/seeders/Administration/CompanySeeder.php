@@ -28,6 +28,18 @@ class CompanySeeder extends Seeder
             throw new \RuntimeException('No currencies found. Please run CurrencySeeder before CompanySeeder.');
         }
 
+        $existing = Company::where('name_en', 'NextBook')->first();
+        if ($existing) {
+            // Company is already seeded, but the admin may still be unlinked
+            // (e.g. a re-run after the user table was reseeded).
+            $user = \App\Models\User::withoutGlobalScopes()->where('name', 'admin')->first();
+            if ($user && !$user->company_id) {
+                $user->company_id = $existing->id;
+                $user->save();
+            }
+
+            return;
+        }
         $company = Company::create([
             'id' => (string) new Ulid(),
             'name_en' => 'NextBook',

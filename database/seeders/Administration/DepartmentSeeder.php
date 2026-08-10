@@ -14,6 +14,12 @@ class DepartmentSeeder extends Seeder
      */
     public function run(): void
     {
+        $exists = Department::withoutGlobalScopes()
+            ->where('name', 'Main Department')
+            ->exists();
+        if ($exists) {
+            return;
+        }
         Department::create([
             'id'  => Ulid::generate(),
             'name' => 'Main Department',

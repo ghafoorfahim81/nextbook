@@ -13,7 +13,11 @@ class BranchSeeder extends Seeder
     public function run(): void
     {
         // Create main branch first
-        $mainBranch = Branch::create([
+        $found = Branch::where('name', 'Main Branch')->first();
+        if ($found) {
+            return;
+        }
+        Branch::create([
             'name' => 'Main Branch',
             'is_main' => true,
             'sub_domain' => 'main',

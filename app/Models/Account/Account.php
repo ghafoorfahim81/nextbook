@@ -1188,9 +1188,27 @@ class Account extends Model
                 'is_main' => true,
             ],
             [
+                'name' => 'Inventory Shrinkage & Wastage',
+                'local_name' => 'ضایعات و کسری انبار',
+                'number' => '9040',
+                'account_type_id' => \App\Models\Account\AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
+                'slug' => 'inventory-shrinkage-and-wastage',
+                'remark' => 'Inventory shrinkage and wastage',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Inventory Adjustments',
+                'local_name' => 'تعدیلات موجودی',
+                'number' => '9050',
+                'account_type_id' => \App\Models\Account\AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
+                'slug' => 'inventory-adjustments',
+                'remark' => 'Inventory adjustments',
+                'is_main' => true,
+            ],
+            [
                 'name' => 'Other Income',
                 'local_name' => 'درآمد دیگر',
-                'number' => '9040',
+                'number' => '9060',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'income')->first()->id,
                 'account_type_slug' => 'income',
                 'slug' => 'other-income',
@@ -1201,7 +1219,7 @@ class Account extends Model
                 'name' => 'Foreign Exchange Gain',
                 'local_name' => 'سود تغیر ارز',
                 'parent_slug' => 'other-income',
-                'number' => '9050',
+                'number' => '9070',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'income')->first()->id,
                 'account_type_slug' => 'income',
                 'slug' => 'foreign-exchange-gain',
@@ -1212,13 +1230,14 @@ class Account extends Model
                 'name' => 'Foreign Exchange Loss',
                 'local_name' => 'ضرر تغیر ارز',
                 'parent_slug' => 'other-expenses',
-                'number' => '9060',
+                'number' => '9080',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
                 'slug' => 'foreign-exchange-loss',
                 'remark' => '',
                 'is_main' => true,
             ],
+
 
         ];
     }

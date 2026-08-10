@@ -10,6 +10,12 @@ class WarehouseSeeder extends Seeder
 {
     public function run(): void
     {
+        $exists = Warehouse::withoutGlobalScopes()
+            ->where('name', 'گدام مرکزی')
+            ->exists();
+        if ($exists) {
+            return;
+        }
         Warehouse::create([
             'name' => 'گدام مرکزی',
             'address' => 'گدام مرکزی',
