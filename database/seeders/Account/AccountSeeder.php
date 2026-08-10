@@ -20,20 +20,30 @@ class AccountSeeder extends Seeder
         $mainBranch = Branch::where('is_main', true)->first();
 
         $accounts = Account::defaultAccounts();
+        $createdBy = User::where('name', 'admin')->first()->id;
+
+        // Maps slug => id for accounts created in this run, so entries that
+        // declare a `parent_slug` can be linked to their parent.
+        $createdIds = [];
 
         foreach ($accounts as $account) {
-            Account::create([
+            $created = Account::create([
                 'id' => (string) new Ulid(),
                 'name' => $account['name'],
                 'local_name' => $account['local_name'],
                 'number' => $account['number'],
                 'account_type_id' => $account['account_type_id'],
+                'parent_id' => isset($account['parent_slug'])
+                    ? ($createdIds[$account['parent_slug']] ?? null)
+                    : null,
                 'slug' => $account['slug'],
                 'branch_id' => $mainBranch?->id,
                 'remark' => $account['remark'],
                 'is_main' => $account['is_main'],
-                'created_by' => User::where('name', 'admin')->first()->id,
+                'created_by' => $createdBy,
             ]);
+
+            $createdIds[$account['slug']] = $created->id;
         }
     }
 }

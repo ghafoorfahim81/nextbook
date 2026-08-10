@@ -62,15 +62,21 @@ class BranchController extends Controller
             });
         }
         $accounts = Account::defaultAccounts();
+        // Maps slug => id for accounts created for this branch, so entries that
+        // declare a `parent_slug` can be linked to their parent.
+        $createdIds = [];
         foreach ($accounts as $account) {
-            Account::withoutEvents(function () use ($account, $branch) {
-                Account::create([
+            $created = Account::withoutEvents(function () use ($account, $branch, $createdIds) {
+                return Account::create([
                     'id' => (string) new Ulid(),
                     'name' => $account['name'],
                     'number' => $account['number'],
                     'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', $account['account_type_slug'])
                     ->where('branch_id', $branch->id)
                     ->first()->id,
+                    'parent_id' => isset($account['parent_slug'])
+                        ? ($createdIds[$account['parent_slug']] ?? null)
+                        : null,
                     'branch_id' => $branch->id,
                     'slug' => $account['slug'],
                     'remark' => $account['remark'],
@@ -78,6 +84,8 @@ class BranchController extends Controller
                     'created_by' => Auth::id(),
                 ]);
             });
+
+            $createdIds[$account['slug']] = $created->id;
         }
 
         $defaultSizes = Size::defaultSizes();
