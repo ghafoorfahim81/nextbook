@@ -28,8 +28,12 @@ const props = defineProps({
 const { t } = useI18n();
 
 
+// The photo is uploaded from the Show page, so this form never holds one.
+// Spreading the resource as-is would post the stored path back as `photo`.
+const { photo, photo_url, ...customerData } = props.customer.data
+
 const form = useForm({
-    ...props.customer.data,
+    ...customerData,
     currency_id: props.customer.data.currency_id,
     selected_currency: props.customer.data?.currency,
     // Saved attachments are listed separately; this holds only new uploads.

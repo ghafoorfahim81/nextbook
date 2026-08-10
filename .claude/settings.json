@@ -4,7 +4,9 @@
       "Edit",
       "Write",
       "Bash",
-      "Bash(git --no-pager diff --stat)"
+      "Bash(git --no-pager diff --stat)",
+      "Bash(php -l app/Http/Controllers/Ledger/CustomerController.php)",
+      "PowerShell($p = \\(Get-Command php -ErrorAction SilentlyContinue\\); if \\($p\\) { $p.Source } else { Get-ChildItem \"$env:USERPROFILE\\\\.config\\\\herd\\\\bin\",\"C:\\\\Program Files\\\\Herd\" -Filter php.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 5 FullName })"
     ],
     "additionalDirectories": [
       "C:\\Users\\Fahim-Pc\\.claude\\projects\\e--nextbook"
