@@ -213,6 +213,9 @@ class PerformanceLoadSeeder extends Seeder
 
         if (!DB::table('accounts')->where('branch_id', $branchId)->exists()) {
             $accountRows = [];
+            // Maps slug => id for rows built in this loop, so entries that
+            // declare a `parent_slug` can be linked to their parent.
+            $accountIdsBySlug = [];
             foreach (Account::defaultAccounts() as $account) {
                 $accountTypeId = DB::table('account_types')
                     ->where('branch_id', $branchId)
@@ -223,12 +226,19 @@ class PerformanceLoadSeeder extends Seeder
                     continue;
                 }
 
+                $accountId = (string) Str::ulid();
+                if (isset($account['slug'])) {
+                    $accountIdsBySlug[$account['slug']] = $accountId;
+                }
+
                 $accountRows[] = [
-                    'id' => (string) Str::ulid(),
+                    'id' => $accountId,
                     'name' => $account['name'],
                     'number' => $account['number'],
                     'account_type_id' => $accountTypeId,
-                    'parent_id' => null,
+                    'parent_id' => isset($account['parent_slug'])
+                        ? ($accountIdsBySlug[$account['parent_slug']] ?? null)
+                        : null,
                     'branch_id' => $branchId,
                     'slug' => $account['slug'] ?? null,
                     'remark' => $account['remark'] ?? null,
