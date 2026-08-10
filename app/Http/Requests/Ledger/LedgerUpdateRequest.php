@@ -42,7 +42,13 @@ class LedgerUpdateRequest extends FormRequest
             'credit_terms' => ['nullable', Rule::enum(CreditTerms::class)],
             'discount' => ['nullable', 'numeric', 'min:0'],
             'whatsapp_number' => $this->phoneRules(),
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            // The edit form carries no photo field — the picture is replaced from the
+            // Show page. Only validate as an upload when a file really arrived, so an
+            // existing photo path posted back as a string can't fail `image` and block
+            // the whole save behind an error the form has nowhere to show.
+            'photo' => $this->hasFile('photo')
+                ? ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120']
+                : ['nullable'],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
             'is_active' => ['nullable', 'boolean'],
