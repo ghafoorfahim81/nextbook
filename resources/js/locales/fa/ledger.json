@@ -38,5 +38,8 @@
     "available_credit": "اعتبار قابل استفاده",
     "used": "استفاده‌شده",
     "exceeds_available_credit": "این سفارش {amount} از اعتبار قابل استفاده بیشتر است",
-    "discount": "تخفیف"
+    "discount": "تخفیف",
+    "invalid_phone_for_country": "طول شماره تلفن برای {country} معتبر نیست",
+    "balance_by_currency": "بیلانس بر اساس اسعار",
+    "no_currency_balance": "در هیچ اسعاری بیلانس وجود ندارد"
 }

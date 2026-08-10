@@ -4,10 +4,11 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3';
 import { Button } from '@/Components/ui/button';
-import { ArrowLeft, SquarePen, Printer, Hash, Mail, Phone, MessageCircle } from 'lucide-vue-next';
+import { ArrowLeft, SquarePen, Printer } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue';
 import LedgerStatement from '@/Components/ledger/LedgerStatement.vue';
+import LedgerCurrencyBalances from '@/Components/ledger/LedgerCurrencyBalances.vue';
 import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paymentStatus';
 import { getCreditSummary } from '@/composables/useCreditLimit';
 import AttachmentList from '@/Components/AttachmentList.vue';
@@ -19,6 +20,7 @@ const props = defineProps({
     receipts: { type: Object, required: false },
     payments: { type: Object, required: false },
     ledgerStatement: { type: Object, required: false, default: () => ({}) },
+    currencyBalances: { type: Array, required: false, default: () => [] },
 });
 
 const { t } = useI18n();
@@ -80,6 +82,9 @@ const creditTermsLabel = (terms) => {
 };
 
 const currencyCode = computed(() => customerData.value.currency?.code || customerData.value.currency?.name || '');
+const homeCurrencyCode = computed(() => props.ledgerStatement?.meta?.home_currency?.code
+    ?? props.currencyBalances.find((row) => row.is_base_currency)?.currency_code
+    ?? '');
 const creditSummary = computed(() => getCreditSummary(customerData.value));
 
 const createTransactionRoute = (type) => {
@@ -231,37 +236,12 @@ const customerMovementColumns = computed(() => [
                             </div>
                         </div>
 
-                        <!-- Contact card -->
-                        <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border divide-y divide-border overflow-hidden">
-                            <div class="flex items-center gap-3 px-4 py-2.5">
-                                <Hash class="h-4 w-4 shrink-0 text-violet-500" />
-                                <span class="text-sm font-medium text-foreground">{{ customerData.code || '-' }}</span>
-                            </div>
-                            <a
-                                :href="customerData.phone_no ? `tel:${customerData.phone_no}` : undefined"
-                                class="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
-                            >
-                                <Phone class="h-4 w-4 shrink-0 text-emerald-500" />
-                                <span class="text-sm text-foreground">{{ customerData.phone_no || '-' }}</span>
-                            </a>
-                            <a
-                                v-if="customerData.whatsapp_number"
-                                :href="`https://wa.me/${String(customerData.whatsapp_number).replace(/[^0-9]/g, '')}`"
-                                target="_blank"
-                                rel="noopener"
-                                class="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
-                            >
-                                <MessageCircle class="h-4 w-4 shrink-0 text-green-500" />
-                                <span class="text-sm text-foreground">{{ customerData.whatsapp_number }}</span>
-                            </a>
-                            <a
-                                :href="customerData.email ? `mailto:${customerData.email}` : undefined"
-                                class="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
-                            >
-                                <Mail class="h-4 w-4 shrink-0 text-blue-500" />
-                                <span class="truncate text-sm text-foreground">{{ customerData.email || '-' }}</span>
-                            </a>
-                        </div>
+                        <!-- Per-currency balances: a party's currencies never net
+                             against each other, so each one is reported on its own. -->
+                        <LedgerCurrencyBalances
+                            :balances="currencyBalances"
+                            :home-currency-code="homeCurrencyCode"
+                        />
 
                         <!-- Statement card -->
                         <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border divide-y divide-border overflow-hidden">
@@ -289,6 +269,10 @@ const customerMovementColumns = computed(() => [
                             <div>
                                 <div class="text-xs text-muted-foreground">{{ t('general.name') }}</div>
                                 <div class="font-medium text-foreground">{{ customerData.name }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('general.code') }}</div>
+                                <div class="font-medium text-foreground">{{ customerData.code || '-' }}</div>
                             </div>
                             <div>
                                 <div class="text-xs text-muted-foreground">{{ t('ledger.contact_person') }}</div>

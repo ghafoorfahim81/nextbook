@@ -61,5 +61,6 @@ return [
 
     'error_occurred_while_creating' => 'An error occurred while creating :resource.',
     'error_occurred_while_updating' => 'An error occurred while updating :resource.',
+    'invalid_phone_number' => 'یوه سمه نړیواله تلیفون شمېره ولیکئ (۶ تر ۱۵ عددونه، د هېواد کود په ګډون).',
 ];
 

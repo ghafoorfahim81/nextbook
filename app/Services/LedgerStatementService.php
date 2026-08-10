@@ -45,7 +45,9 @@ class LedgerStatementService
             $dateFrom = null;
         }
 
-        $currencyId = $filters['currency_id'] ?: null;
+        // The key is optional per the signature, and an empty string from the
+        // query string means "all currencies" just as a missing key does.
+        $currencyId = ($filters['currency_id'] ?? null) ?: null;
 
         $broughtForward = $dateFrom
             ? $this->broughtForwardByCurrency($ledger, $dateFrom, $currencyId)
@@ -74,6 +76,60 @@ class LedgerStatementService
                 'home_equivalent_nature' => $sections->sum('home_equivalent') >= 0 ? 'dr' : 'cr',
             ],
         ];
+    }
+
+    /**
+     * The party's live position in each currency it actually holds one in.
+     *
+     * A ledger's currencies never net against each other, so the single home
+     * total on the profile card hides the real picture: a customer carrying
+     * 10,000 AFN and 200 USD owes two separate amounts, each settled in its own
+     * currency. This returns one unfiltered row per currency the ledger has
+     * moved in, base currency first.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function balancesByCurrency(Ledger $ledger): array
+    {
+        $normalNature = $this->normalNature($ledger);
+
+        return $this->baseQuery($ledger)
+            ->groupBy('t.currency_id', 'c.code', 'c.name', 'c.symbol', 'c.is_base_currency')
+            ->selectRaw('t.currency_id')
+            ->selectRaw('c.code as currency_code')
+            ->selectRaw('c.name as currency_name')
+            ->selectRaw('c.symbol as currency_symbol')
+            ->selectRaw('c.is_base_currency')
+            ->selectRaw('COALESCE(SUM(tl.debit), 0) as debit')
+            ->selectRaw('COALESCE(SUM(tl.credit), 0) as credit')
+            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as home_equivalent')
+            ->get()
+            ->map(function ($row) use ($normalNature) {
+                $net = round((float) $row->debit - (float) $row->credit, 2);
+                $nature = $net >= 0 ? 'dr' : 'cr';
+
+                return [
+                    'currency_id' => $row->currency_id,
+                    'currency_code' => $row->currency_code,
+                    'currency_name' => $row->currency_name,
+                    'currency_symbol' => $row->currency_symbol,
+                    'is_base_currency' => (bool) $row->is_base_currency,
+                    'debit' => round((float) $row->debit, 2),
+                    'credit' => round((float) $row->credit, 2),
+                    'balance' => abs($net),
+                    'net_balance' => $net,
+                    'balance_nature' => $nature,
+                    'balance_label' => $this->formatBalance($net),
+                    'is_normal_balance' => $nature === $normalNature,
+                    'home_equivalent' => round((float) $row->home_equivalent, 2),
+                ];
+            })
+            // Zero rows are dropped: a currency that has been fully settled is
+            // noise on a balance card, not information.
+            ->reject(fn (array $row) => $row['balance'] === 0.0)
+            ->sortBy(fn (array $row) => [$row['is_base_currency'] ? 0 : 1, $row['currency_code']])
+            ->values()
+            ->all();
     }
 
     /**

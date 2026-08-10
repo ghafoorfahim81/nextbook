@@ -84,5 +84,6 @@ return [
     'current_period_profit_loss' => 'Current Period Profit / Loss',
     'active' => 'Active',
     'inactive' => 'Inactive',
+    'invalid_phone_number' => 'Enter a valid international phone number (6 to 15 digits, country code included).',
 ];
 

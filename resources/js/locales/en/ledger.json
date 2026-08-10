@@ -38,5 +38,8 @@
     "available_credit": "Available Credit",
     "used": "Used",
     "exceeds_available_credit": "This order exceeds available credit by {amount}",
-    "discount": "Discount"
+    "discount": "Discount",
+    "invalid_phone_for_country": "Not a valid phone number length for {country}",
+    "balance_by_currency": "Balance by Currency",
+    "no_currency_balance": "No balance in any currency"
 }

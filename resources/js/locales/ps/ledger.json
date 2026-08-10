@@ -27,5 +27,8 @@
     "available_credit": "شته پور",
     "used": "کارول‌شوی",
     "exceeds_available_credit": "دا سفارش د شته پور څخه {amount} زیات دی",
-    "discount": "تخفیف"
+    "discount": "تخفیف",
+    "invalid_phone_for_country": "د {country} لپاره د تلیفون شمېرې اوږدوالی سم نه دی",
+    "balance_by_currency": "د اسعارو له مخې بیلانس",
+    "no_currency_balance": "په هیڅ اسعارو کې بیلانس نشته"
 }

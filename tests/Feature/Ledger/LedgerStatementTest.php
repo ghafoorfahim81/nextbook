@@ -244,6 +244,56 @@ class LedgerStatementTest extends TestCase
         $this->assertCount(2, $statement['sections']);
     }
 
+    public function test_balances_by_currency_reports_each_currency_separately(): void
+    {
+        $customer = $this->seedMultiCurrencyCustomer();
+
+        $balances = collect(app(LedgerStatementService::class)->balancesByCurrency($customer))
+            ->keyBy('currency_code');
+
+        $this->assertCount(3, $balances);
+
+        $this->assertSame(100.0, $balances['USD']['balance']);
+        $this->assertSame(10000.0, $balances['AFN']['balance']);
+        $this->assertSame(1200.0, $balances['EUR']['balance']);
+
+        // Customers are debit-normal, so an amount owed to us reads as a debit.
+        $this->assertSame('dr', $balances['USD']['balance_nature']);
+        $this->assertTrue($balances['AFN']['is_normal_balance']);
+
+        // Home currency leads the list so the card opens on the familiar figure.
+        $first = app(LedgerStatementService::class)->balancesByCurrency($customer)[0];
+        $this->assertSame('AFN', $first['currency_code']);
+        $this->assertTrue($first['is_base_currency']);
+    }
+
+    public function test_balances_by_currency_drops_fully_settled_currencies(): void
+    {
+        $customer = $this->ctx['customer_ledger'];
+
+        $this->postToLedger($customer, $this->usd, 70, 100, '2026-03-01');
+        $this->postToLedger($customer, $this->usd, 70, -100, '2026-03-05');
+        $this->postToLedger($customer, $this->ctx['currency'], 1, 10000, '2026-03-02');
+
+        $balances = app(LedgerStatementService::class)->balancesByCurrency($customer->refresh());
+
+        $this->assertCount(1, $balances);
+        $this->assertSame('AFN', $balances[0]['currency_code']);
+    }
+
+    public function test_balances_by_currency_marks_a_supplier_credit_as_normal(): void
+    {
+        $supplier = $this->ctx['supplier_ledger'];
+        $this->postToLedger($supplier, $this->usd, 70, -500, '2026-03-01');
+
+        $balances = app(LedgerStatementService::class)->balancesByCurrency($supplier->refresh());
+
+        $this->assertCount(1, $balances);
+        $this->assertSame(500.0, $balances[0]['balance']);
+        $this->assertSame('cr', $balances[0]['balance_nature']);
+        $this->assertTrue($balances[0]['is_normal_balance']);
+    }
+
     public function test_customer_show_page_receives_the_statement_prop(): void
     {
         $customer = $this->seedMultiCurrencyCustomer();
@@ -253,7 +303,25 @@ class LedgerStatementTest extends TestCase
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('Ledgers/Customers/Show')
                 ->has('ledgerStatement.sections', 3)
+                ->has('currencyBalances', 3)
                 ->where('ledgerStatement.meta.ledger_type', 'customer')
+            );
+    }
+
+    public function test_currency_balances_ignore_the_statement_filters(): void
+    {
+        $customer = $this->seedMultiCurrencyCustomer();
+
+        // The statement tab is narrowed to a single currency; the profile card
+        // must still report the party's whole standing position.
+        $this->get(route('customers.show', [
+            'customer' => $customer,
+            'statement_currency' => $this->usd->id,
+        ]))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->has('ledgerStatement.sections', 1)
+                ->has('currencyBalances', 3)
             );
     }
 

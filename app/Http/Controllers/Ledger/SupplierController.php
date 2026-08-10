@@ -166,11 +166,16 @@ class SupplierController extends Controller
 
         $ledgerStatement = $statementService->build($supplier, $this->statementFilters($request));
 
+        // Deliberately unfiltered: the profile card reports the party's standing
+        // position, not whatever window the statement tab is currently showing.
+        $currencyBalances = $statementService->balancesByCurrency($supplier);
+
         if ($request->expectsJson()) {
             return response()->json([
                 'supplier' => new LedgerResource($supplier),
                 ...$lists,
                 'ledgerStatement' => $ledgerStatement,
+                'currencyBalances' => $currencyBalances,
             ]);
         }
 
@@ -178,6 +183,7 @@ class SupplierController extends Controller
             'supplier' => new LedgerResource($supplier),
             ...$lists,
             'ledgerStatement' => $ledgerStatement,
+            'currencyBalances' => $currencyBalances,
         ]);
     }
 
