@@ -21,7 +21,21 @@
       "Bash(git push *)",
       "Edit",
       "Write",
-      "Bash"
+      "Bash",
+      "Bash(php -r ' *)",
+      "Bash(echo \"exit=$?\")",
+      "PowerShell(\\(Get-Command php -ErrorAction SilentlyContinue\\).Source; php -v)",
+      "Bash(grep -n -A 30 'protected $fillable' app/Models/Ledger/Ledger.php)",
+      "PowerShell(php artisan migrate:fresh --seed --force 2>&1)",
+      "PowerShell(php artisan tinker \"$env:TEMP\\\\claude\\\\e--nextbook\\\\6574838a-4b88-4293-89ee-77260bf3e61a\\\\scratchpad\\\\counts.php\")",
+      "PowerShell(php artisan db:seed --force 2>&1 | Select-Object -Last 12; php artisan tinker \"$env:TEMP\\\\claude\\\\e--nextbook\\\\6574838a-4b88-4293-89ee-77260bf3e61a\\\\scratchpad\\\\counts.php\")",
+      "PowerShell(php artisan tinker \"$env:TEMP\\\\claude\\\\e--nextbook\\\\6574838a-4b88-4293-89ee-77260bf3e61a\\\\scratchpad\\\\verify.php\")",
+      "PowerShell(php artisan tinker \"$env:TEMP\\\\claude\\\\e--nextbook\\\\6574838a-4b88-4293-89ee-77260bf3e61a\\\\scratchpad\\\\upgrade_test.php\")",
+      "Bash(ls -la \"C:/Users/Fahim-Pc/.claude/projects/e--nextbook/memory/\" 2>&1 | head -20)",
+      "Read(//c/Users/Fahim-Pc/.claude/projects/e--nextbook/memory/**)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Fahim-Pc\\.claude\\projects\\e--nextbook"
     ]
   }
 }

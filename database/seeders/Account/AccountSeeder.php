@@ -27,6 +27,17 @@ class AccountSeeder extends Seeder
         $createdIds = [];
 
         foreach ($accounts as $account) {
+            // Already seeded: remember its id so children declaring this slug as
+            // their `parent_slug` still resolve to a parent on a re-run.
+            $existing = Account::withoutGlobalScopes()
+                ->where('slug', $account['slug'])
+                ->first();
+
+            if ($existing) {
+                $createdIds[$account['slug']] = $existing->id;
+                continue;
+            }
+
             $created = Account::create([
                 'id' => (string) new Ulid(),
                 'name' => $account['name'],
