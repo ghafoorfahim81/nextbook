@@ -1,11 +1,8 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref, onMounted, onBeforeUnmount } from 'vue';
-import TextInput from '@/Components/TextInput.vue';
-import InputError from '@/Components/InputError.vue';
+import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
-import { toast } from 'vue-sonner'
 
 const { t } = useI18n();
 
@@ -20,303 +17,338 @@ const form = useForm({
     remember: false,
 });
 
-const slides = [
-    {
-        title: 'nextbook',
-        highlight: 'helped us collect more than 80,000 leads in a month,',
-        text: 'accelerating our search for emails while reducing the cost per lead.',
-        name: 'Dmitry Chervonyi',
-        role: 'CMO at Belkins',
-    },
-    {
-        title: 'nextbook',
-        highlight: 'boosted our sales pipeline in weeks,',
-        text: 'giving our team a reliable flow of high-quality prospects.',
-        name: 'Sales Team',
-        role: 'Nextbook customer',
-    },
-];
+const showPassword = ref(false);
+const currentYear = new Date().getFullYear();
 
-const currentSlide = ref(0);
-let slideInterval = null;
+// Field-level validation happens client side (mirrors the design); anything the
+// server rejects — bad credentials, throttling — surfaces in the banner above.
+const clientErrors = reactive({ email: '', password: '' });
 
-const startSlider = () => {
-    if (slides.length <= 1) return;
+const serverError = computed(() => form.errors.email || form.errors.password || '');
 
-    slideInterval = window.setInterval(() => {
-        currentSlide.value = (currentSlide.value + 1) % slides.length;
-    }, 6000);
+const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+const clearErrors = (field) => {
+    clientErrors[field] = '';
+    form.clearErrors();
 };
-
-const stopSlider = () => {
-    if (slideInterval !== null) {
-        clearInterval(slideInterval);
-        slideInterval = null;
-    }
-};
-
-onMounted(startSlider);
-onBeforeUnmount(stopSlider);
-
-const isLoading = ref(false);
 
 const submit = () => {
-    isLoading.value = true;
-    form.transform(data => ({
+    if (form.processing) return;
+
+    clientErrors.email = !form.email
+        ? t('auth.email_required')
+        : !isValidEmail(form.email)
+            ? t('auth.email_invalid')
+            : '';
+    clientErrors.password = form.password ? '' : t('auth.password_required');
+
+    if (clientErrors.email || clientErrors.password) return;
+
+    form.transform((data) => ({
         ...data,
         remember: form.remember ? 'on' : '',
     })).post(route('login'), {
-        onFinish: () => {
-            form.reset('password');
-            isLoading.value = false;
-            toast.success(t('general.success'), {
-                description: t('auth.login_success'),
-                class: 'bg-green-600 text-white',
-            })
-        },
-        onError: () => {
-            toast.error(t('general.error'), {
-                description: t('auth.login_error'),
-                class: 'bg-red-600 text-white',
-            })
-        },
+        onFinish: () => form.reset('password'),
     });
 };
 </script>
 
 <template>
-    <Head title="Login" />
-
-    <div class="min-h-screen bg-[#f6f7fb] flex items-center justify-center px-2 py-8">
-        <div
-            class="relative bg-white rounded-[32px] w-full max-w-6xl flex flex-col md:flex-row overflow-hidden shadow-[0_24px_80px_rgba(15,23,42,0.12)] transition-all"
+    <Head title="Login">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link
+            href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+            rel="stylesheet"
         >
-            <!-- Left side - Nextbook testimonial / slider -->
-            <div
-                class="w-full md:w-1/2 bg-gradient-to-b from-[#f5e9ff] via-[#fbe8ff] to-[#ffeef6] px-6 py-8 md:px-12 md:py-12 flex flex-col justify-between"
-            >
-                <!-- Logo / brand -->
-                <div>
-                    <div class="text-3xl md:text-4xl font-semibold tracking-tight text-[#5531ff] mb-8 md:mb-10 text-center md:text-left">
-                        Next<span class="font-normal text-[#ff5ca8]">book</span>
-                    </div>
-                    <!-- Slider card -->
-                    <div
-                        class="bg-white rounded-3xl shadow-[0_18px_60px_rgba(15,23,42,0.12)] px-6 py-7 md:px-10 md:py-9 mx-auto md:mx-0 max-w-sm md:max-w-md"
-                    >
-                        <div class="mb-6">
-                            <div class="h-9 w-32 bg-gray-100 rounded-md mb-4 flex items-center justify-center mx-auto md:mx-0">
-                                <span class="text-xs font-semibold tracking-wide text-gray-500">
-                                    Belkins
-                                </span>
-                            </div>
-                            <p class="text-gray-500 text-sm leading-relaxed text-center md:text-left">
-                                <span class="font-semibold text-gray-800">
-                                    {{ slides[currentSlide].title }} {{ slides[currentSlide].highlight }}
-                                </span>
-                                {{ slides[currentSlide].text }}
-                            </p>
-                        </div>
-                        <div class="flex items-center gap-3 justify-center md:justify-start">
-                            <div class="h-12 w-12 rounded-full bg-gradient-to-tr from-[#f97316] to-[#ec4899]" />
-                            <div>
-                                <p class="text-sm font-semibold text-gray-900">
-                                    {{ slides[currentSlide].name }}
-                                </p>
-                                <p class="text-xs text-gray-500">
-                                    {{ slides[currentSlide].role }}
-                                </p>
-                            </div>
-                        </div>
+    </Head>
 
-                        <!-- Slider dots -->
-                        <div class="flex items-center gap-2 mt-6 justify-center md:justify-start">
-                            <button
-                                v-for="(slide, index) in slides"
-                                :key="index"
-                                type="button"
-                                class="h-2 rounded-full transition-all duration-300"
-                                :class="index === currentSlide ? 'w-5 bg-[#5531ff]' : 'w-2 bg-gray-300'"
-                                @click="currentSlide = index"
-                                @mouseenter="stopSlider"
-                                @mouseleave="startSlider"
-                            />
-                        </div>
-                    </div>
+    <div class="nb-login relative flex min-h-screen flex-col items-center justify-center px-6 pb-10 pt-[88px]">
+        <!-- Top bar: brand + language -->
+        <div class="absolute inset-x-0 top-0 flex h-16 items-center justify-between px-7">
+            <div class="flex items-center gap-[9px]">
+                <div class="nb-accent-bg flex h-[29px] w-[29px] items-center justify-center rounded-[8px] text-base font-semibold text-white nb-mono">
+                    N
                 </div>
-
-                <!-- Badges placeholders -->
-                <div class="mt-8 md:mt-10 flex gap-3 md:gap-6 justify-center md:justify-start">
-                    <div
-                        class="h-20 w-20 md:h-24 md:w-24 rounded-2xl border border-dashed border-white/70 bg-white/40 backdrop-blur-sm flex items-center justify-center text-[10px] md:text-[11px] font-semibold text-white text-center"
-                    >
-                        Badge 1
-                    </div>
-                    <div
-                        class="h-20 w-20 md:h-24 md:w-24 rounded-2xl border border-dashed border-white/70 bg-white/40 backdrop-blur-sm flex items-center justify-center text-[10px] md:text-[11px] font-semibold text-white text-center"
-                    >
-                        Badge 2
-                    </div>
-                    <div
-                        class="h-20 w-20 md:h-24 md:w-24 rounded-2xl border border-dashed border-white/70 bg-white/40 backdrop-blur-sm flex items-center justify-center text-[10px] md:text-[11px] font-semibold text-white text-center"
-                    >
-                        Badge 3
-                    </div>
-                </div>
+                <span class="text-base font-bold tracking-[-0.02em] text-zinc-900">Nextbook</span>
+                <span class="nb-mono ms-0.5 rounded-[5px] border border-zinc-200 px-[5px] py-[2px] text-[9.5px] font-medium tracking-[0.12em] text-zinc-400">
+                    ERP
+                </span>
             </div>
 
-            <!-- Right side - Login form -->
-            <div class="w-full md:w-1/2 px-4 py-8 md:px-16 md:py-12 flex flex-col">
-                <div>
-                    <h1 class="text-2xl md:text-3xl font-semibold text-center text-slate-900 mb-6">
-                        {{ t('auth.login') }}
-                    </h1>
+            <div class="flex items-center gap-2">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
+                </svg>
+                <LanguageSwitcher />
+            </div>
+        </div>
 
-                    <form @submit.prevent="submit" class="space-y-5">
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-slate-700 mb-1">
-                                {{ t('auth.email') }}
-                            </label>
-                            <TextInput
-                                id="email"
-                                v-model="form.email"
-                                type="email"
-                                class="w-full px-3.5 py-3.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#e0ddff] focus:border-[#6c4dff] text-sm placeholder:text-slate-400"
-                                placeholder="ahmad@example.com"
-                                required
-                                autofocus
-                            />
-                            <InputError class="mt-2" :message="form.errors.email" />
-                        </div>
+        <!-- Card -->
+        <div class="nb-card relative z-10 w-full max-w-[406px] rounded-[14px] border border-[#ececee] bg-white px-9 pb-[26px] pt-9">
+            <div class="nb-rise">
+                <h1 class="mb-1.5 text-[21px] font-bold tracking-[-0.025em] text-zinc-900">
+                    {{ t('auth.sign_in_title') }}
+                </h1>
+                <p class="mb-[22px] text-sm leading-normal text-zinc-500">
+                    {{ t('auth.sign_in_subtitle') }}
+                </p>
 
-                        <div>
-                            <label for="password" class="block text-sm font-medium text-slate-700 mb-1">
+                <div
+                    v-if="status"
+                    class="mb-4 flex items-start gap-2 rounded-[9px] border border-emerald-200 bg-emerald-50 px-3 py-2.5"
+                    role="status"
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.4" class="mt-px flex-none" aria-hidden="true">
+                        <path d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span class="text-[13px] leading-[1.45] text-emerald-700">{{ status }}</span>
+                </div>
+
+                <div
+                    v-if="serverError"
+                    class="nb-shake mb-4 flex items-start gap-2 rounded-[9px] border border-red-200 bg-red-50 px-3 py-2.5"
+                    role="alert"
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" class="mt-px flex-none" aria-hidden="true">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M12 8v5M12 16.5v.01" />
+                    </svg>
+                    <span class="text-[13px] leading-[1.45] text-red-700">{{ serverError }}</span>
+                </div>
+
+                <form class="flex flex-col gap-[15px]" @submit.prevent="submit">
+                    <div>
+                        <label for="email" class="mb-[7px] block text-[13px] font-semibold text-zinc-700">
+                            {{ t('auth.work_email') }}
+                        </label>
+                        <input
+                            id="email"
+                            v-model="form.email"
+                            type="email"
+                            autocomplete="username"
+                            autofocus
+                            placeholder="you@company.com"
+                            class="nb-input"
+                            :class="{ 'nb-input-error': clientErrors.email }"
+                            @input="clearErrors('email')"
+                        >
+                        <p v-if="clientErrors.email" class="mt-1.5 text-[12.5px] text-red-600">
+                            {{ clientErrors.email }}
+                        </p>
+                    </div>
+
+                    <div>
+                        <div class="mb-[7px] flex items-baseline justify-between">
+                            <label for="password" class="text-[13px] font-semibold text-zinc-700">
                                 {{ t('auth.password') }}
                             </label>
-                            <div class="relative">
-                                <TextInput
-                                    id="password"
-                                    v-model="form.password"
-                                    type="password"
-                                    class="w-full px-3.5 py-3.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-[#e0ddff] focus:border-[#6c4dff] text-sm placeholder:text-slate-400 pr-10"
-                                    placeholder="8+ characters"
-                                    required
-                                />
-                                <span
-                                    class="absolute inset-y-0 right-3 flex items-center text-slate-300 pointer-events-none"
-                                >
-                                    👁
-                                </span>
-                            </div>
-                            <InputError class="mt-2" :message="form.errors.password" />
-                        </div>
-
-                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-0">
-                            <label class="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    v-model="form.remember"
-                                    class="w-4 h-4 rounded border-slate-300 text-[#6c4dff] focus:ring-[#6c4dff]"
-                                >
-                                <span class="text-sm text-slate-600">{{ t('auth.remember_me') }}</span>
-                            </label>
-
                             <Link
                                 v-if="canResetPassword"
                                 :href="route('password.request')"
-                                class="text-sm font-medium text-[#6c4dff] hover:text-[#5531ff] mt-2 md:mt-0"
+                                class="nb-accent-text text-[12.5px] font-semibold no-underline"
                             >
                                 {{ t('auth.forgot_password') }}
                             </Link>
                         </div>
+                        <div class="relative">
+                            <input
+                                id="password"
+                                v-model="form.password"
+                                :type="showPassword ? 'text' : 'password'"
+                                autocomplete="current-password"
+                                :placeholder="t('auth.enter_your_password')"
+                                class="nb-input pe-[58px]"
+                                :class="{ 'nb-input-error': clientErrors.password }"
+                                @input="clearErrors('password')"
+                            >
+                            <button
+                                type="button"
+                                class="absolute end-[11px] top-1/2 -translate-y-1/2 border-none bg-transparent p-0 text-xs font-semibold text-zinc-500"
+                                @click="showPassword = !showPassword"
+                            >
+                                {{ showPassword ? t('auth.hide') : t('auth.show') }}
+                            </button>
+                        </div>
+                        <p v-if="clientErrors.password" class="mt-1.5 text-[12.5px] text-red-600">
+                            {{ clientErrors.password }}
+                        </p>
+                    </div>
 
-                        <button
-                            type="submit"
-                            class="w-full bg-[#6c4dff] hover:bg-[#5531ff] text-white py-3.5 rounded-xl font-semibold text-[15px] shadow-md shadow-[#6c4dff]/30 transition-colors flex items-center justify-center relative"
-                            :disabled="form.processing || isLoading"
-                        >
-                            <span v-if="isLoading" class="flex items-center justify-center">
-                                <span class="mr-2 inline-flex">
-                                    <svg
-                                        class="animate-spin h-5 w-5 text-gray-700"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                        <circle
-                                            class="opacity-20"
-                                            cx="12"
-                                            cy="12"
-                                            r="9"
-                                            stroke="currentColor"
-                                            stroke-width="4"
-                                        />
-                                        <path
-                                            d="M21 12a9 9 0 00-9-9"
-                                            stroke="currentColor"
-                                            stroke-width="4"
-                                            stroke-linecap="round"
-                                        />
-                                    </svg>
-                                </span>
-                                <span>{{ t('auth.logging_in') }}</span>
-                            </span>
-                            <span v-else>
-                                {{ t('auth.sign_in') }}
-                            </span>
-                        </button>
-                    </form>
+                    <label class="mt-px flex cursor-pointer select-none items-center gap-[9px] text-[13.5px] text-zinc-600">
+                        <input v-model="form.remember" type="checkbox" class="nb-checkbox">
+                        <span>{{ t('auth.keep_me_signed_in') }}</span>
+                    </label>
 
-                    <p class="mt-6 text-sm text-slate-600 text-center">
-                        {{ t('auth.dont_have_an_account') }}
-                        <Link
-                            :href="route('register')"
-                            class="font-semibold text-[#6c4dff] hover:text-[#5531ff] ml-1"
-                        >
-                            {{ t('auth.sign_up') }}
-                        </Link>
-                    </p>
-                </div>
-                <div class="mt-auto pt-10 flex items-center justify-center gap-2 text-sm text-slate-400">
-                     <LanguageSwitcher />
-                </div>
+                    <button type="submit" class="nb-submit" :disabled="form.processing">
+                        <span v-if="form.processing" class="nb-spinner" aria-hidden="true" />
+                        <span>{{ form.processing ? t('auth.logging_in') : t('auth.sign_in') }}</span>
+                    </button>
+                </form>
+
+                <p class="mt-5 text-center text-[13px] text-zinc-500">
+                    {{ t('auth.dont_have_an_account') }}
+                    <Link :href="route('register')" class="nb-accent-text ms-1 font-semibold">
+                        {{ t('auth.sign_up') }}
+                    </Link>
+                </p>
             </div>
 
-            <!-- Chat bubble placeholder -->
-            <button
-                type="button"
-                class="hidden md:flex h-12 w-12 rounded-full bg-[#6c4dff] text-white shadow-lg shadow-[#6c4dff]/40 items-center justify-center fixed right-10 bottom-10 z-40"
-            >
-                ?
-            </button>
+            <div class="mt-6 flex items-center justify-between border-t border-zinc-100 pt-4">
+                <span class="nb-mono flex items-center gap-1.5 text-[10.5px] text-zinc-400">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2.2" aria-hidden="true">
+                        <rect x="4" y="10" width="16" height="11" rx="2" />
+                        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                    </svg>
+                    {{ t('auth.secure_connection') }}
+                </span>
+                <span class="nb-mono text-[10.5px] text-zinc-400">Nextbook ERP</span>
+            </div>
         </div>
+
+        <p class="mt-[22px] text-[12.5px] text-zinc-400">
+            &copy; {{ currentYear }} Nextbook, Inc.
+        </p>
     </div>
 </template>
 
 <style scoped>
-/* Make layout more responsive for mobile */
-@media (max-width: 768px) {
-    .min-h-screen {
-        min-height: 100dvh;
-    }
-    .rounded-\[32px\] {
-        border-radius: 1rem !important;
-    }
-    .shadow-\[0_24px_80px_rgba\(15\,23\,42\,0\.12\)\] {
-        box-shadow: 0 8px 24px rgba(15,23,42,0.12) !important;
-    }
+.nb-login {
+    /* Accent follows the app's active theme rather than hard-coding a brand hex. */
+    --nb-accent: hsl(var(--primary));
+    --nb-accent-strong: color-mix(in srgb, hsl(var(--primary)) 82%, #000);
+    --nb-accent-ring: color-mix(in srgb, hsl(var(--primary)) 14%, transparent);
+
+    box-sizing: border-box;
+    font-family: 'Public Sans', 'Poppins', system-ui, -apple-system, sans-serif;
+    color: #18181b;
+    background-color: #f5f6f6;
+    background-image: radial-gradient(circle, rgba(15, 23, 42, 0.045) 1px, transparent 1.4px);
+    background-size: 22px 22px;
 }
 
-/* Custom checkbox styles */
-input[type='checkbox']:checked {
-    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+.nb-mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
-@keyframes spin {
-    100% {
-        transform: rotate(360deg);
+
+.nb-card {
+    box-shadow:
+        0 1px 2px rgba(16, 24, 40, 0.04),
+        0 18px 40px -18px rgba(16, 24, 40, 0.16);
+}
+
+.nb-accent-bg {
+    background: var(--nb-accent);
+}
+
+.nb-accent-text {
+    color: var(--nb-accent);
+}
+
+.nb-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 11px 13px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #18181b;
+    background: #fff;
+    border: 1px solid #d4d4d8;
+    border-radius: 9px;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.nb-input::placeholder {
+    color: #a1a1aa;
+}
+
+.nb-input:focus {
+    border-color: var(--nb-accent);
+    box-shadow: 0 0 0 3px var(--nb-accent-ring);
+}
+
+.nb-input-error {
+    border-color: #dc2626;
+}
+
+.nb-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--nb-accent);
+    cursor: pointer;
+    margin: 0;
+}
+
+.nb-submit {
+    margin-top: 5px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    width: 100%;
+    background: var(--nb-accent);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.nb-submit:hover:not(:disabled) {
+    background: var(--nb-accent-strong);
+}
+
+.nb-submit:disabled {
+    cursor: default;
+    opacity: 0.85;
+}
+
+.nb-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    display: inline-block;
+    animation: nb-spin 0.6s linear infinite;
+}
+
+.nb-rise {
+    animation: nb-rise 0.35s ease;
+}
+
+.nb-shake {
+    animation: nb-shake 0.4s ease;
+}
+
+@keyframes nb-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes nb-rise {
+    from { transform: translateY(8px); }
+    to { transform: translateY(0); }
+}
+
+@keyframes nb-shake {
+    10%, 90% { transform: translateX(-1px); }
+    20%, 80% { transform: translateX(2px); }
+    30%, 50%, 70% { transform: translateX(-4px); }
+    40%, 60% { transform: translateX(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nb-rise,
+    .nb-shake,
+    .nb-spinner {
+        animation: none;
     }
-}
-.animate-spin {
-    animation: spin 1s linear infinite;
 }
 </style>

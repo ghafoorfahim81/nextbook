@@ -6,10 +6,14 @@
       "Bash",
       "Bash(git --no-pager diff --stat)",
       "Bash(php -l app/Http/Controllers/Ledger/CustomerController.php)",
-      "PowerShell($p = \\(Get-Command php -ErrorAction SilentlyContinue\\); if \\($p\\) { $p.Source } else { Get-ChildItem \"$env:USERPROFILE\\\\.config\\\\herd\\\\bin\",\"C:\\\\Program Files\\\\Herd\" -Filter php.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 5 FullName })"
+      "PowerShell($p = \\(Get-Command php -ErrorAction SilentlyContinue\\); if \\($p\\) { $p.Source } else { Get-ChildItem \"$env:USERPROFILE\\\\.config\\\\herd\\\\bin\",\"C:\\\\Program Files\\\\Herd\" -Filter php.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 5 FullName })",
+      "Bash(cp \"resources/js/Pages/Auth/Login.vue\" \"resources/js/Pages/Auth/oldLogin.vue\" && ls -l resources/js/Pages/Auth/)",
+      "Bash(npx vite *)",
+      "Bash(echo \"EXIT:$?\")"
     ],
     "additionalDirectories": [
-      "C:\\Users\\Fahim-Pc\\.claude\\projects\\e--nextbook"
+      "C:\\Users\\Fahim-Pc\\.claude\\projects\\e--nextbook",
+      "E:\\nextbook\\resources\\js\\Pages\\Auth"
     ]
   }
 }
