@@ -16,7 +16,8 @@ class UserUpdateRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($this->user->id)->whereNull('deleted_at')->where('branch_id', $this->user()->current_branch_id)],
+            // A login is unique across the whole system, not per branch.
+            'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($this->user->id)->whereNull('deleted_at')],
             'password' => ['nullable', 'string', 'min:8', 'confirmed' ],
             'roles' => ['required', 'array'],
             'roles.*' => ['string', 'exists:roles,id'],

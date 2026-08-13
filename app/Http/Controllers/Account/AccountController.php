@@ -28,6 +28,7 @@ use App\Models\Transaction\Transaction;
 use App\Models\User;
 use App\Services\SpreadsheetExportService;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use App\Support\BranchContext;
 class AccountController extends Controller
 {
     public function __construct()
@@ -84,7 +85,7 @@ class AccountController extends Controller
         $validated['slug'] = Str::slug($validated['name']);
         $account = Account::create($validated);
 
-            $glAccounts = Cache::get('gl_accounts');
+            $glAccounts = BranchContext::glAccounts();
             $transactionService = app(TransactionService::class);
         if ($validated['amount'] && $validated['amount'] > 0) {
             // $nature = $account->accountType->nature ?? 'asset';
@@ -293,7 +294,7 @@ class AccountController extends Controller
         }
 
         if ($validated['amount'] && $validated['amount'] > 0) {
-            $glAccounts = Cache::get('gl_accounts');
+            $glAccounts = BranchContext::glAccounts();
             $transactionService = app(TransactionService::class);
             // $nature = $chart_of_account->accountType->nature ?? 'asset';
             // Map debit/credit per account nature (see image)

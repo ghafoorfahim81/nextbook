@@ -3,11 +3,14 @@
 namespace App\Http\Requests\Inventory;
 
 use App\Enums\ItemType;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class ItemUpdateRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -22,10 +25,10 @@ class ItemUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:256', Rule::unique('items')->ignore($this->route('item'))->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
-            'code' => ['required', 'string', 'max:256', Rule::unique('items')->ignore($this->route('item'))->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
+            'name' => ['required', 'string', 'max:256', $this->uniqueInBranch('items', $this->route('item'))],
+            'code' => ['required', 'string', 'max:256', $this->uniqueInBranch('items', $this->route('item'))],
             'item_type' => ['nullable', 'string', Rule::in(ItemType::values()) ?? ItemType::INVENTORY_MATERIALS->value],
-            'sku' => ['nullable', 'string', 'unique:items,sku,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'sku' => ['nullable', 'string', $this->uniqueInBranch('items', $this->route('item'))],
             'is_batch_tracked' => ['nullable', 'boolean'],
             'is_expiry_tracked' => ['nullable', 'boolean'],
             'generic_name' => ['nullable', 'string'],

@@ -22,6 +22,7 @@ use App\Models\Administration\Currency;
 use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
+use App\Support\BranchContext;
 class ReceiptController extends Controller
 {
     private $dateConversionService;
@@ -104,7 +105,7 @@ class ReceiptController extends Controller
                 'cheque_no' => $validated['cheque_no'] ?? null,
                 'narration' => $validated['narration'] ?? null,
             ]);
-            $glAccounts = Cache::get('gl_accounts');
+            $glAccounts = BranchContext::glAccounts();
             // Credit Accounts Receivable for selected ledger
             $arAccountId = $glAccounts['account-receivable'];
 
@@ -266,7 +267,7 @@ class ReceiptController extends Controller
             $rate = isset($validated['rate']) ? (float) $validated['rate'] : $receipt->rate;
             $bankAccountId = $validated['bank_account_id'] ?? $receipt->transaction?->lines[0]->account_id;
             $bankAccount = Account::find($bankAccountId);
-            $glAccounts = Cache::get('gl_accounts');
+            $glAccounts = BranchContext::glAccounts();
             $arAccountId = $glAccounts['account-receivable'];
             TransactionLine::where('transaction_id', $receipt->transaction->id)->forceDelete();
              Transaction::where('id', $receipt->transaction->id)->forceDelete();

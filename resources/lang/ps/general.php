@@ -43,6 +43,8 @@ return [
     'items_saved_successfully' => 'Items saved successfully.',
 
     'cannot_delete_main_warehouse' => 'You cannot delete the main warehouse.',
+    'main_warehouse' => 'مرکزي ګدام',
+    'cash_customer' => 'نغدي پیرودونکی',
     'cannot_delete_main_branch' => 'You cannot delete the main branch.',
     'cannot_delete_main_account' => 'You cannot delete the main account.',
     'cannot_delete_own_account' => 'You cannot delete your own account.',

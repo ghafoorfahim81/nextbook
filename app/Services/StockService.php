@@ -409,9 +409,7 @@ class StockService
      */
     protected function getCostingMethod(string $branchId): string
     {
-        return \Illuminate\Support\Facades\Cache::get('costing_method')
-            ?? Auth::user()?->company?->costing_method?->value
-            ?? 'fifo';
+        return \App\Support\BranchContext::costingMethod();
     }
 
     public function getStockLevel(string $itemId, string $warehouseId, ?string $batch = null, ?string $expireDate = null): array

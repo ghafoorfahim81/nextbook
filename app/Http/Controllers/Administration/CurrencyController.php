@@ -38,7 +38,7 @@ class CurrencyController extends Controller
     public function store(CurrencyStoreRequest $request)
     {
         Currency::create($request->currencyData());
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'currencies'));
+        $this->forgetCurrencyLookups($request);
 
         return redirect()->route('currencies.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.currency')]));
 
@@ -53,7 +53,7 @@ class CurrencyController extends Controller
     public function update(CurrencyUpdateRequest $request, Currency $currency)
     {
         $currency->update($request->validated());
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'currencies'));
+        $this->forgetCurrencyLookups($request);
 
         return redirect()->route('currencies.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.currency')]));
 
@@ -62,14 +62,14 @@ class CurrencyController extends Controller
     public function destroy(Request $request, Currency $currency)
     {
         $currency->delete();
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'currencies'));
+        $this->forgetCurrencyLookups($request);
 
         return back();
     }
     public function restore(Request $request, Currency $currency)
     {
         $currency->restore();
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'currencies'));
+        $this->forgetCurrencyLookups($request);
 
         return redirect()->route('currencies.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.currency')]));
     }
@@ -77,7 +77,7 @@ class CurrencyController extends Controller
     public function forceDelete(Request $request, Currency $currency)
     {
         app(\App\Services\DeletedRecordService::class)->forceDelete('currencies', (string) $currency->id);
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'currencies'));
+        $this->forgetCurrencyLookups($request);
 
         return redirect()->route('currencies.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.currency')]));
     }
@@ -86,5 +86,8 @@ class CurrencyController extends Controller
     {
         CacheForget::lookup($request, 'currencies');
         CacheForget::lookup($request, 'home_currency');
+
+        // The posting code resolves the base currency through BranchContext.
+        \App\Support\BranchContext::flush();
     }
 }

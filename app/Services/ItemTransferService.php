@@ -13,6 +13,7 @@ use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
 use App\Services\DateConversionService;
+use App\Support\BranchContext;
 
 class ItemTransferService
 {
@@ -178,8 +179,8 @@ class ItemTransferService
             // Create transaction for transfer cost
             if($transfer->transfer_cost>0){
                     $transactionService = app(TransactionService::class);
-                    $glAccount = Cache::get('gl_accounts');
-                    $homeCurrency = Cache::get('home_currency');
+                    $glAccount = BranchContext::glAccounts();
+                    $homeCurrency = BranchContext::homeCurrency();
                     $transactionService->post(
                         header: [
                             'currency_id' => $homeCurrency->id,

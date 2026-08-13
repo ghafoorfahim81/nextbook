@@ -32,6 +32,7 @@ use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
 use App\Services\SpreadsheetExportService;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use App\Support\BranchContext;
 class PurchaseController extends Controller
 {
     private $dateConversionService;
@@ -162,7 +163,7 @@ class PurchaseController extends Controller
                 ];
 
             }
-            $glAccounts = Cache::get('gl_accounts');
+            $glAccounts = BranchContext::glAccounts();
             $discountTotal = $request->input('discount_total', 0);
 
             if($discountTotal > 0) {
@@ -399,7 +400,7 @@ class PurchaseController extends Controller
             }
 
             $lines = [];
-            $glAccounts = Cache::get('gl_accounts');
+            $glAccounts = BranchContext::glAccounts();
             $discountTotal = (float) $request->input('discount_total', 0);
             // See store(): GL lines stay in the transaction currency, stock cost is home currency.
             $rate = $this->transactionRate($validated);

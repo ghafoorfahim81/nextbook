@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Administration;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
 use Illuminate\Foundation\Http\FormRequest;
 
 class DepartmentStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -20,7 +23,7 @@ class DepartmentStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:departments,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'name' => ['required', 'string', $this->uniqueInBranch('departments')],
             'remark' => ['nullable', 'string'],
             'parent_id' => ['nullable', 'exists:departments,id'],
             'created_by' => ['required'],

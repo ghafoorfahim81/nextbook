@@ -28,7 +28,6 @@ use App\Enums\ItemType;
 use App\Enums\CostingMethod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use App\Models\Account\Account;
 final class LookupShared
 {
     /**
@@ -105,34 +104,12 @@ final class LookupShared
             $cacheDuration,
             fn() => Currency::query()->where('is_base_currency', true)->first()
         );
-        Cache::put('home_currency', $homeCurrency);
 
-        $glAccounts = Cache::remember(
-            CacheKey::forCompanyBranchLocale($request, 'gl_accounts'),
-            $cacheDuration,
-            fn() => Account::query()->whereIn('slug', [
-                'sales-revenue',
-                'account-receivable',
-                'account-payable',
-                'product-income',
-                'cash-in-hand',
-                'cost-of-goods-sold',
-                'inventory-stock',
-                'retained-earnings',
-                'opening-balance-equity',
-                'non-inventory-items',
-                'raw-materials',
-                'finished-goods',
-                'other-expenses',
-                'discount-to-customer',
-                'discount-from-supplier'
-
-            ])->pluck('id', 'slug')
-        );
-        Cache::put('gl_accounts', $glAccounts);
-
-        $costingMethod = $request->user()?->company?->costing_method?->value ?? CostingMethod::FIFO->value;
-        Cache::put('costing_method', $costingMethod);
+        // The GL account map, base currency and costing method used to be written to
+        // the global cache keys `gl_accounts`, `home_currency` and `costing_method`
+        // here, and read back by the posting code. Those keys carried no branch, so
+        // whichever request ran last decided which branch's accounts everyone posted
+        // to. The posting code resolves them per branch through BranchContext now.
 
         return [
             'mainBranch' => $mainBranch,

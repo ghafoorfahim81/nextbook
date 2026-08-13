@@ -1,0 +1,52 @@
+<?php
+
+namespace App\Http\Requests\Concerns;
+
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Unique;
+
+/**
+ * Uniqueness rules scoped to the branch the request is acting on.
+ *
+ * The string form these replace — `unique:items,name,NULL,id,branch_id,NULL,deleted_at,NULL`
+ * — reads as "unique within the branch", but Laravel turns the NULL value into
+ * `whereNull('branch_id')`. Every row has a branch, so the check ran against an empty
+ * set and passed for every duplicate.
+ */
+trait BranchScopedUnique
+{
+    /**
+     * @param  mixed  $ignore  record (or id) to exclude, for update requests
+     */
+    protected function uniqueInBranch(string $table, mixed $ignore = null): Unique
+    {
+        $rule = Rule::unique($table)->whereNull('deleted_at');
+
+        $branchId = $this->activeBranchId();
+
+        if ($branchId !== null) {
+            $rule->where('branch_id', $branchId);
+        }
+
+        return $ignore ? $rule->ignore($ignore) : $rule;
+    }
+
+    /**
+     * The branch this request is acting on. Never read from request input — that
+     * would let the caller pick which branch their uniqueness is checked against.
+     */
+    protected function activeBranchId(): ?string
+    {
+        if (app()->bound('active_branch_id')) {
+            $branchId = app('active_branch_id');
+
+            if ($branchId) {
+                return (string) $branchId;
+            }
+        }
+
+        $branchId = $this->user()?->branch_id;
+
+        return $branchId ? (string) $branchId : null;
+    }
+}

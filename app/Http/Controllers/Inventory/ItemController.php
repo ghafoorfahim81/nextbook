@@ -32,6 +32,7 @@ use App\Models\Purchase\Purchase;
 use App\Models\Sale\Sale;
 use App\Services\SpreadsheetExportService;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use App\Support\BranchContext;
 class ItemController extends Controller
 {
     public function __construct()
@@ -213,8 +214,8 @@ class ItemController extends Controller
                 if ($openings->filter(function ($o) {
                     return !empty($o['warehouse_id']) && $o['quantity'] > 0;
                 })->count() > 0) {
-                    $glAccounts      = Cache::get('gl_accounts');
-                    $homeCurrency = Cache::get('home_currency');
+                    $glAccounts      = BranchContext::glAccounts();
+                    $homeCurrency = BranchContext::homeCurrency();
                     $openingBalanceAccount = $glAccounts['opening-balance-equity'];
                     $itemType = $validated['item_type'];
                     if ($itemType == ItemType::INVENTORY_MATERIALS->value) {
@@ -493,8 +494,8 @@ class ItemController extends Controller
 
                 // Create opening transactions
                 // if ($filteredOpenings->filter(fn($o) => !empty($o['warehouse_id']) && (float)($o['quantity'] ?? 0) > 0)->count() > 0) {
-                //     $glAccounts = Cache::get('gl_accounts');
-                //     $homeCurrency = Cache::get('home_currency');
+                //     $glAccounts = BranchContext::glAccounts();
+                //     $homeCurrency = BranchContext::homeCurrency();
                 //     $itemType = $validated['item_type'];
                 //     $openingBalanceAccount = $glAccounts['opening-balance-equity'];
                 //     if ($itemType == ItemType::INVENTORY_MATERIALS->value) {
