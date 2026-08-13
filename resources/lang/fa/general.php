@@ -43,6 +43,8 @@ return [
     'items_saved_successfully' => 'آیتم‌ها با موفقیت ذخیره شدند.',
 
     'cannot_delete_main_warehouse' => 'شما نمی‌توانید انبار اصلی را حذف کنید.',
+    'main_warehouse' => 'گدام مرکزی',
+    'cash_customer' => 'مشتری نقدی',
     'cannot_delete_main_branch' => 'شما نمی‌توانید شعبه اصلی را حذف کنید.',
     'cannot_delete_main_account' => 'شما نمی‌توانید حساب اصلی را حذف کنید.',
     'cannot_delete_own_account' => 'شما نمی‌توانید حساب خودتان را حذف کنید.',

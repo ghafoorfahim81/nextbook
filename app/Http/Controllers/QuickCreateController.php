@@ -36,6 +36,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use App\Support\BranchContext;
 
 class QuickCreateController extends Controller
 {
@@ -123,7 +124,7 @@ class QuickCreateController extends Controller
         Gate::authorize('create', Brand::class);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'unique:brands,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'name' => ['required', 'string', $this->uniqueInBranch('brands')],
             'legal_name' => ['nullable', 'string'],
             'registration_number' => ['nullable', 'string'],
             'logo' => ['nullable', 'string'],
@@ -151,7 +152,7 @@ class QuickCreateController extends Controller
         Gate::authorize('create', Category::class);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'unique:categories,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'name' => ['required', 'string', $this->uniqueInBranch('categories')],
             'parent_id' => ['nullable', 'string', 'exists:categories,id'],
             'remark' => ['nullable', 'string'],
         ]);
@@ -184,7 +185,7 @@ class QuickCreateController extends Controller
         Gate::authorize('create', Warehouse::class);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'unique:warehouses,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'name' => ['required', 'string', $this->uniqueInBranch('warehouses')],
             'address' => ['nullable', 'string'],
             'is_main' => ['nullable', 'boolean'],
             'is_active' => true,
@@ -204,8 +205,8 @@ class QuickCreateController extends Controller
         Gate::authorize('create', Size::class);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'unique:sizes,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'code' => ['required', 'string', 'unique:sizes,code,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'name' => ['required', 'string', $this->uniqueInBranch('sizes')],
+            'code' => ['required', 'string', $this->uniqueInBranch('sizes')],
         ]);
 
         $size = Size::create($validated);
@@ -222,7 +223,7 @@ class QuickCreateController extends Controller
         Gate::authorize('create', ExpenseCategory::class);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:expense_categories,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'name' => ['required', 'string', 'max:255', $this->uniqueInBranch('expense_categories')],
             'remarks' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
         ]);
@@ -295,7 +296,7 @@ class QuickCreateController extends Controller
         Gate::authorize('create', Item::class);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'unique:items,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'name' => ['required', 'string', $this->uniqueInBranch('items')],
             'code' => ['nullable', 'string'],
             'item_type' => ['nullable', 'string'],
             'unit_measure_id' => ['required', 'string', 'exists:unit_measures,id'],
@@ -378,8 +379,8 @@ class QuickCreateController extends Controller
         Gate::authorize('create', Account::class);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'unique:accounts,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'number' => ['required', 'string', 'unique:accounts,number,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'name' => ['required', 'string', $this->uniqueInBranch('accounts')],
+            'number' => ['required', 'string', $this->uniqueInBranch('accounts')],
             'account_type_id' => ['required', 'string', 'exists:account_types,id'],
             'is_active' => ['nullable', 'boolean'],
             'remark' => ['nullable', 'string'],
@@ -393,7 +394,7 @@ class QuickCreateController extends Controller
             $validated['slug'] = Str::slug($validated['name']);
             $account = Account::create($validated);
 
-            $glAccounts = Cache::get('gl_accounts');
+            $glAccounts = BranchContext::glAccounts();
             $transactionService = app(TransactionService::class);
 
             $transaction = $transactionService->post(
@@ -444,6 +445,12 @@ class QuickCreateController extends Controller
         foreach ($names as $name) {
             Cache::forget(CacheKey::forCompanyBranchLocale($request, $name));
         }
+
+        // Posting accounts and the base currency are resolved through BranchContext,
+        // which memoises them per branch for the life of the process.
+        if (array_intersect($names, ['accounts', 'gl_accounts', 'currencies', 'home_currency'])) {
+            BranchContext::flush();
+        }
     }
 
     private function generateNextItemCode(): string
@@ -484,5 +491,23 @@ class QuickCreateController extends Controller
         $number = ((int) $latestNumber) + 1;
 
         return $prefix . str_pad((string) $number, 3, '0', STR_PAD_LEFT);
+    }
+    /**
+     * A uniqueness rule scoped to the branch this request is acting on.
+     *
+     * The `...,branch_id,NULL,...` string form these replace compiled to
+     * `whereNull('branch_id')`, which matches no rows and passed every duplicate.
+     */
+    private function uniqueInBranch(string $table): \Illuminate\Validation\Rules\Unique
+    {
+        $rule = \Illuminate\Validation\Rule::unique($table)->whereNull('deleted_at');
+
+        $branchId = BranchContext::branchId();
+
+        if ($branchId !== null) {
+            $rule->where('branch_id', $branchId);
+        }
+
+        return $rule;
     }
 }

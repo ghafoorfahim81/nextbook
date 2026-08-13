@@ -40,6 +40,7 @@ use App\Services\ActivityLogService;
 use App\Services\SpreadsheetExportService;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Illuminate\Support\Str;
+use App\Support\BranchContext;
 
 class SaleController extends Controller
 {
@@ -175,7 +176,7 @@ class SaleController extends Controller
             $sale->items()->createMany($validated['item_list']);
 
             $lines = [];
-            $glAccounts = Cache::get('gl_accounts');
+            $glAccounts = BranchContext::glAccounts();
             // Every transaction_line is expressed in the transaction's currency; reports
             // multiply by transactions.rate to get home currency. Selling prices already
             // come in that currency, but stock cost is always home currency, so COGS and
@@ -583,7 +584,7 @@ class SaleController extends Controller
 
             $lines = [];
             $totalDiscount = (float) $request->input('discount_total', 0);
-            $glAccounts = Cache::get('gl_accounts');
+            $glAccounts = BranchContext::glAccounts();
             // See store(): cost is home currency, GL lines are transaction currency.
             $rate = $this->transactionRate($validated);
 
@@ -1147,7 +1148,7 @@ class SaleController extends Controller
         string $branchId,
         float $quantity,
     ): float {
-        $method = \Illuminate\Support\Facades\Cache::get('costing_method', CostingMethod::WEIGHTED_AVERAGE->value);
+        $method = BranchContext::costingMethod();
 
         if ($method !== CostingMethod::FIFO->value && $method !== CostingMethod::LIFO->value) {
             return $this->resolveUnitCost($avgCost, $selectedUnitMeasureId, $itemUnitMeasureId, $unitValuesById);

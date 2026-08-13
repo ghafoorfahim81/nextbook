@@ -22,6 +22,7 @@ use App\Models\Administration\Currency;
 use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
+use App\Support\BranchContext;
 class PaymentController extends Controller
 {
     private $dateConversionService;
@@ -112,7 +113,7 @@ class PaymentController extends Controller
             ]);
 
             // Debit Accounts Payable for selected ledger (reduce liability)
-            $glAccounts = Cache::get('gl_accounts');
+            $glAccounts = BranchContext::glAccounts();
             $apAccountId = $glAccounts['account-payable'];
             $debitRemark = "Payment #{$payment->number} to {$ledger->name}";
 
@@ -274,7 +275,7 @@ class PaymentController extends Controller
             $rate = isset($validated['rate']) ? (float) $validated['rate'] : ($payment->transaction?->rate ?? 0);
             $bankAccountId = $validated['bank_account_id'] ?? $payment->transaction?->lines[0]->account_id;
             $bankAccount = Account::find($bankAccountId);
-            $glAccounts = Cache::get('gl_accounts');
+            $glAccounts = BranchContext::glAccounts();
             $apAccountId = $glAccounts['account-payable'];
 
             TransactionLine::where('transaction_id', $payment->transaction->id)->forceDelete();

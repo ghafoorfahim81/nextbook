@@ -4,6 +4,7 @@ namespace App\Http\Requests\UserManagement;
 
 use App\Enums\UserStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UserStoreRequest extends FormRequest
 {
@@ -16,7 +17,7 @@ class UserStoreRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:users,email,NULL,id,branch_id,NULL,deleted_at,NULL', 'max:255'],
+            'email' => ['required', 'email', Rule::unique('users', 'email')->whereNull('deleted_at'), 'max:255'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'status' => ['nullable', 'in:' . implode(',', array_column(UserStatus::cases(), 'value'))],
             'branch_id' => ['nullable', 'string', 'exists:branches,id'],

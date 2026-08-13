@@ -89,4 +89,18 @@ class JournalClass extends Model
         ];
     }
 
+    /**
+     * Starter journal classes provisioned for every new branch.
+     */
+    public static function defaultClasses(): array
+    {
+        return [
+            ['name' => 'General Journal', 'code' => 'GJ', 'description' => 'Manual entries that do not belong to another journal'],
+            ['name' => 'Sales Journal', 'code' => 'SJ', 'description' => 'Sales and customer invoices'],
+            ['name' => 'Purchase Journal', 'code' => 'PJ', 'description' => 'Purchases and supplier bills'],
+            ['name' => 'Cash Receipts Journal', 'code' => 'CRJ', 'description' => 'Money received'],
+            ['name' => 'Cash Payments Journal', 'code' => 'CPJ', 'description' => 'Money paid out'],
+            ['name' => 'Adjusting Entries', 'code' => 'ADJ', 'description' => 'Period-end adjustments and corrections'],
+        ];
+    }
 }

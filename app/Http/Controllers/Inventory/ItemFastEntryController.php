@@ -14,6 +14,7 @@ use App\Enums\ItemType;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
+use App\Support\BranchContext;
 class ItemFastEntryController extends Controller
 {
 
@@ -37,7 +38,7 @@ class ItemFastEntryController extends Controller
 
             $rows->each(function ($r) use ($today) {
                 // 1) Create the item
-                $glAccounts = Cache::get('gl_accounts');
+                $glAccounts = BranchContext::glAccounts();
                 $item = Item::create([
                     // Adjust fields to match your Item fillables/columns
                     'id'             => (string) Str::ulid(), // if your Item uses ULIDs; remove if auto-increment
@@ -82,8 +83,8 @@ class ItemFastEntryController extends Controller
 
                     $cost = (float)($r['purchase_price'] ?? 0);
                     $quantity = (float)($r['quantity'] ?? 0);
-                    $glAccounts      = Cache::get('gl_accounts');
-                    $homeCurrency = Cache::get('home_currency');
+                    $glAccounts      = BranchContext::glAccounts();
+                    $homeCurrency = BranchContext::homeCurrency();
                     $transaction = $transactionService->post(
                         header: [
                             'currency_id' => $homeCurrency->id,

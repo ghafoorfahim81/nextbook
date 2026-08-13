@@ -8,6 +8,7 @@ use App\Models\Transaction\TransactionLine;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
+use App\Support\BranchContext;
 
 /**
  * Opening balances for a customer/supplier.
@@ -84,7 +85,7 @@ class LedgerOpeningService
      */
     private function post(Ledger $ledger, array $row): void
     {
-        $glAccounts = Cache::get('gl_accounts');
+        $glAccounts = BranchContext::glAccounts();
         $isSupplier = (string) ($ledger->type?->value ?? $ledger->type) === 'supplier';
 
         $partyAccountId = $isSupplier

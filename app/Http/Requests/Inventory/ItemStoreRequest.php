@@ -3,11 +3,14 @@
 namespace App\Http\Requests\Inventory;
 
 use App\Enums\ItemType;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class ItemStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -23,10 +26,10 @@ class ItemStoreRequest extends FormRequest
     {
 
         return [
-            'name' => ['required', 'string', 'unique:items,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'code' => ['required', 'string', 'unique:items,code,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'name' => ['required', 'string', $this->uniqueInBranch('items')],
+            'code' => ['required', 'string', $this->uniqueInBranch('items')],
             'item_type' => ['nullable', 'string', Rule::in(ItemType::values()) ?? ItemType::INVENTORY_MATERIALS->value],
-            'sku' => ['nullable', 'string', 'unique:items,sku,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'sku' => ['nullable', 'string', $this->uniqueInBranch('items')],
             'is_batch_tracked' => ['nullable', 'boolean'],
             'is_expiry_tracked' => ['nullable', 'boolean'],
             'generic_name' => ['nullable', 'string'],

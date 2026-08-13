@@ -1,11 +1,14 @@
 <?php
 namespace App\Http\Requests\Administration;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class BrandUpdateRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -14,7 +17,7 @@ class BrandUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', Rule::unique('brands')->ignore($this->route('brand'))->whereNull('deleted_at')->where('branch_id', $this->user()->current_branch_id)],
+            'name' => ['required', 'string', $this->uniqueInBranch('brands', $this->route('brand'))],
             'legal_name' => ['nullable', 'string'],
             'registration_number' => ['nullable', 'string'],
             'logo' => ['nullable', 'string'],

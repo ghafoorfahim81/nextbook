@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Owner;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
 use Illuminate\Foundation\Http\FormRequest;
 
 class OwnerStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -14,12 +17,12 @@ class OwnerStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255' , 'unique:owners,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'name' => ['required', 'string', 'max:255' , $this->uniqueInBranch('owners')],
             'father_name' => ['required', 'string', 'max:255'],
-            'nic' => ['nullable', 'string', 'max:255' , 'unique:owners,nic,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'email' => ['nullable', 'email', 'max:255' , 'unique:owners,email,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'nic' => ['nullable', 'string', 'max:255' , $this->uniqueInBranch('owners')],
+            'email' => ['nullable', 'email', 'max:255' , $this->uniqueInBranch('owners')],
             'address' => ['nullable', 'string'],
-            'phone_number' => ['nullable', 'string', 'max:255' , 'unique:owners,phone_number,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'phone_number' => ['nullable', 'string', 'max:255' , $this->uniqueInBranch('owners')],
             'ownership_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'share_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'profit_share_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
