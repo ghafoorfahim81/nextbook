@@ -94,15 +94,15 @@ class LedgerStatementService
         $normalNature = $this->normalNature($ledger);
 
         return $this->baseQuery($ledger)
-            ->groupBy('t.currency_id', 'c.code', 'c.name', 'c.symbol', 'c.is_base_currency')
-            ->selectRaw('t.currency_id')
+            ->groupBy('tl.currency_id', 'c.code', 'c.name', 'c.symbol', 'c.is_base_currency')
+            ->selectRaw('tl.currency_id')
             ->selectRaw('c.code as currency_code')
             ->selectRaw('c.name as currency_name')
             ->selectRaw('c.symbol as currency_symbol')
             ->selectRaw('c.is_base_currency')
             ->selectRaw('COALESCE(SUM(tl.debit), 0) as debit')
             ->selectRaw('COALESCE(SUM(tl.credit), 0) as credit')
-            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as home_equivalent')
+            ->selectRaw('COALESCE(SUM((tl.base_debit - tl.base_credit)), 0) as home_equivalent')
             ->get()
             ->map(function ($row) use ($normalNature) {
                 $net = round((float) $row->debit - (float) $row->credit, 2);
@@ -163,7 +163,7 @@ class LedgerStatementService
                     ->where('t.status', '=', TransactionStatus::POSTED->value)
                     ->whereNull('t.deleted_at');
             })
-            ->join('currencies as c', 'c.id', '=', 't.currency_id')
+            ->join('currencies as c', 'c.id', '=', 'tl.currency_id')
             ->where('tl.ledger_id', '=', $ledger->id)
             ->whereNull('tl.deleted_at');
     }
@@ -175,14 +175,14 @@ class LedgerStatementService
     {
         $query = $this->baseQuery($ledger)
             ->where('t.date', '<', $dateFrom)
-            ->groupBy('t.currency_id')
-            ->selectRaw('t.currency_id')
+            ->groupBy('tl.currency_id')
+            ->selectRaw('tl.currency_id')
             ->selectRaw('COALESCE(SUM(tl.debit), 0) as debit')
             ->selectRaw('COALESCE(SUM(tl.credit), 0) as credit')
-            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as home_equivalent');
+            ->selectRaw('COALESCE(SUM((tl.base_debit - tl.base_credit)), 0) as home_equivalent');
 
         if ($currencyId) {
-            $query->where('t.currency_id', '=', $currencyId);
+            $query->where('tl.currency_id', '=', $currencyId);
         }
 
         return $query->get()->keyBy('currency_id');
@@ -204,8 +204,8 @@ class LedgerStatementService
             ->selectRaw('tl.id as line_id')
             ->selectRaw('t.id as transaction_id')
             ->selectRaw('t.date')
-            ->selectRaw('t.rate')
-            ->selectRaw('t.currency_id')
+            ->selectRaw('tl.rate')
+            ->selectRaw('tl.currency_id')
             ->selectRaw('t.reference_type')
             ->selectRaw('t.reference_id')
             ->selectRaw("COALESCE(NULLIF(t.voucher_number, ''), '-') as voucher_number")
@@ -215,6 +215,8 @@ class LedgerStatementService
             ->selectRaw('c.is_base_currency')
             ->selectRaw('COALESCE(tl.debit, 0) as debit')
             ->selectRaw('COALESCE(tl.credit, 0) as credit')
+            ->selectRaw('COALESCE(tl.base_debit, 0) as base_debit')
+            ->selectRaw('COALESCE(tl.base_credit, 0) as base_credit')
             ->selectRaw(
                 sprintf(
                     "COALESCE(NULLIF(%s, ''), NULLIF(tl.remark, ''), NULLIF(t.remark, ''), '') as description",
@@ -227,7 +229,7 @@ class LedgerStatementService
         }
 
         if ($currencyId) {
-            $query->where('t.currency_id', '=', $currencyId);
+            $query->where('tl.currency_id', '=', $currencyId);
         }
 
         return $query->get();
@@ -283,7 +285,7 @@ class LedgerStatementService
                     $running = round($running + $debit - $credit, 2);
                     $totalDebit += $debit;
                     $totalCredit += $credit;
-                    $homeEquivalent = round($homeEquivalent + (($debit - $credit) * (float) $row->rate), 2);
+                    $homeEquivalent = round($homeEquivalent + ((float) $row->base_debit - (float) $row->base_credit), 2);
 
                     return [
                         'id' => $row->line_id,

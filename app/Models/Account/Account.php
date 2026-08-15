@@ -98,8 +98,8 @@ class Account extends Model
                     ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
                     ->where('transactions.status', 'posted')
                     ->selectRaw('
-                        SUM(transaction_lines.debit * transactions.rate)  AS total_debit,
-                        SUM(transaction_lines.credit * transactions.rate) AS total_credit
+                        SUM(transaction_lines.base_debit)  AS total_debit,
+                        SUM(transaction_lines.base_credit) AS total_credit
                     ')
                     ->first();
 
@@ -139,6 +139,71 @@ class Account extends Model
                     'is_normal_balance'     => $this->isNormalBalance($netBalance),
                 ];
             }
+        );
+    }
+
+    /**
+     * Balances split by the currency each line was posted in.
+     *
+     * An account is not single-currency: a "Cash in Hand USD" box can
+     * physically also hold AFN and PKR, and a supplier control account carries
+     * whatever currencies that supplier was invoiced in. `statement` folds
+     * everything into base (AFN) and answers "what is this worth"; this
+     * answers "what is actually in there".
+     *
+     * Each row reports both the document-currency total and its base value.
+     * Those are different questions and the base value is NOT derived here —
+     * it is the sum of what was stored at posting time, at each line's own
+     * historical rate.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function balancesByCurrency(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->transactionLines()
+                ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
+                ->join('currencies', 'currencies.id', '=', 'transaction_lines.currency_id')
+                ->where('transactions.status', 'posted')
+                ->whereNull('transactions.deleted_at')
+                ->groupBy(
+                    'transaction_lines.currency_id',
+                    'currencies.code',
+                    'currencies.name',
+                    'currencies.symbol',
+                    'currencies.is_base_currency'
+                )
+                ->selectRaw('transaction_lines.currency_id')
+                ->selectRaw('currencies.code as currency_code')
+                ->selectRaw('currencies.name as currency_name')
+                ->selectRaw('currencies.symbol as currency_symbol')
+                ->selectRaw('currencies.is_base_currency')
+                ->selectRaw('COALESCE(SUM(transaction_lines.debit), 0) as total_debit')
+                ->selectRaw('COALESCE(SUM(transaction_lines.credit), 0) as total_credit')
+                ->selectRaw('COALESCE(SUM(transaction_lines.base_debit), 0) as base_total_debit')
+                ->selectRaw('COALESCE(SUM(transaction_lines.base_credit), 0) as base_total_credit')
+                ->get()
+                ->map(function ($row) {
+                    $net = round((float) $row->total_debit - (float) $row->total_credit, 4);
+                    $baseNet = round((float) $row->base_total_debit - (float) $row->base_total_credit, 4);
+
+                    return [
+                        'currency_id' => $row->currency_id,
+                        'currency_code' => $row->currency_code,
+                        'currency_name' => $row->currency_name,
+                        'currency_symbol' => $row->currency_symbol,
+                        'is_base_currency' => (bool) $row->is_base_currency,
+                        'total_debit' => (float) $row->total_debit,
+                        'total_credit' => (float) $row->total_credit,
+                        'net_balance' => $net,
+                        'balance_amount' => abs($net),
+                        'balance_nature' => $net > 0 ? 'dr' : ($net < 0 ? 'cr' : null),
+                        'base_net_balance' => $baseNet,
+                    ];
+                })
+                ->sortBy(fn (array $row) => [$row['is_base_currency'] ? 0 : 1, $row['currency_code']])
+                ->values()
+                ->all()
         );
     }
 

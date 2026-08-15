@@ -453,7 +453,7 @@ class NotificationService
             })
             ->whereNull('tl.deleted_at')
             ->groupBy('tl.account_id')
-            ->selectRaw('tl.account_id, COALESCE(SUM((COALESCE(tl.debit, 0) - COALESCE(tl.credit, 0)) * t.rate), 0) as balance');
+            ->selectRaw('tl.account_id, COALESCE(SUM((COALESCE(tl.base_debit, 0) - COALESCE(tl.base_credit, 0))), 0) as balance');
 
         return DB::table('accounts as a')
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
@@ -566,8 +566,8 @@ class NotificationService
             ->whereNull('s.deleted_at')
             ->groupBy('s.id', 's.customer_id', 's.number', 's.date', 's.due_date', 's.type')
             ->selectRaw('s.id, s.customer_id as ledger_id, s.number, s.date, s.due_date, s.type')
-            ->selectRaw("COALESCE(SUM(CASE WHEN at.slug IN ('cash-or-bank', 'account-receivable') AND COALESCE(tl.debit, 0) > 0 THEN tl.debit * t.rate ELSE 0 END), 0) as total_amount")
-            ->selectRaw("COALESCE(SUM(CASE WHEN a.slug = 'account-receivable' AND COALESCE(tl.debit, 0) > 0 THEN tl.debit * t.rate ELSE 0 END), 0) as open_amount")
+            ->selectRaw("COALESCE(SUM(CASE WHEN at.slug IN ('cash-or-bank', 'account-receivable') AND COALESCE(tl.debit, 0) > 0 THEN tl.base_debit ELSE 0 END), 0) as total_amount")
+            ->selectRaw("COALESCE(SUM(CASE WHEN a.slug = 'account-receivable' AND COALESCE(tl.debit, 0) > 0 THEN tl.base_debit ELSE 0 END), 0) as open_amount")
             ->orderBy('s.date')
             ->orderBy('s.number')
             ->get()
@@ -607,8 +607,8 @@ class NotificationService
             ->whereNull('p.deleted_at')
             ->groupBy('p.id', 'p.supplier_id', 'p.number', 'p.date', 'p.due_date', 'p.type')
             ->selectRaw('p.id, p.supplier_id as ledger_id, p.number, p.date, p.due_date, p.type')
-            ->selectRaw("COALESCE(SUM(CASE WHEN at.slug IN ('cash-or-bank', 'account-payable') AND COALESCE(tl.credit, 0) > 0 THEN tl.credit * t.rate ELSE 0 END), 0) as total_amount")
-            ->selectRaw("COALESCE(SUM(CASE WHEN a.slug = 'account-payable' AND COALESCE(tl.credit, 0) > 0 THEN tl.credit * t.rate ELSE 0 END), 0) as open_amount")
+            ->selectRaw("COALESCE(SUM(CASE WHEN at.slug IN ('cash-or-bank', 'account-payable') AND COALESCE(tl.credit, 0) > 0 THEN tl.base_credit ELSE 0 END), 0) as total_amount")
+            ->selectRaw("COALESCE(SUM(CASE WHEN a.slug = 'account-payable' AND COALESCE(tl.credit, 0) > 0 THEN tl.base_credit ELSE 0 END), 0) as open_amount")
             ->orderBy('p.date')
             ->orderBy('p.number')
             ->get()
@@ -653,7 +653,7 @@ class NotificationService
                 'r.id',
                 'r.ledger_id',
                 'r.date',
-                DB::raw('COALESCE(SUM(tl.credit * t.rate), 0) as amount'),
+                DB::raw('COALESCE(SUM(tl.base_credit), 0) as amount'),
             ])
             ->map(fn ($receipt) => [
                 'id' => $receipt->id,
@@ -692,7 +692,7 @@ class NotificationService
                 'p.id',
                 'p.ledger_id',
                 'p.date',
-                DB::raw('COALESCE(SUM(tl.debit * t.rate), 0) as amount'),
+                DB::raw('COALESCE(SUM(tl.base_debit), 0) as amount'),
             ])
             ->map(fn ($payment) => [
                 'id' => $payment->id,
@@ -860,7 +860,7 @@ class NotificationService
             ->whereBetween('t.date', [$startDate, $endDate])
             ->whereIn('at.slug', $accountTypeSlugs)
             ->where("tl.{$direction}", '>', 0)
-            ->selectRaw("COALESCE(SUM(tl.{$direction} * t.rate), 0) as total")
+            ->selectRaw("COALESCE(SUM(tl.base_{$direction}), 0) as total")
             ->first();
 
         return $this->moneyValue($row?->total);
