@@ -22,6 +22,12 @@ class TransactionLineResource extends JsonResource
             'account' => $this->whenLoaded('account', fn () => new AccountResource($this->account)),
             'debit' => $this->debit,
             'credit' => $this->credit,
+            // The line's own currency and rate, plus its base (AFN) value as
+            // stored at posting time. Never re-derived from the header.
+            'currency_id' => $this->currency_id,
+            'rate' => $this->rate,
+            'base_debit' => $this->base_debit,
+            'base_credit' => $this->base_credit,
             'remark' => $remark?? $this->remark,
             'ledger_id' => $this->ledger_id,
             'reference_number' => $this->transaction?->voucher_number,

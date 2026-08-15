@@ -180,14 +180,14 @@ class ReportService
             ->groupBy('l.id', 'l.name')
             ->orderBy('l.name')
             ->selectRaw('l.id as ledger_id, l.name as ledger_name')
-            ->selectRaw('COALESCE(SUM(tl.debit * t.rate), 0) as total_debit')
-            ->selectRaw('COALESCE(SUM(tl.credit * t.rate), 0) as total_credit')
-            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as balance');
+            ->selectRaw('COALESCE(SUM(tl.base_debit), 0) as total_debit')
+            ->selectRaw('COALESCE(SUM(tl.base_credit), 0) as total_credit')
+            ->selectRaw('COALESCE(SUM((tl.base_debit - tl.base_credit)), 0) as balance');
 
         $totals = (clone $baseQuery)
-            ->selectRaw('COALESCE(SUM(tl.debit * t.rate), 0) as total_debit')
-            ->selectRaw('COALESCE(SUM(tl.credit * t.rate), 0) as total_credit')
-            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as balance')
+            ->selectRaw('COALESCE(SUM(tl.base_debit), 0) as total_debit')
+            ->selectRaw('COALESCE(SUM(tl.base_credit), 0) as total_credit')
+            ->selectRaw('COALESCE(SUM((tl.base_debit - tl.base_credit)), 0) as balance')
             ->first();
 
         return $this->paginateReport(
@@ -322,7 +322,7 @@ class ReportService
 
     protected function partyBalanceSummaryQuery(array $filters, string $ledgerType, string $balanceType): Builder
     {
-        $closingBalance = 'COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0)';
+        $closingBalance = 'COALESCE(SUM((tl.base_debit - tl.base_credit)), 0)';
 
         // Left joins so every party is listed, including ones with no postings yet.
         $query = DB::table('ledgers as l')
@@ -343,9 +343,9 @@ class ReportService
             ->groupBy('l.id', 'l.name')
             ->selectRaw('l.id as party_id')
             ->selectRaw('l.name as party_name')
-            ->selectRaw("COALESCE(SUM(CASE WHEN t.date < ? THEN (tl.debit - tl.credit) * t.rate ELSE 0 END), 0) as opening_balance", [$filters['date_from']])
-            ->selectRaw("COALESCE(SUM(CASE WHEN t.date >= ? THEN tl.debit * t.rate ELSE 0 END), 0) as debit", [$filters['date_from']])
-            ->selectRaw("COALESCE(SUM(CASE WHEN t.date >= ? THEN tl.credit * t.rate ELSE 0 END), 0) as credit", [$filters['date_from']])
+            ->selectRaw("COALESCE(SUM(CASE WHEN t.date < ? THEN (tl.base_debit - tl.base_credit) ELSE 0 END), 0) as opening_balance", [$filters['date_from']])
+            ->selectRaw("COALESCE(SUM(CASE WHEN t.date >= ? THEN tl.base_debit ELSE 0 END), 0) as debit", [$filters['date_from']])
+            ->selectRaw("COALESCE(SUM(CASE WHEN t.date >= ? THEN tl.base_credit ELSE 0 END), 0) as credit", [$filters['date_from']])
             ->selectRaw("{$closingBalance} as closing_balance");
 
         return match ($balanceType) {
@@ -399,7 +399,7 @@ class ReportService
         $this->applyDateFilter($query, 't.date', $filters);
 
         $summaryRow = (clone $query)
-            ->selectRaw('COALESCE(SUM(tl.debit * t.rate), 0) as total_amount')
+            ->selectRaw('COALESCE(SUM(tl.base_debit), 0) as total_amount')
             ->first();
 
         $query
@@ -410,7 +410,7 @@ class ReportService
             ->selectRaw('COALESCE(t.voucher_number, \'-\') as transaction_number')
             ->selectRaw('COALESCE(cp.ledger_name, a.name) as ledger_name')
             ->selectRaw("COALESCE(NULLIF(tl.remark, ''), NULLIF(t.remark, ''), '') as description")
-            ->selectRaw('COALESCE(tl.debit * t.rate, 0) as amount_received');
+            ->selectRaw('COALESCE(tl.base_debit, 0) as amount_received');
 
         return $this->paginateReport(
             $query,
@@ -452,7 +452,7 @@ class ReportService
         $this->applyDateFilter($query, 't.date', $filters);
 
         $summaryRow = (clone $query)
-            ->selectRaw('COALESCE(SUM(tl.credit * t.rate), 0) as total_amount')
+            ->selectRaw('COALESCE(SUM(tl.base_credit), 0) as total_amount')
             ->first();
 
         $query
@@ -463,7 +463,7 @@ class ReportService
             ->selectRaw('COALESCE(t.voucher_number, \'-\') as transaction_number')
             ->selectRaw('COALESCE(cp.ledger_name, a.name) as ledger_name')
             ->selectRaw("COALESCE(NULLIF(tl.remark, ''), NULLIF(t.remark, ''), '') as description")
-            ->selectRaw('COALESCE(tl.credit * t.rate, 0) as amount_paid');
+            ->selectRaw('COALESCE(tl.base_credit, 0) as amount_paid');
 
         return $this->paginateReport(
             $query,
@@ -507,9 +507,9 @@ class ReportService
         $this->applyDateFilter($query, 't.date', $filters);
 
         $summaryRow = (clone $query)
-            ->selectRaw('COALESCE(SUM(tl.debit * t.rate), 0) as total_debit')
-            ->selectRaw('COALESCE(SUM(tl.credit * t.rate), 0) as total_credit')
-            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as balance')
+            ->selectRaw('COALESCE(SUM(tl.base_debit), 0) as total_debit')
+            ->selectRaw('COALESCE(SUM(tl.base_credit), 0) as total_credit')
+            ->selectRaw('COALESCE(SUM((tl.base_debit - tl.base_credit)), 0) as balance')
             ->first();
 
         $query
@@ -520,9 +520,9 @@ class ReportService
             ->selectRaw('t.date')
             ->selectRaw('COALESCE(t.voucher_number, \'-\') as reference')
             ->selectRaw("COALESCE(NULLIF(tl.remark, ''), NULLIF(t.remark, ''), '') as description")
-            ->selectRaw('COALESCE(tl.debit * t.rate, 0) as debit')
-            ->selectRaw('COALESCE(tl.credit * t.rate, 0) as credit')
-            ->selectRaw('SUM((tl.debit - tl.credit) * t.rate) OVER (ORDER BY t.date, t.created_at, t.id, tl.id) as running_balance');
+            ->selectRaw('COALESCE(tl.base_debit, 0) as debit')
+            ->selectRaw('COALESCE(tl.base_credit, 0) as credit')
+            ->selectRaw('SUM((tl.base_debit - tl.base_credit)) OVER (ORDER BY t.date, t.created_at, t.id, tl.id) as running_balance');
 
         return $this->paginateReport(
             $query,
@@ -1739,9 +1739,9 @@ class ReportService
         $this->applyDateFilter($query, 't.date', $filters);
 
         $summaryRow = (clone $query)
-            ->selectRaw('COALESCE(SUM(tl.debit * t.rate), 0) as total_debit')
-            ->selectRaw('COALESCE(SUM(tl.credit * t.rate), 0) as total_credit')
-            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as balance')
+            ->selectRaw('COALESCE(SUM(tl.base_debit), 0) as total_debit')
+            ->selectRaw('COALESCE(SUM(tl.base_credit), 0) as total_credit')
+            ->selectRaw('COALESCE(SUM((tl.base_debit - tl.base_credit)), 0) as balance')
             ->first();
 
         $query
@@ -1753,8 +1753,8 @@ class ReportService
             ->selectRaw('a.name as account_name')
             ->selectRaw('t.reference_type')
             ->selectRaw('COALESCE(t.voucher_number, t.reference_id::text, \'-\') as reference')
-            ->selectRaw('COALESCE(tl.debit * t.rate, 0) as debit')
-            ->selectRaw('COALESCE(tl.credit * t.rate, 0) as credit')
+            ->selectRaw('COALESCE(tl.base_debit, 0) as debit')
+            ->selectRaw('COALESCE(tl.base_credit, 0) as credit')
             ->selectRaw("COALESCE(NULLIF(tl.remark, ''), NULLIF(t.remark, ''), '') as narration");
 
         return $this->paginateReport(
@@ -1836,9 +1836,9 @@ class ReportService
             ->whereNull('tl.deleted_at')
             ->groupBy('tl.account_id')
             ->selectRaw('tl.account_id')
-            ->selectRaw('COALESCE(SUM(tl.debit * t.rate), 0) as total_debit')
-            ->selectRaw('COALESCE(SUM(tl.credit * t.rate), 0) as total_credit')
-            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as balance');
+            ->selectRaw('COALESCE(SUM(tl.base_debit), 0) as total_debit')
+            ->selectRaw('COALESCE(SUM(tl.base_credit), 0) as total_credit')
+            ->selectRaw('COALESCE(SUM((tl.base_debit - tl.base_credit)), 0) as balance');
     }
 
     protected function accountTypeNatureExpression(string $alias = 'at'): string
@@ -2003,7 +2003,7 @@ class ReportService
             ->whereDate('t.date', '<', $filters['date_from'])
             ->groupBy('tl.account_id')
             ->selectRaw('tl.account_id')
-            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as opening_balance');
+            ->selectRaw('COALESCE(SUM((tl.base_debit - tl.base_credit)), 0) as opening_balance');
     }
 
     protected function accountPeriodTotalsSubquery(array $filters): Builder
@@ -2019,8 +2019,8 @@ class ReportService
             ->whereBetween('t.date', [$filters['date_from'], $filters['date_to']])
             ->groupBy('tl.account_id')
             ->selectRaw('tl.account_id')
-            ->selectRaw('COALESCE(SUM(tl.debit * t.rate), 0) as total_debit')
-            ->selectRaw('COALESCE(SUM(tl.credit * t.rate), 0) as total_credit');
+            ->selectRaw('COALESCE(SUM(tl.base_debit), 0) as total_debit')
+            ->selectRaw('COALESCE(SUM(tl.base_credit), 0) as total_credit');
     }
 
     protected function periodDays(array $filters): int
@@ -2149,9 +2149,9 @@ class ReportService
             ->selectRaw('COALESCE(t.voucher_number, \'-\') as transaction_number')
             ->selectRaw('t.reference_type')
             ->selectRaw("COALESCE(NULLIF(tl.remark, ''), NULLIF(t.remark, ''), '') as description")
-            ->selectRaw('COALESCE(tl.debit * t.rate, 0) as debit')
-            ->selectRaw('COALESCE(tl.credit * t.rate, 0) as credit')
-            ->selectRaw('SUM((tl.debit - tl.credit) * t.rate) OVER (ORDER BY t.date, t.created_at, t.id, tl.id) as running_balance');
+            ->selectRaw('COALESCE(tl.base_debit, 0) as debit')
+            ->selectRaw('COALESCE(tl.base_credit, 0) as credit')
+            ->selectRaw('SUM((tl.base_debit - tl.base_credit)) OVER (ORDER BY t.date, t.created_at, t.id, tl.id) as running_balance');
     }
 
     protected function ledgerStatementSummary(array $filters, string $ledgerId, ?string $ledgerType = null): array
@@ -2178,9 +2178,9 @@ class ReportService
         $this->applyDateFilter($query, 't.date', $filters);
 
         $row = $query
-            ->selectRaw('COALESCE(SUM(tl.debit * t.rate), 0) as total_debit')
-            ->selectRaw('COALESCE(SUM(tl.credit * t.rate), 0) as total_credit')
-            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as balance')
+            ->selectRaw('COALESCE(SUM(tl.base_debit), 0) as total_debit')
+            ->selectRaw('COALESCE(SUM(tl.base_credit), 0) as total_credit')
+            ->selectRaw('COALESCE(SUM((tl.base_debit - tl.base_credit)), 0) as balance')
             ->first();
 
         return [
@@ -2256,7 +2256,7 @@ class ReportService
             ->selectRaw("CASE WHEN ? = 'en' THEN a.name ELSE COALESCE(a.local_name, a.name) END as account_name", [app()->getLocale()])
             ->selectRaw('a.slug as account_slug')
             ->selectRaw('at.slug as account_type_slug')
-            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as raw_balance');
+            ->selectRaw('COALESCE(SUM((tl.base_debit - tl.base_credit)), 0) as raw_balance');
     }
 
     protected function statementSectionRows($balances, array $typeSlugs, bool $reverseSign): array

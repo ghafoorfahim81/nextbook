@@ -32,6 +32,7 @@ class Transaction extends Model
         'voucher_number',
         'status',
         'currency_id',
+        'base_currency_id',
         'reference_type',
         'reference_id',
         'rate',
@@ -56,6 +57,7 @@ class Transaction extends Model
             'transactionable_type' => 'string',
             'transactionable_id' => 'string',
             'currency_id' => 'string',
+            'base_currency_id' => 'string',
             'rate' => 'float',
             'date' => 'date',
             'created_by' => 'string',
@@ -67,6 +69,11 @@ class Transaction extends Model
     public function currency(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Administration\Currency::class);
+    }
+
+    public function baseCurrency(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Administration\Currency::class, 'base_currency_id');
     }
 
     public function lines(): HasMany

@@ -75,8 +75,8 @@ class Ledger extends Model
                         })
                         ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
                         ->selectRaw('
-                            SUM(transaction_lines.debit * transactions.rate) as total_debit,
-                            SUM(transaction_lines.credit * transactions.rate) as total_credit
+                            SUM(transaction_lines.base_debit) as total_debit,
+                            SUM(transaction_lines.base_credit) as total_credit
                         ')
                         ->first();
 
@@ -220,11 +220,11 @@ class Ledger extends Model
 
         return $query
             ->selectSub(
-                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.debit * transactions.rate), 0)'),
+                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.base_debit), 0)'),
                 'statement_total_debit'
             )
             ->selectSub(
-                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.credit * transactions.rate), 0)'),
+                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.base_credit), 0)'),
                 'statement_total_credit'
             );
     }

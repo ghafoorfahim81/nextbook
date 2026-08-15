@@ -463,7 +463,7 @@ class DashboardService
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
             ->where('at.slug', 'cash-or-bank')
-            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as value')
+            ->selectRaw('COALESCE(SUM((tl.base_debit - tl.base_credit)), 0) as value')
             ->first();
 
         return $this->moneyValue($row?->value);
@@ -493,7 +493,7 @@ class DashboardService
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
             ->whereIn('at.slug', $accountTypeSlugs)
-            ->selectRaw('COALESCE(SUM((COALESCE(tl.debit, 0) - COALESCE(tl.credit, 0)) * t.rate), 0) as raw_balance')
+            ->selectRaw('COALESCE(SUM((COALESCE(tl.base_debit, 0) - COALESCE(tl.base_credit, 0))), 0) as raw_balance')
             ->first();
 
         $balance = (float) ($row?->raw_balance ?? 0);
@@ -506,9 +506,9 @@ class DashboardService
         $rows = $this->postedLedgerBalances($branchId, $ledgerType)
             ->when(
                 $nature === 'dr',
-                fn ($query) => $query->havingRaw('SUM((COALESCE(tl.debit, 0) - COALESCE(tl.credit, 0)) * t.rate) > 0')
+                fn ($query) => $query->havingRaw('SUM((COALESCE(tl.base_debit, 0) - COALESCE(tl.base_credit, 0))) > 0')
                     ->orderByDesc('balance'),
-                fn ($query) => $query->havingRaw('SUM((COALESCE(tl.debit, 0) - COALESCE(tl.credit, 0)) * t.rate) < 0')
+                fn ($query) => $query->havingRaw('SUM((COALESCE(tl.base_debit, 0) - COALESCE(tl.base_credit, 0))) < 0')
                     ->orderBy('balance')
             )
             ->limit(10)
@@ -578,13 +578,13 @@ class DashboardService
             ->whereIn('at.slug', ['cash-or-bank', 'account-receivable'])
             ->where('tl.debit', '>', 0)
             ->groupBy('s.customer_id', 'l.name')
-            ->orderByDesc(DB::raw('SUM(tl.debit * t.rate)'))
+            ->orderByDesc(DB::raw('SUM(tl.base_debit)'))
             ->limit(5)
             ->get([
                 's.customer_id as id',
                 'l.name',
                 DB::raw('COUNT(DISTINCT s.id) as sales_count'),
-                DB::raw('COALESCE(SUM(tl.debit * t.rate), 0) as total'),
+                DB::raw('COALESCE(SUM(tl.base_debit), 0) as total'),
             ]);
 
         return $rows->map(fn ($row) => [
@@ -625,13 +625,13 @@ class DashboardService
             ->whereIn('at.slug', ['cash-or-bank', 'account-payable'])
             ->where('tl.credit', '>', 0)
             ->groupBy('p.supplier_id', 'l.name')
-            ->orderByDesc(DB::raw('SUM(tl.credit * t.rate)'))
+            ->orderByDesc(DB::raw('SUM(tl.base_credit)'))
             ->limit(5)
             ->get([
                 'p.supplier_id as id',
                 'l.name',
                 DB::raw('COUNT(DISTINCT p.id) as purchase_count'),
-                DB::raw('COALESCE(SUM(tl.credit * t.rate), 0) as total'),
+                DB::raw('COALESCE(SUM(tl.base_credit), 0) as total'),
             ]);
 
         return $rows->map(fn ($row) => [
@@ -660,7 +660,7 @@ class DashboardService
             ->whereDate('t.date', $date->toDateString())
             ->whereIn('at.slug', $accountTypeSlugs)
             ->where("tl.{$amountColumn}", '>', 0)
-            ->selectRaw("COALESCE(SUM(tl.{$amountColumn} * t.rate), 0) as value")
+            ->selectRaw("COALESCE(SUM(tl.base_{$amountColumn}), 0) as value")
             ->first();
 
         return $this->moneyValue($row?->value);
@@ -689,7 +689,7 @@ class DashboardService
             ->orderBy(DB::raw('DATE(t.date)'))
             ->get([
                 DB::raw('DATE(t.date) as report_date'),
-                DB::raw("COALESCE(SUM(tl.{$amountColumn} * t.rate), 0) as total"),
+                DB::raw("COALESCE(SUM(tl.base_{$amountColumn}), 0) as total"),
             ])
             ->mapWithKeys(fn ($row) => [$row->report_date => $this->moneyValue($row->total)])
             ->all();
@@ -708,7 +708,7 @@ class DashboardService
             ->where('at.slug', 'cash-or-bank')
             ->whereDate('t.date', $date->toDateString())
             ->where("tl.{$amountColumn}", '>', 0)
-            ->selectRaw("COALESCE(SUM(tl.{$amountColumn} * t.rate), 0) as value")
+            ->selectRaw("COALESCE(SUM(tl.base_{$amountColumn}), 0) as value")
             ->first();
 
         return $this->moneyValue($row?->value);
@@ -732,7 +732,7 @@ class DashboardService
             ->whereNull('tl.deleted_at')
             ->groupBy('l.id', 'l.name')
             ->selectRaw('l.id as ledger_id, l.name as ledger_name')
-            ->selectRaw('COALESCE(SUM((COALESCE(tl.debit, 0) - COALESCE(tl.credit, 0)) * t.rate), 0) as balance');
+            ->selectRaw('COALESCE(SUM((COALESCE(tl.base_debit, 0) - COALESCE(tl.base_credit, 0))), 0) as balance');
     }
 
     protected function supplierPayableBalances(string $branchId)
@@ -757,7 +757,7 @@ class DashboardService
             ->where('at.slug', '=', 'account-payable')
             ->groupBy(DB::raw($resolvedLedgerId))
             ->selectRaw("{$resolvedLedgerId} as ledger_id")
-            ->selectRaw('COALESCE(SUM((COALESCE(tl.debit, 0) - COALESCE(tl.credit, 0)) * t.rate), 0) as balance');
+            ->selectRaw('COALESCE(SUM((COALESCE(tl.base_debit, 0) - COALESCE(tl.base_credit, 0))), 0) as balance');
     }
 
     protected function referenceTransactionTotalsSubquery(string $referenceType, string $amountColumn, array $accountTypeSlugs)
@@ -778,7 +778,7 @@ class DashboardService
             ->whereIn('at.slug', $accountTypeSlugs)
             ->where("tl.{$amountColumn}", '>', 0)
             ->groupBy('tl.transaction_id')
-            ->selectRaw("tl.transaction_id, COALESCE(SUM(tl.{$amountColumn} * t.rate), 0) as total");
+            ->selectRaw("tl.transaction_id, COALESCE(SUM(tl.base_{$amountColumn}), 0) as total");
     }
 
     protected function activeStockBalances(string $branchId)
