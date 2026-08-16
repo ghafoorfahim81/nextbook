@@ -910,6 +910,56 @@ class SettlementEndpointsTest extends TestCase
             ->assertJsonCount(1, 'data.settlements');
     }
 
+    // ------------------------------------------------------
+    // Export
+    // ------------------------------------------------------
+
+    public function test_the_receipt_export_streams_with_the_cash_amount(): void
+    {
+        $usd = $this->usd();
+        $opening = $this->invoice(200, $usd, 60);
+
+        $this->post(route('receipts.store'), [
+            'number' => 1,
+            'date' => '2026-03-01',
+            'ledger_id' => $this->ctx['customer_ledger']->id,
+            'payment_mode' => 'bill_by_bill',
+            'amount' => 200,
+            'bank_account_id' => $this->account('cash-in-hand'),
+            'currency_id' => $usd->id,
+            'rate' => 55,
+            'allocations' => [['target_line_id' => $opening->id, 'amount' => 200]],
+        ])->assertRedirect(route('receipts.index'));
+
+        // payment_mode is cast to the PaymentMode enum, and the export cast it
+        // to string — a fatal error, not a value. The voucher also has three
+        // lines, so "the first line" was the receivable, not the cash.
+        $this->get(route('receipts.export', ['sortField' => 'date', 'sortDirection' => 'desc']))
+            ->assertOk()
+            ->assertDownload();
+    }
+
+    public function test_the_payment_export_streams_with_the_cash_amount(): void
+    {
+        $bill = $this->bill(500, $this->ctx['currency'], 1);
+
+        $this->post(route('payments.store'), [
+            'number' => 1,
+            'date' => '2026-03-01',
+            'ledger_id' => $this->ctx['supplier_ledger']->id,
+            'payment_mode' => 'on_account',
+            'amount' => 500,
+            'bank_account_id' => $this->account('cash-in-hand'),
+            'currency_id' => $this->ctx['currency']->id,
+            'rate' => 1,
+            'allocations' => [['target_line_id' => $bill->id, 'amount' => 500]],
+        ])->assertRedirect(route('payments.index'));
+
+        $this->get(route('payments.export', ['sortField' => 'date', 'sortDirection' => 'desc']))
+            ->assertOk()
+            ->assertDownload();
+    }
+
     public function test_deleting_a_receipt_reopens_what_it_settled(): void
     {
         $invoice = $this->invoice(500, $this->ctx['currency'], 1);
