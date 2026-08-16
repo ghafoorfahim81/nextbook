@@ -22,6 +22,8 @@ use App\Models\Administration\Province;
 use App\Http\Resources\Purchase\PurchaseResource;
 use App\Http\Resources\Payment\PaymentResource;
 use Illuminate\Http\Request;
+use App\Services\Accounting\PaymentStatusService;
+use App\Services\Accounting\SettlementService;
 use App\Services\AttachmentService;
 use App\Services\DateConversionService;
 use App\Services\LedgerOpeningService;
@@ -170,12 +172,23 @@ class SupplierController extends Controller
         // position, not whatever window the statement tab is currently showing.
         $currencyBalances = $statementService->balancesByCurrency($supplier);
 
+        // Open items are claims, not documents — a bill, an opening balance and
+        // a manual journal credit to payables all appear here on equal footing,
+        // each with the rate it was booked at.
+        $settlements = app(PaymentStatusService::class);
+        $openItems = app(SettlementService::class)->openItems($supplier->id);
+        $settlementHistory = $settlements->settlementHistoryForLedger($supplier->id);
+        $settlementBalances = $settlements->balancesForLedger($supplier->id);
+
         if ($request->expectsJson()) {
             return response()->json([
                 'supplier' => new LedgerResource($supplier),
                 ...$lists,
                 'ledgerStatement' => $ledgerStatement,
                 'currencyBalances' => $currencyBalances,
+                'openItems' => $openItems,
+                'settlementHistory' => $settlementHistory,
+                'settlementBalances' => $settlementBalances,
             ]);
         }
 
@@ -184,6 +197,9 @@ class SupplierController extends Controller
             ...$lists,
             'ledgerStatement' => $ledgerStatement,
             'currencyBalances' => $currencyBalances,
+            'openItems' => $openItems,
+            'settlementHistory' => $settlementHistory,
+            'settlementBalances' => $settlementBalances,
         ]);
     }
 

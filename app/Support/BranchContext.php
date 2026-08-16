@@ -40,8 +40,13 @@ final class BranchContext
         'other-expenses',
         'discount-to-customer',
         'discount-from-supplier',
-        'foreign-exchange-gain',
-        'foreign-exchange-loss',
+        // Realised exchange differences and unapplied money, both resolved by
+        // slug only — the names are localised into Dari and Pashto, so any
+        // lookup by name breaks the moment someone switches language.
+        'fx-gain',
+        'fx-loss',
+        'customer-advances',
+        'supplier-advances',
     ];
 
     /** @var array<string, Collection<string, string>> */

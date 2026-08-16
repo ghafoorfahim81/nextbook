@@ -159,6 +159,215 @@ class LineLevelCurrencyPostingTest extends TestCase
         $this->assertSame(0, DB::table('transaction_lines')->count());
     }
 
+    public function test_an_fx_line_may_leave_the_base_currency_one_sided(): void
+    {
+        $usd = $this->usd(60);
+
+        // A customer owes $200 booked at 60 and pays $200 when the rate is 55.
+        // The receivable is relieved at the rate it was BOOKED at, cash comes
+        // in at today's rate, and the 1,000 AFN shortfall is a realised loss.
+        //
+        // USD balances: 200 debit, 200 credit. AFN does not, and cannot — the
+        // loss has no dollar amount to pair with. Writing 0 USD on the FX line
+        // to satisfy a naive per-currency check would be a lie about the line.
+        $transaction = $this->service->post(
+            $this->header(['currency_id' => $usd->id, 'rate' => 55]),
+            [
+                [
+                    'account_id' => $this->ctx['accounts']['cash-in-hand']->id,
+                    'currency_id' => $usd->id,
+                    'rate' => 55,
+                    'debit' => 200,
+                ],
+                [
+                    'account_id' => $this->ctx['accounts']['account-receivable']->id,
+                    'currency_id' => $usd->id,
+                    'rate' => 60,
+                    'credit' => 200,
+                ],
+                [
+                    'account_id' => $this->ctx['accounts']['fx-loss']->id,
+                    'currency_id' => $this->ctx['currency']->id,
+                    'rate' => 1,
+                    'debit' => 1000,
+                ],
+            ]
+        );
+
+        $lines = $transaction->lines()->get();
+
+        $this->assertCount(3, $lines);
+        $this->assertEquals(12000, $lines->sum('base_debit'));
+        $this->assertEquals(12000, $lines->sum('base_credit'));
+
+        $cash = $lines->firstWhere('account_id', $this->ctx['accounts']['cash-in-hand']->id);
+        $this->assertEquals(200, $cash->debit);
+        $this->assertEquals(55, $cash->rate);
+        $this->assertEquals(11000, $cash->base_debit);
+
+        $receivable = $lines->firstWhere('account_id', $this->ctx['accounts']['account-receivable']->id);
+        $this->assertEquals(200, $receivable->credit);
+        $this->assertEquals(60, $receivable->rate, 'A receivable is relieved at the rate it was booked at.');
+        $this->assertEquals(12000, $receivable->base_credit);
+
+        $loss = $lines->firstWhere('account_id', $this->ctx['accounts']['fx-loss']->id);
+        $this->assertSame($this->ctx['currency']->id, $loss->currency_id, 'An FX line is AFN-only.');
+        $this->assertEquals(1000, $loss->debit);
+        $this->assertEquals(1000, $loss->base_debit);
+        $this->assertEquals(1, $loss->rate);
+    }
+
+    public function test_a_cross_currency_entry_balancing_only_in_base_is_accepted(): void
+    {
+        $usd = $this->usd(60);
+
+        // $100 of a @60 invoice settled with 5,500 AFN cash. Neither currency
+        // self-balances here — the AFN cash line has no AFN counterpart at all
+        // and the USD receivable has no USD counterpart. Only base ties out,
+        // so the caller has to say out loud that this is what it meant.
+        $transaction = $this->service->post(
+            $this->header([
+                'currency_id' => $this->ctx['currency']->id,
+                'rate' => 1,
+                'cross_currency' => true,
+            ]),
+            [
+                [
+                    'account_id' => $this->ctx['accounts']['cash-in-hand']->id,
+                    'currency_id' => $this->ctx['currency']->id,
+                    'rate' => 1,
+                    'debit' => 5500,
+                ],
+                [
+                    'account_id' => $this->ctx['accounts']['account-receivable']->id,
+                    'currency_id' => $usd->id,
+                    'rate' => 60,
+                    'credit' => 100,
+                ],
+                [
+                    'account_id' => $this->ctx['accounts']['fx-loss']->id,
+                    'currency_id' => $this->ctx['currency']->id,
+                    'rate' => 1,
+                    'debit' => 500,
+                ],
+            ]
+        );
+
+        $lines = $transaction->lines()->get();
+
+        $this->assertEquals(6000, $lines->sum('base_debit'));
+        $this->assertEquals(6000, $lines->sum('base_credit'));
+    }
+
+    public function test_an_undeclared_cross_currency_entry_is_rejected(): void
+    {
+        $usd = $this->usd(60);
+
+        // Same three lines as above, minus the declaration. Left implicit, a
+        // USD credit with no USD debit is indistinguishable from a receivable
+        // that was relieved by mistake, so it has to be refused.
+        $this->expectException(InvalidPostingException::class);
+        $this->expectExceptionMessage('not balanced within every currency');
+
+        $this->service->post(
+            $this->header(['currency_id' => $this->ctx['currency']->id, 'rate' => 1]),
+            [
+                [
+                    'account_id' => $this->ctx['accounts']['cash-in-hand']->id,
+                    'currency_id' => $this->ctx['currency']->id,
+                    'rate' => 1,
+                    'debit' => 5500,
+                ],
+                [
+                    'account_id' => $this->ctx['accounts']['account-receivable']->id,
+                    'currency_id' => $usd->id,
+                    'rate' => 60,
+                    'credit' => 100,
+                ],
+                [
+                    'account_id' => $this->ctx['accounts']['fx-loss']->id,
+                    'currency_id' => $this->ctx['currency']->id,
+                    'rate' => 1,
+                    'debit' => 500,
+                ],
+            ]
+        );
+    }
+
+    public function test_the_cross_currency_flag_is_rejected_on_a_single_currency_entry(): void
+    {
+        $this->expectException(InvalidPostingException::class);
+        $this->expectExceptionMessage('must touch more than one currency');
+
+        $this->service->post(
+            $this->header(['cross_currency' => true]),
+            [
+                ['account_id' => $this->ctx['accounts']['cash-in-hand']->id, 'debit' => 500],
+                ['account_id' => $this->ctx['accounts']['sales-revenue']->id, 'credit' => 500],
+            ]
+        );
+    }
+
+    public function test_a_non_base_currency_must_still_self_balance(): void
+    {
+        $usd = $this->usd(60);
+
+        // The exemption is for the base currency only. A USD side that does
+        // not close is a broken subledger, not an FX difference, and no AFN
+        // plug may paper over it — even though this entry ties in base.
+        $this->expectException(InvalidPostingException::class);
+        $this->expectExceptionMessage('not balanced within every currency');
+
+        $this->service->post(
+            $this->header(['currency_id' => $usd->id, 'rate' => 60]),
+            [
+                [
+                    'account_id' => $this->ctx['accounts']['cash-in-hand']->id,
+                    'currency_id' => $usd->id,
+                    'rate' => 60,
+                    'debit' => 200,
+                ],
+                [
+                    'account_id' => $this->ctx['accounts']['account-receivable']->id,
+                    'currency_id' => $usd->id,
+                    'rate' => 60,
+                    'credit' => 100,
+                ],
+                [
+                    'account_id' => $this->ctx['accounts']['sales-revenue']->id,
+                    'currency_id' => $this->ctx['currency']->id,
+                    'rate' => 1,
+                    'credit' => 6000,
+                ],
+            ]
+        );
+    }
+
+    public function test_an_afn_only_entry_is_still_required_to_self_balance(): void
+    {
+        // The base-currency exemption exists to let AFN absorb a multi-currency
+        // difference. A voucher that never leaves AFN has nothing to absorb, so
+        // it stays under the per-currency rule and posts exactly as it did
+        // before settlement existed.
+        $this->expectException(InvalidPostingException::class);
+        $this->expectExceptionMessage('not balanced within every currency');
+
+        $this->service->post($this->header(), [
+            [
+                'account_id' => $this->ctx['accounts']['cash-in-hand']->id,
+                'currency_id' => $this->ctx['currency']->id,
+                'rate' => 1,
+                'debit' => 500,
+            ],
+            [
+                'account_id' => $this->ctx['accounts']['sales-revenue']->id,
+                'currency_id' => $this->ctx['currency']->id,
+                'rate' => 1,
+                'credit' => 400,
+            ],
+        ]);
+    }
+
     public function test_a_line_with_both_debit_and_credit_is_rejected(): void
     {
         $this->expectException(InvalidPostingException::class);

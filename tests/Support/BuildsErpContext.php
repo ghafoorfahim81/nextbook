@@ -196,6 +196,9 @@ trait BuildsErpContext
             'account-payable' => ['name' => 'Accounts Payable', 'type' => 'account-payable', 'number' => '5001'],
             'product-income' => ['name' => 'Product Income', 'type' => 'income', 'number' => '7002'],
             'cash-in-hand' => ['name' => 'Cash In Hand', 'type' => 'cash-or-bank', 'number' => '1001'],
+            // A second cash account, so tests can prove a voucher reports the
+            // account the money actually went to rather than a default.
+            'cash-in-safe' => ['name' => 'Cash In Safe', 'type' => 'cash-or-bank', 'number' => '1002'],
             'cost-of-goods-sold' => ['name' => 'Cost Of Goods Sold', 'type' => 'cost-of-goods-sold', 'number' => '8001'],
             'inventory-stock' => ['name' => 'Inventory Stock', 'type' => 'other-current-asset', 'number' => '3001'],
             'retained-earnings' => ['name' => 'Retained Earnings', 'type' => 'equity', 'number' => '6001'],
@@ -204,6 +207,14 @@ trait BuildsErpContext
             'raw-materials' => ['name' => 'Raw Materials', 'type' => 'other-current-asset', 'number' => '3003'],
             'finished-goods' => ['name' => 'Finished Goods', 'type' => 'other-current-asset', 'number' => '3004'],
             'other-expenses' => ['name' => 'Other Expenses', 'type' => 'expense', 'number' => '9001'],
+            // Realised exchange differences. Resolved by slug everywhere —
+            // the names are localised into Dari and Pashto in production.
+            'fx-gain' => ['name' => 'Foreign Exchange Gain', 'type' => 'income', 'number' => '9070'],
+            'fx-loss' => ['name' => 'Foreign Exchange Loss', 'type' => 'expense', 'number' => '9080'],
+            // Where an overpayment lands. Liability to the customer, asset
+            // against the supplier.
+            'customer-advances' => ['name' => 'Customer Advances', 'type' => 'account-payable', 'number' => '5085'],
+            'supplier-advances' => ['name' => 'Supplier Advances', 'type' => 'other-current-asset', 'number' => '4075'],
         ];
 
         $accounts = [];

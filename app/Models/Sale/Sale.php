@@ -119,9 +119,25 @@ class Sale extends Model
         return $this->hasMany(\App\Models\Sale\SaleItem::class);
     }
 
-    public function saleReceives(): HasMany
+    /**
+     * Settlements against this sale's receivable line.
+     *
+     * Three hops — sale -> voucher -> receivable line -> settlements — so this
+     * is a query rather than a relation. `PaymentStatusService` owns the
+     * "how much is left" answer; nothing else should recompute it.
+     */
+    public function settlements()
     {
-        return $this->hasMany(SaleReceive::class);
+        return \App\Models\Accounting\Settlement::query()
+            ->whereIn('target_line_id', function ($query) {
+                $query->select('tl.id')
+                    ->from('transaction_lines as tl')
+                    ->join('transactions as t', 't.id', '=', 'tl.transaction_id')
+                    ->where('t.reference_type', self::class)
+                    ->where('t.reference_id', $this->id)
+                    ->whereNull('t.deleted_at')
+                    ->whereNull('tl.deleted_at');
+            });
     }
 
     public function stockOuts()

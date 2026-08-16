@@ -1289,7 +1289,7 @@ class Account extends Model
                 'number' => '9070',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'income')->first()->id,
                 'account_type_slug' => 'income',
-                'slug' => 'foreign-exchange-gain',
+                'slug' => 'fx-gain',
                 'remark' => '',
                 'is_main' => true,
             ],
@@ -1300,12 +1300,37 @@ class Account extends Model
                 'number' => '9080',
                 'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
                 'account_type_slug' => 'expense',
-                'slug' => 'foreign-exchange-loss',
+                'slug' => 'fx-loss',
                 'remark' => '',
                 'is_main' => true,
             ],
 
-
+            // Money received before there is anything to relieve. Overpaying a
+            // bill is routine here, so the excess is parked rather than
+            // refused — as a liability to the customer, an asset against the
+            // supplier. Settlement resolves both by slug.
+            [
+                'name' => 'Customer Advances',
+                'local_name' => 'پیش‌پرداخت مشتری',
+                'parent_slug' => 'current-liabilities',
+                'number' => '5085',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-liability')->first()->id,
+                'account_type_slug' => 'other-current-liability',
+                'slug' => 'customer-advances',
+                'remark' => 'Unapplied money received from customers',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Supplier Advances',
+                'local_name' => 'پیش‌پرداخت به تهیه‌کننده',
+                'parent_slug' => 'advances-prepaid-deposit',
+                'number' => '4075',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
+                'account_type_slug' => 'other-current-asset',
+                'slug' => 'supplier-advances',
+                'remark' => 'Money paid to suppliers ahead of a bill',
+                'is_main' => true,
+            ],
         ];
     }
 }

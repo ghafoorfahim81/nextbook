@@ -21,6 +21,8 @@ use App\Models\Administration\CustomerGroup;
 use App\Models\Administration\PaymentTerm;
 use App\Models\Administration\Province;
 use Illuminate\Http\Request;
+use App\Services\Accounting\PaymentStatusService;
+use App\Services\Accounting\SettlementService;
 use App\Services\AttachmentService;
 use App\Services\DateConversionService;
 use App\Services\LedgerOpeningService;
@@ -169,12 +171,23 @@ class CustomerController extends Controller
         // position, not whatever window the statement tab is currently showing.
         $currencyBalances = $statementService->balancesByCurrency($customer);
 
+        // Open items are claims, not documents: an invoice, an opening balance
+        // and a manual journal debit to receivables all appear here on equal
+        // footing, each with the rate it was booked at.
+        $settlements = app(PaymentStatusService::class);
+        $openItems = app(SettlementService::class)->openItems($customer->id);
+        $settlementHistory = $settlements->settlementHistoryForLedger($customer->id);
+        $settlementBalances = $settlements->balancesForLedger($customer->id);
+
         if ($request->expectsJson()) {
             return response()->json([
                 'customer' => new LedgerResource($customer),
                 ...$lists,
                 'ledgerStatement' => $ledgerStatement,
                 'currencyBalances' => $currencyBalances,
+                'openItems' => $openItems,
+                'settlementHistory' => $settlementHistory,
+                'settlementBalances' => $settlementBalances,
             ]);
         }
 
@@ -183,6 +196,9 @@ class CustomerController extends Controller
             ...$lists,
             'ledgerStatement' => $ledgerStatement,
             'currencyBalances' => $currencyBalances,
+            'openItems' => $openItems,
+            'settlementHistory' => $settlementHistory,
+            'settlementBalances' => $settlementBalances,
         ]);
     }
 

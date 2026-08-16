@@ -13,6 +13,7 @@ import AttachmentList from '@/Components/AttachmentList.vue';
 import PhotoUpload from '@/Components/next/PhotoUpload.vue';
 import LedgerStatement from '@/Components/ledger/LedgerStatement.vue';
 import LedgerCurrencyBalances from '@/Components/ledger/LedgerCurrencyBalances.vue';
+import LedgerOpenItems from '@/Components/ledger/LedgerOpenItems.vue';
 
 const props = defineProps({
     supplier: { type: Object, required: true },
@@ -21,6 +22,11 @@ const props = defineProps({
     payments: { type: Object, required: false },
     ledgerStatement: { type: Object, required: false, default: () => ({}) },
     currencyBalances: { type: Array, required: false, default: () => [] },
+    // Claims still open in this supplier's favour, what has been applied to
+    // each, and the balance in every currency they trade in.
+    openItems: { type: Array, required: false, default: () => [] },
+    settlementHistory: { type: Object, required: false, default: () => ({}) },
+    settlementBalances: { type: Object, required: false, default: () => ({ currencies: [], base_total: '0' }) },
 });
 
 const { t } = useI18n();
@@ -207,7 +213,29 @@ const supplierMovementColumns = computed(() => [
                 >
                     {{ t('report.statement') }}
                 </button>
+                <button
+                    type="button"
+                    class="px-4 py-2 -mb-px border-b-2 transition-colors"
+                    :class="activeMainTab === 'open_items'
+                        ? 'border-primary text-primary font-semibold'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'"
+                    @click="activeMainTab = 'open_items'"
+                >
+                    {{ t('settlement.open_items') }}
+                    <span
+                        v-if="openItems.length"
+                        class="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary"
+                    >{{ openItems.length }}</span>
+                </button>
             </div>
+
+            <!-- OPEN ITEMS TAB -->
+            <LedgerOpenItems
+                v-if="activeMainTab === 'open_items'"
+                :open-items="openItems"
+                :history="settlementHistory"
+                :balances="settlementBalances"
+            />
 
             <!-- GENERAL TAB -->
             <div v-if="activeMainTab === 'general'" class="space-y-4">

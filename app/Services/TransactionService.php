@@ -6,6 +6,7 @@ use App\Exceptions\Accounting\InvalidPostingException;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Currency;
 use App\Models\Transaction\Transaction;
+use App\Support\Decimal;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Exception;
@@ -65,20 +66,25 @@ class TransactionService
             // Normalise and validate everything BEFORE a single row is written,
             // so a rejected entry never leaves a half-posted voucher behind.
             $prepared = $this->prepareLines($lines, $header);
-            $this->assertInvariants($prepared);
+            $this->assertInvariants(
+                $prepared,
+                $baseCurrencyId,
+                (bool) ($header['cross_currency'] ?? false)
+            );
 
             $transaction = Transaction::create([
-                'currency_id'      => $header['currency_id'],
-                'base_currency_id' => $baseCurrencyId,
-                'rate'             => $header['rate'],
-                'date'             => $header['date'],
-                'voucher_number'   => $header['voucher_number'] ?? null,
-                'reference_type'   => $header['reference_type'] ?? null,
-                'reference_id'     => $header['reference_id'] ?? null,
-                'remark'           => $header['remark'] ?? null,
-                'status'           => $header['status'] ?? 'posted',
-                'branch_id'        => $branchId,
-                'created_by'       => Auth::id(),
+                'currency_id'       => $header['currency_id'],
+                'base_currency_id'  => $baseCurrencyId,
+                'rate'              => $header['rate'],
+                'is_cross_currency' => (bool) ($header['cross_currency'] ?? false),
+                'date'              => $header['date'],
+                'voucher_number'    => $header['voucher_number'] ?? null,
+                'reference_type'    => $header['reference_type'] ?? null,
+                'reference_id'      => $header['reference_id'] ?? null,
+                'remark'            => $header['remark'] ?? null,
+                'status'            => $header['status'] ?? 'posted',
+                'branch_id'         => $branchId,
+                'created_by'        => Auth::id(),
             ]);
 
             foreach ($prepared as $line) {
@@ -158,11 +164,14 @@ class TransactionService
     /**
      * @param  array<int, array<string, mixed>>  $lines
      */
-    protected function assertInvariants(array $lines): void
-    {
+    protected function assertInvariants(
+        array $lines,
+        ?string $baseCurrencyId = null,
+        bool $crossCurrency = false
+    ): void {
         $this->assertSingleSide($lines);
         $this->assertRateConsistency($lines);
-        $this->assertBalancedPerCurrency($lines);
+        $this->assertBalancedPerCurrency($lines, $baseCurrencyId, $crossCurrency);
         $this->assertBalancedInBase($lines);
     }
 
@@ -250,10 +259,38 @@ class TransactionService
     }
 
     /**
-     * Invariant 1 — within each currency, debits equal credits.
+     * Invariant 1 — within each NON-BASE currency, debits equal credits.
+     *
+     * Base-currency (AFN) lines are the balancing plug of a multi-currency
+     * entry and are exempt. A realised FX gain/loss has no document amount in
+     * the foreign currency at all — it exists only in base — so it lands as a
+     * one-sided AFN line:
+     *
+     *     Cash in Hand USD   USD  dr 200  @55   base 11,000
+     *     Accounts Recv      USD  cr 200  @60   base 12,000
+     *     FX Loss            AFN  dr 1,000 @1   base  1,000
+     *
+     * USD self-balances; AFN does not, and must not be forced to. The whole
+     * entry still has to balance in base — assertBalancedInBase() is what
+     * actually holds the ledger together here, and it is never relaxed.
+     *
+     * The exemption applies only when the entry genuinely spans currencies. A
+     * voucher that touches nothing but AFN has no plug to be, so it is still
+     * required to self-balance and an AFN-only entry posts exactly as before.
+     *
+     * A NON-base currency that does not close is a broken subledger, not an FX
+     * difference, and no AFN plug may paper over it. The one exception is a
+     * cross-currency settlement — a USD invoice paid with AFN cash — where the
+     * dollars really are relieved by afghanis and no dollar counterpart exists.
+     * That case must be declared by the caller via header['cross_currency'],
+     * because it is a commercial decision the user made, not something the
+     * numbers can be trusted to imply. Base balance still holds absolutely.
      */
-    protected function assertBalancedPerCurrency(array $lines): void
-    {
+    protected function assertBalancedPerCurrency(
+        array $lines,
+        ?string $baseCurrencyId = null,
+        bool $crossCurrency = false
+    ): void {
         $totals = [];
 
         foreach ($lines as $line) {
@@ -263,9 +300,29 @@ class TransactionService
             $totals[$currencyId]['credit'] = bcadd($totals[$currencyId]['credit'], $line['credit'], self::AMOUNT_SCALE);
         }
 
+        $isMultiCurrency = count($totals) > 1;
+
+        // The escape hatch only means anything on an entry that spans
+        // currencies. Set on a single-currency voucher it is a caller bug, and
+        // silently honouring it would disable the check on ordinary vouchers.
+        if ($crossCurrency && ! $isMultiCurrency) {
+            throw InvalidPostingException::make(
+                'A cross-currency entry must touch more than one currency.',
+                [['line' => 'header', 'currencies' => array_keys($totals)]]
+            );
+        }
+
+        if ($crossCurrency) {
+            return;
+        }
+
         $violations = [];
 
         foreach ($totals as $currencyId => $total) {
+            if ($isMultiCurrency && $baseCurrencyId !== null && $currencyId === $baseCurrencyId) {
+                continue;
+            }
+
             if (bccomp($total['debit'], $total['credit'], self::AMOUNT_SCALE) !== 0) {
                 $violations[] = [
                     'line' => 'currency ' . $currencyId,
@@ -287,8 +344,11 @@ class TransactionService
     /**
      * Invariant 2 — the whole entry balances in base currency.
      *
-     * Not implied by invariant 1: a future FX line is exactly the case where
-     * the document currencies each balance but the base totals diverge.
+     * Not implied by invariant 1, and now that invariant 1 exempts the base
+     * currency it is the only thing standing between a settlement voucher and
+     * an out-of-balance ledger. An FX line is exactly the case where the
+     * foreign currencies each balance but the base totals would diverge
+     * without it.
      */
     protected function assertBalancedInBase(array $lines): void
     {
@@ -329,6 +389,10 @@ class TransactionService
             'reference_id'   => 'nullable|string',
             'remark'         => 'nullable|string',
             'status'         => 'nullable|string',
+            // Opt-in relaxation of per-currency balance. See
+            // assertBalancedPerCurrency() — never set this to work around an
+            // entry you have not deliberately built as cross-currency.
+            'cross_currency' => 'nullable|boolean',
         ])->validate();
     }
 
@@ -441,56 +505,37 @@ class TransactionService
                 ->value('id');
     }
 
-    /**
-     * amount x rate, rounded half-up to the stored amount scale.
-     */
+    // ------------------------------------------------------
+    // Arithmetic lives in App\Support\Decimal.
+    //
+    // SettlementService builds base amounts and hands them to post(), which
+    // then checks them against amount x rate. If the two rounded differently
+    // every settlement carrying an odd fraction would be rejected here, so both
+    // go through one implementation.
+    // ------------------------------------------------------
+
     protected function toBase(string $amount, string $rate): string
     {
-        $product = bcmul($amount, $rate, self::AMOUNT_SCALE + self::RATE_SCALE);
-
-        return $this->roundHalfUp($product, self::AMOUNT_SCALE);
+        return Decimal::toBase($amount, $rate);
     }
 
-    /**
-     * bcmath truncates, so nudge by half a unit before cutting.
-     * Every amount here is non-negative, which keeps this exact.
-     */
     protected function roundHalfUp(string $value, int $scale): string
     {
-        $half = '0.' . str_repeat('0', $scale) . '5';
-
-        return bcadd($value, $half, $scale);
+        return Decimal::roundHalfUp($value, $scale);
     }
 
-    /**
-     * Coerce any numeric input to a plain decimal string at the given scale.
-     *
-     * A small rate like 0.0000017 stringifies to "1.7E-6", which bcmath
-     * rejects outright — and small rates are exactly the case this whole
-     * change exists to support.
-     */
     protected function scale(mixed $value, int $scale): string
     {
-        if (is_string($value) && $value !== '' && ! preg_match('/[eE]/', $value)) {
-            return $this->roundHalfUp($value, $scale);
-        }
-
-        if ($value === '' || $value === null) {
-            return $this->roundHalfUp('0', $scale);
-        }
-
-        return sprintf('%.' . $scale . 'F', (float) $value);
+        return Decimal::scale($value, $scale);
     }
 
     protected function isPositive(string $value): bool
     {
-        return bccomp($value, '0', self::AMOUNT_SCALE) > 0;
+        return Decimal::isPositive($value);
     }
 
     protected function abs(string $value): string
     {
-        return bccomp($value, '0', self::AMOUNT_SCALE) < 0
-            ? bcmul($value, '-1', self::AMOUNT_SCALE)
-            : $value;
+        return Decimal::abs($value);
     }
 }
