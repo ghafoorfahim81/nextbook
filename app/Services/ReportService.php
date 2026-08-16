@@ -635,6 +635,18 @@ class ReportService
 
     private function getSalesItemwiseReport(array $filters): array
     {
+        // Itemwise is a drill-down of the same documents the general view lists, so
+        // it has to net out discounts and add tax the same way, or the two views of
+        // one report disagree on the total. Line discounts sit on the row; the bill
+        // discount belongs to the document, so it is spread across that document's
+        // lines in proportion to line value and the shares add back up to it.
+        $lineGrossSql = '(si.quantity * si.unit_price)';
+        $saleGrossSql = '(SELECT COALESCE(SUM(si2.quantity * si2.unit_price), 0) FROM sale_items si2 WHERE si2.sale_id = s.id AND si2.deleted_at IS NULL)';
+        $billDiscountSql = "(CASE WHEN s.discount_type = 'percentage' THEN $saleGrossSql * COALESCE(s.discount, 0) / 100 ELSE COALESCE(s.discount, 0) END)";
+        $lineBillShareSql = "(CASE WHEN $saleGrossSql > 0 THEN $billDiscountSql * $lineGrossSql / $saleGrossSql ELSE 0 END)";
+        $lineDiscountSql = "((COALESCE(si.discount, 0) + $lineBillShareSql) * COALESCE(t.rate, 1))";
+        $lineNetSql = "(($lineGrossSql - COALESCE(si.discount, 0) + COALESCE(si.tax, 0) - $lineBillShareSql) * COALESCE(t.rate, 1))";
+
         $query = DB::table('sales as s')
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.reference_id', '=', 's.id')
@@ -673,7 +685,7 @@ class ReportService
         $summaryRow = (clone $query)
             ->selectRaw('COALESCE(SUM(si.quantity), 0) as total_quantity')
             // Restated in home currency so rows from different sale currencies can be summed.
-            ->selectRaw('COALESCE(SUM(si.quantity * si.unit_price * COALESCE(t.rate, 1)), 0) as total_amount')
+            ->selectRaw("COALESCE(SUM($lineNetSql), 0) as total_amount")
             ->first();
 
         $query
@@ -688,7 +700,8 @@ class ReportService
             ->selectRaw('um.name as unit_measure')
             ->selectRaw('si.quantity as quantity')
             ->selectRaw('si.unit_price * COALESCE(t.rate, 1) as unit_price')
-            ->selectRaw('COALESCE(si.quantity * si.unit_price * COALESCE(t.rate, 1), 0) as total_amount');
+            ->selectRaw("COALESCE($lineDiscountSql, 0) as discount")
+            ->selectRaw("COALESCE($lineNetSql, 0) as total_amount");
 
         return $this->paginateReport(
             $query,
@@ -701,6 +714,7 @@ class ReportService
                 'unit_measure' => $row->unit_measure,
                 'quantity'     => $this->quantityValue($row->quantity),
                 'unit_price'   => $this->moneyValue($row->unit_price),
+                'discount'     => $this->moneyValue($row->discount),
                 'total_amount' => $this->moneyValue($row->total_amount),
             ],
             [
@@ -798,6 +812,15 @@ class ReportService
 
     private function getPurchaseItemwiseReport(array $filters): array
     {
+        // See getSalesItemwiseReport(): the itemwise and general views of one report
+        // must agree on the total, so discounts and tax are applied identically here.
+        $lineGrossSql = '(pi.quantity * pi.unit_price)';
+        $purchaseGrossSql = '(SELECT COALESCE(SUM(pi2.quantity * pi2.unit_price), 0) FROM purchase_items pi2 WHERE pi2.purchase_id = p.id AND pi2.deleted_at IS NULL)';
+        $billDiscountSql = "(CASE WHEN p.discount_type = 'percentage' THEN $purchaseGrossSql * COALESCE(p.discount, 0) / 100 ELSE COALESCE(p.discount, 0) END)";
+        $lineBillShareSql = "(CASE WHEN $purchaseGrossSql > 0 THEN $billDiscountSql * $lineGrossSql / $purchaseGrossSql ELSE 0 END)";
+        $lineDiscountSql = "((COALESCE(pi.discount, 0) + $lineBillShareSql) * COALESCE(t.rate, 1))";
+        $lineNetSql = "(($lineGrossSql - COALESCE(pi.discount, 0) + COALESCE(pi.tax, 0) - $lineBillShareSql) * COALESCE(t.rate, 1))";
+
         $query = DB::table('purchases as p')
             ->join('transactions as t', function ($join) use ($filters) {
                 $join->on('t.reference_id', '=', 'p.id')
@@ -831,7 +854,7 @@ class ReportService
         $summaryRow = (clone $query)
             ->selectRaw('COALESCE(SUM(pi.quantity), 0) as total_quantity')
             // Restated in home currency so rows from different purchase currencies can be summed.
-            ->selectRaw('COALESCE(SUM(pi.quantity * pi.unit_price * COALESCE(t.rate, 1)), 0) as total_amount')
+            ->selectRaw("COALESCE(SUM($lineNetSql), 0) as total_amount")
             ->first();
 
         $query
@@ -844,7 +867,8 @@ class ReportService
             ->selectRaw('i.name as item')
             ->selectRaw('pi.quantity as quantity')
             ->selectRaw('pi.unit_price * COALESCE(t.rate, 1) as unit_price')
-            ->selectRaw('COALESCE(pi.quantity * pi.unit_price * COALESCE(t.rate, 1), 0) as total_amount');
+            ->selectRaw("COALESCE($lineDiscountSql, 0) as discount")
+            ->selectRaw("COALESCE($lineNetSql, 0) as total_amount");
 
         return $this->paginateReport(
             $query,
@@ -856,6 +880,7 @@ class ReportService
                 'item'            => $row->item,
                 'quantity'        => $this->quantityValue($row->quantity),
                 'unit_price'      => $this->moneyValue($row->unit_price),
+                'discount'        => $this->moneyValue($row->discount),
                 'total_amount'    => $this->moneyValue($row->total_amount),
             ],
             [
@@ -2762,10 +2787,10 @@ class ReportService
             'cash_book' => ['date', 'reference', 'description', 'debit', 'credit', 'running_balance', 'running_balance_label'],
             'sales_report' => $viewType === 'general'
                 ? ['date', 'number', 'customer', 'type', 'status', 'payment_status', 'amount']
-                : ['date', 'sale_number', 'customer', 'item', 'quantity', 'unit_price', 'total_amount'],
+                : ['date', 'sale_number', 'customer', 'item', 'quantity', 'unit_price', 'discount', 'total_amount'],
             'purchase_report' => $viewType === 'general'
                 ? ['date', 'number', 'supplier', 'type', 'status', 'amount']
-                : ['date', 'purchase_number', 'supplier', 'item', 'quantity', 'unit_price', 'total_amount'],
+                : ['date', 'purchase_number', 'supplier', 'item', 'quantity', 'unit_price', 'discount', 'total_amount'],
             'inventory_stock' => ['item', 'warehouse', 'quantity', 'average_cost', 'total_value'],
             'stock_movement' => ['date', 'item', 'warehouse', 'movement_type', 'quantity', 'unit_price', 'source_type', 'reference_type', 'reference_id'],
             'low_stock' => ['item', 'warehouse', 'quantity', 'reorder_level'],
@@ -2852,6 +2877,7 @@ class ReportService
             'amount_paid',
             'quantity',
             'unit_price',
+            'discount',
             'total_amount',
             'average_cost',
             'total_value',

@@ -157,6 +157,11 @@ class SaleController extends Controller
             [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
 
             $validated['item_list'] = array_map(function ($item) use ($validated, $sale, $itemModelsById, $averageCostsByItemId, $unitValuesById) {
+                // The form posts the line discount as item_discount; the column is
+                // `discount`. Without this the value is dropped on create, so the GL
+                // records the discount (it is folded into discount_total) while the
+                // sale_items row stores 0 and the sales report cannot subtract it.
+                $item['discount'] = $item['item_discount'] ?? 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
                 $itemModel = $itemModelsById[$item['item_id']] ?? null;
                 $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0);
