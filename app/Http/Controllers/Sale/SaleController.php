@@ -466,7 +466,11 @@ class SaleController extends Controller
             $validated['type'] = $validated['sale_type'] ?? $sale->type ?? 'cash';
             $validated['status'] = TransactionStatus::POSTED->value;
 
-            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $sale->date;
+            // Write the converted date back into $validated: the sale row is saved from
+            // $validated further down, so converting into $date alone left sales.date
+            // holding the raw Jalali value while the transaction got the Gregorian one.
+            $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $sale->date;
+            $date = $validated['date'];
             $affectedCombos = $sale->items()
                 ->get(['item_id', 'warehouse_id', 'branch_id'])
                 ->map(fn ($item) => [
