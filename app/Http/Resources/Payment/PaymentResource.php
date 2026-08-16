@@ -24,9 +24,7 @@ class PaymentResource extends JsonResource
             'payment_mode' => $this->payment_mode instanceof PaymentMode
                 ? $this->payment_mode->value
                 : $this->payment_mode,
-            'payment_mode_label' => $this->payment_mode instanceof PaymentMode
-                ? $this->payment_mode->getLabel()
-                : (PaymentMode::tryFrom((string) $this->payment_mode)?->getLabel() ?? $this->payment_mode),
+            'payment_mode_label' => PaymentMode::labelFor($this->payment_mode),
             'ledger' => $this->whenLoaded('ledger'),
             'ledger_name' => $this->ledger?->name,
             // The cash line, never lines[0] — a settlement voucher carries the

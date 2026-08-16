@@ -473,7 +473,7 @@ class ReceiptController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $receipts = Receipt::with(['ledger', 'transaction.currency', 'transaction.lines'])
+        $receipts = Receipt::with(['ledger', 'transaction.currency', 'transaction.lines.account.accountType'])
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection)
@@ -491,10 +491,12 @@ class ReceiptController extends Controller
         $rows = $receipts->map(fn ($r) => [
             'number'       => $r->number,
             'ledger_name'  => $r->ledger?->name ?? '-',
-            'payment_mode' => PaymentMode::tryFrom((string) $r->payment_mode)?->getLabel() ?? (string) $r->payment_mode,
-            'amount'       => (float) ($r->transaction?->lines->first()?->debit > 0
-                ? $r->transaction->lines->first()->debit
-                : $r->transaction?->lines->first()?->credit ?? 0),
+            'payment_mode' => PaymentMode::labelFor($r->payment_mode),
+            // The cash line, not lines->first(). A settlement voucher carries
+            // the receivable relief and any exchange difference alongside the
+            // cash, in no guaranteed order, so "the first line" exported a
+            // receivable amount in place of the receipt amount.
+            'amount'       => $r->receivedAmount(),
             'currency'     => $r->transaction?->currency?->code ?? '-',
             'rate'         => $r->transaction?->rate !== null ? (float) $r->transaction->rate : '-',
             'date'         => $r->date ? $this->dateConversionService->toDisplay($r->date) : '-',

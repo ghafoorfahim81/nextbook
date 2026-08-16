@@ -477,7 +477,7 @@ class PaymentController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $payments = Payment::with(['ledger', 'transaction.currency', 'transaction.lines'])
+        $payments = Payment::with(['ledger', 'transaction.currency', 'transaction.lines.account.accountType'])
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection)
@@ -495,10 +495,9 @@ class PaymentController extends Controller
         $rows = $payments->map(fn ($p) => [
             'number'       => $p->number,
             'ledger_name'  => $p->ledger?->name ?? '-',
-            'payment_mode' => PaymentMode::tryFrom((string) $p->payment_mode)?->getLabel() ?? (string) $p->payment_mode,
-            'amount'       => (float) ($p->transaction?->lines->first()?->debit > 0
-                ? $p->transaction->lines->first()->debit
-                : $p->transaction?->lines->first()?->credit ?? 0),
+            'payment_mode' => PaymentMode::labelFor($p->payment_mode),
+            // The cash line, not lines->first() — see the receipt export.
+            'amount'       => $p->paidAmount(),
             'currency'     => $p->transaction?->currency?->code ?? '-',
             'rate'         => $p->transaction?->rate !== null ? (float) $p->transaction->rate : '-',
             'date'         => $p->date ? $this->dateConversionService->toDisplay($p->date) : '-',
