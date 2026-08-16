@@ -65,7 +65,17 @@ class ReceiptPaymentFeatureTest extends TestCase
         $this->assertDatabaseHas('receipts', ['number' => '1']);
 
         $receipt = Receipt::query()->latest()->firstOrFail();
-        $this->assertEquals(2, $receipt->transaction()->firstOrFail()->lines()->count());
+
+        // An on-account receipt still relieves what is open before parking the
+        // rest: cash 120, receivable 100, advance 20. Dropping the whole 120
+        // into advances would report a 100 receivable and a 120 liability for
+        // the same money.
+        $lines = $receipt->transaction()->firstOrFail()->lines()->get();
+        $this->assertCount(3, $lines);
+
+        $this->assertEquals(120, $lines->firstWhere('account_id', $this->ctx['accounts']['cash-in-hand']->id)->debit);
+        $this->assertEquals(100, $lines->firstWhere('account_id', $this->ctx['accounts']['account-receivable']->id)->credit);
+        $this->assertEquals(20, $lines->firstWhere('account_id', $this->ctx['accounts']['customer-advances']->id)->credit);
 
         $ledgerBalance = DB::table('transaction_lines')
             ->where('ledger_id', $this->ctx['customer_ledger']->id)

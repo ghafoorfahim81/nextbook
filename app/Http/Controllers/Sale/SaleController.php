@@ -9,7 +9,8 @@ use App\Http\Resources\Sale\SaleListResource;
 use App\Http\Resources\Sale\SaleResource;
 use App\Models\Sale\Sale;
 use App\Models\Sale\SaleItem;
-use App\Services\BillAllocationService;
+use App\Services\Accounting\PaymentStatusService;
+use App\Services\Accounting\SettlementService;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
 use App\Models\Administration\UnitMeasure;
@@ -306,7 +307,7 @@ class SaleController extends Controller
                         'remark_fa' => 'پرداخت جزئی برای فروش #' . $sale->number,
                         'remark_ps' => 'د'. '#'. $sale->number.' '.'جزوی تادیه خرڅلاو د',
                     ];
-                    app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
+                    app(PaymentStatusService::class)->recalculateSales([$sale->id]);
                     $sale->update([
                         'payment_status' => \App\Enums\PaymentStatus::PartiallyPaid->value,
                     ]);
@@ -789,7 +790,7 @@ class SaleController extends Controller
                         'remark_fa' => ':پرداخت جزئی برای فروش #' . $sale->number,
                         'remark_ps' => 'د'. '#'. $sale->number.' '.'جزوی تادیه خرڅلاو: د',
                     ];
-                    app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
+                    app(PaymentStatusService::class)->recalculateSales([$sale->id]);
 
                     $sale->update([
                         'payment_status' => \App\Enums\PaymentStatus::PartiallyPaid->value,
@@ -1406,13 +1407,23 @@ class SaleController extends Controller
         return back()->with('success', __('general.sale_status_updated_successfully'));
     }
 
-    public function openBills(Request $request, BillAllocationService $billAllocationService)
+    /**
+     * Open receivables for a customer.
+     *
+     * Kept as an alias of settlements.open-items so existing links do not
+     * break. The claims are journal LINES now, not sales — an opening balance
+     * or a manual journal debit to AR shows up here on equal footing with an
+     * invoice, which is the whole point of settling against lines.
+     */
+    public function openBills(Request $request, SettlementService $settlements)
     {
         $ledgerId = (string) $request->query('ledger_id', '');
-        $excludeReceiptId = (string) $request->query('exclude_receipt_id', '');
+        $currencyId = (string) $request->query('currency_id', '');
 
         return response()->json([
-            'data' => $ledgerId ? $billAllocationService->openSalesForCustomer($ledgerId, $excludeReceiptId ?: null) : [],
+            'data' => $ledgerId
+                ? $settlements->openItems($ledgerId, $currencyId ?: null)
+                : [],
         ]);
     }
 

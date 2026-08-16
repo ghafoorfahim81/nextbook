@@ -38,5 +38,3 @@ Route::delete('/quantities/{quantity}/force-delete', [App\Http\Controllers\Admin
     ->name('quantities.force-delete')
     ->withTrashed();
  
-Route::apiResource('sale-receives', App\Http\Controllers\Sale\SaleReceiveController::class);
- 

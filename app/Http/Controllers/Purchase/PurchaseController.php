@@ -7,7 +7,8 @@ use App\Http\Requests\Purchase\PurchaseStoreRequest;
 use App\Http\Requests\Purchase\PurchaseUpdateRequest;
 use App\Http\Resources\Purchase\PurchaseResource;
 use App\Models\Purchase\Purchase;
-use App\Services\BillAllocationService;
+use App\Services\Accounting\PaymentStatusService;
+use App\Services\Accounting\SettlementService;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Warehouse;
@@ -249,7 +250,7 @@ class PurchaseController extends Controller
                 lines: $lines
             );
 
-            app(BillAllocationService::class)->recalculatePurchasePaymentStatuses([$purchase->id]);
+            app(PaymentStatusService::class)->recalculatePurchases([$purchase->id]);
             $activityLogService->logCreate(
                 reference: $purchase,
                 module: 'purchase',
@@ -531,7 +532,7 @@ class PurchaseController extends Controller
                 lines: $lines
             );
 
-            app(BillAllocationService::class)->recalculatePurchasePaymentStatuses([$purchase->id]);
+            app(PaymentStatusService::class)->recalculatePurchases([$purchase->id]);
             $afterState = [
                 'number' => $purchase->number,
                 'supplier_id' => $purchase->supplier_id,
@@ -1120,13 +1121,18 @@ class PurchaseController extends Controller
         ]);
     }
 
-    public function openBills(Request $request, BillAllocationService $billAllocationService)
+    /**
+     * Open payables for a supplier. Mirror of SaleController::openBills().
+     */
+    public function openBills(Request $request, SettlementService $settlements)
     {
         $ledgerId = (string) $request->query('ledger_id', '');
-        $excludePaymentId = (string) $request->query('exclude_payment_id', '');
+        $currencyId = (string) $request->query('currency_id', '');
 
         return response()->json([
-            'data' => $ledgerId ? $billAllocationService->openPurchasesForSupplier($ledgerId, $excludePaymentId ?: null) : [],
+            'data' => $ledgerId
+                ? $settlements->openItems($ledgerId, $currencyId ?: null)
+                : [],
         ]);
     }
 }

@@ -221,6 +221,14 @@ Route::middleware([
     Route::get('/quick-create/items/next-code', [QuickCreateController::class, 'nextItemCode'])->name('quick-create.items.next-code');
     Route::post('/quick-create/{resourceType}', [QuickCreateController::class, 'store'])->name('quick-create.store');
 
+    // Settlement previews shared by the receipt and payment forms. Read-only —
+    // they show what an amount would settle and the FX it would realise before
+    // anything is posted.
+    Route::get('/settlements/open-items', [\App\Http\Controllers\Accounting\SettlementController::class, 'openItems'])
+        ->name('settlements.open-items');
+    Route::post('/settlements/preview', [\App\Http\Controllers\Accounting\SettlementController::class, 'preview'])
+        ->name('settlements.preview');
+
     // Receipts
     Route::get('/receipts/export', [\App\Http\Controllers\Receipt\ReceiptController::class, 'export'])->name('receipts.export');
     Route::resource('/receipts', \App\Http\Controllers\Receipt\ReceiptController::class);

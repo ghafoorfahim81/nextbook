@@ -8,11 +8,13 @@ use App\Http\Requests\Payment\PaymentUpdateRequest;
 use App\Http\Resources\Payment\PaymentResource;
 use App\Enums\PaymentMode;
 use App\Models\Account\Account;
+use App\Models\Accounting\Settlement;
 use App\Models\Ledger\Ledger;
 use App\Models\Payment\Payment;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
-use App\Services\BillAllocationService;
+use App\Services\Accounting\PaymentStatusService;
+use App\Services\Accounting\SettlementService;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +34,20 @@ class PaymentController extends Controller
         $this->dateConversionService = $dateConversionService;
     }
 
+    /**
+     * Re-derive the paid/partly-paid badge on whatever this voucher settled.
+     *
+     * Driven off the settlements rows rather than a list the form sent, so it
+     * stays right when an allocation was split across rates or dropped.
+     */
+    private function refreshSettledDocuments(string $transactionId): void
+    {
+        $statuses = app(PaymentStatusService::class);
+        $affected = $statuses->documentsSettledBy($transactionId);
+
+        $statuses->recalculatePurchases($affected['purchases']);
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', recordsPerPage());
@@ -39,7 +55,7 @@ class PaymentController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $payments = Payment::with(['ledger', 'transaction.currency', 'transaction.lines.account', 'purchasePayments.purchase', 'createdBy', 'updatedBy'])
+        $payments = Payment::with(['ledger', 'transaction.currency', 'transaction.lines.account.accountType', 'settlements', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection)
@@ -68,7 +84,7 @@ class PaymentController extends Controller
 
     public function create(Request $request)
     {
-        $latest = Payment::max('number') > 0 ? Payment::max('number') + 1 : 1;
+        $latest = Payment::nextNumber();
         return inertia('Payments/Create', [
             'latestNumber' => $latest,
             'paymentModes' => collect(PaymentMode::cases())->map(fn (PaymentMode $mode) => [
@@ -80,9 +96,8 @@ class PaymentController extends Controller
 
     public function latestNumber(Request $request)
     {
-        $latest = Payment::max('number');
         return response()->json([
-            'number' => $latest ? ((is_numeric($latest) ? ((int)$latest) : 0) + 1) : 1,
+            'number' => Payment::nextNumber(),
         ]);
     }
 
@@ -112,45 +127,35 @@ class PaymentController extends Controller
                 'narration' => $validated['narration'] ?? null,
             ]);
 
-            // Debit Accounts Payable for selected ledger (reduce liability)
-            $glAccounts = BranchContext::glAccounts();
-            $apAccountId = $glAccounts['account-payable'];
-            $debitRemark = "Payment #{$payment->number} to {$ledger->name}";
-
-            $transaction = $transactionService->post(
-                header: [
-                    'currency_id' => $currencyId,
-                    'rate' => $rate,
+            // The purchase side is the exact mirror of the sale side: same
+            // service, same settlements table, payable account instead of
+            // receivable. SettlementService relieves each bill at the rate it
+            // was booked at and posts the exchange difference.
+            $transaction = app(SettlementService::class)->settle(
+                voucher: array_filter([
+                    'ledger_id' => $ledger->id,
+                    // Money going OUT. Stated by the module, never inferred
+                    // from the party — paying a customer (refunding them) is a
+                    // real thing, and it must still credit cash.
+                    'direction' => SettlementService::DIRECTION_OUT,
                     'date' => $validated['date'],
+                    'cash_account_id' => $bankAccountId,
+                    'cash_currency_id' => $currencyId,
+                    'cash_rate' => $rate,
+                    'cash_amount' => $amount,
+                    'applied_cash_amount' => $validated['applied_cash_amount'] ?? null,
+                    'applied_cash' => $validated['applied_cash'] ?? null,
                     'voucher_number' => $validated['cheque_no'] ?? 'Payment #' . $payment->number,
                     'reference_type' => Payment::class,
                     'reference_id' => $payment->id,
-                    'remark' => $debitRemark,
-                ],
-                lines: [
-                    [
-                        'account_id' => $bankAccountId,
-                        'debit' => 0,
-                        'credit' => $amount,
-                        'remark' => 'Payment #' . $payment->number. ' to '.$ledger->name,
-                        'remark_fa' => 'پرداخت نقدی #' . $payment->number. ' به '.$ledger->name,
-                        'remark_ps' => $ledger->name . ' ته د #' . $payment->number . ' ورکړه',
-
-                    ],
-                    [
-                        'account_id' => $apAccountId,
-                        'ledger_id' => $ledger->id,
-                        'debit' => $amount,
-                        'credit' => 0,
-                        'remark' => 'Payment #' . $payment->number. ' to '.$ledger->name,
-                        'remark_fa' => 'پرداخت نقدی #' . $payment->number. ' به '.$ledger->name,
-                        'remark_ps' => $ledger->name . ' ته د #' . $payment->number . ' ورکړه',
-                    ],
-
-                ],
+                    'remark' => $validated['narration'] ?? "Payment #{$payment->number} to {$ledger->name}",
+                    'remark_fa' => 'پرداخت نقدی #' . $payment->number . ' به ' . $ledger->name,
+                    'remark_ps' => $ledger->name . ' ته د #' . $payment->number . ' ورکړه',
+                ], fn ($value) => $value !== null),
+                allocations: $validated['allocations'] ?? [],
             );
 
-            app(BillAllocationService::class)->syncPaymentAllocations($payment, $amount, $validated['allocations'] ?? []);
+            $this->refreshSettledDocuments($transaction->id);
             $activityLogService->logCreate(
                 reference: $payment,
                 module: 'payment',
@@ -191,9 +196,29 @@ class PaymentController extends Controller
 
     public function show(Request $request, Payment $payment)
     {
-        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'purchasePayments.purchase', 'createdBy', 'updatedBy']);
-        return response()->json([
-            'data' => new PaymentResource($payment),
+        $payment->load([
+            'ledger',
+            'transaction.currency',
+            'transaction.lines.account.accountType',
+            'transaction.lines.currency',
+            'settlements',
+            'createdBy',
+            'updatedBy',
+        ]);
+
+        $resource = new PaymentResource($payment);
+
+        // The edit form fetches this endpoint over axios to populate itself, so
+        // the JSON shape has to stay. Browsers get the page.
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $resource]);
+        }
+
+        return inertia('Payments/Show', [
+            'payment' => $resource,
+            'settlements' => $payment->transaction
+                ? app(SettlementService::class)->settlementsForVoucher($payment->transaction->id)
+                : [],
         ]);
     }
 
@@ -204,9 +229,9 @@ class PaymentController extends Controller
         $payment->load([
             'ledger',
             'transaction.currency',
-            'transaction.lines.account',
+            'transaction.lines.account.accountType',
             'transaction.lines.ledger',
-            'purchasePayments.purchase',
+            'settlements',
             'createdBy',
             'updatedBy',
         ]);
@@ -231,7 +256,7 @@ class PaymentController extends Controller
 
     public function edit(Request $request, Payment $payment)
     {
-        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'purchasePayments.purchase', 'createdBy', 'updatedBy']);
+        $payment->load(['ledger', 'transaction.currency', 'transaction.lines.account.accountType', 'settlements', 'createdBy', 'updatedBy']);
         return inertia('Payments/Edit', [
             'data' => new PaymentResource($payment),
             'paymentModes' => collect(PaymentMode::cases())->map(fn (PaymentMode $mode) => [
@@ -275,45 +300,47 @@ class PaymentController extends Controller
             $rate = isset($validated['rate']) ? (float) $validated['rate'] : ($payment->transaction?->rate ?? 0);
             $bankAccountId = $validated['bank_account_id'] ?? $payment->transaction?->lines[0]->account_id;
             $bankAccount = Account::find($bankAccountId);
-            $glAccounts = BranchContext::glAccounts();
-            $apAccountId = $glAccounts['account-payable'];
 
-            TransactionLine::where('transaction_id', $payment->transaction->id)->forceDelete();
-            Transaction::where('id', $payment->transaction->id)->forceDelete();
-            $transactionService = app(TransactionService::class);
-            $transactionService->post(
-                header: [
-                    'currency_id' => $currencyId,
-                    'rate' => $rate,
+            // Editing re-posts the voucher, so its settlements go with it.
+            // Leaving them would keep bills closed against an entry that has
+            // been deleted.
+            $oldTransaction = $payment->transaction()->first();
+
+            if ($oldTransaction) {
+                $affected = app(PaymentStatusService::class)->documentsSettledBy($oldTransaction->id);
+
+                Settlement::withoutGlobalScopes()->where('transaction_id', $oldTransaction->id)->forceDelete();
+                TransactionLine::where('transaction_id', $oldTransaction->id)->forceDelete();
+                Transaction::where('id', $oldTransaction->id)->forceDelete();
+
+                app(PaymentStatusService::class)->recalculatePurchases($affected['purchases']);
+            }
+
+            $transaction = app(SettlementService::class)->settle(
+                voucher: array_filter([
+                    'ledger_id' => $ledger->id,
+                    // Money going OUT. Stated by the module, never inferred
+                    // from the party — paying a customer (refunding them) is a
+                    // real thing, and it must still credit cash.
+                    'direction' => SettlementService::DIRECTION_OUT,
                     'date' => $validated['date'],
+                    'cash_account_id' => $bankAccountId,
+                    'cash_currency_id' => $currencyId,
+                    'cash_rate' => $rate,
+                    'cash_amount' => $amount,
+                    'applied_cash_amount' => $validated['applied_cash_amount'] ?? null,
+                    'applied_cash' => $validated['applied_cash'] ?? null,
+                    'voucher_number' => $validated['cheque_no'] ?? 'Payment #' . $payment->number,
                     'reference_type' => Payment::class,
                     'reference_id' => $payment->id,
-                    'remark' => "Payment #{$payment->number} to {$ledger->name}",
-                    'voucher_number' => $validated['cheque_no'] ?? 'Payment #' . $payment->number,
-                ],
-                lines: [
-                    [
-                        'account_id' => $bankAccountId,
-                        'debit' => 0,
-                        'credit' => $amount,
-                        'remark' => 'Payment #' . $payment->number. ' to '.$ledger->name,
-                        'remark_fa' => 'پرداخت نقدی #' . $payment->number. ' به '.$ledger->name,
-                        'remark_ps' => $ledger->name . ' ته د #' . $payment->number . ' ورکړه',
-
-                    ],
-                    [
-                        'account_id' => $apAccountId,
-                        'ledger_id' => $ledger->id,
-                        'debit' => $amount,
-                        'credit' => 0,
-                        'remark' => 'Payment #' . $payment->number. ' to '.$ledger->name,
-                        'remark_fa' => 'پرداخت نقدی #' . $payment->number. ' به '.$ledger->name,
-                        'remark_ps' => $ledger->name . ' ته د #' . $payment->number . ' ورکړه',
-                    ],
-                ],
+                    'remark' => $validated['narration'] ?? "Payment #{$payment->number} to {$ledger->name}",
+                    'remark_fa' => 'پرداخت نقدی #' . $payment->number . ' به ' . $ledger->name,
+                    'remark_ps' => $ledger->name . ' ته د #' . $payment->number . ' ورکړه',
+                ], fn ($value) => $value !== null),
+                allocations: $validated['allocations'] ?? [],
             );
 
-            app(BillAllocationService::class)->syncPaymentAllocations($payment, $amount, $validated['allocations'] ?? []);
+            $this->refreshSettledDocuments($transaction->id);
             $activityLogService->logUpdate(
                 reference: $payment,
                 before: $beforeState,
@@ -330,7 +357,7 @@ class PaymentController extends Controller
                 description: "Payment #{$payment->number} updated.",
                 metadata: [
                     'action' => 'payment_update',
-                    'transaction_id' => $payment->transaction->id,
+                    'transaction_id' => $transaction->id,
                 ],
             );
         });
@@ -359,18 +386,22 @@ class PaymentController extends Controller
         ];
 
         DB::transaction(function () use ($payment) {
-            $allocatedPurchaseIds = $payment->purchasePayments()->pluck('purchase_id')->all();
             $transaction = $payment->transaction()->first();
+            $affected = ['purchases' => []];
 
             if ($transaction) {
+                // Note which bills this payment was holding closed before the
+                // settlements go, so their badges can be re-derived after.
+                $affected = app(PaymentStatusService::class)->documentsSettledBy($transaction->id);
+
+                Settlement::withoutGlobalScopes()->where('transaction_id', $transaction->id)->delete();
                 $transaction->lines()->delete();
                 $transaction->delete();
             }
 
-            $payment->purchasePayments()->delete();
             $payment->delete();
 
-            app(BillAllocationService::class)->recalculatePurchasePaymentStatuses($allocatedPurchaseIds);
+            app(PaymentStatusService::class)->recalculatePurchases($affected['purchases']);
         });
 
         $activityLogService->logDelete(
@@ -396,11 +427,17 @@ class PaymentController extends Controller
             if ($transaction) {
                 $transaction->restore();
                 $transaction->lines()->withTrashed()->restore();
+                Settlement::withoutGlobalScopes()
+                    ->onlyTrashed()
+                    ->where('transaction_id', $transaction->id)
+                    ->restore();
             }
 
             $payment->restore();
-            $payment->purchasePayments()->withTrashed()->restore();
-            app(BillAllocationService::class)->recalculatePurchasePaymentStatuses($payment->purchasePayments()->pluck('purchase_id')->all());
+
+            if ($transaction) {
+                $this->refreshSettledDocuments($transaction->id);
+            }
         });
 
         $activityLogService->logAction(

@@ -124,9 +124,22 @@ class Purchase extends Model
         });
     }
 
-    public function purchasePayments(): HasMany
+    /**
+     * Settlements against this purchase's payable line. Mirror of
+     * Sale::settlements().
+     */
+    public function settlements()
     {
-        return $this->hasMany(PurchasePayment::class);
+        return \App\Models\Accounting\Settlement::query()
+            ->whereIn('target_line_id', function ($query) {
+                $query->select('tl.id')
+                    ->from('transaction_lines as tl')
+                    ->join('transactions as t', 't.id', '=', 'tl.transaction_id')
+                    ->where('t.reference_type', self::class)
+                    ->where('t.reference_id', $this->id)
+                    ->whereNull('t.deleted_at')
+                    ->whereNull('tl.deleted_at');
+            });
     }
 
     public function getDependencyMessage(): string

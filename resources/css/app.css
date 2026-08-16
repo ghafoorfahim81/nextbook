@@ -1138,3 +1138,22 @@
   html[data-theme='violet-900'] .to-violet-950 {
     --tw-gradient-to: hsl(var(--theme-950)) var(--tw-gradient-to-position) !important;
   }
+
+/*
+ * The afghani sign, U+060B (؋).
+ *
+ * Poppins — the UI font — has no glyph at that code point, so the browser falls
+ * back per-character to whatever system face it finds first. On Windows that is
+ * commonly a face whose glyph there reads as a division sign, which is the
+ * reported "AFN renders as ÷" bug. The character was always correct; the face
+ * rendering it was not.
+ *
+ * Dana and iranyekan are already loaded for Dari and Pashto and both cover
+ * Arabic-script currency signs, so naming them first fixes the glyph without
+ * shipping another font. Dense tables use the currency CODE instead (see
+ * resources/js/utils/money.js) — unambiguous next to USD, and no font risk.
+ */
+.currency-symbol {
+  font-family: 'Dana', 'iranyekan', 'Noto Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+  font-feature-settings: normal;
+}

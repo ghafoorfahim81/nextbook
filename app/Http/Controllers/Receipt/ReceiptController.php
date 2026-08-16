@@ -8,11 +8,13 @@ use App\Http\Requests\Receipt\ReceiptUpdateRequest;
 use App\Http\Resources\Receipt\ReceiptResource;
 use App\Enums\PaymentMode;
 use App\Models\Account\Account;
+use App\Models\Accounting\Settlement;
 use App\Models\Ledger\Ledger;
 use App\Models\Receipt\Receipt;
 use App\Models\Transaction\Transaction;
 use App\Models\Transaction\TransactionLine;
-use App\Services\BillAllocationService;
+use App\Services\Accounting\PaymentStatusService;
+use App\Services\Accounting\SettlementService;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -32,6 +34,20 @@ class ReceiptController extends Controller
         $this->dateConversionService = $dateConversionService;
     }
 
+    /**
+     * Re-derive the paid/partly-paid badge on whatever this voucher settled.
+     *
+     * Driven off the settlements rows rather than a list the form sent, so it
+     * stays right when an allocation was split across rates or dropped.
+     */
+    private function refreshSettledDocuments(string $transactionId): void
+    {
+        $statuses = app(PaymentStatusService::class);
+        $affected = $statuses->documentsSettledBy($transactionId);
+
+        $statuses->recalculateSales($affected['sales']);
+    }
+
     public function index(Request $request)
     {
         $perPage = $request->input('perPage', recordsPerPage());
@@ -39,7 +55,7 @@ class ReceiptController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $receipts = Receipt::with(['ledger', 'transaction.currency', 'transaction.lines.account', 'saleReceives.sale', 'createdBy', 'updatedBy'])
+        $receipts = Receipt::with(['ledger', 'transaction.currency', 'transaction.lines.account.accountType', 'settlements', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection)
@@ -69,7 +85,7 @@ class ReceiptController extends Controller
 
     public function create(Request $request)
     {
-        $latest = Receipt::max('number') > 0 ? Receipt::max('number') + 1 : 1;
+        $latest = Receipt::nextNumber();
         return inertia('Receipts/Create', [
             'latestNumber' => $latest,
             'paymentModes' => collect(PaymentMode::cases())->map(fn (PaymentMode $mode) => [
@@ -105,44 +121,36 @@ class ReceiptController extends Controller
                 'cheque_no' => $validated['cheque_no'] ?? null,
                 'narration' => $validated['narration'] ?? null,
             ]);
-            $glAccounts = BranchContext::glAccounts();
-            // Credit Accounts Receivable for selected ledger
-            $arAccountId = $glAccounts['account-receivable'];
-
-            $creditRemark = "Receipt #{$receipt->number} from {$ledger->name}";
-
-            $transaction = $transactionService->post(
-                header: [
-                    'currency_id' => $currencyId,
-                    'rate' => $rate,
+            // SettlementService posts the whole voucher: cash at today's rate,
+            // one receivable line per booking rate it relieves, and the FX
+            // difference between them. It is deliberately not this controller's
+            // job to decide any of that.
+            $transaction = app(SettlementService::class)->settle(
+                voucher: array_filter([
+                    'ledger_id' => $ledger->id,
+                    // Money coming IN. Stated by the module, never inferred
+                    // from the party — a receipt from a supplier is a real
+                    // thing (they are refunding an advance), and it still has
+                    // to debit cash.
+                    'direction' => SettlementService::DIRECTION_IN,
                     'date' => $validated['date'],
+                    'cash_account_id' => $bankAccountId,
+                    'cash_currency_id' => $currencyId,
+                    'cash_rate' => $rate,
+                    'cash_amount' => $amount,
+                    'applied_cash_amount' => $validated['applied_cash_amount'] ?? null,
+                    'applied_cash' => $validated['applied_cash'] ?? null,
+                    'voucher_number' => $validated['cheque_no'] ?? 'Receipt #' . $receipt->number,
                     'reference_type' => Receipt::class,
                     'reference_id' => $receipt->id,
-                    'remark' => $creditRemark,
-                    'voucher_number' => $validated['cheque_no'] ?? 'Receipt #' . $receipt->number,
-                ],
-                lines: [
-                    [
-                        'account_id' => $bankAccountId,
-                        'debit' => $amount,
-                        'credit' => 0,
-                        'remark' => 'Cash received #' . $receipt->number. ' from '.$ledger->name,
-                        'remark_fa' => 'دریافت نقدی رسید #' . $receipt->number. ' از '.$ledger->name,
-                        'remark_ps' => 'د'. '#'. $receipt->number.' '.'د نغدي اخیستلو په اړه رسید له  '.$ledger->name,
-                    ],
-                    [
-                        'account_id' => $arAccountId,
-                        'debit' => 0,
-                        'ledger_id' => $ledger->id,
-                        'credit' => $amount,
-                        'remark' => 'Payment by '.$ledger->name.' #' . $receipt->number,
-                        'remark_fa' => 'پرداخت توسط '.$ledger->name.' #' . $receipt->number,
-                        'remark_ps' => 'د ' . $ledger->name . ' لخوا تادیه #' . $receipt->number,
-                    ],
-                ],
+                    'remark' => $validated['narration'] ?? "Receipt #{$receipt->number} from {$ledger->name}",
+                    'remark_fa' => 'دریافت نقدی رسید #' . $receipt->number . ' از ' . $ledger->name,
+                    'remark_ps' => 'د' . '#' . $receipt->number . ' ' . 'د نغدي اخیستلو په اړه رسید له  ' . $ledger->name,
+                ], fn ($value) => $value !== null),
+                allocations: $validated['allocations'] ?? [],
             );
 
-            app(BillAllocationService::class)->syncReceiptAllocations($receipt, $amount, $validated['allocations'] ?? []);
+            $this->refreshSettledDocuments($transaction->id);
             $activityLogService->logCreate(
                 reference: $receipt,
                 module: 'receipt',
@@ -182,9 +190,31 @@ class ReceiptController extends Controller
 
     public function show(Request $request, Receipt $receipt)
     {
-        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'saleReceives.sale', 'createdBy', 'updatedBy']);
-        return response()->json([
-            'data' => new ReceiptResource($receipt),
+        $receipt->load([
+            'ledger',
+            'transaction.currency',
+            'transaction.lines.account.accountType',
+            'transaction.lines.currency',
+            'settlements',
+            'createdBy',
+            'updatedBy',
+        ]);
+
+        $resource = new ReceiptResource($receipt);
+
+        // The edit form fetches this endpoint over axios to populate itself, so
+        // the JSON shape has to stay. Browsers get the page.
+        if ($request->expectsJson()) {
+            return response()->json(['data' => $resource]);
+        }
+
+        return inertia('Receipts/Show', [
+            'receipt' => $resource,
+            // Named documents rather than raw line ids — the settlement rows
+            // alone cannot say which invoice or opening they relieved.
+            'settlements' => $receipt->transaction
+                ? app(SettlementService::class)->settlementsForVoucher($receipt->transaction->id)
+                : [],
         ]);
     }
 
@@ -195,9 +225,9 @@ class ReceiptController extends Controller
         $receipt->load([
             'ledger',
             'transaction.currency',
-            'transaction.lines.account',
+            'transaction.lines.account.accountType',
             'transaction.lines.ledger',
-            'saleReceives.sale',
+            'settlements',
             'createdBy',
             'updatedBy',
         ]);
@@ -223,7 +253,7 @@ class ReceiptController extends Controller
 
     public function edit(Request $request, Receipt $receipt)
     {
-        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account', 'saleReceives.sale', 'createdBy', 'updatedBy']);
+        $receipt->load(['ledger', 'transaction.currency', 'transaction.lines.account.accountType', 'settlements', 'createdBy', 'updatedBy']);
         return inertia('Receipts/Edit', [
             'data' => new ReceiptResource($receipt),
             'paymentModes' => collect(PaymentMode::cases())->map(fn (PaymentMode $mode) => [
@@ -267,42 +297,48 @@ class ReceiptController extends Controller
             $rate = isset($validated['rate']) ? (float) $validated['rate'] : $receipt->rate;
             $bankAccountId = $validated['bank_account_id'] ?? $receipt->transaction?->lines[0]->account_id;
             $bankAccount = Account::find($bankAccountId);
-            $glAccounts = BranchContext::glAccounts();
-            $arAccountId = $glAccounts['account-receivable'];
-            TransactionLine::where('transaction_id', $receipt->transaction->id)->forceDelete();
-             Transaction::where('id', $receipt->transaction->id)->forceDelete();
-             $transactionService = app(TransactionService::class);
-            $transactionService->post(
-                header: [
-                    'currency_id' => $currencyId,
-                    'rate' => $rate,
-                    'voucher_number' => $validated['cheque_no'] ?? 'Receipt #' . $receipt->number,
+
+            // Editing a receipt re-posts it from scratch. The settlements it
+            // wrote go with the old voucher — leaving them behind would keep
+            // invoices closed against a journal entry that no longer exists.
+            $oldTransaction = $receipt->transaction()->first();
+
+            if ($oldTransaction) {
+                $affected = app(PaymentStatusService::class)->documentsSettledBy($oldTransaction->id);
+
+                Settlement::withoutGlobalScopes()->where('transaction_id', $oldTransaction->id)->forceDelete();
+                TransactionLine::where('transaction_id', $oldTransaction->id)->forceDelete();
+                Transaction::where('id', $oldTransaction->id)->forceDelete();
+
+                app(PaymentStatusService::class)->recalculateSales($affected['sales']);
+            }
+
+            $transaction = app(SettlementService::class)->settle(
+                voucher: array_filter([
+                    'ledger_id' => $ledger->id,
+                    // Money coming IN. Stated by the module, never inferred
+                    // from the party — a receipt from a supplier is a real
+                    // thing (they are refunding an advance), and it still has
+                    // to debit cash.
+                    'direction' => SettlementService::DIRECTION_IN,
                     'date' => $validated['date'],
+                    'cash_account_id' => $bankAccountId,
+                    'cash_currency_id' => $currencyId,
+                    'cash_rate' => $rate,
+                    'cash_amount' => $amount,
+                    'applied_cash_amount' => $validated['applied_cash_amount'] ?? null,
+                    'applied_cash' => $validated['applied_cash'] ?? null,
+                    'voucher_number' => $validated['cheque_no'] ?? 'Receipt #' . $receipt->number,
                     'reference_type' => Receipt::class,
-                    'remark'    => $validated['narration'] ?? "Receipt #{$receipt->number} from {$ledger->name}",   
                     'reference_id' => $receipt->id,
-                ],
-                lines: [
-                    [
-                        'account_id' => $bankAccountId,
-                        'debit' => $amount,
-                        'credit' => 0,
-                        'remark' => 'Cash received #' . $receipt->number. ' from '.$ledger->name,
-                        'remark_fa' => 'دریافت نقدی رسید #' . $receipt->number. ' از '.$ledger->name,
-                        'remark_ps' => 'د'. '#'. $receipt->number.' '.'د نغدي اخیستلو په اړه رسید له  '.$ledger->name,
-                    ],
-                    [
-                        'account_id' => $arAccountId,
-                        'debit' => 0,
-                        'ledger_id' => $ledger->id,
-                        'credit' => $amount,
-                        'remark' => 'Payment by '.$ledger->name.' #' . $receipt->number,
-                        'remark_fa' => 'پرداخت توسط '.$ledger->name.' #' . $receipt->number,
-                        'remark_ps' => 'د ' . $ledger->name . ' لخوا تادیه #' . $receipt->number,
-                    ],
-                ],
+                    'remark' => $validated['narration'] ?? "Receipt #{$receipt->number} from {$ledger->name}",
+                    'remark_fa' => 'دریافت نقدی رسید #' . $receipt->number . ' از ' . $ledger->name,
+                    'remark_ps' => 'د' . '#' . $receipt->number . ' ' . 'د نغدي اخیستلو په اړه رسید له  ' . $ledger->name,
+                ], fn ($value) => $value !== null),
+                allocations: $validated['allocations'] ?? [],
             );
-            app(BillAllocationService::class)->syncReceiptAllocations($receipt, $amount, $validated['allocations'] ?? []);
+
+            $this->refreshSettledDocuments($transaction->id);
             Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
             $activityLogService->logUpdate(
@@ -321,7 +357,7 @@ class ReceiptController extends Controller
                 description: "Receipt #{$receipt->number} updated.",
                 metadata: [
                     'action' => 'receipt_update',
-                    'transaction_id' => $receipt->transaction->id,
+                    'transaction_id' => $transaction->id,
                 ],
             );
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
@@ -349,19 +385,22 @@ class ReceiptController extends Controller
         ];
 
         DB::transaction(function () use ($receipt) {
-            $allocatedSaleIds = $receipt->saleReceives()->pluck('sale_id')->all();
-            // Soft delete linked transactions then the receipt
-                $transaction = $receipt->transaction()->first();
+            $transaction = $receipt->transaction()->first();
+            $affected = ['sales' => []];
 
-                if ($transaction) {
-                    $transaction->lines()->delete();
-                    $transaction->delete();
-                }
+            if ($transaction) {
+                // Note which invoices this receipt was holding closed BEFORE
+                // the settlements go, so their badges can be re-derived after.
+                $affected = app(PaymentStatusService::class)->documentsSettledBy($transaction->id);
 
-                $receipt->saleReceives()->delete();
-                $receipt->delete();
+                Settlement::withoutGlobalScopes()->where('transaction_id', $transaction->id)->delete();
+                $transaction->lines()->delete();
+                $transaction->delete();
+            }
 
-                app(BillAllocationService::class)->recalculateSalePaymentStatuses($allocatedSaleIds);
+            $receipt->delete();
+
+            app(PaymentStatusService::class)->recalculateSales($affected['sales']);
         });
 
         $activityLogService->logDelete(
@@ -385,11 +424,17 @@ class ReceiptController extends Controller
             if ($transaction) {
                 $transaction->restore();
                 $transaction->lines()->withTrashed()->restore();
+                Settlement::withoutGlobalScopes()
+                    ->onlyTrashed()
+                    ->where('transaction_id', $transaction->id)
+                    ->restore();
             }
 
             $receipt->restore();
-            $receipt->saleReceives()->withTrashed()->restore();
-            app(BillAllocationService::class)->recalculateSalePaymentStatuses($receipt->saleReceives()->pluck('sale_id')->all());
+
+            if ($transaction) {
+                $this->refreshSettledDocuments($transaction->id);
+            }
         });
 
         $activityLogService->logAction(
