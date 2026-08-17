@@ -446,7 +446,9 @@ class ReceiptController extends Controller
         $rows = $receipts->map(fn ($r) => [
             'number'       => $r->number,
             'ledger_name'  => $r->ledger?->name ?? '-',
-            'payment_mode' => PaymentMode::tryFrom((string) $r->payment_mode)?->getLabel() ?? (string) $r->payment_mode,
+            // payment_mode is cast to the PaymentMode enum on the model, so
+            // (string) $r->payment_mode is a fatal error, not a value.
+            'payment_mode' => PaymentMode::labelFor($r->payment_mode),
             'amount'       => (float) ($r->transaction?->lines->first()?->debit > 0
                 ? $r->transaction->lines->first()->debit
                 : $r->transaction?->lines->first()?->credit ?? 0),
