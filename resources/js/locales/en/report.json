@@ -103,7 +103,9 @@
     "expense_count": "Expenses",
     "party_count": "Parties",
     "total_debtor": "Total receivable",
-    "total_creditor": "Total payable"
+    "total_creditor": "Total payable",
+    "currency_count": "Currencies",
+    "total_home_equivalent": "Total (home currency)"
   },
   "columns": {
     "no": "No.",
@@ -178,7 +180,10 @@
     "bank_account": "Bank / Cash account",
     "remark": "Remark",
     "party_name": "Party",
-    "balance_type": "Balance type"
+    "balance_type": "Balance type",
+    "currency": "Currency",
+    "home_equivalent": "Home equivalent",
+    "currency_name": "Currency name"
   },
   "view_types": {
     "general": "General view",
@@ -220,6 +225,10 @@
     "cash_book": {
       "label": "Cash book",
       "description": "Running balance for a selected cash or bank account."
+    },
+    "cash_position_by_currency": {
+      "label": "Cash Position by Currency",
+      "description": "How much cash you are holding in each currency, across all cash and bank accounts."
     },
     "sales_report": {
       "label": "Sales report",

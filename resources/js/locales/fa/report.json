@@ -103,7 +103,9 @@
     "expense_count": "مصارف",
     "party_count": "تعداد طرف حساب",
     "total_debtor": "مجموع طلب",
-    "total_creditor": "مجموع بدهی"
+    "total_creditor": "مجموع بدهی",
+    "currency_count": "تعداد ارزها",
+    "total_home_equivalent": "مجموع (ارز پایه)"
   },
   "columns": {
     "no": "شماره",
@@ -178,7 +180,10 @@
     "bank_account": "حساب بانکی / نقدی",
     "remark": "ملاحظات",
     "party_name": "طرف حساب",
-    "balance_type": "نوع مانده"
+    "balance_type": "نوع مانده",
+    "currency": "ارز",
+    "home_equivalent": "معادل ارز پایه",
+    "currency_name": "نام ارز"
   },
   "view_types": {
     "general": "عمومی",
@@ -220,6 +225,10 @@
     "cash_book": {
       "label": "کتاب نقدی",
       "description": "مانده جاری برای حساب نقد یا بانک انتخاب‌شده."
+    },
+    "cash_position_by_currency": {
+      "label": "وضعیت نقدینگی بر اساس ارز",
+      "description": "مقدار نقدینگی موجود در هر ارز، در مجموع تمام حساب‌های نقد و بانک."
     },
     "sales_report": {
       "label": "گزارش فروش",
