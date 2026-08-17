@@ -160,10 +160,16 @@ class AccountController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
+        $currencyBalances = $this->currencyBalances($transactions);
+        $accountCurrency = $this->accountCurrency($chart_of_account, $transactions);
+        $convertedBalance = $this->convertedBalance($currencyBalances, $accountCurrency);
+
         if ($request->expectsJson()) {
             return response()->json([
                 'account' => new AccountResource($chart_of_account),
                 'transactions' => TransactionResource::collection($transactions),
+                'currencyBalances' => $currencyBalances,
+                'convertedBalance' => $convertedBalance,
                 'opening' => $chart_of_account->opening
                     ? new LedgerOpeningResource($chart_of_account->opening)
                     : null,
@@ -173,11 +179,132 @@ class AccountController extends Controller
         return inertia('Accounts/Accounts/Show', [
             'account' => new AccountResource($chart_of_account),
             'transactions' => TransactionResource::collection($transactions),
+            'currencyBalances' => $currencyBalances,
+            'convertedBalance' => $convertedBalance,
             'opening' => $chart_of_account->opening
                 ? new LedgerOpeningResource($chart_of_account->opening)
                 : null,
             'balanceNatureFormat' => balanceNatureFormat(),
         ]);
+    }
+
+    /**
+     * The currency an account is understood to be held in.
+     *
+     * Accounts carry no currency column, so it is inferred: the opening balance
+     * decides it, and failing that the earliest transaction posted to the
+     * account. Nothing is written anywhere — this only labels the detail view.
+     *
+     * @param  \Illuminate\Support\Collection<int, Transaction>  $transactions
+     */
+    protected function accountCurrency(Account $account, $transactions): ?Currency
+    {
+        $opening = $account->opening?->transaction?->currency;
+
+        if ($opening) {
+            return $opening;
+        }
+
+        return collect($transactions)
+            ->sortBy([['date', 'asc'], ['created_at', 'asc']])
+            ->first(fn (Transaction $transaction) => $transaction->currency !== null)
+            ?->currency;
+    }
+
+    /**
+     * The whole account expressed in its own currency.
+     *
+     * Positions the account holds in other currencies are carried to the account
+     * currency through their home-currency equivalent, divided by the account
+     * currency's current rate. Balances already in the account currency are
+     * taken as they stand, so they never pick up rounding from a round trip.
+     *
+     * This is a reading of the balance, not a posting: no line is converted or
+     * rewritten, and the figure moves whenever the exchange rate does.
+     *
+     * @param  array<int, array<string, mixed>>  $currencyBalances
+     * @return array<string, mixed>|null
+     */
+    protected function convertedBalance(array $currencyBalances, ?Currency $accountCurrency): ?array
+    {
+        $rate = (float) ($accountCurrency?->exchange_rate ?? 0);
+
+        if (! $accountCurrency || $rate <= 0 || $currencyBalances === []) {
+            return null;
+        }
+
+        $net = 0.0;
+
+        foreach ($currencyBalances as $row) {
+            $net += $row['currency_id'] === $accountCurrency->id
+                ? (float) $row['net_balance']
+                : (float) $row['home_equivalent'] / $rate;
+        }
+
+        $net = round($net, 2);
+
+        return [
+            'currency_id' => $accountCurrency->id,
+            'currency_code' => $accountCurrency->code ?: $accountCurrency->name,
+            'currency_name' => $accountCurrency->name,
+            'rate' => $rate,
+            'amount' => abs($net),
+            'net_balance' => $net,
+            'balance_nature' => $net >= 0 ? 'dr' : 'cr',
+        ];
+    }
+
+    /**
+     * Native totals per currency for the account detail view.
+     *
+     * A cash or bank account holds real money in the currency it was opened in,
+     * so converting its lines to the home currency here misstates what is
+     * actually in the drawer. Every currency keeps its own debit, credit and
+     * balance; the home-currency equivalent is carried alongside as a
+     * cross-currency footnote, not as the headline figure.
+     *
+     * Built from the same transactions the detail table renders so the card and
+     * the table can never disagree.
+     *
+     * @param  \Illuminate\Support\Collection<int, Transaction>  $transactions
+     * @return array<int, array<string, mixed>>
+     */
+    protected function currencyBalances($transactions): array
+    {
+        return collect($transactions)
+            ->flatMap(fn (Transaction $transaction) => $transaction->lines->map(fn ($line) => [
+                'currency' => $transaction->currency,
+                'rate' => (float) ($transaction->rate ?: 1),
+                'debit' => (float) ($line->debit ?? 0),
+                'credit' => (float) ($line->credit ?? 0),
+            ]))
+            ->groupBy(fn (array $row) => $row['currency']?->id ?? '')
+            ->map(function ($rows, $currencyId) {
+                $currency = $rows->first()['currency'];
+                $debit = round((float) $rows->sum('debit'), 2);
+                $credit = round((float) $rows->sum('credit'), 2);
+                $net = round($debit - $credit, 2);
+
+                return [
+                    'currency_id' => $currencyId,
+                    'currency_code' => $currency?->code ?: ($currency?->name ?? ''),
+                    'currency_name' => $currency?->name ?? '',
+                    'currency_symbol' => $currency?->symbol,
+                    'is_base_currency' => (bool) ($currency?->is_base_currency ?? false),
+                    'total_debit' => $debit,
+                    'total_credit' => $credit,
+                    'balance' => abs($net),
+                    'net_balance' => $net,
+                    'balance_nature' => $net >= 0 ? 'dr' : 'cr',
+                    'home_equivalent' => round(
+                        (float) $rows->sum(fn (array $row) => ($row['debit'] - $row['credit']) * $row['rate']),
+                        2
+                    ),
+                ];
+            })
+            ->sortBy(fn (array $row) => [$row['is_base_currency'] ? 0 : 1, $row['currency_code']])
+            ->values()
+            ->all();
     }
 
     public function exportTransactions(
@@ -207,20 +334,21 @@ class AccountController extends Controller
             ->get();
 
         $rows = [];
-        $runningBalance = 0.0;
 
         foreach ($transactions as $transaction) {
             $rate = (float) ($transaction->rate ?: 1);
 
             foreach ($transaction->lines as $line) {
-                $debit = round((float) ($line?->debit ?? 0) * $rate, 2);
-                $credit = round((float) ($line?->credit ?? 0) * $rate, 2);
-                // $runningBalance += $debit - $credit;
+                // Amounts stay in the transaction's own currency, matching the
+                // account detail table. The currency and rate columns carry the
+                // conversion information for anyone who needs it.
+                $debit = round((float) ($line?->debit ?? 0), 2);
+                $credit = round((float) ($line?->credit ?? 0), 2);
 
                 $rows[] = [
                     'date' => $dateConversionService->toDisplay($transaction->date) ?: $transaction->date,
                     'transaction_number' => $transaction->voucher_number ?: '-',
-                    'description' => trim((string) ($line?->remark ?? $transaction->remark ?? '')) ?: '-',
+                    'description' => $this->localisedRemark($line, $transaction),
                     'debit' => $debit,
                     'credit' => $credit,
                     // 'balance' => round($runningBalance, 2),
@@ -231,13 +359,17 @@ class AccountController extends Controller
         }
 
         $sheetTitle = $spreadsheetExportService->localeTranslation('general', 'transaction_summary', 'Transaction Summary');
-        $titlePrefix = $chart_of_account->local_name ?: $chart_of_account->name;
+        $accountName = match (app()->getLocale()) {
+            'fa', 'ps' => $chart_of_account->local_name ?: $chart_of_account->name,
+            default => $chart_of_account->name ?: $chart_of_account->local_name,
+        };
+        $headerTitle = trim($accountName) !== '' ? $sheetTitle . ' - ' . $accountName : $sheetTitle;
 
         return $spreadsheetExportService->download([
-            'filename' => Str::slug($titlePrefix . '-' . $sheetTitle) . '-' . now()->format('Ymd-His') . '.xlsx',
+            'filename' => Str::slug($chart_of_account->name . '-' . $sheetTitle) . '-' . now()->format('Ymd-His') . '.xlsx',
             'sheet_name' => $sheetTitle,
-            'sheet_title' => $sheetTitle,
-            'title' => $titlePrefix . ' - ' . $sheetTitle,
+            'sheet_title' => $headerTitle,
+            'title' => $headerTitle,
             'company_name' => $this->exportCompanyName($request),
             'exported_on' => now()->format('Y m d'),
             'rtl' => in_array(app()->getLocale(), ['fa', 'ps'], true),
@@ -255,6 +387,27 @@ class AccountController extends Controller
             ],
             'rows' => $rows,
         ]);
+    }
+
+    /**
+     * The line remark in the active locale, falling back to the English line
+     * remark and then the transaction remark.
+     */
+    protected function localisedRemark(?TransactionLine $line, Transaction $transaction): string
+    {
+        $localised = match (app()->getLocale()) {
+            'fa' => $line?->remark_fa,
+            'ps' => $line?->remark_ps,
+            default => null,
+        };
+
+        foreach ([$localised, $line?->remark, $transaction->remark] as $remark) {
+            if (trim((string) $remark) !== '') {
+                return trim((string) $remark);
+            }
+        }
+
+        return '-';
     }
 
     protected function exportCompanyName(Request $request): string
