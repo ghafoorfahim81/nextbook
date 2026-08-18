@@ -68,6 +68,7 @@ return [
     'ledger_type' => [
         'customer' => 'مشتری',
         'supplier' => 'تأمین‌کننده',
+        'employee' => 'کارمند',
     ],
     'item_type' => [
         'inventory_materials' => 'مواد و محصولات انبار',

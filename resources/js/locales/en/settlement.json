@@ -26,6 +26,7 @@
     "over_applied": "{amount} {currency} more cash has been allocated than the voucher holds. Reduce an amount before saving.",
     "customer_advances": "Customer Advances",
     "supplier_advances": "Supplier Advances",
+    "employee_advances": "Employee Advances",
     "cross_currency": "Cross-currency",
     "cross_currency_hint": "Cash is in {cash} and the documents are in {claim}. Enter both the cash applied and the amount it settles — the agreed conversion is a commercial decision, not a calculation.",
     "cash_applied": "Cash applied ({currency})",

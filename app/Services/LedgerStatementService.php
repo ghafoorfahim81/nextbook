@@ -436,13 +436,16 @@ class LedgerStatementService
     }
 
     /**
-     * Customers sit debit-normal (they owe us), suppliers credit-normal (we owe them).
+     * Customers sit debit-normal (they owe us); suppliers and employees sit
+     * credit-normal (we owe them).
      */
     private function normalNature(Ledger $ledger): string
     {
-        $type = $ledger->type instanceof LedgerType ? $ledger->type->value : (string) $ledger->type;
+        $type = $ledger->type instanceof LedgerType
+            ? $ledger->type
+            : LedgerType::tryFrom((string) $ledger->type);
 
-        return $type === LedgerType::SUPPLIER->value ? 'cr' : 'dr';
+        return $type?->isPayableParty() ? 'cr' : 'dr';
     }
 
     private function homeCurrency(): ?array

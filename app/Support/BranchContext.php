@@ -47,6 +47,20 @@ final class BranchContext
         'fx-loss',
         'customer-advances',
         'supplier-advances',
+        // Payroll. Staff cost is kept out of trade payables so the balance sheet
+        // can separate what is owed to suppliers from what is owed to people,
+        // and so withheld wage tax sits as its own remittable liability rather
+        // than being buried in salary expense.
+        'payroll-liabilities',
+        'salary-tax-payable',
+        'employee-advances',
+        'employee-loans-receivable',
+        'permanent-staff-salary',
+        'temporary-staff-salary',
+        'consultant-professional-salary',
+        'allowances-commissions',
+        'overtime-expense',
+        'employee-recruitment-training',
     ];
 
     /** @var array<string, Collection<string, string>> */

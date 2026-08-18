@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\LedgerType;
 use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\Administration\BrandResource;
 use App\Http\Resources\Administration\CategoryResource;
@@ -477,10 +478,19 @@ class QuickCreateController extends Controller
 
     private function generateNextLedgerCode(string $type): string
     {
-        $prefix = $type === 'customer' ? 'CUST-' : 'SUP-';
-        $codePattern = $type === 'customer'
-            ? '^(CUST-)?[0-9]+$'
-            : '^(SUP-)?[0-9]+$';
+        // Exhaustive rather than a customer/else ternary: employee ledger codes
+        // are minted by EmployeeLedgerService from the employee's own code, and
+        // falling through to 'SUP-' here would hand an employee a supplier code
+        // that then collides with the supplier sequence.
+        $prefix = match ($type) {
+            LedgerType::CUSTOMER->value => 'CUST-',
+            LedgerType::SUPPLIER->value => 'SUP-',
+            default => throw new \InvalidArgumentException(
+                "Quick create does not mint codes for ledger type [{$type}]."
+            ),
+        };
+
+        $codePattern = '^('.$prefix.')?[0-9]+$';
 
         $latestNumber = Ledger::query()
             ->where('type', $type)

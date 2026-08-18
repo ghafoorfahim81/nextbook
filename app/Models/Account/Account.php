@@ -1331,6 +1331,70 @@ class Account extends Model
                 'remark' => 'Money paid to suppliers ahead of a bill',
                 'is_main' => true,
             ],
+
+            // Payroll control accounts.
+            //
+            // Withheld wage tax is a LIABILITY, not an expense: the gross salary
+            // is already the company's cost, and the withheld portion is money
+            // held on the employee's behalf until it is remitted to the MoF.
+            // The pre-existing 'salary-withholding-tax' (9602) is typed as an
+            // expense and is left alone — crediting it would double-count
+            // payroll cost.
+            [
+                'name' => 'Salary Tax Payable',
+                'local_name' => 'مالیات معاش قابل پرداخت',
+                'parent_slug' => 'current-liabilities',
+                'number' => '5084',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-liability')->first()->id,
+                'account_type_slug' => 'other-current-liability',
+                'slug' => 'salary-tax-payable',
+                'remark' => 'Wage tax withheld from employees, pending remittance',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Employee Advances',
+                'local_name' => 'پیش‌پرداخت کارمند',
+                'parent_slug' => 'advances-prepaid-deposit',
+                'number' => '4076',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
+                'account_type_slug' => 'other-current-asset',
+                'slug' => 'employee-advances',
+                'remark' => 'Salary paid to employees ahead of a payroll run',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Employee Loans Receivable',
+                'local_name' => 'قرضه کارمندان',
+                'parent_slug' => 'advances-prepaid-deposit',
+                'number' => '4077',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
+                'account_type_slug' => 'other-current-asset',
+                'slug' => 'employee-loans-receivable',
+                'remark' => 'Outstanding staff loans recovered through payroll',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Overtime Expense',
+                'local_name' => 'هزینه اضافه‌کاری',
+                'parent_slug' => 'payroll-expenses',
+                'number' => '9203',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
+                'account_type_slug' => 'expense',
+                'slug' => 'overtime-expense',
+                'remark' => 'Overtime paid to staff',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Staff Benefits Expense',
+                'local_name' => 'هزینه امتیازات کارمندان',
+                'parent_slug' => 'payroll-expenses',
+                'number' => '9204',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
+                'account_type_slug' => 'expense',
+                'slug' => 'staff-benefits-expense',
+                'remark' => 'Non-salary staff benefits',
+                'is_main' => true,
+            ],
         ];
     }
 }

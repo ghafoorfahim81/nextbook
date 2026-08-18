@@ -63,6 +63,7 @@ return [
     'ledger_type' => [
         'customer' => 'Customer',
         'supplier' => 'Supplier',
+        'employee' => 'کارکوونکی',
     ],
 ];
 

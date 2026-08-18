@@ -214,6 +214,7 @@ function submit(action = 'update') {
             :error="form.errors?.ledger_id"
             :searchable="true"
             resource-type="ledgers"
+            :search-options="{ types: ['customer', 'supplier'] }"
             :search-fields="['name', 'email', 'phone_no']"
           />
           <NextInput :placeholder="t('general.enter', { text: t('general.number') })" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />

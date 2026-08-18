@@ -149,7 +149,7 @@ function highlight(result: any, key = 'name', isActive = false): string {
 }
 
 // ── type styling ──────────────────────────────────────────────────────────────
-const PERSON_TYPES = new Set(['customer', 'supplier', 'owner', 'user'])
+const PERSON_TYPES = new Set(['customer', 'supplier', 'employee', 'owner', 'user'])
 const ICON_MAP: Record<string, any> = {
     item: Package, sale: FileText, purchase: ShoppingCart,
     receipt: ReceiptText, payment: Banknote, expense: TrendingDown,
@@ -157,6 +157,7 @@ const ICON_MAP: Record<string, any> = {
 }
 const AVATAR_BG: Record<string, string> = {
     customer: 'bg-blue-500',   supplier: 'bg-orange-500',
+    employee: 'bg-fuchsia-500',
     owner:    'bg-indigo-500', user:     'bg-violet-500',
     item:     'bg-teal-600',   sale:     'bg-emerald-500',
     purchase: 'bg-amber-500',  receipt:  'bg-sky-500',

@@ -6,6 +6,7 @@ use App\Exceptions\Accounting\SettlementException;
 use App\Models\Account\Account;
 use App\Models\Account\AccountType;
 use App\Models\Accounting\Settlement;
+use App\Enums\LedgerType;
 use App\Models\Administration\Currency;
 use App\Models\Ledger\Ledger;
 use App\Models\Transaction\Transaction;
@@ -530,9 +531,7 @@ class SettlementService
             // Named after the party, so the form can warn where the leftover
             // is going before the user commits to it.
             'advance_account' => Decimal::isPositive($composed['excess'])
-                ? ($this->partyAccountSlug($composed['ledger']) === 'account-payable'
-                    ? 'supplier-advances'
-                    : 'customer-advances')
+                ? $this->advanceAccountSlug($composed['ledger'])
                 : null,
         ];
     }
@@ -1186,12 +1185,28 @@ class SettlementService
      * A property of the LEDGER and nothing else. A customer's balance is in
      * Accounts Receivable whether you are taking money from them or refunding
      * them; a supplier's is in Accounts Payable either way.
+     *
+     * An employee's salary payable lives in Payroll Liabilities, deliberately
+     * apart from trade payables: staff cost has to be separable from supplier
+     * debt on the balance sheet, and a payroll accrual credits each employee
+     * individually so disbursement can match payslip by payslip. This must stay
+     * an exhaustive match — the old two-way ternary quietly routed anything that
+     * was not a supplier to Accounts Receivable, so a third party type would
+     * have posted salary against receivables without raising anything.
      */
     private function partyAccountSlug(Ledger $ledger): string
     {
         $type = (string) ($ledger->type?->value ?? $ledger->type);
 
-        return $type === 'supplier' ? 'account-payable' : 'account-receivable';
+        return match ($type) {
+            LedgerType::SUPPLIER->value => 'account-payable',
+            LedgerType::EMPLOYEE->value => 'payroll-liabilities',
+            LedgerType::CUSTOMER->value => 'account-receivable',
+            default => throw SettlementException::make(
+                'Unknown ledger type; cannot resolve a control account.',
+                [['ledger_id' => $ledger->id, 'type' => $type]]
+            ),
+        };
     }
 
     /**
@@ -1232,12 +1247,24 @@ class SettlementService
      */
     private function advanceAccountId(Ledger $ledger, string $branchId): string
     {
-        $slug = $this->partyAccountSlug($ledger) === 'account-payable'
-            ? 'supplier-advances'
-            : 'customer-advances';
+        $slug = $this->advanceAccountSlug($ledger);
 
         return BranchContext::glAccount($slug, $branchId)
             ?? $this->createAdvanceAccount($slug, $branchId);
+    }
+
+    /**
+     * Derived from the control account rather than the type directly, so a party
+     * type can only ever have one advance account — and so preview() and the
+     * posting path cannot disagree about where the leftover lands.
+     */
+    private function advanceAccountSlug(Ledger $ledger): string
+    {
+        return match ($this->partyAccountSlug($ledger)) {
+            'account-payable' => 'supplier-advances',
+            'payroll-liabilities' => 'employee-advances',
+            default => 'customer-advances',
+        };
     }
 
     /**

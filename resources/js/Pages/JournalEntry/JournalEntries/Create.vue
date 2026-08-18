@@ -472,6 +472,7 @@ onUnmounted(() => {
                                     :error="form.errors?.[`line.${index}.ledger_id`]"
                                     :searchable="true"
                                     resource-type="ledgers"
+                                    :search-options="{ types: ['customer', 'supplier', 'employee'] }"
                                     :search-fields="['name', 'email', 'phone_no']"
                                 />
                             </td>
