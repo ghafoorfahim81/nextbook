@@ -491,12 +491,12 @@ class ReceiptController extends Controller
         $rows = $receipts->map(fn ($r) => [
             'number'       => $r->number,
             'ledger_name'  => $r->ledger?->name ?? '-',
+            // payment_mode is cast to the PaymentMode enum on the model, so
+            // (string) $r->payment_mode is a fatal error, not a value.
             'payment_mode' => PaymentMode::labelFor($r->payment_mode),
-            // The cash line, not lines->first(). A settlement voucher carries
-            // the receivable relief and any exchange difference alongside the
-            // cash, in no guaranteed order, so "the first line" exported a
-            // receivable amount in place of the receipt amount.
-            'amount'       => $r->receivedAmount(),
+            'amount'       => (float) ($r->transaction?->lines->first()?->debit > 0
+                ? $r->transaction->lines->first()->debit
+                : $r->transaction?->lines->first()?->credit ?? 0),
             'currency'     => $r->transaction?->currency?->code ?? '-',
             'rate'         => $r->transaction?->rate !== null ? (float) $r->transaction->rate : '-',
             'date'         => $r->date ? $this->dateConversionService->toDisplay($r->date) : '-',

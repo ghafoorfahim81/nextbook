@@ -24,7 +24,6 @@ use App\Models\Administration\Currency;
 use App\Models\User;
 use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
-use App\Support\BranchContext;
 class PaymentController extends Controller
 {
     private $dateConversionService;
@@ -495,9 +494,12 @@ class PaymentController extends Controller
         $rows = $payments->map(fn ($p) => [
             'number'       => $p->number,
             'ledger_name'  => $p->ledger?->name ?? '-',
+            // payment_mode is cast to the PaymentMode enum on the model, so
+            // (string) $p->payment_mode is a fatal error, not a value.
             'payment_mode' => PaymentMode::labelFor($p->payment_mode),
-            // The cash line, not lines->first() — see the receipt export.
-            'amount'       => $p->paidAmount(),
+            'amount'       => (float) ($p->transaction?->lines->first()?->debit > 0
+                ? $p->transaction->lines->first()->debit
+                : $p->transaction?->lines->first()?->credit ?? 0),
             'currency'     => $p->transaction?->currency?->code ?? '-',
             'rate'         => $p->transaction?->rate !== null ? (float) $p->transaction->rate : '-',
             'date'         => $p->date ? $this->dateConversionService->toDisplay($p->date) : '-',
