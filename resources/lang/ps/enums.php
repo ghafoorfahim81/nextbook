@@ -65,6 +65,63 @@ return [
         'supplier' => 'Supplier',
         'employee' => 'کارکوونکی',
     ],
+
+    // بشري سرچینې
+    'gender' => [
+        'male' => 'نارینه',
+        'female' => 'ښځینه',
+        'other' => 'نور',
+    ],
+    'marital_status' => [
+        'single' => 'مجرد',
+        'married' => 'واده شوی',
+        'divorced' => 'طلاق شوی',
+        'widowed' => 'کونډه',
+    ],
+    'employment_type' => [
+        'permanent' => 'دایمي',
+        'temporary' => 'موقتي',
+        'contract' => 'قراردادي',
+        'consultant' => 'سلاکار',
+        'intern' => 'زده‌کوونکی',
+        'daily_wage' => 'ورځنۍ مزدوري',
+    ],
+    'employment_status' => [
+        'probation' => 'ازمایښتي دوره',
+        'active' => 'فعال',
+        'on_leave' => 'په رخصتۍ کې',
+        'suspended' => 'ځنډول شوی',
+        'resigned' => 'استعفا ورکړې',
+        'terminated' => 'لرې شوی',
+        'retired' => 'تقاعد شوی',
+    ],
+    'employee_document_type' => [
+        'tazkira' => 'تذکره',
+        'passport' => 'پاسپورت',
+        'visa' => 'ویزه',
+        'work_permit' => 'د کار جواز',
+        'contract' => 'قرارداد',
+        'degree' => 'تحصیلي سند',
+        'certificate' => 'تصدیق‌نامه',
+        'police_clearance' => 'د جرمي مسؤولیت نه شتون تصدیق',
+        'medical' => 'روغتیایي',
+        'driving_license' => 'د موټر چلولو جواز',
+        'other' => 'نور',
+    ],
+    'contract_type' => [
+        'permanent' => 'دایمي',
+        'fixed_term' => 'ټاکلې موده',
+        'probation' => 'ازمایښتي دوره',
+        'consultancy' => 'سلاکارۍ',
+        'internship' => 'زده‌کړې',
+    ],
+    'contract_status' => [
+        'draft' => 'مسوده',
+        'active' => 'فعال',
+        'expired' => 'پای ته رسېدلی',
+        'terminated' => 'فسخ شوی',
+        'renewed' => 'نوی شوی',
+    ],
 ];
 
 

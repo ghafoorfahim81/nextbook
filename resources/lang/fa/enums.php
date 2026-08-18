@@ -105,6 +105,63 @@ return [
         'unpaid' => 'باقی',
         'partially_paid' => 'بخشی پرداخت شده',
     ],
+
+    // منابع بشری
+    'gender' => [
+        'male' => 'مرد',
+        'female' => 'زن',
+        'other' => 'سایر',
+    ],
+    'marital_status' => [
+        'single' => 'مجرد',
+        'married' => 'متأهل',
+        'divorced' => 'طلاق‌شده',
+        'widowed' => 'بیوه',
+    ],
+    'employment_type' => [
+        'permanent' => 'دایمی',
+        'temporary' => 'موقت',
+        'contract' => 'قراردادی',
+        'consultant' => 'مشاور',
+        'intern' => 'کارآموز',
+        'daily_wage' => 'مزد روزانه',
+    ],
+    'employment_status' => [
+        'probation' => 'دوره آزمایشی',
+        'active' => 'فعال',
+        'on_leave' => 'در رخصتی',
+        'suspended' => 'معطل',
+        'resigned' => 'استعفا داده',
+        'terminated' => 'منفک شده',
+        'retired' => 'متقاعد',
+    ],
+    'employee_document_type' => [
+        'tazkira' => 'تذکره',
+        'passport' => 'پاسپورت',
+        'visa' => 'ویزه',
+        'work_permit' => 'جواز کار',
+        'contract' => 'قرارداد',
+        'degree' => 'سند تحصیلی',
+        'certificate' => 'تصدیق‌نامه',
+        'police_clearance' => 'تصدیق عدم مسئولیت جرمی',
+        'medical' => 'صحی',
+        'driving_license' => 'جواز رانندگی',
+        'other' => 'سایر',
+    ],
+    'contract_type' => [
+        'permanent' => 'دایمی',
+        'fixed_term' => 'مدت معین',
+        'probation' => 'دوره آزمایشی',
+        'consultancy' => 'مشورتی',
+        'internship' => 'کارآموزی',
+    ],
+    'contract_status' => [
+        'draft' => 'مسوده',
+        'active' => 'فعال',
+        'expired' => 'ختم شده',
+        'terminated' => 'فسخ شده',
+        'renewed' => 'تمدید شده',
+    ],
 ];
 
 

@@ -38,6 +38,17 @@ return [
             \App\Models\Ledger\LedgerOpening::class,
             \App\Models\Accounting\Settlement::class,
             \App\Models\Transaction\Transaction::class,
+
+            // Human resources. Employee records and their contracts and
+            // documents are low-volume and legally sensitive, so every change
+            // is worth an audit row.
+            //
+            // Attendance is deliberately absent and must stay that way: a
+            // single branch produces roughly 150k punch rows a year, and
+            // logging each one would dwarf the rest of the audit trail.
+            \App\Models\Hr\Employee::class,
+            \App\Models\Hr\EmployeeContract::class,
+            \App\Models\Hr\EmployeeDocument::class,
         ],
         'except_attributes' => [
             'created_at',
