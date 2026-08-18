@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\LedgerType;
 use App\Http\Resources\Inventory\ItemResource;
 use App\Http\Resources\Ledger\LedgerOptionResource;
 use App\Models\Administration\UnitMeasure;
@@ -185,10 +186,20 @@ class SearchController extends Controller
                 }
             });
 
-        // Add additional filters if provided
-        if (isset($additionalParams['type'])) {
-            $query->where('type', $additionalParams['type']);
-        }
+        // Type filtering FAILS CLOSED. Most callers of resource-type="ledgers"
+        // are supplier or customer pickers that pass no type at all, so an
+        // unfiltered default would surface every employee in the company the
+        // moment payroll ledgers exist. Callers that genuinely want a wider set
+        // (journal entries, which may post to any party) opt in explicitly via
+        // `types`.
+        $requestedTypes = $additionalParams['types']
+            ?? $additionalParams['type']
+            ?? LedgerType::commercialValues();
+
+        $query->whereIn('type', array_values(array_filter(
+            (array) $requestedTypes,
+            fn ($type) => LedgerType::tryFrom((string) $type) !== null
+        )) ?: LedgerType::commercialValues());
 
         if (isset($additionalParams['branch_id'])) {
             $query->where('branch_id', $additionalParams['branch_id']);

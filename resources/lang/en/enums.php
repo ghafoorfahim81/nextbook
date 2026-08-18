@@ -67,6 +67,7 @@ return [
     'ledger_type' => [
         'customer' => 'Customer',
         'supplier' => 'Supplier',
+        'employee' => 'Employee',
     ],
     'item_type' => [
         'inventory_materials' => 'Inventory Materials',

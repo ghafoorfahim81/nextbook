@@ -4,6 +4,9 @@
 // A "ledger" here is a customer or supplier object carrying:
 //   credit_limit, credit_limit_enabled, credit_terms ('strict'|'warning'|'flexible'),
 //   type ('customer'|'supplier') and statement.{receivable_amount,payable_amount}.
+//
+// Employee ledgers are deliberately excluded: credit limits are a trading
+// control, and an employee's salary payable is not credit extended to them.
 
 const toNum = (v) => {
     const n = Number(v)
@@ -65,7 +68,12 @@ export function levelClasses(level) {
  * @param {number}      pendingAmount order/bill total (base currency) being entered, if any
  */
 export function getCreditSummary(ledger, pendingAmount = 0) {
-    const enabled = Boolean(ledger && ledger.credit_limit_enabled) && toNum(ledger?.credit_limit) > 0
+    // Employees never carry a trading credit limit. Short-circuiting keeps them
+    // out of the customer branch of currentUsage(), which would otherwise read
+    // their receivable side and report a meaningless zero as a real position.
+    const enabled = ledger?.type !== 'employee'
+        && Boolean(ledger && ledger.credit_limit_enabled)
+        && toNum(ledger?.credit_limit) > 0
     const limit = toNum(ledger?.credit_limit)
     const used = currentUsage(ledger)
     const available = limit - used

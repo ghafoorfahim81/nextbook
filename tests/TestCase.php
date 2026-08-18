@@ -22,6 +22,20 @@ abstract class TestCase extends BaseTestCase
      */
     protected function setUp(): void
     {
+        // The application has to exist before the guard can read config(), but
+        // the guard has to run before RefreshDatabase migrates. parent::setUp()
+        // does both in that order and offers no hook between them, so the app is
+        // built here first — parent::setUp() then skips creating it (it only
+        // calls refreshApplication() when $this->app is null) and goes straight
+        // on to the traits.
+        //
+        // Calling guardTestDatabase() before this line resolved 'config' from an
+        // empty container and failed every test in the suite with
+        // "Target class [config] does not exist".
+        if (! $this->app) {
+            $this->refreshApplication();
+        }
+
         $this->guardTestDatabase();
 
         parent::setUp();

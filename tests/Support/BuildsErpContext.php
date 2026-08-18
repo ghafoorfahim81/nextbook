@@ -215,6 +215,19 @@ trait BuildsErpContext
             // against the supplier.
             'customer-advances' => ['name' => 'Customer Advances', 'type' => 'account-payable', 'number' => '5085'],
             'supplier-advances' => ['name' => 'Supplier Advances', 'type' => 'other-current-asset', 'number' => '4075'],
+            // Payroll. Salary payable is kept out of trade payables so staff
+            // cost stays separable, and withheld wage tax is a liability
+            // (money held for the MoF) rather than a second expense on top of
+            // the gross that was already booked.
+            'payroll-liabilities' => ['name' => 'Payroll Liabilities', 'type' => 'account-payable', 'number' => '5081'],
+            'salary-tax-payable' => ['name' => 'Salary Tax Payable', 'type' => 'account-payable', 'number' => '5084'],
+            'employee-advances' => ['name' => 'Employee Advances', 'type' => 'other-current-asset', 'number' => '4076'],
+            'employee-loans-receivable' => ['name' => 'Employee Loans Receivable', 'type' => 'other-current-asset', 'number' => '4077'],
+            'permanent-staff-salary' => ['name' => 'Permanent Staff Salary', 'type' => 'expense', 'number' => '9201'],
+            'temporary-staff-salary' => ['name' => 'Temporary Staff Salary', 'type' => 'expense', 'number' => '9202'],
+            'consultant-professional-salary' => ['name' => 'Consultant Salary', 'type' => 'expense', 'number' => '9207'],
+            'allowances-commissions' => ['name' => 'Allowances & Commissions', 'type' => 'expense', 'number' => '9208'],
+            'overtime-expense' => ['name' => 'Overtime Expense', 'type' => 'expense', 'number' => '9203'],
         ];
 
         $accounts = [];

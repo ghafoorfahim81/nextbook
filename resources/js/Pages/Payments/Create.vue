@@ -239,6 +239,7 @@ onMounted(() => {
             :error="form.errors?.ledger_id"
             :searchable="true"
             resource-type="ledgers"
+            :search-options="{ types: ['customer', 'supplier'] }"
             :search-fields="['name', 'email', 'phone_no']"
           />
 

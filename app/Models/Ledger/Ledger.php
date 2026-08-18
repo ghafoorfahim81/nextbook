@@ -91,23 +91,42 @@ class Ledger extends Model
 
                 $natureFormat = balanceNatureFormat();
 
-                $isSupplier = $this->type === 'supplier';
+                // `type` is cast to LedgerType, so it must be compared by value.
+                // Comparing the enum instance to a string with === is always
+                // false, which is how the supplier arm of this accessor silently
+                // stopped firing and every supplier read as a customer.
+                $type = $this->type instanceof LedgerType
+                    ? $this->type
+                    : LedgerType::tryFrom((string) $this->type);
+
+                // Parties the company owes normally sit on the credit side:
+                // an unpaid supplier bill and an accrued but undisbursed salary
+                // are the same shape. Customers are the only party type whose
+                // normal balance is a debit.
+                $normalNature = $type?->isPayableParty() ? 'cr' : 'dr';
+                $weOweThem = $balanceNature === 'cr';
+
                 // Format balance based on user preference
                 if ($natureFormat === 'with_nature') {
                     $balance = $balanceAmount . ' ' . $balanceNature;
                 } else {
-                    if($isSupplier) {
-                        $balance = $balanceNature === 'cr'
-                            ? __('general.owe_to') . ' ' . $balanceAmount
-                            : __('general.owe_you') . ' ' . $balanceAmount;
-                    } else {
-                        $balance = $netBalance >= 0
-                            ? __('general.owe_you') . ' ' . $balanceAmount
-                            : __('general.owe_to') . ' ' . $balanceAmount;
-                    }
+                    $balance = $weOweThem
+                        ? __('general.owe_to') . ' ' . $balanceAmount
+                        : __('general.owe_you') . ' ' . $balanceAmount;
                 }
 
-                $normalNature = $this->type === 'supplier' ? 'cr' : 'dr';
+                $meaning = match ($type) {
+                    LedgerType::SUPPLIER => $weOweThem
+                        ? "You owe {$balanceAmount} to this supplier"
+                        : "Supplier owes you {$balanceAmount}",
+                    LedgerType::EMPLOYEE => $weOweThem
+                        ? "You owe {$balanceAmount} to this employee"
+                        : "Employee owes you {$balanceAmount}",
+                    default => $weOweThem
+                        ? "You owe {$balanceAmount} to this customer"
+                        : "Customer owes you {$balanceAmount}",
+                };
+
                 return [
                     'balance' => $balanceAmount>0 ? $balance : 0,
                     'balance_amount' => $balanceAmount,
@@ -118,19 +137,12 @@ class Ledger extends Model
                     'total_debit' => $totalDebit,
                     'total_credit' => $totalCredit,
                     'net_balance' => $netBalance,
-                    'meaning' => $isSupplier
-                        ? ($balanceNature === 'cr'
-                            ? "You owe {$balanceAmount} to this supplier"
-                            : "Supplier owes you {$balanceAmount}")
-                        : ($balanceNature === 'dr'
-                            ? "Customer owes you {$balanceAmount}"
-                            : "You owe {$balanceAmount} to this customer"),
+                    'meaning' => $meaning,
                     'account_type' => $this->type,
-                    // Sign from the company's point of view: a supplier we owe and a
-                    // customer who owes us both read as a negative position.
-                    'balance_type' => $isSupplier
-                        ? ($balanceNature === 'cr' ? '-' : '+')
-                        : ($balanceNature === 'dr' ? '-' : '+'),
+                    // Sign from the company's point of view: a party we owe and a
+                    // party who owes us read as negative and positive regardless
+                    // of type, so this needs no per-type arm at all.
+                    'balance_type' => $weOweThem ? '-' : '+',
                     'payable_amount' => $balanceNature === 'cr' ? $balanceAmount : 0,
                     'receivable_amount' => $balanceNature === 'dr' ? $balanceAmount : 0,
                 ];

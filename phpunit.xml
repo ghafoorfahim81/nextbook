@@ -8,13 +8,26 @@
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
         </testsuite>
+        <!--
+            Enumerated rather than pointed at tests/Feature wholesale because
+            tests/Feature/Http holds Blueprint-generated API scaffolds that were
+            never converted to this app's Inertia conventions (97 of its 129
+            tests fail against controllers that redirect rather than return JSON).
+            Every other directory belongs here — leaving one out means its tests
+            silently never run.
+        -->
         <testsuite name="Feature">
             <directory>tests/Feature/Accounting</directory>
+            <directory>tests/Feature/Administration</directory>
+            <directory>tests/Feature/Hr</directory>
             <directory>tests/Feature/Inventory</directory>
+            <directory>tests/Feature/Ledger</directory>
             <directory>tests/Feature/Purchase</directory>
             <directory>tests/Feature/Sales</directory>
             <directory>tests/Feature/Reports</directory>
             <directory>tests/Feature/Notifications</directory>
+            <directory>tests/Feature/System</directory>
+            <directory>tests/Feature/UserManagement</directory>
         </testsuite>
         <testsuite name="Integration">
             <directory>tests/Integration</directory>

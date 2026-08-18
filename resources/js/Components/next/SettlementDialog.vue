@@ -168,9 +168,16 @@ const impliedRate = (group) => (group.applied > 0
   ? (cashFor(group.currency_id) * Number(props.rate || 1)) / group.applied
   : null)
 
-const advanceAccountLabel = computed(() => (partyType.value === 'supplier'
-  ? t('settlement.supplier_advances')
-  : t('settlement.customer_advances')))
+// Mirrors SettlementService::advanceAccountSlug() — each party type parks its
+// leftover in its own advance account, so the label must not fall through to
+// "customer advances" for a type the backend routes elsewhere.
+const advanceAccountLabel = computed(() => {
+  switch (partyType.value) {
+    case 'supplier': return t('settlement.supplier_advances')
+    case 'employee': return t('settlement.employee_advances')
+    default:         return t('settlement.customer_advances')
+  }
+})
 
 const isValid = computed(() => !isOverapplied.value && (
   rows.value.some((row) => row.selected && Number(row.amount || 0) > 0) || isOverpayment.value
