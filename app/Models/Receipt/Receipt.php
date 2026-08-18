@@ -69,6 +69,7 @@ class Receipt extends Model
 
     protected array $allowedFilters = [
         'ledger_id',
+        'payment_mode',
         'transaction.currency_id',
         'transaction.lines.account_id',
         'date',

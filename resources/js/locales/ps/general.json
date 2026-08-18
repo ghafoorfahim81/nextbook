@@ -177,5 +177,10 @@
   "attachment_invalid_type": "ناسم فایل ډول. منل شوي ډولونه: {extensions}.",
   "attachment_max_size": "اعظمي اندازه: {size} MB",
   "attachment_supported_files": "منل شوي فایلونه: {extensions}",
-  "attachment_too_large": "فایل ډېر لوی دی. اعظمي اندازه {size} MB ده."
+  "attachment_too_large": "فایل ډېر لوی دی. اعظمي اندازه {size} MB ده.",
+  "ledger": "کاته",
+  "payment_mode": "د تادیې طریقه",
+  "bank_account": "د بانک/نقدي حساب",
+  "cheque_no": "د چک شمېره",
+  "narration": "یادونه"
 }

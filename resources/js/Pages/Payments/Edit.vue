@@ -11,13 +11,19 @@ import NextDate from '@/Components/next/NextDatePicker.vue'
 import SettlementDialog from '@/Components/next/SettlementDialog.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import { Spinner } from '@/Components/ui/spinner'
+import { formatLedgerBalance } from '@/utils/balanceNature'
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 
 const page = usePage()
+const balanceNatureFormat = computed(() => page.props.balanceNatureFormat || 'with_nature')
 // Every party — see Payments/Create.vue.
 const ledgers = computed(() => page.props.ledgers?.data || [])
-const accounts = computed(() => page.props.accounts?.data || [])
+// Money in and out of a voucher always lands on a cash or bank account. The
+// shared `accounts` prop is the whole chart, so the box would otherwise offer
+// revenue and payable accounts that would post a nonsense entry if picked.
+const accounts = computed(() => (page.props.accounts?.data || [])
+  .filter((account) => account.account_type?.slug === 'cash-or-bank'))
 const currencies = computed(() => page.props.currencies?.data || [])
 const paymentModes = computed(() => page.props.paymentModes || [])
 
@@ -133,11 +139,7 @@ watch([() => form.ledger_id, () => form.payment_mode], async ([ledgerId, payment
 })
 
 function oldBalanceText() {
-  const s = form.selected_ledger?.statement
-  if (!s) return ''
-  return s.balance > 0
-    ? `${s.balance} ${String(s.balance_nature || '').toUpperCase()}`
-    : `${s.balance}`
+  return formatLedgerBalance(form.selected_ledger?.statement, balanceNatureFormat.value, t)
 }
 
 function finalizePrint(page) {

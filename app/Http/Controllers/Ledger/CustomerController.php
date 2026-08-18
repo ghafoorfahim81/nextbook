@@ -77,6 +77,9 @@ class CustomerController extends Controller
             'customers' => LedgerResource::collection($customers),
             'filterOptions' => [
                 'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'groups' => CustomerGroup::query()->orderBy('name_en')->get(['id', 'name_en', 'name_fa']),
+                'countries' => Country::query()->orderBy('name_en')->get(['id', 'name_en', 'name_fa']),
+                'provinces' => Province::query()->orderBy('name_en')->get(['id', 'name_en', 'name_fa', 'country_id']),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
             ],
             'filters' => [
@@ -235,11 +238,14 @@ class CustomerController extends Controller
                 'description' => $s->description,
             ])->all();
 
-        $mapMovement = fn ($m) => [
+        // Receipts and payments no longer carry an amount column - the money
+        // lives on the voucher's cash line, so the amount has to be read the
+        // same way the resources read it, or the table shows a dash.
+        $mapMovement = fn ($m, float $amount) => [
             'id' => $m->id,
             'number' => $m->number,
             'date' => $dateService->toDisplay($m->date),
-            'amount' => $m->amount,
+            'amount' => $amount,
             'currency_code' => $m->transaction?->currency?->code,
             'rate' => $m->transaction?->rate ?? 0,
             'payment_mode' => $m->payment_mode?->value,
@@ -247,11 +253,17 @@ class CustomerController extends Controller
             'narration' => $m->narration,
         ];
 
-        $receipts = $ledger->receipts()->with('transaction.currency')
-            ->orderByDesc('date')->orderByDesc('id')->get()->map($mapMovement)->all();
+        // account.accountType is what cashLine() matches on; without it every
+        // row fires its own query to find the cash-or-bank line.
+        $movementRelations = ['transaction.currency', 'transaction.lines.account.accountType'];
 
-        $payments = $ledger->payments()->with('transaction.currency')
-            ->orderByDesc('date')->orderByDesc('id')->get()->map($mapMovement)->all();
+        $receipts = $ledger->receipts()->with($movementRelations)
+            ->orderByDesc('date')->orderByDesc('id')->get()
+            ->map(fn ($m) => $mapMovement($m, $m->receivedAmount()))->all();
+
+        $payments = $ledger->payments()->with($movementRelations)
+            ->orderByDesc('date')->orderByDesc('id')->get()
+            ->map(fn ($m) => $mapMovement($m, $m->paidAmount()))->all();
 
         return compact('sales', 'receipts', 'payments');
     }
@@ -578,6 +590,10 @@ class CustomerController extends Controller
         $customers = Ledger::search($request->query('search'))
             ->where('type', 'customer')
             ->filter($filters)
+            ->with(['group', 'paymentTerm', 'country', 'province'])
+            // Feeds the statement accessor, so the balance column costs one
+            // query for the whole sheet instead of one per row.
+            ->withStatementTotals()
             ->orderBy($sortField, $sortDirection)
             ->get();
 
@@ -585,12 +601,23 @@ class CustomerController extends Controller
         $t = fn (string $group, string $key, string $fallback = '') => $spreadsheetExportService->localeTranslation($group, $key, $fallback);
 
         $rows = $customers->map(fn ($c) => [
-            'name'           => $c->name ?? '-',
-            'code'           => $c->code ?? '-',
-            'contact_person' => $c->contact_person ?? '-',
-            'phone_no'       => $c->phone_no ?? '-',
-            'email'          => $c->email ?? '-',
-            'is_active'      => $c->is_active ? $t('general', 'active', 'Active') : $t('general', 'inactive', 'Inactive'),
+            'name'            => $c->name ?? '-',
+            'code'            => $c->code ?? '-',
+            'contact_person'  => $c->contact_person ?? '-',
+            'phone_no'        => $c->phone_no ?? '-',
+            'whatsapp_number' => $c->whatsapp_number ?? '-',
+            'email'           => $c->email ?? '-',
+            'address'         => $c->address ?? '-',
+            'country'         => $c->country?->localized_name ?? '-',
+            'province'        => $c->province?->localized_name ?? '-',
+            'group'           => $c->group?->localized_name ?? '-',
+            'payment_term'    => $c->paymentTerm?->name ?? '-',
+            'discount'        => $c->discount !== null ? (float) $c->discount : '-',
+            'credit_limit'    => $c->credit_limit !== null ? (float) $c->credit_limit : '-',
+            // The same preference-aware string the list and detail pages show,
+            // so an exported balance reads the way the user set it to read.
+            'balance'         => (string) $c->statement['balance'],
+            'is_active'       => $c->is_active ? $t('general', 'active', 'Active') : $t('general', 'inactive', 'Inactive'),
         ])->all();
 
         $label = $t('ledger', 'customer.customers', 'Customers');
@@ -606,12 +633,21 @@ class CustomerController extends Controller
             'include_row_number' => true,
             'row_number_label'   => $t('report', 'columns.no', 'No.'),
             'columns' => [
-                ['key' => 'name',           'label' => $t('general', 'name', 'Name'), 'width' => 22],
-                ['key' => 'code',           'label' => $t('general', 'code', 'Code'), 'width' => 12],
-                ['key' => 'contact_person', 'label' => $t('ledger', 'contact_person', 'Contact Person'), 'width' => 18],
-                ['key' => 'phone_no',       'label' => $t('general', 'phone', 'Phone'), 'width' => 14],
-                ['key' => 'email',          'label' => $t('general', 'email', 'Email'), 'width' => 20],
-                ['key' => 'is_active',      'label' => $t('general', 'status', 'Status'), 'width' => 10],
+                ['key' => 'name',            'label' => $t('general', 'name', 'Name'), 'width' => 22],
+                ['key' => 'code',            'label' => $t('general', 'code', 'Code'), 'width' => 12],
+                ['key' => 'contact_person',  'label' => $t('ledger', 'contact_person', 'Contact Person'), 'width' => 18],
+                ['key' => 'phone_no',        'label' => $t('general', 'phone', 'Phone'), 'width' => 14],
+                ['key' => 'whatsapp_number', 'label' => $t('ledger', 'whatsapp_number', 'WhatsApp Number'), 'width' => 16],
+                ['key' => 'email',           'label' => $t('general', 'email', 'Email'), 'width' => 20],
+                ['key' => 'address',         'label' => $t('general', 'address', 'Address'), 'width' => 24],
+                ['key' => 'country',         'label' => $t('ledger', 'country', 'Country'), 'width' => 14],
+                ['key' => 'province',        'label' => $t('ledger', 'province', 'Province'), 'width' => 14],
+                ['key' => 'group',           'label' => $t('ledger', 'customer_group', 'Customer Group'), 'width' => 16],
+                ['key' => 'payment_term',    'label' => $t('ledger', 'payment_term', 'Payment Term'), 'width' => 16],
+                ['key' => 'discount',        'label' => $t('general', 'discount', 'Discount'), 'type' => 'money', 'align' => 'right', 'width' => 12],
+                ['key' => 'credit_limit',    'label' => $t('ledger', 'credit_limit', 'Credit Limit'), 'type' => 'money', 'align' => 'right', 'width' => 14],
+                ['key' => 'balance',         'label' => $t('general', 'balance', 'Balance'), 'align' => 'right', 'width' => 18],
+                ['key' => 'is_active',       'label' => $t('general', 'status', 'Status'), 'width' => 10],
             ],
             'rows' => $rows,
         ]);

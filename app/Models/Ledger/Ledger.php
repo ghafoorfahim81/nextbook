@@ -200,8 +200,53 @@ class Ledger extends Model
         'name',
         'code',
         'currency_id',
+        'group_id',
+        'payment_term_id',
+        'country_id',
+        'province_id',
+        'balance_type',
         'created_by',
     ];
+
+    /**
+     * balance_type is not a column — it is the sign of the party's net posting
+     * total, the same question the Party Balance Summary report asks. Handled
+     * here so the list filter and the report agree on what "debtor" means.
+     */
+    protected function dynamicFilterHandlers(): array
+    {
+        return [
+            'balance_type' => function (Builder $query, $value): void {
+                $query->whereBalanceType((string) $value);
+            },
+        ];
+    }
+
+    /**
+     * Narrow to parties who owe you (debtor) or who you owe (creditor).
+     *
+     * The subquery mirrors scopeWithStatementTotals() line for line, so the
+     * balance shown in the row is the balance that decided whether the row is
+     * here at all. The 0.005 guard keeps rounding dust out of both buckets.
+     */
+    public function scopeWhereBalanceType(Builder $query, string $type): Builder
+    {
+        if (! in_array($type, ['debtor', 'creditor'], true)) {
+            return $query;
+        }
+
+        $net = "(SELECT COALESCE(SUM(tl.base_debit - tl.base_credit), 0)
+                   FROM transaction_lines tl
+                   JOIN transactions t ON t.id = tl.transaction_id
+                  WHERE tl.ledger_id = ledgers.id
+                    AND t.branch_id = ledgers.branch_id
+                    AND tl.deleted_at IS NULL
+                    AND t.deleted_at IS NULL)";
+
+        return $type === 'debtor'
+            ? $query->whereRaw("{$net} > 0.005")
+            : $query->whereRaw("{$net} < -0.005");
+    }
 
     public function scopeWithStatementTotals(Builder $query): Builder
     {

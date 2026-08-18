@@ -55,6 +55,35 @@ const filterFields = computed(() => ([
         options: (props.filterOptions?.currencies || []).map((c) => ({ id: c.id, name: c.code })),
     },
     {
+        key: 'balance_type',
+        label: t('report.filters.balance_type'),
+        type: 'select',
+        // The same buckets as the Party Balance Summary report, so a filter
+        // learned in one place means the same thing in the other.
+        options: [
+            { id: 'debtor', name: t('report.balance_types.debtor') },
+            { id: 'creditor', name: t('report.balance_types.creditor') },
+        ],
+    },
+    {
+        key: 'group_id',
+        label: t('ledger.customer_group'),
+        type: 'select',
+        options: (props.filterOptions?.groups || []).map((g) => ({ id: g.id, name: g.localized_name })),
+    },
+    {
+        key: 'country_id',
+        label: t('ledger.country'),
+        type: 'select',
+        options: (props.filterOptions?.countries || []).map((c) => ({ id: c.id, name: c.localized_name })),
+    },
+    {
+        key: 'province_id',
+        label: t('ledger.province'),
+        type: 'select',
+        options: (props.filterOptions?.provinces || []).map((p) => ({ id: p.id, name: p.localized_name })),
+    },
+    {
         key: 'created_by',
         label: t('general.created_by'),
         type: 'select',
