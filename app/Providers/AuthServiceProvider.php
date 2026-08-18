@@ -17,6 +17,9 @@ use App\Models\Administration\Warehouse;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Expense\Expense;
 use App\Models\Expense\ExpenseCategory;
+use App\Models\Hr\Employee;
+use App\Models\Hr\EmployeeContract;
+use App\Models\Hr\EmployeeDocument;
 use App\Models\Inventory\Item;
 use App\Models\Ledger\Ledger;
 use App\Models\Owner\Drawing;
@@ -40,6 +43,9 @@ use App\Policies\DepartmentPolicy;
 use App\Policies\DesignationPolicy;
 use App\Policies\ExpenseCategoryPolicy;
 use App\Policies\ExpensePolicy;
+use App\Policies\Hr\EmployeeContractPolicy;
+use App\Policies\Hr\EmployeeDocumentPolicy;
+use App\Policies\Hr\EmployeePolicy;
 use App\Policies\DrawingPolicy;
 use App\Policies\ItemPolicy;
 use App\Policies\OwnerPolicy;
@@ -88,6 +94,11 @@ class AuthServiceProvider extends ServiceProvider
         // Owners
         Owner::class => OwnerPolicy::class,
         Drawing::class => DrawingPolicy::class,
+
+        // Human resources
+        Employee::class => EmployeePolicy::class,
+        EmployeeContract::class => EmployeeContractPolicy::class,
+        EmployeeDocument::class => EmployeeDocumentPolicy::class,
 
         // Purchases & Sales
         Purchase::class => PurchasePolicy::class,

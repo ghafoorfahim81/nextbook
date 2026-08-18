@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\Hr\Employee;
 use App\Models\Transaction\Transaction;
+use App\Observers\Hr\EmployeeObserver;
 use App\Observers\TransactionObserver;
 use App\Observers\ModelActivityObserver;
 use Illuminate\Support\ServiceProvider;
@@ -47,7 +49,17 @@ class AppServiceProvider extends ServiceProvider
             'drawing' => 'App\Models\Owner\Drawing',
             'journal_entry' => 'App\Models\JournalEntry\JournalEntry',
 
+            // Human resources
+            'employee' => 'App\Models\Hr\Employee',
+            'employee_contract' => 'App\Models\Hr\EmployeeContract',
+            'employee_document' => 'App\Models\Hr\EmployeeDocument',
+
         ]);
+
+        // Registered explicitly rather than through the activity_log list: this
+        // observer maintains the employee's companion ledger, which is domain
+        // behaviour and must run even where audit logging is switched off.
+        Employee::observe(EmployeeObserver::class);
 
         foreach (config('activity_log.observer.models', []) as $modelClass) {
             if (class_exists($modelClass)) {
