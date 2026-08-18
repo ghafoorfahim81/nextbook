@@ -31,6 +31,7 @@ class ReportService
         'receipt_report',
         'payment_report',
         'cash_book',
+        'cash_position_by_currency',
         'sales_report',
         'purchase_report',
         'inventory_stock',
@@ -135,6 +136,7 @@ class ReportService
             'receipt_report' => $this->getReceiptReport($filters),
             'payment_report' => $this->getPaymentReport($filters),
             'cash_book' => $this->getCashBook($filters),
+            'cash_position_by_currency' => $this->getCashPositionByCurrency($filters),
             'sales_report' => $this->getSalesReport($filters),
             'purchase_report' => $this->getPurchaseReport($filters),
             'inventory_stock' => $this->getInventoryStock($filters),
@@ -541,6 +543,69 @@ class ReportService
                 'total_credit' => $this->moneyValue($summaryRow?->total_credit),
                 'balance' => $this->moneyValue($summaryRow?->balance),
                 'balance_label' => $this->formatBalance($summaryRow?->balance),
+            ],
+        );
+    }
+
+    /**
+     * How much cash the business is holding, one line per currency.
+     *
+     * Every cash and bank account is folded into the currency it transacted in,
+     * so the answer reads "this much USD, this much AFN" rather than an account
+     * list. Amounts stay in their own currency; the home equivalent, converted
+     * at each transaction's own rate, is the only column that can legitimately
+     * be added across currencies.
+     *
+     * The position is cumulative up to date_to; date_from does not narrow it,
+     * because a cash position is a standing balance rather than a movement.
+     */
+    public function getCashPositionByCurrency(array $filters): array
+    {
+        $baseQuery = DB::table('transaction_lines as tl')
+            ->join('transactions as t', function ($join) use ($filters) {
+                $join->on('t.id', '=', 'tl.transaction_id')
+                    ->where('t.branch_id', '=', $filters['branch_id'])
+                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereNull('t.deleted_at');
+            })
+            ->join('accounts as a', function ($join) use ($filters) {
+                $join->on('a.id', '=', 'tl.account_id')
+                    ->where('a.branch_id', '=', $filters['branch_id'])
+                    ->whereNull('a.deleted_at');
+            })
+            ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
+            ->join('currencies as c', 'c.id', '=', 't.currency_id')
+            ->whereNull('tl.deleted_at')
+            ->where('at.slug', 'cash-or-bank')
+            ->where('t.date', '<=', $filters['date_to']);
+
+        $totals = (clone $baseQuery)
+            ->selectRaw('COUNT(DISTINCT c.id) as currency_count')
+            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as total_home_equivalent')
+            ->first();
+
+        $query = $baseQuery
+            ->groupBy('c.id', 'c.code', 'c.name', 'c.is_base_currency')
+            ->orderByDesc('c.is_base_currency')
+            ->orderBy('c.code')
+            ->selectRaw('c.id as currency_id')
+            ->selectRaw('c.code as currency_code')
+            ->selectRaw('c.name as currency_name')
+            ->selectRaw('COALESCE(SUM(tl.debit - tl.credit), 0) as amount')
+            ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as home_equivalent');
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'currency' => $row->currency_code ?: $row->currency_name,
+                'currency_name' => $row->currency_name,
+                'amount' => $this->moneyValue($row->amount),
+                'home_equivalent' => $this->moneyValue($row->home_equivalent),
+            ],
+            [
+                'currency_count' => (int) ($totals?->currency_count ?? 0),
+                'total_home_equivalent' => $this->moneyValue($totals?->total_home_equivalent),
             ],
         );
     }
@@ -2785,6 +2850,7 @@ class ReportService
             'receipt_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'amount_received'],
             'payment_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'amount_paid'],
             'cash_book' => ['date', 'reference', 'description', 'debit', 'credit', 'running_balance', 'running_balance_label'],
+            'cash_position_by_currency' => ['currency', 'currency_name', 'amount', 'home_equivalent'],
             'sales_report' => $viewType === 'general'
                 ? ['date', 'number', 'customer', 'type', 'status', 'payment_status', 'amount']
                 : ['date', 'sale_number', 'customer', 'item', 'quantity', 'unit_price', 'discount', 'total_amount'],
@@ -2911,6 +2977,8 @@ class ReportService
             'balance',
             'amount',
             'expense_count',
+            'home_equivalent',
+            'total_home_equivalent',
         ];
 
         return in_array($key, $numericKeys, true) ? 'number' : 'text';

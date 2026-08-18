@@ -85,6 +85,47 @@ class ReceiptPaymentFeatureTest extends TestCase
         $this->assertEquals(-20.0, (float) $ledgerBalance);
     }
 
+    /**
+     * `payment_mode` is cast to the PaymentMode enum on the model, so the
+     * export's `(string) $r->payment_mode` was a fatal error rather than a
+     * value — every receipt export returned a 500.
+     */
+    public function test_the_receipt_export_streams_instead_of_crashing_on_the_payment_mode_enum(): void
+    {
+        $this->post(route('receipts.store'), [
+            'number' => 1,
+            'date' => '2026-03-02',
+            'ledger_id' => $this->ctx['customer_ledger']->id,
+            'amount' => 100,
+            'bank_account_id' => $this->ctx['accounts']['cash-in-hand']->id,
+            'currency_id' => $this->ctx['currency']->id,
+            'rate' => 1,
+            'payment_mode' => 'on_account',
+        ])->assertRedirect(route('receipts.index'));
+
+        $this->get(route('receipts.export', ['sortField' => 'date', 'sortDirection' => 'desc']))
+            ->assertOk()
+            ->assertDownload();
+    }
+
+    public function test_the_payment_export_streams_instead_of_crashing_on_the_payment_mode_enum(): void
+    {
+        $this->post(route('payments.store'), [
+            'number' => 1,
+            'date' => '2026-03-02',
+            'ledger_id' => $this->ctx['supplier_ledger']->id,
+            'amount' => 100,
+            'bank_account_id' => $this->ctx['accounts']['cash-in-hand']->id,
+            'currency_id' => $this->ctx['currency']->id,
+            'rate' => 1,
+            'payment_mode' => 'on_account',
+        ])->assertRedirect(route('payments.index'));
+
+        $this->get(route('payments.export', ['sortField' => 'date', 'sortDirection' => 'desc']))
+            ->assertOk()
+            ->assertDownload();
+    }
+
     public function test_partial_supplier_payment_reduces_payable_balance_without_closing_it(): void
     {
         $service = app(TransactionService::class);
