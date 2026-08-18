@@ -1,6 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
-import { useForm, usePage, Link } from '@inertiajs/vue3'
+import { useForm, usePage, router, Link } from '@inertiajs/vue3'
 import { ref, watch, computed, onMounted } from 'vue'
 import { useLazyProps } from '@/composables/useLazyProps'
 import NextInput from '@/Components/next/NextInput.vue'
@@ -10,17 +10,23 @@ import NextDate from '@/Components/next/NextDatePicker.vue'
 import SettlementDialog from '@/Components/next/SettlementDialog.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
+import { formatLedgerBalance } from '@/utils/balanceNature'
 import { useI18n } from 'vue-i18n'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
 const { t } = useI18n()
 const page = usePage()
+const balanceNatureFormat = computed(() => page.props.balanceNatureFormat || 'with_nature')
 const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
 // Every party, not just customers. A party who both buys and sells is one
 // name in one list, and a supplier handing money back is an ordinary receipt.
 // What makes the entry correct is the DIRECTION of the cash, which the module
 // fixes — not a restriction on who can appear here.
 const ledgers = computed(() => page.props.ledgers?.data || [])
-const accounts = computed(() => page.props.accounts?.data || [])
+// Money in and out of a voucher always lands on a cash or bank account. The
+// shared `accounts` prop is the whole chart, so the box would otherwise offer
+// revenue and payable accounts that would post a nonsense entry if picked.
+const accounts = computed(() => (page.props.accounts?.data || [])
+  .filter((account) => account.account_type?.slug === 'cash-or-bank'))
 const currencies = computed(() => page.props.currencies?.data || [])
 const paymentModes = computed(() => page.props.paymentModes || [])
 import { toast } from 'vue-sonner'
@@ -53,19 +59,14 @@ const createLoading = computed(() => form.processing && submitAction.value === '
 const createAndNewLoading = computed(() => form.processing && submitAction.value === 'create_and_new')
 const saveAndPrintLoading = computed(() => form.processing && submitAction.value === 'create_and_print')
 
+// A party or account created from inside the form is not in the lazy props
+// this page was rendered with, so re-fetch just those two.
+//
+// This used to call window.$inertia, which Inertia's Vue 3 adapter never
+// defines — clicking "Create and new" threw a TypeError here and took the
+// rest of the success handler, including the number reset, with it.
 const refreshLedgersAndAccounts = () => {
-  // For Inertia lazy props, best is to force reload the props from server
-  // We do it by making a GET request to the same page (`/receipts/create`)
-  // with preserveState to keep the modal open, and then update the page.props with the new ledgers/accounts
-  // Since we're in a SPA context, we'll forcibly reload the page props for ledgers/accounts.
-  // You can use $inertia.reload or router.reload in newer Inertia, or a manual inertia visit with only for fresh props.
-  // Here, we use Inertia visit with preserveScroll, only to update those lazy props
-  window.$inertia.visit('/receipts/create', {
-    method: 'get',
-    preserveState: true,
-    preserveScroll: true,
-    only: ['ledgers', 'accounts'],
-  })
+  router.reload({ only: ['ledgers', 'accounts'] })
 }
 
 const openBillDialog = () => {
@@ -129,11 +130,7 @@ function handleSelectChange(field, value) {
 }
 
 function oldBalanceText() {
-  const s = form.selected_ledger?.statement
-  if (!s) return ''
-  return s.balance > 0
-    ? `${s.balance} ${String(s.balance_nature || '').toUpperCase()}`
-    : `${s.balance}`
+  return formatLedgerBalance(form.selected_ledger?.statement, balanceNatureFormat.value, t)
 }
 
 function finalizePrint(page) {
@@ -179,6 +176,17 @@ onMounted(() => {
   initialized.value = true
 })
 
+// The store redirects back to the create page, so the response carries a
+// freshly computed latestNumber. Prefer it over counting up locally: it also
+// accounts for receipts other users saved while this form was open.
+function nextNumberAfterSave(page) {
+  const fromServer = Number(page?.props?.latestNumber)
+  if (Number.isFinite(fromServer) && fromServer > 0) return fromServer
+
+  const current = Number(form.number)
+  return (Number.isFinite(current) ? current : 0) + 1
+}
+
 function cleanupPrintWindow() {
   if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
     pendingPrintWindow.value.close()
@@ -195,15 +203,13 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
   form.transform(data => ({ ...data, ...payload })).post('/receipts', {
     onSuccess: (page) => {
       if (createAndNew) {
-        const latest = Number(form.number || 0)
         form.reset('date', 'amount', 'cheque_no', 'narration', 'selected_ledger')
         form.payment_mode = 'on_account'
         form.allocations = []
         form.applied_cash = []
         showBillDialog.value = false
-        // Refresh ledgers and accounts after create and new
+        applyCreateDefaults({ number: String(nextNumberAfterSave(page)) })
         refreshLedgersAndAccounts()
-        applyCreateDefaults({ number: String((isNaN(latest) ? 0 : latest) + 1) })
       }
       if (createAndPrint) {
         finalizePrint(page)

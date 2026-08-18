@@ -11,19 +11,25 @@ import NextDate from '@/Components/next/NextDatePicker.vue'
 import SettlementDialog from '@/Components/next/SettlementDialog.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
+import { formatLedgerBalance } from '@/utils/balanceNature'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
 const { t } = useI18n()
 
 const page = usePage()
+const balanceNatureFormat = computed(() => page.props.balanceNatureFormat || 'with_nature')
 const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
 // Every party, not just suppliers. Refunding a customer's overpayment is a
 // payment, and a party who both buys and sells is one name in one list. What
 // makes the entry correct is the DIRECTION of the cash, which the module
 // fixes — not a restriction on who can appear here.
 const ledgers = computed(() => page.props.ledgers?.data || [])
-const accounts = computed(() => page.props.accounts?.data || [])
+// Money in and out of a voucher always lands on a cash or bank account. The
+// shared `accounts` prop is the whole chart, so the box would otherwise offer
+// revenue and payable accounts that would post a nonsense entry if picked.
+const accounts = computed(() => (page.props.accounts?.data || [])
+  .filter((account) => account.account_type?.slug === 'cash-or-bank'))
 const currencies = computed(() => page.props.currencies?.data || [])
 const paymentModes = computed(() => page.props.paymentModes || [])
 
@@ -134,11 +140,7 @@ watch([() => form.ledger_id, () => form.payment_mode], async ([ledgerId, payment
 })
 
 function oldBalanceText() {
-  const s = form.selected_ledger?.statement
-  if (!s) return ''
-  return s.balance > 0
-    ? `${s.balance} ${String(s.balance_nature || '').toUpperCase()}`
-    : `${s.balance}`
+  return formatLedgerBalance(form.selected_ledger?.statement, balanceNatureFormat.value, t)
 }
 
 function finalizePrint(page) {
@@ -162,6 +164,17 @@ function finalizePrint(page) {
   pendingPrintWindow.value = null
 }
 
+// The store redirects back to the create page, so the response carries a
+// freshly computed latestNumber. Prefer it over counting up locally: it also
+// accounts for payments other users saved while this form was open.
+function nextNumberAfterSave(page) {
+  const fromServer = Number(page?.props?.latestNumber)
+  if (Number.isFinite(fromServer) && fromServer > 0) return fromServer
+
+  const current = Number(form.number)
+  return (Number.isFinite(current) ? current : 0) + 1
+}
+
 function cleanupPrintWindow() {
   if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
     pendingPrintWindow.value.close()
@@ -177,14 +190,13 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
   }
   form.transform(data => ({ ...data, ...payload })).post('/payments', {
     onSuccess: (page) => {
-      const latest = Number(form.number || 0)
       if (createAndNew) {
         form.reset('date', 'amount', 'cheque_no', 'narration')
         form.payment_mode = 'on_account'
         form.allocations = []
         form.applied_cash = []
         showBillDialog.value = false
-        applyCreateDefaults({ number: String((isNaN(latest) ? 0 : latest) + 1) })
+        applyCreateDefaults({ number: String(nextNumberAfterSave(page)) })
       }
       if (createAndPrint) {
         finalizePrint(page)

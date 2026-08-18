@@ -29,7 +29,10 @@ final class DomainShared
                 CacheKey::forCompanyBranchLocale($request, 'accounts'),
                 $cacheDuration,
                 fn() => AccountResource::collection(
-                    Account::query()->orderBy('id')->limit(1000)->get()
+                    // accountType comes back on every row (AccountResource exposes it,
+                    // and the receipt/payment forms filter on its slug), so load it
+                    // once rather than per account.
+                    Account::query()->with('accountType')->orderBy('id')->limit(1000)->get()
                 )
             )),
             'accountTypes' => Inertia::lazy(fn() => Cache::remember(

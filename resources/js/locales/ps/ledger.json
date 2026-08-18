@@ -30,5 +30,6 @@
     "discount": "تخفیف",
     "invalid_phone_for_country": "د {country} لپاره د تلیفون شمېرې اوږدوالی سم نه دی",
     "balance_by_currency": "د اسعارو له مخې بیلانس",
-    "no_currency_balance": "په هیڅ اسعارو کې بیلانس نشته"
+    "no_currency_balance": "په هیڅ اسعارو کې بیلانس نشته",
+    "contact_person": "د اړیکې شخص"
 }

@@ -27,6 +27,8 @@ use App\Services\ActivityLogService;
 use App\Support\BranchContext;
 class ReceiptController extends Controller
 {
+    use \App\Http\Controllers\Concerns\ListsCashMovements;
+
     private $dateConversionService;
     public function __construct(DateConversionService $dateConversionService)
     {
@@ -55,10 +57,11 @@ class ReceiptController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $receipts = Receipt::with(['ledger', 'transaction.currency', 'transaction.lines.account.accountType', 'settlements', 'createdBy', 'updatedBy'])
+        $query = Receipt::with(['ledger', 'transaction.currency', 'transaction.lines.account.accountType', 'settlements', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
-            ->filter($filters)
-            ->orderBy($sortField, $sortDirection)
+            ->filter($filters);
+
+        $receipts = $this->applyCashMovementSort($query, $sortField, $sortDirection, Receipt::class)
             ->paginate($perPage)
             ->withQueryString();
 
@@ -67,9 +70,8 @@ class ReceiptController extends Controller
             'filterOptions' => [
                 'customers' => Ledger::query()->where('type', 'customer')->orderBy('name')->get(['id', 'name']),
                 'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
-                'bankAccounts' => Account::whereHas('accountType', fn ($q) => $q->whereIn('slug', ['cash-or-bank']))
-                    ->orderBy('name')
-                    ->get(['id', 'name']),
+                'bankAccounts' => $this->cashBankAccountOptions(),
+                'paymentModes' => $this->paymentModeOptions(),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
             ],
             'filters' => [
@@ -473,11 +475,11 @@ class ReceiptController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $receipts = Receipt::with(['ledger', 'transaction.currency', 'transaction.lines.account.accountType'])
+        $exportQuery = Receipt::with(['ledger', 'transaction.currency', 'transaction.lines.account.accountType'])
             ->search($request->query('search'))
-            ->filter($filters)
-            ->orderBy($sortField, $sortDirection)
-            ->get();
+            ->filter($filters);
+
+        $receipts = $this->applyCashMovementSort($exportQuery, $sortField, $sortDirection, Receipt::class)->get();
 
         $rtl = in_array(app()->getLocale(), ['fa', 'ps'], true);
         $company = $request->user()?->company;
@@ -487,6 +489,12 @@ class ReceiptController extends Controller
             default => $company?->name_en ?: $company?->abbreviation ?: $company?->name_fa ?: $company?->name_pa ?: config('app.name'),
         };
         $t = fn (string $group, string $key, string $fallback = '') => $exporter->localeTranslation($group, $key, $fallback);
+        // Accounts are named twice — once in English, once in the local
+        // language — and the sheet should read in whichever the user is in.
+        $locale = app()->getLocale();
+        $accountName = fn (?\App\Models\Account\Account $account) => $account
+            ? ($locale === 'en' ? $account->name : ($account->local_name ?: $account->name))
+            : '-';
 
         $rows = $receipts->map(fn ($r) => [
             'number'       => $r->number,
@@ -494,12 +502,16 @@ class ReceiptController extends Controller
             // payment_mode is cast to the PaymentMode enum on the model, so
             // (string) $r->payment_mode is a fatal error, not a value.
             'payment_mode' => PaymentMode::labelFor($r->payment_mode),
-            'amount'       => (float) ($r->transaction?->lines->first()?->debit > 0
-                ? $r->transaction->lines->first()->debit
-                : $r->transaction?->lines->first()?->credit ?? 0),
+            // The cash line, not lines[0]: a settlement voucher carries the
+            // ledger relief and any exchange difference alongside the cash,
+            // in an order Postgres is free to choose.
+            'bank_account' => $accountName($r->bankAccount()),
+            'amount'       => $r->receivedAmount(),
             'currency'     => $r->transaction?->currency?->code ?? '-',
             'rate'         => $r->transaction?->rate !== null ? (float) $r->transaction->rate : '-',
+            'cheque_no'    => $r->cheque_no ?: '-',
             'date'         => $r->date ? $this->dateConversionService->toDisplay($r->date) : '-',
+            'narration'    => $r->narration ?: '-',
         ])->all();
 
         $label = $t('receipt', 'receipts', 'Receipts');
@@ -518,10 +530,13 @@ class ReceiptController extends Controller
                 ['key' => 'number',       'label' => $t('general', 'number', 'Number'), 'width' => 10],
                 ['key' => 'ledger_name',  'label' => $t('general', 'ledger', 'Ledger'), 'width' => 20],
                 ['key' => 'payment_mode', 'label' => $t('general', 'payment_mode', 'Payment Mode'), 'width' => 16],
+                ['key' => 'bank_account', 'label' => $t('expense', 'bank_account', 'Bank/Cash Account'), 'width' => 22],
                 ['key' => 'amount',       'label' => $t('general', 'amount', 'Amount'), 'type' => 'money', 'align' => 'right', 'width' => 14],
                 ['key' => 'currency',     'label' => $t('admin', 'currency.currency', 'Currency'), 'width' => 10],
                 ['key' => 'rate',         'label' => $t('general', 'rate', 'Rate'), 'type' => 'money', 'align' => 'right', 'width' => 10],
+                ['key' => 'cheque_no',    'label' => $t('general', 'cheque_no', 'Cheque No'), 'width' => 14],
                 ['key' => 'date',         'label' => $t('general', 'date', 'Date'), 'width' => 14],
+                ['key' => 'narration',    'label' => $t('general', 'narration', 'Narration'), 'width' => 30],
             ],
             'rows' => $rows,
         ]);

@@ -90,7 +90,7 @@ trait HasDynamicFilters
 
         // Date
         if ($this->isDateColumn($field)) {
-            $query->whereDate($field, $value);
+            $query->whereDate($field, $this->toGregorianFilterDate($value));
             return;
         }
 
@@ -200,10 +200,32 @@ trait HasDynamicFilters
         return [$relation, $field];
     }
 
+    /**
+     * Dates arrive from the filter panel in whatever calendar the user works
+     * in, because that is what the date picker shows them. Everything below
+     * this line is Gregorian.
+     *
+     * DateConversionService::toGregorian() decides by the year (13xx-14xx is
+     * Jalali), so an already-Gregorian value passes through untouched and a
+     * value that is not a date at all is handed back for Carbon to reject.
+     */
+    protected function toGregorianFilterDate(mixed $value): mixed
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return $value;
+        }
+
+        try {
+            return app(\App\Services\DateConversionService::class)->toGregorian($value);
+        } catch (\Throwable $e) {
+            return $value;
+        }
+    }
+
     protected function applyDateComparison(Builder $query, string $fieldPath, string $operator, mixed $value): void
     {
         try {
-            $date = Carbon::parse($value);
+            $date = Carbon::parse($this->toGregorianFilterDate($value));
         } catch (\Throwable $e) {
             return;
         }
