@@ -7,6 +7,31 @@ use Illuminate\Support\Facades\Auth;
 
 trait HasUserAuditable
 {
+    /** @var array<string, array<int, string>> Column names per table, resolved once. */
+    private static array $auditColumnCache = [];
+
+    /**
+     * Does this model's table actually carry the given audit column?
+     *
+     * Deliberately NOT isFillable(): $fillable governs mass assignment, and an
+     * audit column is set by the framework, not by a request — only 13 of the
+     * 70 soft-deletable models list deleted_by there. Gating on fillable meant
+     * the other 57 recorded no one as having deleted the row, and the deleted
+     * records screen attributed every one of them to "System".
+     */
+    protected static function auditColumnExists($model, string $column): bool
+    {
+        $table = $model->getTable();
+
+        if (! array_key_exists($table, self::$auditColumnCache)) {
+            self::$auditColumnCache[$table] = $model->getConnection()
+                ->getSchemaBuilder()
+                ->getColumnListing($table);
+        }
+
+        return in_array($column, self::$auditColumnCache[$table], true);
+    }
+
     public static function bootHasUserAuditable()
     {
         $resolveUser = static fn () => Auth::user()
@@ -32,12 +57,12 @@ trait HasUserAuditable
         });
 
         if (in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive(static::class))) {
-        static::deleting(function ($model) use ($resolveUser) {
+            static::deleting(function ($model) use ($resolveUser) {
                 $user = $resolveUser();
                 if ($user?->id) {
-                    if (method_exists($model, 'isFillable') && $model->isFillable('deleted_by_id')) {
+                    if (static::auditColumnExists($model, 'deleted_by_id')) {
                         $model->deleted_by_id = $user->id;
-                    } elseif (method_exists($model, 'isFillable') && $model->isFillable('deleted_by')) {
+                    } elseif (static::auditColumnExists($model, 'deleted_by')) {
                         $model->deleted_by = $user->id;
                     }
                     $model->save();
@@ -49,10 +74,10 @@ trait HasUserAuditable
                 $user = $resolveUser();
                 
                 // Set deleted_by to null and updated_by to the restoring user
-                if (method_exists($model, 'isFillable') && $model->isFillable('deleted_by_id')) {
+                if (static::auditColumnExists($model, 'deleted_by_id')) {
                     $model->deleted_by_id = null;
                 }
-                if (method_exists($model, 'isFillable') && $model->isFillable('deleted_by')) {
+                if (static::auditColumnExists($model, 'deleted_by')) {
                     $model->deleted_by = null;
                 }
                 if ($user?->id) {
