@@ -83,9 +83,17 @@ class Branch extends Model
                 'model' => 'items',
                 'message' => 'This branch is used in items'
             ],
-            'accounts' => [
+            'userAccounts' => [
                 'model' => 'accounts',
                 'message' => 'This branch is used in accounts'
+            ],
+            'userLedgers' => [
+                'model' => 'ledgers',
+                'message' => 'This branch is used in customers or suppliers'
+            ],
+            'transactions' => [
+                'model' => 'transactions',
+                'message' => 'This branch is used in transactions'
             ],
             'children' => [
                 'model' => 'subbranches',
@@ -96,10 +104,17 @@ class Branch extends Model
 
     /**
      * Relationship to items that belong to this branch
+     *
+     * Every relation below drops the `branchSpecific` scope. The related models add
+     * `branch_id = <acting branch>` of their own, which combined with this relation's
+     * `branch_id = <this branch>` can only ever match the branch you are currently
+     * in — so the dependency check used to report zero for every other branch and
+     * let a branch full of data be deleted.
      */
     public function items()
     {
-        return $this->hasMany(\App\Models\Inventory\Item::class, 'branch_id');
+        return $this->hasMany(\App\Models\Inventory\Item::class, 'branch_id')
+            ->withoutGlobalScope('branchSpecific');
     }
 
     /**
@@ -107,6 +122,48 @@ class Branch extends Model
      */
     public function accounts()
     {
-        return $this->hasMany(\App\Models\Account\Account::class, 'branch_id');
+        return $this->hasMany(\App\Models\Account\Account::class, 'branch_id')
+            ->withoutGlobalScope('branchSpecific');
+    }
+
+    /**
+     * Relationship to ledgers that belong to this branch
+     */
+    public function ledgers()
+    {
+        return $this->hasMany(\App\Models\Ledger\Ledger::class, 'branch_id')
+            ->withoutGlobalScope('branchSpecific');
+    }
+
+    /**
+     * Relationship to transactions that belong to this branch
+     */
+    public function transactions()
+    {
+        return $this->hasMany(\App\Models\Transaction\Transaction::class, 'branch_id')
+            ->withoutGlobalScope('branchSpecific');
+    }
+
+    /**
+     * Accounts the user added themselves.
+     *
+     * Every branch is provisioned with the default chart of accounts, so counting
+     * all accounts would make every branch permanently undeletable.
+     */
+    public function userAccounts()
+    {
+        return $this->accounts()->whereNotIn(
+            'slug',
+            array_column(\App\Models\Account\Account::defaultAccounts(), 'slug')
+        );
+    }
+
+    /**
+     * Customers and suppliers the user added themselves, ignoring the cash customer
+     * every branch is provisioned with.
+     */
+    public function userLedgers()
+    {
+        return $this->ledgers()->where('code', '!=', 'CASH-CUST');
     }
 }

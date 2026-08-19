@@ -17,6 +17,12 @@ class UnitMeasureSeeder extends Seeder
         $branch_id = Branch::where('is_main', true)->first()->id;
         $quantities = Quantity::defaultQuantity();
         foreach ($quantities as $quantity) {
+            $exists = Quantity::withoutGlobalScopes()
+                ->where('slug', $quantity['slug'])
+                ->exists();
+            if ($exists) {
+                continue;
+            }
             Quantity::create([
                 'id' => (string) new Ulid(),
                 'quantity' => $quantity['quantity'],
@@ -31,15 +37,22 @@ class UnitMeasureSeeder extends Seeder
         }
         $unitMeasures = UnitMeasure::defaultUnitMeasures();
         foreach ($unitMeasures as $unitMeasure) {
-                UnitMeasure::create([
-                    'id' => (string) new Ulid(),
-                    'name' => $unitMeasure['name'],
-                    'unit' => $unitMeasure['unit'],
-                    'symbol' => $unitMeasure['symbol'],
-                    'quantity_id' => $unitMeasure['quantity_id'],
-                    'branch_id' => $branch_id,
-                    'is_main' => $unitMeasure['is_main'],
-                    'is_active' => false,
+            $exists = UnitMeasure::withoutGlobalScopes()
+                ->where('name', $unitMeasure['name'])
+                ->where('quantity_id', $unitMeasure['quantity_id'])
+                ->exists();
+            if ($exists) {
+                continue;
+            }
+            UnitMeasure::create([
+                'id' => (string) new Ulid(),
+                'name' => $unitMeasure['name'],
+                'unit' => $unitMeasure['unit'],
+                'symbol' => $unitMeasure['symbol'],
+                'quantity_id' => $unitMeasure['quantity_id'],
+                'branch_id' => $branch_id,
+                'is_main' => $unitMeasure['is_main'],
+                'is_active' => false,
                 'created_by' => User::where('name', 'admin')->first()->id,
             ]);
         }

@@ -11,12 +11,22 @@ import { paymentStatusBadgeClass, PAYMENT_STATUS_BADGE_BASE } from '@/utils/paym
 import { getCreditSummary } from '@/composables/useCreditLimit';
 import AttachmentList from '@/Components/AttachmentList.vue';
 import PhotoUpload from '@/Components/next/PhotoUpload.vue';
+import LedgerStatement from '@/Components/ledger/LedgerStatement.vue';
+import LedgerCurrencyBalances from '@/Components/ledger/LedgerCurrencyBalances.vue';
+import LedgerOpenItems from '@/Components/ledger/LedgerOpenItems.vue';
 
 const props = defineProps({
     supplier: { type: Object, required: true },
     purchases: { type: Object, required: false },
     receipts: { type: Object, required: false },
     payments: { type: Object, required: false },
+    ledgerStatement: { type: Object, required: false, default: () => ({}) },
+    currencyBalances: { type: Array, required: false, default: () => [] },
+    // Claims still open in this supplier's favour, what has been applied to
+    // each, and the balance in every currency they trade in.
+    openItems: { type: Array, required: false, default: () => [] },
+    settlementHistory: { type: Object, required: false, default: () => ({}) },
+    settlementBalances: { type: Object, required: false, default: () => ({ currencies: [], base_total: '0' }) },
 });
 
 const { t } = useI18n();
@@ -75,6 +85,9 @@ const creditTermsLabel = (terms) => {
 };
 
 const currencyCode = computed(() => supplierData.value.currency?.code || supplierData.value.currency?.name || '');
+const homeCurrencyCode = computed(() => props.ledgerStatement?.meta?.home_currency?.code
+    ?? props.currencyBalances.find((row) => row.is_base_currency)?.currency_code
+    ?? '');
 const creditSummary = computed(() => getCreditSummary(supplierData.value));
 
 const createTransactionRoute = (type) => {
@@ -187,7 +200,39 @@ const supplierMovementColumns = computed(() => [
                 >
                     {{ t('item.opening') }}
                 </button>
+                <button
+                    type="button"
+                    class="px-4 py-2 -mb-px border-b-2 transition-colors"
+                    :class="activeMainTab === 'statement'
+                        ? 'border-primary text-primary font-semibold'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'"
+                    @click="activeMainTab = 'statement'"
+                >
+                    {{ t('report.statement') }}
+                </button>
+                <button
+                    type="button"
+                    class="px-4 py-2 -mb-px border-b-2 transition-colors"
+                    :class="activeMainTab === 'open_items'
+                        ? 'border-primary text-primary font-semibold'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'"
+                    @click="activeMainTab = 'open_items'"
+                >
+                    {{ t('settlement.open_items') }}
+                    <span
+                        v-if="openItems.length"
+                        class="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary"
+                    >{{ openItems.length }}</span>
+                </button>
             </div>
+
+            <!-- OPEN ITEMS TAB -->
+            <LedgerOpenItems
+                v-if="activeMainTab === 'open_items'"
+                :open-items="openItems"
+                :history="settlementHistory"
+                :balances="settlementBalances"
+            />
 
             <!-- GENERAL TAB -->
             <div v-if="activeMainTab === 'general'" class="space-y-4">
@@ -246,6 +291,13 @@ const supplierMovementColumns = computed(() => [
                             </a>
                         </div>
 
+                        <!-- Per-currency balances: a party's currencies never net
+                             against each other, so each one is reported on its own. -->
+                        <LedgerCurrencyBalances
+                            :balances="currencyBalances"
+                            :home-currency-code="homeCurrencyCode"
+                        />
+
                         <!-- Statement card -->
                         <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border divide-y divide-border overflow-hidden">
                             <div class="flex items-center justify-between px-4 py-2.5">
@@ -272,6 +324,10 @@ const supplierMovementColumns = computed(() => [
                             <div>
                                 <div class="text-xs text-muted-foreground">{{ t('general.name') }}</div>
                                 <div class="font-medium text-foreground">{{ supplierData.name }}</div>
+                            </div>
+                            <div>
+                                <div class="text-xs text-muted-foreground">{{ t('general.code') }}</div>
+                                <div class="font-medium text-foreground">{{ supplierData.code || '-' }}</div>
                             </div>
                             <div>
                                 <div class="text-xs text-muted-foreground">{{ t('ledger.contact_person') }}</div>
@@ -492,6 +548,16 @@ const supplierMovementColumns = computed(() => [
                     </LedgerListTable>
                 </div>
             </div>
+
+            <!-- STATEMENT TAB -->
+            <LedgerStatement
+                v-else-if="activeMainTab === 'statement'"
+                :statement="ledgerStatement"
+                route-name="suppliers.show"
+                param-key="supplier"
+                :ledger-id="supplierData.id"
+                export-route-name="suppliers.export"
+            />
 
             <!-- OPENING TAB -->
             <div v-else class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-4">

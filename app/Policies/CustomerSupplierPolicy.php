@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\LedgerType;
 use App\Models\Ledger\Ledger;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -28,11 +29,19 @@ class CustomerSupplierPolicy extends BasePolicy
         $type = $ledger?->type?->value ?? $ledger?->type ?? request()->input('type');
         $routeName = request()->route()?->getName() ?? '';
 
-        if ($type === 'customer' || str_contains($routeName, 'customers.')) {
+        // Employee ledgers are checked FIRST and never fall through. Holding
+        // customers.view must not confer the ability to read a colleague's
+        // salary ledger, and the generic fallback below would have granted
+        // exactly that.
+        if ($type === LedgerType::EMPLOYEE->value) {
+            return ['employees'];
+        }
+
+        if ($type === LedgerType::CUSTOMER->value || str_contains($routeName, 'customers.')) {
             return ['customers', 'ledgers'];
         }
 
-        if ($type === 'supplier' || str_contains($routeName, 'suppliers.')) {
+        if ($type === LedgerType::SUPPLIER->value || str_contains($routeName, 'suppliers.')) {
             return ['suppliers', 'ledgers'];
         }
 

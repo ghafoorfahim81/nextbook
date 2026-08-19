@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Ledger;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Concerns\BuildsLedgerStatement;
 use App\Http\Requests\Ledger\LedgerStoreRequest;
 use App\Http\Requests\Ledger\LedgerUpdateRequest;
 use App\Http\Resources\Ledger\LedgerResource;
@@ -20,8 +21,15 @@ use App\Models\Administration\CustomerGroup;
 use App\Models\Administration\PaymentTerm;
 use App\Models\Administration\Province;
 use Illuminate\Http\Request;
-use App\Services\TransactionService;
+use App\Services\Accounting\PaymentStatusService;
+use App\Services\Accounting\SettlementService;
 use App\Services\AttachmentService;
+use App\Services\DateConversionService;
+use App\Services\LedgerOpeningService;
+use App\Services\LedgerStatementService;
+use App\Services\TransactionService;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Transaction\TransactionLine;
 use Illuminate\Support\Facades\DB;
@@ -30,10 +38,13 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use App\Services\SpreadsheetExportService;
+use App\Services\PdfExportService;
 use Illuminate\Validation\Rule;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 class CustomerController extends Controller
 {
+    use BuildsLedgerStatement;
+
     public function __construct()
     {
         $this->authorizeResource(Ledger::class, 'customer');
@@ -55,6 +66,8 @@ class CustomerController extends Controller
             ->where('type', $type) // Filter by type
             ->filter($filters)
             ->with(['currency', 'branch', 'group', 'country', 'province'])
+            // Feeds the `statement` accessor so the list doesn't run one aggregate
+            // query per row.
             ->withStatementTotals()
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
@@ -64,6 +77,9 @@ class CustomerController extends Controller
             'customers' => LedgerResource::collection($customers),
             'filterOptions' => [
                 'currencies' => Currency::orderBy('code')->get(['id', 'code', 'name']),
+                'groups' => CustomerGroup::query()->orderBy('name_en')->get(['id', 'name_en', 'name_fa']),
+                'countries' => Country::query()->orderBy('name_en')->get(['id', 'name_en', 'name_fa']),
+                'provinces' => Province::query()->orderBy('name_en')->get(['id', 'name_en', 'name_fa', 'country_id']),
                 'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
             ],
             'filters' => [
@@ -84,10 +100,7 @@ class CustomerController extends Controller
         return inertia('Ledgers/Customers/Create', [
             'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
             'branches' => BranchResource::collection(Branch::orderBy('name')->get()),
-            'customerGroups' => CustomerGroup::query()->orderBy('name_en')->get(),
-            'paymentTerms' => PaymentTerm::query()->orderBy('name')->get(),
-            'countries' => Country::query()->orderBy('name_en')->get(),
-            'provinces' => Province::query()->orderBy('name_en')->get(),
+            ...$this->referenceData(),
             'nextCode' => $this->nextCode($request->user()?->branch_id),
             'accountTypes' => [],
         ]);
@@ -96,55 +109,28 @@ class CustomerController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(LedgerStoreRequest $request, AttachmentService $attachmentService)
-    {
+    public function store(
+        LedgerStoreRequest $request,
+        LedgerOpeningService $ledgerOpeningService,
+        AttachmentService $attachmentService,
+    ) {
         $validated = $request->validated();
         $validated['type'] = 'customer';
         $validated['code'] = $validated['code'] ?: $this->nextCode($request->user()?->branch_id);
         $validated['is_active'] = $validated['is_active'] ?? true;
+
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('ledgers/photos', 'public');
         }
-        $ledger = Ledger::create(\Illuminate\Support\Arr::except($validated, ['attachments']));
+
+        $ledger = Ledger::create(Arr::except($validated, ['attachments']));
+
         if ($request->hasFile('attachments')) {
             $attachmentService->store($ledger, $request->file('attachments'));
         }
-        $glAccounts = Cache::get('gl_accounts');
-        $transactionService = app(TransactionService::class);
-        if ($validated['currency_id'] && $validated['amount'] && $validated['amount'] > 0) {
 
-            $arId = $glAccounts['account-receivable'];
-            $equityId = $glAccounts['opening-balance-equity'];
+        $ledgerOpeningService->sync($ledger, $validated['openings'] ?? []);
 
-            abort_unless($arId && $equityId, 500, 'System accounts (AR/AP) are missing.');
-
-            $remark = trim((string) ($validated['remark'] ?? ''));
-
-            $transaction = $transactionService->post(
-                header: [
-                    'currency_id' => $validated['currency_id'],
-                    'rate' => (float) $validated['rate'],
-                    'date' => Carbon::now()->toDateString(),
-                    'reference_type' => Ledger::class,
-                    'reference_id' => $ledger->id,
-                    'remark' => 'Opening balance for customer ' . $ledger->name,
-                ],
-                lines: [
-                ['account_id' => $arId, 'ledger_id' => $ledger->id, 'debit' => (float) $validated['amount'], 'credit' => 0,
-                'remark' => $remark !== '' ? $remark : 'Opening balance for customer ' . $ledger->name,
-                'remark_fa' => $remark !== '' ? $remark : 'موجودی اولیه برای مشتری ' . $ledger->name,
-                'remark_ps' => $remark !== '' ? $remark : 'د'. ' '. $ledger->name.' '.'د پرانیستلو بیلانس ',
-            ],
-                ['account_id' => $equityId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $ledger->name,
-                'remark_fa' => 'Ù…ÙˆØ¬ÙˆØ¯ÛŒ Ø§ÙˆÙ„ÛŒÙ‡ Ø¨Ø±Ø§ÛŒ Ù…Ø´ØªØ±ÛŒ ' . $ledger->name,
-                'remark_ps' =>'Ø¯'. ' '. $ledger->name.' '.'Ø¯ Ù¾Ø±Ø§Ù†ÛŒØ³ØªÙ„Ùˆ Ø¨ÛŒÙ„Ø§Ù†Ø³ ',
-                ],
-            ]);
-            $transaction->opening()->create([
-                'ledgerable_id' => $ledger->id,
-                'ledgerable_type' => 'ledger',
-            ]);
-        }
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
 
@@ -161,7 +147,7 @@ class CustomerController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Request $request, Ledger $customer)
+    public function show(Request $request, Ledger $customer, LedgerStatementService $statementService)
     {
         // Only the relations the Show page actually renders — the customer's whole
         // transaction-line history was being eager-loaded before, which made pages
@@ -174,24 +160,48 @@ class CustomerController extends Controller
             'province',
             'createdBy',
             'updatedBy',
-            'opening',
-            'opening.transaction.currency',
-            'opening.transaction.lines',
+            'openings',
+            'openings.transaction.currency',
+            'openings.transaction.lines',
             'attachments',
         ]);
 
         $lists = $this->transactionLists($customer);
 
+        $ledgerStatement = $statementService->build($customer, $this->statementFilters($request));
+
+        // Deliberately unfiltered: the profile card reports the party's standing
+        // position, not whatever window the statement tab is currently showing.
+        $currencyBalances = $statementService->balancesByCurrency($customer);
+
+        // Open items are claims, not documents: an invoice, an opening balance
+        // and a manual journal debit to receivables all appear here on equal
+        // footing, each with the rate it was booked at.
+        $settlements = app(PaymentStatusService::class);
+        $openItems = app(SettlementService::class)->openItems($customer->id);
+        $settlementHistory = $settlements->settlementHistoryForLedger($customer->id);
+        $settlementBalances = $settlements->balancesForLedger($customer->id);
+
         if ($request->expectsJson()) {
             return response()->json([
                 'customer' => new LedgerResource($customer),
                 ...$lists,
+                'ledgerStatement' => $ledgerStatement,
+                'currencyBalances' => $currencyBalances,
+                'openItems' => $openItems,
+                'settlementHistory' => $settlementHistory,
+                'settlementBalances' => $settlementBalances,
             ]);
         }
 
         return inertia('Ledgers/Customers/Show', [
             'customer' => new LedgerResource($customer),
             ...$lists,
+            'ledgerStatement' => $ledgerStatement,
+            'currencyBalances' => $currencyBalances,
+            'openItems' => $openItems,
+            'settlementHistory' => $settlementHistory,
+            'settlementBalances' => $settlementBalances,
         ]);
     }
 
@@ -204,12 +214,13 @@ class CustomerController extends Controller
      */
     protected function transactionLists(Ledger $ledger): array
     {
-        $dateService = app(\App\Services\DateConversionService::class);
+        $dateService = app(DateConversionService::class);
 
         $typeLabel = function ($type) {
             if ($type instanceof \App\Enums\SalePurchaseType) {
                 return $type->getLabel();
             }
+
             return \App\Enums\SalePurchaseType::tryFrom((string) $type)?->getLabel() ?? $type;
         };
 
@@ -227,11 +238,14 @@ class CustomerController extends Controller
                 'description' => $s->description,
             ])->all();
 
-        $mapMovement = fn ($m) => [
+        // Receipts and payments no longer carry an amount column - the money
+        // lives on the voucher's cash line, so the amount has to be read the
+        // same way the resources read it, or the table shows a dash.
+        $mapMovement = fn ($m, float $amount) => [
             'id' => $m->id,
             'number' => $m->number,
             'date' => $dateService->toDisplay($m->date),
-            'amount' => $m->amount,
+            'amount' => $amount,
             'currency_code' => $m->transaction?->currency?->code,
             'rate' => $m->transaction?->rate ?? 0,
             'payment_mode' => $m->payment_mode?->value,
@@ -239,45 +253,75 @@ class CustomerController extends Controller
             'narration' => $m->narration,
         ];
 
-        $receipts = $ledger->receipts()->with('transaction.currency')
-            ->orderByDesc('date')->orderByDesc('id')->get()->map($mapMovement)->all();
+        // account.accountType is what cashLine() matches on; without it every
+        // row fires its own query to find the cash-or-bank line.
+        $movementRelations = ['transaction.currency', 'transaction.lines.account.accountType'];
 
-        $payments = $ledger->payments()->with('transaction.currency')
-            ->orderByDesc('date')->orderByDesc('id')->get()->map($mapMovement)->all();
+        $receipts = $ledger->receipts()->with($movementRelations)
+            ->orderByDesc('date')->orderByDesc('id')->get()
+            ->map(fn ($m) => $mapMovement($m, $m->receivedAmount()))->all();
+
+        $payments = $ledger->payments()->with($movementRelations)
+            ->orderByDesc('date')->orderByDesc('id')->get()
+            ->map(fn ($m) => $mapMovement($m, $m->paidAmount()))->all();
 
         return compact('sales', 'receipts', 'payments');
+    }
+
+    /**
+     * Lookup lists shared by the customer create and edit forms.
+     */
+    protected function referenceData(): array
+    {
+        return [
+            'customerGroups' => CustomerGroup::query()->orderBy('name_en')->get(),
+            'paymentTerms' => PaymentTerm::query()->orderBy('name')->get(),
+            'countries' => Country::query()->orderBy('name_en')->get(),
+            'provinces' => Province::query()->orderBy('name_en')->get(),
+        ];
     }
 
     public function export(
         Request $request,
         Ledger $customer,
         SpreadsheetExportService $spreadsheetExportService,
-    ): BinaryFileResponse {
+        PdfExportService $pdfExportService,
+    ): SymfonyResponse {
         $this->authorize('view', $customer);
 
         $validated = $request->validate([
-            'list' => ['nullable', 'string', Rule::in(['sales', 'receipts', 'payments'])],
+            'list' => ['nullable', 'string', Rule::in(['sales', 'receipts', 'payments', 'statement'])],
+            'format' => ['nullable', 'string', Rule::in(['xlsx', 'pdf'])],
         ]);
 
         $list = $validated['list'] ?? 'sales';
+        $format = $validated['format'] ?? 'xlsx';
         $customer->loadMissing(['currency', 'branch']);
+
+        $translate = fn (string $group, string $key, string $fallback = '') => $spreadsheetExportService->localeTranslation($group, $key, $fallback);
 
         $rows = match ($list) {
             'receipts' => $this->exportReceiptRows($customer),
             'payments' => $this->exportPaymentRows($customer),
+            'statement' => $this->statementExportRows(
+                app(LedgerStatementService::class)->build($customer, $this->statementFilters($request)),
+                $translate,
+            ),
             default => $this->exportSaleRows($customer),
         };
 
         $moduleLabel = match ($list) {
             'receipts' => $spreadsheetExportService->localeTranslation('receipt', 'receipts', 'Receipts'),
             'payments' => $spreadsheetExportService->localeTranslation('payment', 'payments', 'Payments'),
+            'statement' => $spreadsheetExportService->localeTranslation('report', 'reports.customer_statement.label', 'Customer Statement'),
             default => $spreadsheetExportService->localeTranslation('sale', 'sales', 'Sales'),
         };
 
-        $entityLabel = $spreadsheetExportService->localeTranslation('ledger', 'customer.customer', 'Customer');
-        $sheetTitle = $entityLabel . ' ' . $moduleLabel;
+        // Name the party in the heading rather than repeating the generic
+        // "Customer" label, which the module label already carries.
+        $sheetTitle = $moduleLabel . ' ' . $customer->name;
 
-        return $spreadsheetExportService->download([
+        $payload = [
             'filename' => Str::slug($customer->name . '-' . $sheetTitle) . '-' . now()->format('Ymd-His') . '.xlsx',
             'sheet_name' => $sheetTitle,
             'sheet_title' => $sheetTitle,
@@ -288,6 +332,7 @@ class CustomerController extends Controller
             'include_row_number' => true,
             'row_number_label' => $spreadsheetExportService->localeTranslation('report', 'columns.no', 'No.'),
             'columns' => match ($list) {
+                'statement' => $this->statementExportColumns($translate),
                 'receipts', 'payments' => [
                     ['key' => 'number', 'label' => $spreadsheetExportService->localeTranslation('general', 'number', 'Number')],
                     ['key' => 'date', 'label' => $spreadsheetExportService->localeTranslation('general', 'date', 'Date')],
@@ -309,7 +354,11 @@ class CustomerController extends Controller
                 ],
             },
             'rows' => $rows,
-        ]);
+        ];
+
+        return $format === 'pdf'
+            ? $pdfExportService->download($payload)
+            : $spreadsheetExportService->download($payload);
     }
 
     /**
@@ -317,14 +366,15 @@ class CustomerController extends Controller
      */
     public function edit(Ledger $customer)
     {
-        $customer->load(['currency', 'group', 'paymentTerm', 'country', 'province', 'opening', 'opening.transaction.currency', 'opening.transaction.lines', 'attachments']);
+        $customer->load([
+            'currency', 'group', 'paymentTerm', 'country', 'province',
+            'openings', 'openings.transaction.currency', 'openings.transaction.lines',
+            'attachments',
+        ]);
+
         return inertia('Ledgers/Customers/Edit', [
             'customer' => new LedgerResource($customer),
-            'currencies' => CurrencyResource::collection(Currency::orderBy('name')->get()),
-            'customerGroups' => CustomerGroup::query()->orderBy('name_en')->get(),
-            'paymentTerms' => PaymentTerm::query()->orderBy('name')->get(),
-            'countries' => Country::query()->orderBy('name_en')->get(),
-            'provinces' => Province::query()->orderBy('name_en')->get(),
+            ...$this->referenceData(),
         ]);
     }
 
@@ -398,6 +448,9 @@ class CustomerController extends Controller
         };
     }
 
+    /**
+     * Replace just the profile photo, from the inline uploader on the Show page.
+     */
     public function updatePhoto(Request $request, Ledger $customer)
     {
         $this->authorize('update', $customer);
@@ -408,7 +461,7 @@ class CustomerController extends Controller
         ]);
 
         if ($customer->photo) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($customer->photo);
+            Storage::disk('public')->delete($customer->photo);
         }
 
         $customer->update([
@@ -421,65 +474,36 @@ class CustomerController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(LedgerUpdateRequest $request, Ledger $customer, AttachmentService $attachmentService)
-    {
+    public function update(
+        LedgerUpdateRequest $request,
+        Ledger $customer,
+        LedgerOpeningService $ledgerOpeningService,
+        AttachmentService $attachmentService,
+    ) {
         $validated = $request->validated();
         $validated['is_active'] = $validated['is_active'] ?? true;
+
+        // A form without a new upload posts no `photo` key at all, so the existing
+        // one must not be cleared.
+        $attributes = Arr::except($validated, ['attachments', 'photo']);
+
         if ($request->hasFile('photo')) {
             if ($customer->photo) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($customer->photo);
+                Storage::disk('public')->delete($customer->photo);
             }
-            $validated['photo'] = $request->file('photo')->store('ledgers/photos', 'public');
+
+            $attributes['photo'] = $request->file('photo')->store('ledgers/photos', 'public');
         }
-        $customer->update(\Illuminate\Support\Arr::except($validated, ['attachments', 'photo']) + (isset($validated['photo']) ? ['photo' => $validated['photo']] : []));
+
+        $customer->update($attributes);
+
         if ($request->hasFile('attachments')) {
             $attachmentService->store($customer, $request->file('attachments'));
         }
 
-        // Remove existing opening balances
-
-        if($customer->opening) {
-            TransactionLine::where('transaction_id',$customer->opening->transaction_id)->forceDelete();
-            $customer->opening->forceDelete();
-            $customer->opening->transaction()->forceDelete();
-        }
-
-
-        if ($validated['amount'] && $validated['amount'] > 0 && $validated['currency_id'] && $validated['rate']) {  // Update existing opening balances
-            $glAccounts = Cache::get('gl_accounts');
-            $arId = $glAccounts['account-receivable'];
-            $equityId = $glAccounts['opening-balance-equity'];
-            $transactionService = app(TransactionService::class);
-            abort_unless($arId && $equityId, 500, 'System accounts (AR/AP) are missing.');
-
-            $remark = trim((string) ($validated['remark'] ?? ''));
-
-            $transaction = $transactionService->post(
-                header: [
-                    'currency_id' => $validated['currency_id'],
-                    'rate' => (float) $validated['rate'],
-                    'date' => Carbon::now()->toDateString(),
-                    'reference_type' => Ledger::class,
-                    'reference_id' => $customer->id,
-                    'remark' => 'Opening balance for customer ' . $customer->name,
-                ],
-                lines: [
-                ['account_id' => $arId, 'ledger_id' => $customer->id, 'debit' => (float) $validated['amount'], 'credit' => 0,
-                'remark' => $remark !== '' ? $remark : 'Opening balance for customer ' . $customer->name,
-                'remark_fa' => $remark !== '' ? $remark : 'موجودی اولیه برای مشتری ' . $customer->name,
-                'remark_ps' => $remark !== '' ? $remark : 'د'. ' '. $customer->name.' '.'د پرانیستلو بیلانس ',
-                ],
-                ['account_id' => $equityId, 'debit' => 0, 'credit' => (float) $validated['amount'], 'remark' => 'Opening balance for customer ' . $customer->name,
-                'remark_fa' => 'Ù…ÙˆØ¬ÙˆØ¯ÛŒ Ø§ÙˆÙ„ÛŒÙ‡ Ø¨Ø±Ø§ÛŒ Ù…Ø´ØªØ±ÛŒ ' . $customer->name,
-                'remark_ps' =>'Ø¯'. ' '. $customer->name.' '.'Ø¯ Ù¾Ø±Ø§Ù†ÛŒØ³ØªÙ„Ùˆ Ø¨ÛŒÙ„Ø§Ù†Ø³ ',
-                ],
-            ]);
-
-            $transaction->opening()->create([
-                'ledgerable_id' => $customer->id,
-                'ledgerable_type' => 'ledger',
-            ]);
-        }
+        // Openings are rebuilt wholesale rather than diffed: the form always posts
+        // the party's complete set, one row per currency.
+        $ledgerOpeningService->sync($customer, $validated['openings'] ?? []);
 
         Cache::forget(CacheKey::forCompanyBranchLocale($request, 'ledgers'));
 
@@ -493,14 +517,14 @@ class CustomerController extends Controller
 
     public function destroy(Request $request, Ledger $customer)
     {
-        $openingTransactionId = $customer->opening?->transaction_id;
+        $openingTransactionIds = $customer->openings()->pluck('transaction_id')->filter()->all();
 
-        // Allow delete only when customer has no transactions OR only opening transaction.
+        // Allow delete only when customer has no transactions OR only opening transactions.
         $hasNonOpeningTransactions = TransactionLine::query()
             ->where('ledger_id', $customer->id)
             ->when(
-                $openingTransactionId,
-                fn ($q) => $q->where('transaction_id', '!=', $openingTransactionId),
+                $openingTransactionIds !== [],
+                fn ($q) => $q->whereNotIn('transaction_id', $openingTransactionIds),
                 fn ($q) => $q // no opening found -> any transaction means blocked
             )
             ->exists();
@@ -509,12 +533,12 @@ class CustomerController extends Controller
             return back()->with('error', __('Cannot delete customer: this customer has transactions. Please remove related transactions first.'));
         }
 
-        DB::transaction(function () use ($customer, $openingTransactionId) {
-            if ($openingTransactionId) {
+        DB::transaction(function () use ($customer, $openingTransactionIds) {
+            if ($openingTransactionIds !== []) {
                 // Delete the whole opening transaction (both lines) and the opening record.
-                TransactionLine::where('transaction_id', $openingTransactionId)->delete();
-                Transaction::where('id', $openingTransactionId)->delete();
-                $customer->opening()->delete();
+                TransactionLine::whereIn('transaction_id', $openingTransactionIds)->delete();
+                Transaction::whereIn('id', $openingTransactionIds)->delete();
+                $customer->openings()->delete();
             }
 
             $customer->delete();
@@ -529,14 +553,13 @@ class CustomerController extends Controller
 
     public function restore(Request $request, Ledger $customer)
     {
-        $opening = $customer->opening()->withTrashed()->first();
-        $openingTransactionId = $opening?->transaction_id;
+        $openingTransactionIds = $customer->openings()->withTrashed()->pluck('transaction_id')->filter()->all();
 
-        DB::transaction(function () use ($customer, $openingTransactionId) {
-            if ($openingTransactionId) {
-                Transaction::withTrashed()->where('id', $openingTransactionId)->restore();
-                TransactionLine::withTrashed()->where('transaction_id', $openingTransactionId)->restore();
-                $customer->opening()->withTrashed()->restore();
+        DB::transaction(function () use ($customer, $openingTransactionIds) {
+            if ($openingTransactionIds !== []) {
+                Transaction::withTrashed()->whereIn('id', $openingTransactionIds)->restore();
+                TransactionLine::withTrashed()->whereIn('transaction_id', $openingTransactionIds)->restore();
+                $customer->openings()->withTrashed()->restore();
             }
 
             $customer->restore();
@@ -567,6 +590,10 @@ class CustomerController extends Controller
         $customers = Ledger::search($request->query('search'))
             ->where('type', 'customer')
             ->filter($filters)
+            ->with(['group', 'paymentTerm', 'country', 'province'])
+            // Feeds the statement accessor, so the balance column costs one
+            // query for the whole sheet instead of one per row.
+            ->withStatementTotals()
             ->orderBy($sortField, $sortDirection)
             ->get();
 
@@ -574,12 +601,23 @@ class CustomerController extends Controller
         $t = fn (string $group, string $key, string $fallback = '') => $spreadsheetExportService->localeTranslation($group, $key, $fallback);
 
         $rows = $customers->map(fn ($c) => [
-            'name'           => $c->name ?? '-',
-            'code'           => $c->code ?? '-',
-            'contact_person' => $c->contact_person ?? '-',
-            'phone_no'       => $c->phone_no ?? '-',
-            'email'          => $c->email ?? '-',
-            'is_active'      => $c->is_active ? $t('general', 'active', 'Active') : $t('general', 'inactive', 'Inactive'),
+            'name'            => $c->name ?? '-',
+            'code'            => $c->code ?? '-',
+            'contact_person'  => $c->contact_person ?? '-',
+            'phone_no'        => $c->phone_no ?? '-',
+            'whatsapp_number' => $c->whatsapp_number ?? '-',
+            'email'           => $c->email ?? '-',
+            'address'         => $c->address ?? '-',
+            'country'         => $c->country?->localized_name ?? '-',
+            'province'        => $c->province?->localized_name ?? '-',
+            'group'           => $c->group?->localized_name ?? '-',
+            'payment_term'    => $c->paymentTerm?->name ?? '-',
+            'discount'        => $c->discount !== null ? (float) $c->discount : '-',
+            'credit_limit'    => $c->credit_limit !== null ? (float) $c->credit_limit : '-',
+            // The same preference-aware string the list and detail pages show,
+            // so an exported balance reads the way the user set it to read.
+            'balance'         => (string) $c->statement['balance'],
+            'is_active'       => $c->is_active ? $t('general', 'active', 'Active') : $t('general', 'inactive', 'Inactive'),
         ])->all();
 
         $label = $t('ledger', 'customer.customers', 'Customers');
@@ -595,12 +633,21 @@ class CustomerController extends Controller
             'include_row_number' => true,
             'row_number_label'   => $t('report', 'columns.no', 'No.'),
             'columns' => [
-                ['key' => 'name',           'label' => $t('general', 'name', 'Name'), 'width' => 22],
-                ['key' => 'code',           'label' => $t('general', 'code', 'Code'), 'width' => 12],
-                ['key' => 'contact_person', 'label' => $t('ledger', 'contact_person', 'Contact Person'), 'width' => 18],
-                ['key' => 'phone_no',       'label' => $t('general', 'phone', 'Phone'), 'width' => 14],
-                ['key' => 'email',          'label' => $t('general', 'email', 'Email'), 'width' => 20],
-                ['key' => 'is_active',      'label' => $t('general', 'status', 'Status'), 'width' => 10],
+                ['key' => 'name',            'label' => $t('general', 'name', 'Name'), 'width' => 22],
+                ['key' => 'code',            'label' => $t('general', 'code', 'Code'), 'width' => 12],
+                ['key' => 'contact_person',  'label' => $t('ledger', 'contact_person', 'Contact Person'), 'width' => 18],
+                ['key' => 'phone_no',        'label' => $t('general', 'phone', 'Phone'), 'width' => 14],
+                ['key' => 'whatsapp_number', 'label' => $t('ledger', 'whatsapp_number', 'WhatsApp Number'), 'width' => 16],
+                ['key' => 'email',           'label' => $t('general', 'email', 'Email'), 'width' => 20],
+                ['key' => 'address',         'label' => $t('general', 'address', 'Address'), 'width' => 24],
+                ['key' => 'country',         'label' => $t('ledger', 'country', 'Country'), 'width' => 14],
+                ['key' => 'province',        'label' => $t('ledger', 'province', 'Province'), 'width' => 14],
+                ['key' => 'group',           'label' => $t('ledger', 'customer_group', 'Customer Group'), 'width' => 16],
+                ['key' => 'payment_term',    'label' => $t('ledger', 'payment_term', 'Payment Term'), 'width' => 16],
+                ['key' => 'discount',        'label' => $t('general', 'discount', 'Discount'), 'type' => 'money', 'align' => 'right', 'width' => 12],
+                ['key' => 'credit_limit',    'label' => $t('ledger', 'credit_limit', 'Credit Limit'), 'type' => 'money', 'align' => 'right', 'width' => 14],
+                ['key' => 'balance',         'label' => $t('general', 'balance', 'Balance'), 'align' => 'right', 'width' => 18],
+                ['key' => 'is_active',       'label' => $t('general', 'status', 'Status'), 'width' => 10],
             ],
             'rows' => $rows,
         ]);

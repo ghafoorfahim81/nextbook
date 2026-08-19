@@ -1,34 +1,45 @@
-﻿{
-    "ledger": "دفتر حساب",
-    "ledgers": "دفتر حسابات",
-    "supplier":{
-        "supplier": "تامین کننده",
-        "suppliers": "تامین کنندگان"
-    },
-    "customer":{
-        "customer": "مشتری",
-        "customers": "مشتریان"
-    },
-    "contact_person": "شخصی ارتباطی",
-    "customer_group": "گروه مشتری",
-    "payment_term": "شرایط پرداخت",
-    "country": "کشور",
-    "province": "ولایت",
-    "whatsapp_number": "شماره واتساپ",
-    "credit_limit": "حد اعتبار",
-    "credit_limit_enabled": "فعال‌سازی حد اعتبار",
-    "profile_photo": "عکس پروفایل",
-    "credit_terms": "شرایط اعتبار",
-    "credit_terms_strict": "محدود",
-    "credit_terms_warning": "هشدار",
-    "credit_terms_flexible": "انعطاف‌پذیر",
-    "credit_summary": "خلاصه اعتبار",
-    "supplier_credit_summary": "خلاصه اعتبار تأمین‌کننده",
-    "supplier_credit_limit": "حد اعتبار تأمین‌کننده",
-    "current_balance": "بیلانس فعلی",
-    "current_payable": "قابل پرداخت فعلی",
-    "available_credit": "اعتبار قابل استفاده",
-    "used": "استفاده‌شده",
-    "exceeds_available_credit": "این سفارش {amount} از اعتبار قابل استفاده بیشتر است",
-    "discount": "تخفیف"
+{
+  "ledger": "دفتر حساب",
+  "ledgers": "دفتر حسابات",
+  "supplier": {
+    "supplier": "تامین کننده",
+    "suppliers": "تامین کنندگان"
+  },
+  "customer": {
+    "customer": "مشتری",
+    "customers": "مشتریان"
+  },
+  "contact_person": "شخصی ارتباطی",
+  "customer_group": "گروه مشتری",
+  "payment_term": "شرایط پرداخت",
+  "country": "کشور",
+  "province": "ولایت",
+  "whatsapp_number": "شماره واتساپ",
+  "credit_limit": "حد اعتبار",
+  "credit_limit_enabled": "فعال‌سازی حد اعتبار",
+  "profile_photo": "عکس پروفایل",
+  "credit_terms": "شرایط اعتبار",
+  "credit_terms_strict": "محدود",
+  "credit_terms_warning": "هشدار",
+  "credit_terms_flexible": "انعطاف‌پذیر",
+  "credit_summary": "خلاصه اعتبار",
+  "supplier_credit_summary": "خلاصه اعتبار تأمین‌کننده",
+  "supplier_credit_limit": "حد اعتبار تأمین‌کننده",
+  "current_balance": "بیلانس فعلی",
+  "current_payable": "قابل پرداخت فعلی",
+  "available_credit": "اعتبار قابل استفاده",
+  "used": "استفاده‌شده",
+  "exceeds_available_credit": "این سفارش {amount} از اعتبار قابل استفاده بیشتر است",
+  "discount": "تخفیف",
+  "opening": {
+    "title": "موجودی‌های اولیه",
+    "hint": "برای هر ارزی که این طرف حساب در آن بدهکار یا بستانکار است، مبلغ را وارد کنید. ارزهای بدون مبلغ نادیده گرفته می‌شوند.",
+    "home": "ارز پایه",
+    "home_equivalent": "معادل ({code})",
+    "currencies_used": "ارزهای دارای موجودی: {count}",
+    "total_note": "مجموع، تبدیل شده به {code} با نرخ هر سطر"
+  },
+  "invalid_phone_for_country": "طول شماره تلفن برای {country} معتبر نیست",
+  "balance_by_currency": "بیلانس بر اساس اسعار",
+  "no_currency_balance": "در هیچ اسعاری بیلانس وجود ندارد"
 }

@@ -53,5 +53,20 @@ class ExpenseCategory extends Model
             ]
         ];
     }
+
+    /**
+     * Starter categories provisioned for every new branch.
+     */
+    public static function defaultCategories(): array
+    {
+        return [
+            ['name' => 'General', 'remarks' => 'Uncategorised expenses'],
+            ['name' => 'Office & Administration', 'remarks' => 'Rent, stationery, office running costs'],
+            ['name' => 'Utilities', 'remarks' => 'Electricity, gas, water, internet, telephone'],
+            ['name' => 'Salaries & Wages', 'remarks' => 'Staff salaries, allowances and commissions'],
+            ['name' => 'Transportation', 'remarks' => 'Vehicle running costs, fares and freight'],
+            ['name' => 'Repair & Maintenance', 'remarks' => 'Building, equipment and vehicle maintenance'],
+        ];
+    }
 }
 

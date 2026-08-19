@@ -5,25 +5,18 @@ namespace App\Http\Controllers\Administration;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Administration\BranchStoreRequest;
 use App\Http\Requests\Administration\BranchUpdateRequest;
-use App\Http\Resources\Administration\BranchCollection;
 use App\Http\Resources\Administration\BranchResource;
 use App\Models\Administration\Branch;
+use App\Services\BranchProvisioningService;
+use App\Support\Inertia\CacheForget;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use App\Models\Account\Account;
-use App\Models\Account\AccountType;
-use App\Models\Administration\Quantity;
-use App\Models\Administration\Size;
-use App\Models\Administration\Currency;
-use App\Models\Administration\UnitMeasure;
-use App\Models\Administration\Warehouse;
-use App\Models\Ledger\Ledger;
-use Symfony\Component\Uid\Ulid;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+
 class BranchController extends Controller
 {
-    public function __construct()
-    {
+    public function __construct(
+        private readonly BranchProvisioningService $provisioning,
+    ) {
         $this->authorizeResource(Branch::class, 'branch');
     }
 
@@ -38,6 +31,7 @@ class BranchController extends Controller
             ->orderBy($sortField, $sortDirection)
             ->paginate($perPage)
             ->withQueryString();
+
         return inertia('Administration/Branches/Index', [
             'branches' => BranchResource::collection($branches),
         ]);
@@ -45,129 +39,16 @@ class BranchController extends Controller
 
     public function store(BranchStoreRequest $request)
     {
-        $branch = Branch::create($request->validated());
+        // The branch and its ~200 default records land together or not at all.
+        // A failure part-way through used to leave a branch that could not trade,
+        // with no way to finish provisioning it from the UI.
+        DB::transaction(function () use ($request) {
+            $branch = Branch::create($request->validated());
 
-        $defaultAccountTypes = AccountType::defaultAccountTypes();
-
-        foreach ($defaultAccountTypes as $accountType) {
-            AccountType::withoutEvents(function () use ($accountType, $branch) {
-            AccountType::create([
-                'id' => (string) new Ulid(),
-                'name' => $accountType['name'],
-                'is_main' => $accountType['is_main'],
-                'slug' => $accountType['slug'],
-                'branch_id' => $branch->id,
-                'created_by' => Auth::id(),
-            ]);
-            });
-        }
-        $accounts = Account::defaultAccounts();
-        foreach ($accounts as $account) {
-            Account::withoutEvents(function () use ($account, $branch) {
-                Account::create([
-                    'id' => (string) new Ulid(),
-                    'name' => $account['name'],
-                    'number' => $account['number'],
-                    'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', $account['account_type_slug'])
-                    ->where('branch_id', $branch->id)
-                    ->first()->id,
-                    'branch_id' => $branch->id,
-                    'slug' => $account['slug'],
-                    'remark' => $account['remark'],
-                    'is_main' => $account['is_main'],
-                    'created_by' => Auth::id(),
-                ]);
-            });
-        }
-
-        $defaultSizes = Size::defaultSizes();
-        foreach ($defaultSizes as $size) {
-            Size::withoutEvents(function () use ($size, $branch) {
-                Size::create([
-                    'id' => (string) new Ulid(),
-                    'name' => $size['name'],
-                    'code' => $size['code'],
-                    'branch_id' => $branch->id,
-                    'created_by' => Auth::id(),
-                ]);
-            });
-        }
-
-        $defaultCurrencies = Currency::defaultCurrencies();
-        foreach ($defaultCurrencies as $currency) {
-            Currency::withoutEvents(function () use ($currency, $branch) {
-                Currency::create([
-                    'id' => (string) new Ulid(),
-                    'name' => $currency['name'],
-                    'code' => $currency['code'],
-                    'symbol' => $currency['symbol'],
-                    'format' => $currency['format'],
-                    'exchange_rate' => $currency['exchange_rate'],
-                    'is_active' => $currency['is_active'],
-                    'is_base_currency' => $currency['is_base_currency'] ?? false,
-                    'flag' => $currency['flag'],
-                    'branch_id' => $branch->id,
-                    'created_by' => Auth::id(),
-                ]);
-            });
-        }
-
-        $quantities = Quantity::defaultQuantity();
-        foreach ($quantities as $quantity) {
-            Quantity::withoutEvents(function () use ($quantity, $branch) {
-                Quantity::create([
-                    'id' => (string) new Ulid(),
-                    'quantity' => $quantity['quantity'],
-                    'unit' => $quantity['unit'],
-                    'symbol' => $quantity['symbol'],
-                    'slug' => $quantity['slug'],
-                    'branch_id' => $branch->id,
-                    'created_by' => Auth::id(),
-                ]);
-            });
-        }
-        $unitMeasures = UnitMeasure::defaultUnitMeasures();
-        foreach ($unitMeasures as $unitMeasure) {
-            UnitMeasure::withoutEvents(function () use ($unitMeasure, $branch) {
-                UnitMeasure::create([
-                'id' => (string) new Ulid(),
-                'name' => $unitMeasure['name'],
-                'unit' => $unitMeasure['unit'],
-                'symbol' => $unitMeasure['symbol'],
-                'branch_id' => $branch->id,
-                'quantity_id' => Quantity::withoutGlobalScopes()
-                ->where('branch_id',$branch->id)
-                ->where('slug', $unitMeasure['quantity_slug'])
-                ->first()->id,
-                'is_main' => true,
-                'created_by' => Auth::id(),
-            ]);
-            });
-        }
-
-        $warehouse = Warehouse::withoutGlobalScopes()->where('is_main', true)->first();
-            Warehouse::withoutEvents(function () use ($warehouse, $branch) {
-                Warehouse::create([
-                    'id' => (string) new Ulid(),
-                    'name' => $warehouse['name'],
-                    'address' => 'Main warehouse',
-                    'branch_id' => $branch->id,
-                    'is_main' => true,
-                    'created_by' => Auth::id(),
-                ]);
-            });
-
-        Ledger::withoutEvents(function () use ($branch) {
-            Ledger::create([
-                'id' => (string) new Ulid(),
-                'name' => 'Cash customer',
-                'code' => 'CASH-CUST',
-                'type' => 'customer',
-                'branch_id' => $branch->id,
-                'created_by' => Auth::id(),
-            ]);
+            $this->provisioning->provision($branch);
         });
 
+        $this->forgetBranchCache($request);
 
         return redirect()->route('branches.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.branch')]));
     }
@@ -175,12 +56,16 @@ class BranchController extends Controller
     public function show(Request $request, Branch $branch): BranchResource
     {
         $branch->load(['parent', 'createdBy', 'updatedBy']);
+
         return new BranchResource($branch);
     }
 
     public function update(BranchUpdateRequest $request, Branch $branch)
     {
         $branch->update($request->validated());
+
+        $this->forgetBranchCache($request);
+
         return redirect()->route('branches.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.branch')]));
     }
 
@@ -198,20 +83,39 @@ class BranchController extends Controller
         }
 
         $branch->delete();
+
+        $this->forgetBranchCache($request);
+
         return redirect()->route('branches.index')->with('success', __('general.branch_deleted_successfully'));
     }
 
     public function restore(Request $request, Branch $branch)
     {
         $branch->restore();
+
+        $this->forgetBranchCache($request);
+
         return redirect()->route('branches.index')->with('success', __('general.restored_successfully', ['resource' => __('general.resource.branch')]));
     }
 
     public function forceDelete(Request $request, Branch $branch)
     {
         app(\App\Services\DeletedRecordService::class)->forceDelete('branches', (string) $branch->id);
-        Cache::forget(CacheKey::forCompanyBranchLocale($request, 'branches'));
+
+        $this->forgetBranchCache($request);
 
         return redirect()->route('branches.index')->with('success', __('general.permanently_deleted_successfully', ['resource' => __('general.resource.branch')]));
+    }
+
+    /**
+     * Drop the cached branch list that feeds the switcher.
+     *
+     * It is cached per company/branch/locale for an hour, so without this a branch
+     * that was just created, renamed or deleted keeps showing the old list.
+     */
+    private function forgetBranchCache(Request $request): void
+    {
+        CacheForget::lookupEverywhere($request, 'branches');
+        CacheForget::lookupEverywhere($request, 'main_branch');
     }
 }

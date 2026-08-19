@@ -28,6 +28,7 @@ import {
   Layers,
   Banknote,
   SlidersHorizontal,
+  Coins,
 } from 'lucide-vue-next'
 import AppLayout from '@/Layouts/Layout.vue'
 import { Button } from '@/Components/ui/button'
@@ -226,6 +227,23 @@ const reportDefinitions = computed(() => ({
       { key: 'running_balance_label', label: t('report.columns.running_balance'), align: 'right' },
     ],
   },
+  cash_position_by_currency: {
+    label: t('report.reports.cash_position_by_currency.label'),
+    description: t('report.reports.cash_position_by_currency.description'),
+    filters: [],
+    group: 'financial',
+    icon: Coins,
+    summary: [
+      { key: 'currency_count', label: t('report.summary.currency_count'), type: 'integer' },
+      { key: 'total_home_equivalent', label: t('report.summary.total_home_equivalent'), type: 'money' },
+    ],
+    columns: [
+      { key: 'currency', label: t('report.columns.currency') },
+      { key: 'currency_name', label: t('report.columns.currency_name') },
+      { key: 'amount', label: t('report.columns.amount'), type: 'balance', align: 'right' },
+      { key: 'home_equivalent', label: t('report.columns.home_equivalent'), type: 'money', align: 'right' },
+    ],
+  },
   receipt_report: {
     label: t('report.reports.receipt_report.label'),
     description: t('report.reports.receipt_report.description'),
@@ -357,6 +375,7 @@ const reportDefinitions = computed(() => ({
           { key: 'quantity', label: t('report.columns.quantity'), type: 'quantity', align: 'right' },
           { key: 'unit_measure', label: t('report.columns.unit_measure') },
           { key: 'unit_price', label: t('report.columns.unit_price'), type: 'money', align: 'right' },
+          { key: 'discount', label: t('report.columns.discount'), type: 'money', align: 'right' },
           { key: 'total_amount', label: t('report.columns.total_amount'), type: 'money', align: 'right' },
         ],
   },
@@ -393,6 +412,7 @@ const reportDefinitions = computed(() => ({
           { key: 'item', label: t('report.columns.item') },
           { key: 'quantity', label: t('report.columns.quantity'), type: 'quantity', align: 'right' },
           { key: 'unit_price', label: t('report.columns.unit_price'), type: 'money', align: 'right' },
+          { key: 'discount', label: t('report.columns.discount'), type: 'money', align: 'right' },
           { key: 'total_amount', label: t('report.columns.total_amount'), type: 'money', align: 'right' },
         ],
   },

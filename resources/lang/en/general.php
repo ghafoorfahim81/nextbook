@@ -60,6 +60,8 @@ return [
     'items_saved_successfully' => 'Items saved successfully.',
 
     'cannot_delete_main_warehouse' => 'You cannot delete the main warehouse.',
+    'main_warehouse' => 'Main Warehouse',
+    'cash_customer' => 'Cash customer',
     'cannot_delete_main_branch' => 'You cannot delete the main branch.',
     'cannot_delete_main_account' => 'You cannot delete the main account.',
     'cannot_delete_own_account' => 'You cannot delete your own account.',
@@ -115,4 +117,5 @@ return [
     'active' => 'Active',
     'inactive' => 'Inactive',
     'cannot_post_insufficient_stock' => 'Cannot post: not enough stock for :item. It may have been sold on another invoice.',
+    'invalid_phone_number' => 'Enter a valid international phone number (6 to 15 digits, country code included).',
 ];

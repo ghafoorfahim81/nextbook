@@ -9,20 +9,30 @@ import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
-import BillAllocationDialog from '@/Components/next/BillAllocationDialog.vue'
+import SettlementDialog from '@/Components/next/SettlementDialog.vue'
 import SubmitButtons from '@/Components/SubmitButtons.vue'
 import AttachmentUploader from '@/Components/AttachmentUploader.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
+import { formatLedgerBalance } from '@/utils/balanceNature'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { todayValueForCalendar } from '@/utils/dateDefaults'
 const { t } = useI18n()
 
 const page = usePage()
+const balanceNatureFormat = computed(() => page.props.balanceNatureFormat || 'with_nature')
 const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
+// Every party, not just suppliers. Refunding a customer's overpayment is a
+// payment, and a party who both buys and sells is one name in one list. What
+// makes the entry correct is the DIRECTION of the cash, which the module
+// fixes — not a restriction on who can appear here.
 const ledgers = computed(() => page.props.ledgers?.data || [])
-const accounts = computed(() => page.props.accounts?.data || [])
+// Money in and out of a voucher always lands on a cash or bank account. The
+// shared `accounts` prop is the whole chart, so the box would otherwise offer
+// revenue and payable accounts that would post a nonsense entry if picked.
+const accounts = computed(() => (page.props.accounts?.data || [])
+  .filter((account) => account.account_type?.slug === 'cash-or-bank'))
 const currencies = computed(() => page.props.currencies?.data || [])
 const paymentModes = computed(() => page.props.paymentModes || [])
 // Single reactive copy of the receipt/payment preferences so the panel and form stay in sync live.
@@ -33,8 +43,8 @@ const showPreferencesPanel = ref(false)
 
 const { loading: lazyLoading } = useLazyProps(page.props, ['ledgers', 'accounts'])
 const billLoading = ref(false)
+useLazyProps(page.props, ['ledgers', 'accounts'])
 const showBillDialog = ref(false)
-const billOptions = ref([])
 const initialized = ref(false)
 
 const form = useForm({
@@ -53,6 +63,9 @@ const form = useForm({
   narration: '',
   allocations: [],
   attachments: [],
+  // Only sent when the cash and the claim are in different currencies. The
+  // server refuses to guess the conversion the two parties agreed on.
+  applied_cash: [],
 })
 
 const submitAction = ref(null)
@@ -112,34 +125,19 @@ function handleSelectChange(field, value) {
   }
 }
 
-const loadBills = async () => {
-  if (!form.ledger_id) {
-    billOptions.value = []
-    return
-  }
-
-  billLoading.value = true
-  try {
-    const { data } = await axios.get('/purchases/open-bills', {
-      params: { ledger_id: form.ledger_id },
-    })
-    billOptions.value = data?.data || []
-  } finally {
-    billLoading.value = false
-  }
-}
-
-const openBillDialog = async () => {
+const openBillDialog = () => {
   if (form.payment_mode !== 'bill_by_bill' || !form.ledger_id) {
     return
   }
 
-  await loadBills()
+  // The dialog loads its own open items — it needs each bill's booking rate and
+  // remaining amount, which only the settlement endpoint knows.
   showBillDialog.value = true
 }
 
-const handleBillAllocationsSave = (allocations) => {
+const handleSettlementSave = ({ allocations, applied_cash }) => {
   form.allocations = allocations
+  form.applied_cash = applied_cash
 }
 
 watch([() => form.ledger_id, () => form.payment_mode], async ([ledgerId, paymentMode], [prevLedgerId, prevPaymentMode]) => {
@@ -149,21 +147,18 @@ watch([() => form.ledger_id, () => form.payment_mode], async ([ledgerId, payment
 
   if (paymentMode !== 'bill_by_bill') {
     form.allocations = []
+    form.applied_cash = []
     showBillDialog.value = false
     return
   }
 
   if (ledgerId && (ledgerId !== prevLedgerId || paymentMode !== prevPaymentMode)) {
-    await openBillDialog()
+    openBillDialog()
   }
 })
 
 function oldBalanceText() {
-  const s = form.selected_ledger?.statement
-  if (!s) return ''
-  return s.balance > 0
-    ? `${s.balance} ${String(s.balance_nature || '').toUpperCase()}`
-    : `${s.balance}`
+  return formatLedgerBalance(form.selected_ledger?.statement, balanceNatureFormat.value, t)
 }
 
 function finalizePrint(page) {
@@ -187,6 +182,17 @@ function finalizePrint(page) {
   pendingPrintWindow.value = null
 }
 
+// The store redirects back to the create page, so the response carries a
+// freshly computed latestNumber. Prefer it over counting up locally: it also
+// accounts for payments other users saved while this form was open.
+function nextNumberAfterSave(page) {
+  const fromServer = Number(page?.props?.latestNumber)
+  if (Number.isFinite(fromServer) && fromServer > 0) return fromServer
+
+  const current = Number(form.number)
+  return (Number.isFinite(current) ? current : 0) + 1
+}
+
 function cleanupPrintWindow() {
   if (pendingPrintWindow.value && !pendingPrintWindow.value.closed) {
     pendingPrintWindow.value.close()
@@ -202,15 +208,14 @@ function submit({ createAndNew = false, createAndPrint = false } = {}) {
   }
   form.transform(data => ({ ...data, ...payload })).post('/payments', {
     onSuccess: (page) => {
-      const latest = Number(form.number || 0)
       if (createAndNew) {
         form.reset('date', 'amount', 'cheque_no', 'narration')
         form.payment_mode = 'on_account'
         form.allocations = []
         form.attachments = []
+        form.applied_cash = []
         showBillDialog.value = false
-        billOptions.value = []
-        applyCreateDefaults({ number: String((isNaN(latest) ? 0 : latest) + 1) })
+        applyCreateDefaults({ number: String(nextNumberAfterSave(page)) })
       }
       if (createAndPrint) {
         finalizePrint(page)
@@ -268,6 +273,7 @@ useFormGuard(form)
             :error="form.errors?.ledger_id"
             :searchable="true"
             resource-type="ledgers"
+            :search-options="{ types: ['customer', 'supplier'] }"
             :search-fields="['name', 'email', 'phone_no']"
           />
 
@@ -362,17 +368,19 @@ useFormGuard(form)
         @save-and-print="submitActionHandler('create_and_print')"
         @cancel="() => $inertia.visit('/payments')"
       />
-      <BillAllocationDialog
+      <SettlementDialog
         :open="showBillDialog"
-        :title="t('general.allocate_bills') || 'Allocate bills'"
-        bill-label="Purchase"
+        direction="out"
+        :ledger-id="form.ledger_id"
+        :currency-id="form.currency_id"
+        :currency-code="form.selected_currency?.code || ''"
         :amount="Number(form.amount || 0)"
-        :bills="billOptions"
-        :loading="billLoading"
+        :rate="Number(form.rate || 1)"
         :allocations="form.allocations"
+        :applied-cash="form.applied_cash"
         @update:open="showBillDialog = $event"
         @update:allocations="(value) => form.allocations = value"
-        @save="handleBillAllocationsSave"
+        @save="handleSettlementSave"
       />
     </form>
   </AppLayout>

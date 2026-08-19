@@ -68,6 +68,7 @@ return [
     'ledger_type' => [
         'customer' => 'Customer',
         'supplier' => 'Supplier',
+        'employee' => 'کارکوونکی',
     ],
     'landed_cost_status' => [
         'draft' => 'Draft',

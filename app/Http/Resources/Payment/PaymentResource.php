@@ -8,8 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Account\AccountResource;
 use App\Http\Resources\UserManagement\UserSimpleResource;
-use App\Http\Resources\Purchase\PurchasePaymentResource;
 use App\Http\Resources\AttachmentResource;
+use App\Http\Resources\Accounting\SettlementResource;
 
 class PaymentResource extends JsonResource
 {
@@ -27,13 +27,12 @@ class PaymentResource extends JsonResource
             'payment_mode' => $this->payment_mode instanceof PaymentMode
                 ? $this->payment_mode->value
                 : $this->payment_mode,
-            'payment_mode_label' => $this->payment_mode instanceof PaymentMode
-                ? $this->payment_mode->getLabel()
-                : (PaymentMode::tryFrom((string) $this->payment_mode)?->getLabel() ?? $this->payment_mode),
+            'payment_mode_label' => PaymentMode::labelFor($this->payment_mode),
             'ledger' => $this->whenLoaded('ledger'),
             'ledger_name' => $this->ledger?->name,
-            // derive from bank/payment transactions
-            'amount' => $firstLine ? ((float) $firstLine->debit > 0 ? $firstLine->debit : $firstLine->credit) : (float) data_get($this->transaction?->posting_payload, 'amount', 0),
+            // The cash line, never lines[0] — a settlement voucher carries the
+            // payable relief and any exchange difference alongside the cash.
+            'amount' => $this->paidAmount(),
             'currency_id' => $this->transaction?->currency_id,
             'currency_code' => $this->transaction?->currency?->code,
             'rate' => $this->transaction?->rate,
@@ -43,9 +42,15 @@ class PaymentResource extends JsonResource
             'cheque_no' => $this->cheque_no,
             'narration' => $this->narration,
             'description' => $this->narration,
-            'transaction_id' => $this->transaction_id,
+            // Payments have no transaction_id column — the voucher points back
+            // at the payment. The edit form needs the real id so it can exclude
+            // this voucher's own settlements from "already settled".
+            'transaction_id' => $this->transaction?->id,
             'transaction' => new TransactionResource($this->transaction),
-            'purchase_payments' => PurchasePaymentResource::collection($this->whenLoaded('purchasePayments')),
+            // The payable mirror of the receipt: what this payment relieved and
+            // at which rates. purchase_payments never stored any of this.
+            'settlements' => SettlementResource::collection($this->whenLoaded('settlements')),
+            'is_cross_currency' => (bool) ($this->transaction?->is_cross_currency ?? false),
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),
             'updated_by' => UserSimpleResource::make($this->whenLoaded('updatedBy')),
             'attachments' => AttachmentResource::collection($this->whenLoaded('attachments')),

@@ -16,6 +16,7 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 use App\Services\TransactionService;
+use App\Support\BranchContext;
 class FastOpeningController extends Controller
 {
     public function index(Request $request)
@@ -61,9 +62,9 @@ class FastOpeningController extends Controller
                         'branch_id'       => auth()->user()->company->branch_id,
                     ]);
 
-                    $homeCurrency = Cache::get('home_currency');
+                    $homeCurrency = BranchContext::homeCurrency();
                     $date = Carbon::now()->toDateString();
-                    $glAccounts = Cache::get('gl_accounts');
+                    $glAccounts = BranchContext::glAccounts();
                     $transactionService = app(TransactionService::class);
                     $transaction = $transactionService->post(
                         header: [

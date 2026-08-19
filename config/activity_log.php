@@ -36,7 +36,7 @@ return [
             \App\Models\JournalEntry\JournalClass::class,
             \App\Models\Ledger\Ledger::class,
             \App\Models\Ledger\LedgerOpening::class,
-            \App\Models\Purchase\PurchasePayment::class,
+            \App\Models\Accounting\Settlement::class,
             \App\Models\Transaction\Transaction::class,
         ],
         'except_attributes' => [

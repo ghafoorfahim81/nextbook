@@ -107,8 +107,8 @@ class Account extends Model
                         ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
                         ->whereIn('transactions.status', ['posted', 'reversed'])
                         ->selectRaw('
-                            SUM(transaction_lines.debit * transactions.rate)  AS total_debit,
-                            SUM(transaction_lines.credit * transactions.rate) AS total_credit
+                            SUM(transaction_lines.base_debit)  AS total_debit,
+                            SUM(transaction_lines.base_credit) AS total_credit
                         ')
                         ->first();
 
@@ -171,13 +171,78 @@ class Account extends Model
 
         return $query
             ->selectSub(
-                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.debit * transactions.rate), 0)'),
+                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.base_debit), 0)'),
                 'statement_total_debit'
             )
             ->selectSub(
-                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.credit * transactions.rate), 0)'),
+                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.base_credit), 0)'),
                 'statement_total_credit'
             );
+    }
+
+    /**
+     * Balances split by the currency each line was posted in.
+     *
+     * An account is not single-currency: a "Cash in Hand USD" box can
+     * physically also hold AFN and PKR, and a supplier control account carries
+     * whatever currencies that supplier was invoiced in. `statement` folds
+     * everything into base (AFN) and answers "what is this worth"; this
+     * answers "what is actually in there".
+     *
+     * Each row reports both the document-currency total and its base value.
+     * Those are different questions and the base value is NOT derived here —
+     * it is the sum of what was stored at posting time, at each line's own
+     * historical rate.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function balancesByCurrency(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->transactionLines()
+                ->join('transactions', 'transactions.id', '=', 'transaction_lines.transaction_id')
+                ->join('currencies', 'currencies.id', '=', 'transaction_lines.currency_id')
+                ->where('transactions.status', 'posted')
+                ->whereNull('transactions.deleted_at')
+                ->groupBy(
+                    'transaction_lines.currency_id',
+                    'currencies.code',
+                    'currencies.name',
+                    'currencies.symbol',
+                    'currencies.is_base_currency'
+                )
+                ->selectRaw('transaction_lines.currency_id')
+                ->selectRaw('currencies.code as currency_code')
+                ->selectRaw('currencies.name as currency_name')
+                ->selectRaw('currencies.symbol as currency_symbol')
+                ->selectRaw('currencies.is_base_currency')
+                ->selectRaw('COALESCE(SUM(transaction_lines.debit), 0) as total_debit')
+                ->selectRaw('COALESCE(SUM(transaction_lines.credit), 0) as total_credit')
+                ->selectRaw('COALESCE(SUM(transaction_lines.base_debit), 0) as base_total_debit')
+                ->selectRaw('COALESCE(SUM(transaction_lines.base_credit), 0) as base_total_credit')
+                ->get()
+                ->map(function ($row) {
+                    $net = round((float) $row->total_debit - (float) $row->total_credit, 4);
+                    $baseNet = round((float) $row->base_total_debit - (float) $row->base_total_credit, 4);
+
+                    return [
+                        'currency_id' => $row->currency_id,
+                        'currency_code' => $row->currency_code,
+                        'currency_name' => $row->currency_name,
+                        'currency_symbol' => $row->currency_symbol,
+                        'is_base_currency' => (bool) $row->is_base_currency,
+                        'total_debit' => (float) $row->total_debit,
+                        'total_credit' => (float) $row->total_credit,
+                        'net_balance' => $net,
+                        'balance_amount' => abs($net),
+                        'balance_nature' => $net > 0 ? 'dr' : ($net < 0 ? 'cr' : null),
+                        'base_net_balance' => $baseNet,
+                    ];
+                })
+                ->sortBy(fn (array $row) => [$row['is_base_currency'] ? 0 : 1, $row['currency_code']])
+                ->values()
+                ->all()
+        );
     }
 
     public function isNormalBalance(float $netBalance): bool
@@ -1205,16 +1270,16 @@ class Account extends Model
             ],
 
             // MISC
-            [
-                'name' => 'Exchange Gain or Loss',
-                'local_name' => 'سود یا زیان تسعیر ارز',
-                'number' => '9700',
-                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
-                'account_type_slug' => 'expense',
-                'slug' => 'exchange-gain-loss',
-                'remark' => 'Exchange gain or loss',
-                'is_main' => true,
-            ],
+            // [
+            //     'name' => 'Exchange Gain or Loss',
+            //     'local_name' => 'سود یا زیان تسعیر ارز',
+            //     'number' => '9700',
+            //     'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
+            //     'account_type_slug' => 'expense',
+            //     'slug' => 'exchange-gain-loss',
+            //     'remark' => 'Exchange gain or loss',
+            //     'is_main' => true,
+            // ],
             [
                 'name' => 'Ask My Accountant',
                 'local_name' => 'هزینه مشاوره حسابداری',
@@ -1257,7 +1322,149 @@ class Account extends Model
                 'remark' => '',
                 'is_main' => true,
             ],
+            [
+                'name' => 'Inventory Shrinkage & Wastage',
+                'local_name' => 'ضایعات و کسری انبار',
+                'number' => '9040',
+                'account_type_id' => \App\Models\Account\AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
+                'account_type_slug' => 'expense',
+                'slug' => 'inventory-shrinkage-and-wastage',
+                'remark' => 'Inventory shrinkage and wastage',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Inventory Adjustments',
+                'local_name' => 'تعدیلات موجودی',
+                'number' => '9050',
+                'account_type_id' => \App\Models\Account\AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
+                'account_type_slug' => 'expense',
+                'slug' => 'inventory-adjustments',
+                'remark' => 'Inventory adjustments',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Other Income',
+                'local_name' => 'درآمد دیگر',
+                'number' => '9060',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'income')->first()->id,
+                'account_type_slug' => 'income',
+                'slug' => 'other-income',
+                'remark' => '',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Foreign Exchange Gain',
+                'local_name' => 'سود تغیر ارز',
+                'parent_slug' => 'other-income',
+                'number' => '9070',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'income')->first()->id,
+                'account_type_slug' => 'income',
+                'slug' => 'fx-gain',
+                'remark' => '',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Foreign Exchange Loss',
+                'local_name' => 'ضرر تغیر ارز',
+                'parent_slug' => 'other-expenses',
+                'number' => '9080',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
+                'account_type_slug' => 'expense',
+                'slug' => 'fx-loss',
+                'remark' => '',
+                'is_main' => true,
+            ],
 
+            // Money received before there is anything to relieve. Overpaying a
+            // bill is routine here, so the excess is parked rather than
+            // refused — as a liability to the customer, an asset against the
+            // supplier. Settlement resolves both by slug.
+            [
+                'name' => 'Customer Advances',
+                'local_name' => 'پیش‌پرداخت مشتری',
+                'parent_slug' => 'current-liabilities',
+                'number' => '5085',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-liability')->first()->id,
+                'account_type_slug' => 'other-current-liability',
+                'slug' => 'customer-advances',
+                'remark' => 'Unapplied money received from customers',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Supplier Advances',
+                'local_name' => 'پیش‌پرداخت به تهیه‌کننده',
+                'parent_slug' => 'advances-prepaid-deposit',
+                'number' => '4075',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
+                'account_type_slug' => 'other-current-asset',
+                'slug' => 'supplier-advances',
+                'remark' => 'Money paid to suppliers ahead of a bill',
+                'is_main' => true,
+            ],
+
+            // Payroll control accounts.
+            //
+            // Withheld wage tax is a LIABILITY, not an expense: the gross salary
+            // is already the company's cost, and the withheld portion is money
+            // held on the employee's behalf until it is remitted to the MoF.
+            // The pre-existing 'salary-withholding-tax' (9602) is typed as an
+            // expense and is left alone — crediting it would double-count
+            // payroll cost.
+            [
+                'name' => 'Salary Tax Payable',
+                'local_name' => 'مالیات معاش قابل پرداخت',
+                'parent_slug' => 'current-liabilities',
+                'number' => '5084',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-liability')->first()->id,
+                'account_type_slug' => 'other-current-liability',
+                'slug' => 'salary-tax-payable',
+                'remark' => 'Wage tax withheld from employees, pending remittance',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Employee Advances',
+                'local_name' => 'پیش‌پرداخت کارمند',
+                'parent_slug' => 'advances-prepaid-deposit',
+                'number' => '4076',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
+                'account_type_slug' => 'other-current-asset',
+                'slug' => 'employee-advances',
+                'remark' => 'Salary paid to employees ahead of a payroll run',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Employee Loans Receivable',
+                'local_name' => 'قرضه کارمندان',
+                'parent_slug' => 'advances-prepaid-deposit',
+                'number' => '4077',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'other-current-asset')->first()->id,
+                'account_type_slug' => 'other-current-asset',
+                'slug' => 'employee-loans-receivable',
+                'remark' => 'Outstanding staff loans recovered through payroll',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Overtime Expense',
+                'local_name' => 'هزینه اضافه‌کاری',
+                'parent_slug' => 'payroll-expenses',
+                'number' => '9203',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
+                'account_type_slug' => 'expense',
+                'slug' => 'overtime-expense',
+                'remark' => 'Overtime paid to staff',
+                'is_main' => true,
+            ],
+            [
+                'name' => 'Staff Benefits Expense',
+                'local_name' => 'هزینه امتیازات کارمندان',
+                'parent_slug' => 'payroll-expenses',
+                'number' => '9204',
+                'account_type_id' => AccountType::withoutGlobalScopes()->where('slug', 'expense')->first()->id,
+                'account_type_slug' => 'expense',
+                'slug' => 'staff-benefits-expense',
+                'remark' => 'Non-salary staff benefits',
+                'is_main' => true,
+            ],
         ];
     }
 }

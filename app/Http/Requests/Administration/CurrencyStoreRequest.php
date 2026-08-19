@@ -3,12 +3,15 @@
 namespace App\Http\Requests\Administration;
 
 use App\Models\Administration\Currency;
+use App\Http\Requests\Concerns\BranchScopedUnique;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 
 class CurrencyStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     protected function prepareForValidation(): void
     {
         $currencyCode = $this->input('currency_code');
@@ -35,8 +38,8 @@ class CurrencyStoreRequest extends FormRequest
     {
         return [
             'currency_code' => ['required', 'string', Rule::in(array_keys(Currency::currencyList()))],
-            'name' => ['required', 'string', 'unique:currencies,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
-            'code' => ['required', 'string', 'unique:currencies,code,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'name' => ['required', 'string', $this->uniqueInBranch('currencies')],
+            'code' => ['required', 'string', $this->uniqueInBranch('currencies')],
             'symbol' => ['required', 'string'],
             'format' => ['required', 'string'],
             'exchange_rate' => ['required', 'numeric'],

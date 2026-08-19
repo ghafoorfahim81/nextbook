@@ -5,6 +5,7 @@
   "active_report": "ټاکل شوی راپور",
   "back_to_reports": "راپورونو ته بېرته",
   "export_excel": "اکسل ته صادرول",
+  "export_pdf": "پی‌ډي‌اف ته صادرول",
   "snapshot_note": "دا راپور د موجوده سټاک د انځور پر بنسټ جوړ شوی دی.",
   "company_name": "نام شرکت",
   "exported_on": "تاریخ خروجی",
@@ -112,7 +113,9 @@
     "total_outstanding": "ټول پاتې",
     "party_count": "د طرفونو شمېر",
     "total_debtor": "ټول ترلاسه کېدونکي",
-    "total_creditor": "ټول ورکړونکي"
+    "total_creditor": "ټول ورکړونکي",
+    "currency_count": "اسعار",
+    "total_home_equivalent": "ټولټال (بنسټیز اسعار)"
   },
   "columns": {
     "no": "شماره",
@@ -139,6 +142,7 @@
     "item": "توکی",
     "quantity": "مقدار",
     "unit_price": "واحد قیمت",
+    "discount": "تخفیف",
     "total_amount": "ټول مبلغ",
     "warehouse": "ګودام",
     "average_cost": "اوسط لګښت",
@@ -197,7 +201,10 @@
     "days_90_plus": "۹۰+ ورځې",
     "total_outstanding": "ټول پاتې",
     "party_name": "طرف",
-    "balance_type": "د بیلانس ډول"
+    "balance_type": "د بیلانس ډول",
+    "currency": "اسعار",
+    "home_equivalent": "د بنسټیزو اسعارو معادل",
+    "currency_name": "د اسعارو نوم"
   },
   "view_types": {
     "general": "عمومي لید",
@@ -247,6 +254,10 @@
     "cash_book": {
       "label": "نغدي کتاب",
       "description": "د ټاکل شوي نغدي یا بانک حساب روان بیلانس."
+    },
+    "cash_position_by_currency": {
+      "label": "د اسعارو له مخې نغدي حالت",
+      "description": "په هرو اسعارو کې د موجودو نغدو پیسو اندازه، د ټولو نغدي او بانکي حسابونو په مجموع کې."
     },
     "sales_report": {
       "label": "د خرڅلاو راپور",
@@ -390,5 +401,19 @@
       "unit_measures": "د اندازې واحدونه",
       "warehouses": "ګودامونه"
     }
+  },
+  "statement": "صورت حساب",
+  "statement_period": "صورت له {from} څخه تر {to} پورې",
+  "statement_up_to": "صورت تر {to} پورې",
+  "home_currency": "بنسټیز اسعار",
+  "home_equivalent_note": "د بنسټیزو اسعارو معادل ({code})، د هرې معاملې په خپل نرخ",
+  "aging": {
+    "title": "د پور د عمر څېړنه",
+    "current": "روان",
+    "days_30": "۱ تر ۳۰ ورځې",
+    "days_60": "۳۱ تر ۶۰ ورځې",
+    "days_90": "۶۱ تر ۹۰ ورځې",
+    "days_90_plus": "له ۹۰ ورځو ډېر",
+    "unapplied_credit": "نه ځانګړی شوی کریډیټ"
   }
 }

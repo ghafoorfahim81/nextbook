@@ -22,6 +22,12 @@ class CurrencySeeder extends Seeder
             if (!isset($temp['is_base_currency'])) {
                 $temp['is_base_currency'] = false;
             }
+            $exists = Currency::withoutGlobalScopes()
+                ->where('code', $key)
+                ->exists();
+            if ($exists) {
+                continue;
+            }
             Currency::create($temp);
         }
     }
