@@ -8,10 +8,21 @@ final class CacheKey
 {
     public static function forCompanyBranchLocale(Request $request, string $name): string
     {
-        $companyId = self::companyId($request) ?? 'none';
-        $branchId = self::branchId($request) ?? 'none';
-        $locale = app()->getLocale();
+        return self::build(
+            self::companyId($request) ?? 'none',
+            self::branchId($request) ?? 'none',
+            app()->getLocale(),
+            $name,
+        );
+    }
 
+    /**
+     * Build a lookup key from explicit parts.
+     *
+     * Used when clearing a key for a branch or locale other than the current one.
+     */
+    public static function build(string $companyId, string $branchId, string $locale, string $name): string
+    {
         return "inertia:company:{$companyId}:branch:{$branchId}:locale:{$locale}:{$name}";
     }
 

@@ -34,11 +34,11 @@ const printItem = (id) => {
 
 const columns = computed(() => ([
     { key: 'number', label: t('general.number'), sortable: true },
-    { key: 'ledger_name', label: t('ledger.supplier.supplier') },
-    { key: 'payment_mode_label', label: t('general.payment_mode') },
-    { key: 'bank_account_name', label: t('expense.bank_account') },
+    { key: 'ledger_name', label: t('ledger.supplier.supplier'), sortable: true },
+    { key: 'payment_mode_label', label: t('general.payment_mode'), sortable: true },
+    { key: 'bank_account_name', label: t('expense.bank_account'), sortable: true },
     { key: 'amount', label: t('general.amount'), sortable: true },
-    { key: 'currency_code', label: t('admin.currency.currency') },
+    { key: 'currency_code', label: t('admin.currency.currency'), sortable: true },
     { key: 'status', label: t('general.status'), sortable: true },
     { key: 'date', label: t('general.date'), sortable: true },
     {
@@ -72,6 +72,12 @@ const filterFields = computed(() => ([
         label: t('expense.bank_account'),
         type: 'select',
         options: (props.filterOptions?.bankAccounts || []).map((a) => ({ id: a.id, name: a.name })),
+    },
+    {
+        key: 'payment_mode',
+        label: t('general.payment_mode'),
+        type: 'select',
+        options: props.filterOptions?.paymentModes || [],
     },
     { key: 'date', label: t('general.date'), type: 'daterange' },
     {

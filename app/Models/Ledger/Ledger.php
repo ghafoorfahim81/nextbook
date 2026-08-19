@@ -2,12 +2,12 @@
 
 namespace App\Models\Ledger;
 
+use App\Enums\CreditTerms;
 use App\Models\Administration\Branch;
 use App\Models\Administration\Country;
 use App\Models\Administration\CustomerGroup;
 use App\Models\Administration\PaymentTerm;
 use App\Models\Administration\Province;
-use App\Enums\CreditTerms;
 use App\Models\Ledger\LedgerOpening;
 use App\Models\Sale\Sale;
 use App\Models\Receipt\Receipt;
@@ -19,6 +19,7 @@ use App\Traits\HasSorting;
 use App\Traits\HasUserAuditable;
 use App\Traits\HasUserTracking;
 use App\Traits\HasDynamicFilters;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -47,7 +48,7 @@ class Ledger extends Model
     {
         return Attribute::make(
             get: fn () => $this->photo
-                ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->photo)
+                ? Storage::disk('public')->url($this->photo)
                 : null,
         );
     }
@@ -74,8 +75,8 @@ class Ledger extends Model
                         })
                         ->join('transactions', 'transaction_lines.transaction_id', '=', 'transactions.id')
                         ->selectRaw('
-                            SUM(transaction_lines.debit * transactions.rate) as total_debit,
-                            SUM(transaction_lines.credit * transactions.rate) as total_credit
+                            SUM(transaction_lines.base_debit) as total_debit,
+                            SUM(transaction_lines.base_credit) as total_credit
                         ')
                         ->first();
 
@@ -89,24 +90,43 @@ class Ledger extends Model
                 $balanceNature = $netBalance >= 0 ? 'dr' : 'cr';
 
                 $natureFormat = balanceNatureFormat();
-                $locale = app()->getLocale();
-                $isSupplier = $this->type === 'supplier';
+
+                // `type` is cast to LedgerType, so it must be compared by value.
+                // Comparing the enum instance to a string with === is always
+                // false, which is how the supplier arm of this accessor silently
+                // stopped firing and every supplier read as a customer.
+                $type = $this->type instanceof LedgerType
+                    ? $this->type
+                    : LedgerType::tryFrom((string) $this->type);
+
+                // Parties the company owes normally sit on the credit side:
+                // an unpaid supplier bill and an accrued but undisbursed salary
+                // are the same shape. Customers are the only party type whose
+                // normal balance is a debit.
+                $normalNature = $type?->isPayableParty() ? 'cr' : 'dr';
+                $weOweThem = $balanceNature === 'cr';
+
                 // Format balance based on user preference
                 if ($natureFormat === 'with_nature') {
                     $balance = $balanceAmount . ' ' . $balanceNature;
                 } else {
-                    if($isSupplier) {
-                        $balance = $balanceNature === 'cr'
-                            ? __('general.owe_to') . ' ' . $balanceAmount
-                            : __('general.owe_you') . ' ' . $balanceAmount;
-                    } else {
-                        $balance = $netBalance >= 0
-                            ? __('general.owe_you') . ' ' . $balanceAmount
-                            : __('general.owe_to') . ' ' . $balanceAmount;
-                    }
+                    $balance = $weOweThem
+                        ? __('general.owe_to') . ' ' . $balanceAmount
+                        : __('general.owe_you') . ' ' . $balanceAmount;
                 }
 
-                $normalNature = $this->type === 'supplier' ? 'cr' : 'dr';
+                $meaning = match ($type) {
+                    LedgerType::SUPPLIER => $weOweThem
+                        ? "You owe {$balanceAmount} to this supplier"
+                        : "Supplier owes you {$balanceAmount}",
+                    LedgerType::EMPLOYEE => $weOweThem
+                        ? "You owe {$balanceAmount} to this employee"
+                        : "Employee owes you {$balanceAmount}",
+                    default => $weOweThem
+                        ? "You owe {$balanceAmount} to this customer"
+                        : "Customer owes you {$balanceAmount}",
+                };
+
                 return [
                     'balance' => $balanceAmount>0 ? $balance : 0,
                     'balance_amount' => $balanceAmount,
@@ -116,21 +136,12 @@ class Ledger extends Model
                     'total_debit' => $totalDebit,
                     'total_credit' => $totalCredit,
                     'net_balance' => $netBalance,
-                    'meaning' => $isSupplier
-                        ? ($balanceNature === 'cr'
-                            ? "You owe {$balanceAmount} to this supplier"
-                            : "Supplier owes you {$balanceAmount}")
-                        : ($balanceNature === 'dr'
-                            ? "Customer owes you {$balanceAmount}"
-                            : "You owe {$balanceAmount} to this customer"),
+                    'meaning' => $meaning,
                     'account_type' => $this->type,
-                    'balance_type' => $isSupplier
-                    ? ($balanceNature === 'cr'
-                        ? '-'
-                        : '+')
-                    : ($balanceNature === 'dr'
-                        ? '-'
-                        : '+'),
+                    // Sign from the company's point of view: a party we owe and a
+                    // party who owes us read as negative and positive regardless
+                    // of type, so this needs no per-type arm at all.
+                    'balance_type' => $weOweThem ? '-' : '+',
                     'payable_amount' => $balanceNature === 'cr' ? $balanceAmount : 0,
                     'receivable_amount' => $balanceNature === 'dr' ? $balanceAmount : 0,
                 ];
@@ -185,8 +196,8 @@ class Ledger extends Model
             'province_id' => 'string',
             'credit_limit' => 'double',
             'credit_limit_enabled' => 'boolean',
-            'discount' => 'double',
             'credit_terms' => CreditTerms::class,
+            'discount' => 'double',
             'created_by' => 'string',
             'updated_by' => 'string',
             'branch_id' => 'string',
@@ -200,11 +211,58 @@ class Ledger extends Model
         'name',
         'code',
         'currency_id',
+        'group_id',
+        'payment_term_id',
+        'country_id',
+        'province_id',
+        'balance_type',
         'created_by',
     ];
 
+    /**
+     * balance_type is not a column — it is the sign of the party's net posting
+     * total, the same question the Party Balance Summary report asks. Handled
+     * here so the list filter and the report agree on what "debtor" means.
+     */
+    protected function dynamicFilterHandlers(): array
+    {
+        return [
+            'balance_type' => function (Builder $query, $value): void {
+                $query->whereBalanceType((string) $value);
+            },
+        ];
+    }
+
+    /**
+     * Narrow to parties who owe you (debtor) or who you owe (creditor).
+     *
+     * The subquery mirrors scopeWithStatementTotals() line for line, so the
+     * balance shown in the row is the balance that decided whether the row is
+     * here at all. The 0.005 guard keeps rounding dust out of both buckets.
+     */
+    public function scopeWhereBalanceType(Builder $query, string $type): Builder
+    {
+        if (! in_array($type, ['debtor', 'creditor'], true)) {
+            return $query;
+        }
+
+        $net = "(SELECT COALESCE(SUM(tl.base_debit - tl.base_credit), 0)
+                   FROM transaction_lines tl
+                   JOIN transactions t ON t.id = tl.transaction_id
+                  WHERE tl.ledger_id = ledgers.id
+                    AND t.branch_id = ledgers.branch_id
+                    AND tl.deleted_at IS NULL
+                    AND t.deleted_at IS NULL)";
+
+        return $type === 'debtor'
+            ? $query->whereRaw("{$net} > 0.005")
+            : $query->whereRaw("{$net} < -0.005");
+    }
+
     public function scopeWithStatementTotals(Builder $query): Builder
     {
+        // selectSub() would otherwise replace the implicit `*`, leaving the model
+        // with only the two aggregates when the caller selected no columns.
         if (is_null($query->getQuery()->columns)) {
             $query->select($query->qualifyColumn('*'));
         }
@@ -218,11 +276,11 @@ class Ledger extends Model
 
         return $query
             ->selectSub(
-                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.debit * transactions.rate), 0)'),
+                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.base_debit), 0)'),
                 'statement_total_debit'
             )
             ->selectSub(
-                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.credit * transactions.rate), 0)'),
+                (clone $lineTotals)->selectRaw('COALESCE(SUM(transaction_lines.base_credit), 0)'),
                 'statement_total_credit'
             );
     }
@@ -260,6 +318,16 @@ class Ledger extends Model
     public function province(): BelongsTo
     {
         return $this->belongsTo(Province::class);
+    }
+
+    /**
+     * A ledger holds one opening per currency: `transactions.currency_id` is a
+     * single currency for the whole voucher, so a customer owing 100 USD and
+     * 10,000 AFN is two openings, each pointing at its own posted transaction.
+     */
+    public function openings()
+    {
+        return $this->morphMany(LedgerOpening::class, 'ledgerable');
     }
 
     public function opening()

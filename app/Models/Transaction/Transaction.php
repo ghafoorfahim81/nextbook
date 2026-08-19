@@ -34,9 +34,11 @@ class Transaction extends Model
         'voucher_number',
         'status',
         'currency_id',
+        'base_currency_id',
         'reference_type',
         'reference_id',
         'rate',
+        'is_cross_currency',
         'date',
         'remark',
         'posted_at',
@@ -64,7 +66,9 @@ class Transaction extends Model
             'transactionable_type' => 'string',
             'transactionable_id' => 'string',
             'currency_id' => 'string',
+            'base_currency_id' => 'string',
             'rate' => 'float',
+            'is_cross_currency' => 'boolean',
             'date' => 'date',
             'posted_at' => 'datetime',
             'reversed_at' => 'datetime',
@@ -80,6 +84,11 @@ class Transaction extends Model
     public function currency(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Administration\Currency::class);
+    }
+
+    public function baseCurrency(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Administration\Currency::class, 'base_currency_id');
     }
 
     public function lines(): HasMany

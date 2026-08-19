@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Expense;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ExpenseCategoryStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -14,7 +17,7 @@ class ExpenseCategoryStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', 'unique:expense_categories,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'name' => ['required', 'string', 'max:255', $this->uniqueInBranch('expense_categories')],
             'remarks' => ['nullable', 'string'],
             'is_active' => ['boolean'],
         ];

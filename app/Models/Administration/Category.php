@@ -138,4 +138,17 @@ class Category extends Model
     {
         return $this->hasMany(\App\Models\Inventory\Item::class, 'category_id');
     }
+
+    /**
+     * Starter categories provisioned for every new branch.
+     *
+     * Item categories are business-specific, so a new branch only gets a
+     * catch-all to file items under until the user defines their own.
+     */
+    public static function defaultCategories(): array
+    {
+        return [
+            ['name' => 'General', 'remark' => 'Default category for uncategorised items'],
+        ];
+    }
 }

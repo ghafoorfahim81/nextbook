@@ -2,11 +2,16 @@
 
 namespace App\Http\Requests\Ledger;
 
+use App\Enums\CreditTerms;
+use App\Http\Requests\Ledger\Concerns\ValidatesLedgerOpenings;
+use App\Http\Requests\Ledger\Concerns\ValidatesPhoneNumbers;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class LedgerStoreRequest extends FormRequest
 {
+    use ValidatesLedgerOpenings, ValidatesPhoneNumbers;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -32,7 +37,7 @@ class LedgerStoreRequest extends FormRequest
             ],
             'address' => ['nullable', 'string'],
             'contact_person' => ['nullable', 'string'],
-            'phone_no' => ['nullable', 'digits_between:1,10'],
+            'phone_no' => $this->phoneRules(),
             'email' => ['nullable', 'email'],
             'currency_id' => ['nullable', 'string', 'exists:currencies,id'],
             'group_id' => ['nullable', 'string', 'exists:customer_groups,id'],
@@ -41,17 +46,22 @@ class LedgerStoreRequest extends FormRequest
             'province_id' => ['nullable', 'string', 'exists:provinces,id'],
             'credit_limit' => ['nullable', 'numeric', 'min:0'],
             'credit_limit_enabled' => ['nullable', 'boolean'],
-            'credit_terms' => ['nullable', 'in:strict,warning,flexible'],
+            'credit_terms' => ['nullable', Rule::enum(CreditTerms::class)],
+            'discount' => ['nullable', 'numeric', 'min:0'],
+            'whatsapp_number' => $this->phoneRules(),
             'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png,webp', 'max:10240'],
-            'discount' => ['nullable', 'numeric', 'min:0'],
-            'whatsapp_number' => ['nullable', 'digits_between:1,10'],
-            'rate' => ['nullable', 'numeric'],
-            'opening_currency_id' => ['nullable', 'string', 'exists:currencies,id'], 
-            'amount' => ['nullable', 'numeric'],
-            'remark' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
+            ...$this->openingRules(),
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return $this->phoneMessages();
     }
 }

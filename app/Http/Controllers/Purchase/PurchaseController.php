@@ -9,7 +9,8 @@ use App\Http\Resources\Purchase\PurchaseResource;
 use App\Models\Purchase\Purchase;
 use App\Models\Purchase\PurchaseOrder;
 use App\Enums\PurchaseOrderStatus;
-use App\Services\BillAllocationService;
+use App\Services\Accounting\PaymentStatusService;
+use App\Services\Accounting\SettlementService;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Warehouse;
@@ -35,6 +36,7 @@ use App\Services\DateConversionService;
 use App\Services\ActivityLogService;
 use App\Services\SpreadsheetExportService;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use App\Support\BranchContext;
 class PurchaseController extends Controller
 {
     private $dateConversionService;
@@ -240,7 +242,7 @@ class PurchaseController extends Controller
                 ];
 
             }
-            $glAccounts = Cache::get('gl_accounts');
+            $glAccounts = BranchContext::glAccounts();
             $discountTotal = $request->input('discount_total', 0);
 
             if($discountTotal > 0) {
@@ -329,7 +331,7 @@ class PurchaseController extends Controller
                 lines: $lines
             );
 
-            app(BillAllocationService::class)->recalculatePurchasePaymentStatuses([$purchase->id]);
+            app(PaymentStatusService::class)->recalculatePurchases([$purchase->id]);
             $activityLogService->logCreate(
                 reference: $purchase,
                 module: 'purchase',
@@ -500,7 +502,7 @@ class PurchaseController extends Controller
 
             $lines = [];
             $stockPayloads = [];
-            $glAccounts = Cache::get('gl_accounts');
+            $glAccounts = BranchContext::glAccounts();
             $discountTotal = (float) $request->input('discount_total', 0);
             // See store(): GL lines stay in the transaction currency, stock cost is home currency.
             $rate = $this->transactionRate($validated);
@@ -632,7 +634,7 @@ class PurchaseController extends Controller
                 $stockService->reserve($payload);
             }
 
-            app(BillAllocationService::class)->recalculatePurchasePaymentStatuses([$purchase->id]);
+            app(PaymentStatusService::class)->recalculatePurchases([$purchase->id]);
             $afterState = [
                 'number' => $purchase->number,
                 'supplier_id' => $purchase->supplier_id,
@@ -1260,13 +1262,18 @@ class PurchaseController extends Controller
         ]);
     }
 
-    public function openBills(Request $request, BillAllocationService $billAllocationService)
+    /**
+     * Open payables for a supplier. Mirror of SaleController::openBills().
+     */
+    public function openBills(Request $request, SettlementService $settlements)
     {
         $ledgerId = (string) $request->query('ledger_id', '');
-        $excludePaymentId = (string) $request->query('exclude_payment_id', '');
+        $currencyId = (string) $request->query('currency_id', '');
 
         return response()->json([
-            'data' => $ledgerId ? $billAllocationService->openPurchasesForSupplier($ledgerId, $excludePaymentId ?: null) : [],
+            'data' => $ledgerId
+                ? $settlements->openItems($ledgerId, $currencyId ?: null)
+                : [],
         ]);
     }
 }

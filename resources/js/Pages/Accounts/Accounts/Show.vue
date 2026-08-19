@@ -2,7 +2,7 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { router } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import { Button } from '@/Components/ui/button';
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue';
 import { ArrowLeft, SquarePen } from 'lucide-vue-next';
@@ -10,10 +10,15 @@ import { useAuth } from '@/composables/useAuth';
 
 const { t } = useI18n();
 const { can } = useAuth();
+const page = usePage();
 
 const props = defineProps({
     account: { type: Object, required: true },
     transactions: { type: [Array, Object], required: false, default: () => [] },
+    /** Native totals per currency, from AccountController::currencyBalances(). */
+    currencyBalances: { type: Array, required: false, default: () => [] },
+    /** The whole account in its own currency, from AccountController::convertedBalance(). */
+    convertedBalance: { type: Object, required: false, default: null },
     opening: { type: Object, required: false, default: null },
     balanceNatureFormat: { type: String, default: null },
 });
@@ -52,21 +57,23 @@ const transactionRows = computed(() => {
     });
 });
 
+// Amounts stay in the transaction's own currency: a USD cash account holds
+// dollars, not their home-currency equivalent. The currency and rate columns
+// carry the conversion detail.
 const transactionTableRows = computed(() =>
-    transactionRows.value.map((row) => {
-        const rate = Number(row.rate || 1);
-        return {
-            id: row.id,
-            date: row.date,
-            reference_number: row.transaction_number,
-            description: row.description || row.remark || '-',
-            status: row.status,
-            debit: Number(row.type === 'debit' ? row.amount * rate : 0),
-            credit: Number(row.type === 'credit' ? row.amount * rate : 0),
-            currency: row.currency || '',
-            rate,
-        };
-    })
+    transactionRows.value.map((row) => ({
+        id: row.id,
+        date: row.date,
+        reference_number: row.transaction_number,
+        description: row.description || row.remark || '-',
+        status: row.status,
+        // Amounts stay in the currency they were posted in; `rate` is its own
+        // column, so multiplying here would report the base value twice over.
+        debit: Number(row.type === 'debit' ? row.amount : 0),
+        credit: Number(row.type === 'credit' ? row.amount : 0),
+        currency: row.currency || '',
+        rate: Number(row.rate || 1),
+    }))
 );
 
 const transactionColumns = computed(() => [
@@ -80,32 +87,47 @@ const transactionColumns = computed(() => [
     { key: 'debit', label: t('general.debit'), type: 'money', align: 'right' },
 ]);
 
-const statement = computed(() => {
-    const totals = transactionRows.value.reduce(
-        (carry, txn) => {
-            const amount = Number(txn.amount || 0) * Number(txn.rate || 1);
-            if (txn.type === 'debit') carry.debit += amount;
-            else if (txn.type === 'credit') carry.credit += amount;
-            return carry;
-        },
-        { debit: 0, credit: 0 }
-    );
-    const netBalance = totals.debit - totals.credit;
-    return {
-        total_debit: totals.debit,
-        total_credit: totals.credit,
-        balance: Math.abs(netBalance),
-        balance_nature: netBalance >= 0 ? 'dr' : 'cr',
-    };
-});
+const homeCurrencyCode = computed(() => page.props?.homeCurrency?.code
+    || props.currencyBalances.find((row) => row.is_base_currency)?.currency_code
+    || '');
 
-const balanceDisplay = computed(() => {
-    const amount = Number(statement.value.balance || 0);
-    const nature = statement.value.balance_nature;
+// Currencies never net against each other, so the summary keeps one block per
+// currency the account has moved in instead of one converted total.
+const currencySections = computed(() => (props.currencyBalances.length
+    ? props.currencyBalances
+    : [{
+        currency_id: 'none',
+        currency_code: homeCurrencyCode.value,
+        currency_name: '',
+        is_base_currency: true,
+        total_debit: 0,
+        total_credit: 0,
+        balance: 0,
+        balance_nature: null,
+        home_equivalent: 0,
+    }]));
+
+// Only meaningful once the account mixes currencies; with a single one it just
+// repeats the block above it.
+const homeEquivalent = computed(() => (props.currencyBalances.length > 1
+    ? props.currencyBalances.reduce((total, row) => total + Number(row.home_equivalent || 0), 0)
+    : null));
+
+const balanceDisplay = (section) => {
+    const amount = Number(section.balance || 0);
+    const nature = section.balance_nature;
     if (!amount || !nature) return formatAmount(0);
     if (props.balanceNatureFormat === 'without_nature') return formatAmount(amount);
     return `${formatAmount(amount)} ${nature.toUpperCase()}`;
-});
+};
+
+// The account read as a whole, in the currency it is held in. Only worth a row
+// once a second currency is in play; with one it repeats the block above it.
+const convertedTotal = computed(() => (currencySections.value.length > 1 ? props.convertedBalance : null));
+
+const convertedTotalDisplay = computed(() => (convertedTotal.value
+    ? balanceDisplay({ balance: convertedTotal.value.amount, balance_nature: convertedTotal.value.balance_nature })
+    : ''));
 
 const exportUrl = computed(() =>
     accountData.value?.id
@@ -168,21 +190,47 @@ const exportUrl = computed(() =>
                             <div class="text-xs text-muted-foreground mt-1">{{ accountData.number }}</div>
                             <div class="mt-2 text-xs text-muted-foreground/80">{{ t('account.account') }}</div>
                         </div>
-                        <div class="w-full bg-background border border-border rounded-xl overflow-hidden mt-4">
-                            <div class="flex flex-col divide-y divide-border">
+                        <div class="w-full bg-background border border-border rounded-xl overflow-hidden mt-4 divide-y divide-border">
+                            <div v-for="section in currencySections" :key="section.currency_id" class="flex flex-col divide-y divide-border">
+                                <div class="flex items-center gap-2 px-5 py-2 bg-muted/40">
+                                    <span class="text-sm font-semibold text-foreground">{{ section.currency_code }}</span>
+                                    <span
+                                        v-if="section.is_base_currency"
+                                        class="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                                    >
+                                        {{ t('admin.currency.home_currency') }}
+                                    </span>
+                                    <span class="truncate text-xs text-muted-foreground">{{ section.currency_name }}</span>
+                                </div>
                                 <div class="flex items-center px-5 py-2">
                                     <div class="flex-1 text-base text-foreground">{{ t('general.credit') }}</div>
-                                    <div class="text-base font-medium text-green-600">{{ formatAmount(statement.total_credit) }}</div>
+                                    <div class="text-base font-medium text-green-600">{{ formatAmount(section.total_credit) }}</div>
                                 </div>
                                 <div class="flex items-center px-5 py-2">
                                     <div class="flex-1 text-base text-foreground">{{ t('general.debit') }}</div>
-                                    <div class="text-base font-medium text-green-600">{{ formatAmount(statement.total_debit) }}</div>
+                                    <div class="text-base font-medium text-green-600">{{ formatAmount(section.total_debit) }}</div>
                                 </div>
                                 <div class="flex items-center px-5 py-2">
                                     <div class="flex-1 text-base text-foreground">{{ t('general.balance') }}</div>
-                                    <div class="text-base font-medium" :class="statement.balance_nature === 'cr' ? 'text-green-600' : 'text-primary'">
-                                        <span dir="ltr" class="inline-block text-left tabular-nums">{{ balanceDisplay }}</span>
+                                    <div class="text-base font-medium" :class="section.balance_nature === 'cr' ? 'text-green-600' : 'text-primary'">
+                                        <span dir="ltr" class="inline-block text-left tabular-nums">{{ balanceDisplay(section) }}</span>
                                     </div>
+                                </div>
+                            </div>
+                            <div v-if="convertedTotal" class="flex items-center gap-3 px-5 py-2 bg-muted/40">
+                                <div class="flex-1 text-base font-medium text-foreground">
+                                    {{ t('general.balance') }} ({{ convertedTotal.currency_code }})
+                                </div>
+                                <div class="text-base font-semibold" :class="convertedTotal.balance_nature === 'cr' ? 'text-green-600' : 'text-primary'">
+                                    <span dir="ltr" class="inline-block text-left tabular-nums">{{ convertedTotalDisplay }}</span>
+                                </div>
+                            </div>
+                            <div v-if="homeEquivalent !== null" class="flex items-center gap-3 px-5 py-2 bg-muted/40">
+                                <div class="flex-1 text-xs text-muted-foreground">
+                                    {{ t('report.home_equivalent_note', { code: homeCurrencyCode }) }}
+                                </div>
+                                <div class="text-sm font-medium tabular-nums" :class="homeEquivalent >= 0 ? 'text-primary' : 'text-green-600'">
+                                    {{ formatAmount(Math.abs(homeEquivalent)) }}
                                 </div>
                             </div>
                         </div>

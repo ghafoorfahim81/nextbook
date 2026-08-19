@@ -130,11 +130,21 @@ export function useSearchResources() {
             params.append('limit', limit)
             // Add fields as array format: fields[]=name&fields[]=code
             searchFields.forEach(field => params.append('fields[]', field))
-            // Add additional params
+            // Add additional params. Arrays are appended as `key[]=a&key[]=b`
+            // so PHP receives a real array — a bare append() would stringify
+            // ['customer','supplier'] to "customer,supplier", which no backend
+            // filter can match.
             Object.entries(additionalParams || {}).forEach(([key, value]) => {
-                if (value !== undefined && value !== null && value !== '') {
-                    params.append(key, value)
+                if (value === undefined || value === null || value === '') return
+
+                if (Array.isArray(value)) {
+                    value
+                        .filter(v => v !== undefined && v !== null && v !== '')
+                        .forEach(v => params.append(`${key}[]`, v))
+                    return
                 }
+
+                params.append(key, value)
             })
 
             const response = await fetch(`/search/${resourceType}?${params.toString()}`, {

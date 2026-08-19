@@ -2,11 +2,14 @@
 
 namespace App\Http\Requests\Account;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Enums\TransactionType;
 class AccountUpdateRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -24,11 +27,11 @@ class AccountUpdateRequest extends FormRequest
         $chartOfAccount = $this->route('chart_of_account');
 
         return [
-            'name' => ['required', 'string', 'max:256', Rule::unique('accounts')->ignore($chartOfAccount->id)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
-            'local_name' => ['nullable', 'string', 'max:256', Rule::unique('accounts')->ignore($chartOfAccount->id)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
-            'number' => ['required', 'string', 'max:256', Rule::unique('accounts')->ignore($chartOfAccount->id)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
+            'name' => ['required', 'string', 'max:256', $this->uniqueInBranch('accounts', $chartOfAccount->id)],
+            'local_name' => ['nullable', 'string', 'max:256', $this->uniqueInBranch('accounts', $chartOfAccount->id)],
+            'number' => ['required', 'string', 'max:256', $this->uniqueInBranch('accounts', $chartOfAccount->id)],
             'account_type_id' => ['required', 'string', 'exists:account_types,id'],
-            'slug' => ['nullable', 'string', 'max:256', Rule::unique('accounts')->ignore($chartOfAccount->id)->whereNull('deleted_at')->where('branch_id', $this->branch_id)],
+            'slug' => ['nullable', 'string', 'max:256', $this->uniqueInBranch('accounts', $chartOfAccount->id)],
             'remark' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
             'is_main' => ['nullable', 'boolean'],

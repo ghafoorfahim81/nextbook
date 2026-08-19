@@ -60,6 +60,8 @@ return [
     'items_saved_successfully' => 'آیتم‌ها با موفقیت ذخیره شدند.',
 
     'cannot_delete_main_warehouse' => 'شما نمی‌توانید انبار اصلی را حذف کنید.',
+    'main_warehouse' => 'گدام مرکزی',
+    'cash_customer' => 'مشتری نقدی',
     'cannot_delete_main_branch' => 'شما نمی‌توانید شعبه اصلی را حذف کنید.',
     'cannot_delete_main_account' => 'شما نمی‌توانید حساب اصلی را حذف کنید.',
     'cannot_delete_own_account' => 'شما نمی‌توانید حساب خودتان را حذف کنید.',
@@ -112,4 +114,5 @@ return [
     'active' => 'فعال',
     'inactive' => 'غیرفعال',
     'cannot_post_insufficient_stock' => 'ثبت ناممکن است: موجودی کافی برای :item وجود ندارد. ممکن است در فاکتور دیگری فروخته شده باشد.',
+    'invalid_phone_number' => 'یک شماره تلفن بین‌المللی معتبر وارد کنید (۶ تا ۱۵ رقم، شامل کود کشور).',
 ];

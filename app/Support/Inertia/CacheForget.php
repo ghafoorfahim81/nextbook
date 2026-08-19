@@ -32,6 +32,32 @@ final class CacheForget
         );
     }
 
+    /**
+     * Forget a lookup key in every branch context and locale.
+     *
+     * Lookup keys carry the acting branch and locale, so clearing only the current
+     * one leaves the same data stale for users sitting in another branch or reading
+     * the app in another language. Used for data that is shared across branches —
+     * the branch list behind the switcher, for instance.
+     */
+    public static function lookupEverywhere(Request $request, string $name): void
+    {
+        $companyId = CacheKey::companyId($request) ?? 'none';
+
+        $branchIds = \App\Models\Administration\Branch::query()
+            ->withTrashed()
+            ->pluck('id')
+            ->push('none');
+
+        foreach ($branchIds as $branchId) {
+            foreach (\App\Enums\Locale::values() as $locale) {
+                \Illuminate\Support\Facades\Cache::forget(
+                    CacheKey::build($companyId, (string) $branchId, $locale, $name)
+                );
+            }
+        }
+    }
+
     public static function user(Request $request, string $name): void
     {
         \Illuminate\Support\Facades\Cache::forget(

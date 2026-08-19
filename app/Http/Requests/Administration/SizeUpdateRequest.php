@@ -2,11 +2,14 @@
 
 namespace App\Http\Requests\Administration;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class SizeUpdateRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -18,8 +21,8 @@ class SizeUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', Rule::unique('sizes')->ignore($this->route('size'))->whereNull('deleted_at')->where('branch_id', $this->user()->current_branch_id)],
-            'code' => ['required', 'string', Rule::unique('sizes')->ignore($this->route('size'))->whereNull('deleted_at')],
+            'name' => ['required', 'string', $this->uniqueInBranch('sizes', $this->route('size'))],
+            'code' => ['required', 'string', $this->uniqueInBranch('sizes', $this->route('size'))],
         ];
     }
 }

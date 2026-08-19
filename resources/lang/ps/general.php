@@ -60,6 +60,8 @@ return [
     'items_saved_successfully' => 'Items saved successfully.',
 
     'cannot_delete_main_warehouse' => 'You cannot delete the main warehouse.',
+    'main_warehouse' => 'مرکزي ګدام',
+    'cash_customer' => 'نغدي پیرودونکی',
     'cannot_delete_main_branch' => 'You cannot delete the main branch.',
     'cannot_delete_main_account' => 'You cannot delete the main account.',
     'cannot_delete_own_account' => 'You cannot delete your own account.',
@@ -92,4 +94,5 @@ return [
     'landed_cost_freight_customs_clearing_account_could_not_be_resolved' => 'Freight/customs clearing account could not be resolved.',
     'landed_cost_home_currency_could_not_be_resolved' => 'Home currency could not be resolved.',
     'cannot_post_insufficient_stock' => 'ثبتول ناشونی: د :item لپاره کافي موجودي نشته. کیدای شي په بل انوایس کې پلورل شوی وي.',
+    'invalid_phone_number' => 'یوه سمه نړیواله تلیفون شمېره ولیکئ (۶ تر ۱۵ عددونه، د هېواد کود په ګډون).',
 ];

@@ -10,16 +10,23 @@ import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextTextarea from '@/Components/next/NextTextarea.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
-import BillAllocationDialog from '@/Components/next/BillAllocationDialog.vue'
+import SettlementDialog from '@/Components/next/SettlementDialog.vue'
 import FormPageToolbar from '@/Components/FormPageToolbar.vue'
 import FormPreferencesPanel from '@/Components/FormPreferencesPanel.vue'
 import { Spinner } from '@/Components/ui/spinner'
+import { formatLedgerBalance } from '@/utils/balanceNature'
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
 
 const page = usePage()
+const balanceNatureFormat = computed(() => page.props.balanceNatureFormat || 'with_nature')
+// Every party — see Payments/Create.vue.
 const ledgers = computed(() => page.props.ledgers?.data || [])
-const accounts = computed(() => page.props.accounts?.data || [])
+// Money in and out of a voucher always lands on a cash or bank account. The
+// shared `accounts` prop is the whole chart, so the box would otherwise offer
+// revenue and payable accounts that would post a nonsense entry if picked.
+const accounts = computed(() => (page.props.accounts?.data || [])
+  .filter((account) => account.account_type?.slug === 'cash-or-bank'))
 const currencies = computed(() => page.props.currencies?.data || [])
 const paymentModes = computed(() => page.props.paymentModes || [])
 // Single reactive copy of the receipt/payment preferences so the panel and form stay in sync live.
@@ -30,8 +37,8 @@ const showPreferencesPanel = ref(false)
 
 const { loading: lazyLoading } = useLazyProps(page.props, ['ledgers', 'accounts'])
 const billLoading = ref(false)
+useLazyProps(page.props, ['ledgers', 'accounts'])
 const showBillDialog = ref(false)
-const billOptions = ref([])
 const initialized = ref(false)
 
 const form = useForm({
@@ -51,6 +58,10 @@ const form = useForm({
   narration: '',
   allocations: [],
   attachments: [],
+  applied_cash: [],
+  // The voucher this receipt posted. The settle dialog excludes its own
+  // applications so the documents it paid show as open again.
+  transaction_id: '',
 })
 const existingAttachments = ref([])
 const removeExistingAttachment = (id) => {
@@ -84,9 +95,11 @@ onMounted(async () => {
   form.rate = r.rate
   form.cheque_no = r.cheque_no
   form.narration = r.narration
-  form.allocations = (r.purchase_payments || []).map((allocation) => ({
-    bill_id: allocation.purchase_id,
-    amount: allocation.amount,
+  form.transaction_id = r.transaction_id || ''
+  // Settlements point at the payable LINE they relieved, not at a purchase.
+  form.allocations = (r.settlements || []).map((settlement) => ({
+    target_line_id: settlement.target_line_id,
+    amount: settlement.amount_applied,
   }))
   form.selected_ledger = ledgers.value.find(l => l.id === r.ledger_id) || r.ledger || null
   form.selected_currency = currencies.value.find(c => c.id === r.currency_id) || null
@@ -114,37 +127,17 @@ function handleSelectChange(field, value) {
   }
 }
 
-const loadBills = async () => {
-  if (!form.ledger_id) {
-    billOptions.value = []
-    return
-  }
-
-  billLoading.value = true
-  try {
-    const { data } = await axios.get('/purchases/open-bills', {
-      params: {
-        ledger_id: form.ledger_id,
-        exclude_payment_id: form.id,
-      },
-    })
-    billOptions.value = data?.data || []
-  } finally {
-    billLoading.value = false
-  }
-}
-
-const openBillDialog = async () => {
+const openBillDialog = () => {
   if (form.payment_mode !== 'bill_by_bill' || !form.ledger_id) {
     return
   }
 
-  await loadBills()
   showBillDialog.value = true
 }
 
-const handleBillAllocationsSave = (allocations) => {
+const handleSettlementSave = ({ allocations, applied_cash }) => {
   form.allocations = allocations
+  form.applied_cash = applied_cash
 }
 
 watch([() => form.ledger_id, () => form.payment_mode], async ([ledgerId, paymentMode], [prevLedgerId, prevPaymentMode]) => {
@@ -154,21 +147,18 @@ watch([() => form.ledger_id, () => form.payment_mode], async ([ledgerId, payment
 
   if (paymentMode !== 'bill_by_bill') {
     form.allocations = []
+    form.applied_cash = []
     showBillDialog.value = false
     return
   }
 
   if (ledgerId && (ledgerId !== prevLedgerId || paymentMode !== prevPaymentMode)) {
-    await openBillDialog()
+    openBillDialog()
   }
 })
 
 function oldBalanceText() {
-  const s = form.selected_ledger?.statement
-  if (!s) return ''
-  return s.balance > 0
-    ? `${s.balance} ${String(s.balance_nature || '').toUpperCase()}`
-    : `${s.balance}`
+  return formatLedgerBalance(form.selected_ledger?.statement, balanceNatureFormat.value, t)
 }
 
 function finalizePrint(page) {
@@ -259,6 +249,7 @@ useFormGuard(form)
             :error="form.errors?.ledger_id"
             :searchable="true"
             resource-type="ledgers"
+            :search-options="{ types: ['customer', 'supplier'] }"
             :search-fields="['name', 'email', 'phone_no']"
           />
           <NextInput is-required v-if="rpFields.number" :placeholder="t('general.enter', { text: t('general.number') })" :error="form.errors?.number" v-model="form.number" type="text" :label="t('general.number')" />
@@ -349,17 +340,20 @@ useFormGuard(form)
         </button>
         <button type="button" class="btn px-4 py-2 rounded-md border" @click="() => $inertia.visit('/payments')">{{ t('general.cancel') }}</button>
       </div>
-      <BillAllocationDialog
+      <SettlementDialog
         :open="showBillDialog"
-        :title="t('general.allocate_bills') || 'Allocate bills'"
-        bill-label="Purchase"
+        direction="out"
+        :ledger-id="form.ledger_id"
+        :currency-id="form.currency_id"
+        :currency-code="form.selected_currency?.code || ''"
         :amount="Number(form.amount || 0)"
-        :bills="billOptions"
-        :loading="billLoading"
+        :rate="Number(form.rate || 1)"
         :allocations="form.allocations"
+        :applied-cash="form.applied_cash"
+        :exclude-transaction-id="form.transaction_id"
         @update:open="showBillDialog = $event"
         @update:allocations="(value) => form.allocations = value"
-        @save="handleBillAllocationsSave"
+        @save="handleSettlementSave"
       />
     </form>
   </AppLayout>

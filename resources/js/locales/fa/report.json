@@ -5,6 +5,7 @@
   "active_report": "گزارش انتخاب‌شده",
   "back_to_reports": "بازگشت به گزارشات",
   "export_excel": "خروجی اکسل",
+  "export_pdf": "خروجی پی‌دی‌اف",
   "snapshot_note": "این گزارش بر اساس وضعیت فعلی موجودی تهیه شده است.",
   "company_name": "نام شرکت",
   "exported_on": "تاریخ خروجی",
@@ -112,7 +113,9 @@
     "total_outstanding": "مجموع معوق",
     "party_count": "تعداد طرف حساب",
     "total_debtor": "مجموع طلب",
-    "total_creditor": "مجموع بدهی"
+    "total_creditor": "مجموع بدهی",
+    "currency_count": "تعداد ارزها",
+    "total_home_equivalent": "مجموع (ارز پایه)"
   },
   "columns": {
     "no": "شماره",
@@ -140,6 +143,7 @@
     "quantity": "مقدار",
     "unit_measure": "واحد اندازه گیری",
     "unit_price": "قیمت واحد",
+    "discount": "تخفیف",
     "total_amount": "مبلغ کل",
     "warehouse": "انبار",
     "average_cost": "میانگین قیمت تمام‌شده",
@@ -198,7 +202,10 @@
     "days_90_plus": "۹۰+ روز",
     "total_outstanding": "مجموع معوق",
     "party_name": "طرف حساب",
-    "balance_type": "نوع مانده"
+    "balance_type": "نوع مانده",
+    "currency": "ارز",
+    "home_equivalent": "معادل ارز پایه",
+    "currency_name": "نام ارز"
   },
   "view_types": {
     "general": "عمومی",
@@ -248,6 +255,10 @@
     "cash_book": {
       "label": "کتاب نقدی",
       "description": "مانده جاری برای حساب نقد یا بانک انتخاب‌شده."
+    },
+    "cash_position_by_currency": {
+      "label": "وضعیت نقدینگی بر اساس ارز",
+      "description": "مقدار نقدینگی موجود در هر ارز، در مجموع تمام حساب‌های نقد و بانک."
     },
     "sales_report": {
       "label": "گزارش فروش",
@@ -391,5 +402,19 @@
       "unit_measures": "واحدهای اندازه‌گیری",
       "warehouses": "انبارها"
     }
+  },
+  "statement": "صورت‌حساب",
+  "statement_period": "صورت‌حساب از {from} تا {to}",
+  "statement_up_to": "صورت‌حساب تا {to}",
+  "home_currency": "ارز پایه",
+  "home_equivalent_note": "معادل به ارز پایه ({code})، بر اساس نرخ هر معامله",
+  "aging": {
+    "title": "تحلیل سنی مانده",
+    "current": "جاری",
+    "days_30": "۱ تا ۳۰ روز",
+    "days_60": "۳۱ تا ۶۰ روز",
+    "days_90": "۶۱ تا ۹۰ روز",
+    "days_90_plus": "بیش از ۹۰ روز",
+    "unapplied_credit": "بستانکاری تخصیص‌نیافته"
   }
 }

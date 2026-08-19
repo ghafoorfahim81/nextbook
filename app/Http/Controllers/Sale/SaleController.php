@@ -11,7 +11,8 @@ use App\Models\Sale\Sale;
 use App\Models\Sale\SaleItem;
 use App\Models\Sale\SaleOrder;
 use App\Enums\SaleOrderStatus;
-use App\Services\BillAllocationService;
+use App\Services\Accounting\PaymentStatusService;
+use App\Services\Accounting\SettlementService;
 use App\Models\Ledger\Ledger;
 use App\Models\Administration\Currency;
 use App\Models\Administration\UnitMeasure;
@@ -44,6 +45,7 @@ use App\Services\SpreadsheetExportService;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Support\BranchContext;
 
 class SaleController extends Controller
 {
@@ -250,6 +252,11 @@ class SaleController extends Controller
             [$itemModelsById, $averageCostsByItemId, $unitValuesById] = $this->buildSaleItemCostLookup($validated['item_list']);
 
             $validated['item_list'] = array_map(function ($item) use ($validated, $sale, $itemModelsById, $averageCostsByItemId, $unitValuesById) {
+                // The form posts the line discount as item_discount; the column is
+                // `discount`. Without this the value is dropped on create, so the GL
+                // records the discount (it is folded into discount_total) while the
+                // sale_items row stores 0 and the sales report cannot subtract it.
+                $item['discount'] = $item['item_discount'] ?? 0;
                 $item['warehouse_id'] = $validated['warehouse_id'];
                 $itemModel = $itemModelsById[$item['item_id']] ?? null;
                 $avgCost = (float) ($averageCostsByItemId[$item['item_id']] ?? 0);
@@ -270,7 +277,7 @@ class SaleController extends Controller
 
             $lines = [];
             $stockPayloads = [];
-            $glAccounts = Cache::get('gl_accounts');
+            $glAccounts = BranchContext::glAccounts();
             // Every transaction_line is expressed in the transaction's currency; reports
             // multiply by transactions.rate to get home currency. Selling prices already
             // come in that currency, but stock cost is always home currency, so COGS and
@@ -408,7 +415,7 @@ class SaleController extends Controller
                         'remark_fa' => 'پرداخت جزئی برای فروش #' . $sale->number,
                         'remark_ps' => 'د'. '#'. $sale->number.' '.'جزوی تادیه خرڅلاو د',
                     ];
-                    app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
+                    app(PaymentStatusService::class)->recalculateSales([$sale->id]);
                     $sale->update([
                         'payment_status' => \App\Enums\PaymentStatus::PartiallyPaid->value,
                     ]);
@@ -629,7 +636,11 @@ class SaleController extends Controller
             $validated['type'] = $validated['sale_type'] ?? $sale->type ?? 'cash';
             $validated['status'] = TransactionStatus::DRAFT->value;
 
-            $date = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $sale->date;
+            // Write the converted date back into $validated: the sale row is saved from
+            // $validated further down, so converting into $date alone left sales.date
+            // holding the raw Jalali value while the transaction got the Gregorian one.
+            $validated['date'] = $validated['date'] ? $this->dateConversionService->toGregorian($validated['date']) : $sale->date;
+            $date = $validated['date'];
             // Posted/reversed sales are immutable, so update no longer needs to
             // rebuild posted stock state or recalculate avg cost.
             // $affectedCombos = $sale->items()
@@ -750,7 +761,7 @@ class SaleController extends Controller
             $lines = [];
             $stockPayloads = [];
             $totalDiscount = (float) $request->input('discount_total', 0);
-            $glAccounts = Cache::get('gl_accounts');
+            $glAccounts = BranchContext::glAccounts();
             // See store(): cost is home currency, GL lines are transaction currency.
             $rate = $this->transactionRate($validated);
 
@@ -880,7 +891,7 @@ class SaleController extends Controller
                         'remark_fa' => ':پرداخت جزئی برای فروش #' . $sale->number,
                         'remark_ps' => 'د'. '#'. $sale->number.' '.'جزوی تادیه خرڅلاو: د',
                     ];
-                    app(BillAllocationService::class)->recalculateSalePaymentStatuses([$sale->id]);
+                    app(PaymentStatusService::class)->recalculateSales([$sale->id]);
 
                     $sale->update([
                         'payment_status' => \App\Enums\PaymentStatus::PartiallyPaid->value,
@@ -1242,7 +1253,7 @@ class SaleController extends Controller
         string $branchId,
         float $quantity,
     ): float {
-        $method = \Illuminate\Support\Facades\Cache::get('costing_method', CostingMethod::WEIGHTED_AVERAGE->value);
+        $method = BranchContext::costingMethod();
 
         if ($method !== CostingMethod::FIFO->value && $method !== CostingMethod::LIFO->value) {
             return $this->resolveUnitCost($avgCost, $selectedUnitMeasureId, $itemUnitMeasureId, $unitValuesById);
@@ -1603,13 +1614,23 @@ class SaleController extends Controller
         return back()->with('success', __('general.sale_status_updated_successfully'));
     }
 
-    public function openBills(Request $request, BillAllocationService $billAllocationService)
+    /**
+     * Open receivables for a customer.
+     *
+     * Kept as an alias of settlements.open-items so existing links do not
+     * break. The claims are journal LINES now, not sales — an opening balance
+     * or a manual journal debit to AR shows up here on equal footing with an
+     * invoice, which is the whole point of settling against lines.
+     */
+    public function openBills(Request $request, SettlementService $settlements)
     {
         $ledgerId = (string) $request->query('ledger_id', '');
-        $excludeReceiptId = (string) $request->query('exclude_receipt_id', '');
+        $currencyId = (string) $request->query('currency_id', '');
 
         return response()->json([
-            'data' => $ledgerId ? $billAllocationService->openSalesForCustomer($ledgerId, $excludeReceiptId ?: null) : [],
+            'data' => $ledgerId
+                ? $settlements->openItems($ledgerId, $currencyId ?: null)
+                : [],
         ]);
     }
 

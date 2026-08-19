@@ -1,4 +1,4 @@
-﻿{
+{
   "customer_group": "د پېرودونکو ډله",
   "payment_term": "د تادیې شرط",
   "country": "هېواد",
@@ -19,5 +19,17 @@
   "available_credit": "شته پور",
   "used": "کارول‌شوی",
   "exceeds_available_credit": "دا سفارش د شته پور څخه {amount} زیات دی",
-  "discount": "تخفیف"
+  "discount": "تخفیف",
+  "opening": {
+    "title": "پرانیستونکي بیلانسونه",
+    "hint": "د هرې اسعارو لپاره چې دا اړخ پکې پوروړی یا پور ورکوونکی دی، اندازه دننه کړئ. خالي پرې ایښودل شوې اسعار به پریښودل شي.",
+    "home": "کورنۍ اسعار",
+    "home_equivalent": "برابر ({code})",
+    "currencies_used": "د بیلانس لرونکې اسعار: {count}",
+    "total_note": "ټولټال، د هرې کرښې په نرخ سره {code} ته اړول شوی"
+  },
+  "invalid_phone_for_country": "د {country} لپاره د تلیفون شمېرې اوږدوالی سم نه دی",
+  "balance_by_currency": "د اسعارو له مخې بیلانس",
+  "no_currency_balance": "په هیڅ اسعارو کې بیلانس نشته",
+  "contact_person": "د اړیکې شخص"
 }

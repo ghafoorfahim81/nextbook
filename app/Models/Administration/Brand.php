@@ -74,4 +74,17 @@ class Brand extends Model
     {
         return $this->hasMany(\App\Models\Inventory\Item::class, 'brand_id');
     }
+
+    /**
+     * Starter brands provisioned for every new branch.
+     *
+     * Brands are business-specific, so a new branch only gets a catch-all for
+     * items that carry no brand of their own.
+     */
+    public static function defaultBrands(): array
+    {
+        return [
+            ['name' => 'Generic', 'type' => 'general'],
+        ];
+    }
 }

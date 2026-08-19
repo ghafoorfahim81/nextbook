@@ -2,12 +2,15 @@
 
 namespace App\Http\Requests\Sale;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Enums\SalePurchaseType;
 
 class SaleStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -22,7 +25,7 @@ class SaleStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'number' => ['required', 'integer', 'min:1', 'unique:sales,number,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'number' => ['required', 'integer', 'min:1', $this->uniqueInBranch('sales')],
             'customer_id' => ['required', 'string', 'exists:ledgers,id'],
             'sale_order_id' => ['nullable', 'string', 'exists:sale_orders,id'],
             'date' => ['nullable', 'date'],

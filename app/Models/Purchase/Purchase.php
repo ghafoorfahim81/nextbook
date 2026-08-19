@@ -119,7 +119,7 @@ class Purchase extends Model
 
     /**
      * Net purchase amount (goods − item discounts − bill discount), mirroring the
-     * calculation used in PurchaseResource. Requires the `items` relation loaded.
+     * calculation in PurchaseResource. Requires the `items` relation loaded.
      */
     public function purchaseTotal(): float
     {
@@ -141,9 +141,22 @@ class Purchase extends Model
             ->withPivot('id');
     }
 
-    public function purchasePayments(): HasMany
+    /**
+     * Settlements against this purchase's payable line. Mirror of
+     * Sale::settlements().
+     */
+    public function settlements()
     {
-        return $this->hasMany(PurchasePayment::class);
+        return \App\Models\Accounting\Settlement::query()
+            ->whereIn('target_line_id', function ($query) {
+                $query->select('tl.id')
+                    ->from('transaction_lines as tl')
+                    ->join('transactions as t', 't.id', '=', 'tl.transaction_id')
+                    ->where('t.reference_type', self::class)
+                    ->where('t.reference_id', $this->id)
+                    ->whereNull('t.deleted_at')
+                    ->whereNull('tl.deleted_at');
+            });
     }
 
     public function returns(): HasMany

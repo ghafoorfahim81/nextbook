@@ -92,9 +92,10 @@ class JournalEntryController extends Controller
             $validated = $request->validated();
             $postImmediately = (bool) user_preference('transaction.journal_entry_post_immediately', true);
             $documentStatus = $postImmediately ? TransactionStatus::POSTED->value : TransactionStatus::DRAFT->value;
+            $date = $validated['date'] ? app(DateConversionService::class)->toGregorian($validated['date']) : null;
             $journalEntry = JournalEntry::create([
                 'number' => $validated['number'],
-                'date' => $validated['date'],
+                'date' => $date,
                 'status' => $documentStatus,
                 'posted_at' => $postImmediately ? now() : null,
                 'posted_by' => $postImmediately ? Auth::id() : null,
@@ -128,7 +129,7 @@ class JournalEntryController extends Controller
                     'currency_id' => $validated['currency_id'],
                     'rate' => $validated['rate'],
                     'voucher_number' =>  'journal #'.$validated['number'],
-                    'date' => $validated['date'],
+                    'date' => $date,
                     'remark' => $validated['remarks'],
                     'reference_type' => JournalEntry::class,
                     'reference_id' => $journalEntry->id,
@@ -144,7 +145,7 @@ class JournalEntryController extends Controller
                 description: "Journal entry #{$journalEntry->number} posted.",
                 newValues: [
                     'number' => $journalEntry->number,
-                    'date' => $validated['date'],
+                    'date' => $date,
                     'narration' => $validated['remarks'],
                     'total_debit' => (float) $totalDebit,
                     'total_credit' => (float) $totalCredit,

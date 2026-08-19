@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Support\BranchContext;
+
 use App\Enums\LandedCostAllocationMethod;
 use App\Enums\LandedCostStatus;
 use App\Models\Account\Account;
@@ -370,7 +372,7 @@ class LandedCostService
 
     private function resolveInventoryStockAccountId(): string
     {
-        return data_get(Cache::get('gl_accounts'), 'inventory-stock')
+        return data_get(BranchContext::glAccounts(), 'inventory-stock')
             ?? Account::withoutGlobalScopes()->where('slug', 'inventory-stock')->value('id')
             ?? throw ValidationException::withMessages([
                 'items' => __('general.landed_cost_inventory_stock_account_could_not_be_resolved'),
@@ -379,9 +381,9 @@ class LandedCostService
 
     private function resolveClearingAccountId(): string
     {
-        return data_get(Cache::get('gl_accounts'), 'landed-costs-clearing')
+        return data_get(BranchContext::glAccounts(), 'landed-costs-clearing')
             ?? Account::withoutGlobalScopes()->where('slug', 'landed-costs-clearing')->value('id')
-            ?? data_get(Cache::get('gl_accounts'), 'freight-customs-clearing')
+            ?? data_get(BranchContext::glAccounts(), 'freight-customs-clearing')
             ?? Account::withoutGlobalScopes()->where('slug', 'freight-customs-clearing')->value('id')
             ?? throw ValidationException::withMessages([
                 'items' => __('general.landed_cost_landed_costs_clearing_account_could_not_be_resolved'),
@@ -390,7 +392,7 @@ class LandedCostService
 
     private function resolveHomeCurrencyId(): string
     {
-        return data_get(Cache::get('home_currency'), 'id')
+        return BranchContext::homeCurrency()?->id
             ?? Currency::query()->where('is_base_currency', true)->value('id')
             ?? throw ValidationException::withMessages([
                 'currency' => __('general.landed_cost_home_currency_could_not_be_resolved'),

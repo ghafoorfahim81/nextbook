@@ -3,7 +3,7 @@ import Fuse from 'fuse.js'
 import { useDebounceFn } from '@vueuse/core'
 import { router } from '@inertiajs/vue3'
 
-const PEOPLE_TYPES  = ['customer', 'supplier', 'owner', 'user']
+const PEOPLE_TYPES  = ['customer', 'supplier', 'employee', 'owner', 'user']
 const ITEM_TYPES    = ['item']
 const FINANCE_TYPES = ['sale', 'purchase', 'receipt', 'payment', 'expense', 'account', 'report']
 

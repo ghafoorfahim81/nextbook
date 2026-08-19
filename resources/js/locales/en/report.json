@@ -5,6 +5,7 @@
   "active_report": "Selected report",
   "back_to_reports": "Back to reports",
   "export_excel": "Export Excel",
+  "export_pdf": "Export PDF",
   "snapshot_note": "This report is based on the current stock snapshot.",
   "company_name": "Company name",
   "exported_on": "Exported on",
@@ -112,7 +113,9 @@
     "total_outstanding": "Total outstanding",
     "party_count": "Parties",
     "total_debtor": "Total receivable",
-    "total_creditor": "Total payable"
+    "total_creditor": "Total payable",
+    "currency_count": "Currencies",
+    "total_home_equivalent": "Total (home currency)"
   },
   "columns": {
     "no": "No.",
@@ -140,6 +143,7 @@
     "unit_measure": "Unit measure",
     "quantity": "Quantity",
     "unit_price": "Unit price",
+    "discount": "Discount",
     "total_amount": "Total amount",
     "warehouse": "Warehouse",
     "average_cost": "Average cost",
@@ -198,7 +202,10 @@
     "days_90_plus": "90+ days",
     "total_outstanding": "Total outstanding",
     "party_name": "Party",
-    "balance_type": "Balance type"
+    "balance_type": "Balance type",
+    "currency": "Currency",
+    "home_equivalent": "Home equivalent",
+    "currency_name": "Currency name"
   },
   "view_types": {
     "general": "General view",
@@ -248,6 +255,10 @@
     "cash_book": {
       "label": "Cash book",
       "description": "Running balance for a selected cash or bank account."
+    },
+    "cash_position_by_currency": {
+      "label": "Cash Position by Currency",
+      "description": "How much cash you are holding in each currency, across all cash and bank accounts."
     },
     "sales_report": {
       "label": "Sales report",
@@ -391,5 +402,19 @@
       "unit_measures": "Unit measures",
       "warehouses": "Warehouses"
     }
+  },
+  "statement": "Statement",
+  "statement_period": "Statement from {from} to {to}",
+  "statement_up_to": "Statement up to {to}",
+  "home_currency": "Home currency",
+  "home_equivalent_note": "Home-currency equivalent ({code}), converted at each transaction's own rate",
+  "aging": {
+    "title": "Aging",
+    "current": "Current",
+    "days_30": "1-30 days",
+    "days_60": "31-60 days",
+    "days_90": "61-90 days",
+    "days_90_plus": "90+ days",
+    "unapplied_credit": "Unapplied credit"
   }
 }

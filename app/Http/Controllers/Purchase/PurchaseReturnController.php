@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Purchase;
 
+use App\Support\BranchContext;
+
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Purchase\PurchaseReturnStoreRequest;
 use App\Http\Requests\Purchase\PurchaseReturnUpdateRequest;
@@ -20,7 +22,7 @@ use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
 use App\Enums\TransactionStatus;
 use App\Services\ActivityLogService;
-use App\Services\BillAllocationService;
+use App\Services\Accounting\PaymentStatusService;
 use App\Services\DateConversionService;
 use App\Services\StockService;
 use App\Services\TransactionService;
@@ -169,12 +171,12 @@ class PurchaseReturnController extends Controller
         PurchaseReturnStoreRequest $request,
         TransactionService $transactionService,
         StockService $stockService,
-        BillAllocationService $billAllocationService,
+        PaymentStatusService $paymentStatusService,
         ActivityLogService $activityLogService
     ) {
         $validated = $request->validated();
 
-        $purchaseReturn = DB::transaction(function () use ($validated, $transactionService, $stockService, $billAllocationService, $activityLogService) {
+        $purchaseReturn = DB::transaction(function () use ($validated, $transactionService, $stockService, $paymentStatusService, $activityLogService) {
             $purchase = Purchase::with('transaction')->findOrFail($validated['purchase_id']);
 
             abort_unless($purchase->status === TransactionStatus::POSTED->value, 422, 'Only posted purchases can be returned against.');
@@ -220,7 +222,7 @@ class PurchaseReturnController extends Controller
             );
 
             if ($postImmediately) {
-                $billAllocationService->recalculatePurchasePaymentStatuses([$purchase->id]);
+                $paymentStatusService->recalculatePurchases([$purchase->id]);
             }
 
             $activityLogService->logCreate(
@@ -310,7 +312,7 @@ class PurchaseReturnController extends Controller
         PurchaseReturn $purchaseReturn,
         TransactionService $transactionService,
         StockService $stockService,
-        BillAllocationService $billAllocationService,
+        PaymentStatusService $paymentStatusService,
         ActivityLogService $activityLogService
     ) {
         if ($purchaseReturn->status !== TransactionStatus::DRAFT->value) {
@@ -325,7 +327,7 @@ class PurchaseReturnController extends Controller
             'item_count' => $purchaseReturn->items()->count(),
         ];
 
-        $purchaseReturn = DB::transaction(function () use ($request, $purchaseReturn, $transactionService, $stockService, $billAllocationService, $activityLogService, $beforeState) {
+        $purchaseReturn = DB::transaction(function () use ($request, $purchaseReturn, $transactionService, $stockService, $paymentStatusService, $activityLogService, $beforeState) {
             $validated = $request->validated();
             $purchase = Purchase::with('transaction')->findOrFail($validated['purchase_id']);
 
@@ -430,7 +432,7 @@ class PurchaseReturnController extends Controller
             ->whereIn('id', $itemIds)
             ->get(['id', 'name', 'asset_account_id'])
             ->keyBy('id');
-        $glAccounts = Cache::get('gl_accounts');
+        $glAccounts = BranchContext::glAccounts();
 
         $lines = [];
         $stockPayloads = [];
@@ -525,7 +527,7 @@ class PurchaseReturnController extends Controller
         return [$lines, $stockPayloads, $totalReturnedValue];
     }
 
-    public function post(PurchaseReturn $purchaseReturn, TransactionService $transactionService, StockService $stockService, BillAllocationService $billAllocationService)
+    public function post(PurchaseReturn $purchaseReturn, TransactionService $transactionService, StockService $stockService, PaymentStatusService $paymentStatusService)
     {
         $this->authorize('update', $purchaseReturn);
 
@@ -534,7 +536,7 @@ class PurchaseReturnController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($purchaseReturn, $transactionService, $stockService, $billAllocationService) {
+            DB::transaction(function () use ($purchaseReturn, $transactionService, $stockService, $paymentStatusService) {
                 $transaction = $purchaseReturn->transaction()->firstOrFail();
 
                 foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $payload) {
@@ -548,7 +550,7 @@ class PurchaseReturnController extends Controller
                     'updated_by' => Auth::id(),
                 ]);
 
-                $billAllocationService->recalculatePurchasePaymentStatuses([$purchaseReturn->purchase_id]);
+                $paymentStatusService->recalculatePurchases([$purchaseReturn->purchase_id]);
             });
         } catch (ValidationException $e) {
             return redirect()->back()->with('error', $e->validator->errors()->first('stock') ?: $e->getMessage());
@@ -560,7 +562,7 @@ class PurchaseReturnController extends Controller
         );
     }
 
-    public function reverse(Request $request, PurchaseReturn $purchaseReturn, TransactionService $transactionService, BillAllocationService $billAllocationService)
+    public function reverse(Request $request, PurchaseReturn $purchaseReturn, TransactionService $transactionService, PaymentStatusService $paymentStatusService)
     {
         $this->authorize('update', $purchaseReturn);
 
@@ -572,7 +574,7 @@ class PurchaseReturnController extends Controller
             abort(422, 'Only posted documents can be reversed.');
         }
 
-        DB::transaction(function () use ($purchaseReturn, $transactionService, $billAllocationService, $validated) {
+        DB::transaction(function () use ($purchaseReturn, $transactionService, $paymentStatusService, $validated) {
             $transaction = $purchaseReturn->transaction()->firstOrFail();
             $transactionService->reverse($transaction, $validated['reason'], $purchaseReturn->number, PurchaseReturn::class);
 
@@ -581,7 +583,7 @@ class PurchaseReturnController extends Controller
                 'updated_by' => Auth::id(),
             ]);
 
-            $billAllocationService->recalculatePurchasePaymentStatuses([$purchaseReturn->purchase_id]);
+            $paymentStatusService->recalculatePurchases([$purchaseReturn->purchase_id]);
         });
 
         return redirect()->back()->with(

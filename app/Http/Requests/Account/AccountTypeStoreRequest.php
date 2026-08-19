@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Account;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AccountTypeStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -20,7 +23,7 @@ class AccountTypeStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'unique:account_types,name,NULL,id,branch_id,NULL,deleted_at,NULL'],
+            'name' => ['required', 'string', $this->uniqueInBranch('account_types')],
             'remark' => ['nullable', 'string'],
             'slug' => ['nullable', 'string'],
             'is_main' => ['nullable', 'boolean'],

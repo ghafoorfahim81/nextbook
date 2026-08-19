@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Sale;
 
+use App\Support\BranchContext;
+
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sale\SaleReturnStoreRequest;
 use App\Http\Requests\Sale\SaleReturnUpdateRequest;
@@ -20,7 +22,7 @@ use App\Enums\StockSourceType;
 use App\Enums\StockStatus;
 use App\Enums\TransactionStatus;
 use App\Services\ActivityLogService;
-use App\Services\BillAllocationService;
+use App\Services\Accounting\PaymentStatusService;
 use App\Services\DateConversionService;
 use App\Services\StockService;
 use App\Services\TransactionService;
@@ -170,12 +172,12 @@ class SaleReturnController extends Controller
         SaleReturnStoreRequest $request,
         TransactionService $transactionService,
         StockService $stockService,
-        BillAllocationService $billAllocationService,
+        PaymentStatusService $paymentStatusService,
         ActivityLogService $activityLogService
     ) {
         $validated = $request->validated();
 
-        $saleReturn = DB::transaction(function () use ($validated, $transactionService, $stockService, $billAllocationService, $activityLogService) {
+        $saleReturn = DB::transaction(function () use ($validated, $transactionService, $stockService, $paymentStatusService, $activityLogService) {
             $sale = Sale::with('transaction')->findOrFail($validated['sale_id']);
 
             abort_unless($sale->status === TransactionStatus::POSTED->value, 422, 'Only posted sales can be returned against.');
@@ -221,7 +223,7 @@ class SaleReturnController extends Controller
             );
 
             if ($postImmediately) {
-                $billAllocationService->recalculateSalePaymentStatuses([$sale->id]);
+                $paymentStatusService->recalculateSales([$sale->id]);
             }
 
             $activityLogService->logCreate(
@@ -311,7 +313,7 @@ class SaleReturnController extends Controller
         SaleReturn $saleReturn,
         TransactionService $transactionService,
         StockService $stockService,
-        BillAllocationService $billAllocationService,
+        PaymentStatusService $paymentStatusService,
         ActivityLogService $activityLogService
     ) {
         if ($saleReturn->status !== TransactionStatus::DRAFT->value) {
@@ -326,7 +328,7 @@ class SaleReturnController extends Controller
             'item_count' => $saleReturn->items()->count(),
         ];
 
-        $saleReturn = DB::transaction(function () use ($request, $saleReturn, $transactionService, $stockService, $billAllocationService, $activityLogService, $beforeState) {
+        $saleReturn = DB::transaction(function () use ($request, $saleReturn, $transactionService, $stockService, $paymentStatusService, $activityLogService, $beforeState) {
             $validated = $request->validated();
             $sale = Sale::with('transaction')->findOrFail($validated['sale_id']);
 
@@ -431,7 +433,7 @@ class SaleReturnController extends Controller
             ->whereIn('id', $itemIds)
             ->get(['id', 'name', 'income_account_id', 'cost_account_id', 'asset_account_id'])
             ->keyBy('id');
-        $glAccounts = Cache::get('gl_accounts');
+        $glAccounts = BranchContext::glAccounts();
 
         $lines = [];
         $stockPayloads = [];
@@ -542,7 +544,7 @@ class SaleReturnController extends Controller
         return [$lines, $stockPayloads, $totalReturnedValue];
     }
 
-    public function post(SaleReturn $saleReturn, TransactionService $transactionService, StockService $stockService, BillAllocationService $billAllocationService)
+    public function post(SaleReturn $saleReturn, TransactionService $transactionService, StockService $stockService, PaymentStatusService $paymentStatusService)
     {
         $this->authorize('update', $saleReturn);
 
@@ -551,7 +553,7 @@ class SaleReturnController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($saleReturn, $transactionService, $stockService, $billAllocationService) {
+            DB::transaction(function () use ($saleReturn, $transactionService, $stockService, $paymentStatusService) {
                 $transaction = $saleReturn->transaction()->firstOrFail();
 
                 foreach ((array) data_get($transaction->posting_payload, 'stock_movements', []) as $payload) {
@@ -565,7 +567,7 @@ class SaleReturnController extends Controller
                     'updated_by' => Auth::id(),
                 ]);
 
-                $billAllocationService->recalculateSalePaymentStatuses([$saleReturn->sale_id]);
+                $paymentStatusService->recalculateSales([$saleReturn->sale_id]);
             });
         } catch (ValidationException $e) {
             return redirect()->back()->with('error', $e->validator->errors()->first('stock') ?: $e->getMessage());
@@ -577,7 +579,7 @@ class SaleReturnController extends Controller
         );
     }
 
-    public function reverse(Request $request, SaleReturn $saleReturn, TransactionService $transactionService, BillAllocationService $billAllocationService)
+    public function reverse(Request $request, SaleReturn $saleReturn, TransactionService $transactionService, PaymentStatusService $paymentStatusService)
     {
         $this->authorize('update', $saleReturn);
 
@@ -589,7 +591,7 @@ class SaleReturnController extends Controller
             abort(422, 'Only posted documents can be reversed.');
         }
 
-        DB::transaction(function () use ($saleReturn, $transactionService, $billAllocationService, $validated) {
+        DB::transaction(function () use ($saleReturn, $transactionService, $paymentStatusService, $validated) {
             $transaction = $saleReturn->transaction()->firstOrFail();
             $transactionService->reverse($transaction, $validated['reason'], $saleReturn->number, SaleReturn::class);
 
@@ -598,7 +600,7 @@ class SaleReturnController extends Controller
                 'updated_by' => Auth::id(),
             ]);
 
-            $billAllocationService->recalculateSalePaymentStatuses([$saleReturn->sale_id]);
+            $paymentStatusService->recalculateSales([$saleReturn->sale_id]);
         });
 
         return redirect()->back()->with(

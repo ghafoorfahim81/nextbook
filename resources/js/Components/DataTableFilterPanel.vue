@@ -6,6 +6,7 @@ import { Input } from '@/Components/ui/input'
 import { Label } from '@/Components/ui/label'
 import NextSelect from '@/Components/next/NextSelect.vue'
 import NextDate from '@/Components/next/NextDatePicker.vue'
+
 const { t } = useI18n()
 
 const props = defineProps({
@@ -24,7 +25,9 @@ const normalizedFields = computed(() => {
     label: f.label,
     type: f.type || 'text', // text | date | daterange | number | numberrange | select
     placeholder: f.placeholder || '',
-    options: Array.isArray(f.options) ? f.options : null,
+    // [] rather than null: NextSelect types this prop as an Array, and a field
+    // may legitimately declare a select whose list is still loading or empty.
+    options: Array.isArray(f.options) ? f.options : [],
     labelKey: f.labelKey || 'name',
     valueKey: f.valueKey || 'id',
     reduce: typeof f.reduce === 'function' ? f.reduce : null,
@@ -106,10 +109,23 @@ function clear() {
         </Label>
 
         <div class="col-span-8">
+          <!-- The app's own picker, not <input type="date">: a Jalali user
+               filtering a Jalali list should not have to translate the dates
+               they can see into the browser's Gregorian calendar. -->
           <template v-if="f.type === 'daterange'">
             <div class="grid grid-cols-2 gap-2">
-                <NextDate v-model="local[`${f.key}_from`]" :current-date="true" />
-                <NextDate v-model="local[`${f.key}_to`]" :current-date="true" />
+              <NextDate
+                v-model="local[`${f.key}_from`]"
+                :current-date="true"
+                :placeholder="t('general.from')"
+                input-class="h-9"
+              />
+              <NextDate
+                v-model="local[`${f.key}_to`]"
+                :current-date="true"
+                :placeholder="t('general.to')"
+                input-class="h-9"
+              />
             </div>
           </template>
 
@@ -120,6 +136,11 @@ function clear() {
             </div>
           </template>
 
+          <!-- A field that declares itself a select stays a select even when
+               its list comes back empty. Falling through to a text box let the
+               user type free text into what the backend matches as an exact
+               id, which silently returns nothing and looks like a broken
+               filter rather than missing reference data. -->
           <template v-else-if="f.type === 'select'">
             <NextSelect
               :modelValue="local[f.key]"
@@ -136,10 +157,18 @@ function clear() {
             />
           </template>
 
+          <template v-else-if="f.type === 'date'">
+            <NextDate
+              v-model="local[f.key]"
+              :placeholder="f.placeholder"
+              input-class="h-9"
+            />
+          </template>
+
           <template v-else>
             <Input
               v-model="local[f.key]"
-              :type="f.type === 'date' ? 'date' : f.type === 'number' ? 'number' : 'text'"
+              :type="f.type === 'number' ? 'number' : 'text'"
               :placeholder="f.placeholder"
               class="h-9"
             />

@@ -87,4 +87,17 @@ class Department extends Model
     {
         return $this->hasMany(Department::class, 'parent_id');
     }
+
+    /**
+     * Starter departments provisioned for every new branch.
+     */
+    public static function defaultDepartments(): array
+    {
+        return [
+            ['name' => 'Administration', 'code' => 'ADM', 'remark' => 'Management and office staff'],
+            ['name' => 'Finance', 'code' => 'FIN', 'remark' => 'Accounting and finance'],
+            ['name' => 'Sales', 'code' => 'SAL', 'remark' => 'Sales and customer service'],
+            ['name' => 'Warehouse', 'code' => 'WHS', 'remark' => 'Stock handling and dispatch'],
+        ];
+    }
 }

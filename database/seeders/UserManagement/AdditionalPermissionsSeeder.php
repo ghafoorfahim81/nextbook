@@ -33,6 +33,8 @@ class AdditionalPermissionsSeeder extends Seeder
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         foreach ($this->permissions as $permissionName => $roleNames) {
+            // ensurePermission() is idempotent; don't skip existing permissions or
+            // the role grants below would never be applied on a re-run.
             $permission = $this->ensurePermission($permissionName);
 
             if ($roleNames === []) {
