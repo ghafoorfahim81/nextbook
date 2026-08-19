@@ -1,11 +1,9 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import { useFormGuard } from '@/composables/useFormGuard'
-import { useForm, usePage, Link } from '@inertiajs/vue3'
+import { useForm, usePage, router, Link } from '@inertiajs/vue3'
 import { ref, watch, computed, reactive, onMounted } from 'vue'
 import axios from 'axios'
-import { useForm, usePage, router, Link } from '@inertiajs/vue3'
-import { ref, watch, computed, onMounted } from 'vue'
 import { useLazyProps } from '@/composables/useLazyProps'
 import NextInput from '@/Components/next/NextInput.vue'
 import NextSelect from '@/Components/next/NextSelect.vue'

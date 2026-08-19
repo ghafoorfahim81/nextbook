@@ -123,7 +123,9 @@ class TransactionService
                     'remark'           => $line['remark'],
                     'remark_fa'        => $line['remark_fa'],
                     'remark_ps'        => $line['remark_ps'],
-                    'created_by'       => Auth::id(),
+                    // No created_by/branch_id here: transaction_lines has
+                    // neither column. Who posted the entry, and which branch it
+                    // belongs to, are carried once on the voucher header.
                 ]);
             }
 
@@ -177,7 +179,9 @@ class TransactionService
                     'remark'           => $line['remark'],
                     'remark_fa'        => $line['remark_fa'],
                     'remark_ps'        => $line['remark_ps'],
-                    'created_by'       => Auth::id(),
+                    // No created_by/branch_id here: transaction_lines has
+                    // neither column. Who posted the entry, and which branch it
+                    // belongs to, are carried once on the voucher header.
                 ]);
             }
 
