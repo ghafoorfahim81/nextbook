@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\LedgerType;
+use App\Http\Resources\Hr\EmployeeOptionResource;
 use App\Http\Resources\Inventory\ItemResource;
 use App\Http\Resources\Ledger\LedgerOptionResource;
 use App\Models\Administration\UnitMeasure;
@@ -16,6 +17,7 @@ use App\Models\Administration\Category;
 use App\Models\Administration\Warehouse;
 use App\Models\Expense\Expense;
 use App\Models\Expense\ExpenseCategory;
+use App\Models\Hr\Employee;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
@@ -34,6 +36,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class SearchController extends Controller
 {
@@ -153,9 +156,49 @@ class SearchController extends Controller
                 return $this->searchAccounts($searchTerm, $fields, $limit, $additionalParams);
             case 'sizes':
                 return $this->searchSizes($searchTerm, $fields, $limit, $additionalParams);
+
+            case 'employees':
+                return $this->searchEmployees($searchTerm, $fields, $limit, $additionalParams);
             default:
                 throw new \InvalidArgumentException("Unsupported resource type: {$resourceType}");
         }
+    }
+
+    /**
+     * Search employees for HR pickers.
+     *
+     * Gated on `employees.view_any` rather than riding on the generic search
+     * permission: the ledger endpoint deliberately excludes staff, and this
+     * must not become the back door around that.
+     */
+    private function searchEmployees(string $searchTerm, array $fields, int $limit, array $additionalParams): \Illuminate\Http\Resources\Json\AnonymousResourceCollection
+    {
+        Gate::authorize('viewAny', Employee::class);
+
+        $query = Employee::query()
+            ->select(['id', 'code', 'full_name', 'phone_number', 'email', 'department_id', 'designation_id', 'currency_id', 'is_active', 'branch_id'])
+            ->with(['department:id,name', 'designation:id,name'])
+            ->where(function ($q) use ($searchTerm, $fields) {
+                $columns = array_intersect($fields, ['full_name', 'code', 'email', 'phone_number', 'national_id']);
+
+                foreach ($columns ?: ['full_name', 'code'] as $field) {
+                    $q->orWhere($field, 'ilike', $searchTerm);
+                }
+            });
+
+        // Defaults to currently-employed staff: pickers for payroll, approvals
+        // and reporting lines want people who are actually here.
+        if (! array_key_exists('include_separated', $additionalParams)) {
+            $query->employed()->where('is_active', true);
+        }
+
+        if (! empty($additionalParams['department_id'])) {
+            $query->where('department_id', $additionalParams['department_id']);
+        }
+
+        return EmployeeOptionResource::collection(
+            $query->orderBy('full_name')->limit($limit)->get()
+        );
     }
 
     /**

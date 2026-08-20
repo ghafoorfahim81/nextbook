@@ -19,6 +19,9 @@ use App\Models\Administration\Warehouse;
 use App\Models\Expense\Expense;
 use App\Models\Expense\ExpenseCategory;
 use App\Models\Expense\ExpenseDetail;
+use App\Models\Hr\Employee;
+use App\Models\Hr\EmployeeContract;
+use App\Models\Hr\EmployeeDocument;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
@@ -245,8 +248,32 @@ class DeletedRecordService
                 'label' => 'Ledgers',
                 'model' => Ledger::class,
                 'title' => fn (Model $record) => trim(($record->code ? $record->code.' - ' : '').($record->name ?? '')),
+                // Commercial parties only. An employee's ledger is an internal
+                // half of their HR record, restored by restoring the employee —
+                // surfacing it here would let someone with ledger rights bring
+                // back a deleted employee's payable account on its own.
+                'query' => fn (Builder $query) => $query->whereIn('type', LedgerType::commercialValues()),
                 'restore' => fn (Model $record) => $this->restoreLedgerOpeningRecord($record),
                 'force_delete' => fn (Model $record) => $this->forceDeleteLedgerOpeningRecord($record),
+            ],
+            'employees' => [
+                'label' => 'Employees',
+                'model' => Employee::class,
+                'title' => fn (Model $record) => trim(($record->code ? $record->code.' - ' : '').($record->full_name ?? '')),
+                // Restore and force-delete both go through the model so
+                // EmployeeObserver can carry the companion ledger with it.
+                'restore' => fn (Model $record) => $record->restore(),
+                'force_delete' => fn (Model $record) => $record->forceDelete(),
+            ],
+            'employee_contracts' => [
+                'label' => 'Employee contracts',
+                'model' => EmployeeContract::class,
+                'title' => fn (Model $record) => trim((string) $record->contract_number),
+            ],
+            'employee_documents' => [
+                'label' => 'Employee documents',
+                'model' => EmployeeDocument::class,
+                'title' => fn (Model $record) => trim((string) ($record->document_number ?: $record->document_type?->value)),
             ],
             'customers' => [
                 'label' => 'Customers',
