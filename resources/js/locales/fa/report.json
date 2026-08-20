@@ -1,382 +1,515 @@
 {
-  "title": "گزارشات",
-  "subtitle": "گزارشات عملیاتی، موجودی و مالی برای تراکنش‌های ثبت‌شده.",
-  "catalog_label": "فهرست گزارشات",
-  "active_report": "گزارش انتخاب‌شده",
-  "back_to_reports": "بازگشت به گزارشات",
-  "export_excel": "خروجی اکسل",
-  "export_pdf": "خروجی پی‌دی‌اف",
-  "snapshot_note": "این گزارش بر اساس وضعیت فعلی موجودی تهیه شده است.",
-  "company_name": "نام شرکت",
-  "exported_on": "تاریخ خروجی",
-  "groups": {
-    "financial": "گزارشات مالی",
-    "financial_description": "گزارشات و صورت‌های اصلی حسابداری.",
-    "cash_flow": "گزارشات جریان نقدی",
-    "cash_flow_description": "گزارش ورود و خروج وجه نقد و بانک.",
-    "party": "صورت‌حساب طرف حساب‌ها",
-    "party_description": "گزارش گردش و مانده مشتریان و تأمین‌کنندگان.",
-    "operations": "گزارشات فروش و خرید",
-    "operations_description": "گزارشات عملیاتی فروش و خرید بر اساس اقلام.",
-    "expenses": "گزارشات مصارف",
-    "expenses_description": "گزارش تراکنش‌های مصارف بر اساس دسته‌بندی و حساب.",
-    "inventory": "گزارشات موجودی",
-    "inventory_description": "گزارش موجودی فعلی، ارزش‌گذاری و گردش کالا.",
-    "management": "گزارشات مدیریتی",
-    "management_description": "گزارشات نظارتی و فعالیت کاربران."
-  },
-  "filters": {
-    "title": "فیلترها",
-    "report": "گزارش",
-    "branch": "شعبه",
-    "date_from": "از تاریخ",
-    "date_to": "تا تاریخ",
-    "ledger": "دفتر حساب",
-    "customer": "مشتری",
-    "supplier": "تأمین‌کننده",
-    "item": "کالا",
-    "account": "حساب نقد / بانک",
-    "warehouse": "انبار",
-    "currency": "ارز",
-    "type": "نوع معامله",
-    "balance_type": "نوع مانده",
-    "expense_category": "دسته‌بندی مصرف",
-    "expense_account": "حساب مصرف",
-    "per_page": "تعداد سطر",
-    "apply": "اعمال فیلترها",
-    "reset": "بازنشانی"
-  },
-  "balance_types": {
-    "all": "همه",
-    "debtor": "بدهکار",
-    "creditor": "بستانکار"
-  },
-  "table": {
-    "results": "نتایج",
-    "showing": "نمایش {from}-{to} از {total}",
-    "no_data": "برای فیلترهای انتخاب‌شده داده‌ای یافت نشد.",
-    "previous": "قبلی",
-    "next": "بعدی"
-  },
-  "messages": {
-    "ledger_required": "برای مشاهده این گزارش، یک دفتر حساب انتخاب کنید.",
-    "customer_required": "برای مشاهده این صورت‌حساب، یک مشتری انتخاب کنید.",
-    "supplier_required": "برای مشاهده این صورت‌حساب، یک تأمین‌کننده انتخاب کنید.",
-    "account_required": "برای مشاهده این گزارش، یک حساب نقد یا بانک انتخاب کنید."
-  },
-  "summary": {
-    "total_debit": "مجموع بدهکار",
-    "total_credit": "مجموع بستانکار",
-    "balance": "مانده",
-    "balance_label": "مانده",
-    "total_amount": "مجموع مبلغ",
-    "total_quantity": "مجموع مقدار",
-    "total_value": "مجموع ارزش",
-    "total_items": "تعداد اقلام",
-    "total_in": "مجموع ورودی",
-    "total_out": "مجموع خروجی",
-    "total_on_hand": "مجموع موجودی",
-    "total_sold": "مجموع فروش",
-    "sale_count": "تعداد فروش",
-    "average_per_day": "میانگین روزانه",
-    "days_on_hand": "روزهای موجودی",
-    "turnover_rate": "نرخ گردش",
-    "opening_balance": "موجودی آغازین",
-    "purchase_today": "خرید امروز",
-    "sale_today": "فروش امروز",
-    "closing_balance": "موجودی پایانی",
-    "days_until_expiry": "روزهای تا انقضا",
-    "max_stock_level": "حداکثر موجودی",
-    "excess_quantity": "مقدار مازاد",
-    "total_excess_quantity": "مجموع مقدار مازاد",
-    "total_sales": "مجموع فروش‌ها",
-    "total_purchases": "مجموع خریدها",
-    "total_assets": "مجموع دارایی‌ها",
-    "total_liabilities": "بدهی‌ها",
-    "total_equity": "مجموع سرمایه",
-    "equation_total": "بدهی‌ها + سرمایه",
-    "total_revenue": "مجموع درآمد",
-    "total_cost_of_goods_sold": "مجموع بهای تمام‌شده کالای فروش‌رفته",
-    "gross_profit": "سود ناخالص",
-    "total_expenses": "مجموع مصارف",
-    "net_profit": "سود خالص",
-    "expense_count": "مصارف",
-    "party_count": "تعداد طرف حساب",
-    "total_debtor": "مجموع طلب",
-    "total_creditor": "مجموع بدهی",
-    "currency_count": "تعداد ارزها",
-    "total_home_equivalent": "مجموع (ارز پایه)"
-  },
-  "columns": {
-    "no": "شماره",
-    "section": "بخش",
-    "account_name": "نام حساب",
-    "ledger_name": "دفتر حساب",
-    "total_debit": "بدهکار",
-    "total_credit": "بستانکار",
-    "balance": "مانده",
-    "transaction_number": "شماره تراکنش",
-    "reference_type": "نوع مرجع",
-    "description": "شرح",
-    "debit": "بدهکار",
-    "credit": "بستانکار",
-    "running_balance": "مانده جاری",
-    "reference": "مرجع",
-    "amount_received": "مبلغ دریافت‌شده",
-    "amount_paid": "مبلغ پرداخت‌شده",
-    "date": "تاریخ",
-    "sale_number": "شماره فروش",
-    "purchase_number": "شماره خرید",
-    "customer": "مشتری",
-    "supplier": "تأمین‌کننده",
-    "item": "کالا",
-    "quantity": "مقدار",
-    "unit_measure": "واحد اندازه گیری",
-    "unit_price": "قیمت واحد",
-    "discount": "تخفیف",
-    "total_amount": "مبلغ کل",
-    "warehouse": "انبار",
-    "average_cost": "میانگین قیمت تمام‌شده",
-    "total_value": "ارزش کل",
-    "item_code": "کد کالا",
-    "item_name": "نام کالا",
-    "batch_number": "شماره بچ",
-    "expiry_date": "تاریخ انقضا",
-    "in_quantity": "ورودی",
-    "out_quantity": "خروجی",
-    "on_hand": "موجودی",
-    "time": "زمان",
-    "transaction_type": "نوع تراکنش",
-    "narration": "شرح",
-    "account_type": "نوع حساب",
-    "total_in": "ورودی",
-    "total_out": "خروجی",
-    "opening_balance": "موجودی آغازین",
-    "purchase_today": "خرید امروز",
-    "sale_today": "فروش امروز",
-    "closing_balance": "موجودی پایانی",
-    "days_until_expiry": "روزهای تا انقضا",
-    "max_stock_level": "حداکثر موجودی",
-    "excess_quantity": "مقدار مازاد",
-    "sale_count": "تعداد فروش",
-    "average_per_day": "میانگین روزانه",
-    "days_on_hand": "روزهای موجودی",
-    "turnover_rate": "نرخ گردش",
-    "total_sold": "مجموع فروش",
-    "movement_type": "نوع گردش",
-    "source_type": "نوع منبع",
-    "reference_id": "شناسه مرجع",
-    "reorder_level": "حد سفارش",
-    "reference_number": "شماره مرجع",
-    "expire_date": "تاریخ انقضا",
-    "batch": "بچ",
-    "number": "شماره",
-    "type": "نوع",
-    "status": "وضعیت",
-    "payment_status": "وضعیت پرداخت",
-    "amount": "مبلغ",
-    "category": "دسته‌بندی",
-    "expense_account": "حساب مصرف",
-    "bank_account": "حساب بانکی / نقدی",
-    "remark": "ملاحظات",
-    "party_name": "طرف حساب",
-    "balance_type": "نوع مانده",
-    "currency": "ارز",
-    "home_equivalent": "معادل ارز پایه",
-    "currency_name": "نام ارز"
-  },
-  "view_types": {
-    "general": "عمومی",
-    "itemwise": "براساس جنس"
-  },
-  "reports": {
-    "trial_balance": {
-      "label": "تراز آزمایشی",
-      "description": "بدهکار، بستانکار و مانده خالص حساب‌ها بر اساس اسناد ثبت‌شده."
+    "title": "گزارشات",
+    "subtitle": "گزارشات عملیاتی، موجودی و مالی برای تراکنش‌های ثبت‌شده.",
+    "catalog_label": "فهرست گزارشات",
+    "active_report": "گزارش انتخاب‌شده",
+    "back_to_reports": "بازگشت به گزارشات",
+    "export_excel": "خروجی اکسل",
+    "export_pdf": "خروجی پی‌دی‌اف",
+    "snapshot_note": "این گزارش بر اساس وضعیت فعلی موجودی تهیه شده است.",
+    "company_name": "نام شرکت",
+    "exported_on": "تاریخ خروجی",
+    "groups": {
+        "financial": "گزارشات مالی",
+        "financial_description": "گزارشات و صورت‌های اصلی حسابداری.",
+        "cash_flow": "گزارشات جریان نقدی",
+        "cash_flow_description": "گزارش ورود و خروج وجه نقد و بانک.",
+        "party": "صورت‌حساب طرف حساب‌ها",
+        "party_description": "گزارش گردش و مانده مشتریان و تأمین‌کنندگان.",
+        "operations": "گزارشات فروش و خرید",
+        "operations_description": "گزارشات عملیاتی فروش و خرید بر اساس اقلام.",
+        "expenses": "گزارشات مصارف",
+        "expenses_description": "گزارش تراکنش‌های مصارف بر اساس دسته‌بندی و حساب.",
+        "inventory": "گزارشات موجودی",
+        "inventory_description": "گزارش موجودی فعلی، ارزش‌گذاری و گردش کالا.",
+        "management": "گزارشات مدیریتی",
+        "management_description": "گزارشات نظارتی و فعالیت کاربران.",
+        "hr": "منابع بشری",
+        "hr_description": "معاشات، حاضری، رخصتی و کارمندان."
     },
-    "balance_sheet": {
-      "label": "بیلانس شیت",
-      "description": "وضعیت مالی تا تاریخ انتخاب‌شده."
+    "filters": {
+        "title": "فیلترها",
+        "report": "گزارش",
+        "branch": "شعبه",
+        "date_from": "از تاریخ",
+        "date_to": "تا تاریخ",
+        "ledger": "دفتر حساب",
+        "customer": "مشتری",
+        "supplier": "تأمین‌کننده",
+        "item": "کالا",
+        "account": "حساب نقد / بانک",
+        "warehouse": "انبار",
+        "currency": "ارز",
+        "type": "نوع معامله",
+        "balance_type": "نوع مانده",
+        "expense_category": "دسته‌بندی مصرف",
+        "expense_account": "حساب مصرف",
+        "per_page": "تعداد سطر",
+        "apply": "اعمال فیلترها",
+        "reset": "بازنشانی",
+        "employee": "کارمند",
+        "department": "بخش",
+        "designation": "بست",
+        "payroll": "دوره معاش",
+        "leave_type": "نوع رخصتی",
+        "employment_type": "نوع استخدام",
+        "employment_status": "وضعیت استخدام"
     },
-    "income_statement": {
-      "label": "سود و زیان",
-      "description": "درآمد، بهای تمام‌شده کالای فروش‌رفته، مصارف و سود خالص برای دوره انتخاب‌شده."
+    "balance_types": {
+        "all": "همه",
+        "debtor": "بدهکار",
+        "creditor": "بستانکار"
     },
-    "general_ledger": {
-      "label": "دفتر کل",
-      "description": "تراکنش‌های دفتر حساب همراه با مانده جاری."
+    "table": {
+        "results": "نتایج",
+        "showing": "نمایش {from}-{to} از {total}",
+        "no_data": "برای فیلترهای انتخاب‌شده داده‌ای یافت نشد.",
+        "previous": "قبلی",
+        "next": "بعدی"
     },
-    "customer_statement": {
-      "label": "صورت‌حساب مشتری",
-      "description": "به صورت پیش‌فرض مانده همه مشتریان، یا صورت‌حساب کامل مشتری انتخاب‌شده."
+    "messages": {
+        "ledger_required": "برای مشاهده این گزارش، یک دفتر حساب انتخاب کنید.",
+        "customer_required": "برای مشاهده این صورت‌حساب، یک مشتری انتخاب کنید.",
+        "supplier_required": "برای مشاهده این صورت‌حساب، یک تأمین‌کننده انتخاب کنید.",
+        "account_required": "برای مشاهده این گزارش، یک حساب نقد یا بانک انتخاب کنید."
     },
-    "supplier_statement": {
-      "label": "صورت‌حساب تأمین‌کننده",
-      "description": "به صورت پیش‌فرض مانده همه تأمین‌کنندگان، یا صورت‌حساب کامل تأمین‌کننده انتخاب‌شده."
-    },
-    "receipt_report": {
-      "label": "گزارش رسید",
-      "description": "ورودی‌های نقد و بانک که در آن حساب نقد بدهکار می‌شود."
-    },
-    "payment_report": {
-      "label": "گزارش پرداخت",
-      "description": "خروجی‌های نقد و بانک که در آن حساب نقد بستانکار می‌شود."
-    },
-    "cash_book": {
-      "label": "کتاب نقدی",
-      "description": "مانده جاری برای حساب نقد یا بانک انتخاب‌شده."
-    },
-    "cash_position_by_currency": {
-      "label": "وضعیت نقدینگی بر اساس ارز",
-      "description": "مقدار نقدینگی موجود در هر ارز، در مجموع تمام حساب‌های نقد و بانک."
-    },
-    "sales_report": {
-      "label": "گزارش فروش",
-      "description": "جزئیات فروش‌های ثبت‌شده بر اساس مشتری و کالا."
-    },
-    "purchase_report": {
-      "label": "گزارش خرید",
-      "description": "جزئیات خریدهای ثبت‌شده بر اساس تأمین‌کننده و کالا."
-    },
-    "inventory_stock": {
-      "label": "موجودی کالا",
-      "description": "مقدار و ارزش موجودی فعلی بر اساس کالا و انبار."
-    },
-    "stock_movement": {
-      "label": "گردش موجودی",
-      "description": "تاریخچه تفصیلی گردش موجودی بر اساس کالا و انبار."
-    },
-    "low_stock": {
-      "label": "موجودی کم",
-      "description": "اقلامی که در حد سفارش یا پایین‌تر از آن قرار دارند."
-    },
-    "inventory_valuation": {
-      "label": "ارزش‌گذاری موجودی",
-      "description": "ارزش فعلی موجودی به تفکیک کالا."
-    },
-    "batch_wise_report": {
-      "label": "گزارش به تفکیک بچ",
-      "description": "موجودی هر بچ همراه با ورودی، خروجی و موجودی فعلی."
-    },
-    "expiry_wise_report": {
-      "label": "گزارش بر اساس انقضا",
-      "description": "گردش موجودی بر اساس تاریخ انقضای هر بچ."
-    },
-    "zero_on_hand_report": {
-      "label": "اقلام با موجودی صفر",
-      "description": "اقلامی که موجودی فعلی آن‌ها صفر است، همراه با جمع ورودی و خروجی."
-    },
-    "fast_moving_report": {
-      "label": "گزارش اقلام پرفروش",
-      "description": "اقلامی با بیشترین مقدار و تعداد فروش."
-    },
-    "slow_moving_report": {
-      "label": "گزارش اقلام کم‌گردش",
-      "description": "اقلامی با کمترین میزان فروش و گردش موجودی."
-    },
-    "today_sale_purchase_closing_stock_report": {
-      "label": "فروش، خرید و موجودی پایانی امروز",
-      "description": "موجودی آغازین، خرید امروز، فروش امروز و موجودی پایانی هر کالا."
-    },
-    "near_expiry_report": {
-      "label": "گزارش نزدیک انقضا",
-      "description": "اقلام و بچ‌هایی که در ۳۰ روز آینده منقضی می‌شوند."
-    },
-    "maximum_stock_report": {
-      "label": "گزارش موجودی بیش از حد",
-      "description": "اقلامی که موجودی فعلی آن‌ها از حداکثر تعیین‌شده بیشتر است."
-    },
-    "group_summary_report": {
-      "label": "خلاصه گروهی حساب‌ها",
-      "description": "حساب‌ها بر اساس نوع حساب همراه با موجودی آغازین، بدهکار، بستانکار و موجودی پایانی."
-    },
-    "day_book_report": {
-      "label": "دفتر روزانه",
-      "description": "ردیف‌های ثبت‌شده تراکنش‌ها برای بازه تاریخ انتخاب‌شده."
-    },
-    "journal_book_report": {
-      "label": "دفتر روزنامه",
-      "description": "مجموع بدهکار، بستانکار و مانده بر اساس نوع حساب."
-    },
-    "user_activity": {
-      "label": "فعالیت کاربران",
-      "description": "ورودها و فعالیت‌های ایجاد، ویرایش و حذف به تفکیک کاربر."
-    },
-    "expense_report": {
-      "label": "گزارش مصارف",
-      "description": "مصارف ثبت‌شده بر اساس تاریخ، دسته‌بندی، حساب مصرف و حساب بانکی."
-    }
-  },
-  "user_activity": {
-    "cards": {
-      "total_users": "کل کاربران",
-      "active_users": "کاربران فعال",
-      "active_suffix": "فعال",
-      "total_activities": "کل فعالیت‌ها",
-      "total_logins": "کل ورودها"
-    },
-    "sections": {
-      "role_distribution": "توزیع نقش‌ها",
-      "top_users": "پرفعالیت‌ترین کاربران",
-      "activity_summary": "خلاصه فعالیت‌ها",
-      "user_details": "جزئیات کاربران"
-    },
-    "actions": {
-      "login": "ورود",
-      "create": "ایجاد",
-      "update": "ویرایش",
-      "delete": "حذف"
+    "summary": {
+        "total_debit": "مجموع بدهکار",
+        "total_credit": "مجموع بستانکار",
+        "balance": "مانده",
+        "balance_label": "مانده",
+        "total_amount": "مجموع مبلغ",
+        "total_quantity": "مجموع مقدار",
+        "total_value": "مجموع ارزش",
+        "total_items": "تعداد اقلام",
+        "total_in": "مجموع ورودی",
+        "total_out": "مجموع خروجی",
+        "total_on_hand": "مجموع موجودی",
+        "total_sold": "مجموع فروش",
+        "sale_count": "تعداد فروش",
+        "average_per_day": "میانگین روزانه",
+        "days_on_hand": "روزهای موجودی",
+        "turnover_rate": "نرخ گردش",
+        "opening_balance": "موجودی آغازین",
+        "purchase_today": "خرید امروز",
+        "sale_today": "فروش امروز",
+        "closing_balance": "موجودی پایانی",
+        "days_until_expiry": "روزهای تا انقضا",
+        "max_stock_level": "حداکثر موجودی",
+        "excess_quantity": "مقدار مازاد",
+        "total_excess_quantity": "مجموع مقدار مازاد",
+        "total_sales": "مجموع فروش‌ها",
+        "total_purchases": "مجموع خریدها",
+        "total_assets": "مجموع دارایی‌ها",
+        "total_liabilities": "بدهی‌ها",
+        "total_equity": "مجموع سرمایه",
+        "equation_total": "بدهی‌ها + سرمایه",
+        "total_revenue": "مجموع درآمد",
+        "total_cost_of_goods_sold": "مجموع بهای تمام‌شده کالای فروش‌رفته",
+        "gross_profit": "سود ناخالص",
+        "total_expenses": "مجموع مصارف",
+        "net_profit": "سود خالص",
+        "expense_count": "مصارف",
+        "party_count": "تعداد طرف حساب",
+        "total_debtor": "مجموع طلب",
+        "total_creditor": "مجموع بدهی",
+        "currency_count": "تعداد ارزها",
+        "total_home_equivalent": "مجموع (ارز پایه)",
+        "payslip_count": "فیش‌های معاش",
+        "run_count": "دوره‌های معاش",
+        "total_gross": "مجموع ناخالص",
+        "total_tax": "مجموع مالیه",
+        "total_net": "مجموع خالص",
+        "outstanding": "باقی مانده",
+        "taxable_income": "عاید قابل مالیه",
+        "loan_count": "قرضه‌ها",
+        "total_principal": "مجموع اصل",
+        "present_days": "روزهای حاضر",
+        "absent_days": "روزهای غیرحاضر",
+        "leave_days": "روزهای رخصتی",
+        "worked_hours": "ساعات کار",
+        "overtime_hours": "ساعات اضافه‌کاری",
+        "needs_review": "نیاز به بررسی",
+        "day_count": "روزها",
+        "entitled_days": "روزهای استحقاق",
+        "taken_days": "روزهای استفاده شده",
+        "pending_days": "روزهای در انتظار",
+        "available_days": "روزهای قابل استفاده",
+        "request_count": "درخواست‌ها",
+        "total_days": "مجموع روزها",
+        "approved_days": "روزهای تایید شده",
+        "headcount": "تعداد کارمندان",
+        "joiners": "استخدام شده",
+        "leavers": "ترک کرده",
+        "net_change": "تغییر خالص",
+        "contract_count": "قراردادها",
+        "expired_count": "منقضی شده"
     },
     "columns": {
-      "no": "شماره",
-      "section": "بخش",
-      "account_name": "نام حساب",
-      "user": "کاربر",
-      "role": "نقش",
-      "total_activities": "فعالیت",
-      "logins": "ورود",
-      "creates": "ایجاد",
-      "updates": "ویرایش",
-      "deletes": "حذف",
-      "last_login": "آخرین ورود",
-      "top_sources": "بیشترین فعالیت"
+        "no": "شماره",
+        "section": "بخش",
+        "account_name": "نام حساب",
+        "ledger_name": "دفتر حساب",
+        "total_debit": "بدهکار",
+        "total_credit": "بستانکار",
+        "balance": "مانده",
+        "transaction_number": "شماره تراکنش",
+        "reference_type": "نوع مرجع",
+        "description": "شرح",
+        "debit": "بدهکار",
+        "credit": "بستانکار",
+        "running_balance": "مانده جاری",
+        "reference": "مرجع",
+        "amount_received": "مبلغ دریافت‌شده",
+        "amount_paid": "مبلغ پرداخت‌شده",
+        "date": "تاریخ",
+        "sale_number": "شماره فروش",
+        "purchase_number": "شماره خرید",
+        "customer": "مشتری",
+        "supplier": "تأمین‌کننده",
+        "item": "کالا",
+        "quantity": "مقدار",
+        "unit_measure": "واحد اندازه گیری",
+        "unit_price": "قیمت واحد",
+        "discount": "تخفیف",
+        "total_amount": "مبلغ کل",
+        "warehouse": "انبار",
+        "average_cost": "میانگین قیمت تمام‌شده",
+        "total_value": "ارزش کل",
+        "item_code": "کد کالا",
+        "item_name": "نام کالا",
+        "batch_number": "شماره بچ",
+        "expiry_date": "تاریخ انقضا",
+        "in_quantity": "ورودی",
+        "out_quantity": "خروجی",
+        "on_hand": "موجودی",
+        "time": "زمان",
+        "transaction_type": "نوع تراکنش",
+        "narration": "شرح",
+        "account_type": "نوع حساب",
+        "total_in": "ورودی",
+        "total_out": "خروجی",
+        "opening_balance": "موجودی آغازین",
+        "purchase_today": "خرید امروز",
+        "sale_today": "فروش امروز",
+        "closing_balance": "موجودی پایانی",
+        "days_until_expiry": "روزهای تا انقضا",
+        "max_stock_level": "حداکثر موجودی",
+        "excess_quantity": "مقدار مازاد",
+        "sale_count": "تعداد فروش",
+        "average_per_day": "میانگین روزانه",
+        "days_on_hand": "روزهای موجودی",
+        "turnover_rate": "نرخ گردش",
+        "total_sold": "مجموع فروش",
+        "movement_type": "نوع گردش",
+        "source_type": "نوع منبع",
+        "reference_id": "شناسه مرجع",
+        "reorder_level": "حد سفارش",
+        "reference_number": "شماره مرجع",
+        "expire_date": "تاریخ انقضا",
+        "batch": "بچ",
+        "number": "شماره",
+        "type": "نوع",
+        "status": "وضعیت",
+        "payment_status": "وضعیت پرداخت",
+        "amount": "مبلغ",
+        "category": "دسته‌بندی",
+        "expense_account": "حساب مصرف",
+        "bank_account": "حساب بانکی / نقدی",
+        "remark": "ملاحظات",
+        "party_name": "طرف حساب",
+        "balance_type": "نوع مانده",
+        "currency": "ارز",
+        "home_equivalent": "معادل ارز پایه",
+        "currency_name": "نام ارز",
+        "period": "دوره",
+        "employee": "کارمند",
+        "employee_code": "کود",
+        "department": "بخش",
+        "designation": "بست",
+        "present_days": "حاضر",
+        "absent_days": "غیرحاضر",
+        "late_days": "تاخیر",
+        "half_days": "نیم روز",
+        "leave_days": "رخصتی",
+        "overtime_hours": "ساعات اضافه‌کاری",
+        "worked_hours": "ساعات کار",
+        "late_minutes": "دقایق تاخیر",
+        "needs_review": "بررسی",
+        "basic_salary": "اساسی",
+        "gross_earnings": "ناخالص",
+        "deductions": "کسرات",
+        "tax": "مالیه",
+        "net_payable": "خالص قابل پرداخت",
+        "paid": "پرداخت شده",
+        "outstanding": "باقی مانده",
+        "pay_date": "تاریخ پرداخت",
+        "employees": "کارمندان",
+        "tin": "نمبر تشخیصیه",
+        "tax_table": "جدول مالیه",
+        "taxable_income": "عاید قابل مالیه",
+        "issue_date": "تاریخ صدور",
+        "principal": "اصل",
+        "installment": "قسط",
+        "repaid": "بازپرداخت شده",
+        "shift": "شفت",
+        "check_in": "ورود",
+        "check_out": "خروج",
+        "leave_type": "نوع رخصتی",
+        "entitled_days": "استحقاق",
+        "carried_forward": "انتقالی",
+        "taken_days": "استفاده شده",
+        "pending_days": "در انتظار",
+        "available_days": "قابل استفاده",
+        "from_date": "از تاریخ",
+        "to_date": "الی تاریخ",
+        "days": "روزها",
+        "approved_by": "تایید کننده",
+        "reason": "دلیل",
+        "headcount": "تعداد کارمندان",
+        "joiners": "استخدام شده",
+        "leavers": "ترک کرده",
+        "male": "مرد",
+        "female": "زن",
+        "permanent": "دایمی",
+        "average_salary": "اوسط معاش",
+        "phone": "تیلفون",
+        "start_date": "تاریخ شروع",
+        "end_date": "تاریخ ختم",
+        "days_remaining": "روزهای باقی"
     },
-    "sources": {
-      "users": "کاربران",
-      "accounts": "حساب‌ها",
-      "account_types": "نوع حساب‌ها",
-      "brands": "برندها",
-      "categories": "دسته‌بندی‌ها",
-      "currencies": "ارزها",
-      "expense_categories": "دسته‌بندی مصارف",
-      "expenses": "مصارف",
-      "item_transfers": "انتقالات کالا",
-      "items": "کالاها",
-      "journal_classes": "کلاس‌های ژورنال",
-      "journal_entries": "اسناد ژورنال",
-      "ledgers": "دفاتر حساب",
-      "owners": "مالکان",
-      "payments": "پرداخت‌ها",
-      "purchases": "خریدها",
-      "receipts": "رسیدها",
-      "sales": "فروش‌ها",
-      "sizes": "سایزها",
-      "unit_measures": "واحدهای اندازه‌گیری",
-      "warehouses": "انبارها"
+    "view_types": {
+        "general": "عمومی",
+        "itemwise": "براساس جنس"
+    },
+    "reports": {
+        "trial_balance": {
+            "label": "تراز آزمایشی",
+            "description": "بدهکار، بستانکار و مانده خالص حساب‌ها بر اساس اسناد ثبت‌شده."
+        },
+        "balance_sheet": {
+            "label": "بیلانس شیت",
+            "description": "وضعیت مالی تا تاریخ انتخاب‌شده."
+        },
+        "income_statement": {
+            "label": "سود و زیان",
+            "description": "درآمد، بهای تمام‌شده کالای فروش‌رفته، مصارف و سود خالص برای دوره انتخاب‌شده."
+        },
+        "general_ledger": {
+            "label": "دفتر کل",
+            "description": "تراکنش‌های دفتر حساب همراه با مانده جاری."
+        },
+        "customer_statement": {
+            "label": "صورت‌حساب مشتری",
+            "description": "به صورت پیش‌فرض مانده همه مشتریان، یا صورت‌حساب کامل مشتری انتخاب‌شده."
+        },
+        "supplier_statement": {
+            "label": "صورت‌حساب تأمین‌کننده",
+            "description": "به صورت پیش‌فرض مانده همه تأمین‌کنندگان، یا صورت‌حساب کامل تأمین‌کننده انتخاب‌شده."
+        },
+        "receipt_report": {
+            "label": "گزارش رسید",
+            "description": "ورودی‌های نقد و بانک که در آن حساب نقد بدهکار می‌شود."
+        },
+        "payment_report": {
+            "label": "گزارش پرداخت",
+            "description": "خروجی‌های نقد و بانک که در آن حساب نقد بستانکار می‌شود."
+        },
+        "cash_book": {
+            "label": "کتاب نقدی",
+            "description": "مانده جاری برای حساب نقد یا بانک انتخاب‌شده."
+        },
+        "cash_position_by_currency": {
+            "label": "وضعیت نقدینگی بر اساس ارز",
+            "description": "مقدار نقدینگی موجود در هر ارز، در مجموع تمام حساب‌های نقد و بانک."
+        },
+        "sales_report": {
+            "label": "گزارش فروش",
+            "description": "جزئیات فروش‌های ثبت‌شده بر اساس مشتری و کالا."
+        },
+        "purchase_report": {
+            "label": "گزارش خرید",
+            "description": "جزئیات خریدهای ثبت‌شده بر اساس تأمین‌کننده و کالا."
+        },
+        "inventory_stock": {
+            "label": "موجودی کالا",
+            "description": "مقدار و ارزش موجودی فعلی بر اساس کالا و انبار."
+        },
+        "stock_movement": {
+            "label": "گردش موجودی",
+            "description": "تاریخچه تفصیلی گردش موجودی بر اساس کالا و انبار."
+        },
+        "low_stock": {
+            "label": "موجودی کم",
+            "description": "اقلامی که در حد سفارش یا پایین‌تر از آن قرار دارند."
+        },
+        "inventory_valuation": {
+            "label": "ارزش‌گذاری موجودی",
+            "description": "ارزش فعلی موجودی به تفکیک کالا."
+        },
+        "batch_wise_report": {
+            "label": "گزارش به تفکیک بچ",
+            "description": "موجودی هر بچ همراه با ورودی، خروجی و موجودی فعلی."
+        },
+        "expiry_wise_report": {
+            "label": "گزارش بر اساس انقضا",
+            "description": "گردش موجودی بر اساس تاریخ انقضای هر بچ."
+        },
+        "zero_on_hand_report": {
+            "label": "اقلام با موجودی صفر",
+            "description": "اقلامی که موجودی فعلی آن‌ها صفر است، همراه با جمع ورودی و خروجی."
+        },
+        "fast_moving_report": {
+            "label": "گزارش اقلام پرفروش",
+            "description": "اقلامی با بیشترین مقدار و تعداد فروش."
+        },
+        "slow_moving_report": {
+            "label": "گزارش اقلام کم‌گردش",
+            "description": "اقلامی با کمترین میزان فروش و گردش موجودی."
+        },
+        "today_sale_purchase_closing_stock_report": {
+            "label": "فروش، خرید و موجودی پایانی امروز",
+            "description": "موجودی آغازین، خرید امروز، فروش امروز و موجودی پایانی هر کالا."
+        },
+        "near_expiry_report": {
+            "label": "گزارش نزدیک انقضا",
+            "description": "اقلام و بچ‌هایی که در ۳۰ روز آینده منقضی می‌شوند."
+        },
+        "maximum_stock_report": {
+            "label": "گزارش موجودی بیش از حد",
+            "description": "اقلامی که موجودی فعلی آن‌ها از حداکثر تعیین‌شده بیشتر است."
+        },
+        "group_summary_report": {
+            "label": "خلاصه گروهی حساب‌ها",
+            "description": "حساب‌ها بر اساس نوع حساب همراه با موجودی آغازین، بدهکار، بستانکار و موجودی پایانی."
+        },
+        "day_book_report": {
+            "label": "دفتر روزانه",
+            "description": "ردیف‌های ثبت‌شده تراکنش‌ها برای بازه تاریخ انتخاب‌شده."
+        },
+        "journal_book_report": {
+            "label": "دفتر روزنامه",
+            "description": "مجموع بدهکار، بستانکار و مانده بر اساس نوع حساب."
+        },
+        "user_activity": {
+            "label": "فعالیت کاربران",
+            "description": "ورودها و فعالیت‌های ایجاد، ویرایش و حذف به تفکیک کاربر."
+        },
+        "expense_report": {
+            "label": "گزارش مصارف",
+            "description": "مصارف ثبت‌شده بر اساس تاریخ، دسته‌بندی، حساب مصرف و حساب بانکی."
+        },
+        "payroll_register": {
+            "label": "دفتر معاشات",
+            "description": "تمام فیش‌های معاش دوره با روزهای کاری، مفادات، مالیه و مقدار پرداخت شده."
+        },
+        "payslip_summary": {
+            "label": "خلاصه معاشات",
+            "description": "یک سطر برای هر دوره معاش — تعداد کارمندان، ناخالص، مالیه و باقی مانده."
+        },
+        "tax_withholding_report": {
+            "label": "مالیه معاش کسر شده",
+            "description": "مالیه کسر شده هر کارمند با جدول مالیاتی که فیش بر اساس آن محاسبه شده."
+        },
+        "employee_loan_statement": {
+            "label": "قرضه‌های کارمندان",
+            "description": "قرضه‌ها و پیشکی‌های کارمندان، مقدار بازپرداخت شده و باقی مانده."
+        },
+        "attendance_summary": {
+            "label": "خلاصه حاضری",
+            "description": "روزهای حاضر، تاخیر، غیرحاضر و رخصتی هر کارمند با ساعات کار."
+        },
+        "attendance_register": {
+            "label": "دفتر حاضری",
+            "description": "سوابق حاضری روز به روز با اوقات ورود و خروج."
+        },
+        "leave_balance_report": {
+            "label": "بیلانس رخصتی",
+            "description": "استحقاق در مقابل روزهای استفاده شده. درخواست‌های در انتظار نشان داده می‌شوند اما کسر نمی‌گردند."
+        },
+        "leave_register": {
+            "label": "دفتر رخصتی",
+            "description": "درخواست‌های رخصتی، تاریخ‌ها و تایید کننده آن‌ها."
+        },
+        "headcount_report": {
+            "label": "تعداد کارمندان",
+            "description": "تعداد کارمندان هر بخش در ختم دوره، همراه با استخدام شده‌ها و ترک کرده‌ها."
+        },
+        "contract_expiry_report": {
+            "label": "ختم قراردادها",
+            "description": "قراردادهایی که در این دوره ختم می‌شوند تا تمدید و مهلت اطلاع فراموش نشود."
+        }
+    },
+    "user_activity": {
+        "cards": {
+            "total_users": "کل کاربران",
+            "active_users": "کاربران فعال",
+            "active_suffix": "فعال",
+            "total_activities": "کل فعالیت‌ها",
+            "total_logins": "کل ورودها"
+        },
+        "sections": {
+            "role_distribution": "توزیع نقش‌ها",
+            "top_users": "پرفعالیت‌ترین کاربران",
+            "activity_summary": "خلاصه فعالیت‌ها",
+            "user_details": "جزئیات کاربران"
+        },
+        "actions": {
+            "login": "ورود",
+            "create": "ایجاد",
+            "update": "ویرایش",
+            "delete": "حذف"
+        },
+        "columns": {
+            "no": "شماره",
+            "section": "بخش",
+            "account_name": "نام حساب",
+            "user": "کاربر",
+            "role": "نقش",
+            "total_activities": "فعالیت",
+            "logins": "ورود",
+            "creates": "ایجاد",
+            "updates": "ویرایش",
+            "deletes": "حذف",
+            "last_login": "آخرین ورود",
+            "top_sources": "بیشترین فعالیت"
+        },
+        "sources": {
+            "users": "کاربران",
+            "accounts": "حساب‌ها",
+            "account_types": "نوع حساب‌ها",
+            "brands": "برندها",
+            "categories": "دسته‌بندی‌ها",
+            "currencies": "ارزها",
+            "expense_categories": "دسته‌بندی مصارف",
+            "expenses": "مصارف",
+            "item_transfers": "انتقالات کالا",
+            "items": "کالاها",
+            "journal_classes": "کلاس‌های ژورنال",
+            "journal_entries": "اسناد ژورنال",
+            "ledgers": "دفاتر حساب",
+            "owners": "مالکان",
+            "payments": "پرداخت‌ها",
+            "purchases": "خریدها",
+            "receipts": "رسیدها",
+            "sales": "فروش‌ها",
+            "sizes": "سایزها",
+            "unit_measures": "واحدهای اندازه‌گیری",
+            "warehouses": "انبارها"
+        }
+    },
+    "statement": "صورت‌حساب",
+    "statement_period": "صورت‌حساب از {from} تا {to}",
+    "statement_up_to": "صورت‌حساب تا {to}",
+    "home_currency": "ارز پایه",
+    "home_equivalent_note": "معادل به ارز پایه ({code})، بر اساس نرخ هر معامله",
+    "aging": {
+        "title": "تحلیل سنی مانده",
+        "current": "جاری",
+        "days_30": "۱ تا ۳۰ روز",
+        "days_60": "۳۱ تا ۶۰ روز",
+        "days_90": "۶۱ تا ۹۰ روز",
+        "days_90_plus": "بیش از ۹۰ روز",
+        "unapplied_credit": "بستانکاری تخصیص‌نیافته"
     }
-  },
-  "statement": "صورت‌حساب",
-  "statement_period": "صورت‌حساب از {from} تا {to}",
-  "statement_up_to": "صورت‌حساب تا {to}",
-  "home_currency": "ارز پایه",
-  "home_equivalent_note": "معادل به ارز پایه ({code})، بر اساس نرخ هر معامله",
-  "aging": {
-    "title": "تحلیل سنی مانده",
-    "current": "جاری",
-    "days_30": "۱ تا ۳۰ روز",
-    "days_60": "۳۱ تا ۶۰ روز",
-    "days_90": "۶۱ تا ۹۰ روز",
-    "days_90_plus": "بیش از ۹۰ روز",
-    "unapplied_credit": "بستانکاری تخصیص‌نیافته"
-  }
 }
