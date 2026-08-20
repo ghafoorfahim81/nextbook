@@ -55,6 +55,27 @@ return [
             \App\Models\Hr\LeaveType::class,
             \App\Models\Hr\LeaveAllocation::class,
             \App\Models\Hr\LeaveRequest::class,
+
+            // Payroll. Salary figures and tax tables are the most sensitive
+            // data in the system, and "who changed this bracket" is exactly
+            // the question an audit gets asked.
+            //
+            // payroll_lines and payroll_line_components are absent on purpose:
+            // they are rebuilt wholesale on every recalculation, so logging
+            // them would record the engine's working rather than anyone's
+            // decision. The run itself carries the decisions.
+            \App\Models\Hr\SalaryComponent::class,
+            \App\Models\Hr\SalaryStructure::class,
+            \App\Models\Hr\TaxBracketSet::class,
+            \App\Models\Hr\Payroll::class,
+            \App\Models\Hr\SalaryPayment::class,
+            \App\Models\Hr\EmployeeLoan::class,
+
+            // Recruitment. Hiring decisions attract disputes, so the pipeline
+            // is logged; interview feedback is part of that record.
+            \App\Models\Hr\JobOpening::class,
+            \App\Models\Hr\JobApplication::class,
+            \App\Models\Hr\Interview::class,
         ],
         'except_attributes' => [
             'created_at',
