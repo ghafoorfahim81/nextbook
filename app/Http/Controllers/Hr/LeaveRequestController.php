@@ -124,7 +124,10 @@ class LeaveRequestController extends Controller
     public function show(Request $request, LeaveRequest $leaveRequest, LeaveBalanceService $balances)
     {
         $leaveRequest->load([
-            'employee:id,full_name,code,department_id,gender,joining_date',
+            // branch_id is required here even though the page never shows it —
+            // LeaveBalanceService scopes its query by the employee's branch,
+            // and a constrained select that omits it hands the service a null.
+            'employee:id,branch_id,full_name,code,department_id,gender,joining_date',
             'employee.department:id,name',
             'leaveType', 'approver:id,name', 'handoverTo:id,full_name', 'attachments', 'createdBy:id,name',
         ]);

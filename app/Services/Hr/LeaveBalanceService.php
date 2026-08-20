@@ -5,6 +5,7 @@ namespace App\Services\Hr;
 use App\Enums\LeaveRequestStatus;
 use App\Models\Hr\Employee;
 use App\Models\Hr\LeaveAllocation;
+use App\Support\BranchContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -34,7 +35,18 @@ class LeaveBalanceService
     {
         $asOf = $asOf ?? Carbon::today();
 
-        $rows = $this->baseQuery($employee->branch_id, $asOf)
+        // Falls back to the acting branch when the caller loaded the employee
+        // with a constrained select that omitted branch_id. Employees are
+        // branch-scoped, so in any legitimate flow the two are the same — and
+        // this is a cheap way to stop a `with('employee:id,full_name')`
+        // somewhere unrelated from turning into a 500 on this page.
+        $branchId = $employee->branch_id ?? BranchContext::branchId();
+
+        if (! $branchId) {
+            return [];
+        }
+
+        $rows = $this->baseQuery($branchId, $asOf)
             ->where('la.employee_id', $employee->id)
             ->when($leaveTypeId, fn ($q) => $q->where('la.leave_type_id', $leaveTypeId))
             ->get();
