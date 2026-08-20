@@ -16,6 +16,8 @@ use App\Models\Administration\Size;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Administration\Warehouse;
 use App\Models\Expense\ExpenseCategory;
+use App\Models\Hr\LeaveType;
+use App\Models\Hr\Shift;
 use App\Models\JournalEntry\JournalClass;
 use App\Models\Ledger\Ledger;
 use App\Models\User;
@@ -67,6 +69,8 @@ class BranchProvisioningService
             $counts['categories'] = $this->categories($branch, $actorId);
             $counts['brands'] = $this->brands($branch, $actorId);
             $counts['departments'] = $this->departments($branch, $actorId);
+            $counts['shifts'] = $this->shifts($branch, $actorId);
+            $counts['leave_types'] = $this->leaveTypes($branch, $actorId);
             $counts['financial_periods'] = $this->financialPeriod($branch, $actorId);
 
             return $counts;
@@ -506,6 +510,113 @@ class BranchProvisioningService
                 'branch_id' => $branch->id,
                 'created_by' => $actorId,
             ]);
+            $created++;
+        }
+
+        return $created;
+    }
+
+    /**
+     * Default work patterns.
+     *
+     * The Afghan private-sector week runs Saturday to Thursday with Friday as
+     * the rest day, so that is the default; a five-day variant is provided for
+     * NGO and public-sector branches, and a Ramadan profile with reduced hours
+     * that HR activates for the month. All three are ordinary editable rows.
+     */
+    private function shifts(Branch $branch, ?string $actorId): int
+    {
+        $existing = $this->existing(Shift::class, $branch, 'code');
+        $created = 0;
+
+        $defaults = [
+            [
+                'name' => 'General Shift (Sat–Thu)',
+                'code' => 'GEN6',
+                'start_time' => '08:00:00',
+                'end_time' => '16:00:00',
+                'break_minutes' => 60,
+                'grace_in_minutes' => 15,
+                'full_day_hours' => 8,
+                'half_day_hours' => 4,
+                // ISO weekdays: Sat(6), Sun(7), Mon(1), Tue(2), Wed(3), Thu(4).
+                // Friday (5) is absent — it is the weekly rest day.
+                'working_days' => [6, 7, 1, 2, 3, 4],
+                'is_default' => true,
+            ],
+            [
+                'name' => 'Five Day Shift (Sat–Wed)',
+                'code' => 'GEN5',
+                'start_time' => '08:00:00',
+                'end_time' => '16:00:00',
+                'break_minutes' => 60,
+                'grace_in_minutes' => 15,
+                'full_day_hours' => 8,
+                'half_day_hours' => 4,
+                'working_days' => [6, 7, 1, 2, 3],
+                'is_default' => false,
+            ],
+            [
+                'name' => 'Ramadan Shift',
+                'code' => 'RAMADAN',
+                'start_time' => '09:00:00',
+                'end_time' => '15:00:00',
+                'break_minutes' => 0,
+                'grace_in_minutes' => 15,
+                'full_day_hours' => 6,
+                'half_day_hours' => 3,
+                'working_days' => [6, 7, 1, 2, 3, 4],
+                'is_default' => false,
+            ],
+        ];
+
+        foreach ($defaults as $shift) {
+            if (in_array($shift['code'], $existing, true)) {
+                continue;
+            }
+
+            $this->insert(Shift::class, array_merge($shift, [
+                'working_days' => json_encode($shift['working_days']),
+                'is_active' => true,
+                'branch_id' => $branch->id,
+                'created_by' => $actorId,
+            ]));
+            $created++;
+        }
+
+        return $created;
+    }
+
+    /**
+     * Default leave types, following Afghan Labour Law as a starting point.
+     *
+     * Seeded as data so an employer can change any figure without a deploy —
+     * the same principle as every other default in this service.
+     */
+    private function leaveTypes(Branch $branch, ?string $actorId): int
+    {
+        $existing = $this->existing(LeaveType::class, $branch, 'code');
+        $created = 0;
+
+        foreach (LeaveType::defaultLeaveTypes() as $type) {
+            if (in_array($type['code'], $existing, true)) {
+                continue;
+            }
+
+            $this->insert(LeaveType::class, array_merge([
+                'is_paid' => true,
+                'requires_approval' => true,
+                'requires_attachment' => false,
+                'deduct_from_salary' => false,
+                'is_encashable' => false,
+                'pro_rata_on_join' => true,
+                'excludes_holidays' => true,
+                'excludes_weekends' => true,
+                'is_active' => true,
+            ], $type, [
+                'branch_id' => $branch->id,
+                'created_by' => $actorId,
+            ]));
             $created++;
         }
 

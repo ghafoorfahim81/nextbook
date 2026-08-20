@@ -46,9 +46,9 @@ const editItem = (item) => {
 const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {
     deleteResource('designations.destroy', id, {
-        title: t('general.delete', { name: t('general.resource.designation') }),
-        description: t('general.delete_description', { name: t('general.resource.designation') }),
-        successMessage: t('general.delete_success', { name: t('general.resource.designation') }),
+        title: t('general.delete', { name: t('admin.designation.designation') }),
+        description: t('general.delete_description', { name: t('admin.designation.designation') }),
+        successMessage: t('general.delete_success', { name: t('admin.designation.designation') }),
     });
 };
 </script>
@@ -76,7 +76,7 @@ const deleteItem = (id) => {
             :title="t('sidebar.hr.designation')"
             :url="`designations.index`"
             :showAddButton="true"
-            :addTitle="t('general.resource.designation')"
+            :addTitle="t('admin.designation.designation')"
             :addAction="'modal'"
         />
     </AppLayout>

@@ -1,95 +1,134 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useForm } from '@inertiajs/vue3'
-import { Input } from '@/Components/ui/input'
-import { Textarea } from '@/Components/ui/textarea'
-import { Label } from "@/Components/ui/label/index.js";
-import ModalDialog from "@/Components/next/Dialog.vue";
+import { useI18n } from 'vue-i18n'
+import { toast } from 'vue-sonner'
+import ModalDialog from '@/Components/next/Dialog.vue'
+import NextInput from '@/Components/next/NextInput.vue'
+import NextSelect from '@/Components/next/NextSelect.vue'
+import NextTextarea from '@/Components/next/NextTextarea.vue'
 
 const props = defineProps({
     isDialogOpen: Boolean,
-    departments: {
-        type: Array,
-        default: () => [],
-    },
-    department: {
-        type: Object,
-        default: null,
-    },
-});
+    editingItem: Object,
+    departments: { type: [Array, Object], default: () => [] },
+})
 
-const emit = defineEmits(['update:isDialogOpen', 'saved']);
-
-// ✅ Local reactive state to track dialog open status
-const localDialogOpen = ref(props.isDialogOpen);
-
-// ✅ Watch for changes in the prop and update the local state
-watch(() => props.isDialogOpen, (newValue) => {
-    localDialogOpen.value = newValue;
-});
-
-// ✅ When closing the modal, emit the event to the parent
-const closeModal = () => {
-    localDialogOpen.value = false;
-    emit('update:isDialogOpen', false);
-    form.reset();
-};
-
-const isEditing = computed(() => !!props.department);
+const emit = defineEmits(['update:isDialogOpen', 'saved'])
+const { t } = useI18n()
+const localDialogOpen = ref(props.isDialogOpen)
+const isEditing = computed(() => !!props.editingItem?.id)
+const departmentOptions = computed(() => {
+    const departments = props.departments?.data ?? props.departments
+    return (Array.isArray(departments) ? departments : [])
+        .filter((department) => department.id !== props.editingItem?.id)
+})
 
 const form = useForm({
     name: '',
-    remark: '',
+    code: '',
     parent_id: null,
-});
+    selected_parent: null,
+    remark: '',
+})
 
-if (isEditing.value) {
-    form.name = props.department.name;
-    form.remark = props.department.remark;
-    form.parent_id = props.department.parent_id;
+watch(() => props.isDialogOpen, (value) => {
+    localDialogOpen.value = value
+})
+
+watch(() => localDialogOpen.value, (value) => emit('update:isDialogOpen', value))
+
+watch(() => props.editingItem, (item) => {
+    if (item) {
+        Object.assign(form, {
+            name: item.name ?? '',
+            code: item.code ?? '',
+            parent_id: item.parent_id ?? null,
+            selected_parent: departmentOptions.value.find((department) => department.id === item.parent_id) ?? null,
+            remark: item.remark ?? '',
+        })
+    } else {
+        form.reset()
+        form.clearErrors()
+    }
+}, { immediate: true })
+
+const closeModal = () => {
+    localDialogOpen.value = false
+    form.reset()
+    form.clearErrors()
 }
 
-const handleSubmit = async () => {
-    if (isEditing.value) {
-        await form.patch(route('departments.update', props.department.id));
-    } else {
-        await form.post(route('departments.store'));
+const handleSubmit = () => {
+    const isEdit = isEditing.value
+    const options = {
+        onBefore: () => form.transform(({ selected_parent, ...data }) => data),
+        onSuccess: () => {
+            emit('saved')
+            toast.success(t('general.success'), {
+                description: t(isEdit ? 'general.update_success' : 'general.create_success', {
+                    name: t('admin.department.department'),
+                }),
+                class: 'bg-green-600',
+            })
+            closeModal()
+        },
     }
-    emit('saved');
-    closeModal(); // ✅ Properly close the modal
-};
+
+    if (isEdit) {
+        form.patch(route('departments.update', props.editingItem.id), options)
+    } else {
+        form.post(route('departments.store'), options)
+    }
+}
 </script>
 
 <template>
     <ModalDialog
         :open="localDialogOpen"
-        :title="isEditing ? 'Edit Department' : 'Create Department'"
-        :confirmText="isEditing ? 'Update' : 'Create'"
+        :title="isEditing ? t('general.edit', { name: t('admin.department.department') }) : t('general.create', { name: t('admin.department.department') })"
+        :confirm-text="isEditing ? t('general.update') : t('general.create')"
+        :cancel-text="t('general.close')"
         :closeable="true"
-        @update:open="localDialogOpen = $event; emit('update:isDialogOpen', $event)"
+        :submitting="form.processing"
+        @update:open="localDialogOpen = $event"
         @confirm="handleSubmit"
         @cancel="closeModal"
     >
-        <form @submit.prevent="handleSubmit">
-            <div class="grid gap-4 py-4">
-                <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="name" class="text-nowrap">
-                        Name
-                    </Label>
-                    <Input id="name" autocomplete="false" v-model="form.name" placeholder="Enter name" class="col-span-3" />
+        <form id="modalForm" @submit.prevent="handleSubmit">
+            <div class="grid grid-cols-1 gap-4 py-4 md:grid-cols-2">
+                <NextInput
+                    v-model="form.name"
+                    :label="t('general.name')"
+                    :placeholder="t('general.enter', { text: t('general.name') })"
+                    :error="form.errors?.name"
+                    autofocus
+                />
+                <NextInput
+                    v-model="form.code"
+                    :label="t('general.code')"
+                    :placeholder="t('general.enter', { text: t('general.code') })"
+                    :error="form.errors?.code"
+                />
+                <div class="md:col-span-2">
+                    <NextSelect
+                        v-model="form.selected_parent"
+                        :options="departmentOptions"
+                        label-key="name"
+                        value-key="id"
+                        :reduce="(department) => department"
+                        :floating-text="t('admin.shared.parent')"
+                        :error="form.errors?.parent_id"
+                        append-in-dialog
+                        @update:model-value="(value) => { form.parent_id = value?.id ?? null }"
+                    />
                 </div>
-                <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="parent" class="text-nowrap">
-                        Parent
-                    </Label>
-                    <v-select :options="[1,2,3]" class="col-span-3"></v-select>
-                </div>
-
-                <div class="grid items-center grid-cols-4 gap-4">
-                    <Label for="remark" class="text-nowrap">
-                        Remark
-                    </Label>
-                    <Textarea id="remark" v-model="form.remark" rows="3" class="col-span-3" />
+                <div class="md:col-span-2">
+                    <NextTextarea
+                        v-model="form.remark"
+                        :label="t('admin.shared.remark')"
+                        :error="form.errors?.remark"
+                    />
                 </div>
             </div>
         </form>

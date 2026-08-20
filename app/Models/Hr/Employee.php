@@ -81,6 +81,7 @@ class Employee extends Model
         'photo',
         'department_id',
         'designation_id',
+        'shift_id',
         'reports_to_id',
         'employment_type',
         'employment_status',
@@ -114,6 +115,7 @@ class Employee extends Model
             'province_id' => 'string',
             'department_id' => 'string',
             'designation_id' => 'string',
+            'shift_id' => 'string',
             'reports_to_id' => 'string',
             'currency_id' => 'string',
             'branch_id' => 'string',
@@ -263,6 +265,26 @@ class Employee extends Model
     public function documents(): HasMany
     {
         return $this->hasMany(EmployeeDocument::class);
+    }
+
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(Shift::class);
+    }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function leaveRequests(): HasMany
+    {
+        return $this->hasMany(LeaveRequest::class);
+    }
+
+    public function leaveAllocations(): HasMany
+    {
+        return $this->hasMany(LeaveAllocation::class);
     }
 
     protected function photoUrl(): Attribute

@@ -21,7 +21,9 @@
     "reports": "Reports",
     "system": "System",
     "deleted_records": "Deleted Records",
-    "trash": "Trash"
+    "trash": "Trash",
+    "attendance": "Attendance",
+    "leave": "Leave"
   },
   "expense": {
     "expense": "Expense",
@@ -99,5 +101,19 @@
     "document": "Documents",
     "department": "Departments",
     "designation": "Designations"
+  },
+  "attendance": {
+    "roster": "Daily Roster",
+    "register": "Attendance Register",
+    "unmapped": "Unmapped Punches",
+    "device": "Devices",
+    "shift": "Shifts",
+    "holiday": "Holidays",
+    "self_service": "My Attendance"
+  },
+  "leave": {
+    "request": "Leave Requests",
+    "allocation": "Allocations",
+    "type": "Leave Types"
   }
 }

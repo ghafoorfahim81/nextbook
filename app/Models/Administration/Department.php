@@ -2,6 +2,9 @@
 
 namespace App\Models\Administration;
 
+use App\Models\Hr\Employee;
+use App\Traits\BranchSpecific;
+use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
 use App\Traits\HasSearch;
 use App\Traits\HasSorting;
@@ -12,12 +15,13 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Symfony\Component\Uid\Ulid;
-use App\Traits\BranchSpecific;
 class Department extends Model
 {
-    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting, HasDependencyCheck, BranchSpecific, SoftDeletes;
+    use HasFactory, HasUserAuditable, HasUserTracking, HasUlids, HasCache, HasSearch, HasSorting,
+        HasDependencyCheck, BranchSpecific, HasBranch, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -75,17 +79,35 @@ class Department extends Model
         return [
             'children' => [
                 'model' => 'subdepartments',
-                'message' => 'This department has subdepartments'
-            ]
+                'message' => 'This department has subdepartments',
+            ],
+            'employees' => [
+                'model' => 'employees',
+                'message' => 'This department is used by employees',
+            ],
+            'designations' => [
+                'model' => 'designations',
+                'message' => 'This department is used by designations',
+            ],
         ];
     }
 
     /**
      * Get the child departments
      */
-    public function children()
+    public function children(): HasMany
     {
         return $this->hasMany(Department::class, 'parent_id');
+    }
+
+    public function employees(): HasMany
+    {
+        return $this->hasMany(Employee::class, 'department_id');
+    }
+
+    public function designations(): HasMany
+    {
+        return $this->hasMany(Designation::class, 'department_id');
     }
 
     /**

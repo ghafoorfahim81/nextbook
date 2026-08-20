@@ -16,7 +16,9 @@
     "payment": "پرېمینټ",
     "transfer": "حساب لېږد",
     "user_management": "کارن شمیر",
-    "preferences": "ترتیبات"
+    "preferences": "ترتیبات",
+    "attendance": "حاضري",
+    "leave": "رخصتي"
   },
   "administration": {
     "category": "کټګوري",
@@ -74,5 +76,19 @@
     "document": "اسناد",
     "department": "څانګې",
     "designation": "دندې"
+  },
+  "attendance": {
+    "roster": "ورځنی جدول",
+    "register": "د حاضرۍ دفتر",
+    "unmapped": "بې‌تړاوه ثبتونه",
+    "device": "وسیلې",
+    "shift": "شیفتونه",
+    "holiday": "رسمي رخصتۍ",
+    "self_service": "زما حاضري"
+  },
+  "leave": {
+    "request": "د رخصتۍ غوښتنې",
+    "allocation": "ټاکنې",
+    "type": "د رخصتۍ ډولونه"
   }
 }

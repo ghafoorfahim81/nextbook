@@ -22,7 +22,9 @@
     "reports": "گزارشات",
     "system": "سیستم",
     "deleted_records": "رکوردهای حذف شده",
-    "trash": "سطل زباله"
+    "trash": "سطل زباله",
+    "attendance": "حاضری",
+    "leave": "رخصتی"
   },
   "expense": {
     "expense": "مصارف",
@@ -96,5 +98,19 @@
     "document": "اسناد",
     "department": "بخش‌ها",
     "designation": "وظایف"
+  },
+  "attendance": {
+    "roster": "جدول روزانه",
+    "register": "دفتر حاضری",
+    "unmapped": "ثبت‌های بدون ارتباط",
+    "device": "دستگاه‌ها",
+    "shift": "شیفت‌ها",
+    "holiday": "رخصتی‌های رسمی",
+    "self_service": "حاضری من"
+  },
+  "leave": {
+    "request": "درخواست‌های رخصتی",
+    "allocation": "تخصیص‌ها",
+    "type": "انواع رخصتی"
   }
 }

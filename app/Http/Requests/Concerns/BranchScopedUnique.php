@@ -18,9 +18,10 @@ trait BranchScopedUnique
     /**
      * @param  mixed  $ignore  record (or id) to exclude, for update requests
      */
-    protected function uniqueInBranch(string $table, mixed $ignore = null): Unique
+    protected function uniqueInBranch(string $table, mixed $ignore = null, ?string $column = null): Unique
     {
-        $rule = Rule::unique($table)->whereNull('deleted_at');
+        $rule = ($column === null ? Rule::unique($table) : Rule::unique($table, $column))
+            ->whereNull('deleted_at');
 
         $branchId = $this->activeBranchId();
 

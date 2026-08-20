@@ -19,9 +19,15 @@ use App\Models\Administration\Warehouse;
 use App\Models\Expense\Expense;
 use App\Models\Expense\ExpenseCategory;
 use App\Models\Expense\ExpenseDetail;
+use App\Models\Hr\AttendanceDevice;
 use App\Models\Hr\Employee;
 use App\Models\Hr\EmployeeContract;
 use App\Models\Hr\EmployeeDocument;
+use App\Models\Hr\Holiday;
+use App\Models\Hr\LeaveAllocation;
+use App\Models\Hr\LeaveRequest;
+use App\Models\Hr\LeaveType;
+use App\Models\Hr\Shift;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\StockBalance;
 use App\Models\Inventory\StockMovement;
@@ -275,6 +281,39 @@ class DeletedRecordService
                 'model' => EmployeeDocument::class,
                 'title' => fn (Model $record) => trim((string) ($record->document_number ?: $record->document_type?->value)),
             ],
+            'shifts' => [
+                'label' => 'Shifts',
+                'model' => Shift::class,
+                'title' => fn (Model $record) => trim(($record->code ? $record->code.' - ' : '').($record->name ?? '')),
+            ],
+            'holidays' => [
+                'label' => 'Holidays',
+                'model' => Holiday::class,
+                'title' => fn (Model $record) => trim((string) $record->name),
+            ],
+            'attendance_devices' => [
+                'label' => 'Attendance devices',
+                'model' => AttendanceDevice::class,
+                'title' => fn (Model $record) => trim(($record->code ? $record->code.' - ' : '').($record->name ?? '')),
+            ],
+            'leave_types' => [
+                'label' => 'Leave types',
+                'model' => LeaveType::class,
+                'title' => fn (Model $record) => trim(($record->code ? $record->code.' - ' : '').($record->name ?? '')),
+            ],
+            'leave_allocations' => [
+                'label' => 'Leave allocations',
+                'model' => LeaveAllocation::class,
+                'title' => fn (Model $record) => trim(($record->employee?->full_name ?? '').' — '.($record->leaveType?->name ?? '')),
+            ],
+            'leave_requests' => [
+                'label' => 'Leave requests',
+                'model' => LeaveRequest::class,
+                'title' => fn (Model $record) => trim('#'.($record->number ?? '').' '.($record->employee?->full_name ?? '')),
+            ],
+            // `attendances` is deliberately absent: at roughly 150k rows a year
+            // per branch the trash listing would be unusable, and a deleted day
+            // is recreated by re-running the roster or the pairer.
             'customers' => [
                 'label' => 'Customers',
                 'model' => Ledger::class,

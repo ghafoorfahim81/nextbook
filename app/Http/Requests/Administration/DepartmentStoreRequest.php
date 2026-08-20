@@ -4,6 +4,7 @@ namespace App\Http\Requests\Administration;
 
 use App\Http\Requests\Concerns\BranchScopedUnique;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class DepartmentStoreRequest extends FormRequest
 {
@@ -24,10 +25,15 @@ class DepartmentStoreRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', $this->uniqueInBranch('departments')],
+            'code' => ['required', 'string', $this->uniqueInBranch('departments', column: 'code')],
             'remark' => ['nullable', 'string'],
-            'parent_id' => ['nullable', 'exists:departments,id'],
-            'created_by' => ['required'],
-            'updated_by' => ['nullable'],
+            'parent_id' => [
+                'nullable',
+                Rule::exists('departments', 'id')->where(fn ($query) => $query->where(
+                    'branch_id',
+                    $this->activeBranchId()
+                )),
+            ],
         ];
     }
 }

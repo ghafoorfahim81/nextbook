@@ -88,8 +88,16 @@ class LeaveBalanceService
 
         return DB::table('leave_allocations as la')
             ->join('leave_types as lt', 'lt.id', '=', 'la.leave_type_id')
+            // Matched on employee + type + the period the request STARTS in,
+            // not on leave_allocation_id. That column is only stamped when a
+            // request is approved, so joining on it would make pending days
+            // invisible — and pending days are exactly what an employee needs
+            // to see before booking more time off.
             ->leftJoin('leave_requests as lr', function ($join) {
-                $join->on('lr.leave_allocation_id', '=', 'la.id')
+                $join->on('lr.employee_id', '=', 'la.employee_id')
+                    ->on('lr.leave_type_id', '=', 'la.leave_type_id')
+                    ->whereColumn('lr.from_date', '>=', 'la.period_start')
+                    ->whereColumn('lr.from_date', '<=', 'la.period_end')
                     ->whereNull('lr.deleted_at');
             })
             ->where('la.branch_id', $branchId)

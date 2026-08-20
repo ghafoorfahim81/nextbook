@@ -284,6 +284,8 @@ class PreferencesController extends Controller
             ['value' => 'inventory', 'label' => 'sidebar.main.inventory'],
             ['value' => 'ledger', 'label' => 'sidebar.main.ledger'],
             ['value' => 'hr', 'label' => 'sidebar.main.hr'],
+            ['value' => 'attendance', 'label' => 'sidebar.main.attendance'],
+            ['value' => 'leave', 'label' => 'sidebar.main.leave'],
             ['value' => 'owners', 'label' => 'sidebar.owners.owners'],
             ['value' => 'expense', 'label' => 'sidebar.main.expense'],
             ['value' => 'purchase', 'label' => 'sidebar.main.purchase'],
