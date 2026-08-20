@@ -67,7 +67,7 @@ const handleSubmit = async () => {
             toast.success(t('general.success'), {
                 description: t(
                     isEdit ? 'general.update_success' : 'general.create_success',
-                    { name: t('general.resource.designation') }
+                    { name: t('admin.designation.designation') }
                 ),
                 class: 'bg-green-600',
             });
@@ -86,8 +86,8 @@ const handleSubmit = async () => {
     <ModalDialog
         :open="localDialogOpen"
         :title="isEditing
-            ? t('general.edit', { name: t('general.resource.designation') })
-            : t('general.create', { name: t('general.resource.designation') })"
+            ? t('general.edit', { name: t('admin.designation.designation') })
+            : t('general.create', { name: t('admin.designation.designation') })"
         :confirmText="isEditing ? t('general.update') : t('general.create')"
         :cancel-text="t('general.close')"
         :closeable="true"

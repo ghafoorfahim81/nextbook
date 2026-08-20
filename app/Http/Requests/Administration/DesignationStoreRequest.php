@@ -5,6 +5,7 @@ namespace App\Http\Requests\Administration;
 use App\Http\Requests\Concerns\BranchScopedUnique;
 use App\Models\Administration\Designation;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 /**
  * The Blueprint scaffold this replaces validated a single `designation` field
@@ -27,7 +28,12 @@ class DesignationStoreRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:150', $this->uniqueInBranch('designations', $id)],
             'code' => ['nullable', 'string', 'max:50', $this->uniqueInBranch('designations', $id)],
-            'department_id' => ['nullable', 'exists:departments,id'],
+            'department_id' => [
+                'nullable',
+                Rule::exists('departments', 'id')->where(fn ($query) => $query
+                    ->where('branch_id', $this->activeBranchId())
+                    ->whereNull('deleted_at')),
+            ],
             'grade_level' => ['nullable', 'integer', 'min:0', 'max:100'],
             'remark' => ['nullable', 'string'],
         ];

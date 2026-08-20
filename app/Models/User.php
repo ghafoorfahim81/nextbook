@@ -75,6 +75,8 @@ class User extends Authenticatable
                 'inventory',
                 'ledger',
                 'hr',
+                'attendance',
+                'leave',
                 'owners',
                 'expense',
                 'purchase',
