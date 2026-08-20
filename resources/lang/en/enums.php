@@ -161,4 +161,62 @@ return [
         'terminated' => 'Terminated',
         'renewed' => 'Renewed',
     ],
+
+    'attendance_status' => [
+        'present' => 'Present',
+        'absent' => 'Absent',
+        'late' => 'Late',
+        'half_day' => 'Half day',
+        'on_leave' => 'On leave',
+        'holiday' => 'Holiday',
+        'weekend' => 'Weekend',
+        'remote' => 'Remote',
+        'mission' => 'Mission',
+    ],
+    'attendance_source' => [
+        'manual' => 'Manual',
+        'roster' => 'Roster',
+        'device' => 'Device',
+        'self_service' => 'Self service',
+        'import' => 'Import',
+    ],
+    'punch_direction' => [
+        'in' => 'In',
+        'out' => 'Out',
+        'unknown' => 'Unknown',
+    ],
+    'attendance_device_type' => [
+        'zkteco' => 'ZKTeco',
+        'fingerspot' => 'Fingerspot',
+        'csv' => 'CSV file',
+        'other' => 'Other',
+    ],
+    'holiday_type' => [
+        'public' => 'Public',
+        'religious' => 'Religious',
+        'company' => 'Company',
+    ],
+    'leave_accrual_method' => [
+        'annual_grant' => 'Annual grant',
+        'monthly_accrual' => 'Monthly accrual',
+        'unlimited' => 'Unlimited',
+        'manual' => 'Manual',
+    ],
+    'leave_request_status' => [
+        'draft' => 'Draft',
+        'pending' => 'Pending',
+        'approved' => 'Approved',
+        'rejected' => 'Rejected',
+        'cancelled' => 'Cancelled',
+        'withdrawn' => 'Withdrawn',
+    ],
+    'half_day_period' => [
+        'first_half' => 'First half',
+        'second_half' => 'Second half',
+    ],
+    'leave_allocation_source' => [
+        'auto_accrual' => 'Automatic accrual',
+        'manual' => 'Manual',
+        'carry_forward' => 'Carried forward',
+    ],
 ];

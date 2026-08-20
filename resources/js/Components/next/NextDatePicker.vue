@@ -1,8 +1,13 @@
 <template>
-    <div class="relative">
+    <div
+        class="relative"
+        :class="{ 'date-picker-active': isFocused || hasValue }"
+        @focusin="isFocused = true"
+        @focusout="isFocused = false"
+    >
         <component
             :is="VuePersianDatetimePicker"
-            :class="['block w-full z-5000 no-error-style dark:text-white', { 'no-icon': !showIcon, 'icon-only': showIcon && !showLabel }]"
+            :class="['block w-full z-5000 no-error-style dark:text-white', { 'no-icon': !showIcon || !!label, 'icon-only': showIcon && !label }]"
             v-model="normalizedModel"
             :format="resolvedFormat"
             :display-format="resolvedDisplayFormat"
@@ -12,14 +17,11 @@
             :disabled="disabled"
             :clearable="clearable"
             :color="color"
-            :label="showLabel ? undefined : ''"
-            :input-attrs="{ placeholder, class: inputClass, style: 'width:100%' }"
+            :label="''"
+            :input-attrs="{ id, placeholder, class: inputClass, style: 'width:100%' }"
             :locale="effectiveLocale"
             :current="shouldShowCurrentDate" 
         >
-            <template v-if="!showLabel" #label>
-                <!-- Empty template to override any default label -->
-            </template>
             <template v-if="isJalali" #header-date="{ vm }">
                 {{ vm.convertToLocaleNumber(vm.date.xFormat('ddd jD')) }} {{ monthLabel(vm.date) }}
             </template>
@@ -30,6 +32,15 @@
                 <span>{{ monthLabel(date) }} {{ safeYear(date) }}</span>
             </template>
         </component>
+
+        <label
+            v-if="label"
+            :for="id"
+            class="pointer-events-none absolute start-3 top-1/2 z-10 -translate-y-1/2 rounded bg-background px-1 text-sm text-muted-foreground transition-all duration-150"
+        >
+            {{ label }}
+            <span v-if="isRequired" class="ms-[2px] text-red-600">*</span>
+        </label>
 
         <!-- Display error outside the component if present -->
         <span v-if="error" class="mt-1 block text-red-500 text-sm">{{ error }}</span>
@@ -46,6 +57,8 @@ const user = computed(() => usePage().props.auth?.user || null)
 
 const props = defineProps({
     modelValue: [String, Number, Date],
+    label: { type: String, default: '' },
+    id: { type: String, default: () => `dp-${Math.random().toString(36).slice(2, 9)}` },
     format: { type: String, default: '' },
     displayFormat: { type: String, default: '' },
     placeholder: { type: String, default: '' },
@@ -54,6 +67,7 @@ const props = defineProps({
     currentDate: { type: Boolean, default: false },
     autoSubmit: { type: Boolean, default: true },
     error: String,
+    isRequired: Boolean,
     type: { type: String, default: 'date' },
     min: [String, Number, Date],
     max: [String, Number, Date],
@@ -68,6 +82,8 @@ const props = defineProps({
 const calendarType = computed(() => user.value?.calendar_type || 'gregorian')
 const emit = defineEmits(['update:modelValue', 'change'])
 const initialized = ref(false)
+const isFocused = ref(false)
+const hasValue = computed(() => props.modelValue !== null && props.modelValue !== undefined && props.modelValue !== '')
 
 function normalizeDigits(value) {
     return String(value)
@@ -211,6 +227,14 @@ function safeYear(m) {
 :deep(.vpd-input-group:focus-within) {
     border-color: hsl(var(--ring)) !important;
     box-shadow: 0 0 0 1px hsl(var(--ring) / 0.25);
+}
+
+/* Floating-label behavior mirrors NextInput. */
+.date-picker-active > label {
+    top: 0;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    color: hsl(var(--foreground));
 }
 
 :deep(.vpd-day) {

@@ -17,9 +17,16 @@ use App\Models\Administration\Warehouse;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Expense\Expense;
 use App\Models\Expense\ExpenseCategory;
+use App\Models\Hr\Attendance;
+use App\Models\Hr\AttendanceDevice;
 use App\Models\Hr\Employee;
 use App\Models\Hr\EmployeeContract;
 use App\Models\Hr\EmployeeDocument;
+use App\Models\Hr\Holiday;
+use App\Models\Hr\LeaveAllocation;
+use App\Models\Hr\LeaveRequest;
+use App\Models\Hr\LeaveType;
+use App\Models\Hr\Shift;
 use App\Models\Inventory\Item;
 use App\Models\Ledger\Ledger;
 use App\Models\Owner\Drawing;
@@ -43,9 +50,16 @@ use App\Policies\DepartmentPolicy;
 use App\Policies\DesignationPolicy;
 use App\Policies\ExpenseCategoryPolicy;
 use App\Policies\ExpensePolicy;
+use App\Policies\Hr\AttendanceDevicePolicy;
+use App\Policies\Hr\AttendancePolicy;
 use App\Policies\Hr\EmployeeContractPolicy;
 use App\Policies\Hr\EmployeeDocumentPolicy;
 use App\Policies\Hr\EmployeePolicy;
+use App\Policies\Hr\HolidayPolicy;
+use App\Policies\Hr\LeaveAllocationPolicy;
+use App\Policies\Hr\LeaveRequestPolicy;
+use App\Policies\Hr\LeaveTypePolicy;
+use App\Policies\Hr\ShiftPolicy;
 use App\Policies\DrawingPolicy;
 use App\Policies\ItemPolicy;
 use App\Policies\OwnerPolicy;
@@ -99,6 +113,13 @@ class AuthServiceProvider extends ServiceProvider
         Employee::class => EmployeePolicy::class,
         EmployeeContract::class => EmployeeContractPolicy::class,
         EmployeeDocument::class => EmployeeDocumentPolicy::class,
+        Shift::class => ShiftPolicy::class,
+        Holiday::class => HolidayPolicy::class,
+        Attendance::class => AttendancePolicy::class,
+        AttendanceDevice::class => AttendanceDevicePolicy::class,
+        LeaveType::class => LeaveTypePolicy::class,
+        LeaveAllocation::class => LeaveAllocationPolicy::class,
+        LeaveRequest::class => LeaveRequestPolicy::class,
 
         // Purchases & Sales
         Purchase::class => PurchasePolicy::class,

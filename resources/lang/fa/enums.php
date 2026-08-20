@@ -162,6 +162,64 @@ return [
         'terminated' => 'فسخ شده',
         'renewed' => 'تمدید شده',
     ],
+
+    'attendance_status' => [
+        'present' => 'حاضر',
+        'absent' => 'غیرحاضر',
+        'late' => 'تأخیر',
+        'half_day' => 'نیم روز',
+        'on_leave' => 'در رخصتی',
+        'holiday' => 'رخصتی رسمی',
+        'weekend' => 'روز تعطیل',
+        'remote' => 'کار از راه دور',
+        'mission' => 'سفر کاری',
+    ],
+    'attendance_source' => [
+        'manual' => 'دستی',
+        'roster' => 'جدول حاضری',
+        'device' => 'دستگاه',
+        'self_service' => 'خدمات خودی',
+        'import' => 'وارد شده',
+    ],
+    'punch_direction' => [
+        'in' => 'ورود',
+        'out' => 'خروج',
+        'unknown' => 'نامعلوم',
+    ],
+    'attendance_device_type' => [
+        'zkteco' => 'ZKTeco',
+        'fingerspot' => 'Fingerspot',
+        'csv' => 'فایل CSV',
+        'other' => 'سایر',
+    ],
+    'holiday_type' => [
+        'public' => 'رسمی',
+        'religious' => 'مذهبی',
+        'company' => 'شرکتی',
+    ],
+    'leave_accrual_method' => [
+        'annual_grant' => 'اعطای سالانه',
+        'monthly_accrual' => 'تجمع ماهوار',
+        'unlimited' => 'نامحدود',
+        'manual' => 'دستی',
+    ],
+    'leave_request_status' => [
+        'draft' => 'مسوده',
+        'pending' => 'در انتظار',
+        'approved' => 'تأیید شده',
+        'rejected' => 'رد شده',
+        'cancelled' => 'لغو شده',
+        'withdrawn' => 'پس گرفته شده',
+    ],
+    'half_day_period' => [
+        'first_half' => 'نیم اول',
+        'second_half' => 'نیم دوم',
+    ],
+    'leave_allocation_source' => [
+        'auto_accrual' => 'تجمع خودکار',
+        'manual' => 'دستی',
+        'carry_forward' => 'انتقالی از دوره قبل',
+    ],
 ];
 
 
