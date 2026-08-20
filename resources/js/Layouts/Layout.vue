@@ -55,9 +55,11 @@ import {
     Bell,
     BookOpen,
     Bot,
+    CalendarClock,
     ChevronRight,
     ChevronLeft,
     ChevronsUpDown,
+    BriefcaseBusiness,
     Command,
     CreditCard,
     GalleryVerticalEnd,
@@ -517,6 +519,19 @@ const navMain = computed(() => [
         items: [
             { title: t('sidebar.ledger.customer'), url: '/customers', permission: 'customers.view_any' },
             { title: t('sidebar.ledger.supplier'), url: '/suppliers', permission: 'suppliers.view_any' },
+        ],
+    },
+    {
+        key: 'hr',
+        title: t('sidebar.main.hr'),
+        url: '#',
+        icon: BriefcaseBusiness,
+        items: [
+            { title: t('sidebar.hr.employee'), url: '/employees', permission: 'employees.view_any' },
+            { title: t('sidebar.hr.contract'), url: '/employee-contracts', permission: 'employee_contracts.view_any' },
+            { title: t('sidebar.hr.document'), url: '/employee-documents', permission: 'employee_documents.view_any' },
+            { title: t('sidebar.hr.department'), url: '/departments', permission: 'departments.view_any' },
+            { title: t('sidebar.hr.designation'), url: '/designations', permission: 'designations.view_any' },
         ],
     },
     {

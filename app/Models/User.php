@@ -74,6 +74,7 @@ class User extends Authenticatable
                 'administration',
                 'inventory',
                 'ledger',
+                'hr',
                 'owners',
                 'expense',
                 'purchase',
@@ -334,6 +335,9 @@ class User extends Authenticatable
             'new_transaction_alert' => false,
             'daily_summary_report' => false,
             'weekly_financial_summary' => false,
+            'contract_expiry_alert' => true,
+            'document_expiry_alert' => true,
+            'probation_ending_alert' => true,
         ],
         'security' => [
             'session_timeout' => 60,

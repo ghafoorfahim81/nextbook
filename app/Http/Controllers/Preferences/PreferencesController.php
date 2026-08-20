@@ -283,6 +283,7 @@ class PreferencesController extends Controller
             ['value' => 'administration', 'label' => 'sidebar.main.administration'],
             ['value' => 'inventory', 'label' => 'sidebar.main.inventory'],
             ['value' => 'ledger', 'label' => 'sidebar.main.ledger'],
+            ['value' => 'hr', 'label' => 'sidebar.main.hr'],
             ['value' => 'owners', 'label' => 'sidebar.owners.owners'],
             ['value' => 'expense', 'label' => 'sidebar.main.expense'],
             ['value' => 'purchase', 'label' => 'sidebar.main.purchase'],

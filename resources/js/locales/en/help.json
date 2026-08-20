@@ -1,6 +1,17 @@
 {
   "no_tips_available": "No tips available yet for this screen.",
   "modules": {
+    "employees": {
+      "title": "Employees — Tips",
+      "description": "An employee record is both an HR profile and a financial party, so salary, advances and staff loans post against them like any other ledger.",
+      "items": [
+        "Saving an employee automatically creates a linked ledger named '<Name> (CODE)'. The code suffix keeps two people with the same name apart, so avoid reusing employee codes.",
+        "Phone and email stay on the employee record and are deliberately not copied to the ledger — otherwise an employee sharing a phone with a customer could not be saved.",
+        "Employment type decides which salary expense account payroll uses: permanent, temporary/intern/daily-wage, or contract/consultant.",
+        "Set a separation date only once the status is resigned, terminated or retired; an employee still on staff must not carry one.",
+        "Deleting an employee also hides their ledger, and restoring brings it back. An employee with posted accounting history cannot be permanently deleted."
+      ]
+    },
     "chart_of_accounts": {
       "title": "Chart of Accounts — Tips",
       "description": "Use the chart of accounts to define your GL structure and (only when eligible) opening balances.",

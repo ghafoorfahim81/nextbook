@@ -53,8 +53,9 @@
         "sub_domain": "زیر دامنه"
     },
     "designation": {
-        "designation": "دیزاینیشن",
-        "designations": "دیزاینیشن ها"
+        "designation": "دنده",
+        "designations": "دندې",
+        "grade_level": "د بست کچه"
     },
     "quantity": {
         "quantity": "مقدار",
@@ -93,6 +94,7 @@
         "logo": "لوگو",
         "email": "ایمیل",
         "phone": "تلفن",
-        "country": "کشور"
+        "country": "کشور",
+        "province": "ولایت"
     }
 }

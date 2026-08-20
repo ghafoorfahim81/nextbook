@@ -186,9 +186,18 @@ class Employee extends Model
     protected function getRelationships(): array
     {
         return [
-            'contracts' => __('hr.contracts'),
-            'documents' => __('hr.documents'),
-            'directReports' => __('hr.direct_reports'),
+            'contracts' => [
+                'model' => 'employee_contracts',
+                'message' => 'This employee has contracts',
+            ],
+            'documents' => [
+                'model' => 'employee_documents',
+                'message' => 'This employee has documents',
+            ],
+            'directReports' => [
+                'model' => 'employees',
+                'message' => 'This employee has direct reports',
+            ],
         ];
     }
 

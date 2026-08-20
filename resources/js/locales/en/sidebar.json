@@ -11,6 +11,7 @@
     "purchase": "Purchase",
     "sale": "Sale",
     "ledger": "Ledger",
+    "hr": "Human Resources",
     "receipt": "Receipt",
     "payment": "Payment",
     "transfer": "Account Transfers",
@@ -91,5 +92,12 @@
   "system": {
     "deleted_records": "Deleted Records",
     "activity_logs": "Activity Logs"
+  },
+  "hr": {
+    "employee": "Employees",
+    "contract": "Contracts",
+    "document": "Documents",
+    "department": "Departments",
+    "designation": "Designations"
   }
 }

@@ -106,7 +106,12 @@ class EmployeeLedgerService
      */
     public function softDeleteFor(Employee $employee): void
     {
-        $this->query($employee)->first()?->delete();
+        // Skip a ledger that is ALREADY trashed. Calling delete() again would
+        // re-stamp deleted_at to now, which destroys the very ordering
+        // restoreFor() relies on — a ledger the user deleted deliberately days
+        // earlier would look like part of this cascade and come back with the
+        // employee.
+        $this->query($employee)->whereNull('deleted_at')->first()?->delete();
     }
 
     /**

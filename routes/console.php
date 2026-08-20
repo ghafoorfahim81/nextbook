@@ -52,3 +52,10 @@ Schedule::call(fn () => app()->call([app(SendDailyTransactionSummaryJob::class),
 Schedule::call(fn () => app()->call([app(SendWeeklyFinancialSummaryJob::class), 'handle']))
     ->name('notifications:weekly-summary')
     ->weeklyOn(6, '18:00');
+
+// HR compliance. Runs after the finance checks so a busy 07:00 slot does not
+// delay them; the reminders themselves dedupe per day, so an occasional
+// overlap is harmless.
+Schedule::command('hr:reminders')
+    ->name('notifications:hr-reminders')
+    ->dailyAt('07:30');
