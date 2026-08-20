@@ -77,6 +77,7 @@ Route::middleware([
 
 
     Route::resource('designations', DesignationController::class);
+    Route::patch('/designations/{designation}/restore', [DesignationController::class, 'restore'])->name('designations.restore')->withTrashed();
     Route::delete('/designations/{designation}/force-delete', [DesignationController::class, 'forceDelete'])
         ->name('designations.force-delete')
         ->withTrashed();
@@ -339,6 +340,29 @@ Route::middleware([
     Route::delete('/journal-classes/{journalClass}/force-delete', [\App\Http\Controllers\JournalEntry\JournalClassController::class, 'forceDelete'])
         ->name('journal-classes.force-delete')
         ->withTrashed();
+    // Human Resources
+    // Export routes come BEFORE the resource, or {employee} swallows the
+    // literal "list-export". Every .destroy has a matching .restore because
+    // useDeleteResource derives the Undo route by name substitution.
+    Route::get('/employees/list-export', [\App\Http\Controllers\Hr\EmployeeController::class, 'exportList'])->name('employees.list-export');
+    Route::resource('/employees', \App\Http\Controllers\Hr\EmployeeController::class);
+    Route::patch('/employees/{employee}/restore', [\App\Http\Controllers\Hr\EmployeeController::class, 'restore'])->name('employees.restore')->withTrashed();
+    Route::delete('/employees/{employee}/force-delete', [\App\Http\Controllers\Hr\EmployeeController::class, 'forceDelete'])
+        ->name('employees.force-delete')
+        ->withTrashed();
+
+    Route::resource('/employee-contracts', \App\Http\Controllers\Hr\EmployeeContractController::class)->except(['create', 'edit', 'show']);
+    Route::patch('/employee-contracts/{employee_contract}/restore', [\App\Http\Controllers\Hr\EmployeeContractController::class, 'restore'])->name('employee-contracts.restore')->withTrashed();
+    Route::delete('/employee-contracts/{employee_contract}/force-delete', [\App\Http\Controllers\Hr\EmployeeContractController::class, 'forceDelete'])
+        ->name('employee-contracts.force-delete')
+        ->withTrashed();
+
+    Route::resource('/employee-documents', \App\Http\Controllers\Hr\EmployeeDocumentController::class)->except(['create', 'edit', 'show']);
+    Route::patch('/employee-documents/{employee_document}/restore', [\App\Http\Controllers\Hr\EmployeeDocumentController::class, 'restore'])->name('employee-documents.restore')->withTrashed();
+    Route::delete('/employee-documents/{employee_document}/force-delete', [\App\Http\Controllers\Hr\EmployeeDocumentController::class, 'forceDelete'])
+        ->name('employee-documents.force-delete')
+        ->withTrashed();
+
     Route::match(['get', 'post'], '/search/items-list', [SearchController::class, 'searchItemsList'])
         ->name('search.items-list');
     Route::get('/search/global', [SearchController::class, 'globalIndex'])
