@@ -160,6 +160,28 @@
         "Sale/Purchase tabs let you choose visible columns and numbering; set them before daily usage starts.",
         "Backup/Export preferences should be configured early so data recovery is always possible."
       ]
+    },
+    "attendances": {
+      "title": "Attendance — Tips",
+      "description": "Attendance can be entered by hand, imported from a terminal, or clocked by employees themselves. All three write the same daily record.",
+      "items": [
+        "The daily roster is the fallback that always works: pick a date and a department, and confirm the pre-filled statuses.",
+        "Importing a punch log never loses a row. Punches from a device ID nobody has mapped land on the Unmapped Punches screen — map the ID there and the days are recalculated without re-uploading the file.",
+        "Re-importing the same export is safe; duplicate punches are rejected by the database, not counted twice.",
+        "A day showing \"needs review\" had a single punch with no pair — usually someone forgot to clock out. Fix it on the roster rather than guessing the hours.",
+        "Once a payroll has been posted, the days it consumed are locked and can no longer be edited. Reverse the payroll first if a correction is genuinely needed."
+      ]
+    },
+    "leave_requests": {
+      "title": "Leave — Tips",
+      "description": "A leave request moves draft → pending → approved, and approving it writes the leave days into the attendance register automatically.",
+      "items": [
+        "Day counts are calculated from the leave type, not typed in: types that skip weekends and holidays charge fewer days than the calendar span.",
+        "Pending days are shown separately from the balance and are never deducted — nobody has agreed to them yet.",
+        "Approval is refused when the balance is short, except for unpaid leave, which is allowed to go negative by design.",
+        "Cancelling approved leave removes the future days from attendance and leaves past days alone: last week already happened.",
+        "Approving is a separate permission from editing, so raising a request on someone’s behalf does not let you grant it."
+      ]
     }
   }
 }

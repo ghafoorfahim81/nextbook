@@ -83,6 +83,9 @@ class AttendanceController extends Controller
             'options' => [
                 'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
                 'shifts' => Shift::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+                // The import dialog lives on this screen, so its device list
+                // ships with the roster rather than costing a second request.
+                'devices' => AttendanceDevice::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
                 'statuses' => array_map(
                     fn (AttendanceStatus $c) => ['id' => $c->value, 'name' => $c->getLabel()],
                     AttendanceStatus::cases()
