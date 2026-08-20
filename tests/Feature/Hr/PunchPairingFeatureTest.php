@@ -79,6 +79,19 @@ class PunchPairingFeatureTest extends TestCase
         ]);
     }
 
+    /**
+     * A real payroll row to lock a day against — attendances.payroll_id is a
+     * genuine foreign key, so a made-up ULID is rejected.
+     */
+    private function lockingPayroll(): \App\Models\Hr\Payroll
+    {
+        return \App\Models\Hr\Payroll::factory()->posted()->create([
+            'branch_id' => $this->ctx['branch']->id,
+            'currency_id' => $this->ctx['currency']->id,
+            'created_by' => $this->ctx['user']->id,
+        ]);
+    }
+
     private function pair(string $date = self::WORKDAY)
     {
         return app(PunchPairingService::class)->pairForDate($this->employee->fresh(), Carbon::parse($date));
@@ -300,7 +313,7 @@ class PunchPairingFeatureTest extends TestCase
         $this->punch(self::WORKDAY.' 16:00:00', PunchDirection::Out);
 
         $day = $this->pair();
-        $day->forceFill(['payroll_id' => (string) Str::ulid()])->save();
+        $day->forceFill(['payroll_id' => $this->lockingPayroll()->id])->save();
 
         $this->assertNull($this->pair());
     }
