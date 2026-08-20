@@ -4,6 +4,7 @@ namespace App\Models\Hr;
 
 use App\Enums\PayrollLinePaymentStatus;
 use App\Models\Administration\Currency;
+use App\Models\Transaction\TransactionLine;
 use App\Traits\BranchSpecific;
 use App\Traits\HasBranch;
 use App\Traits\HasDynamicFilters;
@@ -36,7 +37,7 @@ class PayrollLine extends Model
 
     protected $fillable = [
         'payroll_id', 'employee_id', 'salary_structure_id', 'tax_bracket_set_id',
-        'currency_id', 'rate',
+        'liability_line_id', 'currency_id', 'rate',
         'working_days', 'present_days', 'absent_days', 'paid_leave_days',
         'unpaid_leave_days', 'overtime_hours',
         'basic_salary', 'gross_earnings', 'total_deductions', 'taxable_income',
@@ -52,6 +53,7 @@ class PayrollLine extends Model
             'employee_id' => 'string',
             'salary_structure_id' => 'string',
             'tax_bracket_set_id' => 'string',
+            'liability_line_id' => 'string',
             'currency_id' => 'string',
             'branch_id' => 'string',
             'created_by' => 'string',
@@ -106,6 +108,15 @@ class PayrollLine extends Model
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
+    }
+
+    /**
+     * The general-ledger credit this payslip created, and the thing a salary
+     * payment settles against. Null until the run is posted.
+     */
+    public function liabilityLine(): BelongsTo
+    {
+        return $this->belongsTo(TransactionLine::class, 'liability_line_id');
     }
 
     public function components(): HasMany

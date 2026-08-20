@@ -112,6 +112,22 @@ class PayrollPostingService
             );
         }
 
+        // A payable with no ledger is a credit nobody can ever settle. The
+        // observer gives every employee a ledger on creation, so reaching here
+        // means something bypassed it — better to refuse the run than to post a
+        // liability that can never be paid out.
+        $unlinked = $lines->filter(
+            fn (PayrollLine $line) => Decimal::isPositive(Decimal::amount($line->net_payable))
+                && ! $line->employee?->ledger_id
+        );
+
+        if ($unlinked->isNotEmpty()) {
+            throw PayrollException::make(
+                'Some employees on this payroll have no ledger account.',
+                ['employee_ids' => $unlinked->pluck('employee_id')->values()->all()]
+            );
+        }
+
         return DB::transaction(function () use ($payroll, $lines) {
             $glLines = $this->buildGlLines($payroll, $lines);
 
@@ -129,6 +145,7 @@ class PayrollPostingService
                 lines: $glLines,
             );
 
+            $this->linkLiabilityLines($payroll, $lines, $transaction);
             $this->recordLoanRepayments($payroll, $lines);
             $this->lockAttendance($payroll);
 
@@ -378,6 +395,42 @@ class PayrollPostingService
     }
 
     /**
+     * Point each payslip at the ledger credit that represents it.
+     *
+     * Matched on ledger_id, which is exact: there is one payslip per employee
+     * per run (enforced by payroll_lines_live_employee_unique) and one ledger
+     * per employee, so the liability lines and the payslips are the same set
+     * viewed from two sides.
+     *
+     * Without this a payslip cannot be paid — the disbursement would see an
+     * anonymous credit on Payroll Liabilities and have no way to report what it
+     * settled.
+     *
+     * @param  \Illuminate\Support\Collection<int, PayrollLine>  $lines
+     */
+    private function linkLiabilityLines(Payroll $payroll, $lines, Transaction $transaction): void
+    {
+        $liabilityAccountId = BranchContext::glAccount('payroll-liabilities', $payroll->branch_id);
+
+        $byLedger = $transaction->lines()
+            ->where('account_id', $liabilityAccountId)
+            ->whereNotNull('ledger_id')
+            ->get()
+            ->keyBy('ledger_id');
+
+        foreach ($lines as $line) {
+            $ledgerId = $line->employee?->ledger_id;
+            $glLine = $ledgerId ? $byLedger->get($ledgerId) : null;
+
+            if (! $glLine) {
+                continue;
+            }
+
+            $line->forceFill(['liability_line_id' => $glLine->id])->saveQuietly();
+        }
+    }
+
+    /**
      * Record what each loan actually recovered, so reversing the run can undo
      * exactly its own repayments.
      *
@@ -504,7 +557,11 @@ class PayrollPostingService
             // re-run.
             Attendance::query()->where('payroll_id', $payroll->id)->update(['payroll_id' => null]);
 
+            // The claim these payslips pointed at is no longer live, so the
+            // pointer goes too. Leaving it would let a stale open-item lookup
+            // resolve a payslip against a reversed credit.
             PayrollLine::query()->where('payroll_id', $payroll->id)->update([
+                'liability_line_id' => null,
                 'paid_amount' => 0,
                 'payment_status' => PayrollLinePaymentStatus::Unpaid->value,
             ]);
