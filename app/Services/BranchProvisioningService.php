@@ -16,8 +16,12 @@ use App\Models\Administration\Size;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Administration\Warehouse;
 use App\Models\Expense\ExpenseCategory;
+use App\Enums\TaxPeriod;
 use App\Models\Hr\LeaveType;
+use App\Models\Hr\SalaryComponent;
 use App\Models\Hr\Shift;
+use App\Models\Hr\TaxBracket;
+use App\Models\Hr\TaxBracketSet;
 use App\Models\JournalEntry\JournalClass;
 use App\Models\Ledger\Ledger;
 use App\Models\User;
@@ -71,6 +75,8 @@ class BranchProvisioningService
             $counts['departments'] = $this->departments($branch, $actorId);
             $counts['shifts'] = $this->shifts($branch, $actorId);
             $counts['leave_types'] = $this->leaveTypes($branch, $actorId);
+            $counts['salary_components'] = $this->salaryComponents($branch, $actorId);
+            $counts['tax_brackets'] = $this->taxBrackets($branch, $actorId);
             $counts['financial_periods'] = $this->financialPeriod($branch, $actorId);
 
             return $counts;
@@ -621,6 +627,84 @@ class BranchProvisioningService
         }
 
         return $created;
+    }
+
+    /**
+     * The components payroll creates for itself — tax, unpaid leave, loan
+     * recovery, overtime. Looked up by code during calculation, so they must
+     * exist before the first run.
+     */
+    private function salaryComponents(Branch $branch, ?string $actorId): int
+    {
+        $existing = $this->existing(SalaryComponent::class, $branch, 'code');
+        $created = 0;
+
+        foreach (SalaryComponent::defaultComponents() as $component) {
+            if (in_array($component['code'], $existing, true)) {
+                continue;
+            }
+
+            $this->insert(SalaryComponent::class, array_merge([
+                'affects_gross' => true,
+                'is_active' => true,
+            ], $component, [
+                'branch_id' => $branch->id,
+                'created_by' => $actorId,
+            ]));
+            $created++;
+        }
+
+        return $created;
+    }
+
+    /**
+     * The statutory Afghan monthly wage tax table.
+     *
+     * Seeded as data with an effective-from date so a rate change is an edit
+     * rather than a deploy — and so re-running an old period still reproduces
+     * the tax that was withheld at the time.
+     */
+    private function taxBrackets(Branch $branch, ?string $actorId): int
+    {
+        $exists = TaxBracketSet::withoutGlobalScopes()
+            ->where('branch_id', $branch->id)
+            ->where('period', TaxPeriod::Monthly->value)
+            ->exists();
+
+        if ($exists) {
+            return 0;
+        }
+
+        $currencyId = Currency::withoutGlobalScopes()
+            ->where('branch_id', $branch->id)
+            ->where('is_base_currency', true)
+            ->value('id');
+
+        /** @var TaxBracketSet $set */
+        $set = $this->insert(TaxBracketSet::class, [
+            'name' => 'Afghanistan Monthly Wage Tax',
+            'jurisdiction' => 'AF',
+            'period' => TaxPeriod::Monthly->value,
+            // Deliberately far back: any historical period resolves to this set
+            // rather than failing for want of a rate.
+            'effective_from' => '2005-01-01',
+            'currency_id' => $currencyId,
+            'is_active' => true,
+            'is_system' => true,
+            'remark' => 'Seeded default. Verify against current Ministry of Finance rules.',
+            'branch_id' => $branch->id,
+            'created_by' => $actorId,
+        ]);
+
+        foreach (TaxBracketSet::defaultAfghanMonthlyBrackets() as $bracket) {
+            $this->insert(TaxBracket::class, array_merge($bracket, [
+                'tax_bracket_set_id' => $set->id,
+                'branch_id' => $branch->id,
+                'created_by' => $actorId,
+            ]));
+        }
+
+        return 1;
     }
 
     /**

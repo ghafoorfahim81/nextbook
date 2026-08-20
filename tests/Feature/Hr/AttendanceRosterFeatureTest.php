@@ -45,6 +45,21 @@ class AttendanceRosterFeatureTest extends TestCase
         ]);
     }
 
+    /**
+     * A real payroll row to lock a day against.
+     *
+     * attendances.payroll_id is a genuine foreign key, so a made-up ULID is
+     * rejected — which is the constraint doing its job.
+     */
+    private function lockingPayroll(): \App\Models\Hr\Payroll
+    {
+        return \App\Models\Hr\Payroll::factory()->posted()->create([
+            'branch_id' => $this->ctx['branch']->id,
+            'currency_id' => $this->ctx['currency']->id,
+            'created_by' => $this->ctx['user']->id,
+        ]);
+    }
+
     private function rosterPayload(array $overrides = []): array
     {
         return array_merge([
@@ -151,7 +166,7 @@ class AttendanceRosterFeatureTest extends TestCase
         $this->post(route('attendances.roster.store'), $this->rosterPayload());
 
         Attendance::withoutGlobalScopes()->first()
-            ->forceFill(['payroll_id' => (string) Str::ulid()])->save();
+            ->forceFill(['payroll_id' => $this->lockingPayroll()->id])->save();
 
         $this->post(route('attendances.roster.store'), $this->rosterPayload([
             'rows' => [[
@@ -166,7 +181,7 @@ class AttendanceRosterFeatureTest extends TestCase
         $this->post(route('attendances.roster.store'), $this->rosterPayload());
 
         $day = Attendance::withoutGlobalScopes()->first();
-        $day->forceFill(['payroll_id' => (string) Str::ulid()])->save();
+        $day->forceFill(['payroll_id' => $this->lockingPayroll()->id])->save();
 
         $this->delete(route('attendances.destroy', $day->id))->assertSessionHas('error');
 
