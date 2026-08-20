@@ -1,116 +1,131 @@
 {
-  "group": {
-    "menu": "منو"
-  },
-  "main": {
-    "home": "خانه",
-    "dashboard": "داشبورد",
-    "administration": "مدیریت",
-    "inventory": "انبار",
-    "account": "حسابداری",
-    "purchase": "خرید",
-    "sale": "فروش",
-    "ledger": "دفتر حسابات",
-    "hr": "منابع بشری",
-    "receipt": "رسید",
-    "payment": "پرداخت",
-    "transfer": "انتقال حساب",
-    "user_management": "مدیریت کاربران",
-    "preferences": "تنظیمات",
-    "expense": "مصارف",
-    "item_transfer": "انتقال جنس",
-    "reports": "گزارشات",
-    "system": "سیستم",
-    "deleted_records": "رکوردهای حذف شده",
-    "trash": "سطل زباله",
-    "attendance": "حاضری",
-    "leave": "رخصتی"
-  },
-  "expense": {
-    "expense": "مصارف",
-    "expenses": "مصارف ها",
-    "expense_category": "دسته بندی مصارف"
-  },
-  "administration": {
-    "category": "دسته بندی",
-    "customer_group": "گروه مشتریان",
-    "payment_term": "شرایط پرداخت",
-    "currency": "ارز",
-    "currency_rate_update": "به‌روزرسانی نرخ ارز",
-    "unit_measure": "واحد اندازه گیری",
-    "size": "اندازه",
-    "branch": "شعبه",
-    "brand": "برند",
-    "warehouse": "گدام/انبار",
-    "company": "شرکت"
-  },
-  "inventory": {
-    "item": "جنس/کالا",
-    "fast_entry": "ثبت سریع",
-    "fast_opening": "افتتاحیه سریع",
-    "barcode_print": "چاپ بارکد",
-    "item_transfer": "انتقال جنس",
-    "pricing": "بررسی قیمت‌ها"
-  },
-  "account": {
-    "chart_of_account": "چارت حساب",
-    "account_type": "نوع حساب"
-  },
-  "journal_entry": {
-    "journal_entry": "ژورنال",
-    "journal_entries": "ژورنال ها",
-    "journal_class": "کلاس ژورنال",
-    "journal_classes": "کلاس های ژورنال"
-  },
-  "purchase": {
-    "purchase": "خرید",
-    "purchase_return": "برگشت خرید"
-  },
-  "sale": {
-    "sale": "فروش",
-    "sales": "فروشات",
-    "create_sale": "ایجاد فروش",
-    "edit_sale": "ویرایش فروش",
-    "sale_created_successfully": "فروش با موفقیت ایجاد شد",
-    "sale_updated_successfully": "فروش با موفقیت بروزرسانی شد",
-    "sale_return": "برگشت فروش"
-  },
-  "ledger": {
-    "customer": "مشتری",
-    "supplier": "تامین کننده"
-  },
-  "owners": {
-    "owners": "مالکان",
-    "drawing": "برداشت"
-  },
-  "user_management": {
-    "user": "کاربر",
-    "role": "نقش"
-  },
-  "reports": {
-    "reports": "گزارشات",
-    "report": "گزارش",
-    "activity_logs": "فعالیت کاربران"
-  },
-  "hr": {
-    "employee": "کارمندان",
-    "contract": "قراردادها",
-    "document": "اسناد",
-    "department": "بخش‌ها",
-    "designation": "وظایف"
-  },
-  "attendance": {
-    "roster": "جدول روزانه",
-    "register": "دفتر حاضری",
-    "unmapped": "ثبت‌های بدون ارتباط",
-    "device": "دستگاه‌ها",
-    "shift": "شیفت‌ها",
-    "holiday": "رخصتی‌های رسمی",
-    "self_service": "حاضری من"
-  },
-  "leave": {
-    "request": "درخواست‌های رخصتی",
-    "allocation": "تخصیص‌ها",
-    "type": "انواع رخصتی"
-  }
+    "group": {
+        "menu": "منو"
+    },
+    "main": {
+        "home": "خانه",
+        "dashboard": "داشبورد",
+        "administration": "مدیریت",
+        "inventory": "انبار",
+        "account": "حسابداری",
+        "purchase": "خرید",
+        "sale": "فروش",
+        "ledger": "دفتر حسابات",
+        "hr": "منابع بشری",
+        "receipt": "رسید",
+        "payment": "پرداخت",
+        "transfer": "انتقال حساب",
+        "user_management": "مدیریت کاربران",
+        "preferences": "تنظیمات",
+        "expense": "مصارف",
+        "item_transfer": "انتقال جنس",
+        "reports": "گزارشات",
+        "system": "سیستم",
+        "deleted_records": "رکوردهای حذف شده",
+        "trash": "سطل زباله",
+        "attendance": "حاضری",
+        "leave": "رخصتی",
+        "payroll": "معاشات",
+        "recruitment": "استخدام"
+    },
+    "expense": {
+        "expense": "مصارف",
+        "expenses": "مصارف ها",
+        "expense_category": "دسته بندی مصارف"
+    },
+    "administration": {
+        "category": "دسته بندی",
+        "customer_group": "گروه مشتریان",
+        "payment_term": "شرایط پرداخت",
+        "currency": "ارز",
+        "currency_rate_update": "به‌روزرسانی نرخ ارز",
+        "unit_measure": "واحد اندازه گیری",
+        "size": "اندازه",
+        "branch": "شعبه",
+        "brand": "برند",
+        "warehouse": "گدام/انبار",
+        "company": "شرکت"
+    },
+    "inventory": {
+        "item": "جنس/کالا",
+        "fast_entry": "ثبت سریع",
+        "fast_opening": "افتتاحیه سریع",
+        "barcode_print": "چاپ بارکد",
+        "item_transfer": "انتقال جنس",
+        "pricing": "بررسی قیمت‌ها"
+    },
+    "account": {
+        "chart_of_account": "چارت حساب",
+        "account_type": "نوع حساب"
+    },
+    "journal_entry": {
+        "journal_entry": "ژورنال",
+        "journal_entries": "ژورنال ها",
+        "journal_class": "کلاس ژورنال",
+        "journal_classes": "کلاس های ژورنال"
+    },
+    "purchase": {
+        "purchase": "خرید",
+        "purchase_return": "برگشت خرید"
+    },
+    "sale": {
+        "sale": "فروش",
+        "sales": "فروشات",
+        "create_sale": "ایجاد فروش",
+        "edit_sale": "ویرایش فروش",
+        "sale_created_successfully": "فروش با موفقیت ایجاد شد",
+        "sale_updated_successfully": "فروش با موفقیت بروزرسانی شد",
+        "sale_return": "برگشت فروش"
+    },
+    "ledger": {
+        "customer": "مشتری",
+        "supplier": "تامین کننده"
+    },
+    "owners": {
+        "owners": "مالکان",
+        "drawing": "برداشت"
+    },
+    "user_management": {
+        "user": "کاربر",
+        "role": "نقش"
+    },
+    "reports": {
+        "reports": "گزارشات",
+        "report": "گزارش",
+        "activity_logs": "فعالیت کاربران"
+    },
+    "hr": {
+        "employee": "کارمندان",
+        "contract": "قراردادها",
+        "document": "اسناد",
+        "department": "بخش‌ها",
+        "designation": "وظایف"
+    },
+    "attendance": {
+        "roster": "جدول روزانه",
+        "register": "دفتر حاضری",
+        "unmapped": "ثبت‌های بدون ارتباط",
+        "device": "دستگاه‌ها",
+        "shift": "شیفت‌ها",
+        "holiday": "رخصتی‌های رسمی",
+        "self_service": "حاضری من"
+    },
+    "leave": {
+        "request": "درخواست‌های رخصتی",
+        "allocation": "تخصیص‌ها",
+        "type": "انواع رخصتی"
+    },
+    "payroll": {
+        "payroll": "دوره‌های معاش",
+        "salary_payment": "پرداخت معاشات",
+        "loan": "قرضه و پیشکی",
+        "structure": "ساختارهای معاش",
+        "component": "اجزای معاش",
+        "tax_table": "جداول مالیه"
+    },
+    "recruitment": {
+        "opening": "بست‌های خالی",
+        "application": "درخواست‌ها",
+        "interview": "مصاحبه‌ها"
+    }
 }

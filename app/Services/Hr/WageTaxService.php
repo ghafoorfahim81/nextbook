@@ -156,6 +156,62 @@ class WageTaxService
     }
 
     /**
+     * Tax on an income against bracket rows that have NOT been saved yet.
+     *
+     * The bracket form needs to answer "what would someone on 50,000 pay under
+     * these bands" while the user is still editing them. A rate table is easy
+     * to get subtly wrong and hard to read back, so checking before committing
+     * is worth more than checking after.
+     *
+     * Deliberately separate from compute(): that one resolves a persisted,
+     * effective-dated set and is what payroll uses. This one takes the user's
+     * working copy and is never a source of a posted figure.
+     *
+     * @param  array<int, array<string, mixed>>  $brackets
+     * @return array{tax: string, marginal_rate: string}
+     */
+    public function computeAgainst(mixed $taxableIncome, array $brackets): array
+    {
+        $income = Decimal::amount($taxableIncome);
+
+        if (Decimal::cmp($income, '0') <= 0 || $brackets === []) {
+            return ['tax' => '0.0000', 'marginal_rate' => '0.0000'];
+        }
+
+        $incomeFloat = (float) $income;
+
+        $match = null;
+
+        foreach ($brackets as $bracket) {
+            $from = (float) ($bracket['from_amount'] ?? 0);
+            $to = ($bracket['to_amount'] ?? null) === null || $bracket['to_amount'] === ''
+                ? null
+                : (float) $bracket['to_amount'];
+
+            if ($incomeFloat > $from && ($to === null || $incomeFloat <= $to)) {
+                $match = $bracket;
+                break;
+            }
+        }
+
+        if (! $match) {
+            return ['tax' => '0.0000', 'marginal_rate' => '0.0000'];
+        }
+
+        $excess = Decimal::sub($income, Decimal::amount($match['from_amount'] ?? 0));
+        $marginal = bcdiv(
+            bcmul($excess, Decimal::amount($match['rate'] ?? 0), Decimal::AMOUNT_SCALE + 2),
+            '100',
+            Decimal::AMOUNT_SCALE
+        );
+
+        return [
+            'tax' => Decimal::add(Decimal::amount($match['fixed_amount'] ?? 0), $marginal),
+            'marginal_rate' => Decimal::amount($match['rate'] ?? 0),
+        ];
+    }
+
+    /**
      * Every band with its computed tax at the top of the band, for the settings
      * screen — so an admin can see what the table actually does before saving.
      *

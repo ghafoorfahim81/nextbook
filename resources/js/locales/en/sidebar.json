@@ -1,119 +1,134 @@
 {
-  "group": {
-    "menu": "Menu"
-  },
-  "main": {
-    "home": "Home",
-    "dashboard": "Dashboard",
-    "administration": "Administration",
-    "inventory": "Inventory",
-    "account": "Account",
-    "purchase": "Purchase",
-    "sale": "Sale",
-    "ledger": "Ledger",
-    "hr": "Human Resources",
-    "receipt": "Receipt",
-    "payment": "Payment",
-    "transfer": "Account Transfers",
-    "expense": "Expense",
-    "user_management": "User Management",
-    "preferences": "Preferences",
-    "reports": "Reports",
-    "system": "System",
-    "deleted_records": "Deleted Records",
-    "trash": "Trash",
-    "attendance": "Attendance",
-    "leave": "Leave"
-  },
-  "expense": {
-    "expense": "Expense",
-    "expenses": "Expenses",
-    "expense_category": "Expense Category"
-  },
-  "administration": {
-    "category": "Category",
-    "customer_group": "Customer Group",
-    "payment_term": "Payment Term",
-    "currency": "Currency",
-    "currency_rate_update": "Currency Rate Updates",
-    "unit_measure": "Unit Measure",
-    "size": "Size",
-    "branch": "Branch",
-    "brand": "Brand",
-    "warehouse": "Warehouse",
-    "company": "Company"
-  },
-  "inventory": {
-    "item": "Item",
-    "fast_entry": "Fast Entry",
-    "fast_opening": "Fast Opening",
-    "barcode_print": "Barcode Print",
-    "item_transfer": "Item Transfer",
-    "pricing": "Pricing"
-  },
-  "account": {
-    "chart_of_account": "Chart of Account",
-    "account_type": "Account Type"
-  },
-  "journal_entry": {
-    "journal_entry": "Journal Entry",
-    "journal_entries": "Journal Entries",
-    "journal_class": "Journal Class",
-    "journal_classes": "Journal Classes"
-  },
-  "purchase": {
-    "purchase": "Purchase",
-    "purchase_return": "Purchase Return"
-  },
-  "sale": {
-    "sale": "Sale",
-    "sales": "Sales",
-    "create_sale": "Create Sale",
-    "edit_sale": "Edit Sale",
-    "sale_created_successfully": "Sale created successfully",
-    "sale_updated_successfully": "Sale updated successfully",
-    "sale_return": "Sale Return"
-  },
-  "ledger": {
-    "customer": "Customer",
-    "supplier": "Supplier"
-  },
-  "owners": {
-    "owners": "Owners",
-    "drawing": "Drawing"
-  },
-  "user_management": {
-    "user": "User",
-    "role": "Role"
-  },
-  "reports": {
-    "reports": "Reports",
-    "report": "Report",
-    "activity_logs": "User Activity"
-  },
-  "system": {
-    "deleted_records": "Deleted Records",
-    "activity_logs": "Activity Logs"
-  },
-  "hr": {
-    "employee": "Employees",
-    "contract": "Contracts",
-    "document": "Documents",
-    "department": "Departments",
-    "designation": "Designations"
-  },
-  "attendance": {
-    "roster": "Daily Roster",
-    "register": "Attendance Register",
-    "unmapped": "Unmapped Punches",
-    "device": "Devices",
-    "shift": "Shifts",
-    "holiday": "Holidays",
-    "self_service": "My Attendance"
-  },
-  "leave": {
-    "request": "Leave Requests",
-    "allocation": "Allocations",
-    "type": "Leave Types"
-  }
+    "group": {
+        "menu": "Menu"
+    },
+    "main": {
+        "home": "Home",
+        "dashboard": "Dashboard",
+        "administration": "Administration",
+        "inventory": "Inventory",
+        "account": "Account",
+        "purchase": "Purchase",
+        "sale": "Sale",
+        "ledger": "Ledger",
+        "hr": "Human Resources",
+        "receipt": "Receipt",
+        "payment": "Payment",
+        "transfer": "Account Transfers",
+        "expense": "Expense",
+        "user_management": "User Management",
+        "preferences": "Preferences",
+        "reports": "Reports",
+        "system": "System",
+        "deleted_records": "Deleted Records",
+        "trash": "Trash",
+        "attendance": "Attendance",
+        "leave": "Leave",
+        "payroll": "Payroll",
+        "recruitment": "Recruitment"
+    },
+    "expense": {
+        "expense": "Expense",
+        "expenses": "Expenses",
+        "expense_category": "Expense Category"
+    },
+    "administration": {
+        "category": "Category",
+        "customer_group": "Customer Group",
+        "payment_term": "Payment Term",
+        "currency": "Currency",
+        "currency_rate_update": "Currency Rate Updates",
+        "unit_measure": "Unit Measure",
+        "size": "Size",
+        "branch": "Branch",
+        "brand": "Brand",
+        "warehouse": "Warehouse",
+        "company": "Company"
+    },
+    "inventory": {
+        "item": "Item",
+        "fast_entry": "Fast Entry",
+        "fast_opening": "Fast Opening",
+        "barcode_print": "Barcode Print",
+        "item_transfer": "Item Transfer",
+        "pricing": "Pricing"
+    },
+    "account": {
+        "chart_of_account": "Chart of Account",
+        "account_type": "Account Type"
+    },
+    "journal_entry": {
+        "journal_entry": "Journal Entry",
+        "journal_entries": "Journal Entries",
+        "journal_class": "Journal Class",
+        "journal_classes": "Journal Classes"
+    },
+    "purchase": {
+        "purchase": "Purchase",
+        "purchase_return": "Purchase Return"
+    },
+    "sale": {
+        "sale": "Sale",
+        "sales": "Sales",
+        "create_sale": "Create Sale",
+        "edit_sale": "Edit Sale",
+        "sale_created_successfully": "Sale created successfully",
+        "sale_updated_successfully": "Sale updated successfully",
+        "sale_return": "Sale Return"
+    },
+    "ledger": {
+        "customer": "Customer",
+        "supplier": "Supplier"
+    },
+    "owners": {
+        "owners": "Owners",
+        "drawing": "Drawing"
+    },
+    "user_management": {
+        "user": "User",
+        "role": "Role"
+    },
+    "reports": {
+        "reports": "Reports",
+        "report": "Report",
+        "activity_logs": "User Activity"
+    },
+    "system": {
+        "deleted_records": "Deleted Records",
+        "activity_logs": "Activity Logs"
+    },
+    "hr": {
+        "employee": "Employees",
+        "contract": "Contracts",
+        "document": "Documents",
+        "department": "Departments",
+        "designation": "Designations"
+    },
+    "attendance": {
+        "roster": "Daily Roster",
+        "register": "Attendance Register",
+        "unmapped": "Unmapped Punches",
+        "device": "Devices",
+        "shift": "Shifts",
+        "holiday": "Holidays",
+        "self_service": "My Attendance"
+    },
+    "leave": {
+        "request": "Leave Requests",
+        "allocation": "Allocations",
+        "type": "Leave Types"
+    },
+    "payroll": {
+        "payroll": "Payroll Runs",
+        "salary_payment": "Salary Payments",
+        "loan": "Loans & Advances",
+        "structure": "Salary Structures",
+        "component": "Salary Components",
+        "tax_table": "Tax Tables"
+    },
+    "recruitment": {
+        "opening": "Job Openings",
+        "application": "Applications",
+        "interview": "Interviews"
+    }
 }

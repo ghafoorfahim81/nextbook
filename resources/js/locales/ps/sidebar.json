@@ -1,94 +1,109 @@
 {
-  "group": {
-    "menu": "مینو"
-  },
-  "main": {
-    "home": "کور",
-    "dashboard": "ډشبورډ",
-    "administration": "اداره",
-    "inventory": "ذخیره",
-    "account": "حساب",
-    "purchase": "پېرود",
-    "sale": "خرڅ",
-    "ledger": "لیجر",
-    "hr": "بشري سرچینې",
-    "receipt": "رسید",
-    "payment": "پرېمینټ",
-    "transfer": "حساب لېږد",
-    "user_management": "کارن شمیر",
-    "preferences": "ترتیبات",
-    "attendance": "حاضري",
-    "leave": "رخصتي"
-  },
-  "administration": {
-    "category": "کټګوري",
-    "customer_group": "د پېرودونکو ډله",
-    "payment_term": "د تادیې شرط",
-    "currency": "اسعار",
-    "currency_rate_update": "د اسعارو نرخ تازه کول",
-    "unit_measure": "یونټ اندازه",
-    "size": "اندازه",
-    "branch": "څانګه",
-    "brand": "برنډ",
-    "warehouse": "ګودام",
-    "company": "شرکت"
-  },
-  "inventory": {
-    "item": "ایټم",
-    "fast_entry": "چټک ثبت",
-    "fast_opening": "چټک افتتاح",
-    "barcode_print": "بارکوډ چاپ",
-    "item_transfer": "جنس لېږد",
-    "pricing": "د قیمتونو کتنه"
-  },
-  "account": {
-    "chart_of_account": "حسابونو جدول",
-    "account_type": "د حساب ډول"
-  },
-  "purchase": {
-    "purchase": "پېرود",
-    "purchase_return": "د پېرود ستنول"
-  },
-  "sale": {
-    "sale": "خرڅ",
-    "sales": "خرڅلاو",
-    "create_sale": "خرڅ جوړول",
-    "edit_sale": "خرڅ سمول",
-    "sale_created_successfully": "خرڅ په بریالیتوب سره جوړ شو",
-    "sale_updated_successfully": "خرڅ په بریالیتوب سره تازه شو",
-    "sale_return": "د خرڅ ستنول"
-  },
-  "ledger": {
-    "customer": "پېرېدونکی",
-    "supplier": "عرضه کوونکی"
-  },
-  "owners": {
-    "owners": "ماڼکان",
-    "drawing": "دریښتنل"
-  },
-  "user_management": {
-    "user": "کارن",
-    "role": "نقش"
-  },
-  "hr": {
-    "employee": "کارکوونکي",
-    "contract": "قراردادونه",
-    "document": "اسناد",
-    "department": "څانګې",
-    "designation": "دندې"
-  },
-  "attendance": {
-    "roster": "ورځنی جدول",
-    "register": "د حاضرۍ دفتر",
-    "unmapped": "بې‌تړاوه ثبتونه",
-    "device": "وسیلې",
-    "shift": "شیفتونه",
-    "holiday": "رسمي رخصتۍ",
-    "self_service": "زما حاضري"
-  },
-  "leave": {
-    "request": "د رخصتۍ غوښتنې",
-    "allocation": "ټاکنې",
-    "type": "د رخصتۍ ډولونه"
-  }
+    "group": {
+        "menu": "مینو"
+    },
+    "main": {
+        "home": "کور",
+        "dashboard": "ډشبورډ",
+        "administration": "اداره",
+        "inventory": "ذخیره",
+        "account": "حساب",
+        "purchase": "پېرود",
+        "sale": "خرڅ",
+        "ledger": "لیجر",
+        "hr": "بشري سرچینې",
+        "receipt": "رسید",
+        "payment": "پرېمینټ",
+        "transfer": "حساب لېږد",
+        "user_management": "کارن شمیر",
+        "preferences": "ترتیبات",
+        "attendance": "حاضري",
+        "leave": "رخصتي",
+        "payroll": "معاشونه",
+        "recruitment": "ګمارنه"
+    },
+    "administration": {
+        "category": "کټګوري",
+        "customer_group": "د پېرودونکو ډله",
+        "payment_term": "د تادیې شرط",
+        "currency": "اسعار",
+        "currency_rate_update": "د اسعارو نرخ تازه کول",
+        "unit_measure": "یونټ اندازه",
+        "size": "اندازه",
+        "branch": "څانګه",
+        "brand": "برنډ",
+        "warehouse": "ګودام",
+        "company": "شرکت"
+    },
+    "inventory": {
+        "item": "ایټم",
+        "fast_entry": "چټک ثبت",
+        "fast_opening": "چټک افتتاح",
+        "barcode_print": "بارکوډ چاپ",
+        "item_transfer": "جنس لېږد",
+        "pricing": "د قیمتونو کتنه"
+    },
+    "account": {
+        "chart_of_account": "حسابونو جدول",
+        "account_type": "د حساب ډول"
+    },
+    "purchase": {
+        "purchase": "پېرود",
+        "purchase_return": "د پېرود ستنول"
+    },
+    "sale": {
+        "sale": "خرڅ",
+        "sales": "خرڅلاو",
+        "create_sale": "خرڅ جوړول",
+        "edit_sale": "خرڅ سمول",
+        "sale_created_successfully": "خرڅ په بریالیتوب سره جوړ شو",
+        "sale_updated_successfully": "خرڅ په بریالیتوب سره تازه شو",
+        "sale_return": "د خرڅ ستنول"
+    },
+    "ledger": {
+        "customer": "پېرېدونکی",
+        "supplier": "عرضه کوونکی"
+    },
+    "owners": {
+        "owners": "ماڼکان",
+        "drawing": "دریښتنل"
+    },
+    "user_management": {
+        "user": "کارن",
+        "role": "نقش"
+    },
+    "hr": {
+        "employee": "کارکوونکي",
+        "contract": "قراردادونه",
+        "document": "اسناد",
+        "department": "څانګې",
+        "designation": "دندې"
+    },
+    "attendance": {
+        "roster": "ورځنی جدول",
+        "register": "د حاضرۍ دفتر",
+        "unmapped": "بې‌تړاوه ثبتونه",
+        "device": "وسیلې",
+        "shift": "شیفتونه",
+        "holiday": "رسمي رخصتۍ",
+        "self_service": "زما حاضري"
+    },
+    "leave": {
+        "request": "د رخصتۍ غوښتنې",
+        "allocation": "ټاکنې",
+        "type": "د رخصتۍ ډولونه"
+    },
+    "payroll": {
+        "payroll": "د معاش دورې",
+        "salary_payment": "د معاش ورکړې",
+        "loan": "پور او پیشکي",
+        "structure": "د معاش جوړښتونه",
+        "component": "د معاش برخې",
+        "tax_table": "د مالیې جدولونه"
+    },
+    "recruitment": {
+        "opening": "خالي بستونه",
+        "application": "غوښتنې",
+        "interview": "مرکې"
+    }
 }

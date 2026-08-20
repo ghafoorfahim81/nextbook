@@ -120,6 +120,15 @@ class AuthServiceProvider extends ServiceProvider
         LeaveType::class => LeaveTypePolicy::class,
         LeaveAllocation::class => LeaveAllocationPolicy::class,
         LeaveRequest::class => LeaveRequestPolicy::class,
+        \App\Models\Hr\SalaryComponent::class => \App\Policies\Hr\SalaryComponentPolicy::class,
+        \App\Models\Hr\SalaryStructure::class => \App\Policies\Hr\SalaryStructurePolicy::class,
+        \App\Models\Hr\TaxBracketSet::class => \App\Policies\Hr\TaxBracketSetPolicy::class,
+        \App\Models\Hr\Payroll::class => \App\Policies\Hr\PayrollPolicy::class,
+        \App\Models\Hr\SalaryPayment::class => \App\Policies\Hr\SalaryPaymentPolicy::class,
+        \App\Models\Hr\EmployeeLoan::class => \App\Policies\Hr\EmployeeLoanPolicy::class,
+        \App\Models\Hr\JobOpening::class => \App\Policies\Hr\JobOpeningPolicy::class,
+        \App\Models\Hr\JobApplication::class => \App\Policies\Hr\JobApplicationPolicy::class,
+        \App\Models\Hr\Interview::class => \App\Policies\Hr\InterviewPolicy::class,
 
         // Purchases & Sales
         Purchase::class => PurchasePolicy::class,

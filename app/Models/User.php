@@ -77,6 +77,8 @@ class User extends Authenticatable
                 'hr',
                 'attendance',
                 'leave',
+                'payroll',
+                'recruitment',
                 'owners',
                 'expense',
                 'purchase',
