@@ -1,381 +1,514 @@
 {
-  "title": "راپورونه",
-  "subtitle": "د ثبت شويو راکړو ورکړو لپاره عملياتي، ګدامي او مالي راپورونه.",
-  "catalog_label": "د راپورونو لړلیک",
-  "active_report": "ټاکل شوی راپور",
-  "back_to_reports": "راپورونو ته بېرته",
-  "export_excel": "اکسل ته صادرول",
-  "export_pdf": "پی‌ډي‌اف ته صادرول",
-  "snapshot_note": "دا راپور د موجوده سټاک د انځور پر بنسټ جوړ شوی دی.",
-  "company_name": "نام شرکت",
-  "exported_on": "تاریخ خروجی",
-  "groups": {
-    "financial": "مالي راپورونه",
-    "financial_description": "د حسابدارۍ اصلي راپورونه او صورتونه.",
-    "cash_flow": "د نغدو بهیر راپورونه",
-    "cash_flow_description": "د نغدو او بانک د داخلېدو او وتلو راپورونه.",
-    "party": "د طرف حساب صورتونه",
-    "party_description": "د پېرېدونکو او عرضه کوونکو د حرکت او بیلانس راپورونه.",
-    "operations": "د خرڅلاو او پېرود راپورونه",
-    "operations_description": "د خرڅلاو او پېرود عملياتي راپورونه د توکو پر بنسټ.",
-    "expenses": "د لګښتونو راپورونه",
-    "expenses_description": "د لګښت راکړې ورکړې راپورونه د کټګورۍ او حساب پر بنسټ.",
-    "inventory": "د ګدام راپورونه",
-    "inventory_description": "اوسنی سټاک، ارزښت او د توکو حرکت.",
-    "management": "مديريتي راپورونه",
-    "management_description": "د کاروونکو د فعالیت او څارنې راپورونه."
-  },
-  "filters": {
-    "title": "فلټرونه",
-    "report": "راپور",
-    "branch": "څانګه",
-    "date_from": "له نېټې",
-    "date_to": "تر نېټې",
-    "ledger": "لېجر",
-    "customer": "پېرېدونکی",
-    "supplier": "عرضه کوونکی",
-    "item": "توکی",
-    "account": "نغدي / بانک حساب",
-    "warehouse": "ګودام",
-    "currency": "اسعار",
-    "type": "د راکړې ورکړې ډول",
-    "balance_type": "د بیلانس ډول",
-    "expense_category": "د لګښت کټګوري",
-    "expense_account": "د لګښت حساب",
-    "per_page": "قطارونه",
-    "apply": "فلټرونه پلي کړئ",
-    "reset": "بیا تنظیم"
-  },
-  "balance_types": {
-    "all": "ټول",
-    "debtor": "پوروړی",
-    "creditor": "پورورکوونکی"
-  },
-  "table": {
-    "results": "پایلې",
-    "showing": "ښودل {from}-{to} له {total} څخه",
-    "no_data": "د ټاکل شويو فلټرونو لپاره د راپور معلومات ونه موندل شول.",
-    "previous": "مخکینی",
-    "next": "بل"
-  },
-  "messages": {
-    "ledger_required": "د دې راپور د لیدو لپاره یو لېجر وټاکئ.",
-    "customer_required": "د دې صورت د لیدو لپاره یو پېرېدونکی وټاکئ.",
-    "supplier_required": "د دې صورت د لیدو لپاره یو عرضه کوونکی وټاکئ.",
-    "account_required": "د دې راپور د لیدو لپاره یو نغدي یا بانک حساب وټاکئ."
-  },
-  "summary": {
-    "total_debit": "ټول ډیبیټ",
-    "total_credit": "ټول کریډیټ",
-    "balance": "بیلانس",
-    "balance_label": "بیلانس",
-    "total_amount": "ټول مبلغ",
-    "total_quantity": "ټول مقدار",
-    "total_value": "ټول ارزښت",
-    "total_items": "توکي",
-    "total_in": "ټول داخل",
-    "total_out": "ټول خارج",
-    "total_on_hand": "ټول موجودي",
-    "total_sold": "ټول خرڅلاو",
-    "sale_count": "د خرڅلاو شمېر",
-    "average_per_day": "ورځنی اوسط",
-    "days_on_hand": "د موجودۍ ورځې",
-    "turnover_rate": "د گردش کچه",
-    "opening_balance": "د پیل موجودي",
-    "purchase_today": "نننۍ پېرود",
-    "sale_today": "نننۍ خرڅلاو",
-    "closing_balance": "وروستۍ موجودي",
-    "days_until_expiry": "تر ختمېدو ورځې",
-    "max_stock_level": "اعظمي موجودي",
-    "excess_quantity": "اضافي اندازه",
-    "total_excess_quantity": "ټوله اضافي اندازه",
-    "total_sales": "ټول خرڅلاوونه",
-    "total_purchases": "ټول پېرودونه",
-    "total_assets": "ټولې شتمنۍ",
-    "total_liabilities": "ټولې پورونه",
-    "total_equity": "ټول حقوق",
-    "equation_total": "پورونه + حقوق",
-    "total_revenue": "ټول عاید",
-    "total_cost_of_goods_sold": "د خرڅ شويو توکو ټول لګښت",
-    "gross_profit": "ناخالصه ګټه",
-    "total_expenses": "ټول لګښتونه",
-    "net_profit": "خالصه ګټه",
-    "expense_count": "لګښتونه",
-    "party_count": "د طرفونو شمېر",
-    "total_debtor": "ټول ترلاسه کېدونکي",
-    "total_creditor": "ټول ورکړونکي",
-    "currency_count": "اسعار",
-    "total_home_equivalent": "ټولټال (بنسټیز اسعار)"
-  },
-  "columns": {
-    "no": "شماره",
-    "section": "بخش",
-    "account_name": "نام حساب",
-    "ledger_name": "لېجر",
-    "total_debit": "ډیبیټ",
-    "total_credit": "کریډیټ",
-    "balance": "بیلانس",
-    "transaction_number": "د راکړې ورکړې شمېره",
-    "reference_type": "د مرجع ډول",
-    "description": "تشریح",
-    "debit": "ډیبیټ",
-    "credit": "کریډیټ",
-    "running_balance": "روان بیلانس",
-    "reference": "مرجع",
-    "amount_received": "ترلاسه شوې اندازه",
-    "amount_paid": "ورکړل شوې اندازه",
-    "date": "نېټه",
-    "sale_number": "د خرڅلاو شمېره",
-    "purchase_number": "د پېرود شمېره",
-    "customer": "پېرېدونکی",
-    "supplier": "عرضه کوونکی",
-    "item": "توکی",
-    "quantity": "مقدار",
-    "unit_price": "واحد قیمت",
-    "discount": "تخفیف",
-    "total_amount": "ټول مبلغ",
-    "warehouse": "ګودام",
-    "average_cost": "اوسط لګښت",
-    "total_value": "ټول ارزښت",
-    "item_code": "د توکي کوډ",
-    "item_name": "د توکي نوم",
-    "batch_number": "د بچ شمېره",
-    "expiry_date": "د ختمېدو نېټه",
-    "in_quantity": "داخل",
-    "out_quantity": "خارج",
-    "on_hand": "موجودي",
-    "time": "وخت",
-    "transaction_type": "د تراکنش ډول",
-    "narration": "تشریح",
-    "account_type": "د حساب ډول",
-    "total_in": "داخل",
-    "total_out": "خارج",
-    "opening_balance": "د پیل موجودي",
-    "purchase_today": "نننۍ پېرود",
-    "sale_today": "نننۍ خرڅلاو",
-    "closing_balance": "وروستۍ موجودي",
-    "days_until_expiry": "تر ختمېدو ورځې",
-    "max_stock_level": "اعظمي موجودي",
-    "excess_quantity": "اضافي اندازه",
-    "sale_count": "د خرڅلاو شمېر",
-    "average_per_day": "ورځنی اوسط",
-    "days_on_hand": "د موجودۍ ورځې",
-    "turnover_rate": "د گردش کچه",
-    "total_sold": "ټول خرڅلاو",
-    "movement_type": "د حرکت ډول",
-    "source_type": "د سرچینې ډول",
-    "reference_id": "د مرجع پېژند",
-    "reorder_level": "د بیا فرمایش کچه",
-    "reference_number": "د مرجع شماره",
-    "expire_date": "د ختمېدو نېټه",
-    "batch": "د بچ شماره",
-    "number": "شمېره",
-    "type": "ډول",
-    "status": "حالت",
-    "payment_status": "د تادیې حالت",
-    "amount": "مبلغ",
-    "category": "کټګوري",
-    "expense_account": "د لګښت حساب",
-    "bank_account": "د بانک / نغدي حساب",
-    "remark": "یادښت",
-    "party_name": "طرف",
-    "balance_type": "د بیلانس ډول",
-    "currency": "اسعار",
-    "home_equivalent": "د بنسټیزو اسعارو معادل",
-    "currency_name": "د اسعارو نوم"
-  },
-  "view_types": {
-    "general": "عمومي لید",
-    "itemwise": "د توکو لید"
-  },
-  "reports": {
-    "trial_balance": {
-      "label": "آزمایښتي بیلانس",
-      "description": "ثبت شوي ډیبیټ، کریډیټ او خالص بیلانس د لېجر له مخې."
+    "title": "راپورونه",
+    "subtitle": "د ثبت شويو راکړو ورکړو لپاره عملياتي، ګدامي او مالي راپورونه.",
+    "catalog_label": "د راپورونو لړلیک",
+    "active_report": "ټاکل شوی راپور",
+    "back_to_reports": "راپورونو ته بېرته",
+    "export_excel": "اکسل ته صادرول",
+    "export_pdf": "پی‌ډي‌اف ته صادرول",
+    "snapshot_note": "دا راپور د موجوده سټاک د انځور پر بنسټ جوړ شوی دی.",
+    "company_name": "نام شرکت",
+    "exported_on": "تاریخ خروجی",
+    "groups": {
+        "financial": "مالي راپورونه",
+        "financial_description": "د حسابدارۍ اصلي راپورونه او صورتونه.",
+        "cash_flow": "د نغدو بهیر راپورونه",
+        "cash_flow_description": "د نغدو او بانک د داخلېدو او وتلو راپورونه.",
+        "party": "د طرف حساب صورتونه",
+        "party_description": "د پېرېدونکو او عرضه کوونکو د حرکت او بیلانس راپورونه.",
+        "operations": "د خرڅلاو او پېرود راپورونه",
+        "operations_description": "د خرڅلاو او پېرود عملياتي راپورونه د توکو پر بنسټ.",
+        "expenses": "د لګښتونو راپورونه",
+        "expenses_description": "د لګښت راکړې ورکړې راپورونه د کټګورۍ او حساب پر بنسټ.",
+        "inventory": "د ګدام راپورونه",
+        "inventory_description": "اوسنی سټاک، ارزښت او د توکو حرکت.",
+        "management": "مديريتي راپورونه",
+        "management_description": "د کاروونکو د فعالیت او څارنې راپورونه.",
+        "hr": "بشري سرچینې",
+        "hr_description": "معاشونه، حاضري، رخصتي او کارکوونکي."
     },
-    "balance_sheet": {
-      "label": "بیلانس شیټ",
-      "description": "تر ټاکلې نېټې پورې مالي وضعیت."
+    "filters": {
+        "title": "فلټرونه",
+        "report": "راپور",
+        "branch": "څانګه",
+        "date_from": "له نېټې",
+        "date_to": "تر نېټې",
+        "ledger": "لېجر",
+        "customer": "پېرېدونکی",
+        "supplier": "عرضه کوونکی",
+        "item": "توکی",
+        "account": "نغدي / بانک حساب",
+        "warehouse": "ګودام",
+        "currency": "اسعار",
+        "type": "د راکړې ورکړې ډول",
+        "balance_type": "د بیلانس ډول",
+        "expense_category": "د لګښت کټګوري",
+        "expense_account": "د لګښت حساب",
+        "per_page": "قطارونه",
+        "apply": "فلټرونه پلي کړئ",
+        "reset": "بیا تنظیم",
+        "employee": "کارکوونکی",
+        "department": "څانګه",
+        "designation": "بست",
+        "payroll": "د معاش دوره",
+        "leave_type": "د رخصتۍ ډول",
+        "employment_type": "د دندې ډول",
+        "employment_status": "د دندې حالت"
     },
-    "income_statement": {
-      "label": "د ګټې او زیان راپور",
-      "description": "عاید، د خرڅ شويو توکو لګښت، لګښتونه او خالصه ګټه د ټاکلې مودې لپاره."
+    "balance_types": {
+        "all": "ټول",
+        "debtor": "پوروړی",
+        "creditor": "پورورکوونکی"
     },
-    "general_ledger": {
-      "label": "عمومي لېجر",
-      "description": "د لېجر راکړې ورکړې له روان بیلانس سره."
+    "table": {
+        "results": "پایلې",
+        "showing": "ښودل {from}-{to} له {total} څخه",
+        "no_data": "د ټاکل شويو فلټرونو لپاره د راپور معلومات ونه موندل شول.",
+        "previous": "مخکینی",
+        "next": "بل"
     },
-    "customer_statement": {
-      "label": "د پېرېدونکي صورت",
-      "description": "په ډیفالټ توګه د ټولو پېرېدونکو بیلانسونه، یا د ټاکل شوي پېرېدونکي بشپړ صورت."
+    "messages": {
+        "ledger_required": "د دې راپور د لیدو لپاره یو لېجر وټاکئ.",
+        "customer_required": "د دې صورت د لیدو لپاره یو پېرېدونکی وټاکئ.",
+        "supplier_required": "د دې صورت د لیدو لپاره یو عرضه کوونکی وټاکئ.",
+        "account_required": "د دې راپور د لیدو لپاره یو نغدي یا بانک حساب وټاکئ."
     },
-    "supplier_statement": {
-      "label": "د عرضه کوونکي صورت",
-      "description": "په ډیفالټ توګه د ټولو عرضه کوونکو بیلانسونه، یا د ټاکل شوي عرضه کوونکي بشپړ صورت."
-    },
-    "receipt_report": {
-      "label": "د رسید راپور",
-      "description": "د نغدو او بانک داخلېدنې چې پکې نغدي حساب ډیبیټ کېږي."
-    },
-    "payment_report": {
-      "label": "د تادیې راپور",
-      "description": "د نغدو او بانک وتنې چې پکې نغدي حساب کریډیټ کېږي."
-    },
-    "cash_book": {
-      "label": "نغدي کتاب",
-      "description": "د ټاکل شوي نغدي یا بانک حساب روان بیلانس."
-    },
-    "cash_position_by_currency": {
-      "label": "د اسعارو له مخې نغدي حالت",
-      "description": "په هرو اسعارو کې د موجودو نغدو پیسو اندازه، د ټولو نغدي او بانکي حسابونو په مجموع کې."
-    },
-    "sales_report": {
-      "label": "د خرڅلاو راپور",
-      "description": "د ثبت شويو خرڅلاو کرښې د پېرېدونکي او توکي له مخې."
-    },
-    "purchase_report": {
-      "label": "د پېرود راپور",
-      "description": "د ثبت شويو پېرودونو کرښې د عرضه کوونکي او توکي له مخې."
-    },
-    "inventory_stock": {
-      "label": "د ګدام سټاک",
-      "description": "د اوسني سټاک مقدار او ارزښت د توکي او ګودام له مخې."
-    },
-    "stock_movement": {
-      "label": "د سټاک حرکت",
-      "description": "د توکي او ګودام له مخې د سټاک تفصیلي تاریخچه."
-    },
-    "low_stock": {
-      "label": "کم سټاک",
-      "description": "هغه توکي چې د بیا فرمایش له کچې سره برابر یا تر هغې کم وي."
-    },
-    "inventory_valuation": {
-      "label": "د سټاک ارزښت",
-      "description": "د اوسني ګدام ارزښت د توکي له مخې."
-    },
-    "batch_wise_report": {
-      "label": "د بچ له مخې راپور",
-      "description": "د هر بچ داخل، خارج او موجودي د بچ په تفکیک سره."
-    },
-    "expiry_wise_report": {
-      "label": "د ختمېدو له مخې راپور",
-      "description": "د هر بچ د ختمېدو نېټې له مخې د موجودۍ حرکت."
-    },
-    "zero_on_hand_report": {
-      "label": "صفر موجودي لرونکي توکي",
-      "description": "هغه توکي چې اوسنۍ موجودي یې صفر ده، له ټول داخل او خارج سره."
-    },
-    "fast_moving_report": {
-      "label": "چټک خرڅېدونکي توکي",
-      "description": "هغه توکي چې تر ټولو ډېر خرڅلاو لري."
-    },
-    "slow_moving_report": {
-      "label": "ورو خوځېدونکي توکي",
-      "description": "هغه توکي چې لږ خرڅلاو او کم گردش لري."
-    },
-    "today_sale_purchase_closing_stock_report": {
-      "label": "د نن خرڅلاو، پېرود او وروستۍ موجودي",
-      "description": "د هر توکي پیل موجودي، نننۍ پېرود، نننۍ خرڅلاو او وروستۍ موجودي."
-    },
-    "near_expiry_report": {
-      "label": "نږدې ختمېدو راپور",
-      "description": "هغه توکي او بچونه چې په راتلونکو ۳۰ ورځو کې ختمېږي."
-    },
-    "maximum_stock_report": {
-      "label": "د اعظمي موجودۍ راپور",
-      "description": "هغه توکي چې اوسنۍ موجودي یې له ټاکل شوې اعظمي کچې لوړه ده."
-    },
-    "group_summary_report": {
-      "label": "د حسابونو ګروپي لنډيز",
-      "description": "حسابونه د حساب ډول له مخې، له پیل موجودي، پور، پوروړي او وروستۍ موجودۍ سره."
-    },
-    "day_book_report": {
-      "label": "ورځنی کتاب",
-      "description": "د ټاکل شوې نېټې د تراکنش ثبت شوې لیکې."
-    },
-    "journal_book_report": {
-      "label": "ژورنال کتاب",
-      "description": "ټول داخل، خارج او مانده د حساب ډول له مخې."
-    },
-    "user_activity": {
-      "label": "د کاروونکو فعالیت",
-      "description": "د هر کاروونکي له مخې د ننوتلو او جوړولو، سمولو او حذف فعالیتونه."
-    },
-    "expense_report": {
-      "label": "د لګښتونو راپور",
-      "description": "ثبت شوي لګښتونه د نېټې، کټګورۍ، د لګښت حساب او د بانک حساب له مخې."
-    }
-  },
-  "user_activity": {
-    "cards": {
-      "total_users": "ټول کاروونکي",
-      "active_users": "فعال کاروونکي",
-      "active_suffix": "فعال",
-      "total_activities": "ټول فعالیتونه",
-      "total_logins": "ټول ننوتل"
-    },
-    "sections": {
-      "role_distribution": "د رول وېش",
-      "top_users": "تر ټولو فعال کاروونکي",
-      "activity_summary": "د فعالیت لنډیز",
-      "user_details": "د کاروونکو جزئیات"
-    },
-    "actions": {
-      "login": "ننوتل",
-      "create": "ایجاد",
-      "update": "سمون",
-      "delete": "حذف"
+    "summary": {
+        "total_debit": "ټول ډیبیټ",
+        "total_credit": "ټول کریډیټ",
+        "balance": "بیلانس",
+        "balance_label": "بیلانس",
+        "total_amount": "ټول مبلغ",
+        "total_quantity": "ټول مقدار",
+        "total_value": "ټول ارزښت",
+        "total_items": "توکي",
+        "total_in": "ټول داخل",
+        "total_out": "ټول خارج",
+        "total_on_hand": "ټول موجودي",
+        "total_sold": "ټول خرڅلاو",
+        "sale_count": "د خرڅلاو شمېر",
+        "average_per_day": "ورځنی اوسط",
+        "days_on_hand": "د موجودۍ ورځې",
+        "turnover_rate": "د گردش کچه",
+        "opening_balance": "د پیل موجودي",
+        "purchase_today": "نننۍ پېرود",
+        "sale_today": "نننۍ خرڅلاو",
+        "closing_balance": "وروستۍ موجودي",
+        "days_until_expiry": "تر ختمېدو ورځې",
+        "max_stock_level": "اعظمي موجودي",
+        "excess_quantity": "اضافي اندازه",
+        "total_excess_quantity": "ټوله اضافي اندازه",
+        "total_sales": "ټول خرڅلاوونه",
+        "total_purchases": "ټول پېرودونه",
+        "total_assets": "ټولې شتمنۍ",
+        "total_liabilities": "ټولې پورونه",
+        "total_equity": "ټول حقوق",
+        "equation_total": "پورونه + حقوق",
+        "total_revenue": "ټول عاید",
+        "total_cost_of_goods_sold": "د خرڅ شويو توکو ټول لګښت",
+        "gross_profit": "ناخالصه ګټه",
+        "total_expenses": "ټول لګښتونه",
+        "net_profit": "خالصه ګټه",
+        "expense_count": "لګښتونه",
+        "party_count": "د طرفونو شمېر",
+        "total_debtor": "ټول ترلاسه کېدونکي",
+        "total_creditor": "ټول ورکړونکي",
+        "currency_count": "اسعار",
+        "total_home_equivalent": "ټولټال (بنسټیز اسعار)",
+        "payslip_count": "د معاش پاڼې",
+        "run_count": "د معاش دورې",
+        "total_gross": "ټول ناخالص",
+        "total_tax": "ټوله مالیه",
+        "total_net": "ټول خالص",
+        "outstanding": "پاتې",
+        "taxable_income": "د مالیې وړ عاید",
+        "loan_count": "پورونه",
+        "total_principal": "ټول اصل",
+        "present_days": "حاضرې ورځې",
+        "absent_days": "غیرحاضرې ورځې",
+        "leave_days": "د رخصتۍ ورځې",
+        "worked_hours": "کاري ساعتونه",
+        "overtime_hours": "اضافي ساعتونه",
+        "needs_review": "کتنې ته اړتیا",
+        "day_count": "ورځې",
+        "entitled_days": "د حق ورځې",
+        "taken_days": "کارول شوې ورځې",
+        "pending_days": "په تمه ورځې",
+        "available_days": "شته ورځې",
+        "request_count": "غوښتنې",
+        "total_days": "ټولې ورځې",
+        "approved_days": "تصویب شوې ورځې",
+        "headcount": "د کارکوونکو شمېر",
+        "joiners": "نوي ګمارل شوي",
+        "leavers": "پرېښودونکي",
+        "net_change": "خالص بدلون",
+        "contract_count": "قراردادونه",
+        "expired_count": "پای ته رسېدلي"
     },
     "columns": {
-      "no": "شماره",
-      "section": "بخش",
-      "account_name": "نام حساب",
-      "user": "کاروونکی",
-      "role": "رول",
-      "total_activities": "فعالیت",
-      "logins": "ننوتل",
-      "creates": "ایجاد",
-      "updates": "سمون",
-      "deletes": "حذف",
-      "last_login": "وروستی ننوتل",
-      "top_sources": "تر ټولو فعال ماډلونه"
+        "no": "شماره",
+        "section": "بخش",
+        "account_name": "نام حساب",
+        "ledger_name": "لېجر",
+        "total_debit": "ډیبیټ",
+        "total_credit": "کریډیټ",
+        "balance": "بیلانس",
+        "transaction_number": "د راکړې ورکړې شمېره",
+        "reference_type": "د مرجع ډول",
+        "description": "تشریح",
+        "debit": "ډیبیټ",
+        "credit": "کریډیټ",
+        "running_balance": "روان بیلانس",
+        "reference": "مرجع",
+        "amount_received": "ترلاسه شوې اندازه",
+        "amount_paid": "ورکړل شوې اندازه",
+        "date": "نېټه",
+        "sale_number": "د خرڅلاو شمېره",
+        "purchase_number": "د پېرود شمېره",
+        "customer": "پېرېدونکی",
+        "supplier": "عرضه کوونکی",
+        "item": "توکی",
+        "quantity": "مقدار",
+        "unit_price": "واحد قیمت",
+        "discount": "تخفیف",
+        "total_amount": "ټول مبلغ",
+        "warehouse": "ګودام",
+        "average_cost": "اوسط لګښت",
+        "total_value": "ټول ارزښت",
+        "item_code": "د توکي کوډ",
+        "item_name": "د توکي نوم",
+        "batch_number": "د بچ شمېره",
+        "expiry_date": "د ختمېدو نېټه",
+        "in_quantity": "داخل",
+        "out_quantity": "خارج",
+        "on_hand": "موجودي",
+        "time": "وخت",
+        "transaction_type": "د تراکنش ډول",
+        "narration": "تشریح",
+        "account_type": "د حساب ډول",
+        "total_in": "داخل",
+        "total_out": "خارج",
+        "opening_balance": "د پیل موجودي",
+        "purchase_today": "نننۍ پېرود",
+        "sale_today": "نننۍ خرڅلاو",
+        "closing_balance": "وروستۍ موجودي",
+        "days_until_expiry": "تر ختمېدو ورځې",
+        "max_stock_level": "اعظمي موجودي",
+        "excess_quantity": "اضافي اندازه",
+        "sale_count": "د خرڅلاو شمېر",
+        "average_per_day": "ورځنی اوسط",
+        "days_on_hand": "د موجودۍ ورځې",
+        "turnover_rate": "د گردش کچه",
+        "total_sold": "ټول خرڅلاو",
+        "movement_type": "د حرکت ډول",
+        "source_type": "د سرچینې ډول",
+        "reference_id": "د مرجع پېژند",
+        "reorder_level": "د بیا فرمایش کچه",
+        "reference_number": "د مرجع شماره",
+        "expire_date": "د ختمېدو نېټه",
+        "batch": "د بچ شماره",
+        "number": "شمېره",
+        "type": "ډول",
+        "status": "حالت",
+        "payment_status": "د تادیې حالت",
+        "amount": "مبلغ",
+        "category": "کټګوري",
+        "expense_account": "د لګښت حساب",
+        "bank_account": "د بانک / نغدي حساب",
+        "remark": "یادښت",
+        "party_name": "طرف",
+        "balance_type": "د بیلانس ډول",
+        "currency": "اسعار",
+        "home_equivalent": "د بنسټیزو اسعارو معادل",
+        "currency_name": "د اسعارو نوم",
+        "period": "دوره",
+        "employee": "کارکوونکی",
+        "employee_code": "کوډ",
+        "department": "څانګه",
+        "designation": "بست",
+        "present_days": "حاضر",
+        "absent_days": "غیرحاضر",
+        "late_days": "ناوخته",
+        "half_days": "نیمه ورځ",
+        "leave_days": "رخصتي",
+        "overtime_hours": "اضافي ساعتونه",
+        "worked_hours": "کاري ساعتونه",
+        "late_minutes": "د ناوخته دقیقې",
+        "needs_review": "کتنه",
+        "basic_salary": "اساسي",
+        "gross_earnings": "ناخالص",
+        "deductions": "کسرونه",
+        "tax": "مالیه",
+        "net_payable": "د تادیې وړ خالص",
+        "paid": "ورکړل شوی",
+        "outstanding": "پاتې",
+        "pay_date": "د تادیې نېټه",
+        "employees": "کارکوونکي",
+        "tin": "د پېژندنې شمېره",
+        "tax_table": "د مالیې جدول",
+        "taxable_income": "د مالیې وړ عاید",
+        "issue_date": "د صادرېدو نېټه",
+        "principal": "اصل",
+        "installment": "قسط",
+        "repaid": "بیرته ورکړل شوی",
+        "shift": "شفټ",
+        "check_in": "ننوتل",
+        "check_out": "وتل",
+        "leave_type": "د رخصتۍ ډول",
+        "entitled_days": "حق",
+        "carried_forward": "لېږدول شوی",
+        "taken_days": "کارول شوی",
+        "pending_days": "په تمه",
+        "available_days": "شته",
+        "from_date": "له نېټې",
+        "to_date": "تر نېټې",
+        "days": "ورځې",
+        "approved_by": "تصویبوونکی",
+        "reason": "دلیل",
+        "headcount": "د کارکوونکو شمېر",
+        "joiners": "نوي ګمارل شوي",
+        "leavers": "پرېښودونکي",
+        "male": "نر",
+        "female": "ښځه",
+        "permanent": "دایمي",
+        "average_salary": "منځنی معاش",
+        "phone": "تیلفون",
+        "start_date": "د پیل نېټه",
+        "end_date": "د پای نېټه",
+        "days_remaining": "پاتې ورځې"
     },
-    "sources": {
-      "users": "کاروونکي",
-      "accounts": "حسابونه",
-      "account_types": "د حساب ډولونه",
-      "brands": "برنډونه",
-      "categories": "کټګورۍ",
-      "currencies": "اسعار",
-      "expense_categories": "د لګښت کټګورۍ",
-      "expenses": "لګښتونه",
-      "item_transfers": "د توکو انتقالونه",
-      "items": "توکي",
-      "journal_classes": "د ژورنال ټولګي",
-      "journal_entries": "د ژورنال ثبتونه",
-      "ledgers": "لېجرونه",
-      "owners": "مالکان",
-      "payments": "تادیات",
-      "purchases": "پېرودونه",
-      "receipts": "رسیدونه",
-      "sales": "خرڅلاو",
-      "sizes": "سایزونه",
-      "unit_measures": "د اندازې واحدونه",
-      "warehouses": "ګودامونه"
+    "view_types": {
+        "general": "عمومي لید",
+        "itemwise": "د توکو لید"
+    },
+    "reports": {
+        "trial_balance": {
+            "label": "آزمایښتي بیلانس",
+            "description": "ثبت شوي ډیبیټ، کریډیټ او خالص بیلانس د لېجر له مخې."
+        },
+        "balance_sheet": {
+            "label": "بیلانس شیټ",
+            "description": "تر ټاکلې نېټې پورې مالي وضعیت."
+        },
+        "income_statement": {
+            "label": "د ګټې او زیان راپور",
+            "description": "عاید، د خرڅ شويو توکو لګښت، لګښتونه او خالصه ګټه د ټاکلې مودې لپاره."
+        },
+        "general_ledger": {
+            "label": "عمومي لېجر",
+            "description": "د لېجر راکړې ورکړې له روان بیلانس سره."
+        },
+        "customer_statement": {
+            "label": "د پېرېدونکي صورت",
+            "description": "په ډیفالټ توګه د ټولو پېرېدونکو بیلانسونه، یا د ټاکل شوي پېرېدونکي بشپړ صورت."
+        },
+        "supplier_statement": {
+            "label": "د عرضه کوونکي صورت",
+            "description": "په ډیفالټ توګه د ټولو عرضه کوونکو بیلانسونه، یا د ټاکل شوي عرضه کوونکي بشپړ صورت."
+        },
+        "receipt_report": {
+            "label": "د رسید راپور",
+            "description": "د نغدو او بانک داخلېدنې چې پکې نغدي حساب ډیبیټ کېږي."
+        },
+        "payment_report": {
+            "label": "د تادیې راپور",
+            "description": "د نغدو او بانک وتنې چې پکې نغدي حساب کریډیټ کېږي."
+        },
+        "cash_book": {
+            "label": "نغدي کتاب",
+            "description": "د ټاکل شوي نغدي یا بانک حساب روان بیلانس."
+        },
+        "cash_position_by_currency": {
+            "label": "د اسعارو له مخې نغدي حالت",
+            "description": "په هرو اسعارو کې د موجودو نغدو پیسو اندازه، د ټولو نغدي او بانکي حسابونو په مجموع کې."
+        },
+        "sales_report": {
+            "label": "د خرڅلاو راپور",
+            "description": "د ثبت شويو خرڅلاو کرښې د پېرېدونکي او توکي له مخې."
+        },
+        "purchase_report": {
+            "label": "د پېرود راپور",
+            "description": "د ثبت شويو پېرودونو کرښې د عرضه کوونکي او توکي له مخې."
+        },
+        "inventory_stock": {
+            "label": "د ګدام سټاک",
+            "description": "د اوسني سټاک مقدار او ارزښت د توکي او ګودام له مخې."
+        },
+        "stock_movement": {
+            "label": "د سټاک حرکت",
+            "description": "د توکي او ګودام له مخې د سټاک تفصیلي تاریخچه."
+        },
+        "low_stock": {
+            "label": "کم سټاک",
+            "description": "هغه توکي چې د بیا فرمایش له کچې سره برابر یا تر هغې کم وي."
+        },
+        "inventory_valuation": {
+            "label": "د سټاک ارزښت",
+            "description": "د اوسني ګدام ارزښت د توکي له مخې."
+        },
+        "batch_wise_report": {
+            "label": "د بچ له مخې راپور",
+            "description": "د هر بچ داخل، خارج او موجودي د بچ په تفکیک سره."
+        },
+        "expiry_wise_report": {
+            "label": "د ختمېدو له مخې راپور",
+            "description": "د هر بچ د ختمېدو نېټې له مخې د موجودۍ حرکت."
+        },
+        "zero_on_hand_report": {
+            "label": "صفر موجودي لرونکي توکي",
+            "description": "هغه توکي چې اوسنۍ موجودي یې صفر ده، له ټول داخل او خارج سره."
+        },
+        "fast_moving_report": {
+            "label": "چټک خرڅېدونکي توکي",
+            "description": "هغه توکي چې تر ټولو ډېر خرڅلاو لري."
+        },
+        "slow_moving_report": {
+            "label": "ورو خوځېدونکي توکي",
+            "description": "هغه توکي چې لږ خرڅلاو او کم گردش لري."
+        },
+        "today_sale_purchase_closing_stock_report": {
+            "label": "د نن خرڅلاو، پېرود او وروستۍ موجودي",
+            "description": "د هر توکي پیل موجودي، نننۍ پېرود، نننۍ خرڅلاو او وروستۍ موجودي."
+        },
+        "near_expiry_report": {
+            "label": "نږدې ختمېدو راپور",
+            "description": "هغه توکي او بچونه چې په راتلونکو ۳۰ ورځو کې ختمېږي."
+        },
+        "maximum_stock_report": {
+            "label": "د اعظمي موجودۍ راپور",
+            "description": "هغه توکي چې اوسنۍ موجودي یې له ټاکل شوې اعظمي کچې لوړه ده."
+        },
+        "group_summary_report": {
+            "label": "د حسابونو ګروپي لنډيز",
+            "description": "حسابونه د حساب ډول له مخې، له پیل موجودي، پور، پوروړي او وروستۍ موجودۍ سره."
+        },
+        "day_book_report": {
+            "label": "ورځنی کتاب",
+            "description": "د ټاکل شوې نېټې د تراکنش ثبت شوې لیکې."
+        },
+        "journal_book_report": {
+            "label": "ژورنال کتاب",
+            "description": "ټول داخل، خارج او مانده د حساب ډول له مخې."
+        },
+        "user_activity": {
+            "label": "د کاروونکو فعالیت",
+            "description": "د هر کاروونکي له مخې د ننوتلو او جوړولو، سمولو او حذف فعالیتونه."
+        },
+        "expense_report": {
+            "label": "د لګښتونو راپور",
+            "description": "ثبت شوي لګښتونه د نېټې، کټګورۍ، د لګښت حساب او د بانک حساب له مخې."
+        },
+        "payroll_register": {
+            "label": "د معاشونو دفتر",
+            "description": "د دورې ټولې د معاش پاڼې، کاري ورځې، ګټې، مالیه او ورکړل شوې اندازه."
+        },
+        "payslip_summary": {
+            "label": "د معاشونو لنډیز",
+            "description": "د هرې معاش دورې لپاره یوه کرښه — د کارکوونکو شمېر، ناخالص، مالیه او پاتې."
+        },
+        "tax_withholding_report": {
+            "label": "له معاشه کسر شوې مالیه",
+            "description": "د هر کارکوونکي کسر شوې مالیه، د هغه مالیاتي جدول سره چې پاڼه پرې محاسبه شوې."
+        },
+        "employee_loan_statement": {
+            "label": "د کارکوونکو پورونه",
+            "description": "د کارکوونکو پورونه او پیشکي، بیرته اخیستل شوې او پاتې اندازه."
+        },
+        "attendance_summary": {
+            "label": "د حاضرۍ لنډیز",
+            "description": "د هر کارکوونکي حاضرې، ناوخته، غیرحاضرې او د رخصتۍ ورځې د کاري ساعتونو سره."
+        },
+        "attendance_register": {
+            "label": "د حاضرۍ دفتر",
+            "description": "ورځ په ورځ د حاضرۍ ریکارډ د ننوتلو او وتلو وختونو سره."
+        },
+        "leave_balance_report": {
+            "label": "د رخصتۍ بیلانس",
+            "description": "حق په مقابل کې کارول شوې ورځې. په تمه غوښتنې ښودل کیږي خو نه کسر کیږي."
+        },
+        "leave_register": {
+            "label": "د رخصتۍ دفتر",
+            "description": "د رخصتۍ غوښتنې، نېټې او د هغوی تصویبوونکي."
+        },
+        "headcount_report": {
+            "label": "د کارکوونکو شمېر",
+            "description": "د دورې په پای کې د هرې څانګې کارکوونکي، له نویو ګمارل شویو او پرېښودونکو سره."
+        },
+        "contract_expiry_report": {
+            "label": "د قراردادونو پای",
+            "description": "هغه قراردادونه چې په دې دوره کې پای ته رسیږي، ترڅو نوی کول او د خبرتیا موده هېره نه شي."
+        }
+    },
+    "user_activity": {
+        "cards": {
+            "total_users": "ټول کاروونکي",
+            "active_users": "فعال کاروونکي",
+            "active_suffix": "فعال",
+            "total_activities": "ټول فعالیتونه",
+            "total_logins": "ټول ننوتل"
+        },
+        "sections": {
+            "role_distribution": "د رول وېش",
+            "top_users": "تر ټولو فعال کاروونکي",
+            "activity_summary": "د فعالیت لنډیز",
+            "user_details": "د کاروونکو جزئیات"
+        },
+        "actions": {
+            "login": "ننوتل",
+            "create": "ایجاد",
+            "update": "سمون",
+            "delete": "حذف"
+        },
+        "columns": {
+            "no": "شماره",
+            "section": "بخش",
+            "account_name": "نام حساب",
+            "user": "کاروونکی",
+            "role": "رول",
+            "total_activities": "فعالیت",
+            "logins": "ننوتل",
+            "creates": "ایجاد",
+            "updates": "سمون",
+            "deletes": "حذف",
+            "last_login": "وروستی ننوتل",
+            "top_sources": "تر ټولو فعال ماډلونه"
+        },
+        "sources": {
+            "users": "کاروونکي",
+            "accounts": "حسابونه",
+            "account_types": "د حساب ډولونه",
+            "brands": "برنډونه",
+            "categories": "کټګورۍ",
+            "currencies": "اسعار",
+            "expense_categories": "د لګښت کټګورۍ",
+            "expenses": "لګښتونه",
+            "item_transfers": "د توکو انتقالونه",
+            "items": "توکي",
+            "journal_classes": "د ژورنال ټولګي",
+            "journal_entries": "د ژورنال ثبتونه",
+            "ledgers": "لېجرونه",
+            "owners": "مالکان",
+            "payments": "تادیات",
+            "purchases": "پېرودونه",
+            "receipts": "رسیدونه",
+            "sales": "خرڅلاو",
+            "sizes": "سایزونه",
+            "unit_measures": "د اندازې واحدونه",
+            "warehouses": "ګودامونه"
+        }
+    },
+    "statement": "صورت حساب",
+    "statement_period": "صورت له {from} څخه تر {to} پورې",
+    "statement_up_to": "صورت تر {to} پورې",
+    "home_currency": "بنسټیز اسعار",
+    "home_equivalent_note": "د بنسټیزو اسعارو معادل ({code})، د هرې معاملې په خپل نرخ",
+    "aging": {
+        "title": "د پور د عمر څېړنه",
+        "current": "روان",
+        "days_30": "۱ تر ۳۰ ورځې",
+        "days_60": "۳۱ تر ۶۰ ورځې",
+        "days_90": "۶۱ تر ۹۰ ورځې",
+        "days_90_plus": "له ۹۰ ورځو ډېر",
+        "unapplied_credit": "نه ځانګړی شوی کریډیټ"
     }
-  },
-  "statement": "صورت حساب",
-  "statement_period": "صورت له {from} څخه تر {to} پورې",
-  "statement_up_to": "صورت تر {to} پورې",
-  "home_currency": "بنسټیز اسعار",
-  "home_equivalent_note": "د بنسټیزو اسعارو معادل ({code})، د هرې معاملې په خپل نرخ",
-  "aging": {
-    "title": "د پور د عمر څېړنه",
-    "current": "روان",
-    "days_30": "۱ تر ۳۰ ورځې",
-    "days_60": "۳۱ تر ۶۰ ورځې",
-    "days_90": "۶۱ تر ۹۰ ورځې",
-    "days_90_plus": "له ۹۰ ورځو ډېر",
-    "unapplied_credit": "نه ځانګړی شوی کریډیټ"
-  }
 }

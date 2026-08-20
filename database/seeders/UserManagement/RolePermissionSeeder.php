@@ -39,6 +39,13 @@ class RolePermissionSeeder extends Seeder
             'shifts',
             'holidays',
             'attendance_devices',
+            'leave_allocations',
+            'salary_components',
+            'salary_structures',
+            'tax_bracket_sets',
+            'job_openings',
+            'job_applications',
+            'interviews',
 
             'items',
             'categories',
@@ -139,6 +146,10 @@ class RolePermissionSeeder extends Seeder
             'leave_applications',
             'payrolls',
             'salary_payments',
+            // A staff loan is approved by someone other than whoever prepares
+            // it, for the same reason: authorising the money and handing it
+            // over are different acts.
+            'loans',
         ];
 
         /*

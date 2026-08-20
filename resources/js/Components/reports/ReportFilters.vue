@@ -28,6 +28,13 @@ const showType = computed(() => props.activeDefinition.filters.includes('type'))
 const showBalanceType = computed(() => props.activeDefinition.filters.includes('balance_type'))
 const showExpenseCategory = computed(() => props.activeDefinition.filters.includes('category_id'))
 const showExpenseAccount = computed(() => props.activeDefinition.filters.includes('expense_account_id'))
+const showEmployee = computed(() => props.activeDefinition.filters.includes('employee_id'))
+const showDepartment = computed(() => props.activeDefinition.filters.includes('department_id'))
+const showDesignation = computed(() => props.activeDefinition.filters.includes('designation_id'))
+const showPayroll = computed(() => props.activeDefinition.filters.includes('payroll_id'))
+const showLeaveType = computed(() => props.activeDefinition.filters.includes('leave_type_id'))
+const showEmploymentType = computed(() => props.activeDefinition.filters.includes('employment_type'))
+const showEmploymentStatus = computed(() => props.activeDefinition.filters.includes('employment_status'))
 
 const perPageOptions = [
   { value: 15, label: '15' },
@@ -65,6 +72,13 @@ const balanceTypeOptions = computed(() => props.options.balance_types || [
 ])
 const expenseCategoryOptions = computed(() => withPlaceholder(props.options.expense_categories, t('report.filters.expense_category')))
 const expenseAccountOptions = computed(() => withPlaceholder(props.options.expense_accounts, t('report.filters.expense_account')))
+const employeeOptions = computed(() => withPlaceholder(props.options.employees, t('report.filters.employee')))
+const departmentOptions = computed(() => withPlaceholder(props.options.departments, t('report.filters.department')))
+const designationOptions = computed(() => withPlaceholder(props.options.designations, t('report.filters.designation')))
+const payrollOptions = computed(() => withPlaceholder(props.options.payrolls, t('report.filters.payroll')))
+const leaveTypeOptions = computed(() => withPlaceholder(props.options.leave_types, t('report.filters.leave_type')))
+const employmentTypeOptions = computed(() => withPlaceholder(props.options.employment_types, t('report.filters.employment_type')))
+const employmentStatusOptions = computed(() => withPlaceholder(props.options.employment_statuses, t('report.filters.employment_status')))
 
 function updateFilters(next) {
   emit('update:filters', next)
@@ -90,6 +104,13 @@ function setReport(report) {
     balance_type: 'all',
     category_id: '',
     expense_account_id: '',
+    employee_id: '',
+    department_id: '',
+    designation_id: '',
+    payroll_id: '',
+    leave_type_id: '',
+    employment_type: '',
+    employment_status: '',
     page: 1,
   })
 }
@@ -250,6 +271,76 @@ function setReport(report) {
             label-key="name"
             value-key="id"
             @update:modelValue="setFilter('expense_account_id', $event)"
+          />
+        </div>
+        <div v-if="showEmployee">
+          <NextSelect
+            :floating-text="t('report.filters.employee')"
+            :model-value="filters.employee_id"
+            :options="employeeOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('employee_id', $event)"
+          />
+        </div>
+        <div v-if="showDepartment">
+          <NextSelect
+            :floating-text="t('report.filters.department')"
+            :model-value="filters.department_id"
+            :options="departmentOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('department_id', $event)"
+          />
+        </div>
+        <div v-if="showDesignation">
+          <NextSelect
+            :floating-text="t('report.filters.designation')"
+            :model-value="filters.designation_id"
+            :options="designationOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('designation_id', $event)"
+          />
+        </div>
+        <div v-if="showPayroll">
+          <NextSelect
+            :floating-text="t('report.filters.payroll')"
+            :model-value="filters.payroll_id"
+            :options="payrollOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('payroll_id', $event)"
+          />
+        </div>
+        <div v-if="showLeaveType">
+          <NextSelect
+            :floating-text="t('report.filters.leave_type')"
+            :model-value="filters.leave_type_id"
+            :options="leaveTypeOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('leave_type_id', $event)"
+          />
+        </div>
+        <div v-if="showEmploymentType">
+          <NextSelect
+            :floating-text="t('report.filters.employment_type')"
+            :model-value="filters.employment_type"
+            :options="employmentTypeOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('employment_type', $event)"
+          />
+        </div>
+        <div v-if="showEmploymentStatus">
+          <NextSelect
+            :floating-text="t('report.filters.employment_status')"
+            :model-value="filters.employment_status"
+            :options="employmentStatusOptions"
+            label-key="name"
+            value-key="id"
+            @update:modelValue="setFilter('employment_status', $event)"
           />
         </div>
       </div>

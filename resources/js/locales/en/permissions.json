@@ -6,7 +6,6 @@
     "users.delete": "Delete Users",
     "users.import": "Import Users",
     "users.export": "Export Users",
-
     "roles.view_any": "View Any Roles",
     "roles.view": "View Roles",
     "roles.create": "Create Roles",
@@ -14,7 +13,6 @@
     "roles.delete": "Delete Roles",
     "roles.import": "Import Roles",
     "roles.export": "Export Roles",
-
     "employees.view_any": "View Any Employees",
     "employees.view": "View Employees",
     "employees.create": "Create Employees",
@@ -22,7 +20,6 @@
     "employees.delete": "Delete Employees",
     "employees.import": "Import Employees",
     "employees.export": "Export Employees",
-
     "payrolls.view_any": "View Any Payrolls",
     "payrolls.view": "View Payrolls",
     "payrolls.create": "Create Payrolls",
@@ -30,7 +27,6 @@
     "payrolls.delete": "Delete Payrolls",
     "payrolls.import": "Import Payrolls",
     "payrolls.export": "Export Payrolls",
-
     "salary_payments.view_any": "View Any Salary Payments",
     "salary_payments.view": "View Salary Payments",
     "salary_payments.create": "Create Salary Payments",
@@ -38,7 +34,6 @@
     "salary_payments.delete": "Delete Salary Payments",
     "salary_payments.import": "Import Salary Payments",
     "salary_payments.export": "Export Salary Payments",
-
     "attendances.view_any": "View Any Attendances",
     "attendances.view": "View Attendances",
     "attendances.create": "Create Attendances",
@@ -46,7 +41,6 @@
     "attendances.delete": "Delete Attendances",
     "attendances.import": "Import Attendances",
     "attendances.export": "Export Attendances",
-
     "leaves.view_any": "View Any Leaves",
     "leaves.view": "View Leaves",
     "leaves.create": "Create Leaves",
@@ -54,7 +48,6 @@
     "leaves.delete": "Delete Leaves",
     "leaves.import": "Import Leaves",
     "leaves.export": "Export Leaves",
-
     "leave_applications.view_any": "View Any Leave Applications",
     "leave_applications.view": "View Leave Applications",
     "leave_applications.create": "Create Leave Applications",
@@ -62,7 +55,6 @@
     "leave_applications.delete": "Delete Leave Applications",
     "leave_applications.import": "Import Leave Applications",
     "leave_applications.export": "Export Leave Applications",
-
     "leave_types.view_any": "View Any Leave Types",
     "leave_types.view": "View Leave Types",
     "leave_types.create": "Create Leave Types",
@@ -70,7 +62,6 @@
     "leave_types.delete": "Delete Leave Types",
     "leave_types.import": "Import Leave Types",
     "leave_types.export": "Export Leave Types",
-
     "departments.view_any": "View Any Departments",
     "departments.view": "View Departments",
     "departments.create": "Create Departments",
@@ -78,7 +69,6 @@
     "departments.delete": "Delete Departments",
     "departments.import": "Import Departments",
     "departments.export": "Export Departments",
-
     "designations.view_any": "View Any Designations",
     "designations.view": "View Designations",
     "designations.create": "Create Designations",
@@ -86,7 +76,6 @@
     "designations.delete": "Delete Designations",
     "designations.import": "Import Designations",
     "designations.export": "Export Designations",
-
     "prepaids.view_any": "View Any Prepaids",
     "prepaids.view": "View Prepaids",
     "prepaids.create": "Create Prepaids",
@@ -94,7 +83,6 @@
     "prepaids.delete": "Delete Prepaids",
     "prepaids.import": "Import Prepaids",
     "prepaids.export": "Export Prepaids",
-
     "loans.view_any": "View Any Loans",
     "loans.view": "View Loans",
     "loans.create": "Create Loans",
@@ -102,7 +90,6 @@
     "loans.delete": "Delete Loans",
     "loans.import": "Import Loans",
     "loans.export": "Export Loans",
-
     "items.view_any": "View Any Items",
     "items.view": "View Items",
     "items.create": "Create Items",
@@ -110,7 +97,6 @@
     "items.delete": "Delete Items",
     "items.import": "Import Items",
     "items.export": "Export Items",
-
     "categories.view_any": "View Any Categories",
     "categories.view": "View Categories",
     "categories.create": "Create Categories",
@@ -118,7 +104,6 @@
     "categories.delete": "Delete Categories",
     "categories.import": "Import Categories",
     "categories.export": "Export Categories",
-
     "currencies.view_any": "View Any Currencies",
     "currencies.view": "View Currencies",
     "currencies.create": "Create Currencies",
@@ -126,7 +111,6 @@
     "currencies.delete": "Delete Currencies",
     "currencies.import": "Import Currencies",
     "currencies.export": "Export Currencies",
-
     "unit_measures.view_any": "View Any Unit Measures",
     "unit_measures.view": "View Unit Measures",
     "unit_measures.create": "Create Unit Measures",
@@ -134,7 +118,6 @@
     "unit_measures.delete": "Delete Unit Measures",
     "unit_measures.import": "Import Unit Measures",
     "unit_measures.export": "Export Unit Measures",
-
     "sizes.view_any": "View Any Sizes",
     "sizes.view": "View Sizes",
     "sizes.create": "Create Sizes",
@@ -142,7 +125,6 @@
     "sizes.delete": "Delete Sizes",
     "sizes.import": "Import Sizes",
     "sizes.export": "Export Sizes",
-
     "companies.view_any": "View Any Companies",
     "companies.view": "View Companies",
     "companies.create": "Create Companies",
@@ -150,7 +132,6 @@
     "companies.delete": "Delete Companies",
     "companies.import": "Import Companies",
     "companies.export": "Export Companies",
-
     "brands.view_any": "View Any Brands",
     "brands.view": "View Brands",
     "brands.create": "Create Brands",
@@ -158,7 +139,6 @@
     "brands.delete": "Delete Brands",
     "brands.import": "Import Brands",
     "brands.export": "Export Brands",
-
     "warehouses.view_any": "View Any Warehouses",
     "warehouses.view": "View Warehouses",
     "warehouses.create": "Create Warehouses",
@@ -166,7 +146,6 @@
     "warehouses.delete": "Delete Warehouses",
     "warehouses.import": "Import Warehouses",
     "warehouses.export": "Export Warehouses",
-
     "branches.view_any": "View Any Branches",
     "branches.view": "View Branches",
     "branches.create": "Create Branches",
@@ -174,7 +153,6 @@
     "branches.delete": "Delete Branches",
     "branches.import": "Import Branches",
     "branches.export": "Export Branches",
-
     "accounts.view_any": "View Any Accounts",
     "accounts.view": "View Accounts",
     "accounts.create": "Create Accounts",
@@ -182,7 +160,6 @@
     "accounts.delete": "Delete Accounts",
     "accounts.import": "Import Accounts",
     "accounts.export": "Export Accounts",
-
     "account_transfers.view_any": "View Any Account Transfers",
     "account_transfers.view": "View Account Transfers",
     "account_transfers.create": "Create Account Transfers",
@@ -194,7 +171,6 @@
     "account_transfers.approve": "Approve Account Transfers",
     "account_transfers.reject": "Reject Account Transfers",
     "account_transfers.email": "Email Account Transfers",
-
     "account_types.view_any": "View Any Account Types",
     "account_types.view": "View Account Types",
     "account_types.create": "Create Account Types",
@@ -202,7 +178,6 @@
     "account_types.delete": "Delete Account Types",
     "account_types.import": "Import Account Types",
     "account_types.export": "Export Account Types",
-
     "journals.view_any": "View Any Journals",
     "journals.view": "View Journals",
     "journals.create": "Create Journals",
@@ -210,7 +185,6 @@
     "journals.delete": "Delete Journals",
     "journals.import": "Import Journals",
     "journals.export": "Export Journals",
-
     "pos_transactions.view_any": "View Any POS Transactions",
     "pos_transactions.view": "View POS Transactions",
     "pos_transactions.create": "Create POS Transactions",
@@ -218,7 +192,6 @@
     "pos_transactions.delete": "Delete POS Transactions",
     "pos_transactions.import": "Import POS Transactions",
     "pos_transactions.export": "Export POS Transactions",
-
     "dashboard.view_any": "View Any Dashboards",
     "dashboard.view": "View Dashboards",
     "dashboard.create": "Create Dashboards",
@@ -226,7 +199,6 @@
     "dashboard.delete": "Delete Dashboards",
     "dashboard.import": "Import Dashboards",
     "dashboard.export": "Export Dashboards",
-
     "preferences.view_any": "View Any Preferences",
     "preferences.view": "View Preferences",
     "preferences.create": "Create Preferences",
@@ -234,7 +206,6 @@
     "preferences.delete": "Delete Preferences",
     "preferences.import": "Import Preferences",
     "preferences.export": "Export Preferences",
-
     "notifications.view_any": "View Any Notifications",
     "notifications.view": "View Notifications",
     "notifications.create": "Create Notifications",
@@ -242,7 +213,6 @@
     "notifications.delete": "Delete Notifications",
     "notifications.import": "Import Notifications",
     "notifications.export": "Export Notifications",
-
     "projects.view_any": "View Any Projects",
     "projects.view": "View Projects",
     "projects.create": "Create Projects",
@@ -250,7 +220,6 @@
     "projects.delete": "Delete Projects",
     "projects.import": "Import Projects",
     "projects.export": "Export Projects",
-
     "owners.view_any": "View Any Owners",
     "owners.view": "View Owners",
     "owners.create": "Create Owners",
@@ -258,7 +227,6 @@
     "owners.delete": "Delete Owners",
     "owners.import": "Import Owners",
     "owners.export": "Export Owners",
-
     "drawings.view_any": "View Any Drawings",
     "drawings.view": "View Drawings",
     "drawings.create": "Create Drawings",
@@ -270,7 +238,6 @@
     "drawings.approve": "Approve Drawings",
     "drawings.reject": "Reject Drawings",
     "drawings.email": "Email Drawings",
-
     "customers.view_any": "View Any Customers",
     "customers.view": "View Customers",
     "customers.create": "Create Customers",
@@ -278,7 +245,6 @@
     "customers.delete": "Delete Customers",
     "customers.import": "Import Customers",
     "customers.export": "Export Customers",
-
     "suppliers.view_any": "View Any Suppliers",
     "suppliers.view": "View Suppliers",
     "suppliers.create": "Create Suppliers",
@@ -286,7 +252,6 @@
     "suppliers.delete": "Delete Suppliers",
     "suppliers.import": "Import Suppliers",
     "suppliers.export": "Export Suppliers",
-
     "purchases.view_any": "View Any Purchases",
     "purchases.view": "View Purchases",
     "purchases.create": "Create Purchases",
@@ -298,7 +263,6 @@
     "purchases.approve": "Approve Purchases",
     "purchases.reject": "Reject Purchases",
     "purchases.email": "Email Purchases",
-
     "purchase_returns.view_any": "View Any Purchase Returns",
     "purchase_returns.view": "View Purchase Returns",
     "purchase_returns.create": "Create Purchase Returns",
@@ -310,7 +274,6 @@
     "purchase_returns.approve": "Approve Purchase Returns",
     "purchase_returns.reject": "Reject Purchase Returns",
     "purchase_returns.email": "Email Purchase Returns",
-
     "purchase_orders.view_any": "View Any Purchase Orders",
     "purchase_orders.view": "View Purchase Orders",
     "purchase_orders.create": "Create Purchase Orders",
@@ -322,7 +285,6 @@
     "purchase_orders.approve": "Approve Purchase Orders",
     "purchase_orders.reject": "Reject Purchase Orders",
     "purchase_orders.email": "Email Purchase Orders",
-
     "purchase_quotations.view_any": "View Any Purchase Quotations",
     "purchase_quotations.view": "View Purchase Quotations",
     "purchase_quotations.create": "Create Purchase Quotations",
@@ -330,7 +292,6 @@
     "purchase_quotations.delete": "Delete Purchase Quotations",
     "purchase_quotations.import": "Import Purchase Quotations",
     "purchase_quotations.export": "Export Purchase Quotations",
-
     "sales.view_any": "View Any Sales",
     "sales.view": "View Sales",
     "sales.create": "Create Sales",
@@ -342,7 +303,6 @@
     "sales.approve": "Approve Sales",
     "sales.reject": "Reject Sales",
     "sales.email": "Email Sales",
-
     "sale_returns.view_any": "View Any Sale Returns",
     "sale_returns.view": "View Sale Returns",
     "sale_returns.create": "Create Sale Returns",
@@ -354,7 +314,6 @@
     "sale_returns.approve": "Approve Sale Returns",
     "sale_returns.reject": "Reject Sale Returns",
     "sale_returns.email": "Email Sale Returns",
-
     "sale_orders.view_any": "View Any Sale Orders",
     "sale_orders.view": "View Sale Orders",
     "sale_orders.create": "Create Sale Orders",
@@ -366,7 +325,6 @@
     "sale_orders.approve": "Approve Sale Orders",
     "sale_orders.reject": "Reject Sale Orders",
     "sale_orders.email": "Email Sale Orders",
-
     "sale_quotations.view_any": "View Any Sale Quotations",
     "sale_quotations.view": "View Sale Quotations",
     "sale_quotations.create": "Create Sale Quotations",
@@ -374,7 +332,6 @@
     "sale_quotations.delete": "Delete Sale Quotations",
     "sale_quotations.import": "Import Sale Quotations",
     "sale_quotations.export": "Export Sale Quotations",
-
     "receipts.view_any": "View Any Receipts",
     "receipts.view": "View Receipts",
     "receipts.create": "Create Receipts",
@@ -386,7 +343,6 @@
     "receipts.approve": "Approve Receipts",
     "receipts.reject": "Reject Receipts",
     "receipts.email": "Email Receipts",
-
     "payments.view_any": "View Any Payments",
     "payments.view": "View Payments",
     "payments.create": "Create Payments",
@@ -398,7 +354,6 @@
     "payments.approve": "Approve Payments",
     "payments.reject": "Reject Payments",
     "payments.email": "Email Payments",
-
     "expenses.view_any": "View Any Expenses",
     "expenses.view": "View Expenses",
     "expenses.create": "Create Expenses",
@@ -406,7 +361,6 @@
     "expenses.delete": "Delete Expenses",
     "expenses.import": "Import Expenses",
     "expenses.export": "Export Expenses",
-
     "expense_categories.view_any": "View Any Expense Categories",
     "expense_categories.view": "View Expense Categories",
     "expense_categories.create": "Create Expense Categories",
@@ -414,7 +368,6 @@
     "expense_categories.delete": "Delete Expense Categories",
     "expense_categories.import": "Import Expense Categories",
     "expense_categories.export": "Export Expense Categories",
-
     "reports.view_any": "View Any Reports",
     "reports.view": "View Reports",
     "reports.create": "Create Reports",
@@ -426,7 +379,6 @@
     "deleted_records.view": "View Deleted Record Details",
     "deleted_records.restore": "Restore Deleted Records",
     "deleted_records.force_delete": "Force Delete Deleted Records",
-
     "stock_transfer.view_any": "View Any Stock Transfers",
     "stock_transfer.view": "View Stock Transfers",
     "stock_transfer.create": "Create Stock Transfers",
@@ -434,7 +386,6 @@
     "stock_transfer.delete": "Delete Stock Transfers",
     "stock_transfer.import": "Import Stock Transfers",
     "stock_transfer.export": "Export Stock Transfers",
-
     "stock_receive.view_any": "View Any Stock Receives",
     "stock_receive.view": "View Stock Receives",
     "stock_receive.create": "Create Stock Receives",
@@ -442,7 +393,6 @@
     "stock_receive.delete": "Delete Stock Receives",
     "stock_receive.import": "Import Stock Receives",
     "stock_receive.export": "Export Stock Receives",
-
     "stock_issue.view_any": "View Any Stock Issues",
     "stock_issue.view": "View Stock Issues",
     "stock_issue.create": "Create Stock Issues",
@@ -450,7 +400,6 @@
     "stock_issue.delete": "Delete Stock Issues",
     "stock_issue.import": "Import Stock Issues",
     "stock_issue.export": "Export Stock Issues",
-
     "stock_adjustment.view_any": "View Any Stock Adjustments",
     "stock_adjustment.view": "View Stock Adjustments",
     "stock_adjustment.create": "Create Stock Adjustments",
@@ -458,7 +407,6 @@
     "stock_adjustment.delete": "Delete Stock Adjustments",
     "stock_adjustment.import": "Import Stock Adjustments",
     "stock_adjustment.export": "Export Stock Adjustments",
-
     "formulas.view_any": "View Any Formulas",
     "formulas.view": "View Formulas",
     "formulas.create": "Create Formulas",
@@ -466,7 +414,6 @@
     "formulas.delete": "Delete Formulas",
     "formulas.import": "Import Formulas",
     "formulas.export": "Export Formulas",
-
     "manufacturers.view_any": "View Any Manufacturers",
     "manufacturers.view": "View Manufacturers",
     "manufacturers.create": "Create Manufacturers",
@@ -474,12 +421,99 @@
     "manufacturers.delete": "Delete Manufacturers",
     "manufacturers.import": "Import Manufacturers",
     "manufacturers.export": "Export Manufacturers",
-
     "backup.view_any": "View Any Backup",
     "backup.view": "View Backup",
     "backup.create": "Create Backup",
     "backup.update": "Update Backup",
     "backup.delete": "Delete Backup",
     "backup.import": "Import Backup",
-    "backup.export": "Export Backup"
+    "backup.export": "Export Backup",
+    "employee_contracts.view_any": "View Any Employee Contracts",
+    "employee_contracts.view": "View Employee Contracts",
+    "employee_contracts.create": "Create Employee Contracts",
+    "employee_contracts.update": "Update Employee Contracts",
+    "employee_contracts.delete": "Delete Employee Contracts",
+    "employee_contracts.import": "Import Employee Contracts",
+    "employee_contracts.export": "Export Employee Contracts",
+    "employee_documents.view_any": "View Any Employee Documents",
+    "employee_documents.view": "View Employee Documents",
+    "employee_documents.create": "Create Employee Documents",
+    "employee_documents.update": "Update Employee Documents",
+    "employee_documents.delete": "Delete Employee Documents",
+    "employee_documents.import": "Import Employee Documents",
+    "employee_documents.export": "Export Employee Documents",
+    "shifts.view_any": "View Any Shifts",
+    "shifts.view": "View Shifts",
+    "shifts.create": "Create Shifts",
+    "shifts.update": "Update Shifts",
+    "shifts.delete": "Delete Shifts",
+    "shifts.import": "Import Shifts",
+    "shifts.export": "Export Shifts",
+    "holidays.view_any": "View Any Holidays",
+    "holidays.view": "View Holidays",
+    "holidays.create": "Create Holidays",
+    "holidays.update": "Update Holidays",
+    "holidays.delete": "Delete Holidays",
+    "holidays.import": "Import Holidays",
+    "holidays.export": "Export Holidays",
+    "attendance_devices.view_any": "View Any Attendance Devices",
+    "attendance_devices.view": "View Attendance Devices",
+    "attendance_devices.create": "Create Attendance Devices",
+    "attendance_devices.update": "Update Attendance Devices",
+    "attendance_devices.delete": "Delete Attendance Devices",
+    "attendance_devices.import": "Import Attendance Devices",
+    "attendance_devices.export": "Export Attendance Devices",
+    "leave_allocations.view_any": "View Any Leave Allocations",
+    "leave_allocations.view": "View Leave Allocations",
+    "leave_allocations.create": "Create Leave Allocations",
+    "leave_allocations.update": "Update Leave Allocations",
+    "leave_allocations.delete": "Delete Leave Allocations",
+    "leave_allocations.import": "Import Leave Allocations",
+    "leave_allocations.export": "Export Leave Allocations",
+    "salary_components.view_any": "View Any Salary Components",
+    "salary_components.view": "View Salary Components",
+    "salary_components.create": "Create Salary Components",
+    "salary_components.update": "Update Salary Components",
+    "salary_components.delete": "Delete Salary Components",
+    "salary_components.import": "Import Salary Components",
+    "salary_components.export": "Export Salary Components",
+    "salary_structures.view_any": "View Any Salary Structures",
+    "salary_structures.view": "View Salary Structures",
+    "salary_structures.create": "Create Salary Structures",
+    "salary_structures.update": "Update Salary Structures",
+    "salary_structures.delete": "Delete Salary Structures",
+    "salary_structures.import": "Import Salary Structures",
+    "salary_structures.export": "Export Salary Structures",
+    "tax_bracket_sets.view_any": "View Any Tax Tables",
+    "tax_bracket_sets.view": "View Tax Tables",
+    "tax_bracket_sets.create": "Create Tax Tables",
+    "tax_bracket_sets.update": "Update Tax Tables",
+    "tax_bracket_sets.delete": "Delete Tax Tables",
+    "tax_bracket_sets.import": "Import Tax Tables",
+    "tax_bracket_sets.export": "Export Tax Tables",
+    "job_openings.view_any": "View Any Job Openings",
+    "job_openings.view": "View Job Openings",
+    "job_openings.create": "Create Job Openings",
+    "job_openings.update": "Update Job Openings",
+    "job_openings.delete": "Delete Job Openings",
+    "job_openings.import": "Import Job Openings",
+    "job_openings.export": "Export Job Openings",
+    "job_applications.view_any": "View Any Job Applications",
+    "job_applications.view": "View Job Applications",
+    "job_applications.create": "Create Job Applications",
+    "job_applications.update": "Update Job Applications",
+    "job_applications.delete": "Delete Job Applications",
+    "job_applications.import": "Import Job Applications",
+    "job_applications.export": "Export Job Applications",
+    "interviews.view_any": "View Any Interviews",
+    "interviews.view": "View Interviews",
+    "interviews.create": "Create Interviews",
+    "interviews.update": "Update Interviews",
+    "interviews.delete": "Delete Interviews",
+    "interviews.import": "Import Interviews",
+    "interviews.export": "Export Interviews",
+    "loans.print": "Print Loans",
+    "loans.approve": "Approve Loans",
+    "loans.reject": "Reject Loans",
+    "loans.email": "Email Loans"
 }
