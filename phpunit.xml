@@ -39,6 +39,14 @@
         </include>
     </source>
     <php>
+        <!--
+            The default 128M is no longer enough for the whole suite in one
+            process: Laravel's exception renderer builds a full HTML page for
+            every failure, and a run with several failures exhausts the heap
+            before it can print a summary — so the run dies with a fatal
+            instead of a list of what failed.
+        -->
+        <ini name="memory_limit" value="1G"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
