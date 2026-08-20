@@ -11,6 +11,7 @@
     "purchase": "خرید",
     "sale": "فروش",
     "ledger": "دفتر حسابات",
+    "hr": "منابع بشری",
     "receipt": "رسید",
     "payment": "پرداخت",
     "transfer": "انتقال حساب",
@@ -88,5 +89,12 @@
     "reports": "گزارشات",
     "report": "گزارش",
     "activity_logs": "فعالیت کاربران"
+  },
+  "hr": {
+    "employee": "کارمندان",
+    "contract": "قراردادها",
+    "document": "اسناد",
+    "department": "بخش‌ها",
+    "designation": "وظایف"
   }
 }

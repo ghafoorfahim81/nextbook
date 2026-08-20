@@ -11,6 +11,7 @@
     "purchase": "پېرود",
     "sale": "خرڅ",
     "ledger": "لیجر",
+    "hr": "بشري سرچینې",
     "receipt": "رسید",
     "payment": "پرېمینټ",
     "transfer": "حساب لېږد",
@@ -66,5 +67,12 @@
   "user_management": {
     "user": "کارن",
     "role": "نقش"
+  },
+  "hr": {
+    "employee": "کارکوونکي",
+    "contract": "قراردادونه",
+    "document": "اسناد",
+    "department": "څانګې",
+    "designation": "دندې"
   }
 }

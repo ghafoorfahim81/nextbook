@@ -12,9 +12,11 @@ use App\Http\Requests\Hr\EmployeeStoreRequest;
 use App\Http\Requests\Hr\EmployeeUpdateRequest;
 use App\Http\Resources\Hr\EmployeeListResource;
 use App\Http\Resources\Hr\EmployeeResource;
+use App\Models\Administration\Country;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Department;
 use App\Models\Administration\Designation;
+use App\Models\Administration\Province;
 use App\Models\Hr\Employee;
 use App\Models\User;
 use App\Services\ActivityLogService;
@@ -299,12 +301,22 @@ class EmployeeController extends Controller
 
     private function formOptions(): array
     {
+        $locale = app()->getLocale();
         return array_merge($this->filterOptions(), [
             'genders' => $this->enumOptions(Gender::cases()),
             'maritalStatuses' => $this->enumOptions(MaritalStatus::cases()),
             'paymentModes' => $this->enumOptions(PaymentMode::cases()),
             'currencies' => Currency::query()->orderBy('code')->get(['id', 'code', 'name']),
-            'users' => User::query()->whereNull('deleted_at')->orderBy('name')->get(['id', 'name']),
+            'countries' => Country::query()->orderBy('name_en')->get(['id', 'name_en as name']),
+            'provinces' => Province::query()->orderBy('name')->get(['id', 'name_fa as name']),
+            // Users who are not already tied to another employee — the
+            // employees.user_id unique index would reject them anyway, and
+            // offering them only to fail validation is worse than omitting them.
+            'users' => User::query()
+                ->whereNull('deleted_at')
+                ->whereNotIn('id', Employee::query()->whereNotNull('user_id')->pluck('user_id'))
+                ->orderBy('name')
+                ->get(['id', 'name']),
         ]);
     }
 

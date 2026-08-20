@@ -79,7 +79,10 @@ class Designation extends Model
     protected function getRelationships(): array
     {
         return [
-            'employees' => __('hr.employees'),
+            'employees' => [
+                'model' => 'employees',
+                'message' => 'This designation is used by employees',
+            ],
         ];
     }
 

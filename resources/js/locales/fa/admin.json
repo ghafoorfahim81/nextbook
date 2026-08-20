@@ -53,8 +53,9 @@
         "sub_domain": "زیر دامنه"
     },
     "designation": {
-        "designation": "دیزاینیشن",
-        "designations": "دیزاینیشن ها"
+        "designation": "وظیفه",
+        "designations": "وظایف",
+        "grade_level": "سطح بست"
     },
     "quantity": {
         "quantity": "مقدار",
@@ -116,6 +117,7 @@
         "logo": "لوگو",
         "email": "ایمیل",
         "phone": "تلفن",
-        "country": "کشور"
+        "country": "کشور",
+        "province": "ولایت"
     }
 }
