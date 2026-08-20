@@ -60,6 +60,16 @@ class AppServiceProvider extends ServiceProvider
             'leave_type' => 'App\Models\Hr\LeaveType',
             'leave_allocation' => 'App\Models\Hr\LeaveAllocation',
             'leave_request' => 'App\Models\Hr\LeaveRequest',
+            'salary_component' => 'App\Models\Hr\SalaryComponent',
+            'salary_structure' => 'App\Models\Hr\SalaryStructure',
+            'tax_bracket_set' => 'App\Models\Hr\TaxBracketSet',
+            'payroll' => 'App\Models\Hr\Payroll',
+            'payroll_line' => 'App\Models\Hr\PayrollLine',
+            'salary_payment' => 'App\Models\Hr\SalaryPayment',
+            'employee_loan' => 'App\Models\Hr\EmployeeLoan',
+            'job_opening' => 'App\Models\Hr\JobOpening',
+            'job_application' => 'App\Models\Hr\JobApplication',
+            'interview' => 'App\Models\Hr\Interview',
 
         ]);
 
