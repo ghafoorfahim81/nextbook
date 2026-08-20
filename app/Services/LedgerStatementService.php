@@ -151,8 +151,23 @@ class LedgerStatementService
     }
 
     /**
-     * Shared join skeleton: posted, non-deleted lines belonging to this ledger,
-     * scoped to the ledger's own branch.
+     * Shared join skeleton: live lines belonging to this ledger, scoped to the
+     * ledger's own branch.
+     *
+     * REVERSED transactions are included alongside posted ones, and must be.
+     * TransactionService::reverse() flips the original to `reversed` and posts
+     * the mirror as `posted` — so a filter of `status = posted` alone sees only
+     * half of the pair and reports the mirror as a real, uncancelled movement.
+     * A customer invoiced 1,000 and then reversed showed a balance of MINUS
+     * 1,000 rather than zero.
+     *
+     * `reversed` means "this was undone", not "this never happened": both the
+     * original and its mirror are real GL facts, and a statement should show
+     * them netting to nothing rather than hiding one side.
+     *
+     * Note this is deliberately NOT the rule for SettlementService::openItems(),
+     * which is right to exclude reversed originals — a reversed invoice is not
+     * something you can still pay.
      */
     private function baseQuery(Ledger $ledger): \Illuminate\Database\Query\Builder
     {
@@ -160,7 +175,10 @@ class LedgerStatementService
             ->join('transactions as t', function ($join) use ($ledger) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $ledger->branch_id)
-                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereIn('t.status', [
+                        TransactionStatus::POSTED->value,
+                        TransactionStatus::REVERSED->value,
+                    ])
                     ->whereNull('t.deleted_at');
             })
             ->join('currencies as c', 'c.id', '=', 'tl.currency_id')
