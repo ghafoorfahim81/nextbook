@@ -49,6 +49,12 @@ return [
             \App\Models\Hr\Employee::class,
             \App\Models\Hr\EmployeeContract::class,
             \App\Models\Hr\EmployeeDocument::class,
+            \App\Models\Hr\Shift::class,
+            \App\Models\Hr\Holiday::class,
+            \App\Models\Hr\AttendanceDevice::class,
+            \App\Models\Hr\LeaveType::class,
+            \App\Models\Hr\LeaveAllocation::class,
+            \App\Models\Hr\LeaveRequest::class,
         ],
         'except_attributes' => [
             'created_at',

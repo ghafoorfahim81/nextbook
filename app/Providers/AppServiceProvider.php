@@ -53,6 +53,13 @@ class AppServiceProvider extends ServiceProvider
             'employee' => 'App\Models\Hr\Employee',
             'employee_contract' => 'App\Models\Hr\EmployeeContract',
             'employee_document' => 'App\Models\Hr\EmployeeDocument',
+            'shift' => 'App\Models\Hr\Shift',
+            'holiday' => 'App\Models\Hr\Holiday',
+            'attendance' => 'App\Models\Hr\Attendance',
+            'attendance_device' => 'App\Models\Hr\AttendanceDevice',
+            'leave_type' => 'App\Models\Hr\LeaveType',
+            'leave_allocation' => 'App\Models\Hr\LeaveAllocation',
+            'leave_request' => 'App\Models\Hr\LeaveRequest',
 
         ]);
 

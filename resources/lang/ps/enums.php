@@ -122,6 +122,64 @@ return [
         'terminated' => 'فسخ شوی',
         'renewed' => 'نوی شوی',
     ],
+
+    'attendance_status' => [
+        'present' => 'حاضر',
+        'absent' => 'غیرحاضر',
+        'late' => 'ناوخته',
+        'half_day' => 'نیمه ورځ',
+        'on_leave' => 'په رخصتۍ کې',
+        'holiday' => 'رسمي رخصتي',
+        'weekend' => 'د اونۍ رخصتي',
+        'remote' => 'له لرې کار',
+        'mission' => 'کاري سفر',
+    ],
+    'attendance_source' => [
+        'manual' => 'لاسي',
+        'roster' => 'د حاضرۍ جدول',
+        'device' => 'وسیله',
+        'self_service' => 'ځان‌خدمت',
+        'import' => 'واردشوی',
+    ],
+    'punch_direction' => [
+        'in' => 'ننوتل',
+        'out' => 'وتل',
+        'unknown' => 'ناڅرګند',
+    ],
+    'attendance_device_type' => [
+        'zkteco' => 'ZKTeco',
+        'fingerspot' => 'Fingerspot',
+        'csv' => 'CSV دوتنه',
+        'other' => 'نور',
+    ],
+    'holiday_type' => [
+        'public' => 'رسمي',
+        'religious' => 'مذهبي',
+        'company' => 'شرکتي',
+    ],
+    'leave_accrual_method' => [
+        'annual_grant' => 'کلنۍ ورکړه',
+        'monthly_accrual' => 'میاشتنۍ راټولونه',
+        'unlimited' => 'بې‌حده',
+        'manual' => 'لاسي',
+    ],
+    'leave_request_status' => [
+        'draft' => 'مسوده',
+        'pending' => 'په تمه',
+        'approved' => 'تصویب شوی',
+        'rejected' => 'رد شوی',
+        'cancelled' => 'لغوه شوی',
+        'withdrawn' => 'بېرته اخیستل شوی',
+    ],
+    'half_day_period' => [
+        'first_half' => 'لومړۍ نیمه',
+        'second_half' => 'دویمه نیمه',
+    ],
+    'leave_allocation_source' => [
+        'auto_accrual' => 'اتومات راټولونه',
+        'manual' => 'لاسي',
+        'carry_forward' => 'د تېرې دورې لېږد',
+    ],
 ];
 
 
