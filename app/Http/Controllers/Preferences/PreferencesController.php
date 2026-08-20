@@ -286,6 +286,8 @@ class PreferencesController extends Controller
             ['value' => 'hr', 'label' => 'sidebar.main.hr'],
             ['value' => 'attendance', 'label' => 'sidebar.main.attendance'],
             ['value' => 'leave', 'label' => 'sidebar.main.leave'],
+            ['value' => 'payroll', 'label' => 'sidebar.main.payroll'],
+            ['value' => 'recruitment', 'label' => 'sidebar.main.recruitment'],
             ['value' => 'owners', 'label' => 'sidebar.owners.owners'],
             ['value' => 'expense', 'label' => 'sidebar.main.expense'],
             ['value' => 'purchase', 'label' => 'sidebar.main.purchase'],
