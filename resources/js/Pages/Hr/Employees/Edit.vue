@@ -117,7 +117,7 @@ const submit = () => {
 </script>
 
 <template>
-    <AppLayout :title="t('general.edit', { name: t('hr.employee') })" :sidebar-collapsed="true">
+    <AppLayout :title="t('general.edit', { name: t('hr.employee') })">
         <FormPageToolbar back-route="employees.index" module="employees" />
 
         <form @submit.prevent="submit">

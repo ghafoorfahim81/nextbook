@@ -1,8 +1,9 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
+import FormPageToolbar from '@/Components/FormPageToolbar.vue';
 import { computed } from 'vue';
 import { Button } from '@/Components/ui/button';
-import { ArrowLeft, Pencil } from 'lucide-vue-next';
+import { Pencil } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth';
 
@@ -27,8 +28,10 @@ const appliesTo = computed(() => structure.value?.employee_name
 
 <template>
     <AppLayout :title="structure.name">
-        <div class="mx-auto max-w-4xl space-y-5">
-            <div class="flex items-center justify-between">
+        <FormPageToolbar back-route="salary-structures.index" module="salary_structures" />
+
+        <div class="space-y-5">
+            <div class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
                 <div>
                     <h1 class="text-xl font-semibold">{{ structure.name }}</h1>
                     <p class="text-sm text-muted-foreground">
@@ -36,14 +39,16 @@ const appliesTo = computed(() => structure.value?.employee_name
                         <template v-if="structure.effective_to"> — {{ structure.effective_to }}</template>
                     </p>
                 </div>
-                <div class="flex gap-2">
-                    <Button variant="outline" @click="$inertia.get(route('salary-structures.index'))">
-                        <ArrowLeft class="mr-1.5 h-4 w-4" /> {{ t('general.back') }}
-                    </Button>
-                    <Button v-if="can('salary_structures.update')" @click="$inertia.get(route('salary-structures.edit', structure.id))">
-                        <Pencil class="mr-1.5 h-4 w-4" /> {{ t('general.edit_action') }}
-                    </Button>
-                </div>
+                <Button
+                    v-if="can('salary_structures.update')"
+                    size="sm"
+                    variant="outline"
+                    class="h-9 border-primary text-primary hover:bg-primary hover:text-white"
+                    @click="$inertia.get(route('salary-structures.edit', structure.id))"
+                >
+                    <Pencil class="h-4 w-4 ltr:mr-1 rtl:ml-1" />
+                    {{ t('general.edit', { name: t('hr.salary_structure') }) }}
+                </Button>
             </div>
 
             <div class="grid grid-cols-2 gap-4 rounded-xl border border-border bg-card p-5 md:grid-cols-4">

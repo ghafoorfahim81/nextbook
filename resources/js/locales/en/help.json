@@ -182,6 +182,50 @@
         "Cancelling approved leave removes the future days from attendance and leaves past days alone: last week already happened.",
         "Approving is a separate permission from editing, so raising a request on someone’s behalf does not let you grant it."
       ]
+    },
+    "payrolls": {
+      "title": "Payroll — Tips",
+      "description": "A payroll run is created first and calculated afterwards. Calculating is safe to repeat while the run is still a draft.",
+      "items": [
+        "Leave the scope blank to include everyone; narrow it to a department or an employment type to run payroll for part of the company.",
+        "Recalculating replaces the payslips of a draft run, so fixing a salary structure and calculating again is the normal correction.",
+        "Posting writes the run to the ledger. From that point the run is a fact: correcting it means reversing it, not editing it.",
+        "Attendance days consumed by a posted run are locked, which is why a reversal is required before the days can change.",
+        "Approving is a separate permission from editing, so preparing a run does not let you post it."
+      ]
+    },
+    "salary_payments": {
+      "title": "Salary payment — Tips",
+      "description": "A salary payment settles what an employee is owed. Leaving the allocation alone applies the money oldest-first across their open payslips.",
+      "items": [
+        "The outstanding list is read from the ledger, not from a cached figure, so it shows what is genuinely still open.",
+        "Choose which payslips only when the money is meant for a specific month; otherwise the oldest-first default is what people expect.",
+        "Pay all fills the amount with the full outstanding total — it does not save anything on its own.",
+        "Paying more than is outstanding leaves the remainder on account against the employee.",
+        "A payment can be voided but not edited: the ledger entry it made has to be reversed rather than restated."
+      ]
+    },
+    "employee_loans": {
+      "title": "Loans and advances — Tips",
+      "description": "Approval and payout are separate steps. Approving authorises the money; it does not move it.",
+      "items": [
+        "The instalment schedule must add up to the principal, and the shortfall is shown while you type rather than only on save.",
+        "Suggest divides the principal by the number of instalments and rounds up, which is usually the intended schedule.",
+        "With recovery through payroll enabled, each payroll run deducts one instalment automatically until the loan is settled.",
+        "Once the money has been disbursed the principal and schedule can no longer be edited — the ledger already carries that balance.",
+        "A repayment can also be recorded by hand, for a loan settled in cash outside payroll."
+      ]
+    },
+    "salary_structures": {
+      "title": "Salary structure — Tips",
+      "description": "A structure is the salary package: a basic salary plus the allowances and deductions that sit on top of it.",
+      "items": [
+        "Attach it to one employee for a personal package, or to a designation or department to use it as a grade template.",
+        "Picking a component fills in its own defaults, so the usual case is one click and no typing.",
+        "The indicative gross covers fixed amounts and percentages of basic only. Anything on a percentage of gross is not known until the payslip is resolved.",
+        "Effective dates decide which structure a payroll run uses, so raise a new structure rather than editing history.",
+        "A structure with no components is valid — it simply pays the basic salary."
+      ]
     }
   }
 }

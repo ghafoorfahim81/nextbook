@@ -1,8 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
+import FormPageToolbar from '@/Components/FormPageToolbar.vue';
 import { computed } from 'vue';
-import { Button } from '@/Components/ui/button';
-import { ArrowLeft } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
 
 const props = defineProps({ salaryPayment: Object });
@@ -20,12 +19,14 @@ const money = (value) => Number(value ?? 0).toLocaleString(undefined, {
 
 <template>
     <AppLayout :title="`${t('hr.salary_payment')} #${payment.number}`">
-        <div class="mx-auto max-w-4xl space-y-5">
-            <div class="flex items-center justify-between">
+        <FormPageToolbar back-route="salary-payments.index" module="salary_payments" />
+
+        <div class="space-y-5">
+            <div class="rounded-xl border border-border bg-card p-4 shadow-sm">
                 <h1 class="text-xl font-semibold">{{ t('hr.salary_payment') }} #{{ payment.number }}</h1>
-                <Button variant="outline" @click="$inertia.get(route('salary-payments.index'))">
-                    <ArrowLeft class="mr-1.5 h-4 w-4" /> {{ t('general.back') }}
-                </Button>
+                <p class="text-sm text-muted-foreground">
+                    {{ payment.employee_name }} · {{ payment.date }}
+                </p>
             </div>
 
             <div class="grid grid-cols-1 gap-4 rounded-xl border border-border bg-card p-5 md:grid-cols-3">

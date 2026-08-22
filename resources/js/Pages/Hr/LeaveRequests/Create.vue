@@ -49,7 +49,7 @@ const save = (andSubmit) => {
 </script>
 
 <template>
-    <AppLayout :title="t('general.create', { name: t('hr.leave_request') })" :sidebar-collapsed="true">
+    <AppLayout :title="t('general.create', { name: t('hr.leave_request') })">
         <FormPageToolbar back-route="leave-requests.index" module="leave_requests" />
 
         <form @submit.prevent="save(true)">

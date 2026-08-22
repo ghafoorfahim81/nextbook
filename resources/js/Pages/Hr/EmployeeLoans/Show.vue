@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
+import FormPageToolbar from '@/Components/FormPageToolbar.vue';
 import { computed, ref } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import { Button } from '@/Components/ui/button';
@@ -115,7 +116,9 @@ const rejectReason = ref('');
 
 <template>
     <AppLayout :title="`${t('hr.employee_loan')} #${loan.number}`">
-        <div class="mx-auto max-w-4xl space-y-5">
+        <FormPageToolbar back-route="employee-loans.index" module="employee_loans" />
+
+        <div class="space-y-5">
             <!-- Header -->
             <div class="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-border bg-card p-5">
                 <div>

@@ -114,7 +114,7 @@ const rowError = (index, field) => form.errors?.[`rows.${index}.${field}`];
 </script>
 
 <template>
-    <AppLayout :title="t('hr.roster')" :sidebar-collapsed="true">
+    <AppLayout :title="t('hr.roster')">
         <FormPageToolbar back-route="attendances.index" module="attendances" />
 
         <ImportDialog

@@ -79,7 +79,7 @@ const submit = () => {
 </script>
 
 <template>
-    <AppLayout :title="t('general.edit', { name: t('hr.leave_request') })" :sidebar-collapsed="true">
+    <AppLayout :title="t('general.edit', { name: t('hr.leave_request') })">
         <FormPageToolbar back-route="leave-requests.index" module="leave_requests" />
 
         <form @submit.prevent="submit">
