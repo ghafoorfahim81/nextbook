@@ -1,118 +1,233 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { formatNumber } from './format'
 
 const props = defineProps({
   series: { type: Array, default: () => [] },
 })
 
 const { t } = useI18n()
-const width = 720
+
+const plot = ref(null)
+const width = ref(760)
 const height = 260
-const paddingLeft = 72
-const paddingRight = 16
-const paddingTop = 16
-const paddingBottom = 24
+const padding = { top: 16, right: 20, bottom: 30, left: 64 }
+
+// The SVG is drawn at its real pixel width rather than being stretched to fit:
+// scaling a fixed viewBox with preserveAspectRatio="none" squashes the strokes
+// and the tick text along with the plot.
+let observer = null
+
+onMounted(() => {
+  if (!plot.value || typeof ResizeObserver === 'undefined') return
+
+  observer = new ResizeObserver((entries) => {
+    const measured = entries[0]?.contentRect?.width
+    if (measured) width.value = Math.max(measured, 320)
+  })
+
+  observer.observe(plot.value)
+})
+
+onBeforeUnmount(() => observer?.disconnect())
+
+const innerWidth = computed(() => width.value - padding.left - padding.right)
+const innerHeight = height - padding.top - padding.bottom
 
 const maxValue = computed(() => {
   const values = props.series.flatMap((point) => [Number(point.sales || 0), Number(point.purchases || 0)])
   return Math.max(...values, 0)
 })
 
-function buildPath(key) {
+const scale = computed(() => Math.max(maxValue.value, 1))
+
+function x(index) {
+  return padding.left + (innerWidth.value * index) / Math.max(props.series.length - 1, 1)
+}
+
+function y(value) {
+  return padding.top + innerHeight - (Number(value || 0) / scale.value) * innerHeight
+}
+
+function linePath(key) {
   if (!props.series.length) return ''
 
-  const innerWidth = width - paddingLeft - paddingRight
-  const innerHeight = height - paddingTop - paddingBottom
-  const divisor = Math.max(maxValue.value, 1)
-
   return props.series
-    .map((point, index) => {
-      const x = paddingLeft + (innerWidth * index) / Math.max(props.series.length - 1, 1)
-      const y = paddingTop + innerHeight - (Number(point[key] || 0) / divisor) * innerHeight
-      return `${index === 0 ? 'M' : 'L'} ${x} ${y}`
-    })
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${x(index)} ${y(point[key])}`)
     .join(' ')
 }
 
-const salesPath = computed(() => buildPath('sales'))
-const purchasesPath = computed(() => buildPath('purchases'))
+const salesPath = computed(() => linePath('sales'))
+const purchasesPath = computed(() => linePath('purchases'))
 
-const ticks = computed(() => {
-  const innerHeight = height - paddingTop - paddingBottom
+// Only the sales series carries an area fill. Two filled areas on one baseline
+// occlude each other and misread as a stack.
+const salesArea = computed(() => {
+  if (!props.series.length) return ''
 
-  return [0, 0.25, 0.5, 0.75, 1].map((ratio) => ({
-    y: paddingTop + innerHeight - innerHeight * ratio,
-    value: (maxValue.value * ratio).toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }),
+  const baseline = padding.top + innerHeight
+
+  return `${salesPath.value} L ${x(props.series.length - 1)} ${baseline} L ${x(0)} ${baseline} Z`
+})
+
+const ticks = computed(() => [0, 0.25, 0.5, 0.75, 1].map((ratio) => ({
+  y: padding.top + innerHeight - innerHeight * ratio,
+  value: formatNumber(maxValue.value * ratio, 'count'),
+})))
+
+// Thirty daily labels collide at this width, so label the ends and the thirds.
+const xLabels = computed(() => {
+  const count = props.series.length
+  if (!count) return []
+
+  const positions = [...new Set([0, Math.floor(count / 3), Math.floor((count * 2) / 3), count - 1])]
+
+  // Centred on the first and last point the end labels overhang the plot and get
+  // clipped, so their anchor point is nudged inward by roughly half a label. The
+  // labels stay centre-anchored: SVG resolves start/end against the writing
+  // direction, which would swap the two ends under RTL.
+  const inset = 30
+
+  return positions.map((index) => ({
+    index,
+    x: Math.min(Math.max(x(index), padding.left + inset), width.value - padding.right - inset),
+    label: props.series[index]?.label,
   }))
+})
+
+const hoverIndex = ref(null)
+const hovered = computed(() => (hoverIndex.value === null ? null : props.series[hoverIndex.value]))
+
+function onPointerMove(event) {
+  if (!props.series.length || !plot.value) return
+
+  const bounds = plot.value.getBoundingClientRect()
+  const offset = event.clientX - bounds.left - padding.left
+  const step = innerWidth.value / Math.max(props.series.length - 1, 1)
+  const index = Math.round(offset / step)
+
+  hoverIndex.value = Math.min(Math.max(index, 0), props.series.length - 1)
+}
+
+// Near the right edge the tooltip flips to the other side of the crosshair so it
+// never spills out of the card.
+const tooltipStyle = computed(() => {
+  if (hoverIndex.value === null) return {}
+
+  const anchor = x(hoverIndex.value)
+  const flip = anchor > width.value - 160
+
+  return {
+    left: `${anchor}px`,
+    transform: flip ? 'translateX(-100%) translateX(-12px)' : 'translateX(12px)',
+  }
 })
 </script>
 
 <template>
   <div class="flex h-full flex-col gap-4">
-    <div class="flex flex-wrap items-center justify-end gap-4 text-sm text-muted-foreground">
-      <div class="flex items-center gap-2 rounded-full bg-muted/60 px-3 py-1">
-        <span class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.45)]" />
+    <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-muted-foreground">
+      <span class="inline-flex items-center gap-2">
+        <span class="inline-block h-2 w-4 rounded-full bg-[var(--viz-in)]" />
         {{ t('dashboard.chart.sales') }}
-      </div>
-      <div class="flex items-center gap-2 rounded-full bg-muted/60 px-3 py-1">
-        <span class="inline-block h-2.5 w-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.45)]" />
+      </span>
+      <span class="inline-flex items-center gap-2">
+        <span class="inline-block h-2 w-4 rounded-full bg-[var(--viz-out)]" />
         {{ t('dashboard.chart.purchases') }}
-      </div>
+      </span>
     </div>
 
-    <div v-if="series.length" class="min-h-0 flex-1 overflow-x-auto rounded-2xl border border-border bg-gradient-to-b from-background to-muted/35 p-4 shadow-inner">
-      <svg :viewBox="`0 0 ${width} ${height}`" preserveAspectRatio="none" class="h-full min-w-[680px] w-full">
-        <rect
-          :x="paddingLeft"
-          :y="paddingTop"
-          :width="width - paddingLeft - paddingRight"
-          :height="height - paddingTop - paddingBottom"
-          rx="16"
-          class="fill-muted/35"
-        />
+    <div v-if="series.length" ref="plot" class="relative min-h-0 flex-1">
+      <svg
+        :viewBox="`0 0 ${width} ${height}`"
+        :width="width"
+        :height="height"
+        class="w-full touch-none"
+        role="img"
+        :aria-label="t('dashboard.sales_vs_purchases')"
+        @pointermove="onPointerMove"
+        @pointerleave="hoverIndex = null"
+      >
+        <defs>
+          <linearGradient id="trend-sales-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--viz-in)" stop-opacity="0.22" />
+            <stop offset="100%" stop-color="var(--viz-in)" stop-opacity="0" />
+          </linearGradient>
+        </defs>
 
         <line
           v-for="tick in ticks"
-          :key="tick.y"
-          :x1="paddingLeft"
-          :x2="width - paddingRight"
+          :key="`grid-${tick.y}`"
+          :x1="padding.left"
+          :x2="width - padding.right"
           :y1="tick.y"
           :y2="tick.y"
-          stroke="currentColor"
-          class="text-border"
-          stroke-dasharray="4 4"
+          stroke="var(--viz-grid)"
+          stroke-width="1"
         />
 
         <text
           v-for="tick in ticks"
-          :key="`label-${tick.y}`"
-          :x="paddingLeft - 8"
+          :key="`tick-${tick.y}`"
+          :x="padding.left - 10"
           :y="tick.y + 4"
           text-anchor="end"
-          class="fill-muted-foreground text-[10px]"
+          class="fill-muted-foreground text-[10px] [font-variant-numeric:tabular-nums]"
         >
           {{ tick.value }}
         </text>
 
-        <path :d="salesPath" fill="none" stroke="#34d399" stroke-width="3.5" stroke-linecap="round" />
-        <path :d="purchasesPath" fill="none" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round" />
+        <text
+          v-for="label in xLabels"
+          :key="`x-${label.index}`"
+          :x="label.x"
+          :y="height - 8"
+          text-anchor="middle"
+          class="fill-muted-foreground text-[10px]"
+        >
+          {{ label.label }}
+        </text>
+
+        <path :d="salesArea" fill="url(#trend-sales-fill)" />
+        <path :d="salesPath" fill="none" stroke="var(--viz-in)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <path :d="purchasesPath" fill="none" stroke="var(--viz-out)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+
+        <g v-if="hoverIndex !== null">
+          <line
+            :x1="x(hoverIndex)"
+            :x2="x(hoverIndex)"
+            :y1="padding.top"
+            :y2="padding.top + innerHeight"
+            stroke="var(--viz-axis)"
+            stroke-width="1"
+          />
+          <circle :cx="x(hoverIndex)" :cy="y(hovered?.sales)" r="5" fill="var(--viz-in)" stroke="hsl(var(--card))" stroke-width="2" />
+          <circle :cx="x(hoverIndex)" :cy="y(hovered?.purchases)" r="5" fill="var(--viz-out)" stroke="hsl(var(--card))" stroke-width="2" />
+        </g>
       </svg>
+
+      <div
+        v-if="hovered"
+        class="pointer-events-none absolute top-2 z-10 w-max rounded-xl border border-border bg-popover px-3 py-2 shadow-lg"
+        :style="tooltipStyle"
+      >
+        <p class="text-xs font-semibold text-popover-foreground">{{ hovered.label }}</p>
+        <p class="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+          <span class="inline-block h-2 w-2 rounded-full bg-[var(--viz-in)]" />
+          {{ t('dashboard.chart.sales') }}
+          <span class="ms-auto font-semibold text-popover-foreground [font-variant-numeric:tabular-nums]">{{ formatNumber(hovered.sales) }}</span>
+        </p>
+        <p class="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
+          <span class="inline-block h-2 w-2 rounded-full bg-[var(--viz-out)]" />
+          {{ t('dashboard.chart.purchases') }}
+          <span class="ms-auto font-semibold text-popover-foreground [font-variant-numeric:tabular-nums]">{{ formatNumber(hovered.purchases) }}</span>
+        </p>
+      </div>
     </div>
 
-    <div class="grid grid-cols-3 gap-2 text-xs sm:grid-cols-6 xl:grid-cols-10">
-      <div
-        v-for="point in series.slice(-10)"
-        :key="point.date"
-        class="rounded-xl border border-border bg-muted/25 px-2 py-2 text-center text-muted-foreground"
-      >
-        <div class="font-medium text-foreground">{{ point.label }}</div>
-        <div>{{ t('dashboard.chart.sales_short') }} {{ Number(point.sales || 0).toLocaleString() }}</div>
-        <div>{{ t('dashboard.chart.purchases_short') }} {{ Number(point.purchases || 0).toLocaleString() }}</div>
-      </div>
+    <div v-else class="flex min-h-[200px] flex-1 items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
+      {{ t('dashboard.no_data_available') }}
     </div>
   </div>
 </template>

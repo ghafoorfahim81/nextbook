@@ -576,11 +576,12 @@ class ReportService
     /**
      * How much cash the business is holding, one line per currency.
      *
-     * Every cash and bank account is folded into the currency it transacted in,
-     * so the answer reads "this much USD, this much AFN" rather than an account
-     * list. Amounts stay in their own currency; the home equivalent, converted
-     * at each transaction's own rate, is the only column that can legitimately
-     * be added across currencies.
+     * One line per cash/bank account per currency, so the answer reads "this much
+     * USD in Cash in Hand, this much USD in the USD bank account" — the same
+     * account can appear under more than one currency when it has transacted in
+     * more than one. Amounts stay in their own currency; the home equivalent,
+     * converted at each transaction's own rate, is the only column that can
+     * legitimately be added across currencies.
      *
      * The position is cumulative up to date_to; date_from does not narrow it,
      * because a cash position is a standing balance rather than a movement.
@@ -611,12 +612,16 @@ class ReportService
             ->first();
 
         $query = $baseQuery
-            ->groupBy('c.id', 'c.code', 'c.name', 'c.is_base_currency')
+            ->groupBy('c.id', 'c.code', 'c.name', 'c.is_base_currency', 'a.id', 'a.name', 'a.number')
             ->orderByDesc('c.is_base_currency')
             ->orderBy('c.code')
+            ->orderBy('a.name')
             ->selectRaw('c.id as currency_id')
             ->selectRaw('c.code as currency_code')
             ->selectRaw('c.name as currency_name')
+            ->selectRaw('a.id as account_id')
+            ->selectRaw('a.name as account_name')
+            ->selectRaw('a.number as account_number')
             ->selectRaw('COALESCE(SUM(tl.debit - tl.credit), 0) as amount')
             ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as home_equivalent');
 
@@ -626,6 +631,9 @@ class ReportService
             fn ($row) => [
                 'currency' => $row->currency_code ?: $row->currency_name,
                 'currency_name' => $row->currency_name,
+                'account_name' => $row->account_number
+                    ? "{$row->account_name} ({$row->account_number})"
+                    : $row->account_name,
                 'amount' => $this->moneyValue($row->amount),
                 'home_equivalent' => $this->moneyValue($row->home_equivalent),
             ],
@@ -3656,7 +3664,7 @@ class ReportService
             'receipt_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'amount_received'],
             'payment_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'amount_paid'],
             'cash_book' => ['date', 'reference', 'description', 'debit', 'credit', 'running_balance', 'running_balance_label'],
-            'cash_position_by_currency' => ['currency', 'currency_name', 'amount', 'home_equivalent'],
+            'cash_position_by_currency' => ['currency', 'currency_name', 'account_name', 'amount', 'home_equivalent'],
             'sales_report' => $viewType === 'general'
                 ? ['date', 'number', 'customer', 'type', 'status', 'payment_status', 'amount']
                 : ['date', 'sale_number', 'customer', 'item', 'quantity', 'unit_price', 'discount', 'total_amount'],

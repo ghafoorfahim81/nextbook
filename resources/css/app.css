@@ -128,6 +128,19 @@
       --sidebar-ring: 270 75% 55%;
       --app-chrome-background: var(--background);
       --app-chrome-foreground: var(--foreground);
+
+      /* Data-visualisation marks.
+         Dashboard charts and meters read against the card surface, not the
+         themed palette, so they carry their own tokens: money-in wears slot 1
+         (blue), money-out slot 2 (orange). The pair is validated for
+         colour-vision deficiency on both surfaces, so keep the two blocks in
+         step — do not swap one hue without re-validating. */
+      --viz-in: #2a78d6;
+      --viz-in-soft: #e7f0fc;
+      --viz-out: #eb6834;
+      --viz-out-soft: #fdeee7;
+      --viz-grid: #e6e6e9;
+      --viz-axis: #c3c2b7;
     }
 
     .dark {
@@ -183,7 +196,13 @@
       --app-chrome-background: var(--background);
       --app-chrome-foreground: var(--foreground);
 
-
+      /* Same two hues, stepped for the dark card surface. */
+      --viz-in: #3987e5;
+      --viz-in-soft: #1c2b41;
+      --viz-out: #d95926;
+      --viz-out-soft: #3a2418;
+      --viz-grid: #2f2a38;
+      --viz-axis: #464050;
     }
 
     :root[data-theme='cyan'] {

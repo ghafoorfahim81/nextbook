@@ -248,6 +248,7 @@ const reportDefinitions = computed(() => ({
     columns: [
       { key: 'currency', label: t('report.columns.currency') },
       { key: 'currency_name', label: t('report.columns.currency_name') },
+      { key: 'account_name', label: t('report.columns.account_name') },
       { key: 'amount', label: t('report.columns.amount'), type: 'balance', align: 'right' },
       { key: 'home_equivalent', label: t('report.columns.home_equivalent'), type: 'money', align: 'right' },
     ],
