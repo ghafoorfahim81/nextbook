@@ -16,6 +16,9 @@
   "no_data_available": "داده‌ای در دسترس نیست.",
   "no_active_alerts": "هشداری وجود ندارد.",
   "records": "سوابق",
+  "vs_yesterday": "در مقایسه با {value} دیروز",
+  "vs_previous_period": "در مقایسه با {value} در ۳۰ روز پیشین",
+  "total": "مجموع",
   "kpis": {
     "cash_bank_balance": "موجودی نقد و بانک",
     "cash_bank_balance_help": "مانده فعلی صندوق و حساب‌های بانکی شما.",
@@ -80,5 +83,17 @@
     "quantity": "تعداد",
     "amount": "مبلغ",
     "no_records": "هیچ سابقه‌ای وجود ندارد."
+  },
+  "cash_position": {
+    "title": "وضعیت نقدینگی",
+    "description": "مقدار نقدینگی شما در هر ارز، در تمام حساب‌های صندوق و بانک.",
+    "currency": "ارز",
+    "currency_name": "نام ارز",
+    "amount": "مبلغ",
+    "home_equivalent": "معادل ارز پایه",
+    "total_home_equivalent": "مجموع معادل ارز پایه",
+    "open_report": "باز کردن گزارش",
+    "dr": "بد",
+    "cr": "بس"
   }
 }
