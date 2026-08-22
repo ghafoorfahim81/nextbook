@@ -301,14 +301,26 @@ class EmployeeController extends Controller
 
     private function formOptions(): array
     {
-        $locale = app()->getLocale();
         return array_merge($this->filterOptions(), [
             'genders' => $this->enumOptions(Gender::cases()),
             'maritalStatuses' => $this->enumOptions(MaritalStatus::cases()),
             'paymentModes' => $this->enumOptions(PaymentMode::cases()),
             'currencies' => Currency::query()->orderBy('code')->get(['id', 'code', 'name']),
-            'countries' => Country::query()->orderBy('name_en')->get(['id', 'name_en as name']),
-            'provinces' => Province::query()->orderBy('name')->get(['id', 'name_fa as name']),
+            'countries' => Country::query()
+                ->orderBy('name_en')
+                ->get(['id', 'name_en', 'name_fa'])
+                ->map(fn (Country $country) => [
+                    'id' => $country->id,
+                    'name' => $country->localized_name,
+                ]),
+            'provinces' => Province::query()
+                ->orderBy('name_en')
+                ->get(['id', 'country_id', 'name_en', 'name_fa'])
+                ->map(fn (Province $province) => [
+                    'id' => $province->id,
+                    'country_id' => $province->country_id,
+                    'name' => $province->localized_name,
+                ]),
             // Users who are not already tied to another employee — the
             // employees.user_id unique index would reject them anyway, and
             // offering them only to fail validation is worse than omitting them.
