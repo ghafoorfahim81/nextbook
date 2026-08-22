@@ -1,5 +1,6 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue';
+import FormPageToolbar from '@/Components/FormPageToolbar.vue';
 import { computed, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { Button } from '@/Components/ui/button';
@@ -102,6 +103,8 @@ const paymentTone = (status) => ({
 
 <template>
     <AppLayout :title="`${t('hr.payroll')} #${run.number}`">
+        <FormPageToolbar back-route="payrolls.index" module="payrolls" />
+
         <div class="space-y-5">
             <!-- Header -->
             <div class="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-border bg-card p-5">
