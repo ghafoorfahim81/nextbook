@@ -5,13 +5,26 @@
     php artisan hr:guide   یا   php docs/build-hr-guide.php
 -->
 <style>
-    body { font-family: iranyekan; font-size: 9.5pt; line-height: 1.9; color: #1f2937; }
+    /*
+        RTL has to be stated on the ELEMENTS, not just in the mPDF config.
+        The `directionality` option sets the page default but does not reach
+        block elements or table column order — without these rules the headings
+        left-align and tables lay their first column out on the left, which
+        makes the whole document read as if it were English.
+    */
+    body { font-family: iranyekan; font-size: 9.5pt; line-height: 1.9; color: #1f2937;
+           direction: rtl; text-align: right; }
 
-    h1 { font-size: 19pt; color: #5b21b6; margin: 0 0 4pt 0; }
-    h2 { font-size: 14pt; color: #5b21b6; margin: 0 0 8pt 0; padding-bottom: 5pt; border-bottom: 2px solid #8b5cf6; }
-    h3 { font-size: 11.5pt; color: #6d28d9; margin: 14pt 0 5pt 0; }
-    h4 { font-size: 10pt; color: #374151; margin: 10pt 0 3pt 0; }
-    p  { margin: 0 0 7pt 0; text-align: justify; }
+    h1, h2, h3, h4, p, ul, ol, li, div, table, td, th {
+        direction: rtl;
+    }
+
+    h1 { font-size: 19pt; color: #5b21b6; margin: 0 0 4pt 0; text-align: right; }
+    h2 { font-size: 14pt; color: #5b21b6; margin: 0 0 8pt 0; padding-bottom: 5pt;
+         border-bottom: 2px solid #8b5cf6; text-align: right; }
+    h3 { font-size: 11.5pt; color: #6d28d9; margin: 14pt 0 5pt 0; text-align: right; }
+    h4 { font-size: 10pt; color: #374151; margin: 10pt 0 3pt 0; text-align: right; }
+    p  { margin: 0 0 7pt 0; text-align: right; }
 
     .page { page-break-before: always; }
 
@@ -24,10 +37,11 @@
     .cover-rule   { border-top: 3px solid #f59e0b; width: 90pt; margin: 22pt auto; }
 
     /* جدول‌ها */
-    table.t { width: 100%; border-collapse: collapse; margin: 7pt 0 11pt 0; }
+    table.t { width: 100%; border-collapse: collapse; margin: 7pt 0 11pt 0; direction: rtl; }
     table.t th { background-color: #ede9fe; color: #4c1d95; font-size: 8.5pt; padding: 5pt 6pt;
                  border: 1px solid #ddd6fe; text-align: right; }
-    table.t td { padding: 5pt 6pt; border: 1px solid #e5e7eb; font-size: 8.5pt; vertical-align: top; }
+    table.t td { padding: 5pt 6pt; border: 1px solid #e5e7eb; font-size: 8.5pt; vertical-align: top;
+                 text-align: right; }
     table.t tr.alt td { background-color: #faf9ff; }
     .fld  { color: #5b21b6; font-weight: bold; white-space: nowrap; }
     .en   { color: #9ca3af; font-size: 7.5pt; direction: ltr; }
@@ -50,13 +64,17 @@
     .step3 { background-color: #fee2e2; border: 1px solid #fca5a5; color: #7f1d1d; padding: 6pt 3pt; }
     .arw   { color: #8b5cf6; font-size: 11pt; width: 16pt; }
 
-    ul, ol { margin: 0 18pt 8pt 0; padding: 0; }
-    li { margin-bottom: 4pt; text-align: justify; }
+    ul, ol { margin: 0 18pt 8pt 0; padding: 0; direction: rtl; }
+    li { margin-bottom: 4pt; text-align: right; }
 
-    .toc td { padding: 5pt 4pt; border-bottom: 1px dotted #d1d5db; font-size: 9.5pt; }
+    .toc { direction: rtl; }
+    .toc td { padding: 5pt 4pt; border-bottom: 1px dotted #d1d5db; font-size: 9.5pt; text-align: right; }
     .toc .num { color: #8b5cf6; font-weight: bold; width: 26pt; }
+    /* The page number sits at the far end of the row — which in RTL is the left. */
     .toc .pg  { color: #9ca3af; text-align: left; width: 30pt; font-size: 8pt; }
 </style>
+
+<div dir="rtl">
 
 <!-- ══════════════════════ جلد ══════════════════════ -->
 <div class="cover">
@@ -74,7 +92,7 @@
 <div class="page"></div>
 <h2>فهرست مطالب</h2>
 
-<table class="toc">
+<table class="toc" dir="rtl">
     <tr><td class="num">۱</td><td>مقدمه و نمای کلی سیستم</td><td class="pg">۳</td></tr>
     <tr><td class="num">۲</td><td>ارتباط ماژول‌ها با یکدیگر</td><td class="pg">۴</td></tr>
     <tr><td class="num">۳</td><td>ماژول کارمندان</td><td class="pg">۶</td></tr>
@@ -117,7 +135,7 @@
 
 <h3>۱٫۲ این سیستم برای چه کسانی ساخته شده است؟</h3>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 26%;">استفاده‌کننده</th><th>چه کاری انجام می‌دهد</th></tr>
     <tr>
         <td class="fld">مسئول منابع بشری</td>
@@ -192,7 +210,7 @@
 
 <h3>۲٫۱ زنجیرهٔ اصلی</h3>
 
-<table class="flow">
+<table class="flow" dir="rtl">
     <tr>
         <td class="step" style="width: 17%;">استخدام<br/><span class="en">Recruitment</span></td>
         <td class="arw">←</td>
@@ -215,7 +233,7 @@
 
 <h3>۲٫۲ اثرگذاری هر ماژول بر ماژول بعدی</h3>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr>
         <th style="width: 22%;">وقتی این کار را می‌کنید</th>
         <th style="width: 39%;">سیستم به‌صورت خودکار این کار را انجام می‌دهد</th>
@@ -264,7 +282,7 @@
     هر کارمند در سیستم دو سابقه دارد که به هم وصل اند:
 </p>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 28%;">سابقه</th><th>چه چیزی را نگه می‌دارد</th></tr>
     <tr>
         <td class="fld">سابقهٔ کارمند</td>
@@ -310,7 +328,7 @@
     پیش از ثبت کارمند، دو چیز را تعریف کنید:
 </p>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 20%;">مورد</th><th style="width: 30%;">معنی</th><th>مثال</th></tr>
     <tr>
         <td class="fld">بخش<br/><span class="en">Department</span></td>
@@ -327,7 +345,7 @@
 <h3>۳٫۳ معلومات کارمند — تشریح فیلدها</h3>
 
 <h4>الف) معلومات شخصی</h4>
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 25%;">فیلد</th><th>تشریح</th></tr>
     <tr>
         <td class="fld">کود کارمند</td>
@@ -350,7 +368,7 @@
 </table>
 
 <h4>ب) معلومات وظیفوی</h4>
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 25%;">فیلد</th><th>تشریح</th></tr>
     <tr>
         <td class="fld">نوع استخدام<br/><span class="en">Employment Type</span></td>
@@ -386,7 +404,7 @@
 </table>
 
 <h4>ج) معلومات بانکی</h4>
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 25%;">فیلد</th><th>تشریح</th></tr>
     <tr>
         <td class="fld">طریقهٔ پرداخت</td>
@@ -411,7 +429,7 @@
 </table>
 
 <h4>د) تنظیمات</h4>
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 25%;">فیلد</th><th>تشریح</th></tr>
     <tr>
         <td class="fld">اجازه خدمات خودی<br/><span class="en">Allow Self-Service</span></td>
@@ -440,7 +458,7 @@
     برای هر کارمند می‌توانید چندین قرارداد و سند ثبت کنید. تفاوت آن‌ها:
 </p>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 20%;">مورد</th><th>کاربرد</th></tr>
     <tr>
         <td class="fld">قرارداد</td>
@@ -485,7 +503,7 @@
     برای این گروه کارمندان چه معنی دارد.
 </p>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 26%;">فیلد شفت</th><th>تشریح</th></tr>
     <tr>
         <td class="fld">ساعت شروع / ختم</td>
@@ -529,7 +547,7 @@
     سیستم سه روش برای ثبت حاضری دارد و می‌توانید هر سه را همزمان استفاده کنید:
 </p>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 22%;">روش</th><th style="width: 39%;">چگونه کار می‌کند</th><th>مناسب برای</th></tr>
     <tr>
         <td class="fld">۱. جدول حاضری روزانه<br/><span class="en">Roster</span></td>
@@ -580,7 +598,7 @@
     (از بالا به پایین، اولی برنده است):
 </p>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 8%;">ترتیب</th><th style="width: 22%;">حالت</th><th>معنی</th></tr>
     <tr>
         <td>۱</td><td class="fld">رخصتی</td>
@@ -637,7 +655,7 @@
 
 <h3>۵٫۲ سه مفهوم اساسی</h3>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 24%;">مفهوم</th><th>معنی</th></tr>
     <tr>
         <td class="fld">نوع رخصتی<br/><span class="en">Leave Type</span></td>
@@ -660,7 +678,7 @@
     سیستم بر اساس قانون کار افغانستان این انواع را به‌صورت پیش‌فرض ایجاد می‌کند:
 </p>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr>
         <th style="width: 22%;">نوع رخصتی</th>
         <th style="width: 13%;">روز در سال</th>
@@ -692,7 +710,7 @@
     استحقاق + انتقالی + تعدیل − روزهای تایید شده − نقد شده − منقضی
 </div>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 24%;">جزء فرمول</th><th>تشریح</th></tr>
     <tr>
         <td class="fld">استحقاق<br/><span class="en">Entitled</span></td>
@@ -748,7 +766,7 @@
 </table>
 
 <h3>۵٫۵ روش تجمع رخصتی</h3>
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 26%;">روش</th><th>تشریح</th></tr>
     <tr>
         <td class="fld">اعطای سالانه</td>
@@ -782,7 +800,7 @@
 
 <h3>۵٫۶ مراحل درخواست رخصتی</h3>
 
-<table class="flow">
+<table class="flow" dir="rtl">
     <tr>
         <td class="step" style="width: 15%;">مسوده</td>
         <td class="arw">←</td>
@@ -802,7 +820,7 @@
     </tr>
 </table>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 22%;">مرحله</th><th>معنی و چه کاری ممکن است</th></tr>
     <tr><td class="fld">مسوده</td><td>هنوز ارسال نشده. قابل ویرایش و حذف است.</td></tr>
     <tr class="alt"><td class="fld">در انتظار تایید</td><td>ارسال شده و منتظر تصمیم آمر است. روزها از بیلانس کم نشده‌اند.</td></tr>
@@ -836,7 +854,7 @@
 
 <h3>۶٫۲ چهار جزء تنظیمات معاش</h3>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 24%;">تنظیم</th><th>نقش آن</th></tr>
     <tr>
         <td class="fld">اجزای معاش<br/><span class="en">Components</span></td>
@@ -859,7 +877,7 @@
 
 <h3>۶٫۳ اجزای معاش</h3>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 24%;">فیلد</th><th>تشریح</th></tr>
     <tr>
         <td class="fld">نوع جزء</td>
@@ -926,7 +944,7 @@
     مالیهٔ معاش در افغانستان به‌صورت پلکانی محاسبه می‌شود. جدول پیش‌فرض سیستم:
 </p>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr>
         <th style="width: 10%;">دسته</th>
         <th style="width: 22%;">از (افغانی)</th>
@@ -985,7 +1003,7 @@
 
 <h3>۶٫۶ مراحل یک دورهٔ معاش</h3>
 
-<table class="flow">
+<table class="flow" dir="rtl">
     <tr>
         <td class="step" style="width: 15%;">مسوده</td>
         <td class="arw">←</td>
@@ -1012,7 +1030,7 @@
     </tr>
 </table>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 22%;">مرحله</th><th>چه اتفاق می‌افتد</th></tr>
     <tr>
         <td class="fld">مسوده</td>
@@ -1061,7 +1079,7 @@
     اجرا می‌کند:
 </p>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 8%;">مرحله</th><th style="width: 26%;">محاسبه</th><th>توضیح</th></tr>
     <tr><td>۱</td><td class="fld">معاش اساسی</td>
         <td>از ساختار معاش نافذ در آن دوره گرفته می‌شود و در صورت لزوم متناسب با روزهای کارکرد کم می‌گردد.</td></tr>
@@ -1092,7 +1110,7 @@
 <h3>۶٫۸ سند حسابداری معاش</h3>
 <p>وقتی معاش در دفتر ثبت می‌شود، یک سند با این ساختار ساخته می‌شود:</p>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 12%;">طرف</th><th style="width: 34%;">حساب</th><th>مبلغ</th></tr>
     <tr><td class="fld">بدهکار</td><td>مصرف معاش (بر اساس نوع استخدام)</td><td>مجموع معاش اساسی و مفادات</td></tr>
     <tr class="alt"><td class="fld">بدهکار</td><td>امتیازات و کمیشن</td><td>مجموع امتیازات</td></tr>
@@ -1120,7 +1138,7 @@
     «پرداخت معاشات» انجام می‌شود.
 </p>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 26%;">حالت</th><th>سیستم چه می‌کند</th></tr>
     <tr>
         <td class="fld">پرداخت کامل</td>
@@ -1179,7 +1197,7 @@
 
 <h3>۷٫۲ تفاوت قرضه و پیشکی</h3>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 20%;">نوع</th><th style="width: 32%;">معنی</th><th>حساب حسابداری</th></tr>
     <tr>
         <td class="fld">پیشکی معاش</td>
@@ -1208,7 +1226,7 @@
 
 <h3>۷٫۳ مراحل قرضه</h3>
 
-<table class="flow">
+<table class="flow" dir="rtl">
     <tr>
         <td class="step" style="width: 14%;">مسوده</td>
         <td class="arw">←</td>
@@ -1232,7 +1250,7 @@
 
 <h3>۷٫۴ فیلدهای قرضه</h3>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 26%;">فیلد</th><th>تشریح</th></tr>
     <tr><td class="fld">اصل</td><td>مبلغ کل قرضه.</td></tr>
     <tr class="alt"><td class="fld">قسط</td><td>مبلغی که در هر دورهٔ معاش کسر می‌شود.</td></tr>
@@ -1292,7 +1310,7 @@
 
 <h3>۸٫۲ بست خالی</h3>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 24%;">فیلد</th><th>تشریح</th></tr>
     <tr><td class="fld">بست‌ها <span class="en">(Vacancies)</span></td>
         <td>چند نفر برای این عنوان استخدام می‌شوند. سیستم تعداد باقی‌مانده را
@@ -1307,7 +1325,7 @@
 </table>
 
 <h4>مراحل بست خالی</h4>
-<table class="flow">
+<table class="flow" dir="rtl">
     <tr>
         <td class="step" style="width: 16%;">مسوده</td>
         <td class="arw">←</td>
@@ -1329,7 +1347,7 @@
 
 <h3>۸٫۳ مراحل کاندید</h3>
 
-<table class="flow">
+<table class="flow" dir="rtl">
     <tr>
         <td class="step" style="width: 15%;">درخواست شده</td>
         <td class="arw">←</td>
@@ -1343,7 +1361,7 @@
     </tr>
 </table>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 24%;">حالت</th><th>معنی</th></tr>
     <tr><td class="fld">درخواست شده</td><td>درخواست دریافت شده اما هنوز بررسی نگردیده.</td></tr>
     <tr class="alt"><td class="fld">شارت لیست شده</td><td>واجد شرایط تشخیص شده. از این مرحله می‌توان مصاحبه تعیین کرد.</td></tr>
@@ -1420,7 +1438,7 @@
     به ترتیب الفبای فارسی مرتب شده‌اند.
 </p>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 26%;">فیلد</th><th>معنی و کاربرد</th></tr>
 
     <tr>
@@ -1543,7 +1561,7 @@
 </p>
 
 <h3>مرحلهٔ ۱ — آماده‌سازی (یک بار انجام می‌شود)</h3>
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 8%;">#</th><th style="width: 30%;">کار</th><th>منو</th></tr>
     <tr><td>۱</td><td>تعریف بخش‌ها و بست‌ها</td><td>منابع بشری ← بخش‌ها / بست‌ها</td></tr>
     <tr class="alt"><td>۲</td><td>بررسی و تنظیم شفت‌های کاری</td><td>حاضری ← شفت‌ها</td></tr>
@@ -1586,7 +1604,7 @@
 </ul>
 
 <h3>مرحلهٔ ۵ — ختم ماه: محاسبهٔ معاش</h3>
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 8%;">#</th><th style="width: 34%;">کار</th><th>نتیجه</th></tr>
     <tr><td>۱</td><td>یک دورهٔ معاش جدید بسازید (تاریخ شروع و ختم ماه)</td><td>حالت: مسوده</td></tr>
     <tr class="alt"><td>۲</td><td>دکمهٔ «محاسبه» را بزنید</td><td>حالت: محاسبه شده — فیش‌ها ساخته می‌شوند</td></tr>
@@ -1621,7 +1639,7 @@
     و هر کدام به فارمت اکسل و پی‌دی‌اف قابل صدور می‌باشند.
 </p>
 
-<table class="t">
+<table class="t" dir="rtl">
     <tr><th style="width: 26%;">گزارش</th><th>چه چیزی نشان می‌دهد و کِی به کار می‌آید</th></tr>
     <tr>
         <td class="fld">دفتر معاشات</td>
@@ -1707,4 +1725,6 @@
     ــــــــــــــــــــــــــــــــــــــــــــ<br/>
     راهنمای ماژول منابع بشری — نکست‌بوک<br/>
     نسخهٔ ۱٫۰
+</div>
+
 </div>

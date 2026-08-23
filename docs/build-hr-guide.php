@@ -60,9 +60,10 @@ $mpdf->SetAuthor('Nextbook');
 $mpdf->SetCreator('Nextbook');
 $mpdf->showImageErrors = false;
 
-// The cover carries its own identity, so the running header starts on page 2.
+// The running header belongs on the right in an RTL document; dir has to be
+// stated here too, because header/footer HTML is parsed separately from the body.
 $mpdf->SetHTMLHeader(
-    '<div style="text-align:left;font-size:7.5pt;color:#9ca3af;'
+    '<div dir="rtl" style="direction:rtl;text-align:right;font-size:7.5pt;color:#9ca3af;'
     .'border-bottom:0.5px solid #e5e7eb;padding-bottom:2pt;">'
     .'راهنمای ماژول منابع بشری — نکست‌بوک</div>'
 );
