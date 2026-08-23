@@ -7,7 +7,10 @@
       "Bash(php artisan *)",
       "Bash(findstr /I \"invoice\")",
       "Bash(npm run *)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(\"C:/Users/Fahim-Pc/.config/herd/bin/php84/php.exe\" \"C:/Users/Fahim-Pc/AppData/Local/Temp/claude/e--nextbook/93ce25af-c15c-4e02-892c-26b9876e3783/scratchpad/check2.php\" docs/hr-user-guide-fa.pdf)",
+      "Bash(git add *)",
+      "Bash(git commit -q -m ' *)"
     ]
   }
 }
