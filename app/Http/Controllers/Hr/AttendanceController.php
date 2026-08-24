@@ -217,6 +217,14 @@ class AttendanceController extends Controller
     public function restore(Request $request, Attendance $attendance)
     {
         $this->authorize('update', $attendance);
+
+        // Restore has to respect the payroll lock exactly as update does.
+        // Without this, a day consumed by a posted payroll could be deleted and
+        // restored to slip a change past the lock the posting put there.
+        if ($attendance->isLocked()) {
+            return redirect()->back()->with('error', __('hr.validation.attendance_locked'));
+        }
+
         $attendance->restore();
 
         return redirect()->back()->with('success', __('general.restored_successfully', ['resource' => __('hr.attendance')]));

@@ -103,7 +103,7 @@ class PayrollPostingService
             );
         }
 
-        $lines = $payroll->lines()->with(['employee', 'components'])->get();
+        $lines = $payroll->lines()->with(['employee', 'components.component'])->get();
 
         if ($lines->isEmpty()) {
             throw PayrollException::make(
@@ -175,6 +175,9 @@ class PayrollPostingService
         $taxTotal = [];
         $partyLines = [];
         $recoveryLines = [];
+        // Amounts owed onward to third parties: employer contributions and
+        // remittable employee deductions. Aggregated like tax.
+        $thirdParty = [];
 
         foreach ($lines as $line) {
             $currencyId = $line->currency_id ?? $payroll->currency_id;
@@ -232,8 +235,58 @@ class PayrollPostingService
                     continue;
                 }
 
-                // Unpaid leave and any other deduction reduce the expense
-                // rather than creating a liability — the company never owed it.
+                $source = $component->component;
+
+                // An EMPLOYER CONTRIBUTION is an extra company cost sitting on
+                // top of the gross — the employee never sees it. It must ADD
+                // to expense and credit what the company now owes the fund.
+                // Falling through to the deduction branch below subtracted it
+                // instead, moving the P&L by twice the amount in the wrong
+                // direction.
+                if ($component->component_type === SalaryComponentType::EmployerContribution) {
+                    $expenseAccount = $component->account_id
+                        ?? $accounts['staff-benefits-expense'];
+                    $k = $key($expenseAccount);
+                    $expenses[$k] = [
+                        'account_id' => $expenseAccount,
+                        'currency_id' => $currencyId,
+                        'rate' => $rate,
+                        'amount' => Decimal::add($expenses[$k]['amount'] ?? '0.0000', $amount),
+                    ];
+
+                    $liability = $source?->liability_account_id ?? $accounts['payroll-liabilities'];
+                    $lk = $key($liability);
+                    $thirdParty[$lk] = [
+                        'account_id' => $liability,
+                        'currency_id' => $currencyId,
+                        'rate' => $rate,
+                        'amount' => Decimal::add($thirdParty[$lk]['amount'] ?? '0.0000', $amount),
+                    ];
+
+                    continue;
+                }
+
+                // A REMITTABLE deduction is money withheld from the employee
+                // that the company must pass to a third party — a pension fund,
+                // social security, a union. The gross is already the cost, so
+                // the withheld portion is a liability, exactly as wage tax is.
+                if ($source?->is_remittable) {
+                    $liability = $source->liability_account_id
+                        ?? $accounts['payroll-liabilities'];
+                    $lk = $key($liability);
+                    $thirdParty[$lk] = [
+                        'account_id' => $liability,
+                        'currency_id' => $currencyId,
+                        'rate' => $rate,
+                        'amount' => Decimal::add($thirdParty[$lk]['amount'] ?? '0.0000', $amount),
+                    ];
+
+                    continue;
+                }
+
+                // Everything left is a deduction the company simply does not
+                // pay out — unpaid leave, a docked day. It reduces the expense,
+                // because the company never owed it to anyone.
                 $account = $component->account_id
                     ?? $this->expenseAccountFor($component, $line, $accounts);
                 $k = $key($account);
@@ -273,15 +326,43 @@ class PayrollPostingService
                 continue;
             }
 
+            // A bucket can end up NEGATIVE when a deduction is routed to an
+            // account that carries no matching earning — a canteen charge
+            // against allowances, say. A negative debit is not a valid ledger
+            // line and TransactionService rejects it, so the whole posting
+            // failed. The correct entry for a negative expense is a credit of
+            // the same magnitude.
+            $negative = Decimal::cmp($expense['amount'], '0') < 0;
+            $magnitude = $negative
+                ? Decimal::sub('0.0000', $expense['amount'])
+                : $expense['amount'];
+
             $glLines[] = [
                 'account_id' => $expense['account_id'],
                 'currency_id' => $expense['currency_id'],
                 'rate' => $expense['rate'],
-                'debit' => $expense['amount'],
-                'credit' => 0,
-                'base_debit' => Decimal::toBase($expense['amount'], $expense['rate']),
-                'base_credit' => 0,
+                'debit' => $negative ? 0 : $magnitude,
+                'credit' => $negative ? $magnitude : 0,
+                'base_debit' => $negative ? 0 : Decimal::toBase($magnitude, $expense['rate']),
+                'base_credit' => $negative ? Decimal::toBase($magnitude, $expense['rate']) : 0,
                 'remark' => 'Payroll expense '.($payroll->period_label ?: ''),
+            ];
+        }
+
+        foreach ($thirdParty as $owed) {
+            if (Decimal::isZero($owed['amount'])) {
+                continue;
+            }
+
+            $glLines[] = [
+                'account_id' => $owed['account_id'],
+                'currency_id' => $owed['currency_id'],
+                'rate' => $owed['rate'],
+                'debit' => 0,
+                'credit' => $owed['amount'],
+                'base_debit' => 0,
+                'base_credit' => Decimal::toBase($owed['amount'], $owed['rate']),
+                'remark' => 'Payroll third-party liability '.($payroll->period_label ?: ''),
             ];
         }
 
@@ -372,7 +453,7 @@ class PayrollPostingService
     {
         $slugs = [
             'payroll-liabilities', 'salary-tax-payable', 'employee-advances',
-            'employee-loans-receivable', 'overtime-expense', 'allowances-commissions',
+            'employee-loans-receivable', 'overtime-expense', 'staff-benefits-expense', 'allowances-commissions',
             'permanent-staff-salary', 'temporary-staff-salary', 'consultant-professional-salary',
         ];
 

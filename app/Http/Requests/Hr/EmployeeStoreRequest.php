@@ -21,6 +21,21 @@ class EmployeeStoreRequest extends FormRequest
         return true;
     }
 
+    /**
+     * An empty salary box means "not set yet", not an error.
+     *
+     * ConvertEmptyStringsToNull turns the blank input into null, and
+     * `basic_salary` is a NOT NULL column defaulting to 0, so passing the null
+     * through blew up on insert. Zero is what the column already means by
+     * unset — the salary structure is authoritative anyway.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('basic_salary') === null || $this->input('basic_salary') === '') {
+            $this->merge(['basic_salary' => 0]);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -58,9 +73,9 @@ class EmployeeStoreRequest extends FormRequest
             // One employee record per login, or self-service check-in cannot
             // tell which employee a user is.
             'user_id' => ['nullable', 'exists:users,id', $this->uniqueInBranch('employees')],
-            'department_id' => ['nullable', 'exists:departments,id'],
-            'designation_id' => ['nullable', 'exists:designations,id'],
-            'reports_to_id' => ['nullable', 'exists:employees,id'],
+            'department_id' => ['nullable', $this->existsInBranch('departments')],
+            'designation_id' => ['nullable', $this->existsInBranch('designations')],
+            'reports_to_id' => ['nullable', $this->existsInBranch('employees')],
 
             'employment_type' => ['required', Rule::in(EmploymentType::values())],
             'employment_status' => ['required', Rule::in(EmploymentStatus::values())],

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Hr;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
+
 use App\Enums\HalfDayPeriod;
 use App\Models\Hr\Employee;
 use App\Models\Hr\LeaveRequest;
@@ -14,6 +16,8 @@ use Illuminate\Validation\Validator;
 
 class LeaveRequestStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -22,15 +26,15 @@ class LeaveRequestStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_id' => ['required', 'exists:employees,id'],
-            'leave_type_id' => ['required', 'exists:leave_types,id'],
+            'employee_id' => ['required', $this->existsInBranch('employees')],
+            'leave_type_id' => ['required', $this->existsInBranch('leave_types')],
             'from_date' => ['required', 'date'],
             'to_date' => ['required', 'date'],
             'is_half_day' => ['nullable', 'boolean'],
             'half_day_period' => ['nullable', Rule::in(HalfDayPeriod::values())],
             'reason' => ['nullable', 'string'],
             'contact_during_leave' => ['nullable', 'string', 'max:50'],
-            'handover_to_id' => ['nullable', 'exists:employees,id'],
+            'handover_to_id' => ['nullable', $this->existsInBranch('employees')],
             'documents' => ['nullable', 'array'],
             'documents.*' => ['file', 'max:10240'],
         ];

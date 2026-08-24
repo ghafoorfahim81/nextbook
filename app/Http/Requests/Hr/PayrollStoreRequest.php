@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Hr;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
+
 use App\Enums\EmploymentType;
 use App\Enums\PayFrequency;
 use App\Enums\PayrollStatus;
@@ -13,6 +15,8 @@ use Illuminate\Validation\Validator;
 
 class PayrollStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -48,7 +52,7 @@ class PayrollStoreRequest extends FormRequest
             'rate' => ['nullable', 'numeric', 'gt:0'],
             // Optional scoping: a run for one department, or for daily-wage
             // staff only.
-            'department_id' => ['nullable', 'string', 'exists:departments,id'],
+            'department_id' => ['nullable', 'string', $this->existsInBranch('departments')],
             'employment_type' => ['nullable', Rule::in(EmploymentType::values())],
             'remark' => ['nullable', 'string'],
         ];
@@ -64,9 +68,19 @@ class PayrollStoreRequest extends FormRequest
                 return;
             }
 
-            // A second LIVE run over the same period would pay everyone twice.
+            // A second LIVE run covering the same people would pay them twice.
             // Reversed and cancelled runs are excluded: re-running a corrected
             // period is exactly the workflow reversal exists for.
+            //
+            // Scope comparison is deliberately NOT an equality test on
+            // department_id. Two runs conflict unless their employee sets are
+            // provably disjoint, and a company-wide run (no department, no
+            // employment type) overlaps EVERY scoped run. Comparing the
+            // columns for equality let a company-wide run and a department run
+            // over the same month both pay the same staff.
+            $department = $this->input('department_id');
+            $employmentType = $this->input('employment_type');
+
             $overlapping = Payroll::query()
                 ->when(
                     $this->route('payroll'),
@@ -78,15 +92,20 @@ class PayrollStoreRequest extends FormRequest
                 ])
                 ->where('period_start', '<=', $end)
                 ->where('period_end', '>=', $start)
-                ->when(
-                    $this->filled('department_id'),
-                    fn ($query) => $query->where('department_id', $this->input('department_id')),
-                    fn ($query) => $query->whereNull('department_id')
-                )
-                ->exists();
+                // Disjoint only if BOTH runs name a department and they differ.
+                ->when($department, fn ($query) => $query->where(
+                    fn ($q) => $q->whereNull('department_id')->orWhere('department_id', $department)
+                ))
+                // Likewise for employment type.
+                ->when($employmentType, fn ($query) => $query->where(
+                    fn ($q) => $q->whereNull('employment_type')->orWhere('employment_type', $employmentType)
+                ))
+                ->first();
 
             if ($overlapping) {
-                $validator->errors()->add('period_start', __('hr.payroll_period_overlaps'));
+                $validator->errors()->add('period_start', __('hr.payroll_period_overlaps', [
+                    'number' => $overlapping->number,
+                ]));
             }
         });
     }

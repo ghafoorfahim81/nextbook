@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Hr;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
+
 use App\Enums\AttendanceStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -15,6 +17,8 @@ use Illuminate\Validation\Validator;
  */
 class AttendanceRosterRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -24,11 +28,11 @@ class AttendanceRosterRequest extends FormRequest
     {
         return [
             'date' => ['required', 'date'],
-            'shift_id' => ['nullable', 'exists:shifts,id'],
+            'shift_id' => ['nullable', $this->existsInBranch('shifts')],
             'rows' => ['required', 'array', 'min:1'],
-            'rows.*.employee_id' => ['required', 'exists:employees,id'],
+            'rows.*.employee_id' => ['required', $this->existsInBranch('employees')],
             'rows.*.status' => ['required', Rule::in(AttendanceStatus::values())],
-            'rows.*.shift_id' => ['nullable', 'exists:shifts,id'],
+            'rows.*.shift_id' => ['nullable', $this->existsInBranch('shifts')],
             'rows.*.check_in' => ['nullable', 'date_format:H:i'],
             'rows.*.check_out' => ['nullable', 'date_format:H:i'],
             'rows.*.overtime_hours' => ['nullable', 'numeric', 'min:0', 'max:24'],

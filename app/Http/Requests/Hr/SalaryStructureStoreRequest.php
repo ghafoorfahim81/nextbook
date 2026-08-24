@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Hr;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
+
 use App\Enums\ComponentCalculationType;
 use App\Enums\PayFrequency;
 use App\Services\DateConversionService;
@@ -11,6 +13,8 @@ use Illuminate\Validation\Validator;
 
 class SalaryStructureStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -39,20 +43,20 @@ class SalaryStructureStoreRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:150'],
             'code' => ['nullable', 'string', 'max:50'],
-            'employee_id' => ['nullable', 'string', 'exists:employees,id'],
-            'designation_id' => ['nullable', 'string', 'exists:designations,id'],
-            'department_id' => ['nullable', 'string', 'exists:departments,id'],
+            'employee_id' => ['nullable', 'string', $this->existsInBranch('employees')],
+            'designation_id' => ['nullable', 'string', $this->existsInBranch('designations')],
+            'department_id' => ['nullable', 'string', $this->existsInBranch('departments')],
             'currency_id' => ['required', 'string', 'exists:currencies,id'],
             'effective_from' => ['required', 'date'],
             'effective_to' => ['nullable', 'date', 'after_or_equal:effective_from'],
             'basic_salary' => ['required', 'numeric', 'min:0'],
             'pay_frequency' => ['required', Rule::in(PayFrequency::values())],
-            'expense_account_id' => ['nullable', 'string', 'exists:accounts,id'],
+            'expense_account_id' => ['nullable', 'string', $this->existsInBranch('accounts')],
             'is_active' => ['nullable', 'boolean'],
             'remark' => ['nullable', 'string'],
 
             'lines' => ['nullable', 'array'],
-            'lines.*.salary_component_id' => ['required', 'string', 'exists:salary_components,id'],
+            'lines.*.salary_component_id' => ['required', 'string', $this->existsInBranch('salary_components')],
             'lines.*.calculation_type' => ['nullable', Rule::in(ComponentCalculationType::values())],
             'lines.*.amount' => ['nullable', 'numeric', 'min:0'],
             'lines.*.percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],

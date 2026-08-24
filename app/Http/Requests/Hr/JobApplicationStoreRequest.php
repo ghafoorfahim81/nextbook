@@ -39,7 +39,7 @@ class JobApplicationStoreRequest extends FormRequest
         $id = $this->route('job_application')?->id;
 
         return [
-            'job_opening_id' => ['required', 'string', 'exists:job_openings,id'],
+            'job_opening_id' => ['required', 'string', $this->existsInBranch('job_openings')],
             'application_number' => [
                 'required', 'string', 'max:50',
                 $this->uniqueInBranch('job_applications', $id, 'application_number'),

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Hr;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
+
 use App\Enums\EmployeeDocumentType;
 use App\Services\DateConversionService;
 use Illuminate\Foundation\Http\FormRequest;
@@ -10,6 +12,8 @@ use Illuminate\Validation\Validator;
 
 class EmployeeDocumentStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -18,7 +22,7 @@ class EmployeeDocumentStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_id' => ['required', 'exists:employees,id'],
+            'employee_id' => ['required', $this->existsInBranch('employees')],
             'document_type' => ['required', Rule::in(EmployeeDocumentType::values())],
             'document_number' => ['nullable', 'string', 'max:100'],
             'issued_by' => ['nullable', 'string', 'max:150'],

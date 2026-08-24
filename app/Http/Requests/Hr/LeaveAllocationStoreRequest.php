@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Hr;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
+
 use App\Enums\LeaveAllocationSource;
 use App\Models\Hr\LeaveAllocation;
 use App\Services\DateConversionService;
@@ -11,6 +13,8 @@ use Illuminate\Validation\Validator;
 
 class LeaveAllocationStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -19,8 +23,8 @@ class LeaveAllocationStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_id' => ['required', 'exists:employees,id'],
-            'leave_type_id' => ['required', 'exists:leave_types,id'],
+            'employee_id' => ['required', $this->existsInBranch('employees')],
+            'leave_type_id' => ['required', $this->existsInBranch('leave_types')],
             'period_start' => ['required', 'date'],
             'period_end' => ['required', 'date'],
             'entitled_days' => ['required', 'numeric', 'min:0', 'max:365'],

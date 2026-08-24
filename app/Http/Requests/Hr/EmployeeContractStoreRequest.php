@@ -23,7 +23,7 @@ class EmployeeContractStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_id' => ['required', 'exists:employees,id'],
+            'employee_id' => ['required', $this->existsInBranch('employees')],
             'contract_number' => ['required', 'string', 'max:50', $this->uniqueInBranch('employee_contracts', $this->contractId())],
             'contract_type' => ['required', Rule::in(ContractType::values())],
             'start_date' => ['required', 'date'],
@@ -37,7 +37,7 @@ class EmployeeContractStoreRequest extends FormRequest
             'working_days_per_week' => ['nullable', 'integer', 'min:1', 'max:7'],
             'annual_leave_entitlement' => ['nullable', 'numeric', 'min:0'],
             'status' => ['required', Rule::in(ContractStatus::values())],
-            'renewed_from_id' => ['nullable', 'exists:employee_contracts,id'],
+            'renewed_from_id' => ['nullable', $this->existsInBranch('employee_contracts')],
             'terminated_on' => ['nullable', 'date'],
             'termination_reason' => ['nullable', 'string'],
             'reminder_days_before' => ['nullable', 'integer', 'min:0', 'max:365'],
