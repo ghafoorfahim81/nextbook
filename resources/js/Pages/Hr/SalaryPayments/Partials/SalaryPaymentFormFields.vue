@@ -23,6 +23,7 @@ const props = defineProps({
 const emit = defineEmits(['update:manualAllocation', 'pay-all']);
 
 const currencies = computed(() => props.filterOptions?.currencies || []);
+const employees = computed(() => props.filterOptions?.employees || []);
 const bankAccounts = computed(() => props.filterOptions?.bankAccounts || []);
 
 const totalOpen = computed(() => props.openItems.reduce(
@@ -45,7 +46,7 @@ const money = (value) => Number(value ?? 0).toLocaleString(undefined, {
 
         <div class="mt-2 grid grid-cols-1 gap-4 md:grid-cols-3">
             <NextSelect
-                :options="[]"
+                :options="employees"
                 v-model="form.selected_employee"
                 @update:modelValue="(v) => { form.employee_id = v?.id ?? null }"
                 label-key="name" value-key="id" :reduce="(x) => x"

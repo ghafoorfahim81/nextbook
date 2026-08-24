@@ -9,6 +9,7 @@ import { useForm, router } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth';
+import { toast } from 'vue-sonner';
 import { CheckCircle2, XCircle, Send, Ban, Pencil } from 'lucide-vue-next';
 
 const { t } = useI18n();
@@ -47,11 +48,25 @@ const statusClasses = computed(() => {
 // never has to reimplement it — and can never offer one the backend refuses.
 const allows = (target) => (req.value.allowed_transitions || []).includes(target);
 
+// Approving can be refused for good reasons — no allocation for that leave
+// type, not enough balance left. Those come back as validation errors on keys
+// this page has no field for, so without this they vanished and the button
+// looked like it did nothing.
+const reportErrors = (errors) => {
+    const messages = Object.values(errors || {}).flat().filter(Boolean);
+
+    toast.error(t('general.error'), {
+        description: messages.length ? messages.join(' ') : t('general.update_error'),
+        class: 'bg-red-600',
+    });
+};
+
 const transition = (action) => {
     busy.value = true;
 
     router.patch(route(`leave-requests.${action}`, req.value.id), {}, {
         preserveScroll: true,
+        onError: reportErrors,
         onFinish: () => { busy.value = false; },
     });
 };
@@ -63,6 +78,7 @@ const submitReject = () => {
             showReject.value = false;
             rejectForm.reset();
         },
+        onError: reportErrors,
     });
 };
 </script>

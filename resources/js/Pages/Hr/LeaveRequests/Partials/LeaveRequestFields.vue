@@ -15,11 +15,11 @@ const props = defineProps({
 });
 
 const leaveTypes = computed(() => props.options?.leaveTypes || []);
+const employees = computed(() => props.options?.employees || []);
 
-const halfDayPeriods = computed(() => ([
-    { id: 'first_half', name: t('enums.half_day_period.first_half') },
-    { id: 'second_half', name: t('enums.half_day_period.second_half') },
-]));
+// Labelled server-side: the `enums.*` strings live in the PHP lang files and
+// are not part of the JS i18n bundle, so translating them here printed the key.
+const halfDayPeriods = computed(() => props.options?.halfDayPeriods || []);
 
 const selectedType = computed(() =>
     leaveTypes.value.find((x) => x.id === props.form.leave_type_id) ?? null
@@ -47,7 +47,7 @@ const onHalfDayToggle = () => {
 
         <div class="mt-2 grid grid-cols-1 gap-4 md:grid-cols-3">
             <NextSelect
-                :options="[]"
+                :options="employees"
                 v-model="form.selected_employee"
                 @update:modelValue="(v) => { form.employee_id = v?.id ?? null }"
                 label-key="name" value-key="id" :reduce="(x) => x"
@@ -102,7 +102,7 @@ const onHalfDayToggle = () => {
                 :error="form.errors?.contact_during_leave"
             />
             <NextSelect
-                :options="[]"
+                :options="employees"
                 v-model="form.selected_handover"
                 @update:modelValue="(v) => { form.handover_to_id = v?.id ?? null }"
                 label-key="name" value-key="id" :reduce="(x) => x"

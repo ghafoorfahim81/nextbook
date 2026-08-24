@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { ref, computed } from 'vue';
+import { router } from '@inertiajs/vue3';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import CreateEditModal from './CreateEditModal.vue';
 import { useI18n } from 'vue-i18n';
@@ -68,8 +69,10 @@ const deleteItem = (id) => {
             :columns="columns"
             :filters="filters"
             :filterFields="filterFields"
+            :hasShow="true"
             @edit="editItem"
             @delete="deleteItem"
+            @show="(id) => router.get(route('tax-bracket-sets.show', id))"
             @add="isDialogOpen = true"
             :title="t('hr.tax_bracket_sets')"
             :url="`tax-bracket-sets.index`"

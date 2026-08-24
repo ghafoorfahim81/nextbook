@@ -351,13 +351,13 @@ Route::middleware([
         ->name('employees.force-delete')
         ->withTrashed();
 
-    Route::resource('/employee-contracts', \App\Http\Controllers\Hr\EmployeeContractController::class)->except(['create', 'edit', 'show']);
+    Route::resource('/employee-contracts', \App\Http\Controllers\Hr\EmployeeContractController::class)->except(['create', 'edit']);
     Route::patch('/employee-contracts/{employee_contract}/restore', [\App\Http\Controllers\Hr\EmployeeContractController::class, 'restore'])->name('employee-contracts.restore')->withTrashed();
     Route::delete('/employee-contracts/{employee_contract}/force-delete', [\App\Http\Controllers\Hr\EmployeeContractController::class, 'forceDelete'])
         ->name('employee-contracts.force-delete')
         ->withTrashed();
 
-    Route::resource('/employee-documents', \App\Http\Controllers\Hr\EmployeeDocumentController::class)->except(['create', 'edit', 'show']);
+    Route::resource('/employee-documents', \App\Http\Controllers\Hr\EmployeeDocumentController::class)->except(['create', 'edit']);
     Route::patch('/employee-documents/{employee_document}/restore', [\App\Http\Controllers\Hr\EmployeeDocumentController::class, 'restore'])->name('employee-documents.restore')->withTrashed();
     Route::delete('/employee-documents/{employee_document}/force-delete', [\App\Http\Controllers\Hr\EmployeeDocumentController::class, 'forceDelete'])
         ->name('employee-documents.force-delete')
@@ -393,7 +393,7 @@ Route::middleware([
     Route::patch('/leave-types/{leave_type}/restore', [\App\Http\Controllers\Hr\LeaveTypeController::class, 'restore'])->name('leave-types.restore')->withTrashed();
     Route::delete('/leave-types/{leave_type}/force-delete', [\App\Http\Controllers\Hr\LeaveTypeController::class, 'forceDelete'])->name('leave-types.force-delete')->withTrashed();
 
-    Route::resource('/leave-allocations', \App\Http\Controllers\Hr\LeaveAllocationController::class)->except(['create', 'edit', 'show']);
+    Route::resource('/leave-allocations', \App\Http\Controllers\Hr\LeaveAllocationController::class)->except(['create', 'edit']);
     Route::patch('/leave-allocations/{leave_allocation}/restore', [\App\Http\Controllers\Hr\LeaveAllocationController::class, 'restore'])->name('leave-allocations.restore')->withTrashed();
     Route::delete('/leave-allocations/{leave_allocation}/force-delete', [\App\Http\Controllers\Hr\LeaveAllocationController::class, 'forceDelete'])->name('leave-allocations.force-delete')->withTrashed();
 
@@ -415,7 +415,7 @@ Route::middleware([
 
     // Before the resource, or /tax-bracket-sets/preview binds as {tax_bracket_set}.
     Route::post('/tax-bracket-sets/preview', [\App\Http\Controllers\Hr\TaxBracketSetController::class, 'preview'])->name('tax-bracket-sets.preview');
-    Route::resource('/tax-bracket-sets', \App\Http\Controllers\Hr\TaxBracketSetController::class)->except(['create', 'edit', 'show']);
+    Route::resource('/tax-bracket-sets', \App\Http\Controllers\Hr\TaxBracketSetController::class)->except(['create', 'edit']);
     Route::patch('/tax-bracket-sets/{tax_bracket_set}/restore', [\App\Http\Controllers\Hr\TaxBracketSetController::class, 'restore'])->name('tax-bracket-sets.restore')->withTrashed();
 
     // HR — payroll runs
@@ -454,7 +454,7 @@ Route::middleware([
 
     Route::patch('/interviews/{interview}/complete', [\App\Http\Controllers\Hr\InterviewController::class, 'complete'])->name('interviews.complete');
     Route::patch('/interviews/{interview}/panelists/{panelist}/feedback', [\App\Http\Controllers\Hr\InterviewController::class, 'feedback'])->name('interviews.feedback');
-    Route::resource('/interviews', \App\Http\Controllers\Hr\InterviewController::class)->except(['create', 'edit', 'show']);
+    Route::resource('/interviews', \App\Http\Controllers\Hr\InterviewController::class)->except(['create', 'edit']);
     Route::patch('/interviews/{interview}/restore', [\App\Http\Controllers\Hr\InterviewController::class, 'restore'])->name('interviews.restore')->withTrashed();
 
     // Employee self-service. Inside this group on purpose — a separate guard

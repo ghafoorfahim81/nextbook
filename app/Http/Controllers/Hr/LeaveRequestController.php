@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Hr;
 
+use App\Enums\HalfDayPeriod;
 use App\Enums\LeaveRequestStatus;
+use App\Http\Controllers\Concerns\ProvidesEmployeeOptions;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Hr\LeaveRequestStoreRequest;
 use App\Http\Requests\Hr\LeaveRequestUpdateRequest;
@@ -22,6 +24,8 @@ use Illuminate\Support\Facades\DB;
 
 class LeaveRequestController extends Controller
 {
+    use ProvidesEmployeeOptions;
+
     private DateConversionService $dateConversionService;
 
     public function __construct(DateConversionService $dateConversionService)
@@ -283,6 +287,14 @@ class LeaveRequestController extends Controller
                 fn (LeaveRequestStatus $c) => ['id' => $c->value, 'name' => $c->getLabel()],
                 LeaveRequestStatus::cases()
             ),
+            // Labelled here rather than in the page: the `enums.*` strings live
+            // in the PHP lang files and are not part of the JS i18n bundle, so
+            // translating them in Vue rendered the raw key.
+            'halfDayPeriods' => array_map(
+                fn (HalfDayPeriod $c) => ['id' => $c->value, 'name' => $c->getLabel()],
+                HalfDayPeriod::cases()
+            ),
+            'employees' => $this->employeeOptions(),
         ];
     }
 

@@ -39,7 +39,7 @@ class JobApplicationResource extends JsonResource
             'email' => $this->email,
             'address' => $this->address,
             'province_id' => $this->province_id,
-            'province_name' => $this->whenLoaded('province', fn () => $this->province?->name),
+            'province_name' => $this->whenLoaded('province', fn () => $this->province?->localized_name),
             'current_employer' => $this->current_employer,
             'current_position' => $this->current_position,
             'years_of_experience' => $this->years_of_experience !== null

@@ -136,7 +136,9 @@ class EmployeeController extends Controller
     {
         $employee->load([
             'department:id,name', 'designation:id,name', 'manager:id,full_name',
-            'currency:id,code', 'country:id,name', 'province:id,name', 'user:id,name',
+            // name_en/name_fa — neither table has a `name` column; both models
+            // derive `localized_name` from the pair.
+            'currency:id,code', 'country:id,name_en,name_fa', 'province:id,name_en,name_fa', 'user:id,name',
             'ledger', 'contracts.currency:id,code', 'documents.verifiedBy:id,name',
             'attachments', 'createdBy:id,name', 'updatedBy:id,name',
         ]);

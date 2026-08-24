@@ -193,11 +193,14 @@ class PayrollController extends Controller
             return redirect()->back()->with('error', $exception->getMessage());
         }
 
-        $activityLog->logUpdate(
+        // logAction, not logUpdate: this records a state change, and logUpdate
+        // takes a before/after diff rather than old/new value arrays — passing
+        // those named arguments was a fatal TypeError.
+        $activityLog->logAction(
+            eventType: $target->value,
             reference: $payroll,
             module: 'payroll',
             description: "Payroll #{$payroll->number} moved to {$target->value}.",
-            oldValues: [],
             newValues: ['status' => $target->value, 'reason' => $validated['reason'] ?? null],
         );
 

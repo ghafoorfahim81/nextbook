@@ -38,8 +38,8 @@ const columns = computed(() => ([
     {
         key: 'status_label',
         label: t('general.status'),
-        html: true,
-        render: (row) => `<span class="rounded-full px-2 py-0.5 text-xs font-medium ${statusTone(row.status)}">${row.status_label}</span>`,
+        render: (row) => row.status_label,
+        badge: (row) => statusTone(row.status),
     },
     { key: 'actions', label: t('general.action') },
 ]));
@@ -77,7 +77,8 @@ const deleteItem = (id) => {
             :columns="columns"
             :filters="filters"
             :filterFields="filterFields"
-            @view="(item) => router.get(route('payrolls.show', item.id))"
+            :hasShow="true"
+            @show="(id) => router.get(route('payrolls.show', id))"
             @edit="(item) => router.get(route('payrolls.edit', item.id))"
             @delete="deleteItem"
             @add="router.get(route('payrolls.create'))"

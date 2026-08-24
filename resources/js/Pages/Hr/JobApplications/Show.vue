@@ -91,15 +91,10 @@ const interviewForm = useForm({
     selected_panelist: null,
 });
 
-const interviewTypes = [
-    { id: 'phone_screen', name: 'phone_screen' },
-    { id: 'in_person', name: 'in_person' },
-    { id: 'video', name: 'video' },
-    { id: 'technical', name: 'technical' },
-    { id: 'panel', name: 'panel' },
-    { id: 'written_test', name: 'written_test' },
-    { id: 'final', name: 'final' },
-].map((item) => ({ id: item.id, name: t(`enums.interview_type.${item.id}`) }));
+// Labelled server-side: the `enums.*` strings live in the PHP lang files and
+// are not part of the JS i18n bundle, so translating them here printed the key.
+const interviewTypes = computed(() => props.filterOptions?.interviewTypes || []);
+const employees = computed(() => props.filterOptions?.employees || []);
 
 const isRemoteInterview = computed(() => ['video', 'phone_screen'].includes(interviewForm.interview_type));
 
@@ -362,9 +357,10 @@ const interviewTone = (status) => ({
 
                 <div class="md:col-span-2">
                     <NextSelect
+                        :options="employees"
                         v-model="interviewForm.selected_panelist"
                         @update:modelValue="addPanelist"
-                        resource-type="employees"
+                        :searchable="true" resource-type="employees" :search-fields="['full_name', 'code']"
                         label-key="name" value-key="id" :reduce="(x) => x"
                         :floating-text="t('hr.add_panelist')"
                         append-in-dialog

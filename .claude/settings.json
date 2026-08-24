@@ -1,12 +1,20 @@
 {
   "permissions": {
-    "defaultMode": "acceptEdits",
     "allow": [
       "Bash(php artisan *)",
       "Bash(curl localhost:*)",
       "Bash(curl 127.0.0.1:*)",
       "Bash(npm *)",
-      "Bash(git *)"
-    ]
+      "Bash(git *)",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"const hr=require\\('./resources/js/locales/en/hr.json'\\); Object.keys\\(hr\\).filter\\(k=>/bracket|panel|rate|system|tax/i.test\\(k\\)\\).forEach\\(k=>console.log\\(k,'=>',JSON.stringify\\(hr[k]\\)\\)\\);\")",
+      "Bash(perl -0pi -e \"s{t\\\\\\('hr.rate'\\\\\\) }{t\\('hr.rate_percent'\\) }; s{\\\\{\\\\{ bracket.rate \\\\}\\\\}%}{{{ bracket.rate }}}\" resources/js/Pages/Hr/TaxBracketSets/Show.vue)",
+      "Bash(perl -pi -e 's{^    \"tax_period\": \"Period\",$}{    \"tax_period\": \"Period\",\\\\n    \"tax_brackets\": \"Bands\",\\\\n    \"is_system\": \"System table\",}' resources/js/locales/en/hr.json)",
+      "Bash(perl -pi -e 's{^    \"tax_period\": \"دوره\",$}{    \"tax_period\": \"دوره\",\\\\n    \"tax_brackets\": \"بندها\",\\\\n    \"is_system\": \"جدول سیستمی\",}' resources/js/locales/fa/hr.json)",
+      "Bash(perl -pi -e 's{^    \"tax_period\": \"دوره\",$}{    \"tax_period\": \"دوره\",\\\\n    \"tax_brackets\": \"بندونه\",\\\\n    \"is_system\": \"سیستمي جدول\",}' resources/js/locales/ps/hr.json)",
+      "Bash(perl -pi -e 's{^    \"panelist\": \"Panelist\",$}{    \"panelist\": \"Panelist\",\\\\n    \"panelists\": \"Panel\",}' resources/js/locales/en/hr.json)",
+      "Bash(perl -pi -e 's{^    \"panelist\": \"عضو هیئت\",$}{    \"panelist\": \"عضو هیئت\",\\\\n    \"panelists\": \"هیئت\",}' resources/js/locales/fa/hr.json)"
+    ],
+    "defaultMode": "acceptEdits"
   }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Hr;
 
 use App\Enums\EmployeeDocumentType;
+use App\Http\Controllers\Concerns\ProvidesEmployeeOptions;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Hr\EmployeeDocumentStoreRequest;
 use App\Http\Requests\Hr\EmployeeDocumentUpdateRequest;
@@ -17,6 +18,8 @@ use Illuminate\Support\Facades\DB;
 
 class EmployeeDocumentController extends Controller
 {
+    use ProvidesEmployeeOptions;
+
     private DateConversionService $dateConversionService;
 
     public function __construct(DateConversionService $dateConversionService)
@@ -53,6 +56,7 @@ class EmployeeDocumentController extends Controller
                     fn (EmployeeDocumentType $case) => ['id' => $case->value, 'name' => $case->getLabel()],
                     EmployeeDocumentType::cases()
                 ),
+                'employees' => $this->employeeOptions(),
             ],
             'filters' => [
                 'search' => $request->query('search'),
@@ -61,6 +65,23 @@ class EmployeeDocumentController extends Controller
                 'sortDirection' => $sortDirection,
                 'filters' => (array) $request->input('filters', []),
             ],
+        ]);
+    }
+
+    public function show(Request $request, EmployeeDocument $employeeDocument)
+    {
+        $employeeDocument->load([
+            'employee:id,full_name,code,department_id,designation_id',
+            'employee.department:id,name',
+            'employee.designation:id,name',
+            'verifiedBy:id,name',
+            'attachments',
+            'createdBy:id,name',
+            'updatedBy:id,name',
+        ]);
+
+        return inertia('Hr/EmployeeDocuments/Show', [
+            'document' => new EmployeeDocumentResource($employeeDocument),
         ]);
     }
 
