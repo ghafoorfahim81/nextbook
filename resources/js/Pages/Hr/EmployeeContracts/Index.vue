@@ -2,6 +2,7 @@
 import AppLayout from '@/Layouts/Layout.vue';
 import DataTable from '@/Components/DataTable.vue';
 import { ref, computed } from 'vue';
+import { router } from '@inertiajs/vue3';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import CreateEditModal from './CreateEditModal.vue';
 import { useI18n } from 'vue-i18n';
@@ -50,6 +51,8 @@ const editItem = (item) => {
     isDialogOpen.value = true;
 };
 
+const showItem = (id) => router.visit(route('employee-contracts.show', id));
+
 const { deleteResource } = useDeleteResource();
 const deleteItem = (id) => {
     deleteResource('employee-contracts.destroy', id, {
@@ -78,8 +81,10 @@ const deleteItem = (id) => {
             :columns="columns"
             :filters="filters"
             :filterFields="filterFields"
+            :hasShow="true"
             @edit="editItem"
             @delete="deleteItem"
+            @show="showItem"
             @add="isDialogOpen = true"
             :title="t('hr.contracts')"
             :url="`employee-contracts.index`"

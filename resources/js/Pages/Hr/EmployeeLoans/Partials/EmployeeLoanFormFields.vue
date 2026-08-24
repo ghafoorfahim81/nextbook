@@ -17,6 +17,7 @@ const props = defineProps({
 });
 
 const loanTypes = computed(() => props.filterOptions?.loanTypes || []);
+const employees = computed(() => props.filterOptions?.employees || []);
 const currencies = computed(() => props.filterOptions?.currencies || []);
 
 // Shown live, because an instalment schedule that does not repay the loan is
@@ -40,7 +41,7 @@ const suggestInstalment = () => {
 
         <div class="mt-2 grid grid-cols-1 gap-4 md:grid-cols-3">
             <NextSelect
-                :options="[]"
+                :options="employees"
                 v-model="form.selected_employee"
                 @update:modelValue="(v) => { form.employee_id = v?.id ?? null }"
                 label-key="name" value-key="id" :reduce="(x) => x"

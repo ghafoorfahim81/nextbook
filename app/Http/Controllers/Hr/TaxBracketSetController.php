@@ -64,6 +64,19 @@ class TaxBracketSetController extends Controller
         ]);
     }
 
+    public function show(TaxBracketSet $taxBracketSet)
+    {
+        $taxBracketSet->load([
+            'currency:id,code',
+            'brackets' => fn ($query) => $query->orderBy('sequence'),
+            'createdBy:id,name',
+        ]);
+
+        return inertia('Hr/TaxBracketSets/Show', [
+            'taxBracketSet' => new TaxBracketSetResource($taxBracketSet),
+        ]);
+    }
+
     public function store(TaxBracketSetStoreRequest $request)
     {
         DB::transaction(function () use ($request) {

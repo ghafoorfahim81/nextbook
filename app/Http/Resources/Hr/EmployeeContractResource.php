@@ -52,6 +52,7 @@ class EmployeeContractResource extends JsonResource
             'status_label' => $status?->getLabel(),
 
             'renewed_from_id' => $this->renewed_from_id,
+            'renewed_from_number' => $this->whenLoaded('renewedFrom', fn () => $this->renewedFrom?->contract_number),
             'terminated_on' => $dates->toDisplay($this->terminated_on),
             'termination_reason' => $this->termination_reason,
 

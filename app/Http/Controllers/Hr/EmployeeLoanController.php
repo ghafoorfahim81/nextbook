@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Hr;
 use App\Enums\LoanStatus;
 use App\Enums\LoanType;
 use App\Exceptions\Hr\PayrollException;
+use App\Http\Controllers\Concerns\ProvidesEmployeeOptions;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Hr\EmployeeLoanStoreRequest;
 use App\Http\Requests\Hr\EmployeeLoanUpdateRequest;
@@ -19,6 +20,8 @@ use Illuminate\Http\Request;
 
 class EmployeeLoanController extends Controller
 {
+    use ProvidesEmployeeOptions;
+
     public function __construct(
         private readonly DateConversionService $dateConversionService,
     ) {
@@ -133,11 +136,14 @@ class EmployeeLoanController extends Controller
             function () use ($loans, $employeeLoan, $activityLog) {
                 $loan = $loans->approve($employeeLoan);
 
-                $activityLog->logUpdate(
+                // logAction, not logUpdate: this records a state change, and
+                // logUpdate takes a before/after diff rather than old/new value
+                // arrays — passing those named arguments was a fatal TypeError.
+                $activityLog->logAction(
+                    eventType: 'approved',
                     reference: $loan,
                     module: 'employee_loan',
                     description: "Loan #{$loan->number} approved.",
-                    oldValues: [],
                     newValues: ['status' => $loan->statusEnum()->value],
                 );
 
@@ -277,6 +283,7 @@ class EmployeeLoanController extends Controller
                 ->whereHas('accountType', fn ($query) => $query->where('slug', 'cash-or-bank'))
                 ->orderBy('name')
                 ->get(['id', 'name']),
+            'employees' => $this->employeeOptions(),
         ];
     }
 }

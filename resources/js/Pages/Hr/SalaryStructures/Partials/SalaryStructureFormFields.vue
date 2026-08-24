@@ -16,6 +16,7 @@ const props = defineProps({
     components: { type: [Array, Object], default: () => [] },
 });
 
+const employees = computed(() => props.filterOptions?.employees || []);
 const componentList = computed(() => props.components?.data ?? props.components ?? []);
 const currencies = computed(() => props.filterOptions?.currencies || []);
 const frequencies = computed(() => props.filterOptions?.payFrequencies || []);
@@ -95,7 +96,7 @@ const lineError = (index) => props.form.errors?.[`lines.${index}.salary_componen
             <NextInput :label="t('general.code')" v-model="form.code" :error="form.errors?.code" />
 
             <NextSelect
-                :options="[]"
+                :options="employees"
                 v-model="form.selected_employee"
                 @update:modelValue="(v) => { form.employee_id = v?.id ?? null }"
                 label-key="name" value-key="id" :reduce="(x) => x"
@@ -177,12 +178,16 @@ const lineError = (index) => props.form.errors?.[`lines.${index}.salary_componen
                     <tr v-for="(line, index) in form.lines" :key="index" class="border-t border-border">
                         <td class="px-4 py-2 text-muted-foreground">{{ line.sequence }}</td>
                         <td class="min-w-[220px] px-4 py-2">
+                            <!-- append-to-body, or the list is clipped by the
+                                 table's overflow-x-auto wrapper and only the
+                                 first row or two of options is reachable. -->
                             <NextSelect
                                 :options="componentList"
                                 :model-value="componentFor(line.salary_component_id)"
                                 @update:modelValue="(v) => onComponentChosen(index, v)"
                                 label-key="name" value-key="id" :reduce="(x) => x"
                                 :error="lineError(index)"
+                                append-to-body
                             />
                         </td>
                         <td class="px-4 py-2 text-muted-foreground">

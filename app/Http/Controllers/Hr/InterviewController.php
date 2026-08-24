@@ -54,6 +54,21 @@ class InterviewController extends Controller
         ]);
     }
 
+    public function show(Interview $interview)
+    {
+        $interview->load([
+            'application:id,full_name,application_number,job_opening_id,phone_number,email,branch_id',
+            'application.opening:id,title,code,branch_id',
+            'panelists.employee:id,full_name,code,branch_id',
+            'panelists.user:id,name',
+            'createdBy:id,name',
+        ]);
+
+        return inertia('Hr/Interviews/Show', [
+            'interview' => new InterviewResource($interview),
+        ]);
+    }
+
     public function store(InterviewStoreRequest $request, RecruitmentService $recruitment)
     {
         $validated = $request->validated();

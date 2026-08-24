@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Hr;
 
 use App\Enums\AttendanceSource;
 use App\Enums\AttendanceStatus;
+use App\Http\Controllers\Concerns\ProvidesEmployeeOptions;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Hr\AttendanceRosterRequest;
 use App\Http\Resources\Hr\AttendanceResource;
@@ -22,6 +23,8 @@ use Illuminate\Support\Carbon;
 
 class AttendanceController extends Controller
 {
+    use ProvidesEmployeeOptions;
+
     private DateConversionService $dateConversionService;
 
     public function __construct(DateConversionService $dateConversionService)
@@ -243,6 +246,7 @@ class AttendanceController extends Controller
                 fn (AttendanceSource $c) => ['id' => $c->value, 'name' => $c->getLabel()],
                 AttendanceSource::cases()
             ),
+            'employees' => $this->employeeOptions(),
         ];
     }
 

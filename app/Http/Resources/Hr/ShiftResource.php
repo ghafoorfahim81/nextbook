@@ -23,7 +23,7 @@ class ShiftResource extends JsonResource
             'grace_out_minutes' => (int) $this->grace_out_minutes,
             'full_day_hours' => (float) $this->full_day_hours,
             'half_day_hours' => $this->half_day_hours !== null ? (float) $this->half_day_hours : null,
-            'working_days' => array_map('intval', $this->working_days ?? []),
+            'working_days' => $this->workingDays(),
             'is_default' => (bool) $this->is_default,
             'is_active' => (bool) $this->is_active,
             'remark' => $this->remark,

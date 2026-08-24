@@ -100,9 +100,24 @@ class Shift extends Model
      */
     public function worksOn(Carbon $date): bool
     {
+        return in_array((int) $date->isoWeekday(), $this->workingDays(), true);
+    }
+
+    /**
+     * `working_days` as a list of ISO weekday integers.
+     *
+     * The cast can still hand back a JSON string for a row written before the
+     * double-encoding fix, so decode that case rather than fataling on it.
+     */
+    public function workingDays(): array
+    {
         $days = $this->working_days ?: [];
 
-        return in_array((int) $date->isoWeekday(), array_map('intval', $days), true);
+        if (is_string($days)) {
+            $days = json_decode($days, true) ?: [];
+        }
+
+        return array_map('intval', (array) $days);
     }
 
     /**

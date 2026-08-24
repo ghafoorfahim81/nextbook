@@ -3,7 +3,8 @@ import AppLayout from '@/Layouts/Layout.vue';
 import { computed, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { Button } from '@/Components/ui/button';
-import { ArrowLeft, Megaphone, Lock, XCircle } from 'lucide-vue-next';
+import FormPageToolbar from '@/Components/FormPageToolbar.vue';
+import { Megaphone, Lock, XCircle } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth';
 
@@ -62,8 +63,10 @@ const applicationTone = (status) => ({
 
 <template>
     <AppLayout :title="opening.title">
-        <div class="mx-auto max-w-5xl space-y-5">
-            <div class="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-border bg-card p-5">
+        <FormPageToolbar back-route="job-openings.index" module="job_openings" />
+
+        <div class="space-y-5">
+            <div class="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-border bg-card p-5 shadow-sm">
                 <div>
                     <div class="flex items-center gap-3">
                         <h1 class="text-xl font-semibold">{{ opening.title }}</h1>
@@ -80,9 +83,6 @@ const applicationTone = (status) => ({
                 </div>
 
                 <div class="flex flex-wrap gap-2">
-                    <Button variant="outline" @click="$inertia.get(route('job-openings.index'))">
-                        <ArrowLeft class="mr-1.5 h-4 w-4" /> {{ t('general.back') }}
-                    </Button>
                     <Button
                         v-for="item in availableTransitions"
                         :key="item.status"
@@ -115,7 +115,40 @@ const applicationTone = (status) => ({
                 </div>
             </div>
 
-            <div v-if="opening.description || opening.requirements || opening.responsibilities" class="space-y-4 rounded-xl border border-border bg-card p-5">
+            <!-- Always rendered: without it a freshly created opening with no
+                 description shows nothing but four counters. -->
+            <div class="rounded-xl border border-border bg-card p-5 shadow-sm">
+                <h2 class="mb-3 text-sm font-semibold text-foreground">{{ t('hr.job_opening') }}</h2>
+
+                <dl class="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <div><dt class="text-xs text-muted-foreground">{{ t('general.code') }}</dt><dd>{{ opening.code || '—' }}</dd></div>
+                    <div><dt class="text-xs text-muted-foreground">{{ t('hr.department') }}</dt><dd>{{ opening.department_name || '—' }}</dd></div>
+                    <div><dt class="text-xs text-muted-foreground">{{ t('hr.designation') }}</dt><dd>{{ opening.designation_name || '—' }}</dd></div>
+
+                    <div><dt class="text-xs text-muted-foreground">{{ t('hr.employment_type') }}</dt><dd>{{ opening.employment_type_label || '—' }}</dd></div>
+                    <div><dt class="text-xs text-muted-foreground">{{ t('hr.location') }}</dt><dd>{{ opening.location || '—' }}</dd></div>
+                    <div><dt class="text-xs text-muted-foreground">{{ t('hr.hiring_manager') }}</dt><dd>{{ opening.hiring_manager_name || '—' }}</dd></div>
+
+                    <div><dt class="text-xs text-muted-foreground">{{ t('hr.posted_date') }}</dt><dd>{{ opening.posted_date || '—' }}</dd></div>
+                    <div><dt class="text-xs text-muted-foreground">{{ t('hr.closing_date') }}</dt><dd>{{ opening.closing_date || '—' }}</dd></div>
+                    <div>
+                        <dt class="text-xs text-muted-foreground">{{ t('hr.min_salary') + ' – ' + t('hr.max_salary') }}</dt>
+                        <dd>
+                            <span v-if="opening.min_salary !== null || opening.max_salary !== null">
+                                {{ opening.min_salary ?? '—' }} – {{ opening.max_salary ?? '—' }} {{ opening.currency_code || '' }}
+                            </span>
+                            <span v-else>—</span>
+                        </dd>
+                    </div>
+
+                    <div class="md:col-span-3">
+                        <dt class="text-xs text-muted-foreground">{{ t('admin.shared.remark') }}</dt>
+                        <dd>{{ opening.remark || '—' }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <div v-if="opening.description || opening.requirements || opening.responsibilities" class="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm">
                 <div v-if="opening.description">
                     <h3 class="mb-1 text-sm font-semibold">{{ t('hr.description') }}</h3>
                     <p class="whitespace-pre-line text-sm text-muted-foreground">{{ opening.description }}</p>
@@ -131,7 +164,7 @@ const applicationTone = (status) => ({
             </div>
 
             <!-- The pipeline, best score first. -->
-            <div class="rounded-xl border border-border bg-card">
+            <div class="rounded-xl border border-border bg-card shadow-sm">
                 <div class="border-b border-border px-5 py-3">
                     <h2 class="text-base font-semibold">{{ t('hr.candidates') }}</h2>
                 </div>

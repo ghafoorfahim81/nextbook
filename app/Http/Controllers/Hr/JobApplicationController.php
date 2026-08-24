@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Hr;
 
 use App\Enums\ApplicationSource;
 use App\Enums\ApplicationStatus;
+use App\Enums\InterviewType;
 use App\Exceptions\Hr\RecruitmentException;
+use App\Http\Controllers\Concerns\ProvidesEmployeeOptions;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Hr\JobApplicationStoreRequest;
 use App\Http\Requests\Hr\JobApplicationUpdateRequest;
@@ -20,6 +22,8 @@ use Illuminate\Http\Request;
 
 class JobApplicationController extends Controller
 {
+    use ProvidesEmployeeOptions;
+
     public function __construct(
         private readonly DateConversionService $dateConversionService,
     ) {
@@ -32,7 +36,7 @@ class JobApplicationController extends Controller
         $sortDirection = strtolower($request->input('sortDirection', 'desc')) === 'asc' ? 'asc' : 'desc';
 
         $applications = JobApplication::query()
-            ->with(['opening:id,title,code,branch_id', 'province:id,name', 'createdBy:id,name'])
+            ->with(['opening:id,title,code,branch_id', 'province:id,name_en,name_fa', 'createdBy:id,name'])
             ->withCount('interviews')
             ->search($request->query('search'))
             ->filter((array) $request->input('filters', []))
@@ -56,7 +60,9 @@ class JobApplicationController extends Controller
     {
         $jobApplication->load([
             'opening:id,title,code,department_id,designation_id,employment_type,currency_id,branch_id',
-            'province:id,name',
+            // name_en/name_fa — provinces have no `name` column; the model
+            // derives `localized_name` from the pair.
+            'province:id,name_en,name_fa',
             'hiredEmployee:id,full_name,code,branch_id',
             'interviews.panelists.employee:id,full_name,branch_id',
             'interviews.panelists.user:id,name',
@@ -226,6 +232,14 @@ class JobApplicationController extends Controller
             'sources' => array_map(
                 fn (ApplicationSource $c) => ['id' => $c->value, 'name' => $c->getLabel()],
                 ApplicationSource::cases()
+            ),
+            // For the interview scheduler on the detail page. The type labels
+            // live in the PHP `enums.*` lang files, which are not part of the
+            // JS i18n bundle — translating them in Vue printed the raw key.
+            'employees' => $this->employeeOptions(),
+            'interviewTypes' => array_map(
+                fn (InterviewType $c) => ['id' => $c->value, 'name' => $c->getLabel()],
+                InterviewType::cases()
             ),
             'statuses' => array_map(
                 fn (ApplicationStatus $c) => ['id' => $c->value, 'name' => $c->getLabel()],

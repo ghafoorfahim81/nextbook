@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Hr;
 
+use App\Http\Controllers\Concerns\ProvidesEmployeeOptions;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Hr\LeaveAllocationStoreRequest;
 use App\Http\Requests\Hr\LeaveAllocationUpdateRequest;
@@ -16,6 +17,8 @@ use Illuminate\Http\Request;
 
 class LeaveAllocationController extends Controller
 {
+    use ProvidesEmployeeOptions;
+
     private DateConversionService $dateConversionService;
 
     public function __construct(DateConversionService $dateConversionService)
@@ -48,12 +51,35 @@ class LeaveAllocationController extends Controller
             'balances' => $balanceMap,
             'filterOptions' => [
                 'leaveTypes' => LeaveType::query()->orderBy('name')->get(['id', 'name']),
+                'employees' => $this->employeeOptions(),
             ],
             'filters' => [
                 'search' => $request->query('search'),
                 'perPage' => $perPage,
                 'filters' => (array) $request->input('filters', []),
             ],
+        ]);
+    }
+
+    public function show(LeaveAllocation $leaveAllocation, LeaveBalanceService $balances)
+    {
+        $leaveAllocation->load([
+            'employee:id,full_name,code,branch_id',
+            'leaveType:id,name,colour,is_paid',
+            'createdBy:id,name',
+        ]);
+
+        return inertia('Hr/LeaveAllocations/Show', [
+            'allocation' => new LeaveAllocationResource($leaveAllocation),
+            // The same figures the list shows, so the detail page does not
+            // recompute consumption with its own arithmetic.
+            'balance' => $leaveAllocation->employee
+                ? $balances->forType(
+                    $leaveAllocation->employee,
+                    $leaveAllocation->leave_type_id,
+                    $leaveAllocation->period_start
+                )
+                : null,
         ]);
     }
 

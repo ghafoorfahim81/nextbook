@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Hr;
 
 use App\Enums\ContractStatus;
 use App\Enums\ContractType;
+use App\Http\Controllers\Concerns\ProvidesEmployeeOptions;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Hr\EmployeeContractStoreRequest;
 use App\Http\Requests\Hr\EmployeeContractUpdateRequest;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\DB;
 
 class EmployeeContractController extends Controller
 {
+    use ProvidesEmployeeOptions;
+
     private DateConversionService $dateConversionService;
 
     public function __construct(DateConversionService $dateConversionService)
@@ -52,6 +55,7 @@ class EmployeeContractController extends Controller
             'filterOptions' => [
                 'contractTypes' => $this->enumOptions(ContractType::cases()),
                 'statuses' => $this->enumOptions(ContractStatus::cases()),
+                'employees' => $this->employeeOptions(),
             ],
             'filters' => [
                 'search' => $request->query('search'),
@@ -60,6 +64,24 @@ class EmployeeContractController extends Controller
                 'sortDirection' => $sortDirection,
                 'filters' => (array) $request->input('filters', []),
             ],
+        ]);
+    }
+
+    public function show(Request $request, EmployeeContract $employeeContract)
+    {
+        $employeeContract->load([
+            'employee:id,full_name,code,department_id,designation_id',
+            'employee.department:id,name',
+            'employee.designation:id,name',
+            'currency:id,code',
+            'renewedFrom:id,contract_number',
+            'attachments',
+            'createdBy:id,name',
+            'updatedBy:id,name',
+        ]);
+
+        return inertia('Hr/EmployeeContracts/Show', [
+            'contract' => new EmployeeContractResource($employeeContract),
         ]);
     }
 

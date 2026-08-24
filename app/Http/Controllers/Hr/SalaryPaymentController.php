@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Hr;
 
 use App\Exceptions\Hr\PayrollException;
+use App\Http\Controllers\Concerns\ProvidesEmployeeOptions;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Hr\SalaryPaymentStoreRequest;
 use App\Http\Resources\Hr\SalaryPaymentResource;
@@ -24,6 +25,8 @@ use Illuminate\Http\Request;
  */
 class SalaryPaymentController extends Controller
 {
+    use ProvidesEmployeeOptions;
+
     public function __construct()
     {
         $this->authorizeResource(SalaryPayment::class, 'salary_payment');
@@ -190,6 +193,7 @@ class SalaryPaymentController extends Controller
                 ->whereHas('accountType', fn ($query) => $query->where('slug', 'cash-or-bank'))
                 ->orderBy('name')
                 ->get(['id', 'name']),
+            'employees' => $this->employeeOptions(),
         ];
     }
 }

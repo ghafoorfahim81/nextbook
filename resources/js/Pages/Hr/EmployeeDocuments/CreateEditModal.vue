@@ -116,7 +116,7 @@ const handleSubmit = async () => {
         <form @submit.prevent="handleSubmit" id="modalForm">
             <div class="grid grid-cols-1 gap-4 py-4 md:grid-cols-3">
                 <NextSelect
-                    :options="[]" v-model="form.selected_employee"
+                    :options="opt('employees')" v-model="form.selected_employee"
                     @update:modelValue="(v) => { form.employee_id = v?.id ?? null }"
                     label-key="name" value-key="id" :reduce="(x) => x"
                     :searchable="true" resource-type="employees" :search-fields="['full_name', 'code']"

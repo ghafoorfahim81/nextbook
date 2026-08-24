@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Hr;
 
 use App\Enums\ComponentCalculationType;
 use App\Enums\PayFrequency;
+use App\Http\Controllers\Concerns\ProvidesEmployeeOptions;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Hr\SalaryStructureStoreRequest;
 use App\Http\Requests\Hr\SalaryStructureUpdateRequest;
@@ -27,6 +28,8 @@ use Illuminate\Support\Facades\DB;
  */
 class SalaryStructureController extends Controller
 {
+    use ProvidesEmployeeOptions;
+
     public function __construct()
     {
         $this->authorizeResource(SalaryStructure::class, 'salary_structure');
@@ -218,6 +221,7 @@ class SalaryStructureController extends Controller
                 fn (PayFrequency $c) => ['id' => $c->value, 'name' => $c->getLabel()],
                 PayFrequency::cases()
             ),
+            'employees' => $this->employeeOptions(),
         ];
     }
 }

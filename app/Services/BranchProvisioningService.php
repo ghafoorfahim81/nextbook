@@ -582,7 +582,9 @@ class BranchProvisioningService
             }
 
             $this->insert(Shift::class, array_merge($shift, [
-                'working_days' => json_encode($shift['working_days']),
+                // Left as an array — the model's `array` cast encodes it. Encoding
+                // here too stored a JSON string inside the jsonb column, which came
+                // back out of the cast as a string instead of a list of weekdays.
                 'is_active' => true,
                 'branch_id' => $branch->id,
                 'created_by' => $actorId,

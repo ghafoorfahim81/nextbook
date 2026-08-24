@@ -155,6 +155,18 @@
                                 </DropdownMenu>
                                 </div>
                             </template>
+                            <!-- A status pill. `badge` returns the tone classes;
+                                 the text still comes from render/the key, so no
+                                 column has to hand-build markup that would only
+                                 be interpolated as text. -->
+                            <template v-else-if="column.badge">
+                                <span
+                                    class="inline-block rounded-full px-2 py-0.5 text-xs font-medium"
+                                    :class="column.badge(item)"
+                                >
+                                    {{ column.render ? column.render(item) : getNestedValue(item, column.key) }}
+                                </span>
+                            </template>
                             <template v-else-if="column.render">
                                 {{ column.render(item) }}
                             </template>

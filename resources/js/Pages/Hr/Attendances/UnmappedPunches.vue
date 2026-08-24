@@ -16,6 +16,7 @@ const props = defineProps({
 });
 
 const rows = computed(() => props.punches?.data ?? []);
+const employees = computed(() => props.options?.employees || []);
 const meta = computed(() => props.punches?.meta ?? {});
 
 /**
@@ -109,7 +110,7 @@ const saveMapping = (group) => {
                             </td>
                             <td class="px-4 py-2 w-64">
                                 <NextSelect
-                                    :options="[]"
+                                    :options="employees"
                                     v-model="selected[group.key]"
                                     label-key="name" value-key="id" :reduce="(x) => x"
                                     :searchable="true"

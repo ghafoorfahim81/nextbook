@@ -56,9 +56,9 @@ class EmployeeResource extends JsonResource
             'blood_group' => $this->blood_group,
 
             'country_id' => $this->country_id,
-            'country_name' => $this->country?->name,
+            'country_name' => $this->country?->localized_name,
             'province_id' => $this->province_id,
-            'province_name' => $this->province?->name,
+            'province_name' => $this->province?->localized_name,
 
             'phone_number' => $this->phone_number,
             'alternate_phone' => $this->alternate_phone,
