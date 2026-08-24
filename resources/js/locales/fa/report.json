@@ -220,6 +220,7 @@
         "party_name": "طرف حساب",
         "balance_type": "نوع مانده",
         "currency": "ارز",
+        "rate": "نرخ",
         "home_equivalent": "معادل ارز پایه",
         "currency_name": "نام ارز",
         "period": "دوره",

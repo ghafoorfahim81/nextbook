@@ -61,10 +61,19 @@ const formatRate = (value) => Number(value ?? 0).toLocaleString(undefined, {
 })
 
 // Debit-positive balances are coloured as "they owe us", credit-positive as
-// "we owe them", matching the Dr/Cr suffix the backend already produced.
-const balanceClass = (value) => (Number(value ?? 0) >= 0
-  ? 'text-blue-600 dark:text-blue-400'
-  : 'text-emerald-600 dark:text-emerald-400')
+// "we owe them", matching the Dr/Cr suffix the backend already produced. On a
+// supplier the credit side is a payable, so it is toned as a warning.
+const isPayableLedger = computed(() => props.paramKey === 'supplier')
+
+const balanceClass = (value) => {
+  if (Number(value ?? 0) >= 0) {
+    return 'text-blue-600 dark:text-blue-400'
+  }
+
+  return isPayableLedger.value
+    ? 'text-amber-600 dark:text-amber-400'
+    : 'text-emerald-600 dark:text-emerald-400'
+}
 
 const queryPayload = () => ({
   statement_from: filters.value.from || undefined,

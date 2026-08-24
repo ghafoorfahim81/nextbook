@@ -26,6 +26,28 @@ function formatValue(card) {
 
   return card.value ?? '-'
 }
+
+const TONE_CLASSES = {
+  warning: 'text-amber-600 dark:text-amber-400',
+  danger: 'text-destructive',
+}
+
+// A card can ask for a tone once its figure crosses zero one way or the other —
+// a supplier balance in credit is money owed, not a plain total. `toneValue`
+// carries the raw figure when the card itself renders a label.
+function toneClass(card) {
+  const amount = Number(card.toneValue ?? card.value ?? 0)
+
+  if (card.negativeTone && amount < -0.005) {
+    return TONE_CLASSES[card.negativeTone] ?? ''
+  }
+
+  if (card.positiveTone && amount > 0.005) {
+    return TONE_CLASSES[card.positiveTone] ?? ''
+  }
+
+  return 'text-card-foreground'
+}
 </script>
 
 <template>
@@ -36,7 +58,7 @@ function formatValue(card) {
       class="rounded-2xl border border-border bg-card px-4 py-4 text-left shadow-sm rtl:text-right"
     >
       <div class="text-sm text-muted-foreground">{{ card.label }}</div>
-      <div class="mt-2 text-2xl font-semibold tracking-tight text-card-foreground">
+      <div class="mt-2 text-2xl font-semibold tracking-tight" :class="toneClass(card)">
         {{ formatValue(card) }}
       </div>
     </div>

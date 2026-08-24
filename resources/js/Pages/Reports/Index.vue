@@ -110,30 +110,51 @@ const isViewToggleReport = computed(() =>
 // party ledger when one is. Columns/summary follow whichever mode the server returned.
 const isPartySummaryMode = computed(() => props.result.meta?.mode !== 'detail')
 
-const partyStatementSummary = computed(() => (isPartySummaryMode.value
-  ? [
+// `payable` marks a statement where a credit balance is money the business owes,
+// so the amount reads as a warning instead of a neutral total.
+function partyStatementSummary({ payable = false } = {}) {
+  const owedBalance = payable
+    ? { negativeTone: 'warning', toneKey: 'balance' }
+    : {}
+
+  if (isPartySummaryMode.value) {
+    return [
       { key: 'party_count', label: t('report.summary.party_count'), type: 'integer' },
       { key: 'total_debit', label: t('report.summary.total_debit'), type: 'money' },
       { key: 'total_credit', label: t('report.summary.total_credit'), type: 'money' },
       { key: 'total_debtor', label: t('report.summary.total_debtor'), type: 'money' },
-      { key: 'total_creditor', label: t('report.summary.total_creditor'), type: 'money' },
-      { key: 'balance_label', label: t('report.summary.balance'), type: 'text' },
+      {
+        key: 'total_creditor',
+        label: t('report.summary.total_creditor'),
+        type: 'money',
+        // On suppliers this total is what the business still owes.
+        ...(payable ? { positiveTone: 'warning' } : {}),
+      },
+      { key: 'balance_label', label: t('report.summary.balance'), type: 'text', ...owedBalance },
     ]
-  : [
-      { key: 'total_debit', label: t('report.summary.total_debit'), type: 'money' },
-      { key: 'total_credit', label: t('report.summary.total_credit'), type: 'money' },
-      { key: 'balance_label', label: t('report.summary.balance'), type: 'text' },
-    ]))
+  }
 
-function partyStatementColumns(partyLabel) {
+  return [
+    { key: 'total_debit', label: t('report.summary.total_debit'), type: 'money' },
+    { key: 'total_credit', label: t('report.summary.total_credit'), type: 'money' },
+    { key: 'balance_label', label: t('report.summary.balance'), type: 'text', ...owedBalance },
+  ]
+}
+
+// `payable` marks the statement as one where a credit balance means the business
+// owes the party — those balances are toned as a warning rather than read as a
+// neutral figure.
+function partyStatementColumns(partyLabel, { payable = false } = {}) {
+  const owedTone = payable ? { negativeTone: 'warning' } : {}
+
   if (isPartySummaryMode.value) {
     return [
       { key: 'party_name', label: partyLabel },
-      { key: 'opening_balance', label: t('report.columns.opening_balance'), type: 'balance', align: 'right' },
+      { key: 'opening_balance', label: t('report.columns.opening_balance'), type: 'balance', align: 'right', ...owedTone },
       { key: 'debit', label: t('report.columns.debit'), type: 'money', align: 'right' },
       { key: 'credit', label: t('report.columns.credit'), type: 'money', align: 'right' },
-      { key: 'closing_balance', label: t('report.columns.closing_balance'), type: 'balance', align: 'right' },
-      { key: 'balance_type', label: t('report.columns.balance_type') },
+      { key: 'closing_balance', label: t('report.columns.closing_balance'), type: 'balance', align: 'right', ...owedTone },
+      { key: 'balance_type', label: t('report.columns.balance_type'), toneKey: 'closing_balance', ...owedTone },
     ]
   }
 
@@ -144,7 +165,7 @@ function partyStatementColumns(partyLabel) {
     { key: 'debit', label: t('report.columns.debit'), type: 'money', align: 'right' },
     { key: 'credit', label: t('report.columns.credit'), type: 'money', align: 'right' },
     { key: 'running_balance', label: t('report.columns.running_balance'), type: 'money', align: 'right' },
-    { key: 'balance', label: t('report.columns.balance'), align: 'right' },
+    { key: 'balance', label: t('report.columns.balance'), align: 'right', toneKey: 'running_balance', ...owedTone },
   ]
 }
 
@@ -218,7 +239,7 @@ const reportDefinitions = computed(() => ({
   cash_book: {
     label: t('report.reports.cash_book.label'),
     description: t('report.reports.cash_book.description'),
-    filters: ['account_id'],
+    filters: ['account_id', 'currency_id'],
     group: 'financial',
     icon: Wallet,
     summary: [
@@ -230,6 +251,8 @@ const reportDefinitions = computed(() => ({
       { key: 'date', label: t('report.columns.date') },
       { key: 'reference', label: t('report.columns.reference') },
       { key: 'description', label: t('report.columns.description') },
+      { key: 'currency', label: t('report.columns.currency') },
+      { key: 'rate', label: t('report.columns.rate'), type: 'rate', align: 'right' },
       { key: 'debit', label: t('report.columns.debit'), type: 'money', align: 'right' },
       { key: 'credit', label: t('report.columns.credit'), type: 'money', align: 'right' },
       { key: 'running_balance_label', label: t('report.columns.running_balance'), align: 'right' },
@@ -256,7 +279,7 @@ const reportDefinitions = computed(() => ({
   receipt_report: {
     label: t('report.reports.receipt_report.label'),
     description: t('report.reports.receipt_report.description'),
-    filters: ['account_id'],
+    filters: ['account_id', 'currency_id'],
     group: 'cash_flow',
     icon: Receipt,
     summary: [
@@ -267,13 +290,15 @@ const reportDefinitions = computed(() => ({
       { key: 'transaction_number', label: t('report.columns.transaction_number') },
       { key: 'ledger_name', label: t('report.columns.ledger_name') },
       { key: 'description', label: t('report.columns.description') },
+      { key: 'currency', label: t('report.columns.currency') },
+      { key: 'rate', label: t('report.columns.rate'), type: 'rate', align: 'right' },
       { key: 'amount_received', label: t('report.columns.amount_received'), type: 'money', align: 'right' },
     ],
   },
   payment_report: {
     label: t('report.reports.payment_report.label'),
     description: t('report.reports.payment_report.description'),
-    filters: ['account_id'],
+    filters: ['account_id', 'currency_id'],
     group: 'cash_flow',
     icon: BadgeDollarSign,
     summary: [
@@ -284,26 +309,33 @@ const reportDefinitions = computed(() => ({
       { key: 'transaction_number', label: t('report.columns.transaction_number') },
       { key: 'ledger_name', label: t('report.columns.ledger_name') },
       { key: 'description', label: t('report.columns.description') },
+      { key: 'currency', label: t('report.columns.currency') },
+      { key: 'rate', label: t('report.columns.rate'), type: 'rate', align: 'right' },
       { key: 'amount_paid', label: t('report.columns.amount_paid'), type: 'money', align: 'right' },
     ],
   },
   customer_statement: {
     label: t('report.reports.customer_statement.label'),
     description: t('report.reports.customer_statement.description'),
-    filters: isPartySummaryMode.value ? ['customer_id', 'balance_type'] : ['customer_id'],
+    filters: isPartySummaryMode.value
+      ? ['customer_id', 'currency_id', 'balance_type']
+      : ['customer_id', 'currency_id'],
     group: 'party',
     icon: Users,
-    summary: partyStatementSummary.value,
+    summary: partyStatementSummary(),
     columns: partyStatementColumns(t('report.columns.customer')),
   },
   supplier_statement: {
     label: t('report.reports.supplier_statement.label'),
     description: t('report.reports.supplier_statement.description'),
-    filters: isPartySummaryMode.value ? ['supplier_id', 'balance_type'] : ['supplier_id'],
+    filters: isPartySummaryMode.value
+      ? ['supplier_id', 'currency_id', 'balance_type']
+      : ['supplier_id', 'currency_id'],
     group: 'party',
     icon: Truck,
-    summary: partyStatementSummary.value,
-    columns: partyStatementColumns(t('report.columns.supplier')),
+    summary: partyStatementSummary({ payable: true }),
+    // A credit balance on a supplier is money we owe — flag it.
+    columns: partyStatementColumns(t('report.columns.supplier'), { payable: true }),
   },
   sales_report: {
     label: t('report.reports.sales_report.label'),
@@ -664,7 +696,7 @@ const reportDefinitions = computed(() => ({
   day_book_report: {
     label: t('report.reports.day_book_report.label'),
     description: t('report.reports.day_book_report.description'),
-    filters: [],
+    filters: ['currency_id'],
     group: 'financial',
     icon: FileText,
     summary: [
@@ -677,6 +709,8 @@ const reportDefinitions = computed(() => ({
       { key: 'account_name', label: t('report.columns.account_name') },
       { key: 'transaction_type', label: t('report.columns.transaction_type') },
       { key: 'reference', label: t('report.columns.reference') },
+      { key: 'currency', label: t('report.columns.currency') },
+      { key: 'rate', label: t('report.columns.rate'), type: 'rate', align: 'right' },
       { key: 'debit', label: t('report.columns.debit'), type: 'money', align: 'right' },
       { key: 'credit', label: t('report.columns.credit'), type: 'money', align: 'right' },
       { key: 'narration', label: t('report.columns.narration') },
@@ -992,6 +1026,9 @@ const summaryCards = computed(() => (activeDefinition.value.summary || [])
   .map((card) => ({
     ...card,
     value: props.result.summary[card.key],
+    // A card rendering a label (`1,200.00 Cr`) still needs the raw figure to
+    // decide its tone.
+    toneValue: card.toneKey ? props.result.summary[card.toneKey] : props.result.summary[card.key],
   })))
 
 const emptyMessage = computed(() => {

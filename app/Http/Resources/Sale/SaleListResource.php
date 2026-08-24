@@ -31,6 +31,7 @@ class SaleListResource extends JsonResource
                 ? $this->payment_status->getLabel()
                 : (PaymentStatus::tryFrom((string) $this->payment_status)?->getLabel() ?? $this->payment_status),
             'amount' => $grossTotal - $itemDiscountTotal - $billDiscount + $itemTaxTotal,
+            'currency_code' => $this->transaction?->currency?->code,
             'date' => app(DateConversionService::class)->toDisplay($this->date),
             'type' => $this->type instanceof SalePurchaseType
                 ? $this->type->getLabel()
