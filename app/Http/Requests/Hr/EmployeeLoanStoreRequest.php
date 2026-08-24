@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Hr;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
+
 use App\Enums\LoanType;
 use App\Services\DateConversionService;
 use Illuminate\Foundation\Http\FormRequest;
@@ -10,6 +12,8 @@ use Illuminate\Validation\Validator;
 
 class EmployeeLoanStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -32,7 +36,7 @@ class EmployeeLoanStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_id' => ['required', 'string', 'exists:employees,id'],
+            'employee_id' => ['required', 'string', $this->existsInBranch('employees')],
             'loan_type' => ['required', Rule::in(LoanType::values())],
             'currency_id' => ['required', 'string', 'exists:currencies,id'],
             'rate' => ['nullable', 'numeric', 'gt:0'],
@@ -43,7 +47,7 @@ class EmployeeLoanStoreRequest extends FormRequest
             'issue_date' => ['required', 'date'],
             'first_deduction_period' => ['nullable', 'date'],
             'interest_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'bank_account_id' => ['nullable', 'string', 'exists:accounts,id'],
+            'bank_account_id' => ['nullable', 'string', $this->existsInBranch('accounts')],
             'remark' => ['nullable', 'string'],
         ];
     }

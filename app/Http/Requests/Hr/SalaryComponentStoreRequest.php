@@ -35,7 +35,7 @@ class SalaryComponentStoreRequest extends FormRequest
             'is_taxable' => ['nullable', 'boolean'],
             'affects_gross' => ['nullable', 'boolean'],
             'is_prorated' => ['nullable', 'boolean'],
-            'account_id' => ['nullable', 'string', 'exists:accounts,id'],
+            'account_id' => ['nullable', 'string', $this->existsInBranch('accounts')],
             'sequence' => ['nullable', 'integer', 'min:0', 'max:999'],
             'is_active' => ['nullable', 'boolean'],
         ];

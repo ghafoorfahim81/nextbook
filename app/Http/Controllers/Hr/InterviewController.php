@@ -116,6 +116,15 @@ class InterviewController extends Controller
     ) {
         $this->authorize('update', $interview);
 
+        // Both models are resolved independently from the URL, so nothing ties
+        // the panelist to the interview in the path. Without this, feedback for
+        // one candidate could be written onto another interview's panelist by
+        // pairing mismatched ids — and the authorize() above would still pass,
+        // because it only checks the interview.
+        if ($panelist->interview_id !== $interview->id) {
+            abort(404);
+        }
+
         try {
             $recruitment->submitFeedback($panelist, $request->validated());
         } catch (RecruitmentException $exception) {

@@ -39,8 +39,8 @@ class JobOpeningStoreRequest extends FormRequest
         return [
             'code' => ['required', 'string', 'max:50', $this->uniqueInBranch('job_openings', $id)],
             'title' => ['required', 'string', 'max:150'],
-            'department_id' => ['nullable', 'string', 'exists:departments,id'],
-            'designation_id' => ['nullable', 'string', 'exists:designations,id'],
+            'department_id' => ['nullable', 'string', $this->existsInBranch('departments')],
+            'designation_id' => ['nullable', 'string', $this->existsInBranch('designations')],
             'employment_type' => ['required', Rule::in(EmploymentType::values())],
             'vacancies' => ['required', 'integer', 'min:1', 'max:9999'],
             'description' => ['nullable', 'string'],
@@ -52,7 +52,7 @@ class JobOpeningStoreRequest extends FormRequest
             'location' => ['nullable', 'string', 'max:150'],
             'posted_date' => ['nullable', 'date'],
             'closing_date' => ['nullable', 'date', 'after_or_equal:posted_date'],
-            'hiring_manager_id' => ['nullable', 'string', 'exists:employees,id'],
+            'hiring_manager_id' => ['nullable', 'string', $this->existsInBranch('employees')],
             'remark' => ['nullable', 'string'],
         ];
     }

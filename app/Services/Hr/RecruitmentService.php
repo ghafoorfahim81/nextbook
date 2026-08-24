@@ -279,17 +279,25 @@ class RecruitmentService
 
         $opening = $application->opening;
 
-        if ($opening && $opening->remainingVacancies() < 1) {
-            // Refused rather than warned: hiring past the approved headcount is
-            // a budget decision, and the fix is to raise the vacancy count on
-            // the opening so the overrun is visible.
-            throw RecruitmentException::make(
-                'This opening has no vacancies left.',
-                ['job_opening_id' => $opening->id, 'vacancies' => $opening->vacancies]
-            );
-        }
-
         return DB::transaction(function () use ($application, $attributes, $opening) {
+            // Capacity is checked INSIDE the transaction, against a locked
+            // opening row. Checking it before the transaction let two hires
+            // running at once both read the last remaining vacancy and both
+            // succeed, quietly putting headcount over the approved number.
+            if ($opening) {
+                $opening = JobOpening::query()->lockForUpdate()->find($opening->id);
+            }
+
+            if ($opening && $opening->remainingVacancies() < 1) {
+                // Refused rather than warned: hiring past the approved headcount
+                // is a budget decision, and the fix is to raise the vacancy
+                // count on the opening so the overrun is visible.
+                throw RecruitmentException::make(
+                    'This opening has no vacancies left.',
+                    ['job_opening_id' => $opening->id, 'vacancies' => $opening->vacancies]
+                );
+            }
+
             $names = $this->splitName($application->full_name);
 
             $employee = Employee::create(array_merge([

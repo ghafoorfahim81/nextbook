@@ -200,6 +200,22 @@ class Employee extends Model
                 'model' => 'employees',
                 'message' => 'This employee has direct reports',
             ],
+            // Financial history. Deleting an employee took their companion
+            // ledger with it while these rows stayed behind, so a payslip or an
+            // outstanding loan was left pointing at an account that no longer
+            // existed — and the general ledger still carried the balance.
+            'payrollLines' => [
+                'model' => 'payroll_lines',
+                'message' => 'This employee has payslips',
+            ],
+            'loans' => [
+                'model' => 'employee_loans',
+                'message' => 'This employee has loans or advances',
+            ],
+            'leaveRequests' => [
+                'model' => 'leave_requests',
+                'message' => 'This employee has leave requests',
+            ],
         ];
     }
 
@@ -275,6 +291,17 @@ class Employee extends Model
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    /** Payslips. Their existence blocks deletion — see getRelationships(). */
+    public function payrollLines(): HasMany
+    {
+        return $this->hasMany(PayrollLine::class);
+    }
+
+    public function loans(): HasMany
+    {
+        return $this->hasMany(EmployeeLoan::class);
     }
 
     public function leaveRequests(): HasMany

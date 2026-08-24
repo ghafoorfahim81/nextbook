@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Hr;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
+
 use App\Enums\InterviewType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -9,6 +11,8 @@ use Illuminate\Validation\Validator;
 
 class InterviewStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -17,7 +21,7 @@ class InterviewStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'job_application_id' => ['required', 'string', 'exists:job_applications,id'],
+            'job_application_id' => ['required', 'string', $this->existsInBranch('job_applications')],
             // Omitted means "next round", derived by the service. Supplying it
             // is allowed so a mis-scheduled round can be corrected.
             'round' => ['nullable', 'integer', 'min:1', 'max:20'],
@@ -29,7 +33,7 @@ class InterviewStoreRequest extends FormRequest
             'remark' => ['nullable', 'string'],
 
             'panelists' => ['nullable', 'array'],
-            'panelists.*.employee_id' => ['nullable', 'string', 'exists:employees,id'],
+            'panelists.*.employee_id' => ['nullable', 'string', $this->existsInBranch('employees')],
             'panelists.*.user_id' => ['nullable', 'string', 'exists:users,id'],
             'panelists.*.role' => ['nullable', 'string', 'max:100'],
             'panelists.*.is_lead' => ['nullable', 'boolean'],

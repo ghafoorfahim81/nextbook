@@ -5,6 +5,7 @@ namespace App\Services\Hr;
 use App\Enums\AttendanceStatus;
 use App\Enums\ComponentCalculationType;
 use App\Enums\PayrollLinePaymentStatus;
+use App\Enums\PayrollStatus;
 use App\Enums\SalaryComponentType;
 use App\Enums\TaxPeriod;
 use App\Exceptions\Hr\PayrollException;
@@ -74,6 +75,8 @@ class PayrollCalculationService
                 );
             }
 
+            $this->assertNobodyIsAlreadyPaid($payroll, $employees);
+
             $taxSet = $this->wageTax->resolveSet(
                 $payroll->period_end,
                 TaxPeriod::Monthly,
@@ -141,6 +144,123 @@ class PayrollCalculationService
     }
 
     /**
+     * Refuse the run if any of its employees already has a live payslip
+     * covering an overlapping period.
+     *
+     * The FormRequest compares SCOPES, which is a good early warning but not
+     * authoritative: an employee who changed department between two runs, or a
+     * company-wide run raised alongside a departmental one, both slip past a
+     * scope comparison. This checks the thing that actually matters — the same
+     * person being paid twice for the same days — and it runs inside the
+     * calculation transaction, so two concurrent runs cannot both pass it.
+     *
+     * @param  \Illuminate\Support\Collection<int, Employee>  $employees
+     */
+    private function assertNobodyIsAlreadyPaid(Payroll $payroll, $employees): void
+    {
+        $clash = PayrollLine::query()
+            ->join('payrolls', 'payrolls.id', '=', 'payroll_lines.payroll_id')
+            ->whereIn('payroll_lines.employee_id', $employees->pluck('id'))
+            ->where('payrolls.id', '!=', $payroll->id)
+            ->whereNull('payrolls.deleted_at')
+            ->whereNull('payroll_lines.deleted_at')
+            ->whereNotIn('payrolls.status', [
+                PayrollStatus::Reversed->value,
+                PayrollStatus::Cancelled->value,
+            ])
+            ->where('payrolls.period_start', '<=', $payroll->period_end->toDateString())
+            ->where('payrolls.period_end', '>=', $payroll->period_start->toDateString())
+            // Lock the clashing rows so a concurrent run blocks here rather
+            // than reading a stale absence and paying the same person twice.
+            ->lockForUpdate()
+            ->select('payroll_lines.employee_id', 'payrolls.number')
+            ->first();
+
+        if ($clash) {
+            throw PayrollException::make(
+                'Some of these employees are already on another payroll covering this period.',
+                [
+                    'payroll_id' => $payroll->id,
+                    'conflicting_payroll' => $clash->number,
+                    'employee_id' => $clash->employee_id,
+                ]
+            );
+        }
+    }
+
+    /**
+     * The share of the period an employee was actually employed for.
+     *
+     * Returns 1 for anyone employed throughout. A joiner or a leaver gets the
+     * fraction of the period's working days that fall inside their employment,
+     * so someone who started on the 25th is not paid a full month.
+     *
+     * @return array{fraction: string, payable_days: string}
+     */
+    private function employmentShare(Payroll $payroll, Employee $employee, string $workingDays): array
+    {
+        $periodStart = $payroll->period_start->copy();
+        $periodEnd = $payroll->period_end->copy();
+
+        $joined = $employee->joining_date?->copy();
+        $left = $employee->separation_date?->copy();
+
+        $activeFrom = $joined && $joined->greaterThan($periodStart) ? $joined : $periodStart;
+        $activeTo = $left && $left->lessThan($periodEnd) ? $left : $periodEnd;
+
+        // Employed for the whole period — nothing to prorate.
+        if ($activeFrom->lessThanOrEqualTo($periodStart) && $activeTo->greaterThanOrEqualTo($periodEnd)) {
+            return ['fraction' => '1.0000', 'payable_days' => $workingDays];
+        }
+
+        $shift = $employee->shift;
+
+        // Shift::worksOn() is the one place that knows how working_days is
+        // stored, including that the values may come back from JSON as
+        // strings. Re-implementing the weekday test here silently matched
+        // nothing, so every partial period counted zero working days and fell
+        // through to the "pay in full" fallback below.
+        $isWorkingDay = fn ($date): bool => $shift
+            ? $shift->worksOn($date)
+            : (int) $date->isoWeekday() !== 5;   // Friday off by default
+
+        $countWorkingDays = function ($from, $to) use ($isWorkingDay): int {
+            $days = 0;
+            $cursor = $from->copy();
+
+            while ($cursor->lessThanOrEqualTo($to)) {
+                if ($isWorkingDay($cursor)) {
+                    $days++;
+                }
+                $cursor->addDay();
+            }
+
+            return $days;
+        };
+
+        $periodDays = $countWorkingDays($periodStart, $periodEnd);
+        $activeDays = $activeFrom->greaterThan($activeTo) ? 0 : $countWorkingDays($activeFrom, $activeTo);
+
+        // A shift with no working days at all cannot produce a ratio. Fall back
+        // to calendar days rather than paying a partial period in full.
+        if ($periodDays <= 0) {
+            $periodDays = $periodStart->diffInDays($periodEnd) + 1;
+            $activeDays = $activeFrom->greaterThan($activeTo)
+                ? 0
+                : $activeFrom->diffInDays($activeTo) + 1;
+        }
+
+        if ($periodDays <= 0) {
+            return ['fraction' => '1.0000', 'payable_days' => $workingDays];
+        }
+
+        return [
+            'fraction' => bcdiv((string) $activeDays, (string) $periodDays, Decimal::AMOUNT_SCALE),
+            'payable_days' => (string) $activeDays,
+        ];
+    }
+
+    /**
      * @return array<string, SalaryComponent>
      */
     private function systemComponents(string $branchId): array
@@ -178,6 +298,14 @@ class PayrollCalculationService
         $currencyId = $structure?->currency_id ?? $employee->currency_id ?? $payroll->currency_id;
         $rate = Decimal::rate($this->resolveRate($currencyId, $payroll));
 
+        // Partial employment is resolved HERE, before the line is written, so
+        // the stored basic_salary, the BASIC component and the totals all say
+        // the same number. Prorating inside resolveComponents alone left the
+        // line header showing a full month while the payslip showed a part.
+        $share = $this->employmentShare($payroll, $employee, $attendance['working_days']);
+        $fullBasic = $basic;
+        $basic = Decimal::amount(bcmul($basic, $share['fraction'], Decimal::AMOUNT_SCALE));
+
         $line = PayrollLine::create([
             'payroll_id' => $payroll->id,
             'employee_id' => $employee->id,
@@ -196,7 +324,8 @@ class PayrollCalculationService
         ]);
 
         $components = $this->resolveComponents(
-            $payroll, $employee, $structure, $line, $attendance, $basic, $systemComponents, $taxSet
+            $payroll, $employee, $structure, $line, $attendance, $basic, $systemComponents, $taxSet,
+            $share, $fullBasic
         );
 
         foreach ($components as $sequence => $component) {
@@ -295,15 +424,22 @@ class PayrollCalculationService
         string $basic,
         array $systemComponents,
         TaxBracketSet $taxSet,
+        array $share,
+        string $fullBasic,
     ): array {
         $workingDays = Decimal::amount($attendance['working_days']);
         $unpaidDays = Decimal::amount($attendance['unpaid_leave_days']);
 
+        // $basic arrives already prorated for partial employment;
+        // $fullBasic is the untouched figure the day rate derives from.
+
         // The day rate comes from the period's ACTUAL working days, so a
         // 31-day Jalali month and a 29-day one price a day differently — which
-        // is what makes a partial month fair either way.
+        // is what makes a partial month fair either way. It is derived from the
+        // FULL basic: a day of unpaid leave costs the same whether or not the
+        // employee also joined mid-month.
         $dayRate = Decimal::cmp($workingDays, '0') > 0
-            ? bcdiv($basic, $workingDays, Decimal::AMOUNT_SCALE)
+            ? bcdiv($fullBasic, $workingDays, Decimal::AMOUNT_SCALE)
             : '0.0000';
 
         $components = [];
@@ -340,7 +476,7 @@ class PayrollCalculationService
                 continue;
             }
 
-            $components[] = $this->componentRow(
+            $row = $this->componentRow(
                 $component,
                 $calculation,
                 $structureLine->amount ?? $component->amount,
@@ -350,6 +486,20 @@ class PayrollCalculationService
                 $attendance,
                 $structureLine->sequence ?: $component->sequence,
             );
+
+            // `is_prorated` was configurable but never read. A transport
+            // allowance marked prorated should shrink for a half-month joiner;
+            // a fixed bonus marked not-prorated should not. Percent-of-basic
+            // lines are already prorated through the basic they derive from.
+            if ($component->is_prorated
+                && $calculation !== ComponentCalculationType::PercentOfBasic
+                && Decimal::cmp($share['fraction'], '1.0000') < 0) {
+                $row['amount'] = Decimal::amount(
+                    bcmul($row['amount'], $share['fraction'], Decimal::AMOUNT_SCALE)
+                );
+            }
+
+            $components[] = $row;
         }
 
         // Overtime, priced from the shift's hourly rate.

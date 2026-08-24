@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Hr;
 
+use App\Http\Requests\Concerns\BranchScopedUnique;
+
 use App\Enums\PaymentMode;
 use App\Services\DateConversionService;
 use Illuminate\Foundation\Http\FormRequest;
@@ -10,6 +12,8 @@ use Illuminate\Validation\Validator;
 
 class SalaryPaymentStoreRequest extends FormRequest
 {
+    use BranchScopedUnique;
+
     public function authorize(): bool
     {
         return true;
@@ -27,14 +31,14 @@ class SalaryPaymentStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'employee_id' => ['required', 'string', 'exists:employees,id'],
-            'payroll_id' => ['nullable', 'string', 'exists:payrolls,id'],
+            'employee_id' => ['required', 'string', $this->existsInBranch('employees')],
+            'payroll_id' => ['nullable', 'string', $this->existsInBranch('payrolls')],
             'date' => ['required', 'date'],
             'currency_id' => ['required', 'string', 'exists:currencies,id'],
             'rate' => ['required', 'numeric', 'gt:0'],
             'amount' => ['required', 'numeric', 'gt:0'],
             'payment_mode' => ['nullable', Rule::in(PaymentMode::values())],
-            'bank_account_id' => ['required', 'string', 'exists:accounts,id'],
+            'bank_account_id' => ['required', 'string', $this->existsInBranch('accounts')],
             'cheque_no' => ['nullable', 'string', 'max:100'],
             'narration' => ['nullable', 'string'],
 

@@ -43,8 +43,8 @@ class SalaryComponent extends Model
 
     protected $fillable = [
         'name', 'code', 'component_type', 'calculation_type', 'amount', 'percentage',
-        'is_taxable', 'affects_gross', 'is_prorated', 'account_id', 'sequence',
-        'is_system', 'is_active', 'remark', 'created_by', 'updated_by',
+        'is_taxable', 'affects_gross', 'is_remittable', 'is_prorated', 'account_id', 'sequence',
+        'liability_account_id', 'is_system', 'is_active', 'remark', 'created_by', 'updated_by',
     ];
 
     protected function casts(): array
@@ -61,6 +61,8 @@ class SalaryComponent extends Model
             'percentage' => 'decimal:4',
             'is_taxable' => 'boolean',
             'affects_gross' => 'boolean',
+            'is_remittable' => 'boolean',
+            'liability_account_id' => 'string',
             'is_prorated' => 'boolean',
             'is_system' => 'boolean',
             'is_active' => 'boolean',
