@@ -220,6 +220,7 @@
         "party_name": "Party",
         "balance_type": "Balance type",
         "currency": "Currency",
+        "rate": "Rate",
         "home_equivalent": "Home equivalent",
         "currency_name": "Currency name",
         "period": "Period",

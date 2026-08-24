@@ -358,12 +358,18 @@ class ReportService
                 $join->on('tl.ledger_id', '=', 'l.id')
                     ->whereNull('tl.deleted_at');
             })
+            // The currency narrows the join rather than the outer query, so a party
+            // with nothing posted in it still lists — with zeroed figures.
             ->leftJoin('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $filters['branch_id'])
                     ->where('t.status', '=', TransactionStatus::POSTED->value)
                     ->where('t.date', '<=', $filters['date_to'])
                     ->whereNull('t.deleted_at');
+
+                if (! empty($filters['currency_id'])) {
+                    $join->where('t.currency_id', '=', $filters['currency_id']);
+                }
             })
             ->where('l.branch_id', $filters['branch_id'])
             ->where('l.type', $ledgerType)
@@ -418,11 +424,13 @@ class ReportService
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
+            ->leftJoin('currencies as cur', 'cur.id', '=', 't.currency_id')
             ->leftJoinSub($this->counterpartyNamesSubquery($filters), 'cp', fn ($join) => $join->on('cp.transaction_id', '=', 't.id'))
             ->whereNull('tl.deleted_at')
             ->where('at.slug', 'cash-or-bank')
             ->where('tl.debit', '>', 0)
-            ->when($filters['account_id'], fn ($builder, $accountId) => $builder->where('a.id', $accountId));
+            ->when($filters['account_id'], fn ($builder, $accountId) => $builder->where('a.id', $accountId))
+            ->when($filters['currency_id'], fn ($builder, $currencyId) => $builder->where('t.currency_id', $currencyId));
 
         $this->applyDateFilter($query, 't.date', $filters);
 
@@ -438,6 +446,8 @@ class ReportService
             ->selectRaw('COALESCE(t.voucher_number, \'-\') as transaction_number')
             ->selectRaw('COALESCE(cp.ledger_name, a.name) as ledger_name')
             ->selectRaw("COALESCE(NULLIF(tl.remark, ''), NULLIF(t.remark, ''), '') as description")
+            ->selectRaw("COALESCE(cur.code, cur.name, '-') as currency_code")
+            ->selectRaw('COALESCE(t.rate, 1) as rate')
             ->selectRaw('COALESCE(tl.base_debit, 0) as amount_received');
 
         return $this->paginateReport(
@@ -448,6 +458,8 @@ class ReportService
                 'transaction_number' => $row->transaction_number,
                 'ledger_name' => $row->ledger_name,
                 'description' => $row->description,
+                'currency' => $row->currency_code,
+                'rate' => $this->rateValue($row->rate),
                 'amount_received' => $this->moneyValue($row->amount_received),
             ],
             [
@@ -471,11 +483,13 @@ class ReportService
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
+            ->leftJoin('currencies as cur', 'cur.id', '=', 't.currency_id')
             ->leftJoinSub($this->counterpartyNamesSubquery($filters), 'cp', fn ($join) => $join->on('cp.transaction_id', '=', 't.id'))
             ->whereNull('tl.deleted_at')
             ->where('at.slug', 'cash-or-bank')
             ->where('tl.credit', '>', 0)
-            ->when($filters['account_id'], fn ($builder, $accountId) => $builder->where('a.id', $accountId));
+            ->when($filters['account_id'], fn ($builder, $accountId) => $builder->where('a.id', $accountId))
+            ->when($filters['currency_id'], fn ($builder, $currencyId) => $builder->where('t.currency_id', $currencyId));
 
         $this->applyDateFilter($query, 't.date', $filters);
 
@@ -491,6 +505,8 @@ class ReportService
             ->selectRaw('COALESCE(t.voucher_number, \'-\') as transaction_number')
             ->selectRaw('COALESCE(cp.ledger_name, a.name) as ledger_name')
             ->selectRaw("COALESCE(NULLIF(tl.remark, ''), NULLIF(t.remark, ''), '') as description")
+            ->selectRaw("COALESCE(cur.code, cur.name, '-') as currency_code")
+            ->selectRaw('COALESCE(t.rate, 1) as rate')
             ->selectRaw('COALESCE(tl.base_credit, 0) as amount_paid');
 
         return $this->paginateReport(
@@ -501,6 +517,8 @@ class ReportService
                 'transaction_number' => $row->transaction_number,
                 'ledger_name' => $row->ledger_name,
                 'description' => $row->description,
+                'currency' => $row->currency_code,
+                'rate' => $this->rateValue($row->rate),
                 'amount_paid' => $this->moneyValue($row->amount_paid),
             ],
             [
@@ -528,9 +546,11 @@ class ReportService
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
+            ->leftJoin('currencies as cur', 'cur.id', '=', 't.currency_id')
             ->whereNull('tl.deleted_at')
             ->where('at.slug', 'cash-or-bank')
-            ->where('a.id', $filters['account_id']);
+            ->where('a.id', $filters['account_id'])
+            ->when($filters['currency_id'], fn ($builder, $currencyId) => $builder->where('t.currency_id', $currencyId));
 
         $this->applyDateFilter($query, 't.date', $filters);
 
@@ -548,6 +568,8 @@ class ReportService
             ->selectRaw('t.date')
             ->selectRaw('COALESCE(t.voucher_number, \'-\') as reference')
             ->selectRaw("COALESCE(NULLIF(tl.remark, ''), NULLIF(t.remark, ''), '') as description")
+            ->selectRaw("COALESCE(cur.code, cur.name, '-') as currency_code")
+            ->selectRaw('COALESCE(t.rate, 1) as rate')
             ->selectRaw('COALESCE(tl.base_debit, 0) as debit')
             ->selectRaw('COALESCE(tl.base_credit, 0) as credit')
             ->selectRaw('SUM((tl.base_debit - tl.base_credit)) OVER (ORDER BY t.date, t.created_at, t.id, tl.id) as running_balance');
@@ -559,6 +581,8 @@ class ReportService
                 'date' => $this->displayDate($row->date),
                 'reference' => $row->reference,
                 'description' => $row->description,
+                'currency' => $row->currency_code,
+                'rate' => $this->rateValue($row->rate),
                 'debit' => $this->moneyValue($row->debit),
                 'credit' => $this->moneyValue($row->credit),
                 'running_balance' => $this->moneyValue($row->running_balance),
@@ -1858,7 +1882,9 @@ class ReportService
                     ->where('a.branch_id', '=', $filters['branch_id'])
                     ->whereNull('a.deleted_at');
             })
-            ->whereNull('tl.deleted_at');
+            ->leftJoin('currencies as cur', 'cur.id', '=', 't.currency_id')
+            ->whereNull('tl.deleted_at')
+            ->when($filters['currency_id'], fn ($builder, $currencyId) => $builder->where('t.currency_id', $currencyId));
 
         $this->applyDateFilter($query, 't.date', $filters);
 
@@ -1877,6 +1903,8 @@ class ReportService
             ->selectRaw('a.name as account_name')
             ->selectRaw('t.reference_type')
             ->selectRaw('COALESCE(t.voucher_number, t.reference_id::text, \'-\') as reference')
+            ->selectRaw("COALESCE(cur.code, cur.name, '-') as currency_code")
+            ->selectRaw('COALESCE(t.rate, 1) as rate')
             ->selectRaw('COALESCE(tl.base_debit, 0) as debit')
             ->selectRaw('COALESCE(tl.base_credit, 0) as credit')
             ->selectRaw("COALESCE(NULLIF(tl.remark, ''), NULLIF(t.remark, ''), '') as narration");
@@ -1889,6 +1917,8 @@ class ReportService
                 'account_name' => $row->account_name,
                 'transaction_type' => $this->referenceLabel($row->reference_type),
                 'reference' => $row->reference,
+                'currency' => $row->currency_code,
+                'rate' => $this->rateValue($row->rate),
                 'debit' => $this->moneyValue($row->debit),
                 'credit' => $this->moneyValue($row->credit),
                 'narration' => $row->narration ?: '-',
@@ -2260,7 +2290,8 @@ class ReportService
                     $join->where('l.type', '=', $ledgerType);
                 }
             })
-            ->whereNull('tl.deleted_at');
+            ->whereNull('tl.deleted_at')
+            ->when($filters['currency_id'] ?? null, fn ($builder, $currencyId) => $builder->where('t.currency_id', $currencyId));
 
         $this->applyDateFilter($query, 't.date', $filters);
 
@@ -2297,7 +2328,8 @@ class ReportService
                     $join->where('l.type', '=', $ledgerType);
                 }
             })
-            ->whereNull('tl.deleted_at');
+            ->whereNull('tl.deleted_at')
+            ->when($filters['currency_id'] ?? null, fn ($builder, $currencyId) => $builder->where('t.currency_id', $currencyId));
 
         $this->applyDateFilter($query, 't.date', $filters);
 
@@ -3661,9 +3693,9 @@ class ReportService
             'supplier_statement' => filled($filters['supplier_id'] ?? null)
                 ? ['date', 'reference', 'description', 'debit', 'credit', 'running_balance', 'balance']
                 : ['party_name', 'opening_balance', 'debit', 'credit', 'closing_balance', 'balance_type'],
-            'receipt_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'amount_received'],
-            'payment_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'amount_paid'],
-            'cash_book' => ['date', 'reference', 'description', 'debit', 'credit', 'running_balance', 'running_balance_label'],
+            'receipt_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'currency', 'rate', 'amount_received'],
+            'payment_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'currency', 'rate', 'amount_paid'],
+            'cash_book' => ['date', 'reference', 'description', 'currency', 'rate', 'debit', 'credit', 'running_balance', 'running_balance_label'],
             'cash_position_by_currency' => ['currency', 'currency_name', 'account_name', 'amount', 'home_equivalent'],
             'sales_report' => $viewType === 'general'
                 ? ['date', 'number', 'customer', 'type', 'status', 'payment_status', 'amount']
@@ -3684,7 +3716,7 @@ class ReportService
             'near_expiry_report' => ['item_code', 'item_name', 'batch_number', 'expiry_date', 'on_hand', 'days_until_expiry'],
             'maximum_stock_report' => ['item_code', 'item_name', 'max_stock_level', 'on_hand', 'excess_quantity'],
             'group_summary_report' => ['account_name', 'opening_balance', 'debit', 'credit', 'closing_balance'],
-            'day_book_report' => ['time', 'account_name', 'transaction_type', 'reference', 'debit', 'credit', 'narration'],
+            'day_book_report' => ['time', 'account_name', 'transaction_type', 'reference', 'currency', 'rate', 'debit', 'credit', 'narration'],
             'journal_book_report' => ['account_type', 'total_debit', 'total_credit', 'balance'],
             'user_activity' => ['user_name', 'email', 'role', 'total_activities', 'logins', 'creates', 'updates', 'deletes', 'last_login', 'top_sources'],
             default => ['value'],
@@ -3793,6 +3825,7 @@ class ReportService
             'expense_count',
             'home_equivalent',
             'total_home_equivalent',
+            'rate',
         ];
 
         return in_array($key, $numericKeys, true) ? 'number' : 'text';
@@ -4102,6 +4135,12 @@ class ReportService
     protected function quantityValue(mixed $value): float
     {
         return round((float) ($value ?? 0), 2);
+    }
+
+    /** Exchange rates are stored with four decimals — keep all of them. */
+    protected function rateValue(mixed $value): float
+    {
+        return round((float) ($value ?? 1), 4);
     }
 
     protected function formatBalance(mixed $value): string

@@ -95,7 +95,7 @@ class SaleController extends Controller
             ->selectSub($itemGrossTotal, 'items_gross_total')
             ->selectSub($itemDiscountTotal, 'items_discount_total')
             ->selectSub($itemTaxTotal, 'items_tax_total')
-            ->with(['customer:id,name'])
+            ->with(['customer:id,name', 'transaction.currency'])
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortColumn, $sortDirection)

@@ -101,6 +101,7 @@ function setReport(report) {
     supplier_id: '',
     item_id: '',
     account_id: '',
+    currency_id: '',
     balance_type: 'all',
     category_id: '',
     expense_account_id: '',

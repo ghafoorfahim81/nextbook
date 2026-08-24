@@ -219,6 +219,7 @@
         "party_name": "طرف",
         "balance_type": "د بیلانس ډول",
         "currency": "اسعار",
+        "rate": "نرخ",
         "home_equivalent": "د بنسټیزو اسعارو معادل",
         "currency_name": "د اسعارو نوم",
         "period": "دوره",
