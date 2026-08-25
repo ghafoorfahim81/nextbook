@@ -21,6 +21,8 @@
             :input-attrs="{ id, placeholder, class: inputClass, style: 'width:100%' }"
             :locale="effectiveLocale"
             :current="shouldShowCurrentDate" 
+            :min="min"
+            :max="resolvedMaxDate"
         >
             <template v-if="isJalali" #header-date="{ vm }">
                 {{ vm.convertToLocaleNumber(vm.date.xFormat('ddd jD')) }} {{ monthLabel(vm.date) }}
@@ -129,6 +131,21 @@ onMounted(() => {
 // Use the picker's built-in current prop
 const shouldShowCurrentDate = computed(() => {
     return props.currentDate && (!props.modelValue || props.modelValue === '' || props.modelValue === null)
+})
+
+// Disallow future dates by default. Callers can still supply an explicit max
+// date for fields that legitimately need to accept a future value.
+const resolvedMaxDate = computed(() => {
+    if (props.max !== null && props.max !== undefined && props.max !== '') {
+        return props.max
+    }
+
+    if (props.type !== 'date') {
+        return undefined
+    }
+
+    const today = new Date()
+    return calendarType.value === 'jalali' ? formatJalaliDate(today) : formatGregorianDate(today)
 })
 
 // Enhanced model that sets current date as default when current-date is true
@@ -249,6 +266,17 @@ function safeYear(m) {
 :deep(.vpd-day.selected) {
     background-color: hsl(var(--primary));
     color: white;
+}
+
+/* Make dates outside the allowed range visibly distinct. */
+:deep(.vpd-day[disabled='true']) {
+    color: hsl(var(--muted-foreground)) !important;
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+:deep(.vpd-day[disabled='true'] .vpd-day-text) {
+    color: hsl(var(--muted-foreground)) !important;
 }
 
 

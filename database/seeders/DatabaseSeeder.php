@@ -1,16 +1,9 @@
 <?php
 
 namespace Database\Seeders;
-
-use App\Models\User;
+   
 use Database\Seeders\Account\AccountSeeder;
 use Database\Seeders\Administration\BranchSeeder;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Database\Seeders\Performance\PerformanceLoadSeeder;
-use Database\Seeders\Administration\CategorySeeder;
-use Database\Seeders\Administration\BrandSeeder;
-use Database\Seeders\Administration\DepartmentSeeder;
-use Database\Seeders\Administration\QuantitySeeder;
 use Database\Seeders\Administration\SizeSeeder;
 use Database\Seeders\Administration\WarehouseSeeder;
 use Database\Seeders\Administration\UnitMeasureSeeder;
@@ -19,14 +12,9 @@ use Database\Seeders\Administration\CompanySeeder;
 use Database\Seeders\Account\AccountTypeSeeder;
 use Database\Seeders\Administration\CurrencySeeder;
 use Database\Seeders\Administration\ReferenceDataSeeder;
-use Database\Seeders\Inventory\ItemSeeder;
 use Database\Seeders\Ledger\LedgerSeeder;
-use Database\Seeders\Purchase\PurchaseSeeder;
-use Database\Seeders\Purchase\PurchaseItemSeeder;
 use Database\Seeders\UserManagement\RolePermissionSeeder;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
-use App\Models\Account\Account;
 
 class DatabaseSeeder extends Seeder
 {
