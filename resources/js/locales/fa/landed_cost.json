@@ -3,6 +3,7 @@
   "create_title": "ایجاد هزینه ورود",
   "edit_title": "ویرایش هزینه ورود",
   "purchase_order": "سفارش خرید",
+  "purchase_orders": "سفارش‌های خرید",
   "date": "تاریخ",
   "total_additional_cost": "مجموع هزینه اضافی",
   "allocation_method": "روش تخصیص",
@@ -21,13 +22,16 @@
   "quantity": "تعداد",
   "item": "آیتم",
   "select_purchase_first": "برای بارگذاری اقلام، ابتدا سفارش خرید را انتخاب کنید.",
-  "save_draft_first": "ابتدا پیش‌نویس هزینه ورود را ذخیره کنید، سپس تخصیص را انجام دهید.",
+  "save_draft_first": "ابتدا هزینه ورود را ذخیره کنید، سپس آن را ثبت کنید.",
   "preview_updated": "پیش‌نمایش تخصیص به‌روزرسانی شد.",
   "failed_to_load_purchase_items": "بارگذاری اقلام سفارش خرید انجام نشد.",
   "unable_to_calculate": "محاسبه تخصیص هزینه ورود انجام نشد.",
   "unable_to_post": "ثبت هزینه ورود انجام نشد.",
-  "save_success": "پیش‌نویس هزینه ورود با موفقیت ذخیره شد.",
+  "save_success": "هزینه ورود با موفقیت ذخیره شد.",
   "update_success": "هزینه ورود با موفقیت به‌روزرسانی شد.",
-  "save_draft": "ذخیره پیش‌نویس",
-  "update_draft": "به‌روزرسانی پیش‌نویس"
+  "save_draft": "ذخیره",
+  "update_draft": "به‌روزرسانی",
+  "allocation_mismatch_title": "عدم تطابق تخصیص",
+  "allocation_not_fully_allocated": "مجموع هزینه اضافی به‌طور کامل تخصیص نشده است. باقی‌مانده: {amount}",
+  "allocation_exceeds_additional_cost": "مبلغ تخصیص‌یافته اقلام به اندازه {amount} بیشتر از مجموع هزینه اضافی است."
 }

@@ -37,6 +37,8 @@ class LandedCostRequest extends FormRequest
             'items.*.warehouse_id' => ['nullable', 'string', 'exists:warehouses,id'],
             'items.*.batch' => ['nullable', 'string'],
             'items.*.expire_date' => ['nullable', 'date'],
+            'items.*.allocated_amount' => ['nullable', 'numeric', 'min:0'],
+            'items.*.allocated_percentage' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 

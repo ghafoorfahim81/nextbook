@@ -336,6 +336,7 @@ return [
         'by_quantity' => 'بر اساس تعداد',
         'by_weight' => 'بر اساس وزن',
         'by_volume' => 'بر اساس حجم',
+        'manual' => 'دستی',
     ],
 ];
 
