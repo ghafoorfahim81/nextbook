@@ -20,7 +20,12 @@
     "reports": "Reports",
     "system": "System",
     "deleted_records": "Deleted Records",
-    "trash": "Trash"
+    "trash": "Trash",
+    "hr": "Human Resources",
+    "attendance": "Attendance",
+    "leave": "Leave",
+    "payroll": "Payroll",
+    "recruitment": "Recruitment"
   },
   "expense": {
     "expense": "Expense",
@@ -98,5 +103,39 @@
   "system": {
     "deleted_records": "Deleted Records",
     "activity_logs": "Activity Logs"
+  },
+  "hr": {
+    "employee": "Employees",
+    "contract": "Contracts",
+    "document": "Documents",
+    "department": "Departments",
+    "designation": "Designations"
+  },
+  "attendance": {
+    "roster": "Daily Roster",
+    "register": "Attendance Register",
+    "unmapped": "Unmapped Punches",
+    "device": "Devices",
+    "shift": "Shifts",
+    "holiday": "Holidays",
+    "self_service": "My Attendance"
+  },
+  "leave": {
+    "request": "Leave Requests",
+    "allocation": "Allocations",
+    "type": "Leave Types"
+  },
+  "payroll": {
+    "payroll": "Payroll Runs",
+    "salary_payment": "Salary Payments",
+    "loan": "Loans & Advances",
+    "structure": "Salary Structures",
+    "component": "Salary Components",
+    "tax_table": "Tax Tables"
+  },
+  "recruitment": {
+    "opening": "Job Openings",
+    "application": "Applications",
+    "interview": "Interviews"
   }
 }

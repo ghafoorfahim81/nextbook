@@ -34,6 +34,18 @@ class RolePermissionSeeder extends Seeder
             'designations',
             'prepaids',
             'loans',
+            'employee_contracts',
+            'employee_documents',
+            'shifts',
+            'holidays',
+            'attendance_devices',
+            'leave_allocations',
+            'salary_components',
+            'salary_structures',
+            'tax_bracket_sets',
+            'job_openings',
+            'job_applications',
+            'interviews',
 
             'items',
             'landed_costs',
@@ -135,6 +147,17 @@ class RolePermissionSeeder extends Seeder
             'account_transfers',
             'drawings',
             'item_transfers',
+            // Leave requests and payroll runs are approved, rejected and
+            // printed like any other document, and approving must be a
+            // separate grant from editing — raising a request on someone's
+            // behalf is not the same authority as granting it.
+            'leave_applications',
+            'payrolls',
+            'salary_payments',
+            // A staff loan is approved by someone other than whoever prepares
+            // it, for the same reason: authorising the money and handing it
+            // over are different acts.
+            'loans',
         ];
 
         /*

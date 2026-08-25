@@ -1,6 +1,17 @@
 {
   "no_tips_available": "No tips available yet for this screen.",
   "modules": {
+    "employees": {
+      "title": "Employees — Tips",
+      "description": "An employee record is both an HR profile and a financial party, so salary, advances and staff loans post against them like any other ledger.",
+      "items": [
+        "Saving an employee automatically creates a linked ledger named '<Name> (CODE)'. The code suffix keeps two people with the same name apart, so avoid reusing employee codes.",
+        "Phone and email stay on the employee record and are deliberately not copied to the ledger — otherwise an employee sharing a phone with a customer could not be saved.",
+        "Employment type decides which salary expense account payroll uses: permanent, temporary/intern/daily-wage, or contract/consultant.",
+        "Set a separation date only once the status is resigned, terminated or retired; an employee still on staff must not carry one.",
+        "Deleting an employee also hides their ledger, and restoring brings it back. An employee with posted accounting history cannot be permanently deleted."
+      ]
+    },
     "chart_of_accounts": {
       "title": "Chart of Accounts — Tips",
       "description": "Use the chart of accounts to define your GL structure and (only when eligible) opening balances.",
@@ -148,6 +159,72 @@
         "Item Management controls which fields appear on the Item screens; hide unused fields for faster data entry.",
         "Sale/Purchase tabs let you choose visible columns and numbering; set them before daily usage starts.",
         "Backup/Export preferences should be configured early so data recovery is always possible."
+      ]
+    },
+    "attendances": {
+      "title": "Attendance — Tips",
+      "description": "Attendance can be entered by hand, imported from a terminal, or clocked by employees themselves. All three write the same daily record.",
+      "items": [
+        "The daily roster is the fallback that always works: pick a date and a department, and confirm the pre-filled statuses.",
+        "Importing a punch log never loses a row. Punches from a device ID nobody has mapped land on the Unmapped Punches screen — map the ID there and the days are recalculated without re-uploading the file.",
+        "Re-importing the same export is safe; duplicate punches are rejected by the database, not counted twice.",
+        "A day showing \"needs review\" had a single punch with no pair — usually someone forgot to clock out. Fix it on the roster rather than guessing the hours.",
+        "Once a payroll has been posted, the days it consumed are locked and can no longer be edited. Reverse the payroll first if a correction is genuinely needed."
+      ]
+    },
+    "leave_requests": {
+      "title": "Leave — Tips",
+      "description": "A leave request moves draft → pending → approved, and approving it writes the leave days into the attendance register automatically.",
+      "items": [
+        "Day counts are calculated from the leave type, not typed in: types that skip weekends and holidays charge fewer days than the calendar span.",
+        "Pending days are shown separately from the balance and are never deducted — nobody has agreed to them yet.",
+        "Approval is refused when the balance is short, except for unpaid leave, which is allowed to go negative by design.",
+        "Cancelling approved leave removes the future days from attendance and leaves past days alone: last week already happened.",
+        "Approving is a separate permission from editing, so raising a request on someone’s behalf does not let you grant it."
+      ]
+    },
+    "payrolls": {
+      "title": "Payroll — Tips",
+      "description": "A payroll run is created first and calculated afterwards. Calculating is safe to repeat while the run is still a draft.",
+      "items": [
+        "Leave the scope blank to include everyone; narrow it to a department or an employment type to run payroll for part of the company.",
+        "Recalculating replaces the payslips of a draft run, so fixing a salary structure and calculating again is the normal correction.",
+        "Posting writes the run to the ledger. From that point the run is a fact: correcting it means reversing it, not editing it.",
+        "Attendance days consumed by a posted run are locked, which is why a reversal is required before the days can change.",
+        "Approving is a separate permission from editing, so preparing a run does not let you post it."
+      ]
+    },
+    "salary_payments": {
+      "title": "Salary payment — Tips",
+      "description": "A salary payment settles what an employee is owed. Leaving the allocation alone applies the money oldest-first across their open payslips.",
+      "items": [
+        "The outstanding list is read from the ledger, not from a cached figure, so it shows what is genuinely still open.",
+        "Choose which payslips only when the money is meant for a specific month; otherwise the oldest-first default is what people expect.",
+        "Pay all fills the amount with the full outstanding total — it does not save anything on its own.",
+        "Paying more than is outstanding leaves the remainder on account against the employee.",
+        "A payment can be voided but not edited: the ledger entry it made has to be reversed rather than restated."
+      ]
+    },
+    "employee_loans": {
+      "title": "Loans and advances — Tips",
+      "description": "Approval and payout are separate steps. Approving authorises the money; it does not move it.",
+      "items": [
+        "The instalment schedule must add up to the principal, and the shortfall is shown while you type rather than only on save.",
+        "Suggest divides the principal by the number of instalments and rounds up, which is usually the intended schedule.",
+        "With recovery through payroll enabled, each payroll run deducts one instalment automatically until the loan is settled.",
+        "Once the money has been disbursed the principal and schedule can no longer be edited — the ledger already carries that balance.",
+        "A repayment can also be recorded by hand, for a loan settled in cash outside payroll."
+      ]
+    },
+    "salary_structures": {
+      "title": "Salary structure — Tips",
+      "description": "A structure is the salary package: a basic salary plus the allowances and deductions that sit on top of it.",
+      "items": [
+        "Attach it to one employee for a personal package, or to a designation or department to use it as a grade template.",
+        "Picking a component fills in its own defaults, so the usual case is one click and no typing.",
+        "The indicative gross covers fixed amounts and percentages of basic only. Anything on a percentage of gross is not known until the payslip is resolved.",
+        "Effective dates decide which structure a payroll run uses, so raise a new structure rather than editing history.",
+        "A structure with no components is valid — it simply pays the basic salary."
       ]
     }
   }

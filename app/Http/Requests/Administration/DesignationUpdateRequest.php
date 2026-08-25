@@ -2,25 +2,10 @@
 
 namespace App\Http\Requests\Administration;
 
-use Illuminate\Foundation\Http\FormRequest;
-
-class DesignationUpdateRequest extends FormRequest
+/**
+ * Same rules as the store request — designationId() resolves the route model,
+ * so uniqueness already excludes this record.
+ */
+class DesignationUpdateRequest extends DesignationStoreRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return true;
-    }
-
-    /**
-     * Get the validation rules that apply to the request.
-     */
-    public function rules(): array
-    {
-        return [
-            'designation' => ['required'],
-        ];
-    }
 }

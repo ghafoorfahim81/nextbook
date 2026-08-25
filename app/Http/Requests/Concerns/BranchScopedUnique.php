@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Concerns;
 
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Exists;
 use Illuminate\Validation\Rules\Unique;
 
 /**
@@ -18,9 +19,10 @@ trait BranchScopedUnique
     /**
      * @param  mixed  $ignore  record (or id) to exclude, for update requests
      */
-    protected function uniqueInBranch(string $table, mixed $ignore = null): Unique
+    protected function uniqueInBranch(string $table, mixed $ignore = null, ?string $column = null): Unique
     {
-        $rule = Rule::unique($table)->whereNull('deleted_at');
+        $rule = ($column === null ? Rule::unique($table) : Rule::unique($table, $column))
+            ->whereNull('deleted_at');
 
         $branchId = $this->activeBranchId();
 
@@ -48,5 +50,28 @@ trait BranchScopedUnique
         $branchId = $this->user()?->branch_id;
 
         return $branchId ? (string) $branchId : null;
+    }
+
+    /**
+     * An `exists` rule confined to the acting branch.
+     *
+     * A bare `exists:employees,id` passes for ANY branch's row. Eloquent's
+     * BranchSpecific scope does not help: the validator queries the table
+     * directly, so a crafted request can point a leave request, a loan or a
+     * payroll at another tenant's employee and the foreign key is accepted.
+     * The policy check does not catch it either — that authorises the ACTION,
+     * not the id inside the payload.
+     */
+    protected function existsInBranch(string $table, string $column = 'id'): Exists
+    {
+        $rule = Rule::exists($table, $column)->whereNull('deleted_at');
+
+        $branchId = $this->activeBranchId();
+
+        if ($branchId !== null) {
+            $rule->where('branch_id', $branchId);
+        }
+
+        return $rule;
     }
 }

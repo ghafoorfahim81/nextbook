@@ -16,6 +16,12 @@ use App\Models\Administration\Size;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Administration\Warehouse;
 use App\Models\Expense\ExpenseCategory;
+use App\Enums\TaxPeriod;
+use App\Models\Hr\LeaveType;
+use App\Models\Hr\SalaryComponent;
+use App\Models\Hr\Shift;
+use App\Models\Hr\TaxBracket;
+use App\Models\Hr\TaxBracketSet;
 use App\Models\JournalEntry\JournalClass;
 use App\Models\Ledger\Ledger;
 use App\Models\User;
@@ -67,6 +73,10 @@ class BranchProvisioningService
             $counts['categories'] = $this->categories($branch, $actorId);
             $counts['brands'] = $this->brands($branch, $actorId);
             $counts['departments'] = $this->departments($branch, $actorId);
+            $counts['shifts'] = $this->shifts($branch, $actorId);
+            $counts['leave_types'] = $this->leaveTypes($branch, $actorId);
+            $counts['salary_components'] = $this->salaryComponents($branch, $actorId);
+            $counts['tax_brackets'] = $this->taxBrackets($branch, $actorId);
             $counts['financial_periods'] = $this->financialPeriod($branch, $actorId);
 
             return $counts;
@@ -510,6 +520,193 @@ class BranchProvisioningService
         }
 
         return $created;
+    }
+
+    /**
+     * Default work patterns.
+     *
+     * The Afghan private-sector week runs Saturday to Thursday with Friday as
+     * the rest day, so that is the default; a five-day variant is provided for
+     * NGO and public-sector branches, and a Ramadan profile with reduced hours
+     * that HR activates for the month. All three are ordinary editable rows.
+     */
+    private function shifts(Branch $branch, ?string $actorId): int
+    {
+        $existing = $this->existing(Shift::class, $branch, 'code');
+        $created = 0;
+
+        $defaults = [
+            [
+                'name' => 'General Shift (Sat–Thu)',
+                'code' => 'GEN6',
+                'start_time' => '08:00:00',
+                'end_time' => '16:00:00',
+                'break_minutes' => 60,
+                'grace_in_minutes' => 15,
+                'full_day_hours' => 8,
+                'half_day_hours' => 4,
+                // ISO weekdays: Sat(6), Sun(7), Mon(1), Tue(2), Wed(3), Thu(4).
+                // Friday (5) is absent — it is the weekly rest day.
+                'working_days' => [6, 7, 1, 2, 3, 4],
+                'is_default' => true,
+            ],
+            [
+                'name' => 'Five Day Shift (Sat–Wed)',
+                'code' => 'GEN5',
+                'start_time' => '08:00:00',
+                'end_time' => '16:00:00',
+                'break_minutes' => 60,
+                'grace_in_minutes' => 15,
+                'full_day_hours' => 8,
+                'half_day_hours' => 4,
+                'working_days' => [6, 7, 1, 2, 3],
+                'is_default' => false,
+            ],
+            [
+                'name' => 'Ramadan Shift',
+                'code' => 'RAMADAN',
+                'start_time' => '09:00:00',
+                'end_time' => '15:00:00',
+                'break_minutes' => 0,
+                'grace_in_minutes' => 15,
+                'full_day_hours' => 6,
+                'half_day_hours' => 3,
+                'working_days' => [6, 7, 1, 2, 3, 4],
+                'is_default' => false,
+            ],
+        ];
+
+        foreach ($defaults as $shift) {
+            if (in_array($shift['code'], $existing, true)) {
+                continue;
+            }
+
+            $this->insert(Shift::class, array_merge($shift, [
+                // Left as an array — the model's `array` cast encodes it. Encoding
+                // here too stored a JSON string inside the jsonb column, which came
+                // back out of the cast as a string instead of a list of weekdays.
+                'is_active' => true,
+                'branch_id' => $branch->id,
+                'created_by' => $actorId,
+            ]));
+            $created++;
+        }
+
+        return $created;
+    }
+
+    /**
+     * Default leave types, following Afghan Labour Law as a starting point.
+     *
+     * Seeded as data so an employer can change any figure without a deploy —
+     * the same principle as every other default in this service.
+     */
+    private function leaveTypes(Branch $branch, ?string $actorId): int
+    {
+        $existing = $this->existing(LeaveType::class, $branch, 'code');
+        $created = 0;
+
+        foreach (LeaveType::defaultLeaveTypes() as $type) {
+            if (in_array($type['code'], $existing, true)) {
+                continue;
+            }
+
+            $this->insert(LeaveType::class, array_merge([
+                'is_paid' => true,
+                'requires_approval' => true,
+                'requires_attachment' => false,
+                'deduct_from_salary' => false,
+                'is_encashable' => false,
+                'pro_rata_on_join' => true,
+                'excludes_holidays' => true,
+                'excludes_weekends' => true,
+                'is_active' => true,
+            ], $type, [
+                'branch_id' => $branch->id,
+                'created_by' => $actorId,
+            ]));
+            $created++;
+        }
+
+        return $created;
+    }
+
+    /**
+     * The components payroll creates for itself — tax, unpaid leave, loan
+     * recovery, overtime. Looked up by code during calculation, so they must
+     * exist before the first run.
+     */
+    private function salaryComponents(Branch $branch, ?string $actorId): int
+    {
+        $existing = $this->existing(SalaryComponent::class, $branch, 'code');
+        $created = 0;
+
+        foreach (SalaryComponent::defaultComponents() as $component) {
+            if (in_array($component['code'], $existing, true)) {
+                continue;
+            }
+
+            $this->insert(SalaryComponent::class, array_merge([
+                'affects_gross' => true,
+                'is_active' => true,
+            ], $component, [
+                'branch_id' => $branch->id,
+                'created_by' => $actorId,
+            ]));
+            $created++;
+        }
+
+        return $created;
+    }
+
+    /**
+     * The statutory Afghan monthly wage tax table.
+     *
+     * Seeded as data with an effective-from date so a rate change is an edit
+     * rather than a deploy — and so re-running an old period still reproduces
+     * the tax that was withheld at the time.
+     */
+    private function taxBrackets(Branch $branch, ?string $actorId): int
+    {
+        $exists = TaxBracketSet::withoutGlobalScopes()
+            ->where('branch_id', $branch->id)
+            ->where('period', TaxPeriod::Monthly->value)
+            ->exists();
+
+        if ($exists) {
+            return 0;
+        }
+
+        $currencyId = Currency::withoutGlobalScopes()
+            ->where('branch_id', $branch->id)
+            ->where('is_base_currency', true)
+            ->value('id');
+
+        /** @var TaxBracketSet $set */
+        $set = $this->insert(TaxBracketSet::class, [
+            'name' => 'Afghanistan Monthly Wage Tax',
+            'jurisdiction' => 'AF',
+            'period' => TaxPeriod::Monthly->value,
+            // Deliberately far back: any historical period resolves to this set
+            // rather than failing for want of a rate.
+            'effective_from' => '2005-01-01',
+            'currency_id' => $currencyId,
+            'is_active' => true,
+            'is_system' => true,
+            'remark' => 'Seeded default. Verify against current Ministry of Finance rules.',
+            'branch_id' => $branch->id,
+            'created_by' => $actorId,
+        ]);
+
+        foreach (TaxBracketSet::defaultAfghanMonthlyBrackets() as $bracket) {
+            $this->insert(TaxBracket::class, array_merge($bracket, [
+                'tax_bracket_set_id' => $set->id,
+                'branch_id' => $branch->id,
+                'created_by' => $actorId,
+            ]));
+        }
+
+        return 1;
     }
 
     /**

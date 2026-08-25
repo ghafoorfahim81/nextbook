@@ -33,6 +33,7 @@ const columns = computed(() => ([
     { key: 'supplier_name', label: t('ledger.supplier.supplier') },
     { key: 'payment_status_label', label: t('general.payment_status') },
     { key: 'amount', label: t('general.amount'), sortable: true },
+    { key: 'currency_code', label: t('general.currency') },
     { key: 'date', label: t('general.date'), sortable: true },
     { key: 'type', label: t('general.type'), sortable: true },
     { key: 'status', label: t('general.status') },

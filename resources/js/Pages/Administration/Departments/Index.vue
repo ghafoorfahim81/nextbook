@@ -8,6 +8,7 @@ import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
     items: Object,
+    filters: { type: Object, default: () => ({}) },
 })
 
 const isDialogOpen = ref(false)
@@ -20,7 +21,7 @@ const columns = computed(() => ([
     { key: 'code', label: t('general.code'), sortable: true },
     {
         key: 'parent.name',
-        label: t('admin.department.parent'),
+        label: t('admin.shared.parent'),
         sortable: true,
         render: (row) => row.parent?.name ?? '-',
     },
@@ -56,7 +57,7 @@ const deleteItem = (id) => {
     <AppLayout :title="t('admin.department.departments')">
         <CreateEditModal
             :isDialogOpen="isDialogOpen"
-            :editingItem="editingDepartment"
+            :editing-item="editingDepartment"
             :departments="items"
             @update:isDialogOpen="(value) => {
                 isDialogOpen = value;
@@ -68,6 +69,7 @@ const deleteItem = (id) => {
             can="departments"
             :items="items"
             :columns="columns"
+            :filters="filters"
             @edit="editItem"
             @delete="deleteItem"
             @add="isDialogOpen = true"

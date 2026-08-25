@@ -78,9 +78,11 @@ Route::middleware([
 
 
     Route::resource('designations', DesignationController::class);
+    Route::patch('/designations/{designation}/restore', [DesignationController::class, 'restore'])->name('designations.restore')->withTrashed();
     Route::delete('/designations/{designation}/force-delete', [DesignationController::class, 'forceDelete'])
         ->name('designations.force-delete')
         ->withTrashed();
+    Route::get('/departments/parents', [DepartmentController::class, 'getParents'])->name('departments.parents');
     Route::resource('/departments', DepartmentController::class);
     Route::patch('/departments/{department}/restore', [\App\Http\Controllers\Administration\DepartmentController::class, 'restore'])->name('departments.restore')->withTrashed();
     Route::delete('/departments/{department}/force-delete', [\App\Http\Controllers\Administration\DepartmentController::class, 'forceDelete'])
@@ -107,7 +109,6 @@ Route::middleware([
     Route::delete('/brands/{brand}/force-delete', [\App\Http\Controllers\Administration\BrandController::class, 'forceDelete'])
         ->name('brands.force-delete')
         ->withTrashed();
-    Route::get('/departments/parents', [DepartmentController::class, 'getParents'])->name('departments.parents');
     Route::resource('/branches', \App\Http\Controllers\Administration\BranchController::class);
     Route::patch('/branches/{branch}/restore', [\App\Http\Controllers\Administration\BranchController::class, 'restore'])->name('branches.restore')->withTrashed();
     Route::delete('/branches/{branch}/force-delete', [\App\Http\Controllers\Administration\BranchController::class, 'forceDelete'])
@@ -426,6 +427,131 @@ Route::middleware([
     Route::delete('/journal-classes/{journalClass}/force-delete', [\App\Http\Controllers\JournalEntry\JournalClassController::class, 'forceDelete'])
         ->name('journal-classes.force-delete')
         ->withTrashed();
+    // Human Resources
+    // Export routes come BEFORE the resource, or {employee} swallows the
+    // literal "list-export". Every .destroy has a matching .restore because
+    // useDeleteResource derives the Undo route by name substitution.
+    Route::get('/employees/list-export', [\App\Http\Controllers\Hr\EmployeeController::class, 'exportList'])->name('employees.list-export');
+    Route::resource('/employees', \App\Http\Controllers\Hr\EmployeeController::class);
+    Route::patch('/employees/{employee}/restore', [\App\Http\Controllers\Hr\EmployeeController::class, 'restore'])->name('employees.restore')->withTrashed();
+    Route::delete('/employees/{employee}/force-delete', [\App\Http\Controllers\Hr\EmployeeController::class, 'forceDelete'])
+        ->name('employees.force-delete')
+        ->withTrashed();
+
+    Route::resource('/employee-contracts', \App\Http\Controllers\Hr\EmployeeContractController::class)->except(['create', 'edit']);
+    Route::patch('/employee-contracts/{employee_contract}/restore', [\App\Http\Controllers\Hr\EmployeeContractController::class, 'restore'])->name('employee-contracts.restore')->withTrashed();
+    Route::delete('/employee-contracts/{employee_contract}/force-delete', [\App\Http\Controllers\Hr\EmployeeContractController::class, 'forceDelete'])
+        ->name('employee-contracts.force-delete')
+        ->withTrashed();
+
+    Route::resource('/employee-documents', \App\Http\Controllers\Hr\EmployeeDocumentController::class)->except(['create', 'edit']);
+    Route::patch('/employee-documents/{employee_document}/restore', [\App\Http\Controllers\Hr\EmployeeDocumentController::class, 'restore'])->name('employee-documents.restore')->withTrashed();
+    Route::delete('/employee-documents/{employee_document}/force-delete', [\App\Http\Controllers\Hr\EmployeeDocumentController::class, 'forceDelete'])
+        ->name('employee-documents.force-delete')
+        ->withTrashed();
+
+    // HR — shifts, holidays, attendance
+    Route::resource('/shifts', \App\Http\Controllers\Hr\ShiftController::class)->except(['create', 'edit', 'show']);
+    Route::patch('/shifts/{shift}/restore', [\App\Http\Controllers\Hr\ShiftController::class, 'restore'])->name('shifts.restore')->withTrashed();
+    Route::delete('/shifts/{shift}/force-delete', [\App\Http\Controllers\Hr\ShiftController::class, 'forceDelete'])->name('shifts.force-delete')->withTrashed();
+
+    Route::resource('/holidays', \App\Http\Controllers\Hr\HolidayController::class)->except(['create', 'edit', 'show']);
+    Route::patch('/holidays/{holiday}/restore', [\App\Http\Controllers\Hr\HolidayController::class, 'restore'])->name('holidays.restore')->withTrashed();
+    Route::delete('/holidays/{holiday}/force-delete', [\App\Http\Controllers\Hr\HolidayController::class, 'forceDelete'])->name('holidays.force-delete')->withTrashed();
+
+    // Declared BEFORE the resource, or {attendance} swallows "roster",
+    // "import" and "unmapped-punches".
+    Route::get('/attendances/roster', [\App\Http\Controllers\Hr\AttendanceController::class, 'roster'])->name('attendances.roster');
+    Route::post('/attendances/roster', [\App\Http\Controllers\Hr\AttendanceController::class, 'storeRoster'])->name('attendances.roster.store');
+    Route::get('/attendances/unmapped-punches', [\App\Http\Controllers\Hr\AttendanceController::class, 'unmappedPunches'])->name('attendances.unmapped-punches');
+    Route::post('/attendances/import', [\App\Http\Controllers\Hr\AttendanceController::class, 'import'])->name('attendances.import');
+    Route::post('/attendances/import-preview', [\App\Http\Controllers\Hr\AttendanceController::class, 'importPreview'])->name('attendances.import-preview');
+    Route::resource('/attendances', \App\Http\Controllers\Hr\AttendanceController::class)->only(['index', 'destroy']);
+    Route::patch('/attendances/{attendance}/restore', [\App\Http\Controllers\Hr\AttendanceController::class, 'restore'])->name('attendances.restore')->withTrashed();
+
+    Route::resource('/attendance-devices', \App\Http\Controllers\Hr\AttendanceDeviceController::class)->except(['create', 'edit', 'show']);
+    Route::patch('/attendance-devices/{attendance_device}/restore', [\App\Http\Controllers\Hr\AttendanceDeviceController::class, 'restore'])->name('attendance-devices.restore')->withTrashed();
+    Route::delete('/attendance-devices/{attendance_device}/force-delete', [\App\Http\Controllers\Hr\AttendanceDeviceController::class, 'forceDelete'])->name('attendance-devices.force-delete')->withTrashed();
+    Route::post('/attendance-device-mappings', [\App\Http\Controllers\Hr\AttendanceDeviceController::class, 'storeMapping'])->name('attendance-device-mappings.store');
+    Route::delete('/attendance-device-mappings/{mapping}', [\App\Http\Controllers\Hr\AttendanceDeviceController::class, 'destroyMapping'])->name('attendance-device-mappings.destroy');
+
+    // HR — leave
+    Route::resource('/leave-types', \App\Http\Controllers\Hr\LeaveTypeController::class)->except(['create', 'edit', 'show']);
+    Route::patch('/leave-types/{leave_type}/restore', [\App\Http\Controllers\Hr\LeaveTypeController::class, 'restore'])->name('leave-types.restore')->withTrashed();
+    Route::delete('/leave-types/{leave_type}/force-delete', [\App\Http\Controllers\Hr\LeaveTypeController::class, 'forceDelete'])->name('leave-types.force-delete')->withTrashed();
+
+    Route::resource('/leave-allocations', \App\Http\Controllers\Hr\LeaveAllocationController::class)->except(['create', 'edit']);
+    Route::patch('/leave-allocations/{leave_allocation}/restore', [\App\Http\Controllers\Hr\LeaveAllocationController::class, 'restore'])->name('leave-allocations.restore')->withTrashed();
+    Route::delete('/leave-allocations/{leave_allocation}/force-delete', [\App\Http\Controllers\Hr\LeaveAllocationController::class, 'forceDelete'])->name('leave-allocations.force-delete')->withTrashed();
+
+    Route::resource('/leave-requests', \App\Http\Controllers\Hr\LeaveRequestController::class);
+    Route::patch('/leave-requests/{leave_request}/submit', [\App\Http\Controllers\Hr\LeaveRequestController::class, 'submit'])->name('leave-requests.submit');
+    Route::patch('/leave-requests/{leave_request}/approve', [\App\Http\Controllers\Hr\LeaveRequestController::class, 'approve'])->name('leave-requests.approve');
+    Route::patch('/leave-requests/{leave_request}/reject', [\App\Http\Controllers\Hr\LeaveRequestController::class, 'reject'])->name('leave-requests.reject');
+    Route::patch('/leave-requests/{leave_request}/cancel', [\App\Http\Controllers\Hr\LeaveRequestController::class, 'cancel'])->name('leave-requests.cancel');
+    Route::patch('/leave-requests/{leave_request}/restore', [\App\Http\Controllers\Hr\LeaveRequestController::class, 'restore'])->name('leave-requests.restore')->withTrashed();
+    Route::delete('/leave-requests/{leave_request}/force-delete', [\App\Http\Controllers\Hr\LeaveRequestController::class, 'forceDelete'])->name('leave-requests.force-delete')->withTrashed();
+
+    // HR — payroll configuration
+    Route::resource('/salary-components', \App\Http\Controllers\Hr\SalaryComponentController::class)->except(['create', 'edit', 'show']);
+    Route::patch('/salary-components/{salary_component}/restore', [\App\Http\Controllers\Hr\SalaryComponentController::class, 'restore'])->name('salary-components.restore')->withTrashed();
+    Route::delete('/salary-components/{salary_component}/force-delete', [\App\Http\Controllers\Hr\SalaryComponentController::class, 'forceDelete'])->name('salary-components.force-delete')->withTrashed();
+
+    Route::resource('/salary-structures', \App\Http\Controllers\Hr\SalaryStructureController::class);
+    Route::patch('/salary-structures/{salary_structure}/restore', [\App\Http\Controllers\Hr\SalaryStructureController::class, 'restore'])->name('salary-structures.restore')->withTrashed();
+
+    // Before the resource, or /tax-bracket-sets/preview binds as {tax_bracket_set}.
+    Route::post('/tax-bracket-sets/preview', [\App\Http\Controllers\Hr\TaxBracketSetController::class, 'preview'])->name('tax-bracket-sets.preview');
+    Route::resource('/tax-bracket-sets', \App\Http\Controllers\Hr\TaxBracketSetController::class)->except(['create', 'edit']);
+    Route::patch('/tax-bracket-sets/{tax_bracket_set}/restore', [\App\Http\Controllers\Hr\TaxBracketSetController::class, 'restore'])->name('tax-bracket-sets.restore')->withTrashed();
+
+    // HR — payroll runs
+    Route::patch('/payrolls/{payroll}/calculate', [\App\Http\Controllers\Hr\PayrollController::class, 'calculate'])->name('payrolls.calculate');
+    // One endpoint for every state change: the state machine already knows
+    // which moves are legal, and five route names would let the two drift.
+    Route::patch('/payrolls/{payroll}/transition', [\App\Http\Controllers\Hr\PayrollController::class, 'transition'])->name('payrolls.transition');
+    Route::get('/payrolls/{payroll}/payslips/{line}', [\App\Http\Controllers\Hr\PayrollController::class, 'payslip'])->name('payrolls.payslip');
+    Route::resource('/payrolls', \App\Http\Controllers\Hr\PayrollController::class);
+    Route::patch('/payrolls/{payroll}/restore', [\App\Http\Controllers\Hr\PayrollController::class, 'restore'])->name('payrolls.restore')->withTrashed();
+
+    // HR — salary disbursement
+    Route::get('/salary-payments/open-payslips', [\App\Http\Controllers\Hr\SalaryPaymentController::class, 'openPayslips'])->name('salary-payments.open-payslips');
+    Route::resource('/salary-payments', \App\Http\Controllers\Hr\SalaryPaymentController::class)->except(['edit', 'update']);
+    Route::patch('/salary-payments/{salary_payment}/restore', [\App\Http\Controllers\Hr\SalaryPaymentController::class, 'restore'])->name('salary-payments.restore')->withTrashed();
+
+    // HR — staff loans
+    Route::patch('/employee-loans/{employee_loan}/submit', [\App\Http\Controllers\Hr\EmployeeLoanController::class, 'submit'])->name('employee-loans.submit');
+    Route::patch('/employee-loans/{employee_loan}/approve', [\App\Http\Controllers\Hr\EmployeeLoanController::class, 'approve'])->name('employee-loans.approve');
+    Route::patch('/employee-loans/{employee_loan}/reject', [\App\Http\Controllers\Hr\EmployeeLoanController::class, 'reject'])->name('employee-loans.reject');
+    Route::patch('/employee-loans/{employee_loan}/disburse', [\App\Http\Controllers\Hr\EmployeeLoanController::class, 'disburse'])->name('employee-loans.disburse');
+    Route::post('/employee-loans/{employee_loan}/repay', [\App\Http\Controllers\Hr\EmployeeLoanController::class, 'repay'])->name('employee-loans.repay');
+    Route::patch('/employee-loans/{employee_loan}/write-off', [\App\Http\Controllers\Hr\EmployeeLoanController::class, 'writeOff'])->name('employee-loans.write-off');
+    Route::resource('/employee-loans', \App\Http\Controllers\Hr\EmployeeLoanController::class);
+    Route::patch('/employee-loans/{employee_loan}/restore', [\App\Http\Controllers\Hr\EmployeeLoanController::class, 'restore'])->name('employee-loans.restore')->withTrashed();
+
+    // HR — recruitment
+    Route::patch('/job-openings/{job_opening}/transition', [\App\Http\Controllers\Hr\JobOpeningController::class, 'transition'])->name('job-openings.transition');
+    Route::resource('/job-openings', \App\Http\Controllers\Hr\JobOpeningController::class)->except(['create', 'edit']);
+    Route::patch('/job-openings/{job_opening}/restore', [\App\Http\Controllers\Hr\JobOpeningController::class, 'restore'])->name('job-openings.restore')->withTrashed();
+
+    Route::patch('/job-applications/{job_application}/transition', [\App\Http\Controllers\Hr\JobApplicationController::class, 'transition'])->name('job-applications.transition');
+    Route::post('/job-applications/{job_application}/hire', [\App\Http\Controllers\Hr\JobApplicationController::class, 'hire'])->name('job-applications.hire');
+    Route::resource('/job-applications', \App\Http\Controllers\Hr\JobApplicationController::class)->except(['create', 'edit']);
+    Route::patch('/job-applications/{job_application}/restore', [\App\Http\Controllers\Hr\JobApplicationController::class, 'restore'])->name('job-applications.restore')->withTrashed();
+
+    Route::patch('/interviews/{interview}/complete', [\App\Http\Controllers\Hr\InterviewController::class, 'complete'])->name('interviews.complete');
+    Route::patch('/interviews/{interview}/panelists/{panelist}/feedback', [\App\Http\Controllers\Hr\InterviewController::class, 'feedback'])->name('interviews.feedback');
+    Route::resource('/interviews', \App\Http\Controllers\Hr\InterviewController::class)->except(['create', 'edit']);
+    Route::patch('/interviews/{interview}/restore', [\App\Http\Controllers\Hr\InterviewController::class, 'restore'])->name('interviews.restore')->withTrashed();
+
+    // Employee self-service. Inside this group on purpose — a separate guard
+    // would drop CheckCompany and the branch scope.
+    Route::middleware(\App\Http\Middleware\EnsureEmployeeProfile::class)->group(function () {
+        Route::get('/my/attendance', [\App\Http\Controllers\Hr\SelfServiceController::class, 'index'])->name('self-service.index');
+        Route::post('/my/attendance/check-in', [\App\Http\Controllers\Hr\SelfServiceController::class, 'checkIn'])->name('self-service.check-in');
+        Route::post('/my/attendance/check-out', [\App\Http\Controllers\Hr\SelfServiceController::class, 'checkOut'])->name('self-service.check-out');
+    });
+
     Route::match(['get', 'post'], '/search/items-list', [SearchController::class, 'searchItemsList'])
         ->name('search.items-list');
     Route::get('/search/global', [SearchController::class, 'globalIndex'])

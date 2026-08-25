@@ -17,6 +17,7 @@ class DepartmentResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'code' => $this->code,
+            'parent_id' => $this->parent_id,
             'parent' => $this->parent ? array_merge($this->parent->toArray(), ['name' => $this->parent->name]) : null,
             'remark' => $this->remark,
             'created_by' => UserSimpleResource::make($this->whenLoaded('createdBy')),

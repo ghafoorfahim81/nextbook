@@ -27,6 +27,12 @@ class NotificationService
         'new_transaction' => 'notifications.new_transaction_alert',
         'daily_summary' => 'notifications.daily_summary_report',
         'weekly_summary' => 'notifications.weekly_financial_summary',
+        // HR compliance. A type missing from this map is treated as always
+        // allowed, so every new notification type belongs here even when the
+        // preference defaults to on.
+        'contract_expiring' => 'notifications.contract_expiry_alert',
+        'document_expiring' => 'notifications.document_expiry_alert',
+        'probation_ending' => 'notifications.probation_ending_alert',
     ];
 
     public function getNotificationCenter(User $user, int $limit = 8): array

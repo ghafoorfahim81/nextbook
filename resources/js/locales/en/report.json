@@ -23,7 +23,9 @@
     "inventory": "Inventory Reports",
     "inventory_description": "Current stock, valuation, and movement reports.",
     "management": "Management Reports",
-    "management_description": "User activity and operational oversight reports."
+    "management_description": "User activity and operational oversight reports.",
+    "hr": "Human resources",
+    "hr_description": "Payroll, attendance, leave and staffing."
   },
   "filters": {
     "title": "Filters",
@@ -47,7 +49,14 @@
     "expense_account": "Expense account",
     "per_page": "Rows",
     "apply": "Apply filters",
-    "reset": "Reset"
+    "reset": "Reset",
+    "employee": "Employee",
+    "department": "Department",
+    "designation": "Designation",
+    "payroll": "Payroll run",
+    "leave_type": "Leave type",
+    "employment_type": "Employment type",
+    "employment_status": "Employment status"
   },
   "balance_types": {
     "all": "All",
@@ -115,7 +124,36 @@
     "total_debtor": "Total receivable",
     "total_creditor": "Total payable",
     "currency_count": "Currencies",
-    "total_home_equivalent": "Total (home currency)"
+    "total_home_equivalent": "Total (home currency)",
+    "payslip_count": "Payslips",
+    "run_count": "Payroll runs",
+    "total_gross": "Total gross",
+    "total_tax": "Total tax",
+    "total_net": "Total net",
+    "outstanding": "Outstanding",
+    "taxable_income": "Taxable income",
+    "loan_count": "Loans",
+    "total_principal": "Total principal",
+    "present_days": "Present days",
+    "absent_days": "Absent days",
+    "leave_days": "Leave days",
+    "worked_hours": "Worked hours",
+    "overtime_hours": "Overtime hours",
+    "needs_review": "Needs review",
+    "day_count": "Days",
+    "entitled_days": "Entitled days",
+    "taken_days": "Taken days",
+    "pending_days": "Pending days",
+    "available_days": "Available days",
+    "request_count": "Requests",
+    "total_days": "Total days",
+    "approved_days": "Approved days",
+    "headcount": "Headcount",
+    "joiners": "Joiners",
+    "leavers": "Leavers",
+    "net_change": "Net change",
+    "contract_count": "Contracts",
+    "expired_count": "Already expired"
   },
   "columns": {
     "no": "No.",
@@ -205,7 +243,62 @@
     "balance_type": "Balance type",
     "currency": "Currency",
     "home_equivalent": "Home equivalent",
-    "currency_name": "Currency name"
+    "currency_name": "Currency name",
+    "rate": "Rate",
+    "period": "Period",
+    "employee": "Employee",
+    "employee_code": "Code",
+    "department": "Department",
+    "designation": "Designation",
+    "present_days": "Present",
+    "absent_days": "Absent",
+    "late_days": "Late",
+    "half_days": "Half days",
+    "leave_days": "On leave",
+    "overtime_hours": "Overtime hrs",
+    "worked_hours": "Worked hrs",
+    "late_minutes": "Late mins",
+    "needs_review": "Review",
+    "basic_salary": "Basic",
+    "gross_earnings": "Gross",
+    "deductions": "Deductions",
+    "tax": "Tax",
+    "net_payable": "Net payable",
+    "paid": "Paid",
+    "outstanding": "Outstanding",
+    "pay_date": "Pay date",
+    "employees": "Employees",
+    "tin": "TIN",
+    "tax_table": "Tax table",
+    "taxable_income": "Taxable income",
+    "issue_date": "Issue date",
+    "principal": "Principal",
+    "installment": "Instalment",
+    "repaid": "Repaid",
+    "shift": "Shift",
+    "check_in": "Check in",
+    "check_out": "Check out",
+    "leave_type": "Leave type",
+    "entitled_days": "Entitled",
+    "carried_forward": "Carried forward",
+    "taken_days": "Taken",
+    "pending_days": "Pending",
+    "available_days": "Available",
+    "from_date": "From",
+    "to_date": "To",
+    "days": "Days",
+    "approved_by": "Approved by",
+    "headcount": "Headcount",
+    "joiners": "Joiners",
+    "leavers": "Leavers",
+    "male": "Male",
+    "female": "Female",
+    "permanent": "Permanent",
+    "average_salary": "Average salary",
+    "phone": "Phone",
+    "start_date": "Start date",
+    "end_date": "End date",
+    "days_remaining": "Days left"
   },
   "view_types": {
     "general": "General view",
@@ -343,6 +436,46 @@
     "expense_report": {
       "label": "Expense report",
       "description": "Posted expenses by date, category, expense account, and bank account."
+    },
+    "payroll_register": {
+      "label": "Payroll register",
+      "description": "Every payslip in the period, with days worked, earnings, tax and what has been paid."
+    },
+    "payslip_summary": {
+      "label": "Payroll summary",
+      "description": "One line per payroll run — headcount, gross, tax and what is still owed."
+    },
+    "tax_withholding_report": {
+      "label": "Wage tax withheld",
+      "description": "Tax deducted per employee, with the tax table each payslip was computed against."
+    },
+    "employee_loan_statement": {
+      "label": "Employee loans",
+      "description": "Staff loans and advances, what has been recovered and what is still outstanding."
+    },
+    "attendance_summary": {
+      "label": "Attendance summary",
+      "description": "Days present, late, absent and on leave per employee, with hours worked."
+    },
+    "attendance_register": {
+      "label": "Attendance register",
+      "description": "The day-by-day attendance record, with check-in and check-out times."
+    },
+    "leave_balance_report": {
+      "label": "Leave balances",
+      "description": "Entitlement against days taken. Pending requests are shown but not deducted."
+    },
+    "leave_register": {
+      "label": "Leave register",
+      "description": "Individual leave requests, their dates and who approved them."
+    },
+    "headcount_report": {
+      "label": "Headcount",
+      "description": "Staff numbers by department as at the end of the period, with joiners and leavers."
+    },
+    "contract_expiry_report": {
+      "label": "Contract expiry",
+      "description": "Contracts ending in the period, so renewals and notice periods are not missed."
     }
   },
   "user_activity": {

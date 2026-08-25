@@ -75,6 +75,13 @@ function formatValue(column, row) {
     return Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })
   }
 
+  if (column.type === 'rate') {
+    return Number(value).toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 4,
+    })
+  }
+
   if (column.type === 'balance') {
     const amount = Number(value || 0)
     if (amount === 0) {
@@ -84,6 +91,24 @@ function formatValue(column, row) {
   }
 
   return value
+}
+
+const NEGATIVE_TONE_CLASSES = {
+  warning: 'font-semibold text-amber-600 dark:text-amber-400',
+  danger: 'font-semibold text-destructive',
+}
+
+// A column can ask for a tone when its figure goes negative — a supplier balance
+// in credit, for instance, is money owed rather than a neutral number. `toneKey`
+// points at the numeric field when the cell itself renders a label.
+function toneClass(column, row) {
+  if (!column.negativeTone) {
+    return ''
+  }
+
+  const amount = Number(row[column.toneKey || column.key] ?? 0)
+
+  return amount < -0.005 ? (NEGATIVE_TONE_CLASSES[column.negativeTone] ?? '') : ''
 }
 </script>
 
@@ -120,7 +145,7 @@ function formatValue(column, row) {
               v-for="column in displayColumns"
               :key="column.key"
               class="text-card-foreground"
-              :class="column.align === 'right' ? 'text-right' : ''"
+              :class="[column.align === 'right' ? 'text-right' : '', toneClass(column, row)]"
             >
               <template v-if="column.key === '__row_number'">
                 {{ getRowNumber(index) }}

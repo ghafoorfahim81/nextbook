@@ -66,6 +66,7 @@ final class BranchContext
         'consultant-professional-salary',
         'allowances-commissions',
         'overtime-expense',
+        'staff-benefits-expense',
         'employee-recruitment-training',
     ];
 

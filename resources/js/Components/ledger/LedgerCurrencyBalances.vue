@@ -7,6 +7,11 @@ const props = defineProps({
     balances: { type: Array, default: () => [] },
     /** Home-currency code, shown on the equivalent total. */
     homeCurrencyCode: { type: String, default: '' },
+    /**
+     * The balance nature that means the business owes this party — 'cr' on a
+     * supplier. Balances of that nature are toned as a warning.
+     */
+    owedNature: { type: String, default: '' },
 });
 
 const { t } = useI18n();
@@ -26,9 +31,15 @@ const formatAmount = (value) => Number(value ?? 0).toLocaleString(undefined, {
 
 const natureLabel = (nature) => (nature === 'cr' ? t('general.credit') : t('general.debit'));
 
-const natureClass = (nature) => (nature === 'cr'
-    ? 'text-emerald-600 dark:text-emerald-400'
-    : 'text-blue-600 dark:text-blue-400');
+const natureClass = (nature) => {
+    if (props.owedNature && nature === props.owedNature) {
+        return 'text-amber-600 dark:text-amber-400';
+    }
+
+    return nature === 'cr'
+        ? 'text-emerald-600 dark:text-emerald-400'
+        : 'text-blue-600 dark:text-blue-400';
+};
 </script>
 
 <template>

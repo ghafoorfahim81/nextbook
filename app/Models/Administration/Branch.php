@@ -98,6 +98,10 @@ class Branch extends Model
             'children' => [
                 'model' => 'subbranches',
                 'message' => 'This branch has subbranches'
+            ],
+            'employees' => [
+                'model' => 'employees',
+                'message' => 'This branch is used in employees'
             ]
         ];
     }
@@ -114,6 +118,18 @@ class Branch extends Model
     public function items()
     {
         return $this->hasMany(\App\Models\Inventory\Item::class, 'branch_id')
+            ->withoutGlobalScope('branchSpecific');
+    }
+
+    /**
+     * Employees belonging to this branch. Drops `branchSpecific` for the reason
+     * documented above — without it the count is always zero for any branch
+     * other than the one you are acting in, and a branch full of staff records
+     * would report as safe to delete.
+     */
+    public function employees()
+    {
+        return $this->hasMany(\App\Models\Hr\Employee::class, 'branch_id')
             ->withoutGlobalScope('branchSpecific');
     }
 
