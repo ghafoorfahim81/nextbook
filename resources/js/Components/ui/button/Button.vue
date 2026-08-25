@@ -16,6 +16,7 @@ const props = defineProps({
   <Primitive
     :as="as"
     :as-child="asChild"
+    data-app-button
     :class="cn(buttonVariants({ variant, size }), props.class)"
   >
     <slot />

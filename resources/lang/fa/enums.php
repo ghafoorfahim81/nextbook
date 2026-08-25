@@ -325,8 +325,7 @@ return [
         'neutral' => 'بی‌طرف',
         'no_hire' => 'عدم استخدام',
         'strong_no_hire' => 'به شدت مخالف استخدام',
-    ],
-];
+    ], 
     'landed_cost_status' => [
         'draft' => 'پیش‌نویس',
         'allocated' => 'تخصیص شده',
