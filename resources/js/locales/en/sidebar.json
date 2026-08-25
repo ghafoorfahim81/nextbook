@@ -51,7 +51,8 @@
         "fast_opening": "Fast Opening",
         "barcode_print": "Barcode Print",
         "item_transfer": "Item Transfer",
-        "pricing": "Pricing"
+        "pricing": "Pricing",
+        "landed_costs": "Landed Costs"
     },
     "account": {
         "chart_of_account": "Chart of Account",

@@ -35,6 +35,12 @@ return new class extends Migration
                     'payments.view_any',
                     'payments.view',
                     'payments.create',
+                    'landed_costs.view_any',
+                    'landed_costs.view',
+                    'landed_costs.create',
+                    'landed_costs.update',
+                    'landed_costs.allocate',
+                    'landed_costs.post',
                 ])->get()
             );
         }

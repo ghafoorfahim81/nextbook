@@ -28,6 +28,7 @@ use App\Models\Hr\LeaveRequest;
 use App\Models\Hr\LeaveType;
 use App\Models\Hr\Shift;
 use App\Models\Inventory\Item;
+use App\Models\Inventory\LandedCost;
 use App\Models\Ledger\Ledger;
 use App\Models\Owner\Drawing;
 use App\Models\Owner\Owner;
@@ -62,6 +63,7 @@ use App\Policies\Hr\LeaveTypePolicy;
 use App\Policies\Hr\ShiftPolicy;
 use App\Policies\DrawingPolicy;
 use App\Policies\ItemPolicy;
+use App\Policies\LandedCostPolicy;
 use App\Policies\OwnerPolicy;
 use App\Policies\PaymentPolicy;
 use App\Policies\PurchasePolicy;
@@ -101,6 +103,7 @@ class AuthServiceProvider extends ServiceProvider
 
         // Inventory
         Item::class => ItemPolicy::class,
+        LandedCost::class => LandedCostPolicy::class,
 
         // Ledgers (customers & suppliers)
         Ledger::class => CustomerSupplierPolicy::class,
@@ -165,4 +168,3 @@ class AuthServiceProvider extends ServiceProvider
         });
     }
 }
-

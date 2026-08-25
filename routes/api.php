@@ -37,4 +37,18 @@ Route::apiResource('quantities', App\Http\Controllers\Administration\QuantityCon
 Route::delete('/quantities/{quantity}/force-delete', [App\Http\Controllers\Administration\QuantityController::class, 'forceDelete'])
     ->name('quantities.force-delete')
     ->withTrashed();
- 
+
+Route::middleware([
+    'web',
+    'auth:sanctum',
+    config('jetstream.auth_session'),
+    'verified',
+])->group(function () {
+    Route::get('/landed-costs', [App\Http\Controllers\Inventory\LandedCostController::class, 'index']);
+    Route::get('/landed-costs/{landedCost}', [App\Http\Controllers\Inventory\LandedCostController::class, 'show']);
+    Route::post('/landed-costs', [App\Http\Controllers\Inventory\LandedCostController::class, 'store']);
+    Route::put('/landed-costs/{landedCost}', [App\Http\Controllers\Inventory\LandedCostController::class, 'update']);
+    Route::delete('/landed-costs/{landedCost}', [App\Http\Controllers\Inventory\LandedCostController::class, 'destroy']);
+    Route::post('/landed-costs/{landedCost}/allocate', [App\Http\Controllers\Inventory\LandedCostController::class, 'allocate']);
+    Route::post('/landed-costs/{landedCost}/post', [App\Http\Controllers\Inventory\LandedCostController::class, 'post']);
+});
