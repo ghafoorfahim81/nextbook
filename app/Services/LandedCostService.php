@@ -4,11 +4,14 @@ namespace App\Services;
 
 use App\Enums\LandedCostAllocationMethod;
 use App\Enums\LandedCostStatus;
+use App\Enums\StockMovementType;
+use App\Enums\StockSourceType;
 use App\Models\Account\Account;
 use App\Models\Administration\Currency;
+use App\Models\Inventory\Item;
 use App\Models\Inventory\LandedCost;
 use App\Models\Inventory\LandedCostItem;
-use App\Models\Inventory\StockBalance;
+use App\Models\Inventory\StockMovement;
 use App\Models\JournalEntry\JournalEntry as JournalEntryRecord;
 use App\Models\Purchase\Purchase;
 use App\Models\Purchase\PurchaseItem;
@@ -129,6 +132,10 @@ class LandedCostService
             }
 
             $items = $landedCost->items;
+            $hasStoredAllocations = (float) $items->sum('allocated_amount') > 0;
+            $method = $hasStoredAllocations
+                ? LandedCostAllocationMethod::Manual
+                : $this->resolveMethod($landedCost->allocation_method?->value ?? $landedCost->allocation_method);
 
             $preview = $this->calculatePreview(
                 $items->map(fn (LandedCostItem $item) => [
@@ -141,10 +148,14 @@ class LandedCostService
                     'warehouse_id' => $item->warehouse_id,
                     'batch' => $item->batch,
                     'expire_date' => $item->expire_date?->toDateString(),
+                    'allocated_amount' => (float) $item->allocated_amount,
+                    'allocated_percentage' => (float) $item->allocated_percentage,
                 ]),
                 (float) $landedCost->total_cost,
-                $this->resolveMethod($landedCost->allocation_method?->value ?? $landedCost->allocation_method)
+                $method
             );
+
+            $this->assertAllocationMatchesTotalCost((float) $landedCost->total_cost, (float) $preview['allocated_total']);
 
             $landedCost->items()->forceDelete();
             $this->syncItems($landedCost, $preview['rows']);
@@ -235,6 +246,7 @@ class LandedCostService
                 LandedCostAllocationMethod::ByQuantity => $quantity,
                 LandedCostAllocationMethod::ByWeight => $weight > 0 ? $weight : $quantity,
                 LandedCostAllocationMethod::ByVolume => $volume > 0 ? $volume : $quantity,
+                LandedCostAllocationMethod::Manual => 0,
                 default => $quantity * $unitCost,
             };
 
@@ -249,13 +261,38 @@ class LandedCostService
                 'batch' => data_get($row, 'batch'),
                 'expire_date' => data_get($row, 'expire_date') ? data_get($row, 'expire_date') : null,
                 'item_cost_before' => round($quantity * $unitCost, 2),
+                'allocated_amount' => (float) data_get($row, 'allocated_amount', 0),
                 'basis_value' => $basisValue,
             ];
         });
 
+        if ($method === LandedCostAllocationMethod::Manual) {
+            $allocatedTotal = 0.0;
+
+            $rowsOut = $prepared->values()->map(function (array $row) use ($totalCost, &$allocatedTotal) {
+                $allocation = round((float) $row['allocated_amount'], 2);
+                $allocatedTotal = round($allocatedTotal + $allocation, 2);
+
+                $row['allocated_percentage'] = $totalCost > 0
+                    ? round(($allocation / $totalCost) * 100, 4)
+                    : 0;
+                $row['allocated_amount'] = $allocation;
+                $row['item_cost_after'] = round($row['item_cost_before'] + $allocation, 2);
+
+                unset($row['basis_value']);
+
+                return $row;
+            })->all();
+
+            return [
+                'rows' => $rowsOut,
+                'allocated_total' => $allocatedTotal,
+            ];
+        }
+
         $basisTotal = (float) $prepared->sum('basis_value');
 
-            if ($basisTotal <= 0) {
+        if ($basisTotal <= 0) {
             throw ValidationException::withMessages([
                 'items' => __('general.landed_cost_allocation_basis_must_be_greater_than_zero'),
             ]);
@@ -309,6 +346,8 @@ class LandedCostService
                     'warehouse_id' => data_get($row, 'warehouse_id'),
                     'batch' => data_get($row, 'batch'),
                     'expire_date' => data_get($row, 'expire_date'),
+                    'allocated_amount' => (float) data_get($row, 'allocated_amount', 0),
+                    'allocated_percentage' => (float) data_get($row, 'allocated_percentage', 0),
                 ];
             })->all();
         }
@@ -399,33 +438,148 @@ class LandedCostService
 
     private function applyInventoryAdjustments(LandedCost $landedCost, Collection $rows): void
     {
-        $rows->each(function (array $row) use ($landedCost) {
+        $itemIds = [];
+
+        $rows->each(function (array $row) use ($landedCost, &$itemIds) {
+            $allocation = round((float) data_get($row, 'allocated_amount', 0), 4);
+
+            if ($allocation == 0.0) {
+                return;
+            }
+
             $itemId = (string) data_get($row, 'item_id');
-            $quantity = (float) data_get($row, 'quantity', 0);
-            $allocation = (float) data_get($row, 'allocated_amount', 0);
+            $purchaseItem = filled(data_get($row, 'purchase_item_id'))
+                ? PurchaseItem::query()->find(data_get($row, 'purchase_item_id'))
+                : null;
 
-            if ($quantity <= 0 || $allocation <= 0) {
+            $purchaseId = $purchaseItem?->purchase_id
+                ?? data_get($row, 'purchase_id')
+                ?? $landedCost->purchase_id;
+            $warehouseId = $purchaseItem?->warehouse_id ?? data_get($row, 'warehouse_id');
+            $batch = $purchaseItem?->batch ?? data_get($row, 'batch');
+            $expireDate = $purchaseItem?->expire_date?->toDateString() ?: data_get($row, 'expire_date');
+
+            $movements = $this->relatedPurchaseMovements(
+                $landedCost,
+                $itemId,
+                $purchaseId,
+                $warehouseId,
+                $batch,
+                $expireDate,
+            );
+
+            if ($movements->isEmpty()) {
+                $movements = $this->relatedPurchaseMovements(
+                    $landedCost,
+                    $itemId,
+                    $purchaseId,
+                    $warehouseId,
+                    null,
+                    null,
+                );
+            }
+
+            if ($movements->isEmpty()) {
+                throw ValidationException::withMessages([
+                    'items' => __('general.landed_cost_related_stock_movement_not_found'),
+                ]);
+            }
+
+            $qtyTotal = (float) $movements->sum('quantity');
+
+            if ($qtyTotal <= 0) {
                 return;
             }
 
-            $increment = round($allocation / $quantity, 4);
+            $remaining = $allocation;
+            $lastIndex = $movements->count() - 1;
 
-            $balances = StockBalance::query()
-                ->where('branch_id', $landedCost->branch_id)
-                ->where('item_id', $itemId)
-                ->when(data_get($row, 'warehouse_id'), fn ($query, $warehouseId) => $query->where('warehouse_id', $warehouseId))
-                ->when(data_get($row, 'batch'), fn ($query, $batch) => $query->where('batch', $batch))
-                ->when(data_get($row, 'expire_date'), fn ($query, $expireDate) => $query->whereDate('expire_date', $expireDate))
-                ->get();
+            foreach ($movements->values() as $index => $movement) {
+                $qty = (float) $movement->quantity;
+                $share = $index === $lastIndex
+                    ? round($remaining, 4)
+                    : round($allocation * ($qty / $qtyTotal), 4);
+                $remaining = round($remaining - $share, 4);
 
-            if ($balances->isEmpty()) {
-                return;
+                if ($qty <= 0) {
+                    continue;
+                }
+
+                $movement->unit_cost = round(((float) $movement->unit_cost) + ($share / $qty), 4);
+                $movement->save();
             }
 
-            foreach ($balances as $balance) {
-                $balance->average_cost = round(((float) $balance->average_cost) + $increment, 4);
-                $balance->save();
-            }
+            $itemIds[$itemId] = $itemId;
         });
+
+        foreach ($itemIds as $itemId) {
+            $this->recalculateAvgCostForItem($itemId);
+        }
+    }
+
+    private function relatedPurchaseMovements(
+        LandedCost $landedCost,
+        string $itemId,
+        ?string $purchaseId,
+        mixed $warehouseId,
+        mixed $batch,
+        mixed $expireDate,
+    ): Collection {
+        return StockMovement::query()
+            ->where('branch_id', $landedCost->branch_id)
+            ->where('item_id', $itemId)
+            ->where('movement_type', StockMovementType::IN)
+            ->where('source', StockSourceType::PURCHASE)
+            ->where('reference_type', Purchase::class)
+            ->when($purchaseId, fn ($query) => $query->where('reference_id', $purchaseId))
+            ->when($warehouseId, fn ($query) => $query->where('warehouse_id', $warehouseId))
+            ->when($batch, fn ($query) => $query->where('batch', $batch))
+            ->when($expireDate, fn ($query) => $query->whereDate('expire_date', $expireDate))
+            ->lockForUpdate()
+            ->get();
+    }
+
+    private function recalculateAvgCostForItem(string $itemId): void
+    {
+        $item = Item::query()->find($itemId);
+
+        if (! $item) {
+            return;
+        }
+
+        $movements = StockMovement::query()
+            ->where('item_id', $itemId)
+            ->orderBy('date')
+            ->orderBy('id')
+            ->get(['movement_type', 'quantity', 'unit_cost']);
+
+        $avgCost = 0.0;
+        $runningQty = 0.0;
+
+        foreach ($movements as $movement) {
+            $qty = (float) $movement->quantity;
+
+            if ($movement->movement_type === StockMovementType::IN) {
+                $cost = (float) $movement->unit_cost;
+                if ($runningQty + $qty > 0) {
+                    $avgCost = (($runningQty * $avgCost) + ($qty * $cost)) / ($runningQty + $qty);
+                }
+                $runningQty += $qty;
+            } else {
+                $runningQty = max(0.0, $runningQty - $qty);
+            }
+        }
+
+        $item->avg_cost = round($avgCost, 4);
+        $item->save();
+    }
+
+    private function assertAllocationMatchesTotalCost(float $totalCost, float $allocatedTotal): void
+    {
+        if (abs(round($totalCost, 2) - round($allocatedTotal, 2)) > 0.01) {
+            throw ValidationException::withMessages([
+                'allocated_total' => __('general.landed_cost_allocation_must_match_total_cost'),
+            ]);
+        }
     }
 }

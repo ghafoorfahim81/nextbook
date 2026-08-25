@@ -16,7 +16,7 @@ const { t } = useI18n();
     :allocation-methods="allocationMethods"
     :landed-cost="landedCost"
     :purchases="purchases"
-    :page-title="t('landed_cost.edit_title')"
+    :page-title="t('general.edit', { name: t('landed_cost.title') })"
     submit-route-name="landed-costs.update"
     submit-method="put"
   />

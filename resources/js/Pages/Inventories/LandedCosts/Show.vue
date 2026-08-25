@@ -56,7 +56,6 @@ const statusClasses = computed(() => ({
   posted: 'border-green-200 bg-green-50 text-green-700',
 }[record.value?.status_id] || 'border-border bg-muted text-foreground'));
 
-const canPost = computed(() => record.value?.status_id !== 'posted');
 const canEdit = computed(() => record.value?.status_id !== 'posted');
 const purchaseNumbersLabel = computed(() => {
   const numbers = record.value?.purchase_numbers?.length
@@ -65,76 +64,29 @@ const purchaseNumbersLabel = computed(() => {
 
   return numbers.length ? numbers.join(', ') : '-';
 });
+
 const landedUnitCost = (row) => Number(
   row.quantity ? (row.item_cost_after / row.quantity) : (row.unit_cost || 0),
 ).toFixed(4);
 
-const round = (value, precision = 2) => {
-  const factor = 10 ** precision;
-  return Math.round((Number(value) || 0) * factor) / factor;
-};
+const previewRows = computed(() => (Array.isArray(record.value?.items) ? record.value.items : []).map((row) => ({
+  ...row,
+  landed_unit_cost: landedUnitCost(row),
+})));
 
-const previewRows = computed(() => {
-  const rows = Array.isArray(record.value?.items) ? record.value.items : [];
-  const method = record.value?.allocation_method_id || 'by_value';
-  const totalCost = Number(record.value?.total_cost || 0);
+const totalLanded = computed(() => Number(
+  previewRows.value.reduce((sum, row) => sum + Number(row.allocated_amount || 0), 0),
+).toFixed(2));
 
-  const prepared = rows
-    .filter((row) => !!row?.item_id)
-    .map((row) => {
-      const quantity = Number(row.quantity) || 0;
-      const unitCost = Number(row.unit_cost) || 0;
-      const weight = Number(row.weight) || 0;
-      const volume = Number(row.volume) || 0;
-
-      const basisValue = {
-        by_quantity: quantity,
-        by_weight: weight > 0 ? weight : quantity,
-        by_volume: volume > 0 ? volume : quantity,
-        by_value: quantity * unitCost,
-      }[method] ?? (quantity * unitCost);
-
-      return {
-        ...row,
-        quantity,
-        unit_cost: unitCost,
-        item_cost_before: round(quantity * unitCost, 2),
-        basis_value: basisValue,
-      };
-    });
-
-  const basisTotal = prepared.reduce((sum, row) => sum + Number(row.basis_value || 0), 0);
-
-  if (!prepared.length || basisTotal <= 0) {
-    return rows.map((row) => ({
-      ...row,
-      landed_unit_cost: landedUnitCost(row),
-    }));
+const canPost = computed(() => {
+  if (record.value?.status_id === 'posted') {
+    return false;
   }
 
-  let remaining = round(totalCost, 2);
-  const lastIndex = prepared.length - 1;
+  const totalCost = Number(record.value?.total_cost || 0);
+  const allocated = Number(totalLanded.value || 0);
 
-  return prepared.map((row, index) => {
-    const allocation = index === lastIndex
-      ? round(remaining, 2)
-      : round((round(totalCost, 2) * Number(row.basis_value || 0)) / basisTotal, 2);
-
-    remaining = round(remaining - allocation, 2);
-
-    const itemCostAfter = round(row.item_cost_before + allocation, 2);
-    const landedUnit = row.quantity > 0
-      ? round(itemCostAfter / row.quantity, 4)
-      : round(row.unit_cost, 4);
-
-    return {
-      ...row,
-      allocated_percentage: round((Number(row.basis_value || 0) / basisTotal) * 100, 4),
-      allocated_amount: allocation,
-      item_cost_after: itemCostAfter,
-      landed_unit_cost: landedUnit,
-    };
-  });
+  return Math.abs(totalCost - allocated) <= 0.01;
 });
 
 const postLandedCost = async () => {
@@ -156,10 +108,6 @@ watch(() => props.landedCost, (value) => {
     refreshRecord(value);
   }
 }, { deep: true });
-
-const totalLanded = computed(() => Number(
-  previewRows.value.reduce((sum, row) => sum + Number(row.allocated_amount || 0), 0),
-).toFixed(2));
 </script>
 
 <template>
@@ -221,6 +169,15 @@ const totalLanded = computed(() => Number(
           <div class="text-xs text-muted-foreground">{{ t('landed_cost.purchase_order') }}</div>
           <div class="mt-1 text-lg font-semibold">{{ purchaseNumbersLabel }}</div>
         </div>
+      </div>
+
+      <div
+        v-if="record.status_id !== 'posted' && !canPost"
+        class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+      >
+        {{ Number(record.total_cost || 0) > Number(totalLanded || 0)
+          ? t('landed_cost.allocation_not_fully_allocated', { amount: (Number(record.total_cost || 0) - Number(totalLanded || 0)).toFixed(2) })
+          : t('landed_cost.allocation_exceeds_additional_cost', { amount: (Number(totalLanded || 0) - Number(record.total_cost || 0)).toFixed(2) }) }}
       </div>
 
       <div class="rounded-xl border bg-card p-4 shadow-sm" v-if="record.notes">

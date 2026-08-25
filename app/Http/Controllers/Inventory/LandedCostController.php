@@ -94,7 +94,7 @@ class LandedCostController extends Controller
             ]);
 
             $service->syncPurchases($landedCost, $this->resolvePurchaseIds($request));
-            $service->syncItems($landedCost, $request->input('items', []));
+            $this->persistAllocation($landedCost, $request, $service);
 
             return $landedCost->fresh(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy']);
         });
@@ -103,7 +103,11 @@ class LandedCostController extends Controller
             return LandedCostResource::make($landedCost)->response()->setStatusCode(201);
         }
 
-        return redirect()->route('landed-costs.show', $landedCost)->with('success', __('general.created_successfully', ['resource' => __('general.resource.landed_cost')]));
+        if ($request->boolean('create_and_new')) {
+            return redirect()->route('landed-costs.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.landed_cost')]));
+        }
+
+        return redirect()->route('landed-costs.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.landed_cost')]));
     }
 
     public function show(Request $request, LandedCost $landedCost)
@@ -157,7 +161,7 @@ class LandedCostController extends Controller
             ]);
 
             $service->syncPurchases($landedCost, $this->resolvePurchaseIds($request));
-            $service->syncItems($landedCost, $request->input('items', []));
+            $this->persistAllocation($landedCost, $request, $service);
 
             return $landedCost->fresh(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy']);
         });
@@ -166,7 +170,7 @@ class LandedCostController extends Controller
             return LandedCostResource::make($landedCost);
         }
 
-        return redirect()->route('landed-costs.show', $landedCost)->with('success', __('general.updated_successfully', ['resource' => __('general.resource.landed_cost')]));
+        return redirect()->route('landed-costs.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.landed_cost')]));
     }
 
     public function destroy(Request $request, LandedCost $landedCost)
@@ -250,5 +254,21 @@ class LandedCostController extends Controller
             ->unique()
             ->values()
             ->all();
+    }
+
+    private function persistAllocation(LandedCost $landedCost, LandedCostRequest $request, LandedCostService $service): void
+    {
+        $payload = array_merge($request->validated(), [
+            'purchase_ids' => $this->resolvePurchaseIds($request),
+            'items' => $request->input('items', []),
+        ]);
+
+        $preview = $service->preview($landedCost, $payload);
+
+        $landedCost->update([
+            'allocated_total' => $preview['allocated_total'],
+        ]);
+
+        $service->syncItems($landedCost, $preview['rows']);
     }
 }

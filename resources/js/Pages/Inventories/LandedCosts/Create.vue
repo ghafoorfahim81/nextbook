@@ -14,7 +14,7 @@ const { t } = useI18n();
   <LandedCostForm
     :allocation-methods="allocationMethods"
     :purchases="purchases"
-    :page-title="t('landed_cost.create_title')"
+    :page-title="t('general.create', { name: t('landed_cost.title') })"
     submit-route-name="landed-costs.store"
     submit-method="post"
   />

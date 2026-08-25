@@ -3,6 +3,7 @@
   "create_title": "Create Landed Cost",
   "edit_title": "Edit Landed Cost",
   "purchase_order": "Purchase Order",
+  "purchase_orders": "Purchase Orders",
   "date": "Date",
   "total_additional_cost": "Total Additional Cost",
   "allocation_method": "Allocation Method",
@@ -21,13 +22,16 @@
   "quantity": "Quantity",
   "item": "Item",
   "select_purchase_first": "Select a purchase order to load items.",
-  "save_draft_first": "Save the landed cost draft first, then allocate it.",
+  "save_draft_first": "Save the landed cost first, then post it.",
   "preview_updated": "Allocation preview updated.",
   "failed_to_load_purchase_items": "Failed to load purchase items.",
   "unable_to_calculate": "Unable to calculate landed cost allocation.",
   "unable_to_post": "Unable to post landed cost.",
-  "save_success": "Landed cost draft saved successfully.",
+  "save_success": "Landed cost saved successfully.",
   "update_success": "Landed cost updated successfully.",
-  "save_draft": "Save Draft",
-  "update_draft": "Update Draft"
+  "save_draft": "Save",
+  "update_draft": "Update",
+  "allocation_mismatch_title": "Allocation mismatch",
+  "allocation_not_fully_allocated": "The total additional cost is not fully allocated. Remaining: {amount}",
+  "allocation_exceeds_additional_cost": "Allocated item amounts are greater than the total additional cost by {amount}."
 }

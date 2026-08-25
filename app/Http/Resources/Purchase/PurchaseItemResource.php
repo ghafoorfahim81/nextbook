@@ -39,6 +39,7 @@ class PurchaseItemResource extends JsonResource
             'unit_measure_id' => $this->unit_measure_id,
             'unit_measure' => $this->whenLoaded('unitMeasure', fn () => $this->unitMeasure),
             'unit_measure_name' => $this->unitMeasure?->name,
+            'warehouse_id' => $this->warehouse_id,
             'unit_price' => $this->unit_price,
             'discount' => $this->discount,
             'free' => $this->free,
