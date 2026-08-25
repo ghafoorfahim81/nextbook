@@ -52,7 +52,8 @@
     },
     "designation": {
         "designation": "Designation",
-        "designations": "Designations"
+        "designations": "Designations",
+        "grade_level": "Grade level"
     },
     "quantity": {
         "quantity": "Quantity",
@@ -114,6 +115,7 @@
         "logo": "Logo",
         "email": "Email",
         "phone": "Phone",
-        "country": "Country"
+        "country": "Country",
+        "province": "Province"
     }
 }

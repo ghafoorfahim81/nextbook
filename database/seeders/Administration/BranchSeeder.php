@@ -3,6 +3,7 @@
 namespace Database\Seeders\Administration;
 
 use App\Models\Administration\Branch;
+use App\Services\BranchProvisioningService;
 use Illuminate\Database\Seeder;
 
 class BranchSeeder extends Seeder
@@ -15,9 +16,10 @@ class BranchSeeder extends Seeder
         // Create main branch first
         $found = Branch::where('name', 'Main Branch')->first();
         if ($found) {
+            app(BranchProvisioningService::class)->provision($found);
             return;
         }
-        Branch::create([
+        $branch = Branch::create([
             'name' => 'Main Branch',
             'is_main' => true,
             'sub_domain' => 'main',
@@ -25,5 +27,7 @@ class BranchSeeder extends Seeder
             'remark' => 'Main Branch',
             
         ]);
+
+        app(BranchProvisioningService::class)->provision($branch);
     }
 }

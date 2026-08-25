@@ -23,7 +23,9 @@
     "inventory": "گزارشات موجودی",
     "inventory_description": "گزارش موجودی فعلی، ارزش‌گذاری و گردش کالا.",
     "management": "گزارشات مدیریتی",
-    "management_description": "گزارشات نظارتی و فعالیت کاربران."
+    "management_description": "گزارشات نظارتی و فعالیت کاربران.",
+    "hr": "منابع بشری",
+    "hr_description": "معاشات، حاضری، رخصتی و کارمندان."
   },
   "filters": {
     "title": "فیلترها",
@@ -47,7 +49,14 @@
     "expense_account": "حساب مصرف",
     "per_page": "تعداد سطر",
     "apply": "اعمال فیلترها",
-    "reset": "بازنشانی"
+    "reset": "بازنشانی",
+    "employee": "کارمند",
+    "department": "بخش",
+    "designation": "بست",
+    "payroll": "دوره معاش",
+    "leave_type": "نوع رخصتی",
+    "employment_type": "نوع استخدام",
+    "employment_status": "وضعیت استخدام"
   },
   "balance_types": {
     "all": "همه",
@@ -115,7 +124,36 @@
     "total_debtor": "مجموع طلب",
     "total_creditor": "مجموع بدهی",
     "currency_count": "تعداد ارزها",
-    "total_home_equivalent": "مجموع (ارز پایه)"
+    "total_home_equivalent": "مجموع (ارز پایه)",
+    "payslip_count": "فیش‌های معاش",
+    "run_count": "دوره‌های معاش",
+    "total_gross": "مجموع ناخالص",
+    "total_tax": "مجموع مالیه",
+    "total_net": "مجموع خالص",
+    "outstanding": "باقی مانده",
+    "taxable_income": "عاید قابل مالیه",
+    "loan_count": "قرضه‌ها",
+    "total_principal": "مجموع اصل",
+    "present_days": "روزهای حاضر",
+    "absent_days": "روزهای غیرحاضر",
+    "leave_days": "روزهای رخصتی",
+    "worked_hours": "ساعات کار",
+    "overtime_hours": "ساعات اضافه‌کاری",
+    "needs_review": "نیاز به بررسی",
+    "day_count": "روزها",
+    "entitled_days": "روزهای استحقاق",
+    "taken_days": "روزهای استفاده شده",
+    "pending_days": "روزهای در انتظار",
+    "available_days": "روزهای قابل استفاده",
+    "request_count": "درخواست‌ها",
+    "total_days": "مجموع روزها",
+    "approved_days": "روزهای تایید شده",
+    "headcount": "تعداد کارمندان",
+    "joiners": "استخدام شده",
+    "leavers": "ترک کرده",
+    "net_change": "تغییر خالص",
+    "contract_count": "قراردادها",
+    "expired_count": "منقضی شده"
   },
   "columns": {
     "no": "شماره",
@@ -205,7 +243,62 @@
     "balance_type": "نوع مانده",
     "currency": "ارز",
     "home_equivalent": "معادل ارز پایه",
-    "currency_name": "نام ارز"
+    "currency_name": "نام ارز",
+    "rate": "نرخ",
+    "period": "دوره",
+    "employee": "کارمند",
+    "employee_code": "کود",
+    "department": "بخش",
+    "designation": "بست",
+    "present_days": "حاضر",
+    "absent_days": "غیرحاضر",
+    "late_days": "تاخیر",
+    "half_days": "نیم روز",
+    "leave_days": "رخصتی",
+    "overtime_hours": "ساعات اضافه‌کاری",
+    "worked_hours": "ساعات کار",
+    "late_minutes": "دقایق تاخیر",
+    "needs_review": "بررسی",
+    "basic_salary": "اساسی",
+    "gross_earnings": "ناخالص",
+    "deductions": "کسرات",
+    "tax": "مالیه",
+    "net_payable": "خالص قابل پرداخت",
+    "paid": "پرداخت شده",
+    "outstanding": "باقی مانده",
+    "pay_date": "تاریخ پرداخت",
+    "employees": "کارمندان",
+    "tin": "نمبر تشخیصیه",
+    "tax_table": "جدول مالیه",
+    "taxable_income": "عاید قابل مالیه",
+    "issue_date": "تاریخ صدور",
+    "principal": "اصل",
+    "installment": "قسط",
+    "repaid": "بازپرداخت شده",
+    "shift": "شفت",
+    "check_in": "ورود",
+    "check_out": "خروج",
+    "leave_type": "نوع رخصتی",
+    "entitled_days": "استحقاق",
+    "carried_forward": "انتقالی",
+    "taken_days": "استفاده شده",
+    "pending_days": "در انتظار",
+    "available_days": "قابل استفاده",
+    "from_date": "از تاریخ",
+    "to_date": "الی تاریخ",
+    "days": "روزها",
+    "approved_by": "تایید کننده",
+    "headcount": "تعداد کارمندان",
+    "joiners": "استخدام شده",
+    "leavers": "ترک کرده",
+    "male": "مرد",
+    "female": "زن",
+    "permanent": "دایمی",
+    "average_salary": "اوسط معاش",
+    "phone": "تیلفون",
+    "start_date": "تاریخ شروع",
+    "end_date": "تاریخ ختم",
+    "days_remaining": "روزهای باقی"
   },
   "view_types": {
     "general": "عمومی",
@@ -343,6 +436,46 @@
     "expense_report": {
       "label": "گزارش مصارف",
       "description": "مصارف ثبت‌شده بر اساس تاریخ، دسته‌بندی، حساب مصرف و حساب بانکی."
+    },
+    "payroll_register": {
+      "label": "دفتر معاشات",
+      "description": "تمام فیش‌های معاش دوره با روزهای کاری، مفادات، مالیه و مقدار پرداخت شده."
+    },
+    "payslip_summary": {
+      "label": "خلاصه معاشات",
+      "description": "یک سطر برای هر دوره معاش — تعداد کارمندان، ناخالص، مالیه و باقی مانده."
+    },
+    "tax_withholding_report": {
+      "label": "مالیه معاش کسر شده",
+      "description": "مالیه کسر شده هر کارمند با جدول مالیاتی که فیش بر اساس آن محاسبه شده."
+    },
+    "employee_loan_statement": {
+      "label": "قرضه‌های کارمندان",
+      "description": "قرضه‌ها و پیشکی‌های کارمندان، مقدار بازپرداخت شده و باقی مانده."
+    },
+    "attendance_summary": {
+      "label": "خلاصه حاضری",
+      "description": "روزهای حاضر، تاخیر، غیرحاضر و رخصتی هر کارمند با ساعات کار."
+    },
+    "attendance_register": {
+      "label": "دفتر حاضری",
+      "description": "سوابق حاضری روز به روز با اوقات ورود و خروج."
+    },
+    "leave_balance_report": {
+      "label": "بیلانس رخصتی",
+      "description": "استحقاق در مقابل روزهای استفاده شده. درخواست‌های در انتظار نشان داده می‌شوند اما کسر نمی‌گردند."
+    },
+    "leave_register": {
+      "label": "دفتر رخصتی",
+      "description": "درخواست‌های رخصتی، تاریخ‌ها و تایید کننده آن‌ها."
+    },
+    "headcount_report": {
+      "label": "تعداد کارمندان",
+      "description": "تعداد کارمندان هر بخش در ختم دوره، همراه با استخدام شده‌ها و ترک کرده‌ها."
+    },
+    "contract_expiry_report": {
+      "label": "ختم قراردادها",
+      "description": "قراردادهایی که در این دوره ختم می‌شوند تا تمدید و مهلت اطلاع فراموش نشود."
     }
   },
   "user_activity": {

@@ -35,12 +35,16 @@ class DashboardService
                 'branch_id' => $branchId,
                 'generated_at' => now()->toIso8601String(),
                 'today' =>$dateConversionService->toDisplay($today->toDateString()),
+                // The display value above may be Jalali; report links need the raw date.
+                'today_date' => $today->toDateString(),
             ],
             'kpis' => $this->getKpis($branchId, $today),
+            'kpi_trends' => $this->getKpiTrends($branchId, $today),
             'sales_purchase_chart' => $this->getSalesPurchaseChart($branchId, $startDate, $endDate),
             'inventory_overview' => $this->getInventoryOverview($branchId, $today),
             'top_lists' => $this->getTopLists($branchId),
             'recent_activity' => $this->getRecentActivity($branchId),
+            'cash_position' => $this->getCashPosition($branchId, $today),
             'alerts' => $this->getAlerts($branchId, $today),
         ];
     }
@@ -56,6 +60,35 @@ class DashboardService
             'today_cash_received' => $this->cashMovementForDate($branchId, 'debit', $today),
             'today_cash_paid' => $this->cashMovementForDate($branchId, 'credit', $today),
         ];
+    }
+
+    /**
+     * Day-over-day comparison for the flow KPIs. Balance KPIs are point-in-time
+     * snapshots, so they intentionally carry no comparison.
+     */
+    protected function getKpiTrends(string $branchId, Carbon $today): array
+    {
+        $yesterday = $today->copy()->subDay();
+
+        $previous = [
+            'today_sales_total' => $this->salesOrPurchaseTotalForDate($branchId, Sale::class, 'debit', ['cash-or-bank', 'account-receivable'], $yesterday),
+            'today_purchases_total' => $this->salesOrPurchaseTotalForDate($branchId, Purchase::class, 'credit', ['cash-or-bank', 'account-payable'], $yesterday),
+            'today_cash_received' => $this->cashMovementForDate($branchId, 'debit', $yesterday),
+            'today_cash_paid' => $this->cashMovementForDate($branchId, 'credit', $yesterday),
+        ];
+
+        $current = $this->getKpis($branchId, $today);
+
+        $trends = [];
+
+        foreach ($previous as $key => $previousValue) {
+            $trends[$key] = [
+                'previous' => $previousValue,
+                'change_percent' => $this->changePercent($current[$key] ?? 0.0, $previousValue),
+            ];
+        }
+
+        return $trends;
     }
 
     protected function getSalesPurchaseChart(string $branchId, Carbon $startDate, Carbon $endDate): array
@@ -93,12 +126,48 @@ class DashboardService
             $cursor->addDay();
         }
 
+        // Carbon 3 returns a float here; the day count feeds subDays() and the payload.
+        $days = (int) $startDate->diffInDays($endDate) + 1;
+        $previousEnd = $startDate->copy()->subDay();
+        $previousStart = $previousEnd->copy()->subDays($days - 1);
+
+        $previousSales = array_sum($this->salesOrPurchaseTotalsByDate(
+            branchId: $branchId,
+            referenceType: Sale::class,
+            amountColumn: 'debit',
+            accountTypeSlugs: ['cash-or-bank', 'account-receivable'],
+            startDate: $previousStart,
+            endDate: $previousEnd,
+        ));
+
+        $previousPurchases = array_sum($this->salesOrPurchaseTotalsByDate(
+            branchId: $branchId,
+            referenceType: Purchase::class,
+            amountColumn: 'credit',
+            accountTypeSlugs: ['cash-or-bank', 'account-payable'],
+            startDate: $previousStart,
+            endDate: $previousEnd,
+        ));
+
+        $salesTotal = $this->moneyValue(array_sum(array_column($series, 'sales')));
+        $purchasesTotal = $this->moneyValue(array_sum(array_column($series, 'purchases')));
+
         return [
             'period' => [
                 'from' => $startDate->toDateString(),
                 'to' => $endDate->toDateString(),
+                'days' => $days,
             ],
             'series' => $series,
+            'totals' => [
+                'sales' => $salesTotal,
+                'purchases' => $purchasesTotal,
+                'net' => $this->moneyValue($salesTotal - $purchasesTotal),
+                'previous_sales' => $this->moneyValue($previousSales),
+                'previous_purchases' => $this->moneyValue($previousPurchases),
+                'sales_change_percent' => $this->changePercent($salesTotal, $this->moneyValue($previousSales)),
+                'purchases_change_percent' => $this->changePercent($purchasesTotal, $this->moneyValue($previousPurchases)),
+            ],
         ];
     }
 
@@ -279,6 +348,7 @@ class DashboardService
             ->limit(10)
             ->get([
                 'sm.id',
+                'sm.item_id',
                 'sm.date',
                 'sm.movement_type',
                 'sm.status',
@@ -291,6 +361,8 @@ class DashboardService
             ])
             ->map(fn ($row) => [
                 'id' => $row->id,
+                // The row links through to the item, not to the movement.
+                'item_id' => $row->item_id,
                 'date' => $this->dateConversionService->toDisplay($row->date),
                 'movement_type' => $row->movement_type,
                 'status' => $row->status,
@@ -450,6 +522,61 @@ class DashboardService
                         ->implode(' | '),
                 ])->values(),
             ],
+        ];
+    }
+
+    /**
+     * Cash held per currency, mirroring the cash-position-by-currency report at
+     * its currency level: amounts stay in their own currency, and the home
+     * equivalent — converted at each transaction's own rate — is the only column
+     * that may legitimately be added across currencies.
+     */
+    protected function getCashPosition(string $branchId, Carbon $today): array
+    {
+        $rows = DB::table('transaction_lines as tl')
+            ->join('transactions as t', function ($join) use ($branchId, $today) {
+                $join->on('t.id', '=', 'tl.transaction_id')
+                    ->where('t.branch_id', '=', $branchId)
+                    ->where('t.status', '=', TransactionStatus::POSTED->value)
+                    ->whereNull('t.deleted_at')
+                    ->where('t.date', '<=', $today->toDateString());
+            })
+            ->join('accounts as a', function ($join) use ($branchId) {
+                $join->on('a.id', '=', 'tl.account_id')
+                    ->where('a.branch_id', '=', $branchId)
+                    ->whereNull('a.deleted_at');
+            })
+            ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
+            ->join('currencies as c', 'c.id', '=', 't.currency_id')
+            ->whereNull('tl.deleted_at')
+            ->where('at.slug', 'cash-or-bank')
+            ->groupBy('c.id', 'c.code', 'c.name', 'c.is_base_currency')
+            ->orderByDesc('c.is_base_currency')
+            ->orderBy('c.code')
+            ->get([
+                DB::raw('c.code as currency_code'),
+                DB::raw('c.name as currency_name'),
+                DB::raw('COALESCE(SUM(tl.debit - tl.credit), 0) as amount'),
+                DB::raw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as home_equivalent'),
+            ]);
+
+        $lines = $rows->map(function ($row) {
+            $amount = $this->moneyValue($row->amount);
+
+            return [
+                'currency' => $row->currency_code ?: $row->currency_name,
+                'currency_name' => $row->currency_name,
+                // A negative holding is a credit balance; the sign moves into the
+                // nature so the figure itself reads as a plain amount.
+                'amount' => abs($amount),
+                'nature' => $amount < 0 ? 'cr' : 'dr',
+                'home_equivalent' => $this->moneyValue($row->home_equivalent),
+            ];
+        })->values()->all();
+
+        return [
+            'lines' => $lines,
+            'total_home_equivalent' => $this->moneyValue(array_sum(array_column($lines, 'home_equivalent'))),
         ];
     }
 
@@ -839,6 +966,19 @@ class DashboardService
         }
 
         return (string) Branch::query()->value('id');
+    }
+
+    /**
+     * Percentage change from $previous to $current. Null when there is no
+     * meaningful base to compare against, so the UI can omit the delta.
+     */
+    protected function changePercent(float $current, float $previous): ?float
+    {
+        if (abs($previous) < 0.00001) {
+            return null;
+        }
+
+        return round((($current - $previous) / abs($previous)) * 100, 1);
     }
 
     protected function moneyValue(mixed $value): float

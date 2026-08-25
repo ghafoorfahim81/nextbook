@@ -16,6 +16,9 @@
   "no_data_available": "No data available.",
   "no_active_alerts": "No active alerts.",
   "records": "records",
+  "vs_yesterday": "vs. {value} yesterday",
+  "vs_previous_period": "vs. {value} previous 30 days",
+  "total": "Total",
   "kpis": {
     "cash_bank_balance": "Cash / Bank Balance",
     "cash_bank_balance_help": "Posted balance across cash and bank accounts.",
@@ -80,5 +83,17 @@
     "quantity": "Quantity",
     "amount": "Amount",
     "no_records": "No records found."
+  },
+  "cash_position": {
+    "title": "Cash position",
+    "description": "How much cash you are holding in each currency, across all cash and bank accounts.",
+    "currency": "Currency",
+    "currency_name": "Currency name",
+    "amount": "Amount",
+    "home_equivalent": "Home equivalent",
+    "total_home_equivalent": "Total home equivalent",
+    "open_report": "Open report",
+    "dr": "Dr",
+    "cr": "Cr"
   }
 }

@@ -17,6 +17,16 @@ use App\Models\Administration\Warehouse;
 use App\Models\Administration\UnitMeasure;
 use App\Models\Expense\Expense;
 use App\Models\Expense\ExpenseCategory;
+use App\Models\Hr\Attendance;
+use App\Models\Hr\AttendanceDevice;
+use App\Models\Hr\Employee;
+use App\Models\Hr\EmployeeContract;
+use App\Models\Hr\EmployeeDocument;
+use App\Models\Hr\Holiday;
+use App\Models\Hr\LeaveAllocation;
+use App\Models\Hr\LeaveRequest;
+use App\Models\Hr\LeaveType;
+use App\Models\Hr\Shift;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\LandedCost;
 use App\Models\Inventory\StockAdjustment;
@@ -48,6 +58,16 @@ use App\Policies\DepartmentPolicy;
 use App\Policies\DesignationPolicy;
 use App\Policies\ExpenseCategoryPolicy;
 use App\Policies\ExpensePolicy;
+use App\Policies\Hr\AttendanceDevicePolicy;
+use App\Policies\Hr\AttendancePolicy;
+use App\Policies\Hr\EmployeeContractPolicy;
+use App\Policies\Hr\EmployeeDocumentPolicy;
+use App\Policies\Hr\EmployeePolicy;
+use App\Policies\Hr\HolidayPolicy;
+use App\Policies\Hr\LeaveAllocationPolicy;
+use App\Policies\Hr\LeaveRequestPolicy;
+use App\Policies\Hr\LeaveTypePolicy;
+use App\Policies\Hr\ShiftPolicy;
 use App\Policies\DrawingPolicy;
 use App\Policies\ItemPolicy;
 use App\Policies\LandedCostPolicy;
@@ -106,6 +126,27 @@ class AuthServiceProvider extends ServiceProvider
         // Owners
         Owner::class => OwnerPolicy::class,
         Drawing::class => DrawingPolicy::class,
+
+        // Human resources
+        Employee::class => EmployeePolicy::class,
+        EmployeeContract::class => EmployeeContractPolicy::class,
+        EmployeeDocument::class => EmployeeDocumentPolicy::class,
+        Shift::class => ShiftPolicy::class,
+        Holiday::class => HolidayPolicy::class,
+        Attendance::class => AttendancePolicy::class,
+        AttendanceDevice::class => AttendanceDevicePolicy::class,
+        LeaveType::class => LeaveTypePolicy::class,
+        LeaveAllocation::class => LeaveAllocationPolicy::class,
+        LeaveRequest::class => LeaveRequestPolicy::class,
+        \App\Models\Hr\SalaryComponent::class => \App\Policies\Hr\SalaryComponentPolicy::class,
+        \App\Models\Hr\SalaryStructure::class => \App\Policies\Hr\SalaryStructurePolicy::class,
+        \App\Models\Hr\TaxBracketSet::class => \App\Policies\Hr\TaxBracketSetPolicy::class,
+        \App\Models\Hr\Payroll::class => \App\Policies\Hr\PayrollPolicy::class,
+        \App\Models\Hr\SalaryPayment::class => \App\Policies\Hr\SalaryPaymentPolicy::class,
+        \App\Models\Hr\EmployeeLoan::class => \App\Policies\Hr\EmployeeLoanPolicy::class,
+        \App\Models\Hr\JobOpening::class => \App\Policies\Hr\JobOpeningPolicy::class,
+        \App\Models\Hr\JobApplication::class => \App\Policies\Hr\JobApplicationPolicy::class,
+        \App\Models\Hr\Interview::class => \App\Policies\Hr\InterviewPolicy::class,
 
         // Purchases & Sales
         Purchase::class => PurchasePolicy::class,

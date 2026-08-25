@@ -30,7 +30,10 @@ class LedgerFactory extends Factory
             'email' => fake()->optional()->safeEmail(),
             'currency_id' => Currency::factory(),
             'branch_id' => Branch::factory(),
-            'type' => fake()->randomElement(LedgerType::values()),
+            // Commercial types only. Employee ledgers are created by
+            // EmployeeObserver and are meaningless without the employee behind
+            // them, so randomising across all values would mint orphans.
+            'type' => fake()->randomElement(LedgerType::commercialValues()),
             'is_main' => false,
             'is_active' => true,
         ];

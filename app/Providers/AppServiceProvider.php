@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\Hr\Employee;
 use App\Models\Transaction\Transaction;
+use App\Observers\Hr\EmployeeObserver;
 use App\Observers\TransactionObserver;
 use App\Observers\ModelActivityObserver;
 use Illuminate\Support\ServiceProvider;
@@ -52,7 +54,34 @@ class AppServiceProvider extends ServiceProvider
             'receipt' => 'App\Models\Receipt\Receipt',
             'attachment' => 'App\Models\Attachment',
 
+            // Human resources
+            'employee' => 'App\Models\Hr\Employee',
+            'employee_contract' => 'App\Models\Hr\EmployeeContract',
+            'employee_document' => 'App\Models\Hr\EmployeeDocument',
+            'shift' => 'App\Models\Hr\Shift',
+            'holiday' => 'App\Models\Hr\Holiday',
+            'attendance' => 'App\Models\Hr\Attendance',
+            'attendance_device' => 'App\Models\Hr\AttendanceDevice',
+            'leave_type' => 'App\Models\Hr\LeaveType',
+            'leave_allocation' => 'App\Models\Hr\LeaveAllocation',
+            'leave_request' => 'App\Models\Hr\LeaveRequest',
+            'salary_component' => 'App\Models\Hr\SalaryComponent',
+            'salary_structure' => 'App\Models\Hr\SalaryStructure',
+            'tax_bracket_set' => 'App\Models\Hr\TaxBracketSet',
+            'payroll' => 'App\Models\Hr\Payroll',
+            'payroll_line' => 'App\Models\Hr\PayrollLine',
+            'salary_payment' => 'App\Models\Hr\SalaryPayment',
+            'employee_loan' => 'App\Models\Hr\EmployeeLoan',
+            'job_opening' => 'App\Models\Hr\JobOpening',
+            'job_application' => 'App\Models\Hr\JobApplication',
+            'interview' => 'App\Models\Hr\Interview',
+
         ]);
+
+        // Registered explicitly rather than through the activity_log list: this
+        // observer maintains the employee's companion ledger, which is domain
+        // behaviour and must run even where audit logging is switched off.
+        Employee::observe(EmployeeObserver::class);
 
         foreach (config('activity_log.observer.models', []) as $modelClass) {
             if (class_exists($modelClass)) {

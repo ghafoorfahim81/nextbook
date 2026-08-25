@@ -228,6 +228,9 @@ trait BuildsErpContext
             'consultant-professional-salary' => ['name' => 'Consultant Salary', 'type' => 'expense', 'number' => '9207'],
             'allowances-commissions' => ['name' => 'Allowances & Commissions', 'type' => 'expense', 'number' => '9208'],
             'overtime-expense' => ['name' => 'Overtime Expense', 'type' => 'expense', 'number' => '9203'],
+            // Where an abandoned staff loan lands. An expense, not a bad debt:
+            // it was never revenue, so there is nothing to reverse out.
+            'staff-benefits-expense' => ['name' => 'Staff Benefits', 'type' => 'expense', 'number' => '9204'],
         ];
 
         $accounts = [];

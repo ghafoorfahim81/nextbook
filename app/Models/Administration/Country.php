@@ -22,6 +22,8 @@ class Country extends Model
 
     public function getLocalizedNameAttribute(): string
     {
-        return app()->getLocale() === 'fa' ? $this->name_fa : $this->name_en;
+        $preferred = app()->getLocale() === 'fa' ? $this->name_fa : $this->name_en;
+
+        return (string) ($preferred ?: $this->name_en ?: $this->name_fa ?: '');
     }
 }

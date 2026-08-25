@@ -2,7 +2,12 @@
 
 namespace App\Services;
 
+use App\Enums\AttendanceStatus;
+use App\Enums\EmploymentType;
+use App\Enums\Gender;
+use App\Enums\LeaveRequestStatus;
 use App\Enums\LedgerType;
+use App\Enums\PayrollStatus;
 use App\Enums\StockAdjustmentReason;
 use App\Enums\StockMovementType;
 use App\Enums\StockStatus;
@@ -57,6 +62,17 @@ class ReportService
         'journal_book_report',
         'user_activity',
         'expense_report',
+        // Human resources.
+        'payroll_register',
+        'payslip_summary',
+        'tax_withholding_report',
+        'employee_loan_statement',
+        'attendance_summary',
+        'attendance_register',
+        'leave_balance_report',
+        'leave_register',
+        'headcount_report',
+        'contract_expiry_report',
     ];
 
     public function __construct(
@@ -169,6 +185,16 @@ class ReportService
             'journal_book_report' => $this->getJournalBookReport($filters),
             'user_activity' => $this->getUserActivity($filters),
             'expense_report' => $this->getExpenseReport($filters),
+            'payroll_register' => $this->getPayrollRegister($filters),
+            'payslip_summary' => $this->getPayslipSummary($filters),
+            'tax_withholding_report' => $this->getTaxWithholdingReport($filters),
+            'employee_loan_statement' => $this->getEmployeeLoanStatement($filters),
+            'attendance_summary' => $this->getAttendanceSummary($filters),
+            'attendance_register' => $this->getAttendanceRegister($filters),
+            'leave_balance_report' => $this->getLeaveBalanceReport($filters),
+            'leave_register' => $this->getLeaveRegister($filters),
+            'headcount_report' => $this->getHeadcountReport($filters),
+            'contract_expiry_report' => $this->getContractExpiryReport($filters),
             default => $this->getTrialBalance($filters),
         };
     }
@@ -345,12 +371,18 @@ class ReportService
                 $join->on('tl.ledger_id', '=', 'l.id')
                     ->whereNull('tl.deleted_at');
             })
+            // The currency narrows the join rather than the outer query, so a party
+            // with nothing posted in it still lists — with zeroed figures.
             ->leftJoin('transactions as t', function ($join) use ($filters) {
                 $join->on('t.id', '=', 'tl.transaction_id')
                     ->where('t.branch_id', '=', $filters['branch_id'])
                     ->where('t.status', '=', TransactionStatus::POSTED->value)
                     ->where('t.date', '<=', $filters['date_to'])
                     ->whereNull('t.deleted_at');
+
+                if (! empty($filters['currency_id'])) {
+                    $join->where('t.currency_id', '=', $filters['currency_id']);
+                }
             })
             ->where('l.branch_id', $filters['branch_id'])
             ->where('l.type', $ledgerType)
@@ -542,11 +574,13 @@ class ReportService
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
+            ->leftJoin('currencies as cur', 'cur.id', '=', 't.currency_id')
             ->leftJoinSub($this->counterpartyNamesSubquery($filters), 'cp', fn ($join) => $join->on('cp.transaction_id', '=', 't.id'))
             ->whereNull('tl.deleted_at')
             ->where('at.slug', 'cash-or-bank')
             ->where('tl.debit', '>', 0)
-            ->when($filters['account_id'], fn ($builder, $accountId) => $builder->where('a.id', $accountId));
+            ->when($filters['account_id'], fn ($builder, $accountId) => $builder->where('a.id', $accountId))
+            ->when($filters['currency_id'], fn ($builder, $currencyId) => $builder->where('t.currency_id', $currencyId));
 
         $this->applyDateFilter($query, 't.date', $filters);
 
@@ -562,6 +596,8 @@ class ReportService
             ->selectRaw('COALESCE(t.voucher_number, \'-\') as transaction_number')
             ->selectRaw('COALESCE(cp.ledger_name, a.name) as ledger_name')
             ->selectRaw("COALESCE(NULLIF(tl.remark, ''), NULLIF(t.remark, ''), '') as description")
+            ->selectRaw("COALESCE(cur.code, cur.name, '-') as currency_code")
+            ->selectRaw('COALESCE(t.rate, 1) as rate')
             ->selectRaw('COALESCE(tl.base_debit, 0) as amount_received');
 
         return $this->paginateReport(
@@ -572,6 +608,8 @@ class ReportService
                 'transaction_number' => $row->transaction_number,
                 'ledger_name' => $row->ledger_name,
                 'description' => $row->description,
+                'currency' => $row->currency_code,
+                'rate' => $this->rateValue($row->rate),
                 'amount_received' => $this->moneyValue($row->amount_received),
             ],
             [
@@ -595,11 +633,13 @@ class ReportService
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
+            ->leftJoin('currencies as cur', 'cur.id', '=', 't.currency_id')
             ->leftJoinSub($this->counterpartyNamesSubquery($filters), 'cp', fn ($join) => $join->on('cp.transaction_id', '=', 't.id'))
             ->whereNull('tl.deleted_at')
             ->where('at.slug', 'cash-or-bank')
             ->where('tl.credit', '>', 0)
-            ->when($filters['account_id'], fn ($builder, $accountId) => $builder->where('a.id', $accountId));
+            ->when($filters['account_id'], fn ($builder, $accountId) => $builder->where('a.id', $accountId))
+            ->when($filters['currency_id'], fn ($builder, $currencyId) => $builder->where('t.currency_id', $currencyId));
 
         $this->applyDateFilter($query, 't.date', $filters);
 
@@ -615,6 +655,8 @@ class ReportService
             ->selectRaw('COALESCE(t.voucher_number, \'-\') as transaction_number')
             ->selectRaw('COALESCE(cp.ledger_name, a.name) as ledger_name')
             ->selectRaw("COALESCE(NULLIF(tl.remark, ''), NULLIF(t.remark, ''), '') as description")
+            ->selectRaw("COALESCE(cur.code, cur.name, '-') as currency_code")
+            ->selectRaw('COALESCE(t.rate, 1) as rate')
             ->selectRaw('COALESCE(tl.base_credit, 0) as amount_paid');
 
         return $this->paginateReport(
@@ -625,6 +667,8 @@ class ReportService
                 'transaction_number' => $row->transaction_number,
                 'ledger_name' => $row->ledger_name,
                 'description' => $row->description,
+                'currency' => $row->currency_code,
+                'rate' => $this->rateValue($row->rate),
                 'amount_paid' => $this->moneyValue($row->amount_paid),
             ],
             [
@@ -652,9 +696,11 @@ class ReportService
                     ->whereNull('a.deleted_at');
             })
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
+            ->leftJoin('currencies as cur', 'cur.id', '=', 't.currency_id')
             ->whereNull('tl.deleted_at')
             ->where('at.slug', 'cash-or-bank')
-            ->where('a.id', $filters['account_id']);
+            ->where('a.id', $filters['account_id'])
+            ->when($filters['currency_id'], fn ($builder, $currencyId) => $builder->where('t.currency_id', $currencyId));
 
         $this->applyDateFilter($query, 't.date', $filters);
 
@@ -672,6 +718,8 @@ class ReportService
             ->selectRaw('t.date')
             ->selectRaw('COALESCE(t.voucher_number, \'-\') as reference')
             ->selectRaw("COALESCE(NULLIF(tl.remark, ''), NULLIF(t.remark, ''), '') as description")
+            ->selectRaw("COALESCE(cur.code, cur.name, '-') as currency_code")
+            ->selectRaw('COALESCE(t.rate, 1) as rate')
             ->selectRaw('COALESCE(tl.base_debit, 0) as debit')
             ->selectRaw('COALESCE(tl.base_credit, 0) as credit')
             ->selectRaw('SUM((tl.base_debit - tl.base_credit)) OVER (ORDER BY t.date, t.created_at, t.id, tl.id) as running_balance');
@@ -683,6 +731,8 @@ class ReportService
                 'date' => $this->displayDate($row->date),
                 'reference' => $row->reference,
                 'description' => $row->description,
+                'currency' => $row->currency_code,
+                'rate' => $this->rateValue($row->rate),
                 'debit' => $this->moneyValue($row->debit),
                 'credit' => $this->moneyValue($row->credit),
                 'running_balance' => $this->moneyValue($row->running_balance),
@@ -700,11 +750,12 @@ class ReportService
     /**
      * How much cash the business is holding, one line per currency.
      *
-     * Every cash and bank account is folded into the currency it transacted in,
-     * so the answer reads "this much USD, this much AFN" rather than an account
-     * list. Amounts stay in their own currency; the home equivalent, converted
-     * at each transaction's own rate, is the only column that can legitimately
-     * be added across currencies.
+     * One line per cash/bank account per currency, so the answer reads "this much
+     * USD in Cash in Hand, this much USD in the USD bank account" — the same
+     * account can appear under more than one currency when it has transacted in
+     * more than one. Amounts stay in their own currency; the home equivalent,
+     * converted at each transaction's own rate, is the only column that can
+     * legitimately be added across currencies.
      *
      * The position is cumulative up to date_to; date_from does not narrow it,
      * because a cash position is a standing balance rather than a movement.
@@ -735,12 +786,16 @@ class ReportService
             ->first();
 
         $query = $baseQuery
-            ->groupBy('c.id', 'c.code', 'c.name', 'c.is_base_currency')
+            ->groupBy('c.id', 'c.code', 'c.name', 'c.is_base_currency', 'a.id', 'a.name', 'a.number')
             ->orderByDesc('c.is_base_currency')
             ->orderBy('c.code')
+            ->orderBy('a.name')
             ->selectRaw('c.id as currency_id')
             ->selectRaw('c.code as currency_code')
             ->selectRaw('c.name as currency_name')
+            ->selectRaw('a.id as account_id')
+            ->selectRaw('a.name as account_name')
+            ->selectRaw('a.number as account_number')
             ->selectRaw('COALESCE(SUM(tl.debit - tl.credit), 0) as amount')
             ->selectRaw('COALESCE(SUM((tl.debit - tl.credit) * t.rate), 0) as home_equivalent');
 
@@ -750,6 +805,9 @@ class ReportService
             fn ($row) => [
                 'currency' => $row->currency_code ?: $row->currency_name,
                 'currency_name' => $row->currency_name,
+                'account_name' => $row->account_number
+                    ? "{$row->account_name} ({$row->account_number})"
+                    : $row->account_name,
                 'amount' => $this->moneyValue($row->amount),
                 'home_equivalent' => $this->moneyValue($row->home_equivalent),
             ],
@@ -2140,7 +2198,9 @@ class ReportService
                     ->where('a.branch_id', '=', $filters['branch_id'])
                     ->whereNull('a.deleted_at');
             })
-            ->whereNull('tl.deleted_at');
+            ->leftJoin('currencies as cur', 'cur.id', '=', 't.currency_id')
+            ->whereNull('tl.deleted_at')
+            ->when($filters['currency_id'], fn ($builder, $currencyId) => $builder->where('t.currency_id', $currencyId));
 
         $this->applyDateFilter($query, 't.date', $filters);
 
@@ -2159,6 +2219,8 @@ class ReportService
             ->selectRaw('a.name as account_name')
             ->selectRaw('t.reference_type')
             ->selectRaw('COALESCE(t.voucher_number, t.reference_id::text, \'-\') as reference')
+            ->selectRaw("COALESCE(cur.code, cur.name, '-') as currency_code")
+            ->selectRaw('COALESCE(t.rate, 1) as rate')
             ->selectRaw('COALESCE(tl.base_debit, 0) as debit')
             ->selectRaw('COALESCE(tl.base_credit, 0) as credit')
             ->selectRaw("COALESCE(NULLIF(tl.remark, ''), NULLIF(t.remark, ''), '') as narration");
@@ -2171,6 +2233,8 @@ class ReportService
                 'account_name' => $row->account_name,
                 'transaction_type' => $this->referenceLabel($row->reference_type),
                 'reference' => $row->reference,
+                'currency' => $row->currency_code,
+                'rate' => $this->rateValue($row->rate),
                 'debit' => $this->moneyValue($row->debit),
                 'credit' => $this->moneyValue($row->credit),
                 'narration' => $row->narration ?: '-',
@@ -2556,7 +2620,8 @@ class ReportService
                     $join->where('l.type', '=', $ledgerType);
                 }
             })
-            ->whereNull('tl.deleted_at');
+            ->whereNull('tl.deleted_at')
+            ->when($filters['currency_id'] ?? null, fn ($builder, $currencyId) => $builder->where('t.currency_id', $currencyId));
 
         $this->applyDateFilter($query, 't.date', $filters);
 
@@ -2593,7 +2658,8 @@ class ReportService
                     $join->where('l.type', '=', $ledgerType);
                 }
             })
-            ->whereNull('tl.deleted_at');
+            ->whereNull('tl.deleted_at')
+            ->when($filters['currency_id'] ?? null, fn ($builder, $currencyId) => $builder->where('t.currency_id', $currencyId));
 
         $this->applyDateFilter($query, 't.date', $filters);
 
@@ -2718,6 +2784,786 @@ class ReportService
             ->sum(fn ($row) => (float) $row->raw_balance);
 
         return $this->moneyValue($revenue - $costOfGoodsSold - $expenses);
+    }
+
+    // ==========================================================
+    // HUMAN RESOURCES
+    // ==========================================================
+
+    /**
+     * Every payslip in the period, one row per employee per run.
+     *
+     * Read from payroll_lines rather than from the general ledger: the accrual
+     * aggregates expense lines, so the GL cannot say what any individual was
+     * paid. The payslip is the record of that, and it is frozen at
+     * calculation — a reprint must show what was paid, not what the same
+     * calculation would produce today.
+     */
+    public function getPayrollRegister(array $filters): array
+    {
+        $base = DB::table('payroll_lines as pl')
+            ->join('payrolls as p', function ($join) {
+                $join->on('p.id', '=', 'pl.payroll_id')->whereNull('p.deleted_at');
+            })
+            ->join('employees as e', function ($join) {
+                $join->on('e.id', '=', 'pl.employee_id')->whereNull('e.deleted_at');
+            })
+            ->leftJoin('departments as d', 'd.id', '=', 'e.department_id')
+            ->leftJoin('currencies as c', 'c.id', '=', 'pl.currency_id')
+            ->where('pl.branch_id', $filters['branch_id'])
+            ->whereNull('pl.deleted_at')
+            // Cancelled and reversed runs are excluded: they are not what
+            // anybody was paid, and including them would double the register
+            // for any period that was corrected.
+            ->whereIn('p.status', [
+                PayrollStatus::Posted->value,
+                PayrollStatus::Paid->value,
+            ]);
+
+        $this->applyDateFilter($base, 'p.period_end', $filters);
+        $this->applyHrScopeFilters($base, $filters);
+
+        // A single run, when the user drilled in from the payslip summary.
+        if ($filters['payroll_id']) {
+            $base->where('pl.payroll_id', $filters['payroll_id']);
+        }
+
+        $query = (clone $base)
+            ->orderBy('p.period_end')
+            ->orderBy('e.full_name')
+            ->select([
+                'pl.id', 'p.number as payroll_number', 'p.period_label', 'p.period_end',
+                'e.code as employee_code', 'e.full_name as employee_name',
+                'd.name as department_name', 'c.code as currency_code',
+                'pl.working_days', 'pl.present_days', 'pl.absent_days',
+                'pl.paid_leave_days', 'pl.unpaid_leave_days', 'pl.overtime_hours',
+                'pl.basic_salary', 'pl.gross_earnings', 'pl.total_deductions',
+                'pl.taxable_income', 'pl.tax_amount', 'pl.net_payable',
+                'pl.base_gross', 'pl.base_net', 'pl.paid_amount', 'pl.payment_status',
+            ]);
+
+        // Totalled on the BASE columns, because a mixed AFN/USD run cannot be
+        // summed in its own currencies — that is exactly why base_gross and
+        // base_net are snapshotted on the payslip.
+        $totals = (clone $base)
+            ->selectRaw('COUNT(*) as payslip_count')
+            ->selectRaw('COALESCE(SUM(pl.base_gross), 0) as base_gross')
+            ->selectRaw('COALESCE(SUM(pl.base_net), 0) as base_net')
+            ->selectRaw('COALESCE(SUM(pl.tax_amount * pl.rate), 0) as base_tax')
+            ->selectRaw('COALESCE(SUM(pl.paid_amount * pl.rate), 0) as base_paid')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'payroll_number' => $row->payroll_number,
+                'period' => $row->period_label ?: $this->displayDate($row->period_end),
+                'employee_code' => $row->employee_code,
+                'employee_name' => $row->employee_name,
+                'department_name' => $row->department_name,
+                'currency_code' => $row->currency_code,
+                'working_days' => (float) $row->working_days,
+                'present_days' => (float) $row->present_days,
+                'absent_days' => (float) $row->absent_days,
+                'paid_leave_days' => (float) $row->paid_leave_days,
+                'unpaid_leave_days' => (float) $row->unpaid_leave_days,
+                'overtime_hours' => (float) $row->overtime_hours,
+                'basic_salary' => $this->moneyValue($row->basic_salary),
+                'gross_earnings' => $this->moneyValue($row->gross_earnings),
+                'total_deductions' => $this->moneyValue($row->total_deductions),
+                'taxable_income' => $this->moneyValue($row->taxable_income),
+                'tax_amount' => $this->moneyValue($row->tax_amount),
+                'net_payable' => $this->moneyValue($row->net_payable),
+                'paid_amount' => $this->moneyValue($row->paid_amount),
+                'payment_status' => $row->payment_status,
+            ],
+            [
+                'payslip_count' => (int) ($totals?->payslip_count ?? 0),
+                'base_gross' => $this->moneyValue($totals?->base_gross),
+                'base_net' => $this->moneyValue($totals?->base_net),
+                'base_tax' => $this->moneyValue($totals?->base_tax),
+                'base_paid' => $this->moneyValue($totals?->base_paid),
+                'base_outstanding' => $this->moneyValue(
+                    (float) ($totals?->base_net ?? 0) - (float) ($totals?->base_paid ?? 0)
+                ),
+            ],
+        );
+    }
+
+    /**
+     * One row per payroll run — the register rolled up.
+     */
+    public function getPayslipSummary(array $filters): array
+    {
+        $base = DB::table('payrolls as p')
+            ->leftJoin('currencies as c', 'c.id', '=', 'p.currency_id')
+            ->where('p.branch_id', $filters['branch_id'])
+            ->whereNull('p.deleted_at');
+
+        $this->applyDateFilter($base, 'p.period_end', $filters);
+
+        if ($filters['department_id']) {
+            $base->where('p.department_id', $filters['department_id']);
+        }
+
+        $paidSql = '(SELECT COALESCE(SUM(pl.paid_amount * pl.rate), 0) FROM payroll_lines pl'
+            .' WHERE pl.payroll_id = p.id AND pl.deleted_at IS NULL)';
+
+        $query = (clone $base)
+            ->orderByDesc('p.period_end')
+            ->selectRaw('p.id, p.number, p.name, p.period_label, p.period_start, p.period_end, p.pay_date')
+            ->selectRaw('p.status, p.employee_count, p.total_gross, p.total_deductions, p.total_tax, p.total_net')
+            ->selectRaw('c.code as currency_code')
+            ->selectRaw("{$paidSql} as base_paid");
+
+        $totals = (clone $base)
+            ->selectRaw('COUNT(*) as run_count')
+            ->selectRaw('COALESCE(SUM(p.total_gross), 0) as total_gross')
+            ->selectRaw('COALESCE(SUM(p.total_tax), 0) as total_tax')
+            ->selectRaw('COALESCE(SUM(p.total_net), 0) as total_net')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'number' => $row->number,
+                'name' => $row->name,
+                'period' => $row->period_label ?: $this->displayDate($row->period_end),
+                'period_start' => $this->displayDate($row->period_start),
+                'period_end' => $this->displayDate($row->period_end),
+                'pay_date' => $this->displayDate($row->pay_date),
+                'status' => $row->status,
+                'currency_code' => $row->currency_code,
+                'employee_count' => (int) $row->employee_count,
+                'total_gross' => $this->moneyValue($row->total_gross),
+                'total_deductions' => $this->moneyValue($row->total_deductions),
+                'total_tax' => $this->moneyValue($row->total_tax),
+                'total_net' => $this->moneyValue($row->total_net),
+                'paid_amount' => $this->moneyValue($row->base_paid),
+                'outstanding' => $this->moneyValue(
+                    (float) $row->total_net - (float) $row->base_paid
+                ),
+            ],
+            [
+                'run_count' => (int) ($totals?->run_count ?? 0),
+                'total_gross' => $this->moneyValue($totals?->total_gross),
+                'total_tax' => $this->moneyValue($totals?->total_tax),
+                'total_net' => $this->moneyValue($totals?->total_net),
+            ],
+        );
+    }
+
+    /**
+     * Wage tax withheld per employee — what the MoF remittance is built from.
+     *
+     * The tax bracket set each payslip used is included rather than the one in
+     * force today: a period re-run after a rate change has to reconcile against
+     * the table it was actually computed with.
+     */
+    public function getTaxWithholdingReport(array $filters): array
+    {
+        $base = DB::table('payroll_lines as pl')
+            ->join('payrolls as p', function ($join) {
+                $join->on('p.id', '=', 'pl.payroll_id')->whereNull('p.deleted_at');
+            })
+            ->join('employees as e', function ($join) {
+                $join->on('e.id', '=', 'pl.employee_id')->whereNull('e.deleted_at');
+            })
+            ->leftJoin('tax_bracket_sets as tbs', 'tbs.id', '=', 'pl.tax_bracket_set_id')
+            ->leftJoin('departments as d', 'd.id', '=', 'e.department_id')
+            ->where('pl.branch_id', $filters['branch_id'])
+            ->whereNull('pl.deleted_at')
+            ->whereIn('p.status', [
+                PayrollStatus::Posted->value,
+                PayrollStatus::Paid->value,
+            ]);
+
+        $this->applyDateFilter($base, 'p.period_end', $filters);
+        $this->applyHrScopeFilters($base, $filters);
+
+        if ($filters['payroll_id']) {
+            $base->where('pl.payroll_id', $filters['payroll_id']);
+        }
+
+        $query = (clone $base)
+            ->orderBy('p.period_end')
+            ->orderBy('e.full_name')
+            ->select([
+                'pl.id', 'p.number as payroll_number', 'p.period_label', 'p.period_end',
+                'e.code as employee_code', 'e.full_name as employee_name',
+                'e.tin', 'e.is_tax_exempt', 'd.name as department_name',
+                'tbs.name as tax_table_name',
+                'pl.gross_earnings', 'pl.taxable_income', 'pl.tax_amount', 'pl.rate',
+            ]);
+
+        $totals = (clone $base)
+            ->selectRaw('COUNT(*) as payslip_count')
+            ->selectRaw('COALESCE(SUM(pl.taxable_income * pl.rate), 0) as base_taxable')
+            ->selectRaw('COALESCE(SUM(pl.tax_amount * pl.rate), 0) as base_tax')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'payroll_number' => $row->payroll_number,
+                'period' => $row->period_label ?: $this->displayDate($row->period_end),
+                'employee_code' => $row->employee_code,
+                'employee_name' => $row->employee_name,
+                'tin' => $row->tin,
+                'department_name' => $row->department_name,
+                'tax_table_name' => $row->tax_table_name,
+                'is_tax_exempt' => (bool) $row->is_tax_exempt,
+                'gross_earnings' => $this->moneyValue($row->gross_earnings),
+                'taxable_income' => $this->moneyValue($row->taxable_income),
+                'tax_amount' => $this->moneyValue($row->tax_amount),
+            ],
+            [
+                'payslip_count' => (int) ($totals?->payslip_count ?? 0),
+                'base_taxable' => $this->moneyValue($totals?->base_taxable),
+                'base_tax' => $this->moneyValue($totals?->base_tax),
+            ],
+        );
+    }
+
+    /**
+     * Staff loans and what is left on them.
+     */
+    public function getEmployeeLoanStatement(array $filters): array
+    {
+        $base = DB::table('employee_loans as el')
+            ->join('employees as e', function ($join) {
+                $join->on('e.id', '=', 'el.employee_id')->whereNull('e.deleted_at');
+            })
+            ->leftJoin('departments as d', 'd.id', '=', 'e.department_id')
+            ->leftJoin('currencies as c', 'c.id', '=', 'el.currency_id')
+            ->where('el.branch_id', $filters['branch_id'])
+            ->whereNull('el.deleted_at');
+
+        $this->applyDateFilter($base, 'el.issue_date', $filters);
+        $this->applyHrScopeFilters($base, $filters);
+
+        $repaidSql = '(SELECT COALESCE(SUM(elr.amount), 0) FROM employee_loan_repayments elr'
+            .' WHERE elr.employee_loan_id = el.id AND elr.deleted_at IS NULL)';
+
+        $query = (clone $base)
+            ->orderBy('e.full_name')
+            ->orderBy('el.issue_date')
+            ->selectRaw('el.id, el.number, el.loan_type, el.status, el.issue_date')
+            ->selectRaw('el.principal_amount, el.installment_amount, el.installments_count')
+            ->selectRaw('el.outstanding_amount, el.deduct_from_payroll, el.rate')
+            ->selectRaw('e.code as employee_code, e.full_name as employee_name')
+            ->selectRaw('d.name as department_name, c.code as currency_code')
+            ->selectRaw("{$repaidSql} as repaid_amount");
+
+        $totals = (clone $base)
+            ->selectRaw('COUNT(*) as loan_count')
+            ->selectRaw('COALESCE(SUM(el.principal_amount * el.rate), 0) as base_principal')
+            ->selectRaw('COALESCE(SUM(el.outstanding_amount * el.rate), 0) as base_outstanding')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'number' => $row->number,
+                'employee_code' => $row->employee_code,
+                'employee_name' => $row->employee_name,
+                'department_name' => $row->department_name,
+                'loan_type' => $row->loan_type,
+                'status' => $row->status,
+                'currency_code' => $row->currency_code,
+                'issue_date' => $this->displayDate($row->issue_date),
+                'principal_amount' => $this->moneyValue($row->principal_amount),
+                'installment_amount' => $this->moneyValue($row->installment_amount),
+                'installments_count' => (int) $row->installments_count,
+                'repaid_amount' => $this->moneyValue($row->repaid_amount),
+                'outstanding_amount' => $this->moneyValue($row->outstanding_amount),
+                'deduct_from_payroll' => (bool) $row->deduct_from_payroll,
+            ],
+            [
+                'loan_count' => (int) ($totals?->loan_count ?? 0),
+                'base_principal' => $this->moneyValue($totals?->base_principal),
+                'base_outstanding' => $this->moneyValue($totals?->base_outstanding),
+            ],
+        );
+    }
+
+    /**
+     * Days present, absent, late and on leave per employee for the period.
+     *
+     * Counted with Postgres FILTER rather than one query per status: the whole
+     * point of a summary is that it is a single pass over the days.
+     */
+    public function getAttendanceSummary(array $filters): array
+    {
+        $base = DB::table('attendances as a')
+            ->join('employees as e', function ($join) {
+                $join->on('e.id', '=', 'a.employee_id')->whereNull('e.deleted_at');
+            })
+            ->leftJoin('departments as d', 'd.id', '=', 'e.department_id')
+            ->where('a.branch_id', $filters['branch_id'])
+            ->whereNull('a.deleted_at');
+
+        $this->applyDateFilter($base, 'a.date', $filters);
+        $this->applyHrScopeFilters($base, $filters);
+
+        $counts = [
+            "COUNT(*) FILTER (WHERE a.status = '".AttendanceStatus::Present->value."') as present_days",
+            "COUNT(*) FILTER (WHERE a.status = '".AttendanceStatus::Late->value."') as late_days",
+            "COUNT(*) FILTER (WHERE a.status = '".AttendanceStatus::Absent->value."') as absent_days",
+            "COUNT(*) FILTER (WHERE a.status = '".AttendanceStatus::HalfDay->value."') as half_days",
+            "COUNT(*) FILTER (WHERE a.status = '".AttendanceStatus::OnLeave->value."') as leave_days",
+            "COUNT(*) FILTER (WHERE a.status = '".AttendanceStatus::Holiday->value."') as holiday_days",
+            "COUNT(*) FILTER (WHERE a.status = '".AttendanceStatus::Weekend->value."') as weekend_days",
+            'COUNT(*) FILTER (WHERE a.needs_review) as needs_review_days',
+        ];
+
+        $query = (clone $base)
+            ->groupBy('e.id', 'e.code', 'e.full_name', 'd.name')
+            ->orderBy('e.full_name')
+            ->selectRaw('e.id as employee_id, e.code as employee_code, e.full_name as employee_name')
+            ->selectRaw('d.name as department_name')
+            ->selectRaw(implode(', ', $counts))
+            ->selectRaw('COALESCE(SUM(a.worked_hours), 0) as worked_hours')
+            ->selectRaw('COALESCE(SUM(a.overtime_hours), 0) as overtime_hours')
+            ->selectRaw('COALESCE(SUM(a.late_minutes), 0) as late_minutes');
+
+        $totals = (clone $base)
+            ->selectRaw(implode(', ', $counts))
+            ->selectRaw('COALESCE(SUM(a.worked_hours), 0) as worked_hours')
+            ->selectRaw('COALESCE(SUM(a.overtime_hours), 0) as overtime_hours')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'employee_code' => $row->employee_code,
+                'employee_name' => $row->employee_name,
+                'department_name' => $row->department_name,
+                'present_days' => (int) $row->present_days,
+                'late_days' => (int) $row->late_days,
+                'absent_days' => (int) $row->absent_days,
+                'half_days' => (int) $row->half_days,
+                'leave_days' => (int) $row->leave_days,
+                'holiday_days' => (int) $row->holiday_days,
+                'weekend_days' => (int) $row->weekend_days,
+                'needs_review_days' => (int) $row->needs_review_days,
+                'worked_hours' => round((float) $row->worked_hours, 2),
+                'overtime_hours' => round((float) $row->overtime_hours, 2),
+                'late_minutes' => (int) $row->late_minutes,
+            ],
+            [
+                'present_days' => (int) ($totals?->present_days ?? 0),
+                'absent_days' => (int) ($totals?->absent_days ?? 0),
+                'leave_days' => (int) ($totals?->leave_days ?? 0),
+                'needs_review_days' => (int) ($totals?->needs_review_days ?? 0),
+                'worked_hours' => round((float) ($totals?->worked_hours ?? 0), 2),
+                'overtime_hours' => round((float) ($totals?->overtime_hours ?? 0), 2),
+            ],
+        );
+    }
+
+    /**
+     * The raw day-by-day attendance record.
+     */
+    public function getAttendanceRegister(array $filters): array
+    {
+        $base = DB::table('attendances as a')
+            ->join('employees as e', function ($join) {
+                $join->on('e.id', '=', 'a.employee_id')->whereNull('e.deleted_at');
+            })
+            ->leftJoin('departments as d', 'd.id', '=', 'e.department_id')
+            ->leftJoin('shifts as s', 's.id', '=', 'a.shift_id')
+            ->where('a.branch_id', $filters['branch_id'])
+            ->whereNull('a.deleted_at');
+
+        $this->applyDateFilter($base, 'a.date', $filters);
+        $this->applyHrScopeFilters($base, $filters);
+
+        if ($filters['type']) {
+            $base->where('a.status', $filters['type']);
+        }
+
+        $query = (clone $base)
+            ->orderBy('a.date')
+            ->orderBy('e.full_name')
+            ->select([
+                'a.id', 'a.date', 'a.check_in', 'a.check_out', 'a.status',
+                'a.worked_hours', 'a.overtime_hours', 'a.late_minutes',
+                'a.early_out_minutes', 'a.break_minutes', 'a.needs_review',
+                'a.source', 'a.remark',
+                'e.code as employee_code', 'e.full_name as employee_name',
+                'd.name as department_name', 's.name as shift_name',
+            ]);
+
+        $totals = (clone $base)
+            ->selectRaw('COUNT(*) as day_count')
+            ->selectRaw('COALESCE(SUM(a.worked_hours), 0) as worked_hours')
+            ->selectRaw('COALESCE(SUM(a.overtime_hours), 0) as overtime_hours')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'date' => $this->displayDate($row->date),
+                'employee_code' => $row->employee_code,
+                'employee_name' => $row->employee_name,
+                'department_name' => $row->department_name,
+                'shift_name' => $row->shift_name,
+                'check_in' => $row->check_in,
+                'check_out' => $row->check_out,
+                'status' => $row->status,
+                'worked_hours' => round((float) $row->worked_hours, 2),
+                'overtime_hours' => round((float) $row->overtime_hours, 2),
+                'late_minutes' => (int) $row->late_minutes,
+                'early_out_minutes' => (int) $row->early_out_minutes,
+                'needs_review' => (bool) $row->needs_review,
+                'source' => $row->source,
+                'remark' => $row->remark,
+            ],
+            [
+                'day_count' => (int) ($totals?->day_count ?? 0),
+                'worked_hours' => round((float) ($totals?->worked_hours ?? 0), 2),
+                'overtime_hours' => round((float) ($totals?->overtime_hours ?? 0), 2),
+            ],
+        );
+    }
+
+    /**
+     * Leave entitlement against what has been taken.
+     *
+     * Derived here exactly as LeaveBalanceService derives it — entitlement plus
+     * carry-forward plus adjustment, less approved, encashed and expired. A
+     * stored balance would desync the moment a request was cancelled, and a
+     * report that disagreed with the employee's own screen is worse than none.
+     *
+     * Pending days are shown but NOT subtracted: nobody has agreed to them yet.
+     */
+    public function getLeaveBalanceReport(array $filters): array
+    {
+        $approved = "COALESCE((SELECT SUM(lr.days) FROM leave_requests lr"
+            ." WHERE lr.employee_id = la.employee_id AND lr.leave_type_id = la.leave_type_id"
+            ." AND lr.status = '".LeaveRequestStatus::Approved->value."'"
+            ." AND lr.from_date BETWEEN la.period_start AND la.period_end"
+            .' AND lr.deleted_at IS NULL), 0)';
+
+        $pending = "COALESCE((SELECT SUM(lr.days) FROM leave_requests lr"
+            ." WHERE lr.employee_id = la.employee_id AND lr.leave_type_id = la.leave_type_id"
+            ." AND lr.status = '".LeaveRequestStatus::Pending->value."'"
+            ." AND lr.from_date BETWEEN la.period_start AND la.period_end"
+            .' AND lr.deleted_at IS NULL), 0)';
+
+        $entitled = '(la.entitled_days + la.carried_forward_days + la.adjustment_days)';
+        $consumed = "({$approved} + la.encashed_days + la.expired_days)";
+
+        $base = DB::table('leave_allocations as la')
+            ->join('employees as e', function ($join) {
+                $join->on('e.id', '=', 'la.employee_id')->whereNull('e.deleted_at');
+            })
+            ->join('leave_types as lt', 'lt.id', '=', 'la.leave_type_id')
+            ->leftJoin('departments as d', 'd.id', '=', 'e.department_id')
+            ->where('la.branch_id', $filters['branch_id'])
+            ->whereNull('la.deleted_at')
+            // The allocation PERIOD is what matters, not a transaction date:
+            // a leave year overlapping the requested window is in scope.
+            ->where('la.period_start', '<=', $filters['date_to'])
+            ->where('la.period_end', '>=', $filters['date_from']);
+
+        $this->applyHrScopeFilters($base, $filters);
+
+        if ($filters['leave_type_id']) {
+            $base->where('la.leave_type_id', $filters['leave_type_id']);
+        }
+
+        $query = (clone $base)
+            ->orderBy('e.full_name')
+            ->orderBy('lt.name')
+            ->selectRaw('la.id, la.period_start, la.period_end')
+            ->selectRaw('la.entitled_days, la.carried_forward_days, la.adjustment_days')
+            ->selectRaw('la.encashed_days, la.expired_days')
+            ->selectRaw('e.code as employee_code, e.full_name as employee_name')
+            ->selectRaw('d.name as department_name, lt.name as leave_type_name, lt.is_paid')
+            ->selectRaw("{$approved} as taken_days")
+            ->selectRaw("{$pending} as pending_days")
+            ->selectRaw("({$entitled} - {$consumed}) as available_days");
+
+        $totals = (clone $base)
+            ->selectRaw("COALESCE(SUM({$entitled}), 0) as entitled_days")
+            ->selectRaw("COALESCE(SUM({$approved}), 0) as taken_days")
+            ->selectRaw("COALESCE(SUM({$pending}), 0) as pending_days")
+            ->selectRaw("COALESCE(SUM({$entitled} - {$consumed}), 0) as available_days")
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'employee_code' => $row->employee_code,
+                'employee_name' => $row->employee_name,
+                'department_name' => $row->department_name,
+                'leave_type_name' => $row->leave_type_name,
+                'is_paid' => (bool) $row->is_paid,
+                'period_start' => $this->displayDate($row->period_start),
+                'period_end' => $this->displayDate($row->period_end),
+                'entitled_days' => (float) $row->entitled_days,
+                'carried_forward_days' => (float) $row->carried_forward_days,
+                'adjustment_days' => (float) $row->adjustment_days,
+                'taken_days' => (float) $row->taken_days,
+                'pending_days' => (float) $row->pending_days,
+                'encashed_days' => (float) $row->encashed_days,
+                'expired_days' => (float) $row->expired_days,
+                'available_days' => (float) $row->available_days,
+            ],
+            [
+                'entitled_days' => round((float) ($totals?->entitled_days ?? 0), 2),
+                'taken_days' => round((float) ($totals?->taken_days ?? 0), 2),
+                'pending_days' => round((float) ($totals?->pending_days ?? 0), 2),
+                'available_days' => round((float) ($totals?->available_days ?? 0), 2),
+            ],
+        );
+    }
+
+    /**
+     * Individual leave requests in the period.
+     */
+    public function getLeaveRegister(array $filters): array
+    {
+        $base = DB::table('leave_requests as lr')
+            ->join('employees as e', function ($join) {
+                $join->on('e.id', '=', 'lr.employee_id')->whereNull('e.deleted_at');
+            })
+            ->join('leave_types as lt', 'lt.id', '=', 'lr.leave_type_id')
+            ->leftJoin('departments as d', 'd.id', '=', 'e.department_id')
+            ->leftJoin('users as u', 'u.id', '=', 'lr.approved_by')
+            ->where('lr.branch_id', $filters['branch_id'])
+            ->whereNull('lr.deleted_at');
+
+        // Overlap, not containment: a request running from before the window
+        // into it is part of that period's leave, and filtering on from_date
+        // alone would silently drop it.
+        $base->where('lr.from_date', '<=', $filters['date_to'])
+            ->where('lr.to_date', '>=', $filters['date_from']);
+
+        $this->applyHrScopeFilters($base, $filters);
+
+        if ($filters['leave_type_id']) {
+            $base->where('lr.leave_type_id', $filters['leave_type_id']);
+        }
+
+        if ($filters['type']) {
+            $base->where('lr.status', $filters['type']);
+        }
+
+        $query = (clone $base)
+            ->orderBy('lr.from_date')
+            ->orderBy('e.full_name')
+            ->select([
+                'lr.id', 'lr.number', 'lr.from_date', 'lr.to_date', 'lr.days',
+                'lr.is_half_day', 'lr.half_day_period', 'lr.status', 'lr.reason',
+                'lr.applied_at', 'lr.approved_at',
+                'e.code as employee_code', 'e.full_name as employee_name',
+                'd.name as department_name',
+                'lt.name as leave_type_name', 'lt.is_paid',
+                'u.name as approved_by_name',
+            ]);
+
+        $totals = (clone $base)
+            ->selectRaw('COUNT(*) as request_count')
+            ->selectRaw('COALESCE(SUM(lr.days), 0) as total_days')
+            ->selectRaw("COALESCE(SUM(lr.days) FILTER (WHERE lr.status = '"
+                .LeaveRequestStatus::Approved->value."'), 0) as approved_days")
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'number' => $row->number,
+                'employee_code' => $row->employee_code,
+                'employee_name' => $row->employee_name,
+                'department_name' => $row->department_name,
+                'leave_type_name' => $row->leave_type_name,
+                'is_paid' => (bool) $row->is_paid,
+                'from_date' => $this->displayDate($row->from_date),
+                'to_date' => $this->displayDate($row->to_date),
+                'days' => (float) $row->days,
+                'is_half_day' => (bool) $row->is_half_day,
+                'status' => $row->status,
+                'reason' => $row->reason,
+                'approved_by_name' => $row->approved_by_name,
+                'approved_at' => $this->displayDateTime($row->approved_at),
+            ],
+            [
+                'request_count' => (int) ($totals?->request_count ?? 0),
+                'total_days' => round((float) ($totals?->total_days ?? 0), 2),
+                'approved_days' => round((float) ($totals?->approved_days ?? 0), 2),
+            ],
+        );
+    }
+
+    /**
+     * Staff numbers by department, with joiners and leavers in the period.
+     *
+     * Headcount is counted AS AT the end of the window, not across it: "how
+     * many people work here" is a question about a moment, and averaging it
+     * over a range produces a number matching no actual day.
+     */
+    public function getHeadcountReport(array $filters): array
+    {
+        $asOf = $filters['date_to'];
+        $from = $filters['date_from'];
+
+        $base = DB::table('employees as e')
+            ->leftJoin('departments as d', 'd.id', '=', 'e.department_id')
+            ->where('e.branch_id', $filters['branch_id'])
+            ->whereNull('e.deleted_at')
+            ->where('e.joining_date', '<=', $asOf);
+
+        if ($filters['department_id']) {
+            $base->where('e.department_id', $filters['department_id']);
+        }
+
+        if ($filters['employment_type']) {
+            $base->where('e.employment_type', $filters['employment_type']);
+        }
+
+        $active = "(e.separation_date IS NULL OR e.separation_date > '{$asOf}')";
+        $joined = "(e.joining_date BETWEEN '{$from}' AND '{$asOf}')";
+        $left = "(e.separation_date BETWEEN '{$from}' AND '{$asOf}')";
+
+        $query = (clone $base)
+            ->groupBy('d.id', 'd.name')
+            ->orderBy('d.name')
+            ->selectRaw("COALESCE(d.name, '—') as department_name")
+            ->selectRaw("COUNT(*) FILTER (WHERE {$active}) as headcount")
+            ->selectRaw("COUNT(*) FILTER (WHERE {$joined}) as joiners")
+            ->selectRaw("COUNT(*) FILTER (WHERE {$left}) as leavers")
+            ->selectRaw("COUNT(*) FILTER (WHERE {$active} AND e.gender = '"
+                .Gender::Male->value."') as male_count")
+            ->selectRaw("COUNT(*) FILTER (WHERE {$active} AND e.gender = '"
+                .Gender::Female->value."') as female_count")
+            ->selectRaw("COUNT(*) FILTER (WHERE {$active} AND e.employment_type = '"
+                .EmploymentType::Permanent->value."') as permanent_count")
+            ->selectRaw("COALESCE(AVG(e.basic_salary) FILTER (WHERE {$active}), 0) as average_salary");
+
+        $totals = (clone $base)
+            ->selectRaw("COUNT(*) FILTER (WHERE {$active}) as headcount")
+            ->selectRaw("COUNT(*) FILTER (WHERE {$joined}) as joiners")
+            ->selectRaw("COUNT(*) FILTER (WHERE {$left}) as leavers")
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'department_name' => $row->department_name,
+                'headcount' => (int) $row->headcount,
+                'joiners' => (int) $row->joiners,
+                'leavers' => (int) $row->leavers,
+                'male_count' => (int) $row->male_count,
+                'female_count' => (int) $row->female_count,
+                'permanent_count' => (int) $row->permanent_count,
+                'average_salary' => $this->moneyValue($row->average_salary),
+            ],
+            [
+                'headcount' => (int) ($totals?->headcount ?? 0),
+                'joiners' => (int) ($totals?->joiners ?? 0),
+                'leavers' => (int) ($totals?->leavers ?? 0),
+                'net_change' => (int) ($totals?->joiners ?? 0) - (int) ($totals?->leavers ?? 0),
+            ],
+        );
+    }
+
+    /**
+     * Contracts ending in the window, and documents expiring with them.
+     *
+     * The compliance view: a work permit lapsing is the same operational
+     * problem as a contract lapsing, so both belong on one screen rather than
+     * in two reports nobody remembers to run.
+     */
+    public function getContractExpiryReport(array $filters): array
+    {
+        $base = DB::table('employee_contracts as ec')
+            ->join('employees as e', function ($join) {
+                $join->on('e.id', '=', 'ec.employee_id')->whereNull('e.deleted_at');
+            })
+            ->leftJoin('departments as d', 'd.id', '=', 'e.department_id')
+            ->leftJoin('designations as dg', 'dg.id', '=', 'e.designation_id')
+            ->where('ec.branch_id', $filters['branch_id'])
+            ->whereNull('ec.deleted_at')
+            ->whereNotNull('ec.end_date');
+
+        $this->applyDateFilter($base, 'ec.end_date', $filters);
+        $this->applyHrScopeFilters($base, $filters);
+
+        $query = (clone $base)
+            ->orderBy('ec.end_date')
+            ->selectRaw('ec.id, ec.contract_number, ec.contract_type, ec.status')
+            ->selectRaw('ec.start_date, ec.end_date, ec.notice_period_days, ec.is_current')
+            ->selectRaw('e.code as employee_code, e.full_name as employee_name, e.phone_number')
+            ->selectRaw('d.name as department_name, dg.name as designation_name')
+            ->selectRaw("(ec.end_date - CURRENT_DATE) as days_remaining");
+
+        $totals = (clone $base)
+            ->selectRaw('COUNT(*) as contract_count')
+            ->selectRaw('COUNT(*) FILTER (WHERE ec.end_date < CURRENT_DATE) as expired_count')
+            ->first();
+
+        return $this->paginateReport(
+            $query,
+            $filters,
+            fn ($row) => [
+                'contract_number' => $row->contract_number,
+                'employee_code' => $row->employee_code,
+                'employee_name' => $row->employee_name,
+                'phone_number' => $row->phone_number,
+                'department_name' => $row->department_name,
+                'designation_name' => $row->designation_name,
+                'contract_type' => $row->contract_type,
+                'status' => $row->status,
+                'start_date' => $this->displayDate($row->start_date),
+                'end_date' => $this->displayDate($row->end_date),
+                'days_remaining' => (int) $row->days_remaining,
+                'notice_period_days' => (int) $row->notice_period_days,
+                'is_current' => (bool) $row->is_current,
+            ],
+            [
+                'contract_count' => (int) ($totals?->contract_count ?? 0),
+                'expired_count' => (int) ($totals?->expired_count ?? 0),
+            ],
+        );
+    }
+
+    /**
+     * The employee / department / designation filters, which every HR report
+     * takes and which all read off the same joined `e` and `d` aliases.
+     */
+    protected function applyHrScopeFilters(Builder $query, array $filters): void
+    {
+        if ($filters['employee_id']) {
+            $query->where('e.id', $filters['employee_id']);
+        }
+
+        if ($filters['department_id']) {
+            $query->where('e.department_id', $filters['department_id']);
+        }
+
+        if ($filters['designation_id']) {
+            $query->where('e.designation_id', $filters['designation_id']);
+        }
+
+        if ($filters['employment_status']) {
+            $query->where('e.employment_status', $filters['employment_status']);
+        }
+
+        if ($filters['employment_type']) {
+            $query->where('e.employment_type', $filters['employment_type']);
+        }
     }
 
     protected function activeStockBalanceQuery(array $filters): Builder
@@ -3179,10 +4025,10 @@ class ReportService
                 : ['party_name', 'opening_balance', 'debit', 'credit', 'closing_balance', 'balance_type'],
             'aged_receivables' => ['customer', 'current', 'days_31_60', 'days_61_90', 'days_90_plus', 'total_outstanding'],
             'aged_payables' => ['supplier', 'current', 'days_31_60', 'days_61_90', 'days_90_plus', 'total_outstanding'],
-            'receipt_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'amount_received'],
-            'payment_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'amount_paid'],
-            'cash_book' => ['date', 'reference', 'description', 'debit', 'credit', 'running_balance', 'running_balance_label'],
-            'cash_position_by_currency' => ['currency', 'currency_name', 'amount', 'home_equivalent'],
+            'receipt_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'currency', 'rate', 'amount_received'],
+            'payment_report' => ['date', 'transaction_number', 'ledger_name', 'description', 'currency', 'rate', 'amount_paid'],
+            'cash_book' => ['date', 'reference', 'description', 'currency', 'rate', 'debit', 'credit', 'running_balance', 'running_balance_label'],
+            'cash_position_by_currency' => ['currency', 'currency_name', 'account_name', 'amount', 'home_equivalent'],
             'sales_report' => $viewType === 'general'
                 ? ['date', 'number', 'customer', 'type', 'status', 'payment_status', 'amount']
                 : ['date', 'sale_number', 'customer', 'item', 'quantity', 'unit_price', 'discount', 'total_amount'],
@@ -3204,7 +4050,7 @@ class ReportService
             'near_expiry_report' => ['item_code', 'item_name', 'batch_number', 'expiry_date', 'on_hand', 'days_until_expiry'],
             'maximum_stock_report' => ['item_code', 'item_name', 'max_stock_level', 'on_hand', 'excess_quantity'],
             'group_summary_report' => ['account_name', 'opening_balance', 'debit', 'credit', 'closing_balance'],
-            'day_book_report' => ['time', 'account_name', 'transaction_type', 'reference', 'debit', 'credit', 'narration'],
+            'day_book_report' => ['time', 'account_name', 'transaction_type', 'reference', 'currency', 'rate', 'debit', 'credit', 'narration'],
             'journal_book_report' => ['account_type', 'total_debit', 'total_credit', 'balance'],
             'user_activity' => ['user_name', 'email', 'role', 'total_activities', 'logins', 'creates', 'updates', 'deletes', 'last_login', 'top_sources'],
             default => ['value'],
@@ -3346,6 +4192,7 @@ class ReportService
             'total_outstanding',
             'home_equivalent',
             'total_home_equivalent',
+            'rate',
         ];
 
         return in_array($key, $numericKeys, true) ? 'number' : 'text';
@@ -3451,6 +4298,13 @@ class ReportService
             'balance_type' => $this->normalizeBalanceType($filters['balance_type'] ?? null),
             'category_id' => $this->nullableString($filters['category_id'] ?? null),
             'expense_account_id' => $this->nullableString($filters['expense_account_id'] ?? null),
+            'employee_id' => $this->nullableString($filters['employee_id'] ?? null),
+            'department_id' => $this->nullableString($filters['department_id'] ?? null),
+            'designation_id' => $this->nullableString($filters['designation_id'] ?? null),
+            'payroll_id' => $this->nullableString($filters['payroll_id'] ?? null),
+            'leave_type_id' => $this->nullableString($filters['leave_type_id'] ?? null),
+            'employment_status' => $this->nullableString($filters['employment_status'] ?? null),
+            'employment_type' => $this->nullableString($filters['employment_type'] ?? null),
             'view_type' => in_array($filters['view_type'] ?? '', ['general', 'itemwise'], true) ? $filters['view_type'] : 'itemwise',
             'per_page' => $perPage,
             'page' => max(1, (int) ($filters['page'] ?? 1)),
@@ -3554,6 +4408,72 @@ class ReportService
                 ->get(['a.id', 'a.name'])
                 ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
                 ->all(),
+            'employees' => DB::table('employees')
+                ->where('branch_id', $branchId)
+                ->whereNull('deleted_at')
+                ->orderBy('full_name')
+                ->get(['id', 'code', 'full_name'])
+                ->map(fn ($row) => [
+                    'id' => $row->id,
+                    'name' => trim(($row->code ? $row->code.' - ' : '').$row->full_name),
+                ])
+                ->all(),
+            'departments' => DB::table('departments')
+                ->where('branch_id', $branchId)
+                ->whereNull('deleted_at')
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
+                ->all(),
+            'designations' => DB::table('designations')
+                ->where('branch_id', $branchId)
+                ->whereNull('deleted_at')
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
+                ->all(),
+            'leave_types' => DB::table('leave_types')
+                ->where('branch_id', $branchId)
+                ->whereNull('deleted_at')
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(fn ($row) => ['id' => $row->id, 'name' => $row->name])
+                ->all(),
+            'payrolls' => DB::table('payrolls')
+                ->where('branch_id', $branchId)
+                ->whereNull('deleted_at')
+                ->orderByDesc('period_end')
+                ->limit(60)
+                ->get(['id', 'number', 'period_label', 'period_end'])
+                ->map(fn ($row) => [
+                    'id' => $row->id,
+                    'name' => '#'.$row->number.' — '.($row->period_label ?: $row->period_end),
+                ])
+                ->all(),
+            'employment_types' => collect(EmploymentType::cases())
+                ->map(fn (EmploymentType $case) => [
+                    'id' => $case->value,
+                    'name' => $case->getLabel(),
+                ])
+                ->all(),
+            'employment_statuses' => collect(\App\Enums\EmploymentStatus::cases())
+                ->map(fn (\App\Enums\EmploymentStatus $case) => [
+                    'id' => $case->value,
+                    'name' => $case->getLabel(),
+                ])
+                ->all(),
+            'attendance_statuses' => collect(AttendanceStatus::cases())
+                ->map(fn (AttendanceStatus $case) => [
+                    'id' => $case->value,
+                    'name' => $case->getLabel(),
+                ])
+                ->all(),
+            'leave_statuses' => collect(LeaveRequestStatus::cases())
+                ->map(fn (LeaveRequestStatus $case) => [
+                    'id' => $case->value,
+                    'name' => $case->getLabel(),
+                ])
+                ->all(),
         ];
     }
 
@@ -3593,6 +4513,12 @@ class ReportService
     protected function quantityValue(mixed $value): float
     {
         return round((float) ($value ?? 0), 2);
+    }
+
+    /** Exchange rates are stored with four decimals — keep all of them. */
+    protected function rateValue(mixed $value): float
+    {
+        return round((float) ($value ?? 1), 4);
     }
 
     protected function formatBalance(mixed $value): string

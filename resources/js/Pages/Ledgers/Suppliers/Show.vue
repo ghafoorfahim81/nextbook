@@ -296,6 +296,7 @@ const supplierMovementColumns = computed(() => [
                         <LedgerCurrencyBalances
                             :balances="currencyBalances"
                             :home-currency-code="homeCurrencyCode"
+                            owed-nature="cr"
                         />
 
                         <!-- Statement card -->
@@ -310,9 +311,10 @@ const supplierMovementColumns = computed(() => [
                             </div>
                             <div class="flex items-center justify-between px-4 py-2.5">
                                 <span class="text-sm text-muted-foreground">{{ t('general.balance') }}</span>
+                                <!-- A credit balance on a supplier is money we owe them. -->
                                 <span
                                     class="text-sm font-semibold"
-                                    :class="statement.balance_nature === 'cr' ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'"
+                                    :class="statement.balance_nature === 'cr' ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'"
                                 >{{ statement.balance }}</span>
                             </div>
                         </div>

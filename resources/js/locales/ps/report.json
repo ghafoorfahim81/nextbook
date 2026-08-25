@@ -23,7 +23,9 @@
     "inventory": "د ګدام راپورونه",
     "inventory_description": "اوسنی سټاک، ارزښت او د توکو حرکت.",
     "management": "مديريتي راپورونه",
-    "management_description": "د کاروونکو د فعالیت او څارنې راپورونه."
+    "management_description": "د کاروونکو د فعالیت او څارنې راپورونه.",
+    "hr": "بشري سرچینې",
+    "hr_description": "معاشونه، حاضري، رخصتي او کارکوونکي."
   },
   "filters": {
     "title": "فلټرونه",
@@ -47,7 +49,14 @@
     "expense_account": "د لګښت حساب",
     "per_page": "قطارونه",
     "apply": "فلټرونه پلي کړئ",
-    "reset": "بیا تنظیم"
+    "reset": "بیا تنظیم",
+    "employee": "کارکوونکی",
+    "department": "څانګه",
+    "designation": "بست",
+    "payroll": "د معاش دوره",
+    "leave_type": "د رخصتۍ ډول",
+    "employment_type": "د دندې ډول",
+    "employment_status": "د دندې حالت"
   },
   "balance_types": {
     "all": "ټول",
@@ -115,7 +124,36 @@
     "total_debtor": "ټول ترلاسه کېدونکي",
     "total_creditor": "ټول ورکړونکي",
     "currency_count": "اسعار",
-    "total_home_equivalent": "ټولټال (بنسټیز اسعار)"
+    "total_home_equivalent": "ټولټال (بنسټیز اسعار)",
+    "payslip_count": "د معاش پاڼې",
+    "run_count": "د معاش دورې",
+    "total_gross": "ټول ناخالص",
+    "total_tax": "ټوله مالیه",
+    "total_net": "ټول خالص",
+    "outstanding": "پاتې",
+    "taxable_income": "د مالیې وړ عاید",
+    "loan_count": "پورونه",
+    "total_principal": "ټول اصل",
+    "present_days": "حاضرې ورځې",
+    "absent_days": "غیرحاضرې ورځې",
+    "leave_days": "د رخصتۍ ورځې",
+    "worked_hours": "کاري ساعتونه",
+    "overtime_hours": "اضافي ساعتونه",
+    "needs_review": "کتنې ته اړتیا",
+    "day_count": "ورځې",
+    "entitled_days": "د حق ورځې",
+    "taken_days": "کارول شوې ورځې",
+    "pending_days": "په تمه ورځې",
+    "available_days": "شته ورځې",
+    "request_count": "غوښتنې",
+    "total_days": "ټولې ورځې",
+    "approved_days": "تصویب شوې ورځې",
+    "headcount": "د کارکوونکو شمېر",
+    "joiners": "نوي ګمارل شوي",
+    "leavers": "پرېښودونکي",
+    "net_change": "خالص بدلون",
+    "contract_count": "قراردادونه",
+    "expired_count": "پای ته رسېدلي"
   },
   "columns": {
     "no": "شماره",
@@ -204,7 +242,62 @@
     "balance_type": "د بیلانس ډول",
     "currency": "اسعار",
     "home_equivalent": "د بنسټیزو اسعارو معادل",
-    "currency_name": "د اسعارو نوم"
+    "currency_name": "د اسعارو نوم",
+    "rate": "نرخ",
+    "period": "دوره",
+    "employee": "کارکوونکی",
+    "employee_code": "کوډ",
+    "department": "څانګه",
+    "designation": "بست",
+    "present_days": "حاضر",
+    "absent_days": "غیرحاضر",
+    "late_days": "ناوخته",
+    "half_days": "نیمه ورځ",
+    "leave_days": "رخصتي",
+    "overtime_hours": "اضافي ساعتونه",
+    "worked_hours": "کاري ساعتونه",
+    "late_minutes": "د ناوخته دقیقې",
+    "needs_review": "کتنه",
+    "basic_salary": "اساسي",
+    "gross_earnings": "ناخالص",
+    "deductions": "کسرونه",
+    "tax": "مالیه",
+    "net_payable": "د تادیې وړ خالص",
+    "paid": "ورکړل شوی",
+    "outstanding": "پاتې",
+    "pay_date": "د تادیې نېټه",
+    "employees": "کارکوونکي",
+    "tin": "د پېژندنې شمېره",
+    "tax_table": "د مالیې جدول",
+    "taxable_income": "د مالیې وړ عاید",
+    "issue_date": "د صادرېدو نېټه",
+    "principal": "اصل",
+    "installment": "قسط",
+    "repaid": "بیرته ورکړل شوی",
+    "shift": "شفټ",
+    "check_in": "ننوتل",
+    "check_out": "وتل",
+    "leave_type": "د رخصتۍ ډول",
+    "entitled_days": "حق",
+    "carried_forward": "لېږدول شوی",
+    "taken_days": "کارول شوی",
+    "pending_days": "په تمه",
+    "available_days": "شته",
+    "from_date": "له نېټې",
+    "to_date": "تر نېټې",
+    "days": "ورځې",
+    "approved_by": "تصویبوونکی",
+    "headcount": "د کارکوونکو شمېر",
+    "joiners": "نوي ګمارل شوي",
+    "leavers": "پرېښودونکي",
+    "male": "نر",
+    "female": "ښځه",
+    "permanent": "دایمي",
+    "average_salary": "منځنی معاش",
+    "phone": "تیلفون",
+    "start_date": "د پیل نېټه",
+    "end_date": "د پای نېټه",
+    "days_remaining": "پاتې ورځې"
   },
   "view_types": {
     "general": "عمومي لید",
@@ -342,6 +435,46 @@
     "expense_report": {
       "label": "د لګښتونو راپور",
       "description": "ثبت شوي لګښتونه د نېټې، کټګورۍ، د لګښت حساب او د بانک حساب له مخې."
+    },
+    "payroll_register": {
+      "label": "د معاشونو دفتر",
+      "description": "د دورې ټولې د معاش پاڼې، کاري ورځې، ګټې، مالیه او ورکړل شوې اندازه."
+    },
+    "payslip_summary": {
+      "label": "د معاشونو لنډیز",
+      "description": "د هرې معاش دورې لپاره یوه کرښه — د کارکوونکو شمېر، ناخالص، مالیه او پاتې."
+    },
+    "tax_withholding_report": {
+      "label": "له معاشه کسر شوې مالیه",
+      "description": "د هر کارکوونکي کسر شوې مالیه، د هغه مالیاتي جدول سره چې پاڼه پرې محاسبه شوې."
+    },
+    "employee_loan_statement": {
+      "label": "د کارکوونکو پورونه",
+      "description": "د کارکوونکو پورونه او پیشکي، بیرته اخیستل شوې او پاتې اندازه."
+    },
+    "attendance_summary": {
+      "label": "د حاضرۍ لنډیز",
+      "description": "د هر کارکوونکي حاضرې، ناوخته، غیرحاضرې او د رخصتۍ ورځې د کاري ساعتونو سره."
+    },
+    "attendance_register": {
+      "label": "د حاضرۍ دفتر",
+      "description": "ورځ په ورځ د حاضرۍ ریکارډ د ننوتلو او وتلو وختونو سره."
+    },
+    "leave_balance_report": {
+      "label": "د رخصتۍ بیلانس",
+      "description": "حق په مقابل کې کارول شوې ورځې. په تمه غوښتنې ښودل کیږي خو نه کسر کیږي."
+    },
+    "leave_register": {
+      "label": "د رخصتۍ دفتر",
+      "description": "د رخصتۍ غوښتنې، نېټې او د هغوی تصویبوونکي."
+    },
+    "headcount_report": {
+      "label": "د کارکوونکو شمېر",
+      "description": "د دورې په پای کې د هرې څانګې کارکوونکي، له نویو ګمارل شویو او پرېښودونکو سره."
+    },
+    "contract_expiry_report": {
+      "label": "د قراردادونو پای",
+      "description": "هغه قراردادونه چې په دې دوره کې پای ته رسیږي، ترڅو نوی کول او د خبرتیا موده هېره نه شي."
     }
   },
   "user_activity": {

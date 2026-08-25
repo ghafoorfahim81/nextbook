@@ -21,7 +21,12 @@
     "reports": "گزارشات",
     "system": "سیستم",
     "deleted_records": "رکوردهای حذف شده",
-    "trash": "سطل زباله"
+    "trash": "سطل زباله",
+    "hr": "منابع بشری",
+    "attendance": "حاضری",
+    "leave": "رخصتی",
+    "payroll": "معاشات",
+    "recruitment": "استخدام"
   },
   "expense": {
     "expense": "مصارف",
@@ -94,5 +99,39 @@
     "reports": "گزارشات",
     "report": "گزارش",
     "activity_logs": "فعالیت کاربران"
+  },
+  "hr": {
+    "employee": "کارمندان",
+    "contract": "قراردادها",
+    "document": "اسناد",
+    "department": "بخش‌ها",
+    "designation": "وظایف"
+  },
+  "attendance": {
+    "roster": "جدول روزانه",
+    "register": "دفتر حاضری",
+    "unmapped": "ثبت‌های بدون ارتباط",
+    "device": "دستگاه‌ها",
+    "shift": "شیفت‌ها",
+    "holiday": "رخصتی‌های رسمی",
+    "self_service": "حاضری من"
+  },
+  "leave": {
+    "request": "درخواست‌های رخصتی",
+    "allocation": "تخصیص‌ها",
+    "type": "انواع رخصتی"
+  },
+  "payroll": {
+    "payroll": "دوره‌های معاش",
+    "salary_payment": "پرداخت معاشات",
+    "loan": "قرضه و پیشکی",
+    "structure": "ساختارهای معاش",
+    "component": "اجزای معاش",
+    "tax_table": "جداول مالیه"
+  },
+  "recruitment": {
+    "opening": "بست‌های خالی",
+    "application": "درخواست‌ها",
+    "interview": "مصاحبه‌ها"
   }
 }

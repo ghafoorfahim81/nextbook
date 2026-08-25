@@ -29,6 +29,13 @@ import {
   Banknote,
   SlidersHorizontal,
   Coins,
+  UserCheck,
+  UserPlus,
+  Fingerprint,
+  CalendarDays,
+  HandCoins,
+  Percent,
+  FileSignature,
 } from 'lucide-vue-next'
 import AppLayout from '@/Layouts/Layout.vue'
 import { Button } from '@/Components/ui/button'
@@ -83,6 +90,13 @@ function normalizeFilters(filters) {
     balance_type: filters.balance_type || 'all',
     category_id: filters.category_id || '',
     expense_account_id: filters.expense_account_id || '',
+    employee_id: filters.employee_id || '',
+    department_id: filters.department_id || '',
+    designation_id: filters.designation_id || '',
+    payroll_id: filters.payroll_id || '',
+    leave_type_id: filters.leave_type_id || '',
+    employment_type: filters.employment_type || '',
+    employment_status: filters.employment_status || '',
     view_type: filters.view_type || 'general',
     per_page: Number(filters.per_page || 25),
     page: Number(filters.page || 1),
@@ -102,30 +116,51 @@ const isViewToggleReport = computed(() =>
 // party ledger when one is. Columns/summary follow whichever mode the server returned.
 const isPartySummaryMode = computed(() => props.result.meta?.mode !== 'detail')
 
-const partyStatementSummary = computed(() => (isPartySummaryMode.value
-  ? [
+// `payable` marks a statement where a credit balance is money the business owes,
+// so the amount reads as a warning instead of a neutral total.
+function partyStatementSummary({ payable = false } = {}) {
+  const owedBalance = payable
+    ? { negativeTone: 'warning', toneKey: 'balance' }
+    : {}
+
+  if (isPartySummaryMode.value) {
+    return [
       { key: 'party_count', label: t('report.summary.party_count'), type: 'integer' },
       { key: 'total_debit', label: t('report.summary.total_debit'), type: 'money' },
       { key: 'total_credit', label: t('report.summary.total_credit'), type: 'money' },
       { key: 'total_debtor', label: t('report.summary.total_debtor'), type: 'money' },
-      { key: 'total_creditor', label: t('report.summary.total_creditor'), type: 'money' },
-      { key: 'balance_label', label: t('report.summary.balance'), type: 'text' },
+      {
+        key: 'total_creditor',
+        label: t('report.summary.total_creditor'),
+        type: 'money',
+        // On suppliers this total is what the business still owes.
+        ...(payable ? { positiveTone: 'warning' } : {}),
+      },
+      { key: 'balance_label', label: t('report.summary.balance'), type: 'text', ...owedBalance },
     ]
-  : [
-      { key: 'total_debit', label: t('report.summary.total_debit'), type: 'money' },
-      { key: 'total_credit', label: t('report.summary.total_credit'), type: 'money' },
-      { key: 'balance_label', label: t('report.summary.balance'), type: 'text' },
-    ]))
+  }
 
-function partyStatementColumns(partyLabel) {
+  return [
+    { key: 'total_debit', label: t('report.summary.total_debit'), type: 'money' },
+    { key: 'total_credit', label: t('report.summary.total_credit'), type: 'money' },
+    { key: 'balance_label', label: t('report.summary.balance'), type: 'text', ...owedBalance },
+  ]
+}
+
+// `payable` marks the statement as one where a credit balance means the business
+// owes the party — those balances are toned as a warning rather than read as a
+// neutral figure.
+function partyStatementColumns(partyLabel, { payable = false } = {}) {
+  const owedTone = payable ? { negativeTone: 'warning' } : {}
+
   if (isPartySummaryMode.value) {
     return [
       { key: 'party_name', label: partyLabel },
-      { key: 'opening_balance', label: t('report.columns.opening_balance'), type: 'balance', align: 'right' },
+      { key: 'opening_balance', label: t('report.columns.opening_balance'), type: 'balance', align: 'right', ...owedTone },
       { key: 'debit', label: t('report.columns.debit'), type: 'money', align: 'right' },
       { key: 'credit', label: t('report.columns.credit'), type: 'money', align: 'right' },
-      { key: 'closing_balance', label: t('report.columns.closing_balance'), type: 'balance', align: 'right' },
-      { key: 'balance_type', label: t('report.columns.balance_type') },
+      { key: 'closing_balance', label: t('report.columns.closing_balance'), type: 'balance', align: 'right', ...owedTone },
+      { key: 'balance_type', label: t('report.columns.balance_type'), toneKey: 'closing_balance', ...owedTone },
     ]
   }
 
@@ -136,7 +171,7 @@ function partyStatementColumns(partyLabel) {
     { key: 'debit', label: t('report.columns.debit'), type: 'money', align: 'right' },
     { key: 'credit', label: t('report.columns.credit'), type: 'money', align: 'right' },
     { key: 'running_balance', label: t('report.columns.running_balance'), type: 'money', align: 'right' },
-    { key: 'balance', label: t('report.columns.balance'), align: 'right' },
+    { key: 'balance', label: t('report.columns.balance'), align: 'right', toneKey: 'running_balance', ...owedTone },
   ]
 }
 
@@ -210,7 +245,7 @@ const reportDefinitions = computed(() => ({
   cash_book: {
     label: t('report.reports.cash_book.label'),
     description: t('report.reports.cash_book.description'),
-    filters: ['account_id'],
+    filters: ['account_id', 'currency_id'],
     group: 'financial',
     icon: Wallet,
     summary: [
@@ -222,6 +257,8 @@ const reportDefinitions = computed(() => ({
       { key: 'date', label: t('report.columns.date') },
       { key: 'reference', label: t('report.columns.reference') },
       { key: 'description', label: t('report.columns.description') },
+      { key: 'currency', label: t('report.columns.currency') },
+      { key: 'rate', label: t('report.columns.rate'), type: 'rate', align: 'right' },
       { key: 'debit', label: t('report.columns.debit'), type: 'money', align: 'right' },
       { key: 'credit', label: t('report.columns.credit'), type: 'money', align: 'right' },
       { key: 'running_balance_label', label: t('report.columns.running_balance'), align: 'right' },
@@ -240,6 +277,7 @@ const reportDefinitions = computed(() => ({
     columns: [
       { key: 'currency', label: t('report.columns.currency') },
       { key: 'currency_name', label: t('report.columns.currency_name') },
+      { key: 'account_name', label: t('report.columns.account_name') },
       { key: 'amount', label: t('report.columns.amount'), type: 'balance', align: 'right' },
       { key: 'home_equivalent', label: t('report.columns.home_equivalent'), type: 'money', align: 'right' },
     ],
@@ -247,7 +285,7 @@ const reportDefinitions = computed(() => ({
   receipt_report: {
     label: t('report.reports.receipt_report.label'),
     description: t('report.reports.receipt_report.description'),
-    filters: ['account_id'],
+    filters: ['account_id', 'currency_id'],
     group: 'cash_flow',
     icon: Receipt,
     summary: [
@@ -258,13 +296,15 @@ const reportDefinitions = computed(() => ({
       { key: 'transaction_number', label: t('report.columns.transaction_number') },
       { key: 'ledger_name', label: t('report.columns.ledger_name') },
       { key: 'description', label: t('report.columns.description') },
+      { key: 'currency', label: t('report.columns.currency') },
+      { key: 'rate', label: t('report.columns.rate'), type: 'rate', align: 'right' },
       { key: 'amount_received', label: t('report.columns.amount_received'), type: 'money', align: 'right' },
     ],
   },
   payment_report: {
     label: t('report.reports.payment_report.label'),
     description: t('report.reports.payment_report.description'),
-    filters: ['account_id'],
+    filters: ['account_id', 'currency_id'],
     group: 'cash_flow',
     icon: BadgeDollarSign,
     summary: [
@@ -275,26 +315,33 @@ const reportDefinitions = computed(() => ({
       { key: 'transaction_number', label: t('report.columns.transaction_number') },
       { key: 'ledger_name', label: t('report.columns.ledger_name') },
       { key: 'description', label: t('report.columns.description') },
+      { key: 'currency', label: t('report.columns.currency') },
+      { key: 'rate', label: t('report.columns.rate'), type: 'rate', align: 'right' },
       { key: 'amount_paid', label: t('report.columns.amount_paid'), type: 'money', align: 'right' },
     ],
   },
   customer_statement: {
     label: t('report.reports.customer_statement.label'),
     description: t('report.reports.customer_statement.description'),
-    filters: isPartySummaryMode.value ? ['customer_id', 'balance_type'] : ['customer_id'],
+    filters: isPartySummaryMode.value
+      ? ['customer_id', 'currency_id', 'balance_type']
+      : ['customer_id', 'currency_id'],
     group: 'party',
     icon: Users,
-    summary: partyStatementSummary.value,
+    summary: partyStatementSummary(),
     columns: partyStatementColumns(t('report.columns.customer')),
   },
   supplier_statement: {
     label: t('report.reports.supplier_statement.label'),
     description: t('report.reports.supplier_statement.description'),
-    filters: isPartySummaryMode.value ? ['supplier_id', 'balance_type'] : ['supplier_id'],
+    filters: isPartySummaryMode.value
+      ? ['supplier_id', 'currency_id', 'balance_type']
+      : ['supplier_id', 'currency_id'],
     group: 'party',
     icon: Truck,
-    summary: partyStatementSummary.value,
-    columns: partyStatementColumns(t('report.columns.supplier')),
+    summary: partyStatementSummary({ payable: true }),
+    // A credit balance on a supplier is money we owe — flag it.
+    columns: partyStatementColumns(t('report.columns.supplier'), { payable: true }),
   },
   aged_receivables: {
     label: t('report.reports.aged_receivables.label'),
@@ -753,7 +800,7 @@ const reportDefinitions = computed(() => ({
   day_book_report: {
     label: t('report.reports.day_book_report.label'),
     description: t('report.reports.day_book_report.description'),
-    filters: [],
+    filters: ['currency_id'],
     group: 'financial',
     icon: FileText,
     summary: [
@@ -766,6 +813,8 @@ const reportDefinitions = computed(() => ({
       { key: 'account_name', label: t('report.columns.account_name') },
       { key: 'transaction_type', label: t('report.columns.transaction_type') },
       { key: 'reference', label: t('report.columns.reference') },
+      { key: 'currency', label: t('report.columns.currency') },
+      { key: 'rate', label: t('report.columns.rate'), type: 'rate', align: 'right' },
       { key: 'debit', label: t('report.columns.debit'), type: 'money', align: 'right' },
       { key: 'credit', label: t('report.columns.credit'), type: 'money', align: 'right' },
       { key: 'narration', label: t('report.columns.narration') },
@@ -797,6 +846,262 @@ const reportDefinitions = computed(() => ({
     icon: Users,
     summary: [],
   },
+
+  // ---- Human resources ----
+  payroll_register: {
+    label: t('report.reports.payroll_register.label'),
+    description: t('report.reports.payroll_register.description'),
+    filters: ['payroll_id', 'employee_id', 'department_id', 'designation_id'],
+    group: 'hr',
+    icon: Wallet,
+    summary: [
+      { key: 'payslip_count', label: t('report.summary.payslip_count'), type: 'integer' },
+      { key: 'base_gross', label: t('report.summary.total_gross'), type: 'money' },
+      { key: 'base_tax', label: t('report.summary.total_tax'), type: 'money' },
+      { key: 'base_net', label: t('report.summary.total_net'), type: 'money' },
+      { key: 'base_outstanding', label: t('report.summary.outstanding'), type: 'money' },
+    ],
+    columns: [
+      { key: 'period', label: t('report.columns.period') },
+      { key: 'employee_code', label: t('report.columns.employee_code') },
+      { key: 'employee_name', label: t('report.columns.employee') },
+      { key: 'department_name', label: t('report.columns.department') },
+      { key: 'currency_code', label: t('report.columns.currency') },
+      { key: 'present_days', label: t('report.columns.present_days'), type: 'quantity', align: 'right' },
+      { key: 'absent_days', label: t('report.columns.absent_days'), type: 'quantity', align: 'right' },
+      { key: 'overtime_hours', label: t('report.columns.overtime_hours'), type: 'quantity', align: 'right' },
+      { key: 'basic_salary', label: t('report.columns.basic_salary'), type: 'money', align: 'right' },
+      { key: 'gross_earnings', label: t('report.columns.gross_earnings'), type: 'money', align: 'right' },
+      { key: 'total_deductions', label: t('report.columns.deductions'), type: 'money', align: 'right' },
+      { key: 'tax_amount', label: t('report.columns.tax'), type: 'money', align: 'right' },
+      { key: 'net_payable', label: t('report.columns.net_payable'), type: 'money', align: 'right' },
+      { key: 'paid_amount', label: t('report.columns.paid'), type: 'money', align: 'right' },
+      { key: 'payment_status', label: t('report.columns.status') },
+    ],
+  },
+  payslip_summary: {
+    label: t('report.reports.payslip_summary.label'),
+    description: t('report.reports.payslip_summary.description'),
+    filters: ['department_id'],
+    group: 'hr',
+    icon: FileSpreadsheet,
+    summary: [
+      { key: 'run_count', label: t('report.summary.run_count'), type: 'integer' },
+      { key: 'total_gross', label: t('report.summary.total_gross'), type: 'money' },
+      { key: 'total_tax', label: t('report.summary.total_tax'), type: 'money' },
+      { key: 'total_net', label: t('report.summary.total_net'), type: 'money' },
+    ],
+    columns: [
+      { key: 'number', label: t('report.columns.number') },
+      { key: 'period', label: t('report.columns.period') },
+      { key: 'pay_date', label: t('report.columns.pay_date') },
+      { key: 'status', label: t('report.columns.status') },
+      { key: 'employee_count', label: t('report.columns.employees'), type: 'integer', align: 'right' },
+      { key: 'total_gross', label: t('report.columns.gross_earnings'), type: 'money', align: 'right' },
+      { key: 'total_tax', label: t('report.columns.tax'), type: 'money', align: 'right' },
+      { key: 'total_net', label: t('report.columns.net_payable'), type: 'money', align: 'right' },
+      { key: 'paid_amount', label: t('report.columns.paid'), type: 'money', align: 'right' },
+      { key: 'outstanding', label: t('report.columns.outstanding'), type: 'money', align: 'right' },
+    ],
+  },
+  tax_withholding_report: {
+    label: t('report.reports.tax_withholding_report.label'),
+    description: t('report.reports.tax_withholding_report.description'),
+    filters: ['payroll_id', 'employee_id', 'department_id'],
+    group: 'hr',
+    icon: Percent,
+    summary: [
+      { key: 'payslip_count', label: t('report.summary.payslip_count'), type: 'integer' },
+      { key: 'base_taxable', label: t('report.summary.taxable_income'), type: 'money' },
+      { key: 'base_tax', label: t('report.summary.total_tax'), type: 'money' },
+    ],
+    columns: [
+      { key: 'period', label: t('report.columns.period') },
+      { key: 'employee_code', label: t('report.columns.employee_code') },
+      { key: 'employee_name', label: t('report.columns.employee') },
+      { key: 'tin', label: t('report.columns.tin') },
+      { key: 'department_name', label: t('report.columns.department') },
+      { key: 'tax_table_name', label: t('report.columns.tax_table') },
+      { key: 'gross_earnings', label: t('report.columns.gross_earnings'), type: 'money', align: 'right' },
+      { key: 'taxable_income', label: t('report.columns.taxable_income'), type: 'money', align: 'right' },
+      { key: 'tax_amount', label: t('report.columns.tax'), type: 'money', align: 'right' },
+    ],
+  },
+  employee_loan_statement: {
+    label: t('report.reports.employee_loan_statement.label'),
+    description: t('report.reports.employee_loan_statement.description'),
+    filters: ['employee_id', 'department_id'],
+    group: 'hr',
+    icon: HandCoins,
+    summary: [
+      { key: 'loan_count', label: t('report.summary.loan_count'), type: 'integer' },
+      { key: 'base_principal', label: t('report.summary.total_principal'), type: 'money' },
+      { key: 'base_outstanding', label: t('report.summary.outstanding'), type: 'money' },
+    ],
+    columns: [
+      { key: 'number', label: t('report.columns.number') },
+      { key: 'employee_code', label: t('report.columns.employee_code') },
+      { key: 'employee_name', label: t('report.columns.employee') },
+      { key: 'loan_type', label: t('report.columns.type') },
+      { key: 'status', label: t('report.columns.status') },
+      { key: 'issue_date', label: t('report.columns.issue_date') },
+      { key: 'principal_amount', label: t('report.columns.principal'), type: 'money', align: 'right' },
+      { key: 'installment_amount', label: t('report.columns.installment'), type: 'money', align: 'right' },
+      { key: 'repaid_amount', label: t('report.columns.repaid'), type: 'money', align: 'right' },
+      { key: 'outstanding_amount', label: t('report.columns.outstanding'), type: 'money', align: 'right' },
+    ],
+  },
+  attendance_summary: {
+    label: t('report.reports.attendance_summary.label'),
+    description: t('report.reports.attendance_summary.description'),
+    filters: ['employee_id', 'department_id', 'designation_id'],
+    group: 'hr',
+    icon: Fingerprint,
+    summary: [
+      { key: 'present_days', label: t('report.summary.present_days'), type: 'integer' },
+      { key: 'absent_days', label: t('report.summary.absent_days'), type: 'integer' },
+      { key: 'leave_days', label: t('report.summary.leave_days'), type: 'integer' },
+      { key: 'worked_hours', label: t('report.summary.worked_hours'), type: 'quantity' },
+      { key: 'overtime_hours', label: t('report.summary.overtime_hours'), type: 'quantity' },
+      { key: 'needs_review_days', label: t('report.summary.needs_review'), type: 'integer' },
+    ],
+    columns: [
+      { key: 'employee_code', label: t('report.columns.employee_code') },
+      { key: 'employee_name', label: t('report.columns.employee') },
+      { key: 'department_name', label: t('report.columns.department') },
+      { key: 'present_days', label: t('report.columns.present_days'), type: 'integer', align: 'right' },
+      { key: 'late_days', label: t('report.columns.late_days'), type: 'integer', align: 'right' },
+      { key: 'absent_days', label: t('report.columns.absent_days'), type: 'integer', align: 'right' },
+      { key: 'half_days', label: t('report.columns.half_days'), type: 'integer', align: 'right' },
+      { key: 'leave_days', label: t('report.columns.leave_days'), type: 'integer', align: 'right' },
+      { key: 'worked_hours', label: t('report.columns.worked_hours'), type: 'quantity', align: 'right' },
+      { key: 'overtime_hours', label: t('report.columns.overtime_hours'), type: 'quantity', align: 'right' },
+      { key: 'late_minutes', label: t('report.columns.late_minutes'), type: 'integer', align: 'right' },
+      { key: 'needs_review_days', label: t('report.columns.needs_review'), type: 'integer', align: 'right' },
+    ],
+  },
+  attendance_register: {
+    label: t('report.reports.attendance_register.label'),
+    description: t('report.reports.attendance_register.description'),
+    filters: ['employee_id', 'department_id', 'type'],
+    group: 'hr',
+    icon: ClipboardList,
+    summary: [
+      { key: 'day_count', label: t('report.summary.day_count'), type: 'integer' },
+      { key: 'worked_hours', label: t('report.summary.worked_hours'), type: 'quantity' },
+      { key: 'overtime_hours', label: t('report.summary.overtime_hours'), type: 'quantity' },
+    ],
+    columns: [
+      { key: 'date', label: t('report.columns.date') },
+      { key: 'employee_code', label: t('report.columns.employee_code') },
+      { key: 'employee_name', label: t('report.columns.employee') },
+      { key: 'department_name', label: t('report.columns.department') },
+      { key: 'shift_name', label: t('report.columns.shift') },
+      { key: 'check_in', label: t('report.columns.check_in') },
+      { key: 'check_out', label: t('report.columns.check_out') },
+      { key: 'status', label: t('report.columns.status') },
+      { key: 'worked_hours', label: t('report.columns.worked_hours'), type: 'quantity', align: 'right' },
+      { key: 'overtime_hours', label: t('report.columns.overtime_hours'), type: 'quantity', align: 'right' },
+      { key: 'late_minutes', label: t('report.columns.late_minutes'), type: 'integer', align: 'right' },
+      { key: 'remark', label: t('report.columns.remark') },
+    ],
+  },
+  leave_balance_report: {
+    label: t('report.reports.leave_balance_report.label'),
+    description: t('report.reports.leave_balance_report.description'),
+    filters: ['employee_id', 'department_id', 'leave_type_id'],
+    group: 'hr',
+    icon: CalendarDays,
+    summary: [
+      { key: 'entitled_days', label: t('report.summary.entitled_days'), type: 'quantity' },
+      { key: 'taken_days', label: t('report.summary.taken_days'), type: 'quantity' },
+      { key: 'pending_days', label: t('report.summary.pending_days'), type: 'quantity' },
+      { key: 'available_days', label: t('report.summary.available_days'), type: 'quantity' },
+    ],
+    columns: [
+      { key: 'employee_code', label: t('report.columns.employee_code') },
+      { key: 'employee_name', label: t('report.columns.employee') },
+      { key: 'department_name', label: t('report.columns.department') },
+      { key: 'leave_type_name', label: t('report.columns.leave_type') },
+      { key: 'entitled_days', label: t('report.columns.entitled_days'), type: 'quantity', align: 'right' },
+      { key: 'carried_forward_days', label: t('report.columns.carried_forward'), type: 'quantity', align: 'right' },
+      { key: 'taken_days', label: t('report.columns.taken_days'), type: 'quantity', align: 'right' },
+      { key: 'pending_days', label: t('report.columns.pending_days'), type: 'quantity', align: 'right' },
+      { key: 'available_days', label: t('report.columns.available_days'), type: 'quantity', align: 'right' },
+    ],
+  },
+  leave_register: {
+    label: t('report.reports.leave_register.label'),
+    description: t('report.reports.leave_register.description'),
+    filters: ['employee_id', 'department_id', 'leave_type_id'],
+    group: 'hr',
+    icon: CalendarClock,
+    summary: [
+      { key: 'request_count', label: t('report.summary.request_count'), type: 'integer' },
+      { key: 'total_days', label: t('report.summary.total_days'), type: 'quantity' },
+      { key: 'approved_days', label: t('report.summary.approved_days'), type: 'quantity' },
+    ],
+    columns: [
+      { key: 'number', label: t('report.columns.number') },
+      { key: 'employee_code', label: t('report.columns.employee_code') },
+      { key: 'employee_name', label: t('report.columns.employee') },
+      { key: 'department_name', label: t('report.columns.department') },
+      { key: 'leave_type_name', label: t('report.columns.leave_type') },
+      { key: 'from_date', label: t('report.columns.from_date') },
+      { key: 'to_date', label: t('report.columns.to_date') },
+      { key: 'days', label: t('report.columns.days'), type: 'quantity', align: 'right' },
+      { key: 'status', label: t('report.columns.status') },
+      { key: 'approved_by_name', label: t('report.columns.approved_by') },
+      { key: 'reason', label: t('report.columns.reason') },
+    ],
+  },
+  headcount_report: {
+    label: t('report.reports.headcount_report.label'),
+    description: t('report.reports.headcount_report.description'),
+    filters: ['department_id', 'employment_type'],
+    group: 'hr',
+    icon: UserPlus,
+    summary: [
+      { key: 'headcount', label: t('report.summary.headcount'), type: 'integer' },
+      { key: 'joiners', label: t('report.summary.joiners'), type: 'integer' },
+      { key: 'leavers', label: t('report.summary.leavers'), type: 'integer' },
+      { key: 'net_change', label: t('report.summary.net_change'), type: 'integer' },
+    ],
+    columns: [
+      { key: 'department_name', label: t('report.columns.department') },
+      { key: 'headcount', label: t('report.columns.headcount'), type: 'integer', align: 'right' },
+      { key: 'joiners', label: t('report.columns.joiners'), type: 'integer', align: 'right' },
+      { key: 'leavers', label: t('report.columns.leavers'), type: 'integer', align: 'right' },
+      { key: 'male_count', label: t('report.columns.male'), type: 'integer', align: 'right' },
+      { key: 'female_count', label: t('report.columns.female'), type: 'integer', align: 'right' },
+      { key: 'permanent_count', label: t('report.columns.permanent'), type: 'integer', align: 'right' },
+      { key: 'average_salary', label: t('report.columns.average_salary'), type: 'money', align: 'right' },
+    ],
+  },
+  contract_expiry_report: {
+    label: t('report.reports.contract_expiry_report.label'),
+    description: t('report.reports.contract_expiry_report.description'),
+    filters: ['employee_id', 'department_id'],
+    group: 'hr',
+    icon: FileSignature,
+    summary: [
+      { key: 'contract_count', label: t('report.summary.contract_count'), type: 'integer' },
+      { key: 'expired_count', label: t('report.summary.expired_count'), type: 'integer' },
+    ],
+    columns: [
+      { key: 'contract_number', label: t('report.columns.number') },
+      { key: 'employee_code', label: t('report.columns.employee_code') },
+      { key: 'employee_name', label: t('report.columns.employee') },
+      { key: 'phone_number', label: t('report.columns.phone') },
+      { key: 'department_name', label: t('report.columns.department') },
+      { key: 'designation_name', label: t('report.columns.designation') },
+      { key: 'contract_type', label: t('report.columns.type') },
+      { key: 'start_date', label: t('report.columns.start_date') },
+      { key: 'end_date', label: t('report.columns.end_date') },
+      { key: 'days_remaining', label: t('report.columns.days_remaining'), type: 'integer', align: 'right' },
+      { key: 'status', label: t('report.columns.status') },
+    ],
+  },
 }))
 
 const catalogBlueprint = computed(() => ([
@@ -806,6 +1111,7 @@ const catalogBlueprint = computed(() => ([
   { key: 'operations', label: t('report.groups.operations'), description: t('report.groups.operations_description') },
   { key: 'expenses', label: t('report.groups.expenses'), description: t('report.groups.expenses_description') },
   { key: 'inventory', label: t('report.groups.inventory'), description: t('report.groups.inventory_description') },
+  { key: 'hr', label: t('report.groups.hr'), description: t('report.groups.hr_description') },
   { key: 'management', label: t('report.groups.management'), description: t('report.groups.management_description') },
 ]))
 
@@ -824,6 +1130,9 @@ const summaryCards = computed(() => (activeDefinition.value.summary || [])
   .map((card) => ({
     ...card,
     value: props.result.summary[card.key],
+    // A card rendering a label (`1,200.00 Cr`) still needs the raw figure to
+    // decide its tone.
+    toneValue: card.toneKey ? props.result.summary[card.toneKey] : props.result.summary[card.key],
   })))
 
 const emptyMessage = computed(() => {
@@ -884,6 +1193,13 @@ function resetFilters() {
     balance_type: 'all',
     category_id: '',
     expense_account_id: '',
+    employee_id: '',
+    department_id: '',
+    designation_id: '',
+    payroll_id: '',
+    leave_type_id: '',
+    employment_type: '',
+    employment_status: '',
     view_type: localFilters.value.view_type,
     per_page: Number(props.filters.per_page || 25),
     page: 1,
@@ -914,6 +1230,13 @@ function selectReport(reportKey) {
     balance_type: 'all',
     category_id: '',
     expense_account_id: '',
+    employee_id: '',
+    department_id: '',
+    designation_id: '',
+    payroll_id: '',
+    leave_type_id: '',
+    employment_type: '',
+    employment_status: '',
     view_type: 'general',
     page: 1,
   }

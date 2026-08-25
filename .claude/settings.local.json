@@ -11,7 +11,16 @@
       "PowerShell(php artisan tinker --execute='$perms = App\\\\Models\\\\Permission::where\\(\"name\",\"like\",\"sale_orders.%\"\\)->pluck\\(\"name\"\\); echo \"sale_orders perms: \" . $perms->implode\\(\", \"\\);' 2>&1)",
       "PowerShell(php artisan test --filter=Sale 2>&1)",
       "Bash(npm run *)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(\"C:/Users/Fahim-Pc/.config/herd/bin/php84/php.exe\" \"C:/Users/Fahim-Pc/AppData/Local/Temp/claude/e--nextbook/93ce25af-c15c-4e02-892c-26b9876e3783/scratchpad/check2.php\" docs/hr-user-guide-fa.pdf)",
+      "Bash(git add *)",
+      "Bash(git commit -q -m ' *)",
+      "Bash(\"C:/Users/Fahim-Pc/.config/herd/bin/php84/php.exe\" \"C:/Users/Fahim-Pc/AppData/Local/Temp/claude/e--nextbook/93ce25af-c15c-4e02-892c-26b9876e3783/scratchpad/rtlcheck.php\" docs/hr-user-guide-fa.pdf)",
+      "Bash(C:/Users/Fahim-Pc/.config/herd/bin/php84/php.exe -r ' *)",
+      "Bash(\"C:/Users/Fahim-Pc/.config/herd/bin/php84/php.exe\" \"C:/Users/Fahim-Pc/AppData/Local/Temp/claude/e--nextbook/93ce25af-c15c-4e02-892c-26b9876e3783/scratchpad/rtlcheck.php.dump.php\" docs/hr-user-guide-fa.pdf 2)",
+      "Bash(\"C:/Users/Fahim-Pc/.config/herd/bin/php84/php.exe\" \"C:/Users/Fahim-Pc/AppData/Local/Temp/claude/e--nextbook/93ce25af-c15c-4e02-892c-26b9876e3783/scratchpad/rtlcheck.php.dump.php\" docs/hr-user-guide-fa.pdf 3)",
+      "Bash(\"C:/Users/Fahim-Pc/.config/herd/bin/php84/php.exe\" \"C:/Users/Fahim-Pc/AppData/Local/Temp/claude/e--nextbook/93ce25af-c15c-4e02-892c-26b9876e3783/scratchpad/final_check.php\" docs/hr-user-guide-fa.pdf)",
+      "Bash(\"C:/Users/Fahim-Pc/.config/herd/bin/php84/php.exe\" -l app/Http/Requests/Hr/EmployeeContractStoreRequest.php)"
     ]
   }
 }
