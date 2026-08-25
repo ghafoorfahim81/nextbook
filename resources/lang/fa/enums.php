@@ -327,3 +327,16 @@ return [
         'strong_no_hire' => 'به شدت مخالف استخدام',
     ],
 ];
+    'landed_cost_status' => [
+        'draft' => 'پیش‌نویس',
+        'allocated' => 'تخصیص شده',
+        'posted' => 'ثبت شده',
+    ],
+    'landed_cost_allocation_method' => [
+        'by_value' => 'بر اساس ارزش',
+        'by_quantity' => 'بر اساس تعداد',
+        'by_weight' => 'بر اساس وزن',
+        'by_volume' => 'بر اساس حجم',
+    ],
+];
+

@@ -32,10 +32,14 @@ trait HasUserAuditable
         });
 
         if (in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive(static::class))) {
-            static::deleting(function ($model) use ($resolveUser) {
+        static::deleting(function ($model) use ($resolveUser) {
                 $user = $resolveUser();
                 if ($user?->id) {
-                    $model->deleted_by = $user->id;
+                    if (method_exists($model, 'isFillable') && $model->isFillable('deleted_by_id')) {
+                        $model->deleted_by_id = $user->id;
+                    } elseif (method_exists($model, 'isFillable') && $model->isFillable('deleted_by')) {
+                        $model->deleted_by = $user->id;
+                    }
                     $model->save();
                 }
             });
@@ -45,7 +49,12 @@ trait HasUserAuditable
                 $user = $resolveUser();
                 
                 // Set deleted_by to null and updated_by to the restoring user
-                $model->deleted_by = null;
+                if (method_exists($model, 'isFillable') && $model->isFillable('deleted_by_id')) {
+                    $model->deleted_by_id = null;
+                }
+                if (method_exists($model, 'isFillable') && $model->isFillable('deleted_by')) {
+                    $model->deleted_by = null;
+                }
                 if ($user?->id) {
                     $model->updated_by = $user->id;
                 }

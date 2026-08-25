@@ -98,7 +98,7 @@ trait HasDynamicFilters
         if (
             str_ends_with($field, '_id')
             || $field === 'id'
-            || in_array($field, ['created_by', 'updated_by', 'deleted_by'], true)
+            || in_array($field, ['created_by', 'updated_by', 'deleted_by', 'deleted_by_id'], true)
         ) {
             $query->where($field, $value);
             return;
