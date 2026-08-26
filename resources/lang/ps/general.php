@@ -19,6 +19,7 @@ return [
         'item_transfer' => 'Item transfer',
         'ledger' => 'Ledger',
         'landed_cost' => 'Landed cost',
+        'landed_cost_category' => 'Landed cost category',
         'owner' => 'Owner',
         'payment' => 'Payment',
         'purchase' => 'Purchase',

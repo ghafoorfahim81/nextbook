@@ -43,7 +43,8 @@
         "branch": "Branch",
         "brand": "Brand",
         "warehouse": "Warehouse",
-        "company": "Company"
+        "company": "Company",
+        "landed_cost_category": "Landed Cost Category"
     },
     "inventory": {
         "item": "Item",

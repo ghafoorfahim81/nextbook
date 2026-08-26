@@ -7,6 +7,7 @@ use App\Enums\LandedCostStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Inventory\LandedCostRequest;
 use App\Http\Resources\Inventory\LandedCostResource;
+use App\Models\Administration\LandedCostCategory;
 use App\Models\Inventory\LandedCost;
 use App\Models\Purchase\Purchase;
 use App\Services\LandedCostService;
@@ -77,6 +78,7 @@ class LandedCostController extends Controller
                 'name' => $method->getLabel(),
             ])->values(),
             'purchases' => $this->purchaseOptions(),
+            'landedCostCategories' => $this->landedCostCategoryOptions(),
         ]);
     }
 
@@ -138,6 +140,7 @@ class LandedCostController extends Controller
                 'name' => $method->getLabel(),
             ])->values(),
             'purchases' => $this->purchaseOptions(),
+            'landedCostCategories' => $this->landedCostCategoryOptions(),
         ]);
     }
 
@@ -222,6 +225,13 @@ class LandedCostController extends Controller
             'journal_entry_id' => $result['journal_entry']->id,
             'transaction_id' => $result['transaction']->id,
         ]);
+    }
+
+    private function landedCostCategoryOptions()
+    {
+        return LandedCostCategory::query()
+            ->orderBy('name')
+            ->get(['id', 'name']);
     }
 
     private function purchaseOptions()

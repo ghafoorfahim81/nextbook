@@ -678,6 +678,7 @@ const navMain = computed(() => [
             { title: t('sidebar.administration.brand'), url: '/brands', permission: 'brands.view_any' },
             { title: t('sidebar.administration.warehouse'), url: '/warehouses', permission: 'warehouses.view_any' },
             { title: t('sidebar.administration.company'), url: '/company', permission: 'companies.view_any' },
+            { title: t('sidebar.administration.landed_cost_category'), url: '/landed-cost-categories', permission: 'landed_cost_categories.view_any' },
         ],
     },
 

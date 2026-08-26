@@ -19,6 +19,7 @@ return [
         'item_transfer' => 'انتقال آیتم',
         'ledger' => 'لیجر',
         'landed_cost' => 'هزینه ورودی',
+        'landed_cost_category' => 'دسته‌بندی هزینه ورودی',
         'owner' => 'مالک',
         'payment' => 'پرداخت',
         'purchase' => 'خرید',

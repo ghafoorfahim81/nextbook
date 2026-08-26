@@ -49,6 +49,7 @@ class RolePermissionSeeder extends Seeder
 
             'items',
             'landed_costs',
+            'landed_cost_categories',
             'categories',
             'customer_groups',
             'payment_terms',

@@ -48,7 +48,7 @@ class AppServiceProvider extends ServiceProvider
             'owner' => 'App\Models\Owner\Owner',
             'drawing' => 'App\Models\Owner\Drawing',
             'journal_entry' => 'App\Models\JournalEntry\JournalEntry',
-
+            'landed_cost' => 'App\Models\Inventory\LandedCost',
             // Human resources
             'employee' => 'App\Models\Hr\Employee',
             'employee_contract' => 'App\Models\Hr\EmployeeContract',

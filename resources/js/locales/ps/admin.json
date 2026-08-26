@@ -57,6 +57,10 @@
         "designations": "دندې",
         "grade_level": "د بست کچه"
     },
+    "landed_cost_category": {
+        "landed_cost_category": "د تحویلي لګښت کټګورۍ",
+        "landed_cost_categories": "د تحویلي لګښت کټګورۍ"
+    },
     "quantity": {
         "quantity": "مقدار",
         "quantities": "مقدار ها"

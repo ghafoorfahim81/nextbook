@@ -6,6 +6,7 @@ defineProps({
   allocationMethods: { type: Array, required: true },
   landedCost: { type: Object, required: true },
   purchases: { type: Array, required: true },
+  landedCostCategories: { type: Array, default: () => [] },
 });
 
 const { t } = useI18n();
@@ -16,6 +17,7 @@ const { t } = useI18n();
     :allocation-methods="allocationMethods"
     :landed-cost="landedCost"
     :purchases="purchases"
+    :landed-cost-categories="landedCostCategories"
     :page-title="t('general.edit', { name: t('landed_cost.title') })"
     submit-route-name="landed-costs.update"
     submit-method="put"
