@@ -92,6 +92,11 @@ Route::middleware([
     Route::delete('/categories/{category}/force-delete', [\App\Http\Controllers\Administration\CategoryController::class, 'forceDelete'])
         ->name('categories.force-delete')
         ->withTrashed();
+    Route::resource('/landed-cost-categories', \App\Http\Controllers\Administration\LandedCostCategoryController::class);
+    Route::patch('/landed-cost-categories/{landed_cost_category}/restore', [\App\Http\Controllers\Administration\LandedCostCategoryController::class, 'restore'])->name('landed-cost-categories.restore')->withTrashed();
+    Route::delete('/landed-cost-categories/{landed_cost_category}/force-delete', [\App\Http\Controllers\Administration\LandedCostCategoryController::class, 'forceDelete'])
+        ->name('landed-cost-categories.force-delete')
+        ->withTrashed();
     Route::resource('/customer-groups', \App\Http\Controllers\Administration\CustomerGroupController::class)
         ->except(['create', 'edit']);
     Route::resource('/payment-terms', \App\Http\Controllers\Administration\PaymentTermController::class)

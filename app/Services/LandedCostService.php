@@ -165,13 +165,13 @@ class LandedCostService
                 'status' => LandedCostStatus::Allocated->value,
             ]);
 
-            $journalEntry = JournalEntryRecord::create([
-                'number' => (int) (JournalEntryRecord::max('number') ? JournalEntryRecord::max('number') + 1 : 1),
-                'date' => $landedCost->date,
-                'remark' => 'Landed cost #' . $landedCost->id,
-                'status' => 'posted',
-                'branch_id' => $landedCost->branch_id,
-            ]);
+            // $journalEntry = JournalEntryRecord::create([
+            //     'number' => (int) (JournalEntryRecord::max('number') ? JournalEntryRecord::max('number') + 1 : 1),
+            //     'date' => $landedCost->date,
+            //     'remark' => 'Landed cost #' . $landedCost->id,
+            //     'status' => 'posted',
+            //     'branch_id' => $landedCost->branch_id,
+            // ]);
 
             $inventoryLine = [
                 'account_id' => $this->resolveInventoryStockAccountId(),
@@ -195,8 +195,8 @@ class LandedCostService
                     'rate' => 1,
                     'date' => $landedCost->date?->toDateString() ?? now()->toDateString(),
                     'remark' => 'Landed cost #' . $landedCost->id,
-                    'reference_type' => JournalEntryRecord::class,
-                    'reference_id' => $journalEntry->id,
+                    'reference_type' => LandedCost::class,
+                    'reference_id' => $landedCost->id,
                     'status' => 'posted',
                 ],
                 lines: [

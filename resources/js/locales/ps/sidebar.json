@@ -33,7 +33,8 @@
         "branch": "څانګه",
         "brand": "برنډ",
         "warehouse": "ګودام",
-        "company": "شرکت"
+        "company": "شرکت",
+        "landed_cost_category": "د تحویلي لګښت کټګورۍ"
     },
     "inventory": {
         "item": "ایټم",

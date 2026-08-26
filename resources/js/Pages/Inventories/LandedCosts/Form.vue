@@ -12,7 +12,7 @@ import { useForm, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
-import { AlertCircle } from 'lucide-vue-next';
+import { AlertCircle, Trash2 } from 'lucide-vue-next';
 import { todayValueForCalendar } from '@/utils/dateDefaults';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 
@@ -24,6 +24,7 @@ const props = defineProps({
   allocationMethods: { type: Array, required: true },
   landedCost: { type: Object, default: null },
   purchases: { type: Array, default: () => [] },
+  landedCostCategories: { type: Array, default: () => [] },
   pageTitle: { type: String, required: true },
   submitRouteName: { type: String, required: true },
   submitMethod: { type: String, required: true },
@@ -117,12 +118,33 @@ const form = useForm({
 
 const isPosted = computed(() => currentRecord.value?.status_id === 'posted');
 const isEditMode = computed(() => !!currentRecord.value?.id);
+
+// Per-category amounts aren't sent/persisted individually yet — only their sum,
+// which drives form.total_cost (see the watch below).
+const categoryAllocations = ref((props.landedCostCategories || []).map((category) => ({
+  id: category.id,
+  name: category.name,
+  amount: '',
+})));
+
+const categoryAllocationsTotal = computed(() => categoryAllocations.value.reduce(
+  (sum, row) => sum + (Number(row.amount) || 0),
+  0,
+));
+
+const removeCategoryAllocation = (id) => {
+  categoryAllocations.value = categoryAllocations.value.filter((row) => row.id !== id);
+};
+
 const isManualAllocation = computed(() => form.allocation_method === 'manual');
 
-const allocationMethodOptions = computed(() => props.allocationMethods.map((method) => ({
-  id: method.id,
-  name: method.name,
-})));
+const allocationMethodOptions = computed(() => [
+  ...props.allocationMethods.map((method) => ({
+    id: method.id,
+    name: method.name,
+  })),
+  { id: 'equal', name: t('landed_cost.equal') },
+]);
 
 const round = (value, precision = 2) => {
   const factor = 10 ** precision;
@@ -145,6 +167,7 @@ const calculatePreviewRows = (rows, totalCost, method) => {
         by_weight: weight > 0 ? weight : quantity,
         by_volume: volume > 0 ? volume : quantity,
         by_value: quantity * unitCost,
+        equal: 1,
         manual: 0,
       }[method] ?? (quantity * unitCost);
 
@@ -342,10 +365,10 @@ const resetFormForCreate = () => {
   form.purchase_id = '';
   form.purchase_ids = [];
   form.selected_purchases = [];
-  form.total_cost = '';
   form.allocation_method = 'by_value';
   form.notes = '';
   form.items = [];
+  categoryAllocations.value.forEach((row) => { row.amount = ''; });
   currentRecord.value = null;
 };
 
@@ -497,6 +520,13 @@ watch(() => form.allocation_method, (method, previous) => {
   }
 });
 
+// Total additional cost is no longer entered directly — it's the sum of the category breakdown.
+// Not immediate: on edit, form.total_cost starts from the loaded record and only
+// switches to tracking the breakdown once the user actually changes a category amount.
+watch(categoryAllocationsTotal, (total) => {
+  form.total_cost = round(total, 2);
+});
+
 watch(() => props.landedCost, (value) => {
   const normalized = normalizeRecord(value);
 
@@ -565,14 +595,6 @@ onUnmounted(() => {
             :disabled="isPosted"
             :error="form.errors?.purchase_ids || form.errors?.purchase_id"
           />
-          <NextInput
-            v-model="form.total_cost"
-            type="number"
-            step="any"
-            :disabled="isPosted"
-            :error="form.errors?.total_cost"
-            :label="t('landed_cost.total_additional_cost')"
-          />
           <NextSelect
             :options="allocationMethodOptions"
             v-model="form.allocation_method"
@@ -594,6 +616,46 @@ onUnmounted(() => {
         </div>
       </div>
 
+      <div v-if="categoryAllocations.length" class="mb-5 rounded-xl border border-violet-500 bg-card shadow-sm overflow-x-auto">
+        <div class="p-4 border-b">
+          <h3 class="font-semibold text-violet-500">{{ t('landed_cost.category_breakdown') }}</h3>
+        </div>
+        <table class="w-full">
+          <thead>
+            <tr class="text-muted-foreground font-semibold text-sm text-violet-500">
+              <th class="px-3 py-2 text-left">{{ t('landed_cost.category') }}</th>
+              <th class="px-3 py-2 text-left w-48">{{ t('general.amount') }}</th>
+              <th class="px-3 py-2 w-12"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in categoryAllocations" :key="row.id" class="border-t">
+              <td class="px-3 py-2">{{ row.name }}</td>
+              <td class="px-3 py-2">
+                <NextInput v-model="row.amount" type="number" step="any" :disabled="isPosted" />
+              </td>
+              <td class="px-3 py-2 text-center">
+                <button
+                  type="button"
+                  :disabled="isPosted"
+                  class="text-destructive hover:opacity-70 disabled:opacity-40"
+                  @click="removeCategoryAllocation(row.id)"
+                >
+                  <Trash2 class="h-4 w-4" />
+                </button>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="border-t font-semibold">
+              <td class="px-3 py-2">{{ t('landed_cost.total_assigned') }}</td>
+              <td class="px-3 py-2 text-violet-500">{{ categoryAllocationsTotal.toFixed(2) }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
       <div class="rounded-xl border border-violet-500 bg-card shadow-sm overflow-x-auto">
         <div class="p-4 border-b">
           <h3 class="font-semibold text-violet-500">{{ t('landed_cost.items') }}</h3>
@@ -604,7 +666,7 @@ onUnmounted(() => {
             <tr class="text-muted-foreground font-semibold text-sm text-violet-500">
               <th class="px-1 py-1 w-8">#</th>
               <th class="px-1 py-1 w-28">{{ t('landed_cost.purchase_order') }}</th>
-              <th class="px-1 py-1 min-w-28">{{ t('landed_cost.item') }}</th>
+              <th class="px-1 py-1 w-40">{{ t('landed_cost.item') }}</th>
               <th class="px-1 py-1 w-20">{{ t('general.qty') }}</th>
               <th class="px-1 py-1 w-24">{{ t('general.unit_price') }}</th>
               <th class="px-1 py-1 w-24">{{ t('general.batch') }}</th>

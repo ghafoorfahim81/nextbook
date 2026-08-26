@@ -4,6 +4,7 @@ namespace Database\Seeders;
    
 use Database\Seeders\Account\AccountSeeder;
 use Database\Seeders\Administration\BranchSeeder;
+use Database\Seeders\Administration\LandedCostCategorySeeder;
 use Database\Seeders\Administration\SizeSeeder;
 use Database\Seeders\Administration\WarehouseSeeder;
 use Database\Seeders\Administration\UnitMeasureSeeder;
@@ -41,6 +42,7 @@ class DatabaseSeeder extends Seeder
             $this->call(RolePermissionSeeder::class);
             $this->call(CompanySeeder::class);
             $this->call(SizeSeeder::class);
+            $this->call(LandedCostCategorySeeder::class);
             // $this->call(ItemSeeder::class);
         }
         if(app()->environment('production')){
@@ -57,6 +59,7 @@ class DatabaseSeeder extends Seeder
             $this->call(RolePermissionSeeder::class);
             $this->call(CompanySeeder::class);
             $this->call(SizeSeeder::class);
+            $this->call(LandedCostCategorySeeder::class);
         }
         // $this->call(PerformanceLoadSeeder::class);
     }
