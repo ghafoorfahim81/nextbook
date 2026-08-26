@@ -72,6 +72,7 @@ return [
     'landed_cost_posted_cannot_be_deleted' => 'هزینه‌های ورود ثبت‌شده قابل حذف نیستند.',
     'landed_cost_posted_cannot_be_reallocated' => 'هزینه‌های ورود ثبت‌شده دوباره قابل تخصیص نیستند.',
     'landed_cost_already_posted' => 'این هزینه ورود قبلاً ثبت شده است.',
+    'landed_cost_related_transaction_not_found' => 'هیچ تراکنش پیش‌نویس برای این هزینه ورود یافت نشد.',
     'landed_cost_no_items_to_allocate' => 'برای تخصیص هزینه ورود، حداقل یک آیتم اضافه کنید.',
     'landed_cost_allocation_basis_must_be_greater_than_zero' => 'مبنای تخصیص باید بزرگ‌تر از صفر باشد.',
     'landed_cost_inventory_stock_account_could_not_be_resolved' => 'حساب موجودی انبار قابل تشخیص نیست.',

@@ -4,7 +4,9 @@ namespace App\Models\Inventory;
 
 use App\Enums\LandedCostAllocationMethod;
 use App\Enums\LandedCostStatus;
+use App\Models\Account\Account;
 use App\Models\Purchase\Purchase;
+use App\Models\Transaction\Transaction;
 use App\Traits\BranchSpecific;
 use App\Traits\HasBranch;
 use App\Traits\HasDependencyCheck;
@@ -19,6 +21,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LandedCost extends Model
@@ -32,6 +35,7 @@ class LandedCost extends Model
     protected $fillable = [
         'date',
         'purchase_id',
+        'bank_account_id',
         'total_cost',
         'allocated_total',
         'allocation_method',
@@ -48,6 +52,7 @@ class LandedCost extends Model
         return [
             'date' => 'date',
             'purchase_id' => 'string',
+            'bank_account_id' => 'string',
             'total_cost' => 'decimal:2',
             'allocated_total' => 'decimal:2',
             'allocation_method' => LandedCostAllocationMethod::class,
@@ -82,6 +87,21 @@ class LandedCost extends Model
     public function purchase(): BelongsTo
     {
         return $this->belongsTo(Purchase::class);
+    }
+
+    public function bankAccount(): BelongsTo
+    {
+        return $this->belongsTo(Account::class, 'bank_account_id');
+    }
+
+    public function transaction(): MorphOne
+    {
+        return $this->morphOne(Transaction::class, 'reference');
+    }
+
+    public function categoryAllocations(): HasMany
+    {
+        return $this->hasMany(LandedCostCategoryAllocation::class, 'landed_cost_id');
     }
 
     public function purchases(): BelongsToMany

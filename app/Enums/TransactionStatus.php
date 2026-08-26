@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum TransactionStatus: string
 {
+    case DRAFT = 'draft';
     case POSTED = 'posted';
     case APPROVED = 'approved';
     case REJECTED = 'rejected';
@@ -14,6 +15,7 @@ enum TransactionStatus: string
     public function getLabel(): string
     {
         return match($this) {
+            self::DRAFT => __('enums.transaction_status.draft'),
             self::POSTED => __('enums.transaction_status.posted'),
             self::APPROVED => __('enums.transaction_status.approved'),
             self::REJECTED => __('enums.transaction_status.rejected'),

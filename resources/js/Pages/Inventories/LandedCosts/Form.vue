@@ -25,6 +25,8 @@ const props = defineProps({
   landedCost: { type: Object, default: null },
   purchases: { type: Array, default: () => [] },
   landedCostCategories: { type: Array, default: () => [] },
+  bankAccounts: { type: Array, default: () => [] },
+  currencies: { type: Array, default: () => [] },
   pageTitle: { type: String, required: true },
   submitRouteName: { type: String, required: true },
   submitMethod: { type: String, required: true },
@@ -110,17 +112,43 @@ const form = useForm({
   purchase_id: currentRecord.value?.purchase_id || defaultPurchases.value[0]?.id || '',
   purchase_ids: Array.isArray(currentRecord.value?.purchase_ids) ? currentRecord.value.purchase_ids : defaultPurchases.value.map((purchase) => purchase.id),
   selected_purchases: defaultPurchases.value,
+  bank_account_id: currentRecord.value?.bank_account_id || '',
+  selected_bank_account: props.bankAccounts.find((a) => a.id === currentRecord.value?.bank_account_id) || null,
+  currency_id: currentRecord.value?.currency_id || '',
+  selected_currency: props.currencies.find((c) => c.id === currentRecord.value?.currency_id) || null,
+  rate: currentRecord.value?.rate || '',
   total_cost: currentRecord.value?.total_cost || '',
   allocation_method: currentRecord.value?.allocation_method_id || 'by_value',
   notes: currentRecord.value?.notes || '',
   items: (currentRecord.value?.items || []).map(normalizeItem),
 });
 
+const handleSelectChange = (field, value) => {
+  form[field] = value;
+
+  if (field === 'currency_id') {
+    const chosen = props.currencies.find((c) => c.id === value);
+    if (chosen) form.rate = chosen.exchange_rate;
+  }
+};
+
+watch(() => props.currencies, (list) => {
+  if (list && list.length && !form.currency_id) {
+    const base = list.find((c) => c.is_base_currency);
+    if (base) {
+      form.selected_currency = base;
+      form.currency_id = base.id;
+      form.rate = base.exchange_rate;
+    }
+  }
+}, { immediate: true });
+
 const isPosted = computed(() => currentRecord.value?.status_id === 'posted');
 const isEditMode = computed(() => !!currentRecord.value?.id);
 
-// Per-category amounts aren't sent/persisted individually yet — only their sum,
-// which drives form.total_cost (see the watch below).
+// Each category's amount is sent as `category_allocations` and persisted to
+// landed_cost_category_allocations; their sum also drives form.total_cost
+// (see the watch below).
 const categoryAllocations = ref((props.landedCostCategories || []).map((category) => ({
   id: category.id,
   name: category.name,
@@ -135,6 +163,20 @@ const categoryAllocationsTotal = computed(() => categoryAllocations.value.reduce
 const removeCategoryAllocation = (id) => {
   categoryAllocations.value = categoryAllocations.value.filter((row) => row.id !== id);
 };
+
+const applyCategoryAllocations = (rows) => {
+  const byId = new Map((rows || []).map((row) => [row.landed_cost_category_id, row.amount]));
+  categoryAllocations.value.forEach((row) => {
+    row.amount = byId.has(row.id) ? byId.get(row.id) : '';
+  });
+};
+
+const categoryAllocationsPayload = () => categoryAllocations.value
+  .filter((row) => Number(row.amount) > 0)
+  .map((row) => ({
+    landed_cost_category_id: row.id,
+    amount: row.amount,
+  }));
 
 const isManualAllocation = computed(() => form.allocation_method === 'manual');
 
@@ -314,10 +356,16 @@ const setRecordFromResponse = (data) => {
   form.selected_purchases = Array.isArray(data.purchases)
     ? responsePurchases
     : props.purchases.filter((purchase) => responsePurchaseIds.includes(purchase.id)).map(normalizePurchase);
+  form.bank_account_id = data.bank_account_id || '';
+  form.selected_bank_account = props.bankAccounts.find((a) => a.id === data.bank_account_id) || null;
+  form.currency_id = data.currency_id || form.currency_id;
+  form.selected_currency = props.currencies.find((c) => c.id === data.currency_id) || form.selected_currency;
+  form.rate = data.rate || form.rate;
   form.total_cost = data.total_cost || '';
   form.allocation_method = data.allocation_method_id || 'by_value';
   form.notes = data.notes || '';
   form.items = (data.items || []).map(normalizeItem);
+  applyCategoryAllocations(data.category_allocations);
 };
 
 const prepareItemsPayload = () => form.items
@@ -343,10 +391,14 @@ const buildPayload = (createAndNew = false) => ({
   date: form.date,
   purchase_id: form.purchase_ids[0] || form.purchase_id || null,
   purchase_ids: form.purchase_ids || [],
+  bank_account_id: form.bank_account_id,
+  currency_id: form.currency_id,
+  rate: form.rate,
   total_cost: form.total_cost,
   allocation_method: form.allocation_method,
   notes: form.notes,
   items: prepareItemsPayload(),
+  category_allocations: categoryAllocationsPayload(),
   ...(createAndNew ? { create_and_new: true } : {}),
 });
 
@@ -365,6 +417,12 @@ const resetFormForCreate = () => {
   form.purchase_id = '';
   form.purchase_ids = [];
   form.selected_purchases = [];
+  form.bank_account_id = '';
+  form.selected_bank_account = null;
+  const base = props.currencies.find((c) => c.is_base_currency);
+  form.selected_currency = base || null;
+  form.currency_id = base?.id || '';
+  form.rate = base?.exchange_rate || '';
   form.allocation_method = 'by_value';
   form.notes = '';
   form.items = [];
@@ -379,6 +437,11 @@ const saveDraft = (createAndNew = false) => {
 
   if (!form.items.length) {
     toast.error(t('landed_cost.select_purchase_first'));
+    return;
+  }
+
+  if (allocationWarning.value) {
+    toast.error(allocationWarning.value.message);
     return;
   }
 
@@ -605,6 +668,43 @@ onUnmounted(() => {
             :disabled="isPosted"
             :error="form.errors?.allocation_method"
           />
+          <NextSelect
+            :options="bankAccounts"
+            v-model="form.selected_bank_account"
+            @update:modelValue="(v) => handleSelectChange('bank_account_id', v.id)"
+            label-key="name"
+            value-key="id"
+            :reduce="account => account"
+            :floating-text="t('landed_cost.bank_account')"
+            :searchable="true"
+            resource-type="accounts"
+            :search-fields="['name', 'number', 'slug']"
+            :disabled="isPosted"
+            :error="form.errors?.bank_account_id"
+          />
+          <NextSelect
+            :options="currencies"
+            v-model="form.selected_currency"
+            @update:modelValue="(v) => handleSelectChange('currency_id', v.id)"
+            label-key="code"
+            value-key="id"
+            :reduce="currency => currency"
+            :floating-text="t('admin.currency.currency')"
+            :searchable="true"
+            resource-type="currencies"
+            :search-fields="['name', 'code', 'symbol']"
+            :disabled="isPosted"
+            :error="form.errors?.currency_id"
+          />
+          <NextInput
+            v-model="form.rate"
+            type="number"
+            step="any"
+            :placeholder="t('general.enter', { text: t('general.rate') })"
+            :disabled="isPosted || form.selected_currency?.is_base_currency === true"
+            :error="form.errors?.rate"
+            :label="t('general.rate')"
+          />
           <NextTextarea
             v-model="form.notes"
             :disabled="isPosted"
@@ -766,7 +866,7 @@ onUnmounted(() => {
           :create-loading="createLoading"
           :create-and-new-loading="createAndNewLoading"
           :show-create-and-new="!isEditMode"
-          :disabled="isPosted"
+          :disabled="isPosted || !!allocationWarning"
           @create-and-new="handleSubmitAction(true)"
           @cancel="() => router.visit(route('landed-costs.index'))"
         />

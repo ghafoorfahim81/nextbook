@@ -32,6 +32,20 @@ class LandedCostResource extends JsonResource
             'purchase_numbers' => $this->whenLoaded('purchases', fn () => $this->purchases->pluck('number')->filter()->values()->all(), $this->purchase?->number ? [$this->purchase?->number] : []),
             'purchase' => PurchaseResource::make($this->whenLoaded('purchase')),
             'purchases' => PurchaseResource::collection($this->whenLoaded('purchases')),
+            'bank_account_id' => $this->bank_account_id,
+            'bank_account_name' => $this->whenLoaded('bankAccount', fn () => $this->bankAccount?->name),
+            // Currency and rate are never stored on the landed cost itself —
+            // they live on its transaction, and are read from there for every
+            // CRUD operation, per the accounting boundary in TransactionService.
+            'currency_id' => $this->whenLoaded('transaction', fn () => $this->transaction?->currency_id),
+            'rate' => $this->whenLoaded('transaction', fn () => $this->transaction?->rate),
+            'transaction_id' => $this->whenLoaded('transaction', fn () => $this->transaction?->id),
+            'transaction_status' => $this->whenLoaded('transaction', fn () => $this->transaction?->status),
+            'category_allocations' => $this->whenLoaded('categoryAllocations', fn () => $this->categoryAllocations->map(fn ($row) => [
+                'landed_cost_category_id' => $row->landed_cost_category_id,
+                'amount' => $row->amount,
+                'category_name' => $row->category?->name,
+            ])->values()),
             'total_cost' => $this->total_cost,
             'allocated_total' => $this->allocated_total,
             'allocation_method' => $allocationMethod?->getLabel() ?? $this->allocation_method,

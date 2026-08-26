@@ -296,6 +296,7 @@ return [
         'by_quantity' => 'By Quantity',
         'by_weight' => 'By Weight',
         'by_volume' => 'By Volume',
+        'equal' => 'مساوي',
         'manual' => 'Manual',
     ],
 ];
