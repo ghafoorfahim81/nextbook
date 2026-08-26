@@ -6,15 +6,15 @@ use App\Enums\LandedCostAllocationMethod;
 use App\Enums\LandedCostStatus;
 use App\Enums\StockMovementType;
 use App\Enums\StockSourceType;
+use App\Enums\TransactionStatus;
 use App\Models\Account\Account;
-use App\Models\Administration\Currency;
 use App\Models\Inventory\Item;
 use App\Models\Inventory\LandedCost;
 use App\Models\Inventory\LandedCostItem;
 use App\Models\Inventory\StockMovement;
-use App\Models\JournalEntry\JournalEntry as JournalEntryRecord;
 use App\Models\Purchase\Purchase;
 use App\Models\Purchase\PurchaseItem;
+use App\Models\Transaction\Transaction;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -82,6 +82,91 @@ class LandedCostService
         ]);
     }
 
+    /**
+     * Replace the category breakdown for this landed cost.
+     *
+     * Force-deleted and rebuilt on every save, same as syncItems() — the
+     * breakdown has no identity of its own outside "what this landed cost is
+     * currently split into".
+     *
+     * @param array<int, array<string, mixed>> $rows
+     */
+    public function syncCategoryAllocations(LandedCost $landedCost, array $rows = []): void
+    {
+        $landedCost->categoryAllocations()->forceDelete();
+
+        foreach ($rows as $row) {
+            $amount = round((float) data_get($row, 'amount', 0), 2);
+
+            if ($amount <= 0) {
+                continue;
+            }
+
+            $landedCost->categoryAllocations()->create([
+                'landed_cost_category_id' => data_get($row, 'landed_cost_category_id'),
+                'amount' => $amount,
+            ]);
+        }
+    }
+
+    /**
+     * (Re)create the draft transaction that funds this landed cost.
+     *
+     * Called from both store() and update(): a landed cost carries its
+     * transaction from the moment it is created, in 'draft' status, so that
+     * post() never has to build GL lines — it only flips two statuses. Editing
+     * a still-draft landed cost force-deletes the old transaction and its
+     * lines and posts a fresh one, the same replace-on-edit pattern
+     * PaymentController::update() uses for the same reason: a draft entry has
+     * no downstream reporting depending on it yet, so there is nothing to
+     * reverse, only something to redo.
+     *
+     * @param array{bank_account_id: string, currency_id: string, rate: float, date: string} $header
+     */
+    public function syncDraftTransaction(LandedCost $landedCost, array $header): Transaction
+    {
+        $existing = $landedCost->transaction()->first();
+
+        if ($existing) {
+            $existing->lines()->forceDelete();
+            $existing->forceDelete();
+        }
+
+        $amount = round((float) $landedCost->total_cost, 2);
+
+        $inventoryLine = [
+            'account_id' => $this->resolveInventoryStockAccountId(),
+            'debit' => $amount,
+            'credit' => 0,
+            'remark' => 'Inventory capitalization for landed cost',
+        ];
+
+        $bankLine = [
+            'account_id' => $header['bank_account_id'],
+            'debit' => 0,
+            'credit' => $amount,
+            'remark' => 'Landed cost funded from account',
+        ];
+
+        return $this->transactionService->post(
+            header: [
+                'currency_id' => $header['currency_id'],
+                'rate' => $header['rate'],
+                'date' => $header['date'],
+                'remark' => 'Landed cost #' . $landedCost->id,
+                // Every reader — LandedCost::transaction() (morphOne), reports,
+                // the trash screen — resolves the type via getMorphClass(),
+                // which returns the registered morph-map alias ('landed_cost')
+                // rather than the FQCN once a mapping exists. Writing the raw
+                // class name here would silently orphan the relation.
+                'reference_type' => $landedCost->getMorphClass(),
+                'reference_id' => $landedCost->id,
+                'status' => TransactionStatus::DRAFT->value,
+            ],
+            lines: [$inventoryLine, $bankLine],
+        );
+    }
+
     public function preview(LandedCost $landedCost, array $payload = []): array
     {
         $rows = $this->resolveRows($landedCost, data_get($payload, 'items', []), data_get($payload, 'purchase_ids', []));
@@ -115,14 +200,33 @@ class LandedCostService
         });
     }
 
+    /**
+     * Posting a landed cost that already carries its draft transaction (see
+     * syncDraftTransaction(), called from the controller at create/update
+     * time) is now just two status flips. Everything that used to happen here
+     * — building GL lines, posting a Transaction — happened when the record
+     * was saved. What's left is (a) a final re-check that the allocation
+     * still matches total_cost, which also finalises landed_cost_items, and
+     * (b) the FIFO cost push into StockMovement/Item.avg_cost, which must
+     * stay gated behind posting: a draft is still editable and discardable,
+     * so item unit costs may not move until the landed cost is final.
+     */
     public function post(LandedCost $landedCost): array
     {
         return DB::transaction(function () use ($landedCost) {
-            $landedCost->loadMissing(['purchases.items.item', 'items.item']);
+            $landedCost->loadMissing(['purchases.items.item', 'items.item', 'transaction']);
 
             if (($landedCost->status instanceof LandedCostStatus ? $landedCost->status->value : (string) $landedCost->status) === LandedCostStatus::Posted->value) {
                 throw ValidationException::withMessages([
                     'landed_cost' => __('general.landed_cost_already_posted'),
+                ]);
+            }
+
+            $transaction = $landedCost->transaction;
+
+            if (! $transaction) {
+                throw ValidationException::withMessages([
+                    'landed_cost' => __('general.landed_cost_related_transaction_not_found'),
                 ]);
             }
 
@@ -160,51 +264,6 @@ class LandedCostService
             $landedCost->items()->forceDelete();
             $this->syncItems($landedCost, $preview['rows']);
 
-            $landedCost->update([
-                'allocated_total' => $preview['allocated_total'],
-                'status' => LandedCostStatus::Allocated->value,
-            ]);
-
-            // $journalEntry = JournalEntryRecord::create([
-            //     'number' => (int) (JournalEntryRecord::max('number') ? JournalEntryRecord::max('number') + 1 : 1),
-            //     'date' => $landedCost->date,
-            //     'remark' => 'Landed cost #' . $landedCost->id,
-            //     'status' => 'posted',
-            //     'branch_id' => $landedCost->branch_id,
-            // ]);
-
-            $inventoryLine = [
-                'account_id' => $this->resolveInventoryStockAccountId(),
-                'ledger_id' => null,
-                'debit' => round($preview['allocated_total'], 2),
-                'credit' => 0,
-                'remark' => 'Inventory capitalization for landed cost',
-            ];
-
-            $clearingLine = [
-                'account_id' => $this->resolveClearingAccountId(),
-                'ledger_id' => null,
-                'debit' => 0,
-                'credit' => round($preview['allocated_total'], 2),
-                'remark' => 'Landed costs clearing for landed cost',
-            ];
-
-            $transaction = $this->transactionService->post(
-                header: [
-                    'currency_id' => $this->resolveHomeCurrencyId(),
-                    'rate' => 1,
-                    'date' => $landedCost->date?->toDateString() ?? now()->toDateString(),
-                    'remark' => 'Landed cost #' . $landedCost->id,
-                    'reference_type' => LandedCost::class,
-                    'reference_id' => $landedCost->id,
-                    'status' => 'posted',
-                ],
-                lines: [
-                    $inventoryLine,
-                    $clearingLine,
-                ],
-            );
-
             $this->applyInventoryAdjustments($landedCost, collect($preview['rows']));
 
             $landedCost->update([
@@ -212,10 +271,13 @@ class LandedCostService
                 'status' => LandedCostStatus::Posted->value,
             ]);
 
+            $transaction->update([
+                'status' => TransactionStatus::POSTED->value,
+            ]);
+
             return [
-                'landed_cost' => $landedCost->fresh(['purchases.items.item', 'items.item']),
-                'journal_entry' => $journalEntry,
-                'transaction' => $transaction,
+                'landed_cost' => $landedCost->fresh(['purchases.items.item', 'items.item', 'transaction']),
+                'transaction' => $transaction->fresh(),
             ];
         });
     }
@@ -246,6 +308,7 @@ class LandedCostService
                 LandedCostAllocationMethod::ByQuantity => $quantity,
                 LandedCostAllocationMethod::ByWeight => $weight > 0 ? $weight : $quantity,
                 LandedCostAllocationMethod::ByVolume => $volume > 0 ? $volume : $quantity,
+                LandedCostAllocationMethod::Equal => 1,
                 LandedCostAllocationMethod::Manual => 0,
                 default => $quantity * $unitCost,
             };
@@ -416,25 +479,6 @@ class LandedCostService
             ]);
     }
 
-    private function resolveClearingAccountId(): string
-    {
-        return data_get(Cache::get('gl_accounts'), 'landed-costs-clearing')
-            ?? Account::withoutGlobalScopes()->where('slug', 'landed-costs-clearing')->value('id')
-            ?? data_get(Cache::get('gl_accounts'), 'freight-customs-clearing')
-            ?? Account::withoutGlobalScopes()->where('slug', 'freight-customs-clearing')->value('id')
-            ?? throw ValidationException::withMessages([
-                'items' => __('general.landed_cost_landed_costs_clearing_account_could_not_be_resolved'),
-            ]);
-    }
-
-    private function resolveHomeCurrencyId(): string
-    {
-        return data_get(Cache::get('home_currency'), 'id')
-            ?? Currency::query()->where('is_base_currency', true)->value('id')
-            ?? throw ValidationException::withMessages([
-                'currency' => __('general.landed_cost_home_currency_could_not_be_resolved'),
-            ]);
-    }
 
     private function applyInventoryAdjustments(LandedCost $landedCost, Collection $rows): void
     {

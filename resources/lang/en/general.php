@@ -72,6 +72,7 @@ return [
     'landed_cost_posted_cannot_be_deleted' => 'Posted landed costs cannot be deleted.',
     'landed_cost_posted_cannot_be_reallocated' => 'Posted landed costs cannot be reallocated.',
     'landed_cost_already_posted' => 'This landed cost has already been posted.',
+    'landed_cost_related_transaction_not_found' => 'No draft transaction was found for this landed cost.',
     'landed_cost_no_items_to_allocate' => 'Add at least one item to allocate landed cost.',
     'landed_cost_allocation_basis_must_be_greater_than_zero' => 'Allocation basis must be greater than zero.',
     'landed_cost_inventory_stock_account_could_not_be_resolved' => 'Inventory stock account could not be resolved.',

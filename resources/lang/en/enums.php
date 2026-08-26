@@ -44,6 +44,7 @@ return [
         'currency' => 'Currency',
     ],
     'transaction_status' => [
+        'draft' => 'Draft',
         'posted' => 'Posted',
         'approved' => 'Approved',
         'rejected' => 'Rejected',
@@ -335,6 +336,7 @@ return [
         'by_quantity' => 'By Quantity',
         'by_weight' => 'By Weight',
         'by_volume' => 'By Volume',
+        'equal' => 'Equal',
         'manual' => 'Manual',
     ],
 ];
