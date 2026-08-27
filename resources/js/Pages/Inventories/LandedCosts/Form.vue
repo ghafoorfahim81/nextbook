@@ -185,7 +185,6 @@ const allocationMethodOptions = computed(() => [
     id: method.id,
     name: method.name,
   })),
-  { id: 'equal', name: t('landed_cost.equal') },
 ]);
 
 const round = (value, precision = 2) => {
