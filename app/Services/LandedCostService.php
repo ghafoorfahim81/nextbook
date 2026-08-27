@@ -411,6 +411,13 @@ class LandedCostService
                     'expire_date' => data_get($row, 'expire_date'),
                     'allocated_amount' => (float) data_get($row, 'allocated_amount', 0),
                     'allocated_percentage' => (float) data_get($row, 'allocated_percentage', 0),
+                    // Carried through rather than recomputed: syncItems() feeds
+                    // calculatePreview() output straight back into here, and
+                    // dropping these two would persist a zero landed unit cost
+                    // for every line. Fall back to quantity x unit_cost so rows
+                    // that never went through a preview still land sane values.
+                    'item_cost_before' => (float) data_get($row, 'item_cost_before', (float) data_get($row, 'quantity', 0) * (float) data_get($row, 'unit_cost', 0)),
+                    'item_cost_after' => (float) data_get($row, 'item_cost_after', ((float) data_get($row, 'quantity', 0) * (float) data_get($row, 'unit_cost', 0)) + (float) data_get($row, 'allocated_amount', 0)),
                 ];
             })->all();
         }

@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Inventory;
 
 use App\Enums\LandedCostAllocationMethod;
+use App\Models\Inventory\LandedCost;
+use App\Models\Purchase\Purchase;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -51,6 +53,8 @@ class LandedCostRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
+            $this->assertPurchasesNotAlreadyAllocated($validator);
+
             $items = collect($this->input('items', []))->filter(fn ($item) => !empty(data_get($item, 'item_id')));
 
             if ($items->isEmpty()) {
@@ -97,5 +101,50 @@ class LandedCostRequest extends FormRequest
                 }
             }
         });
+    }
+
+    /**
+     * A purchase order carries at most one landed cost.
+     *
+     * The create/edit form already hides taken purchase orders from the
+     * picker, but that list is built when the page loads — a second user
+     * saving in between, or a direct API call, would otherwise attach the same
+     * purchase order twice and double-capitalise its stock.
+     */
+    private function assertPurchasesNotAlreadyAllocated($validator): void
+    {
+        $purchaseIds = collect($this->input('purchase_ids', []))
+            ->when(blank($this->input('purchase_ids', [])), fn ($ids) => collect([$this->input('purchase_id')]))
+            ->filter()
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values();
+
+        if ($purchaseIds->isEmpty()) {
+            return;
+        }
+
+        // The web resource route binds this as {landed_cost}, the API routes as
+        // {landedCost}; on store() neither is present.
+        $current = $this->route('landedCost') ?? $this->route('landed_cost');
+        $currentId = $current instanceof LandedCost ? $current->getKey() : $current;
+
+        $taken = Purchase::query()
+            ->whereIn('id', $purchaseIds->all())
+            ->whereHas('landedCosts', function ($query) use ($currentId): void {
+                if ($currentId) {
+                    $query->whereKeyNot($currentId);
+                }
+            })
+            ->pluck('number', 'id');
+
+        if ($taken->isEmpty()) {
+            return;
+        }
+
+        $validator->errors()->add(
+            'purchase_ids',
+            __('general.landed_cost_purchase_already_allocated', ['number' => $taken->values()->join(', ')])
+        );
     }
 }

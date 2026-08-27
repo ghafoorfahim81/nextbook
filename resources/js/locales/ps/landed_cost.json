@@ -38,5 +38,11 @@
   "update_draft": "Update",
   "allocation_mismatch_title": "Allocation mismatch",
   "allocation_not_fully_allocated": "The total additional cost is not fully allocated. Remaining: {amount}",
-  "allocation_exceeds_additional_cost": "Allocated item amounts are greater than the total additional cost by {amount}."
+  "allocation_exceeds_additional_cost": "Allocated item amounts are greater than the total additional cost by {amount}.",
+  "transaction_status": "د راکړې ورکړې حالت",
+  "item_cost_before": "مخکینی لګښت",
+  "item_cost_after": "وروستی لګښت",
+  "share_of_total": "د ټولې برخه",
+  "no_category_breakdown": "د دې راوړل شوي لګښت لپاره د کټګورۍ ویش نه دی ثبت شوی.",
+  "purchase_already_has_landed_cost": "د دې پیرود امر لپاره لا دمخه راوړل شوی لګښت شتون لري."
 }

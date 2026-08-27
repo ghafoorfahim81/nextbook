@@ -31,6 +31,12 @@ class LandedCostItemResource extends JsonResource
             'allocated_amount' => $this->allocated_amount,
             'item_cost_before' => $this->item_cost_before,
             'item_cost_after' => $this->item_cost_after,
+            // The per-unit cost the item ends up at once its share of the
+            // additional cost is capitalised. Derived here rather than in the
+            // page so the API and the view agree on the same number.
+            'landed_unit_cost' => (float) $this->quantity > 0
+                ? round((float) $this->item_cost_after / (float) $this->quantity, 4)
+                : round((float) $this->unit_cost, 4),
         ];
     }
 }

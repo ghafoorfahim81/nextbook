@@ -81,6 +81,7 @@ return [
     'landed_cost_home_currency_could_not_be_resolved' => 'ارز پایه قابل تشخیص نیست.',
     'landed_cost_related_stock_movement_not_found' => 'حرکت موجودی مرتبط با خرید برای اعمال هزینه ورود یافت نشد.',
     'landed_cost_allocation_must_match_total_cost' => 'قبل از ثبت، مبلغ تخصیص‌یافته باید با مجموع هزینه اضافی برابر باشد.',
+    'landed_cost_purchase_already_allocated' => 'برای سفارش خرید :number قبلاً هزینه ورود ثبت شده است.',
     'dependencies_found' => 'نمی‌توان این رکورد را حذف کنید چون در بخش های دیگر استفاده شده است.',
     'cannot_delete_item_with_posted_stock_movements' => 'نمی‌توان جنسی را حذف کنید که دارای حرکات انبار ثبت شده است.',
     'posted_stock_movements_found' => 'جنسی با حرکات انبار ثبت شده وجود دارد.',
