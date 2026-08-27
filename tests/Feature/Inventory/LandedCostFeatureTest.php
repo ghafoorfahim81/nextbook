@@ -150,6 +150,22 @@ class LandedCostFeatureTest extends TestCase
             $landedCost->items()->pluck('allocated_amount')->map(fn ($value) => (float) $value)->all()
         );
 
+        // The capitalised cost columns must survive the round trip through
+        // syncItems() — they are what the show page divides by quantity to get
+        // the landed unit cost, and a dropped value renders it as 0.
+        $this->assertEqualsCanonicalizing(
+            [200.0, 200.0],
+            $landedCost->items()->pluck('item_cost_before')->map(fn ($value) => (float) $value)->all()
+        );
+        $this->assertEqualsCanonicalizing(
+            [230.0, 220.0],
+            $landedCost->items()->pluck('item_cost_after')->map(fn ($value) => (float) $value)->all()
+        );
+
+        $this->getJson('/api/landed-costs/'.$landedCost->id)
+            ->assertOk()
+            ->assertJsonPath('data.items.0.landed_unit_cost', fn ($value) => (float) $value === 23.0);
+
         $this->postJson('/api/landed-costs/'.$landedCost->id.'/post')->assertOk();
 
         $firstMovement = StockMovement::query()
@@ -240,12 +256,75 @@ class LandedCostFeatureTest extends TestCase
         return Purchase::query()->latest()->firstOrFail();
     }
 
+    public function test_it_rejects_a_purchase_order_that_already_carries_a_landed_cost(): void
+    {
+        $purchase = $this->createPostedPurchase([
+            [
+                'item_id' => $this->ctx['item']->id,
+                'batch' => 'BT-100',
+                'expire_date' => '2027-03-01',
+                'quantity' => 10,
+                'unit_price' => 30,
+            ],
+        ]);
+
+        $purchaseItem = $purchase->items()->firstOrFail();
+
+        $payload = $this->landedCostPayload(
+            purchase: $purchase,
+            totalCost: 50,
+            method: LandedCostAllocationMethod::Manual->value,
+            items: [[
+                'purchase_id' => $purchase->id,
+                'purchase_item_id' => $purchaseItem->id,
+                'item_id' => $this->ctx['item']->id,
+                'quantity' => 10,
+                'unit_cost' => 30,
+                'warehouse_id' => $this->ctx['warehouse']->id,
+                'batch' => 'BT-100',
+                'expire_date' => '2027-03-01',
+                'allocated_amount' => 50,
+            ]],
+        );
+
+        $this->post(route('landed-costs.store'), $payload)->assertRedirect(route('landed-costs.index'));
+
+        // Second landed cost on the same purchase order: rejected, and the
+        // purchase order no longer appears among the form's options.
+        $this->post(route('landed-costs.store'), $payload)->assertSessionHasErrors('purchase_ids');
+
+        $this->assertSame(1, LandedCost::query()->count());
+
+        $landedCost = LandedCost::query()->latest()->firstOrFail();
+
+        $this->get(route('landed-costs.create'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where(
+                'purchases',
+                fn ($purchases) => collect($purchases)->doesntContain('id', $purchase->id)
+            ));
+
+        // Editing the landed cost that owns it keeps it selectable.
+        $this->get(route('landed-costs.edit', $landedCost->id))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page->where(
+                'purchases',
+                fn ($purchases) => collect($purchases)->contains('id', $purchase->id)
+            ));
+    }
+
     private function landedCostPayload(Purchase $purchase, float $totalCost, string $method, array $items): array
     {
         return [
             'date' => '2026-03-20',
             'purchase_id' => $purchase->id,
             'purchase_ids' => [$purchase->id],
+            // The funding side of the landed cost: its draft transaction is
+            // built at save time, so the account/currency/rate travel with
+            // every store and update request.
+            'bank_account_id' => $this->ctx['accounts']['cash-in-hand']->id,
+            'currency_id' => $this->ctx['currency']->id,
+            'rate' => 1,
             'total_cost' => $totalCost,
             'allocation_method' => $method,
             'notes' => 'freight and customs',

@@ -38,5 +38,11 @@
   "update_draft": "به‌روزرسانی",
   "allocation_mismatch_title": "عدم تطابق تخصیص",
   "allocation_not_fully_allocated": "مجموع هزینه اضافی به‌طور کامل تخصیص نشده است. باقی‌مانده: {amount}",
-  "allocation_exceeds_additional_cost": "مبلغ تخصیص‌یافته اقلام به اندازه {amount} بیشتر از مجموع هزینه اضافی است."
+  "allocation_exceeds_additional_cost": "مبلغ تخصیص‌یافته اقلام به اندازه {amount} بیشتر از مجموع هزینه اضافی است.",
+  "transaction_status": "وضعیت تراکنش",
+  "item_cost_before": "بهای قبل",
+  "item_cost_after": "بهای بعد",
+  "share_of_total": "سهم از مجموع",
+  "no_category_breakdown": "برای این هزینه ورود، تفکیک دسته‌بندی ثبت نشده است.",
+  "purchase_already_has_landed_cost": "برای این سفارش خرید قبلاً هزینه ورود ثبت شده است."
 }

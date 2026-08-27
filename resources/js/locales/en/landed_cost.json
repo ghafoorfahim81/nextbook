@@ -38,5 +38,11 @@
   "update_draft": "Update",
   "allocation_mismatch_title": "Allocation mismatch",
   "allocation_not_fully_allocated": "The total additional cost is not fully allocated. Remaining: {amount}",
-  "allocation_exceeds_additional_cost": "Allocated item amounts are greater than the total additional cost by {amount}."
+  "allocation_exceeds_additional_cost": "Allocated item amounts are greater than the total additional cost by {amount}.",
+  "transaction_status": "Transaction Status",
+  "item_cost_before": "Cost Before",
+  "item_cost_after": "Cost After",
+  "share_of_total": "Share of Total",
+  "no_category_breakdown": "No category breakdown was recorded for this landed cost.",
+  "purchase_already_has_landed_cost": "This purchase order already has a landed cost."
 }

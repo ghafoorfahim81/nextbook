@@ -82,4 +82,5 @@ return [
     'landed_cost_home_currency_could_not_be_resolved' => 'Home currency could not be resolved.',
     'landed_cost_related_stock_movement_not_found' => 'No related purchase stock movement was found to apply the landed cost.',
     'landed_cost_allocation_must_match_total_cost' => 'Allocated amount must equal the total additional cost before posting.',
+    'landed_cost_purchase_already_allocated' => 'د پیرود امر :number لپاره لا دمخه راوړل شوی لګښت شتون لري.',
 ];

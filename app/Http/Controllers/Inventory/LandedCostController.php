@@ -32,7 +32,7 @@ class LandedCostController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $query = LandedCost::with(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction', 'categoryAllocations.category', 'createdBy', 'updatedBy'])
+        $query = LandedCost::with(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction.currency', 'categoryAllocations.category', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection);
@@ -111,7 +111,7 @@ class LandedCostController extends Controller
                 'date' => $landedCost->date?->toDateString() ?? $request->validated('date'),
             ]);
 
-            return $landedCost->fresh(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction', 'categoryAllocations.category', 'createdBy', 'updatedBy']);
+            return $landedCost->fresh(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction.currency', 'categoryAllocations.category', 'createdBy', 'updatedBy']);
         });
 
         if ($request->expectsJson()) {
@@ -127,7 +127,7 @@ class LandedCostController extends Controller
 
     public function show(Request $request, LandedCost $landedCost)
     {
-        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction', 'categoryAllocations.category', 'createdBy', 'updatedBy']);
+        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction.currency', 'categoryAllocations.category', 'createdBy', 'updatedBy']);
         $payload = LandedCostResource::make($landedCost)->resolve($request);
 
         if ($request->expectsJson()) {
@@ -143,7 +143,7 @@ class LandedCostController extends Controller
 
     public function edit(Request $request, LandedCost $landedCost)
     {
-        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction', 'categoryAllocations.category', 'createdBy', 'updatedBy']);
+        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction.currency', 'categoryAllocations.category', 'createdBy', 'updatedBy']);
         $payload = LandedCostResource::make($landedCost)->resolve($request);
 
         return inertia('Inventories/LandedCosts/Edit', [
@@ -152,7 +152,7 @@ class LandedCostController extends Controller
                 'id' => $method->value,
                 'name' => $method->getLabel(),
             ])->values(),
-            'purchases' => $this->purchaseOptions(),
+            'purchases' => $this->purchaseOptions($landedCost),
             'landedCostCategories' => $this->landedCostCategoryOptions(),
             'bankAccounts' => $this->cashBankAccountOptions(),
             'currencies' => $this->currencyOptions(),
@@ -189,7 +189,7 @@ class LandedCostController extends Controller
                 'date' => $landedCost->date?->toDateString() ?? $request->validated('date'),
             ]);
 
-            return $landedCost->fresh(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction', 'categoryAllocations.category', 'createdBy', 'updatedBy']);
+            return $landedCost->fresh(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction.currency', 'categoryAllocations.category', 'createdBy', 'updatedBy']);
         });
 
         if ($request->expectsJson()) {
@@ -271,10 +271,23 @@ class LandedCostController extends Controller
             ->get(['id', 'code', 'name', 'exchange_rate', 'is_base_currency']);
     }
 
-    private function purchaseOptions()
+    /**
+     * Purchase orders still available to carry a landed cost.
+     *
+     * A purchase order may only be attached to one landed cost, so anything
+     * already linked is dropped from the picker. The landed cost currently
+     * being edited is excluded from that exclusion — otherwise its own
+     * selection would vanish from the options the moment you opened the form.
+     */
+    private function purchaseOptions(?LandedCost $except = null)
     {
         return Purchase::query()
             ->with('supplier')
+            ->whereDoesntHave('landedCosts', function ($query) use ($except): void {
+                if ($except) {
+                    $query->whereKeyNot($except->getKey());
+                }
+            })
             ->orderByDesc('date')
             ->limit(100)
             ->get()
