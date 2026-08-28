@@ -8,7 +8,7 @@
   "refresh_data": "Refresh data",
   "refresh_failed": "Unable to refresh dashboard data.",
   "sales_vs_purchases": "Sales vs purchases",
-  "daily_posted_last_30_days": "Daily posted totals for the last 30 days.",
+  "daily_posted_for_period": "Daily posted totals for {period}.",
   "inventory_overview": "Inventory overview",
   "inventory_overview_description": "Built from the live stock_balances table.",
   "alerts_title": "Alerts",
@@ -17,8 +17,18 @@
   "no_active_alerts": "No active alerts.",
   "records": "records",
   "vs_yesterday": "vs. {value} yesterday",
-  "vs_previous_period": "vs. {value} previous 30 days",
+  "vs_previous_period": "vs. {value} previous period",
   "total": "Total",
+  "period": {
+    "label": "Period",
+    "this_week": "This Week",
+    "last_week": "Last Week",
+    "last_30_days": "Last 30 Days",
+    "this_month": "This Month",
+    "last_month": "Last Month",
+    "this_year": "This Year",
+    "last_year": "Last Year"
+  },
   "kpis": {
     "cash_bank_balance": "Cash / Bank Balance",
     "cash_bank_balance_help": "Posted balance across cash and bank accounts.",

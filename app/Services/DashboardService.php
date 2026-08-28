@@ -15,20 +15,38 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
+    /**
+     * Fiscal-year and season presets are omitted: this system has no fiscal
+     * year / season concept, only calendar week / month / year.
+     */
+    public const PERIODS = [
+        'this_week',
+        'last_week',
+        'last_30_days',
+        'this_month',
+        'last_month',
+        'this_year',
+        'last_year',
+    ];
+
+    public const DEFAULT_PERIOD = 'this_year';
+
     public function __construct(
         private readonly DateConversionService $dateConversionService,
     ) {
     }
 
-    public function getDashboardData(?Authenticatable $user = null): array
+    public function getDashboardData(?Authenticatable $user = null, string $period = self::DEFAULT_PERIOD): array
     {
         $dateConversionService = app(\App\Services\DateConversionService::class);
-        // 'date' => $dateConversionService->toDisplay($this->date),
+
+        if (! in_array($period, self::PERIODS, true)) {
+            $period = self::DEFAULT_PERIOD;
+        }
 
         $branchId = $this->resolveBranchId($user);
         $today = Carbon::today();
-        $startDate = $today->copy()->subDays(29);
-        $endDate = $today->copy();
+        [$periodStart, $periodEnd] = $this->resolvePeriodRange($period, $today);
 
         return [
             'meta' => [
@@ -37,16 +55,46 @@ class DashboardService
                 'today' =>$dateConversionService->toDisplay($today->toDateString()),
                 // The display value above may be Jalali; report links need the raw date.
                 'today_date' => $today->toDateString(),
+                'period' => $period,
+                'period_from' => $periodStart->toDateString(),
+                'period_to' => $periodEnd->toDateString(),
             ],
+            // KPIs here are always "today" figures, regardless of the selected period filter.
             'kpis' => $this->getKpis($branchId, $today),
             'kpi_trends' => $this->getKpiTrends($branchId, $today),
-            'sales_purchase_chart' => $this->getSalesPurchaseChart($branchId, $startDate, $endDate),
+            'sales_purchase_chart' => $this->getSalesPurchaseChart($branchId, $periodStart, $periodEnd),
             'inventory_overview' => $this->getInventoryOverview($branchId, $today),
-            'top_lists' => $this->getTopLists($branchId),
-            'recent_activity' => $this->getRecentActivity($branchId),
+            'top_lists' => $this->getTopLists($branchId, $periodStart, $periodEnd),
+            'recent_activity' => $this->getRecentActivity($branchId, $periodStart, $periodEnd),
             'cash_position' => $this->getCashPosition($branchId, $today),
             'alerts' => $this->getAlerts($branchId, $today),
         ];
+    }
+
+    /**
+     * Resolves a preset key to a [start, end] date range. Week boundaries use
+     * Saturday, matching the Afghan business week rather than Carbon's ISO default.
+     */
+    protected function resolvePeriodRange(string $period, Carbon $today): array
+    {
+        return match ($period) {
+            'this_week' => [$today->copy()->startOfWeek(Carbon::SATURDAY), $today->copy()],
+            'last_week' => [
+                $today->copy()->startOfWeek(Carbon::SATURDAY)->subWeek(),
+                $today->copy()->startOfWeek(Carbon::SATURDAY)->subDay(),
+            ],
+            'last_30_days' => [$today->copy()->subDays(29), $today->copy()],
+            'this_month' => [$today->copy()->startOfMonth(), $today->copy()],
+            'last_month' => [
+                $today->copy()->startOfMonth()->subMonth(),
+                $today->copy()->startOfMonth()->subDay(),
+            ],
+            'last_year' => [
+                $today->copy()->startOfYear()->subYear(),
+                $today->copy()->startOfYear()->subDay(),
+            ],
+            default => [$today->copy()->startOfYear(), $today->copy()], // this_year
+        };
     }
 
     protected function getKpis(string $branchId, Carbon $today): array
@@ -238,17 +286,19 @@ class DashboardService
         ];
     }
 
-    protected function getTopLists(string $branchId): array
+    protected function getTopLists(string $branchId, Carbon $startDate, Carbon $endDate): array
     {
         return [
-            'customers_by_sales' => $this->topCustomersBySales($branchId),
-            'suppliers_by_purchases' => $this->topSuppliersByPurchases($branchId),
+            'customers_by_sales' => $this->topCustomersBySales($branchId, $startDate, $endDate),
+            'suppliers_by_purchases' => $this->topSuppliersByPurchases($branchId, $startDate, $endDate),
+            // Receivable/payable balances are point-in-time snapshots, not period
+            // flows, so the period filter intentionally doesn't apply to them.
             'receivable_balances' => $this->topLedgerBalances($branchId, 'customer', 'dr'),
             'payable_balances' => $this->topSupplierPayableBalances($branchId),
         ];
     }
 
-    protected function getRecentActivity(string $branchId): array
+    protected function getRecentActivity(string $branchId, Carbon $startDate, Carbon $endDate): array
     {
         $saleTotals = $this->referenceTransactionTotalsSubquery(
             referenceType: Sale::class,
@@ -276,6 +326,7 @@ class DashboardService
             ->leftJoinSub($saleTotals, 'totals', fn ($join) => $join->on('totals.transaction_id', '=', 't.id'))
             ->where('s.branch_id', $branchId)
             ->whereNull('s.deleted_at')
+            ->whereBetween('s.date', [$startDate->toDateString(), $endDate->toDateString()])
             ->orderByDesc('s.date')
             ->orderByDesc('s.created_at')
             ->limit(10)
@@ -311,6 +362,7 @@ class DashboardService
             ->leftJoinSub($purchaseTotals, 'totals', fn ($join) => $join->on('totals.transaction_id', '=', 't.id'))
             ->where('p.branch_id', $branchId)
             ->whereNull('p.deleted_at')
+            ->whereBetween('p.date', [$startDate->toDateString(), $endDate->toDateString()])
             ->orderByDesc('p.date')
             ->orderByDesc('p.created_at')
             ->limit(10)
@@ -343,6 +395,7 @@ class DashboardService
             })
             ->where('sm.branch_id', $branchId)
             ->whereNull('sm.deleted_at')
+            ->whereBetween('sm.date', [$startDate->toDateString(), $endDate->toDateString()])
             ->orderByDesc('sm.date')
             ->orderByDesc('sm.created_at')
             ->limit(10)
@@ -675,7 +728,7 @@ class DashboardService
         ])->values()->all();
     }
 
-    protected function topCustomersBySales(string $branchId): array
+    protected function topCustomersBySales(string $branchId, Carbon $startDate, Carbon $endDate): array
     {
         $rows = DB::table('sales as s')
             ->join('ledgers as l', function ($join) use ($branchId) {
@@ -701,6 +754,7 @@ class DashboardService
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
             ->where('s.branch_id', $branchId)
             ->whereNull('s.deleted_at')
+            ->whereBetween('s.date', [$startDate->toDateString(), $endDate->toDateString()])
             ->where('t.status', TransactionStatus::POSTED->value)
             ->whereIn('at.slug', ['cash-or-bank', 'account-receivable'])
             ->where('tl.debit', '>', 0)
@@ -722,7 +776,7 @@ class DashboardService
         ])->values()->all();
     }
 
-    protected function topSuppliersByPurchases(string $branchId): array
+    protected function topSuppliersByPurchases(string $branchId, Carbon $startDate, Carbon $endDate): array
     {
         $rows = DB::table('purchases as p')
             ->join('ledgers as l', function ($join) use ($branchId) {
@@ -748,6 +802,7 @@ class DashboardService
             ->join('account_types as at', 'at.id', '=', 'a.account_type_id')
             ->where('p.branch_id', $branchId)
             ->whereNull('p.deleted_at')
+            ->whereBetween('p.date', [$startDate->toDateString(), $endDate->toDateString()])
             ->where('t.status', TransactionStatus::POSTED->value)
             ->whereIn('at.slug', ['cash-or-bank', 'account-payable'])
             ->where('tl.credit', '>', 0)

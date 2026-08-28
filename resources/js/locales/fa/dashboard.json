@@ -8,7 +8,7 @@
   "refresh_data": "بروزرسانی داده‌ها",
   "refresh_failed": "بروزرسانی داده‌ها با شکست مواجه شد.",
   "sales_vs_purchases": "فروش در مقابل خرید",
-  "daily_posted_last_30_days": "تراکنش‌های ثبت شده ۳۰ روز اخیر",
+  "daily_posted_for_period": "تراکنش‌های ثبت‌شده روزانه برای {period}",
   "inventory_overview": "نمای کلی موجودی",
   "inventory_overview_description": "تصویری از تراز موجودی‌ها بر اساس stock_balances و آخرین قیمت.",
   "alerts_title": "هشدارها",
@@ -17,8 +17,18 @@
   "no_active_alerts": "هشداری وجود ندارد.",
   "records": "سوابق",
   "vs_yesterday": "در مقایسه با {value} دیروز",
-  "vs_previous_period": "در مقایسه با {value} در ۳۰ روز پیشین",
+  "vs_previous_period": "در مقایسه با {value} در دوره قبلی",
   "total": "مجموع",
+  "period": {
+    "label": "بازه زمانی",
+    "this_week": "این هفته",
+    "last_week": "هفته پیش",
+    "last_30_days": "۳۰ روز اخیر",
+    "this_month": "این ماه",
+    "last_month": "ماه پیش",
+    "this_year": "امسال",
+    "last_year": "سال پیش"
+  },
   "kpis": {
     "cash_bank_balance": "موجودی نقد و بانک",
     "cash_bank_balance_help": "مانده فعلی صندوق و حساب‌های بانکی شما.",
