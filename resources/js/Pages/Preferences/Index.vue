@@ -371,7 +371,21 @@ form.appearance.accent_color = accentColorOptions.includes(form.appearance.accen
     : resolveAccentColor(props.preferences)
 
 watch(
-    () => [form.appearance?.theme, form.appearance?.accent_color, form.display?.theme],
+    () => [
+        form.appearance?.theme,
+        form.appearance?.accent_color,
+        form.appearance?.font_size,
+        form.appearance?.sidebar_font_size,
+        form.appearance?.heading_font_size,
+        form.appearance?.table_header_font_size,
+        form.appearance?.table_content_font_size,
+        form.appearance?.button_font_size,
+        form.appearance?.label_font_size,
+        form.appearance?.input_font_size,
+        form.appearance?.select_font_size,
+        form.appearance?.textarea_font_size,
+        form.display?.theme,
+    ],
     () => {
         applyAppearanceTheme(form)
         previewColorMode.value = resolveDisplayColorMode(form)

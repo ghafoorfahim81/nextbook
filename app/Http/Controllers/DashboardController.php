@@ -52,16 +52,26 @@ class DashboardController extends Controller
         // Item::query()->update([
         //     'avg_cost' => 0,
         // ]); 
+        $period = $this->resolvePeriod($request);
+
         return Inertia::render('Dashboard', [
-            'dashboard' => $this->dashboardService->getDashboardData($request->user()),
+            'dashboard' => $this->dashboardService->getDashboardData($request->user(), $period),
             'dashboardDataUrl' => route('dashboard.data'),
+            'period' => $period,
         ]);
     }
 
     public function data(Request $request): JsonResponse
     {
         return response()->json(
-            $this->dashboardService->getDashboardData($request->user())
+            $this->dashboardService->getDashboardData($request->user(), $this->resolvePeriod($request))
         );
+    }
+
+    private function resolvePeriod(Request $request): string
+    {
+        $period = (string) $request->query('period', DashboardService::DEFAULT_PERIOD);
+
+        return in_array($period, DashboardService::PERIODS, true) ? $period : DashboardService::DEFAULT_PERIOD;
     }
 }

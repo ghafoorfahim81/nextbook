@@ -38,7 +38,6 @@ Route::delete('/quantities/{quantity}/force-delete', [App\Http\Controllers\Admin
     ->name('quantities.force-delete')
     ->withTrashed();
 
-
 Route::middleware([
     'web',
     'auth:sanctum',

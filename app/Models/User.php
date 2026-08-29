@@ -55,6 +55,7 @@ class User extends Authenticatable
         'appearance' => [
             'theme' => 'system',
             'accent_color' => 'system',
+            'font_size' => 14,
             'sidebar_font_size' => 14,
             'heading_font_size' =>14,
             'table_header_font_size' => 16,

@@ -55,6 +55,10 @@
         "designations": "Designations",
         "grade_level": "Grade level"
     },
+    "landed_cost_category": {
+        "landed_cost_category": "Landed Cost Category",
+        "landed_cost_categories": "Landed Cost Categories"
+    },
     "quantity": {
         "quantity": "Quantity",
         "quantities": "Quantities"

@@ -116,6 +116,16 @@
         "Check item Measure and prices; incorrect units can distort stock valuation and reports."
       ]
     },
+    "landed_cost": {
+      "title": "Landed Cost — Tips",
+      "description": "Add freight, customs and other extra costs onto a purchase so inventory is valued at its true landed cost.",
+      "items": [
+        "Select one or more purchase orders; their items load automatically and cannot be edited here.",
+        "Choose an allocation method, or pick Manual to type each item's share of the extra cost.",
+        "A warning appears if the allocated amounts do not add up to the total additional cost. Posting is blocked until they match.",
+        "Posting adds the allocated amount to the related purchase stock movement and recalculates the item's average cost."
+      ]
+    },
     "sales": {
       "title": "Sales — Tips",
       "description": "Record sales that affect inventory and customer balance.",

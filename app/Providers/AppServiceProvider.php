@@ -52,8 +52,7 @@ class AppServiceProvider extends ServiceProvider
             'landed_cost' => 'App\Models\Inventory\LandedCost',
             'payment' => 'App\Models\Payment\Payment',
             'receipt' => 'App\Models\Receipt\Receipt',
-            'attachment' => 'App\Models\Attachment',
-
+            'attachment' => 'App\Models\Attachment', 
             // Human resources
             'employee' => 'App\Models\Hr\Employee',
             'employee_contract' => 'App\Models\Hr\EmployeeContract',

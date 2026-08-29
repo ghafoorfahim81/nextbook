@@ -105,7 +105,7 @@
                     <TableRow class="bg-primary hover:bg-purple-500 h-8 text-white">
                         <TableHead v-for="column in derivedColumns" :key="column.key" class="h-8 py-1 px-3">
                             <div :class="isRTL ? 'flex items-center space-x-reverse space-x-1 text-white' : 'flex items-center space-x-1 text-white text-nowrap'">
-                                <span class="text-sm font-medium">{{ column.label }}</span>
+                                <span class="data-table-header-label font-medium">{{ column.label }}</span>
                                 <div v-if="column.sortable">
                                     <Button variant="ghost" size="sm" @click="sort(column.key)" class="h-5 w-5 p-0">
                                         <ChevronUp v-if="sortField === column.key && sortDirection === 'asc'" class="h-3 w-3" />

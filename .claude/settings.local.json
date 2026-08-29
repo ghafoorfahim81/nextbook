@@ -20,7 +20,20 @@
       "Bash(\"C:/Users/Fahim-Pc/.config/herd/bin/php84/php.exe\" \"C:/Users/Fahim-Pc/AppData/Local/Temp/claude/e--nextbook/93ce25af-c15c-4e02-892c-26b9876e3783/scratchpad/rtlcheck.php.dump.php\" docs/hr-user-guide-fa.pdf 2)",
       "Bash(\"C:/Users/Fahim-Pc/.config/herd/bin/php84/php.exe\" \"C:/Users/Fahim-Pc/AppData/Local/Temp/claude/e--nextbook/93ce25af-c15c-4e02-892c-26b9876e3783/scratchpad/rtlcheck.php.dump.php\" docs/hr-user-guide-fa.pdf 3)",
       "Bash(\"C:/Users/Fahim-Pc/.config/herd/bin/php84/php.exe\" \"C:/Users/Fahim-Pc/AppData/Local/Temp/claude/e--nextbook/93ce25af-c15c-4e02-892c-26b9876e3783/scratchpad/final_check.php\" docs/hr-user-guide-fa.pdf)",
-      "Bash(\"C:/Users/Fahim-Pc/.config/herd/bin/php84/php.exe\" -l app/Http/Requests/Hr/EmployeeContractStoreRequest.php)"
+      "Bash(\"C:/Users/Fahim-Pc/.config/herd/bin/php84/php.exe\" -l app/Http/Requests/Hr/EmployeeContractStoreRequest.php)",
+      "Bash(netstat -ano)",
+      "Bash(cat /c/Windows/System32/drivers/etc/hosts 2>/dev/null | grep -i test *)",
+      "Read(//c/Windows/System32/drivers/etc/**)",
+      "Read(//c/Users/Fahim-Pc/.config/herd/**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://nextbook.test/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" https://nextbook.test/)",
+      "PowerShell(php artisan tinker \"C:\\\\Users\\\\Fahim-Pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\e--nextbook\\\\1a3f5578-8f9e-4efd-853f-9b7711cc87d0\\\\scratchpad\\\\smoke2.php\" 2>&1)",
+      "Bash(rm -f \"/c/Users/Fahim-Pc/AppData/Local/Temp/claude/e--nextbook/1a3f5578-8f9e-4efd-853f-9b7711cc87d0/scratchpad/smoke.php\" \"/c/Users/Fahim-Pc/AppData/Local/Temp/claude/e--nextbook/1a3f5578-8f9e-4efd-853f-9b7711cc87d0/scratchpad/smoke2.php\" *)",
+      "PowerShell(php artisan optimize:clear 2>&1)",
+      "PowerShell(php artisan route:list --name=landed-costs 2>&1)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Fahim-Pc\\AppData\\Local\\Temp\\claude\\e--nextbook\\1a3f5578-8f9e-4efd-853f-9b7711cc87d0\\scratchpad"
     ]
   }
 }

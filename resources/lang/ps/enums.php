@@ -15,7 +15,7 @@ return [
         'manufacturing' => 'Manufacturing',
         'retail' => 'Retail',
         'accounting' => 'Accounting',
-        'automobile' => 'Automobile', 
+        'automobile' => 'Automobile',
         'book' => 'Book (Author/Publisher)',
         'clothing' => 'Clothing (Size Wise)',
         'hotel' => 'Hotel & Resorts',
@@ -70,17 +70,7 @@ return [
         'supplier' => 'Supplier',
         'employee' => 'کارکوونکی',
     ],
-    'landed_cost_status' => [
-        'draft' => 'Draft',
-        'allocated' => 'Allocated',
-        'posted' => 'Posted',
-    ],
-    'landed_cost_allocation_method' => [
-        'by_value' => 'By Value',
-        'by_quantity' => 'By Quantity',
-        'by_weight' => 'By Weight',
-        'by_volume' => 'By Volume',
-    ],
+
     'stock_status' => [
         'posted' => 'Posted',
         'draft' => 'Draft',
@@ -364,5 +354,18 @@ return [
         'neutral' => 'بې طرفه',
         'no_hire' => 'ونه ګمارل شي',
         'strong_no_hire' => 'د ګمارلو کلک مخالف',
+    ],
+    'landed_cost_status' => [
+        'draft' => 'Draft',
+        'allocated' => 'Allocated',
+        'posted' => 'Posted',
+    ],
+    'landed_cost_allocation_method' => [
+        'by_value' => 'By Value',
+        'by_quantity' => 'By Quantity',
+        'by_weight' => 'By Weight',
+        'by_volume' => 'By Volume',
+        'equal' => 'مساوي',
+        'manual' => 'Manual',
     ],
 ];

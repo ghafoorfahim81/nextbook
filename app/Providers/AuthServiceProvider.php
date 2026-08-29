@@ -12,6 +12,7 @@ use App\Models\Administration\Company;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Department;
 use App\Models\Administration\Designation;
+use App\Models\Administration\LandedCostCategory;
 use App\Models\Administration\Size;
 use App\Models\Administration\Warehouse;
 use App\Models\Administration\UnitMeasure;
@@ -57,6 +58,7 @@ use App\Policies\CustomerSupplierPolicy;
 use App\Policies\DepartmentPolicy;
 use App\Policies\DesignationPolicy;
 use App\Policies\ExpenseCategoryPolicy;
+use App\Policies\LandedCostCategoryPolicy;
 use App\Policies\ExpensePolicy;
 use App\Policies\Hr\AttendanceDevicePolicy;
 use App\Policies\Hr\AttendancePolicy;
@@ -103,6 +105,7 @@ class AuthServiceProvider extends ServiceProvider
         Category::class => CategoryPolicy::class,
         Department::class => DepartmentPolicy::class,
         Designation::class => DesignationPolicy::class,
+        LandedCostCategory::class => LandedCostCategoryPolicy::class,
         Branch::class => BranchPolicy::class,
         Brand::class => BrandPolicy::class,
         Warehouse::class => WarehousePolicy::class,

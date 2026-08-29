@@ -57,6 +57,10 @@
         "designations": "وظایف",
         "grade_level": "سطح بست"
     },
+    "landed_cost_category": {
+        "landed_cost_category": "دسته‌بندی هزینه ورودی",
+        "landed_cost_categories": "دسته‌بندی‌های هزینه ورودی"
+    },
     "quantity": {
         "quantity": "مقدار",
         "quantities": "مقدار ها"

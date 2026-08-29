@@ -8,6 +8,8 @@ enum LandedCostAllocationMethod: string
     case ByQuantity = 'by_quantity';
     case ByWeight = 'by_weight';
     case ByVolume = 'by_volume';
+    case Equal = 'equal';
+    case Manual = 'manual';
 
     public function getLabel(): string
     {
@@ -16,6 +18,8 @@ enum LandedCostAllocationMethod: string
             self::ByQuantity => __('enums.landed_cost_allocation_method.by_quantity'),
             self::ByWeight => __('enums.landed_cost_allocation_method.by_weight'),
             self::ByVolume => __('enums.landed_cost_allocation_method.by_volume'),
+            self::Equal => __('enums.landed_cost_allocation_method.equal'),
+            self::Manual => __('enums.landed_cost_allocation_method.manual'),
         };
     }
 

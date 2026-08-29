@@ -1176,3 +1176,74 @@
   font-family: 'Dana', 'iranyekan', 'Noto Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
   font-feature-settings: normal;
 }
+
+/*
+ * Appearance typography preferences are set as CSS custom properties by
+ * applyAppearanceTheme(). Keep these selectors element-based so the settings
+ * apply consistently to both shared shadcn-vue controls and native elements.
+ */
+:root {
+  --app-font-size: 14px;
+  --app-sidebar-font-size: 14px;
+  --app-heading-font-size: 14px;
+  --app-table-header-font-size: 16px;
+  --app-table-content-font-size: 14px;
+  --app-button-font-size: 14px;
+  --app-label-font-size: 14px;
+  --app-input-font-size: 14px;
+  --app-select-font-size: 14px;
+  --app-textarea-font-size: 14px;
+}
+
+body {
+  font-size: var(--app-font-size);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--app-heading-font-size) !important;
+}
+
+[data-sidebar='sidebar'] :is(a, button, [role='button'], [data-sidebar='group-label']) {
+  font-size: var(--app-sidebar-font-size) !important;
+}
+
+th {
+  font-size: var(--app-table-header-font-size) !important;
+}
+
+th .data-table-header-label {
+  font-size: var(--app-table-header-font-size) !important;
+}
+
+td {
+  font-size: var(--app-table-content-font-size) !important;
+}
+
+button,
+[data-app-button] {
+  font-size: var(--app-button-font-size) !important;
+}
+
+label {
+  font-size: var(--app-label-font-size) !important;
+}
+
+input:not([type='checkbox']):not([type='radio']),
+input:not([type='checkbox']):not([type='radio'])::file-selector-button {
+  font-size: var(--app-input-font-size) !important;
+}
+
+button[role='combobox'],
+[role='option'],
+[role='listbox'] {
+  font-size: var(--app-select-font-size) !important;
+}
+
+textarea {
+  font-size: var(--app-textarea-font-size) !important;
+}
