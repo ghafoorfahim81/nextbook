@@ -5,6 +5,7 @@ import { Head, Link, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/Layouts/Layout.vue'
 import { Button } from '@/Components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
 import KpiCard from '@/Components/dashboard/KpiCard.vue'
 import TrendChart from '@/Components/dashboard/TrendChart.vue'
 import ActivityTable from '@/Components/dashboard/ActivityTable.vue'
@@ -33,6 +34,7 @@ import {
 const props = defineProps({
   dashboard: { type: Object, required: true },
   dashboardDataUrl: { type: String, required: true },
+  period: { type: String, default: 'this_year' },
 })
 
 const page = usePage()
@@ -40,6 +42,7 @@ const { t, locale } = useI18n()
 const state = ref(props.dashboard)
 const refreshing = ref(false)
 const refreshError = ref('')
+const period = ref(props.period)
 
 const calendarType = computed(() => page.props.auth?.user?.calendar_type || 'gregorian')
 
@@ -50,19 +53,35 @@ watch(
   },
 )
 
-async function refreshDashboard() {
+// Fiscal-year and season presets are left out: this system tracks calendar
+// week / month / year only, no fiscal year or season concept.
+const PERIOD_KEYS = ['this_week', 'last_week', 'last_30_days', 'this_month', 'this_year', 'last_month', 'last_year']
+
+const periodOptions = computed(() => PERIOD_KEYS.map((key) => ({
+  value: key,
+  label: t(`dashboard.period.${key}`),
+})))
+
+async function fetchDashboard() {
   refreshing.value = true
   refreshError.value = ''
 
   try {
-    const response = await axios.get(props.dashboardDataUrl)
+    const response = await axios.get(props.dashboardDataUrl, { params: { period: period.value } })
     state.value = response.data
+    window.history.replaceState(window.history.state, '', route('dashboard', { period: period.value }))
   } catch (error) {
     refreshError.value = error?.response?.data?.message || t('dashboard.refresh_failed')
   } finally {
     refreshing.value = false
   }
 }
+
+function refreshDashboard() {
+  return fetchDashboard()
+}
+
+watch(period, fetchDashboard)
 
 function trendFor(key) {
   return state.value?.kpi_trends?.[key] || null
@@ -265,7 +284,7 @@ const generatedAt = computed(() => {
     <Head :title="t('dashboard.dashboard')" />
 
     <div class="space-y-6 text-foreground">
-      <header class="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+      <header class="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
         <div>
           <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
             {{ t('dashboard.operational_overview') }}
@@ -275,20 +294,36 @@ const generatedAt = computed(() => {
           </h1>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3">
-          <div class="flex items-center gap-4 rounded-xl border border-border bg-card px-4 py-2 shadow-sm">
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1">
             <div>
-              <p class="text-[11px] text-muted-foreground">{{ t('dashboard.today') }}</p>
-              <p class="text-sm font-semibold text-card-foreground">{{ state.meta?.today }}</p>
+              <p class="text-[10px] leading-none text-muted-foreground">{{ t('dashboard.today') }}</p>
+              <p class="mt-0.5 text-xs font-semibold text-card-foreground">{{ state.meta?.today }}</p>
             </div>
-            <div class="h-7 w-px bg-border" />
+            <div class="h-5 w-px bg-border" />
             <div>
-              <p class="text-[11px] text-muted-foreground">{{ t('dashboard.generated') }}</p>
-              <p class="text-sm font-semibold text-card-foreground">{{ generatedAt }}</p>
+              <p class="text-[10px] leading-none text-muted-foreground">{{ t('dashboard.generated') }}</p>
+              <p class="mt-0.5 text-xs font-semibold text-card-foreground">{{ generatedAt }}</p>
             </div>
           </div>
 
-          <Button variant="outline" size="sm" class="h-[52px] gap-2 rounded-xl" :disabled="refreshing" @click="refreshDashboard">
+          <Select v-model="period">
+            <SelectTrigger class="h-7 w-[130px] text-xs border-input md:w-[150px]">
+              <SelectValue :placeholder="t('dashboard.period.label')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                v-for="option in periodOptions"
+                :key="option.value"
+                :value="option.value"
+                class="px-5 py-2 text-xs data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[highlighted]:bg-primary data-[highlighted]:text-primary-foreground"
+              >
+                {{ option.label }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Button variant="outline" size="sm" :disabled="refreshing" @click="refreshDashboard">
             <RefreshCw class="h-4 w-4" :class="refreshing ? 'animate-spin' : ''" />
             {{ t('dashboard.refresh_data') }}
           </Button>
@@ -319,7 +354,7 @@ const generatedAt = computed(() => {
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h2 class="text-base font-semibold text-card-foreground">{{ t('dashboard.sales_vs_purchases') }}</h2>
-              <p class="mt-0.5 text-xs text-muted-foreground">{{ t('dashboard.daily_posted_last_30_days') }}</p>
+              <p class="mt-0.5 text-xs text-muted-foreground">{{ t('dashboard.daily_posted_for_period', { period: t(`dashboard.period.${period}`) }) }}</p>
             </div>
             <div class="text-end">
               <p class="text-[11px] uppercase tracking-wide text-muted-foreground">{{ t('dashboard.chart.sales') }}</p>

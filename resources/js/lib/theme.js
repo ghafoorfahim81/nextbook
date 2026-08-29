@@ -36,6 +36,24 @@ const COLOR_PALETTES = [
 ]
 const CUSTOM_APPEARANCE_THEMES = COLOR_PALETTES.filter((palette) => palette !== 'system')
 const ACCENT_COLORS = COLOR_PALETTES.filter((palette) => palette !== 'violet-900')
+const DEFAULT_FONT_SIZES = {
+    font_size: 14,
+    sidebar_font_size: 14,
+    heading_font_size: 14,
+    table_header_font_size: 16,
+    table_content_font_size: 14,
+    button_font_size: 14,
+    label_font_size: 14,
+    input_font_size: 14,
+    select_font_size: 14,
+    textarea_font_size: 14,
+}
+
+function resolveFontSize(value, fallback) {
+    const size = Number(value)
+
+    return Number.isInteger(size) && size >= 10 && size <= 24 ? size : fallback
+}
 
 export function resolveAppearanceTheme(preferences) {
     const appearanceTheme = preferences?.appearance?.color_palette ?? preferences?.appearance?.theme
@@ -78,6 +96,13 @@ export function resolveAccentColor(preferences) {
 export function applyAppearanceTheme(preferences) {
     if (typeof document === 'undefined') return
 
-    document.documentElement.dataset.theme = resolveAppearanceTheme(preferences)
-    document.documentElement.dataset.accentColor = resolveAccentColor(preferences)
+    const root = document.documentElement
+    const appearance = preferences?.appearance ?? {}
+
+    root.dataset.theme = resolveAppearanceTheme(preferences)
+    root.dataset.accentColor = resolveAccentColor(preferences)
+
+    Object.entries(DEFAULT_FONT_SIZES).forEach(([key, fallback]) => {
+        root.style.setProperty(`--app-${key.replaceAll('_', '-')}`, `${resolveFontSize(appearance[key], fallback)}px`)
+    })
 }

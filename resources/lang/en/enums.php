@@ -125,7 +125,7 @@ return [
         'unpaid' => 'Unpaid',
         'partially_paid' => 'Partially paid',
     ],
-    'landed_cost_status' => [
+       'landed_cost_status' => [
         'draft' => 'Draft',
         'allocated' => 'Allocated',
         'posted' => 'Posted',
@@ -135,6 +135,8 @@ return [
         'by_quantity' => 'By Quantity',
         'by_weight' => 'By Weight',
         'by_volume' => 'By Volume',
+        'equal' => 'Equal',
+        'manual' => 'Manual',
     ],
     'stock_status' => [
         'posted' => 'Posted',

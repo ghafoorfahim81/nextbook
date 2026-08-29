@@ -5,6 +5,9 @@ import { useI18n } from 'vue-i18n';
 defineProps({
   allocationMethods: { type: Array, required: true },
   purchases: { type: Array, required: true },
+  landedCostCategories: { type: Array, default: () => [] },
+  bankAccounts: { type: Array, default: () => [] },
+  currencies: { type: Array, default: () => [] },
 });
 
 const { t } = useI18n();
@@ -14,7 +17,10 @@ const { t } = useI18n();
   <LandedCostForm
     :allocation-methods="allocationMethods"
     :purchases="purchases"
-    :page-title="t('landed_cost.create_title')"
+    :landed-cost-categories="landedCostCategories"
+    :bank-accounts="bankAccounts"
+    :currencies="currencies"
+    :page-title="t('general.create', { name: t('landed_cost.title') })"
     submit-route-name="landed-costs.store"
     submit-method="post"
   />

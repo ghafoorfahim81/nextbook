@@ -201,6 +201,7 @@ trait BuildsErpContext
             'cash-in-safe' => ['name' => 'Cash In Safe', 'type' => 'cash-or-bank', 'number' => '1002'],
             'cost-of-goods-sold' => ['name' => 'Cost Of Goods Sold', 'type' => 'cost-of-goods-sold', 'number' => '8001'],
             'inventory-stock' => ['name' => 'Inventory Stock', 'type' => 'other-current-asset', 'number' => '3001'],
+            'landed-costs-clearing' => ['name' => 'Landed Costs Clearing', 'type' => 'other-current-asset', 'number' => '3060'],
             'retained-earnings' => ['name' => 'Retained Earnings', 'type' => 'equity', 'number' => '6001'],
             'opening-balance-equity' => ['name' => 'Opening Balance Equity', 'type' => 'equity', 'number' => '6002'],
             'non-inventory-items' => ['name' => 'Non Inventory Items', 'type' => 'other-current-asset', 'number' => '3002'],

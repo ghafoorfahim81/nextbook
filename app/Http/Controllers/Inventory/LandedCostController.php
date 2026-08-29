@@ -7,6 +7,8 @@ use App\Enums\LandedCostStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Inventory\LandedCostRequest;
 use App\Http\Resources\Inventory\LandedCostResource;
+use App\Models\Administration\Currency;
+use App\Models\Administration\LandedCostCategory;
 use App\Models\Inventory\LandedCost;
 use App\Models\Purchase\Purchase;
 use App\Services\LandedCostService;
@@ -17,6 +19,8 @@ use Illuminate\Validation\ValidationException;
 
 class LandedCostController extends Controller
 {
+    use \App\Http\Controllers\Concerns\ListsCashMovements;
+
     public function __construct()
     {
         $this->authorizeResource(LandedCost::class, 'landedCost');
@@ -29,7 +33,7 @@ class LandedCostController extends Controller
         $sortDirection = $request->input('sortDirection', 'desc');
         $filters = (array) $request->input('filters', []);
 
-        $query = LandedCost::with(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy'])
+        $query = LandedCost::with(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction.currency', 'categoryAllocations.category', 'createdBy', 'updatedBy'])
             ->search($request->query('search'))
             ->filter($filters)
             ->orderBy($sortField, $sortDirection);
@@ -78,6 +82,9 @@ class LandedCostController extends Controller
                 'name' => $method->getLabel(),
             ])->values(),
             'purchases' => $this->purchaseOptions(),
+            'landedCostCategories' => $this->landedCostCategoryOptions(),
+            'bankAccounts' => $this->cashBankAccountOptions(),
+            'currencies' => $this->currencyOptions(),
         ]);
     }
 
@@ -87,6 +94,7 @@ class LandedCostController extends Controller
             $landedCost = LandedCost::create([
                 'date' => $request->validated('date'),
                 'purchase_id' => $request->validated('purchase_id'),
+                'bank_account_id' => $request->validated('bank_account_id'),
                 'total_cost' => $request->validated('total_cost'),
                 'allocated_total' => 0,
                 'allocation_method' => $request->validated('allocation_method'),
@@ -99,21 +107,32 @@ class LandedCostController extends Controller
             }
 
             $service->syncPurchases($landedCost, $this->resolvePurchaseIds($request));
-            $service->syncItems($landedCost, $request->input('items', []));
+            $this->persistAllocation($landedCost, $request, $service);
+            $service->syncCategoryAllocations($landedCost, $request->input('category_allocations', []));
+            $service->syncDraftTransaction($landedCost, [
+                'bank_account_id' => $request->validated('bank_account_id'),
+                'currency_id' => $request->validated('currency_id'),
+                'rate' => (float) $request->validated('rate'),
+                'date' => $landedCost->date?->toDateString() ?? $request->validated('date'),
+            ]);
 
-            return $landedCost->fresh(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy']);
+            return $landedCost->fresh(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction.currency', 'categoryAllocations.category', 'createdBy', 'updatedBy']);
         });
 
         if ($request->expectsJson()) {
             return LandedCostResource::make($landedCost)->response()->setStatusCode(201);
         }
 
-        return redirect()->route('landed-costs.show', $landedCost)->with('success', __('general.created_successfully', ['resource' => __('general.resource.landed_cost')]));
+        if ($request->boolean('create_and_new')) {
+            return redirect()->route('landed-costs.create')->with('success', __('general.created_successfully', ['resource' => __('general.resource.landed_cost')]));
+        }
+
+        return redirect()->route('landed-costs.index')->with('success', __('general.created_successfully', ['resource' => __('general.resource.landed_cost')]));
     }
 
     public function show(Request $request, LandedCost $landedCost)
     {
-        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy', 'attachments']);
+        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction.currency', 'categoryAllocations.category', 'createdBy', 'updatedBy']);
         $payload = LandedCostResource::make($landedCost)->resolve($request);
 
         if ($request->expectsJson()) {
@@ -129,7 +148,7 @@ class LandedCostController extends Controller
 
     public function edit(Request $request, LandedCost $landedCost)
     {
-        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy', 'attachments']);
+        $landedCost->load(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction.currency', 'categoryAllocations.category', 'createdBy', 'updatedBy']);
         $payload = LandedCostResource::make($landedCost)->resolve($request);
 
         return inertia('Inventories/LandedCosts/Edit', [
@@ -138,7 +157,10 @@ class LandedCostController extends Controller
                 'id' => $method->value,
                 'name' => $method->getLabel(),
             ])->values(),
-            'purchases' => $this->purchaseOptions(),
+            'purchases' => $this->purchaseOptions($landedCost),
+            'landedCostCategories' => $this->landedCostCategoryOptions(),
+            'bankAccounts' => $this->cashBankAccountOptions(),
+            'currencies' => $this->currencyOptions(),
         ]);
     }
 
@@ -158,6 +180,7 @@ class LandedCostController extends Controller
             $landedCost->update([
                 'date' => $request->validated('date'),
                 'purchase_id' => $request->validated('purchase_id'),
+                'bank_account_id' => $request->validated('bank_account_id'),
                 'total_cost' => $request->validated('total_cost'),
                 'allocated_total' => 0,
                 'allocation_method' => $request->validated('allocation_method'),
@@ -166,16 +189,23 @@ class LandedCostController extends Controller
             ]);
 
             $service->syncPurchases($landedCost, $this->resolvePurchaseIds($request));
-            $service->syncItems($landedCost, $request->input('items', []));
+            $this->persistAllocation($landedCost, $request, $service);
+            $service->syncCategoryAllocations($landedCost, $request->input('category_allocations', []));
+            $service->syncDraftTransaction($landedCost, [
+                'bank_account_id' => $request->validated('bank_account_id'),
+                'currency_id' => $request->validated('currency_id'),
+                'rate' => (float) $request->validated('rate'),
+                'date' => $landedCost->date?->toDateString() ?? $request->validated('date'),
+            ]);
 
-            return $landedCost->fresh(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'createdBy', 'updatedBy', 'attachments']);
+            return $landedCost->fresh(['purchases.supplier', 'items.purchaseItem.purchase', 'items.item', 'bankAccount', 'transaction.currency', 'categoryAllocations.category', 'createdBy', 'updatedBy']);
         });
 
         if ($request->expectsJson()) {
             return LandedCostResource::make($landedCost);
         }
 
-        return redirect()->route('landed-costs.show', $landedCost)->with('success', __('general.updated_successfully', ['resource' => __('general.resource.landed_cost')]));
+        return redirect()->route('landed-costs.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.landed_cost')]));
     }
 
     public function destroy(Request $request, LandedCost $landedCost)
@@ -187,6 +217,14 @@ class LandedCostController extends Controller
         }
 
         DB::transaction(function () use ($landedCost) {
+            $transaction = $landedCost->transaction()->first();
+
+            if ($transaction) {
+                $transaction->lines()->delete();
+                $transaction->delete();
+            }
+
+            $landedCost->categoryAllocations()->delete();
             $landedCost->items()->delete();
             $landedCost->delete();
         });
@@ -224,15 +262,41 @@ class LandedCostController extends Controller
 
         return response()->json([
             'data' => new LandedCostResource($result['landed_cost']),
-            'journal_entry_id' => $result['journal_entry']->id,
             'transaction_id' => $result['transaction']->id,
         ]);
     }
 
-    private function purchaseOptions()
+    private function landedCostCategoryOptions()
+    {
+        return LandedCostCategory::query()
+            ->orderBy('name')
+            ->get(['id', 'name']);
+    }
+
+    private function currencyOptions()
+    {
+        return Currency::query()
+            ->orderBy('code')
+            ->get(['id', 'code', 'name', 'exchange_rate', 'is_base_currency']);
+    }
+
+    /**
+     * Purchase orders still available to carry a landed cost.
+     *
+     * A purchase order may only be attached to one landed cost, so anything
+     * already linked is dropped from the picker. The landed cost currently
+     * being edited is excluded from that exclusion — otherwise its own
+     * selection would vanish from the options the moment you opened the form.
+     */
+    private function purchaseOptions(?LandedCost $except = null)
     {
         return Purchase::query()
             ->with('supplier')
+            ->whereDoesntHave('landedCosts', function ($query) use ($except): void {
+                if ($except) {
+                    $query->whereKeyNot($except->getKey());
+                }
+            })
             ->orderByDesc('date')
             ->limit(100)
             ->get()
@@ -259,5 +323,21 @@ class LandedCostController extends Controller
             ->unique()
             ->values()
             ->all();
+    }
+
+    private function persistAllocation(LandedCost $landedCost, LandedCostRequest $request, LandedCostService $service): void
+    {
+        $payload = array_merge($request->validated(), [
+            'purchase_ids' => $this->resolvePurchaseIds($request),
+            'items' => $request->input('items', []),
+        ]);
+
+        $preview = $service->preview($landedCost, $payload);
+
+        $landedCost->update([
+            'allocated_total' => $preview['allocated_total'],
+        ]);
+
+        $service->syncItems($landedCost, $preview['rows']);
     }
 }

@@ -117,6 +117,13 @@ class Purchase extends Model
         return $this->hasMany(\App\Models\Purchase\PurchaseItem::class);
     }
 
+    public function landedCosts(): BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\Inventory\LandedCost::class, 'landed_cost_purchases')
+            ->withTimestamps()
+            ->withPivot('id');
+    }
+
     /**
      * Net purchase amount (goods − item discounts − bill discount), mirroring the
      * calculation in PurchaseResource. Requires the `items` relation loaded.
@@ -132,13 +139,6 @@ class Purchase extends Model
 
             return $rowTotal - $itemDiscount - $billDiscount;
         });
-    }
-
-    public function landedCosts(): BelongsToMany
-    {
-        return $this->belongsToMany(\App\Models\Inventory\LandedCost::class, 'landed_cost_purchases')
-            ->withTimestamps()
-            ->withPivot('id');
     }
 
     /**

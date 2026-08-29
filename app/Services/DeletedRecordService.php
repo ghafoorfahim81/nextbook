@@ -12,6 +12,7 @@ use App\Models\Administration\Category;
 use App\Models\Administration\Currency;
 use App\Models\Administration\Department;
 use App\Models\Administration\Designation;
+use App\Models\Administration\LandedCostCategory;
 use App\Models\Administration\Quantity;
 use App\Models\Administration\Size;
 use App\Models\Administration\UnitMeasure;
@@ -237,6 +238,11 @@ class DeletedRecordService
             'designations' => [
                 'label' => 'Designations',
                 'model' => Designation::class,
+                'title' => fn (Model $record) => $record->name,
+            ],
+            'landed_cost_categories' => [
+                'label' => 'Landed Cost Categories',
+                'model' => LandedCostCategory::class,
                 'title' => fn (Model $record) => $record->name,
             ],
             'quantities' => [
