@@ -4,7 +4,7 @@ import { Head, Link, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 import AppLayout from '@/Layouts/Layout.vue'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/card'
+import { Card } from '@/Components/ui/card'
 import { Button } from '@/Components/ui/button'
 import { Input } from '@/Components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
@@ -12,9 +12,10 @@ import { Badge } from '@/Components/ui/badge'
 import {
   LayoutDashboard, BookOpen, FileText, Package,
   ShoppingCart, ShoppingBag, Receipt, CreditCard,
-  ArrowLeftRight, Loader2, Search, Sparkles,
-  CircleDollarSign, Scale, CloudSun, CalendarDays,
-  MapPin, ArrowUpRight, NotebookText, ArrowRight,
+  ArrowLeftRight, Loader2, RefreshCw,
+  CircleDollarSign, Scale, CalendarDays,
+  ChevronLeft, ChevronRight, ArrowRight, Clock3,
+  Coins, RotateCcw, ArrowUp, ArrowDown,
 } from 'lucide-vue-next'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -32,6 +33,11 @@ const props = defineProps<{
 
 const { t, locale } = useI18n()
 const page = usePage<any>()
+
+// Shared card elevation — rests low, lifts on hover. Dark mode needs an
+// explicit shadow colour, otherwise the default black shadow is invisible
+// against the dark surface.
+const panel = 'shadow-sm transition-shadow duration-200 hover:shadow-md dark:shadow-black/50 dark:hover:shadow-black/70'
 const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value) || page.props.direction === 'rtl')
 
 // calendar_type comes from company settings (auth.user.calendar_type).
@@ -187,6 +193,8 @@ const gregorianDisplay = ref<DateDisplay>({ label:'', icon:'📅', weekDay:'', d
 const hijriDisplay     = ref<DateDisplay>({ label:'', icon:'🌙', weekDay:'', day:0, monthName:'', full:'' })
 const jalaliDisplay    = ref<DateDisplay>({ label:'', icon:'☀️', weekDay:'', day:0, monthName:'', full:'' })
 
+const dateStrip = computed(() => [gregorianDisplay.value, jalaliDisplay.value, hijriDisplay.value])
+
 const jalaliMonthNames = [
   'حمل','ثور','جوزا','سرطان','اسد','سنبله',
   'میزان','عقرب','قوس','جدی','دلو','حوت',
@@ -275,7 +283,7 @@ function drawClock(now: Date) {
   if (!ctx) return
   const W = canvas.width, H = canvas.height
   const cx = W / 2, cy = H / 2
-  const r = Math.min(cx, cy) - 8
+  const r = Math.min(cx, cy) - 4
   const isDark = document.documentElement.classList.contains('dark')
 
   ctx.clearRect(0, 0, W, H)
@@ -286,15 +294,16 @@ function drawClock(now: Date) {
   ctx.fillStyle = isDark ? '#0f172a' : '#ffffff'
   ctx.fill()
   ctx.strokeStyle = isDark ? '#334155' : '#d4d4d8'
-  ctx.lineWidth = 2
+  ctx.lineWidth = 1.5
   ctx.stroke()
 
-  // Minute and hour ticks
+  // Minute and hour ticks — sized relative to the radius so the face stays
+  // legible at the compact size used on the home page.
   for (let i = 0; i < 60; i++) {
     const angle = (i * Math.PI) / 30
     const isHour = i % 5 === 0
-    const outer = r - 10
-    const inner = outer - (isHour ? 14 : 7)
+    const outer = r * 0.93
+    const inner = outer - r * (isHour ? 0.13 : 0.06)
     const x1 = cx + Math.sin(angle) * inner
     const y1 = cy - Math.cos(angle) * inner
     const x2 = cx + Math.sin(angle) * outer
@@ -302,45 +311,40 @@ function drawClock(now: Date) {
     ctx.beginPath()
     ctx.moveTo(x1, y1)
     ctx.lineTo(x2, y2)
-    ctx.strokeStyle = isDark ? '#f8fafc' : '#111111'
-    ctx.lineWidth = isHour ? 3.4 : 1.4
+    ctx.strokeStyle = isDark ? '#e2e8f0' : '#3f3f46'
+    ctx.lineWidth = isHour ? r * 0.035 : r * 0.015
     ctx.lineCap = 'round'
     ctx.stroke()
   }
 
-  // Hour numbers 1-12
-  ctx.font = `700 ${Math.floor(r * 0.16)}px sans-serif`
+  // Hour numbers 3/6/9/12 only — a full 1-12 ring is unreadable at this size
+  ctx.font = `600 ${Math.floor(r * 0.2)}px sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillStyle = isDark ? '#f8fafc' : '#111111'
-  for (let i = 1; i <= 12; i++) {
+  ctx.fillStyle = isDark ? '#f8fafc' : '#18181b'
+  for (const i of [12, 3, 6, 9]) {
     const angle = (i * Math.PI) / 6
-    const dist = r - 34
+    const dist = r * 0.7
     ctx.fillText(String(i), cx + Math.sin(angle) * dist, cy - Math.cos(angle) * dist)
   }
-
-  // Center label
-  ctx.font = `500 ${Math.floor(r * 0.12)}px sans-serif`
-  ctx.fillStyle = isDark ? '#cbd5e1' : '#1f2937'
-  ctx.fillText(t('home.clock.center_label'), cx, cy + r * 0.22)
 
   const sec = now.getSeconds()
   const min = now.getMinutes() + sec / 60
   const hr  = now.getHours() % 12 + min / 60
 
   // Hour hand
-  drawHand(ctx, cx, cy, (hr * Math.PI) / 6, r * 0.45, 8, isDark ? '#f8fafc' : '#222222', r * 0.12)
+  drawHand(ctx, cx, cy, (hr * Math.PI) / 6, r * 0.45, r * 0.06, isDark ? '#f8fafc' : '#27272a', r * 0.12)
   // Minute hand
-  drawHand(ctx, cx, cy, (min * Math.PI) / 30, r * 0.7, 5.5, isDark ? '#f8fafc' : '#222222', r * 0.18)
+  drawHand(ctx, cx, cy, (min * Math.PI) / 30, r * 0.68, r * 0.045, isDark ? '#f8fafc' : '#27272a', r * 0.16)
   // Second hand
-  drawHand(ctx, cx, cy, (sec * Math.PI) / 30, r * 0.8, 2.2, '#f59e0b', r * 0.3)
+  drawHand(ctx, cx, cy, (sec * Math.PI) / 30, r * 0.78, r * 0.018, '#f59e0b', r * 0.24)
   // Center dot
   ctx.beginPath()
-  ctx.arc(cx, cy, 8, 0, Math.PI * 2)
+  ctx.arc(cx, cy, r * 0.07, 0, Math.PI * 2)
   ctx.fillStyle = '#f59e0b'
   ctx.fill()
   ctx.beginPath()
-  ctx.arc(cx, cy, 3.5, 0, Math.PI * 2)
+  ctx.arc(cx, cy, r * 0.03, 0, Math.PI * 2)
   ctx.fillStyle = isDark ? '#0f172a' : '#ffffff'
   ctx.fill()
 }
@@ -420,7 +424,7 @@ function goToday() {
   initJalaliView()
 }
 
-interface CalCell { day: number; currentMonth: boolean; isToday: boolean }
+interface CalCell { day: number; currentMonth: boolean; isToday: boolean; isWeekend: boolean }
 
 const calendarDays = computed<CalCell[]>(() => {
   if (calendarType.value === 'jalali') {
@@ -440,12 +444,14 @@ function buildGregorianCalendar(year: number, month: number): CalCell[] {
   const firstDow = new Date(year, month, 1).getDay()
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const cells: CalCell[] = []
-  for (let i = 0; i < firstDow; i++) cells.push({ day: 0, currentMonth: false, isToday: false })
+  for (let i = 0; i < firstDow; i++) cells.push({ day: 0, currentMonth: false, isToday: false, isWeekend: false })
   for (let d = 1; d <= daysInMonth; d++) {
     const isToday = year === today.getFullYear() && month === today.getMonth() && d === today.getDate()
-    cells.push({ day: d, currentMonth: true, isToday })
+    // Column position marks the weekday: index 5 = Friday in the Gregorian grid
+    const isWeekend = (firstDow + d - 1) % 7 === 5
+    cells.push({ day: d, currentMonth: true, isToday, isWeekend })
   }
-  while (cells.length % 7 !== 0) cells.push({ day: 0, currentMonth: false, isToday: false })
+  while (cells.length % 7 !== 0) cells.push({ day: 0, currentMonth: false, isToday: false, isWeekend: false })
   return cells
 }
 
@@ -459,12 +465,14 @@ function buildJalaliCalendar(jy: number, jm: number): CalCell[] {
   const jalaliDow = (dow + 1) % 7 // Sat=0
   const daysInMonth = jalaliDaysInMonth(jy, jm)
   const cells: CalCell[] = []
-  for (let i = 0; i < jalaliDow; i++) cells.push({ day: 0, currentMonth: false, isToday: false })
+  for (let i = 0; i < jalaliDow; i++) cells.push({ day: 0, currentMonth: false, isToday: false, isWeekend: false })
   for (let d = 1; d <= daysInMonth; d++) {
     const isToday = jy === tjy && jm === tjm && d === tjd
-    cells.push({ day: d, currentMonth: true, isToday })
+    // Friday is the last column (index 6) in the Jalali grid
+    const isWeekend = (jalaliDow + d - 1) % 7 === 6
+    cells.push({ day: d, currentMonth: true, isToday, isWeekend })
   }
-  while (cells.length % 7 !== 0) cells.push({ day: 0, currentMonth: false, isToday: false })
+  while (cells.length % 7 !== 0) cells.push({ day: 0, currentMonth: false, isToday: false, isWeekend: false })
   return cells
 }
 
@@ -484,7 +492,7 @@ const quickLinks = computed(() => [
 ])
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ── 4 & 5. CURRENCY RATES & EXCHANGE ─────────────────────────────────────────
+// ── 4. CURRENCY EXCHANGE ──────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const exchangeAmount = ref<number>(1000)
@@ -522,7 +530,7 @@ function swapCurrencies() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ── 6. WEATHER (Open-Meteo, no API key) ───────────────────────────────────────
+// ── 5. WEATHER (Open-Meteo, no API key) ───────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const afghaniProvinces = [
@@ -590,18 +598,6 @@ function searchWeather() {
 
 onMounted(() => fetchWeather())
 
-const weatherSummary = computed(() => {
-  if (weatherData.value?.temp != null) {
-    return `${Math.round(weatherData.value.temp)}°C · ${weatherData.value.city}`
-  }
-
-  if (weatherLoading.value) {
-    return t('home.hero.weather_pending')
-  }
-
-  return weatherCity.value
-})
-
 const dateConversionOptions = computed(() => [
   {
     key: 'to_jalali',
@@ -615,21 +611,8 @@ const dateConversionOptions = computed(() => [
   },
 ])
 
-const heroStats = computed(() => [
-  { label: t('home.hero.stats.shortcuts'), value: String(quickLinks.value.length).padStart(2, '0'), icon: Sparkles },
-  { label: t('home.hero.stats.currencies'), value: String(props.currencies.length), icon: CircleDollarSign },
-  { label: t('home.hero.stats.units'), value: String(props.unitMeasures.length), icon: Scale },
-  { label: t('home.hero.stats.city'), value: weatherCity.value, icon: CloudSun },
-])
-
-const heroPanelItems = computed(() => [
-  { label: t('home.hero.branch_label'), value: activeBranchName.value, icon: MapPin },
-  { label: t('home.hero.weather_label'), value: weatherSummary.value, icon: CloudSun },
-  { label: t('home.hero.calendar_label'), value: calendarModeLabel.value, icon: CalendarDays },
-])
-
 // ═══════════════════════════════════════════════════════════════════════════════
-// ── 7. DATE CONVERSION ────────────────────────────────────────────────────────
+// ── 6. DATE CONVERSION ────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const dateConvMode   = ref<'to_jalali' | 'to_gregorian'>('to_jalali')
@@ -661,7 +644,7 @@ function convertDate() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ── 8. UNIT EXCHANGE ──────────────────────────────────────────────────────────
+// ── 7. UNIT EXCHANGE ──────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const unitAmount  = ref<number>(1)
@@ -714,576 +697,728 @@ async function doUnitConvert() {
     unitError.value = e?.response?.data?.error || 'Error'
   } finally { unitLoading.value = false }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── 8. DEBIT OR CREDIT? (accounting drill) ────────────────────────────────────
+// A 60-second quick-fire round: an account is named along with the direction it
+// moves, and the player calls the side it posts to. The rule being drilled is
+// the one the whole ledger rests on — assets and expenses rise on the debit
+// side, liabilities, equity and income rise on the credit side.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+type DcCategory = 'asset' | 'liability' | 'equity' | 'income' | 'expense'
+type DcSide = 'debit' | 'credit'
+type DcMovement = 'increase' | 'decrease'
+
+const DC_ACCOUNTS: Array<{ key: string; category: DcCategory }> = [
+  { key: 'cash',                category: 'asset' },
+  { key: 'bank',                category: 'asset' },
+  { key: 'accounts_receivable', category: 'asset' },
+  { key: 'inventory',           category: 'asset' },
+  { key: 'equipment',           category: 'asset' },
+  { key: 'accounts_payable',    category: 'liability' },
+  { key: 'loan_payable',        category: 'liability' },
+  { key: 'salaries_payable',    category: 'liability' },
+  { key: 'owner_capital',       category: 'equity' },
+  { key: 'retained_earnings',   category: 'equity' },
+  { key: 'sales_revenue',       category: 'income' },
+  { key: 'service_income',      category: 'income' },
+  { key: 'rent_expense',        category: 'expense' },
+  { key: 'salaries_expense',    category: 'expense' },
+  { key: 'utilities_expense',   category: 'expense' },
+  { key: 'purchases',           category: 'expense' },
+]
+
+const DC_ROUND_SECONDS = 60
+const DC_FEEDBACK_MS = 850
+
+interface DcQuestion { key: string; category: DcCategory; movement: DcMovement }
+
+const dcStatus     = ref<'idle' | 'playing' | 'over'>('idle')
+const dcTimeLeft   = ref(DC_ROUND_SECONDS)
+const dcScore      = ref(0)
+const dcAsked      = ref(0)
+const dcStreak     = ref(0)
+const dcBestStreak = ref(0)
+const dcBestScore  = ref<number | null>(null)
+const dcCurrent    = ref<DcQuestion | null>(null)
+const dcAnswered   = ref<{ picked: DcSide; correct: boolean } | null>(null)
+
+let dcTimer: ReturnType<typeof setInterval> | null = null
+let dcAdvance: ReturnType<typeof setTimeout> | null = null
+
+// Assets and expenses carry a debit balance; everything else carries a credit
+// balance. An increase posts to the natural side, a decrease to the opposite.
+function dcCorrectSide(category: DcCategory, movement: DcMovement): DcSide {
+  const naturalDebit = category === 'asset' || category === 'expense'
+  const risesWithDebit = naturalDebit
+  if (movement === 'increase') return risesWithDebit ? 'debit' : 'credit'
+  return risesWithDebit ? 'credit' : 'debit'
+}
+
+const dcAccuracy = computed(() =>
+  dcAsked.value === 0 ? 0 : Math.round((dcScore.value / dcAsked.value) * 100),
+)
+
+const dcTimeProgress = computed(() => (dcTimeLeft.value / DC_ROUND_SECONDS) * 100)
+
+const dcCorrectForCurrent = computed<DcSide | null>(() =>
+  dcCurrent.value ? dcCorrectSide(dcCurrent.value.category, dcCurrent.value.movement) : null,
+)
+
+function dcClearTimers() {
+  if (dcTimer) { clearInterval(dcTimer); dcTimer = null }
+  if (dcAdvance) { clearTimeout(dcAdvance); dcAdvance = null }
+}
+
+function dcNextQuestion() {
+  const previous = dcCurrent.value
+  let next: DcQuestion
+  // Re-roll rather than repeat the exact same prompt back to back
+  do {
+    const account = DC_ACCOUNTS[Math.floor(Math.random() * DC_ACCOUNTS.length)]
+    next = {
+      key: account.key,
+      category: account.category,
+      movement: Math.random() < 0.5 ? 'increase' : 'decrease',
+    }
+  } while (previous && next.key === previous.key && next.movement === previous.movement)
+
+  dcCurrent.value = next
+  dcAnswered.value = null
+}
+
+function dcEndRound() {
+  dcClearTimers()
+  dcStatus.value = 'over'
+  if (dcBestScore.value === null || dcScore.value > dcBestScore.value) {
+    dcBestScore.value = dcScore.value
+  }
+}
+
+function dcStart() {
+  dcClearTimers()
+  dcScore.value = 0
+  dcAsked.value = 0
+  dcStreak.value = 0
+  dcTimeLeft.value = DC_ROUND_SECONDS
+  dcStatus.value = 'playing'
+  dcNextQuestion()
+  dcTimer = setInterval(() => {
+    dcTimeLeft.value--
+    if (dcTimeLeft.value <= 0) dcEndRound()
+  }, 1000)
+}
+
+function dcAnswer(side: DcSide) {
+  if (dcStatus.value !== 'playing' || dcAnswered.value || !dcCurrent.value) return
+
+  const correct = side === dcCorrectSide(dcCurrent.value.category, dcCurrent.value.movement)
+  dcAsked.value++
+  if (correct) {
+    dcScore.value++
+    dcStreak.value++
+    if (dcStreak.value > dcBestStreak.value) dcBestStreak.value = dcStreak.value
+  } else {
+    dcStreak.value = 0
+  }
+  dcAnswered.value = { picked: side, correct }
+
+  dcAdvance = setTimeout(() => {
+    dcAdvance = null
+    if (dcStatus.value === 'playing') dcNextQuestion()
+  }, DC_FEEDBACK_MS)
+}
+
+onBeforeUnmount(dcClearTimers)
 </script>
 
 <template>
   <AppLayout>
     <Head :title="t('home.title')" />
 
-    <div class="space-y-5 text-foreground">
-      <section class="relative overflow-hidden rounded-[32px] border border-border bg-gradient-to-br from-primary/15 via-background to-secondary/10 shadow-sm">
-        <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-        <div class="absolute -top-24 end-0 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
-        <div class="absolute -bottom-24 start-0 h-56 w-56 rounded-full bg-secondary/15 blur-3xl" />
+    <div class="space-y-3 text-foreground">
+      <!-- ── Header bar ─────────────────────────────────────────────────── -->
+      <Card :class="[panel, 'flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-s-4 border-s-primary bg-gradient-to-r from-primary/[0.06] to-card px-4 py-3']">
+        <div class="min-w-0">
+          <h1 class="truncate text-lg font-semibold tracking-tight">
+            {{ t('home.hero.greeting', { name: firstName }) }}
+          </h1>
+          <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            <span class="truncate font-medium text-foreground/80">{{ activeBranchName }}</span>
+            <span class="text-border">•</span>
+            <span>{{ calendarModeLabel }}</span>
+            <span class="text-border">•</span>
+            <span class="truncate">{{ gregorianDisplay.weekDay }}, {{ gregorianDisplay.day }} {{ gregorianDisplay.monthName }}</span>
+          </div>
+        </div>
 
-        <div class="relative grid gap-6 px-5 py-6 lg:px-7 lg:py-7 xl:grid-cols-[1.35fr_.95fr]">
-          <div class="space-y-6">
-            <div class="flex flex-wrap items-center gap-2">
-              <Badge class="rounded-full bg-primary/15 px-3 py-1 text-primary hover:bg-primary/15">
-                {{ t('home.hero.eyebrow') }}
-              </Badge>
-              <Badge variant="secondary" class="rounded-full px-3 py-1 text-xs">
-                {{ activeBranchName }}
-              </Badge>
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-1.5">
+            <Clock3 class="size-4 shrink-0 text-muted-foreground" />
+            <div class="flex items-baseline gap-1 font-mono text-sm font-semibold tabular-nums" dir="ltr">
+              <span>{{ digitalTime || '--:--:--' }}</span>
+              <span class="text-[10px] font-medium text-muted-foreground">{{ digitalMeridiem }}</span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <Button as-child size="sm" class="h-8 text-xs">
+              <Link href="/dashboard">
+                <LayoutDashboard class="me-1.5 size-3.5" />
+                {{ t('home.hero.open_dashboard') }}
+              </Link>
+            </Button>
+            <Button as-child size="sm" variant="outline" class="h-8 text-xs">
+              <Link href="/reports">
+                <FileText class="me-1.5 size-3.5" />
+                {{ t('home.hero.open_reports') }}
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </Card>
+
+      <!-- ── Quick links ────────────────────────────────────────────────── -->
+      <Card :class="[panel, 'p-3']">
+        <p class="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {{ t('home.quick_links.title') }}
+        </p>
+        <div class="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+          <Link
+            v-for="link in quickLinks"
+            :key="link.url"
+            :href="link.url"
+            class="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-2 text-xs font-medium shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-muted hover:shadow-md dark:shadow-black/40"
+          >
+            <component :is="link.icon" class="size-4 shrink-0 text-primary" />
+            <span class="truncate">{{ link.label }}</span>
+          </Link>
+        </div>
+      </Card>
+
+      <!-- ── Main grid ──────────────────────────────────────────────────── -->
+      <div class="grid gap-3 xl:grid-cols-3">
+        <!-- Left column: weather + rates -->
+        <div class="space-y-3 xl:col-span-2">
+          <!-- Weather -->
+          <Card :class="panel">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {{ t('home.weather.title') }}
+              </p>
+              <div class="flex items-center gap-1.5">
+                <Select v-model="weatherSearch">
+                  <SelectTrigger class="h-8 min-w-[140px] text-xs">
+                    <SelectValue :placeholder="t('home.weather.city')" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="p in afghaniProvinces" :key="p" :value="p">{{ p }}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  class="h-8 w-8"
+                  :disabled="weatherLoading"
+                  :aria-label="t('home.weather.search')"
+                  @click="searchWeather"
+                >
+                  <Loader2 v-if="weatherLoading" class="size-3.5 animate-spin" />
+                  <RefreshCw v-else class="size-3.5" />
+                </Button>
+              </div>
             </div>
 
-            <div class="space-y-3">
-              <h1 class="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                {{ t('home.hero.greeting', { name: firstName }) }}
-              </h1>
-              <p class="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-                {{ t('home.hero.description') }}
+            <div class="p-3">
+              <p v-if="weatherError" class="py-4 text-center text-sm text-destructive">{{ weatherError }}</p>
+
+              <p v-else-if="weatherLoading && !weatherData" class="py-4 text-center text-sm text-muted-foreground">
+                {{ t('home.weather.loading') }}
+              </p>
+
+              <div v-else-if="weatherData" class="flex flex-col gap-3 lg:flex-row lg:items-center">
+                <!-- Current conditions -->
+                <div class="flex shrink-0 items-center gap-3 lg:w-56">
+                  <span class="text-4xl leading-none">{{ wmoInfo(weatherData.code, weatherData.is_day).emoji }}</span>
+                  <div class="min-w-0">
+                    <p class="text-2xl font-semibold leading-none tabular-nums">{{ weatherData.temp?.toFixed(0) }}°C</p>
+                    <p class="mt-1 truncate text-xs text-muted-foreground">
+                      {{ weatherData.city }} · {{ wmoInfo(weatherData.code, weatherData.is_day).label }}
+                    </p>
+                    <p class="mt-1 text-[11px] text-muted-foreground">
+                      {{ t('home.weather.feels_like') }} {{ weatherData.feels_like?.toFixed(0) }}° ·
+                      {{ t('home.weather.humidity') }} {{ weatherData.humidity }}% ·
+                      {{ t('home.weather.wind') }} {{ weatherData.wind_speed?.toFixed(0) }} km/h
+                    </p>
+                  </div>
+                </div>
+
+                <!-- 7-day forecast -->
+                <div v-if="weatherData.forecast?.length" class="flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
+                  <div
+                    v-for="(day, idx) in weatherData.forecast"
+                    :key="day.date"
+                    class="flex min-w-[62px] flex-1 flex-shrink-0 flex-col items-center gap-0.5 rounded-md border px-1.5 py-2 text-center shadow-sm transition-shadow duration-200 hover:shadow-md dark:shadow-black/40"
+                    :class="idx === 0 ? 'border-primary/50 bg-primary/5' : 'border-border'"
+                  >
+                    <span class="text-[11px] font-semibold">{{ forecastDayLabel(day.date, Number(idx)) }}</span>
+                    <span class="text-[10px] text-muted-foreground">{{ forecastDateLabel(day.date) }}</span>
+                    <span class="text-lg leading-none">{{ wmoInfo(day.code).emoji }}</span>
+                    <div class="flex gap-1 text-[11px] tabular-nums">
+                      <span class="font-semibold">{{ day.max?.toFixed(0) }}°</span>
+                      <span class="text-muted-foreground">{{ day.min?.toFixed(0) }}°</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <!-- Currency rates -->
+          <Card :class="panel">
+            <div class="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {{ t('home.currency_rates.title') }}
+              </p>
+              <CircleDollarSign class="size-4 text-muted-foreground" />
+            </div>
+            <div v-if="currencies.length === 0" class="px-3 py-6 text-center text-sm text-muted-foreground">
+              {{ t('home.currency_rates.no_data') }}
+            </div>
+            <div v-else class="max-h-64 overflow-auto">
+              <table class="w-full text-xs">
+                <thead class="sticky top-0 bg-card">
+                  <tr class="border-b border-border">
+                    <th class="px-3 py-1.5 text-start font-medium text-muted-foreground">{{ t('home.currency_rates.code') }}</th>
+                    <th class="px-3 py-1.5 text-start font-medium text-muted-foreground">{{ t('home.currency_rates.name') }}</th>
+                    <th class="px-3 py-1.5 text-end font-medium text-muted-foreground">{{ t('home.currency_rates.rate') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="cur in currencies" :key="cur.id" class="border-b border-border/50 last:border-0 hover:bg-muted/40">
+                    <td class="px-3 py-1.5">
+                      <div class="flex items-center gap-1.5">
+                        <span class="font-mono font-semibold">{{ cur.code }}</span>
+                        <Badge v-if="cur.is_base_currency" variant="secondary" class="h-4 px-1 py-0 text-[10px]">
+                          {{ t('home.currency_rates.base') }}
+                        </Badge>
+                      </div>
+                    </td>
+                    <td class="truncate px-3 py-1.5 text-muted-foreground">{{ cur.name }}</td>
+                    <td class="px-3 py-1.5 text-end font-mono tabular-nums">
+                      {{ cur.symbol }} {{ Number(cur.exchange_rate).toLocaleString(undefined, { maximumFractionDigits: 4 }) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+
+        <!-- Right column: clock + calendar -->
+        <div class="space-y-3">
+          <!-- Clock & dates -->
+          <Card :class="[panel, 'p-3']">
+            <div class="flex items-center gap-3">
+              <canvas ref="clockCanvas" width="112" height="112" class="shrink-0 rounded-full" />
+              <div class="min-w-0 flex-1 space-y-1">
+                <div
+                  v-for="d in dateStrip"
+                  :key="d.label"
+                  class="flex items-center justify-between gap-2 rounded-md bg-muted/40 px-2 py-1.5 text-xs"
+                >
+                  <span class="flex items-center gap-1.5 text-muted-foreground">
+                    <span class="text-[13px] leading-none">{{ d.icon }}</span>
+                    <span>{{ d.label }}</span>
+                  </span>
+                  <span class="truncate font-medium">
+                    {{ d.day }} {{ d.monthName }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p class="mt-2 text-center text-[11px] text-muted-foreground">{{ t('home.clock.timezone') }}</p>
+          </Card>
+
+          <!-- Calendar -->
+          <Card :class="[panel, 'p-3']">
+            <div class="mb-2 flex items-center justify-between gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7"
+                :aria-label="t('home.calendar.prev')"
+                @click="prevMonth"
+              >
+                <ChevronLeft class="size-4 rtl:rotate-180" />
+              </Button>
+              <p class="truncate text-sm font-semibold">{{ calendarTitle }}</p>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="size-7"
+                :aria-label="t('home.calendar.next')"
+                @click="nextMonth"
+              >
+                <ChevronRight class="size-4 rtl:rotate-180" />
+              </Button>
+            </div>
+
+            <div class="grid grid-cols-7 gap-px">
+              <div
+                v-for="wd in weekDays"
+                :key="wd"
+                class="pb-1 text-center text-[10px] font-semibold uppercase text-muted-foreground"
+              >
+                {{ wd }}
+              </div>
+              <div
+                v-for="(cell, idx) in calendarDays"
+                :key="idx"
+                class="flex h-7 items-center justify-center rounded text-[11px] tabular-nums transition-colors"
+                :class="{
+                  'text-muted-foreground/25': !cell.currentMonth,
+                  'bg-primary font-semibold text-primary-foreground': cell.isToday,
+                  'text-destructive/80': cell.currentMonth && cell.isWeekend && !cell.isToday,
+                  'cursor-default hover:bg-muted': cell.currentMonth && !cell.isToday,
+                }"
+              >
+                {{ cell.day || '' }}
+              </div>
+            </div>
+
+            <Button variant="outline" size="sm" class="mt-2 h-7 w-full text-xs" @click="goToday">
+              {{ t('home.calendar.today') }}
+            </Button>
+          </Card>
+        </div>
+      </div>
+
+      <!-- ── Converters: all three visible side by side ──────────────────── -->
+      <div class="grid gap-3 lg:grid-cols-3">
+        <!-- Currency exchange -->
+        <Card :class="panel">
+          <div class="flex items-center gap-2 border-b border-border px-3 py-2">
+            <ArrowLeftRight class="size-4 shrink-0 text-primary" />
+            <p class="text-xs font-semibold">{{ t('home.currency_exchange.title') }}</p>
+          </div>
+          <div class="space-y-2 p-3">
+            <div>
+              <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.currency_exchange.amount') }}</label>
+              <Input v-model.number="exchangeAmount" type="number" min="0" class="h-9 text-sm" />
+            </div>
+            <div class="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-2">
+              <div>
+                <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.currency_exchange.from') }}</label>
+                <Select v-model="exchangeFrom">
+                  <SelectTrigger class="h-9 text-sm">
+                    <SelectValue :placeholder="t('home.currency_exchange.select_currency')" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="cur in currencies" :key="cur.code" :value="cur.code">
+                      {{ cur.code }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                class="h-9 w-9 shrink-0"
+                :aria-label="t('home.tools.swap')"
+                @click="swapCurrencies"
+              >
+                <ArrowLeftRight class="size-4" />
+              </Button>
+              <div>
+                <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.currency_exchange.to') }}</label>
+                <Select v-model="exchangeTo">
+                  <SelectTrigger class="h-9 text-sm">
+                    <SelectValue :placeholder="t('home.currency_exchange.select_currency')" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="cur in currencies" :key="cur.code" :value="cur.code">
+                      {{ cur.code }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 pt-0.5">
+              <Button class="h-9 shrink-0 text-sm" :disabled="exchangeLoading" @click="doExchange">
+                <Loader2 v-if="exchangeLoading" class="me-1.5 size-4 animate-spin" />
+                {{ t('home.currency_exchange.convert') }}
+              </Button>
+              <div class="flex h-9 min-w-0 flex-1 items-center justify-end rounded-md border border-border bg-muted/40 px-3 font-mono text-sm font-semibold">
+                <span v-if="exchangeError" class="truncate text-xs font-normal text-destructive">{{ exchangeError }}</span>
+                <span v-else class="truncate" :class="exchangeResult ? '' : 'text-muted-foreground/60'">{{ exchangeResult || '—' }}</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <!-- Unit converter -->
+        <Card :class="panel">
+          <div class="flex items-center gap-2 border-b border-border px-3 py-2">
+            <Scale class="size-4 shrink-0 text-primary" />
+            <p class="text-xs font-semibold">{{ t('home.unit_exchange.title') }}</p>
+          </div>
+          <div class="space-y-2 p-3">
+            <p v-if="props.unitMeasures.length === 0" class="py-10 text-center text-sm text-muted-foreground">
+              {{ t('home.unit_exchange.no_units') }}
+            </p>
+            <template v-else>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.unit_exchange.type') }}</label>
+                  <Select v-model="selectedQuantityId">
+                    <SelectTrigger class="h-9 text-sm">
+                      <SelectValue :placeholder="t('home.unit_exchange.select_type')" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="(group, qid) in quantityGroups" :key="String(qid)" :value="String(qid)">
+                        {{ group.label }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.unit_exchange.amount') }}</label>
+                  <Input v-model.number="unitAmount" type="number" class="h-9 text-sm" />
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.unit_exchange.from') }}</label>
+                  <Select v-model="unitFromId">
+                    <SelectTrigger class="h-9 text-sm">
+                      <SelectValue :placeholder="t('home.unit_exchange.select_unit')" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="u in unitsForQuantity" :key="u.id" :value="u.id">
+                        {{ u.name }} ({{ u.symbol }})
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.unit_exchange.to') }}</label>
+                  <Select v-model="unitToId">
+                    <SelectTrigger class="h-9 text-sm">
+                      <SelectValue :placeholder="t('home.unit_exchange.select_unit')" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="u in unitsForQuantity" :key="u.id" :value="u.id">
+                        {{ u.name }} ({{ u.symbol }})
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 pt-0.5">
+                <Button class="h-9 shrink-0 text-sm" :disabled="unitLoading" @click="doUnitConvert">
+                  <Loader2 v-if="unitLoading" class="me-1.5 size-4 animate-spin" />
+                  {{ t('home.unit_exchange.convert') }}
+                </Button>
+                <div class="flex h-9 min-w-0 flex-1 items-center justify-end rounded-md border border-border bg-muted/40 px-3 font-mono text-sm font-semibold">
+                  <span v-if="unitError" class="truncate text-xs font-normal text-destructive">{{ unitError }}</span>
+                  <span v-else class="truncate" :class="unitResult ? '' : 'text-muted-foreground/60'">{{ unitResult || '—' }}</span>
+                </div>
+              </div>
+            </template>
+          </div>
+        </Card>
+
+        <!-- Date conversion -->
+        <Card :class="panel">
+          <div class="flex items-center gap-2 border-b border-border px-3 py-2">
+            <CalendarDays class="size-4 shrink-0 text-primary" />
+            <p class="text-xs font-semibold">{{ t('home.date_conversion.title') }}</p>
+          </div>
+          <div class="space-y-2 p-3">
+            <div class="flex h-9 overflow-hidden rounded-md border border-border text-xs">
+              <button
+                v-for="option in dateConversionOptions"
+                :key="option.key"
+                type="button"
+                class="flex flex-1 items-center justify-center gap-1.5 px-2 transition-colors"
+                :class="dateConvMode === option.key ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
+                @click="dateConvMode = option.key as 'to_jalali' | 'to_gregorian'; dateConvResult = ''; dateConvError = ''"
+              >
+                <ArrowRight v-if="isRTL" class="size-3 shrink-0" />
+                <span class="truncate">{{ option.from }}</span>
+                <ArrowRight v-if="!isRTL" class="size-3 shrink-0" />
+                <span class="truncate">{{ option.to }}</span>
+              </button>
+            </div>
+            <div>
+              <label class="mb-1 block text-[11px] text-muted-foreground">
+                {{ dateConvMode === 'to_jalali' ? 'YYYY-MM-DD (Gregorian)' : 'YYYY/MM/DD (Jalali)' }}
+              </label>
+              <Input
+                v-model="dateConvInput"
+                :placeholder="dateConvMode === 'to_jalali' ? '2024-03-20' : '1402/12/29'"
+                class="h-9 font-mono text-sm"
+                @keyup.enter="convertDate"
+              />
+            </div>
+            <div class="flex items-center gap-2 pt-0.5">
+              <Button class="h-9 shrink-0 text-sm" @click="convertDate">
+                {{ t('home.date_conversion.convert') }}
+              </Button>
+              <div class="flex h-9 min-w-0 flex-1 items-center justify-end rounded-md border border-border bg-muted/40 px-3 font-mono text-sm font-semibold">
+                <span v-if="dateConvError" class="truncate text-xs font-normal text-destructive">{{ dateConvError }}</span>
+                <span v-else class="truncate" :class="dateConvResult ? '' : 'text-muted-foreground/60'">{{ dateConvResult || '—' }}</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <!-- ── Coffee break ──────────────────────────────────────────────── -->
+      <div class="grid gap-3 xl:grid-cols-3">
+        <div class="xl:col-span-2">
+          <!-- Debit or Credit? — a short drill between tasks -->
+          <Card :class="panel">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
+              <p class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <Coins class="size-4 text-primary" />
+                {{ t('home.game.title') }}
+              </p>
+              <Button
+                v-if="dcStatus !== 'idle'"
+                size="sm"
+                variant="outline"
+                class="h-8 gap-1.5 text-xs"
+                @click="dcStart"
+              >
+                <RotateCcw class="size-3.5" />
+                {{ t('home.game.restart') }}
+              </Button>
+            </div>
+
+            <!-- Idle: what the drill is, and how to start -->
+            <div v-if="dcStatus === 'idle'" class="flex flex-col items-center gap-3 px-3 py-6 text-center">
+              <p class="max-w-md text-sm text-muted-foreground">{{ t('home.game.intro') }}</p>
+              <div class="flex flex-wrap items-center justify-center gap-2 text-[11px]">
+                <span class="rounded-md border border-border bg-muted/40 px-2 py-1">{{ t('home.game.rule_debit') }}</span>
+                <span class="rounded-md border border-border bg-muted/40 px-2 py-1">{{ t('home.game.rule_credit') }}</span>
+              </div>
+              <Button class="h-9 text-sm" @click="dcStart">{{ t('home.game.start') }}</Button>
+            </div>
+
+            <!-- Playing -->
+            <div v-else-if="dcStatus === 'playing'" class="space-y-3 p-3">
+              <!-- Scoreboard -->
+              <div class="flex items-center justify-between gap-3 text-xs">
+                <span class="flex items-center gap-1.5">
+                  <span class="text-muted-foreground">{{ t('home.game.score') }}</span>
+                  <span class="font-mono text-sm font-semibold tabular-nums">{{ dcScore }}/{{ dcAsked }}</span>
+                </span>
+                <span v-if="dcStreak >= 3" class="rounded-full bg-primary/10 px-2 py-0.5 font-medium text-primary">
+                  {{ t('home.game.streak', { count: dcStreak }) }}
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <Clock3 class="size-3.5 text-muted-foreground" />
+                  <span class="font-mono text-sm font-semibold tabular-nums">{{ dcTimeLeft }}s</span>
+                </span>
+              </div>
+
+              <!-- Time remaining -->
+              <div class="h-1 overflow-hidden rounded-full bg-muted">
+                <div
+                  class="h-full rounded-full transition-[width] duration-1000 ease-linear"
+                  :class="dcTimeLeft <= 10 ? 'bg-destructive' : 'bg-primary'"
+                  :style="{ width: dcTimeProgress + '%' }"
+                />
+              </div>
+
+              <!-- Prompt -->
+              <div class="rounded-md border border-border bg-muted/30 px-3 py-4 text-center">
+                <p class="text-[11px] uppercase tracking-wider text-muted-foreground">
+                  {{ t(`home.game.categories.${dcCurrent?.category}`) }}
+                </p>
+                <p class="mt-1 text-lg font-semibold">{{ t(`home.game.accounts.${dcCurrent?.key}`) }}</p>
+                <span
+                  class="mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                  :class="dcCurrent?.movement === 'increase'
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-500'"
+                >
+                  <ArrowUp v-if="dcCurrent?.movement === 'increase'" class="size-3.5" />
+                  <ArrowDown v-else class="size-3.5" />
+                  {{ t(`home.game.${dcCurrent?.movement}`) }}
+                </span>
+              </div>
+
+              <!-- Answer buttons -->
+              <div class="grid grid-cols-2 gap-2">
+                <button
+                  v-for="side in (['debit', 'credit'] as const)"
+                  :key="side"
+                  type="button"
+                  class="rounded-md border py-2.5 text-sm font-semibold shadow-sm transition-all duration-150 disabled:cursor-default"
+                  :class="dcAnswered
+                    ? (side === dcCorrectForCurrent
+                      ? 'border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                      : (side === dcAnswered.picked
+                        ? 'border-destructive bg-destructive/15 text-destructive'
+                        : 'border-border text-muted-foreground'))
+                    : 'border-border bg-background hover:-translate-y-0.5 hover:border-primary/50 hover:bg-muted hover:shadow-md'"
+                  :disabled="!!dcAnswered"
+                  @click="dcAnswer(side)"
+                >
+                  {{ t(`home.game.${side}`) }}
+                </button>
+              </div>
+
+              <!-- Feedback -->
+              <p
+                class="min-h-[1.25rem] text-center text-xs"
+                :class="dcAnswered
+                  ? (dcAnswered.correct ? 'font-medium text-emerald-600 dark:text-emerald-400' : 'font-medium text-destructive')
+                  : 'text-muted-foreground'"
+              >
+                <template v-if="dcAnswered">
+                  {{ dcAnswered.correct ? t('home.game.correct') : t('home.game.wrong') }}
+                  ·
+                  {{ t('home.game.because', {
+                    category: t(`home.game.categories.${dcCurrent?.category}`),
+                    movement: t(`home.game.moves.${dcCurrent?.movement}`),
+                    side: t(`home.game.${dcCorrectForCurrent}`),
+                  }) }}
+                </template>
+                <template v-else>{{ t('home.game.prompt') }}</template>
               </p>
             </div>
 
-            <div class="mx-auto grid max-w-5xl gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div
-                v-for="stat in heroStats"
-                :key="stat.label"
-                class="rounded-2xl border border-border/70 bg-background/80 p-4 shadow-sm backdrop-blur"
-              >
-                <div class="flex justify-center">
-                  <component :is="stat.icon" class="size-5 text-primary" />
-                </div>
-                <p class="mt-4 text-2xl font-semibold tracking-tight text-foreground text-center">{{ stat.value }}</p>
-                <p class="mt-1 text-xs text-muted-foreground text-center">{{ stat.label }}</p>
+            <!-- Round over -->
+            <div v-else class="flex flex-col items-center gap-3 px-3 py-6 text-center">
+              <p class="text-sm text-muted-foreground">{{ t('home.game.time_up') }}</p>
+              <div class="flex flex-wrap items-center justify-center gap-2">
+                <span class="rounded-md border border-border bg-muted/40 px-3 py-1.5 text-center">
+                  <span class="block font-mono text-lg font-semibold tabular-nums">{{ dcScore }}/{{ dcAsked }}</span>
+                  <span class="block text-[10px] uppercase tracking-wider text-muted-foreground">{{ t('home.game.score') }}</span>
+                </span>
+                <span class="rounded-md border border-border bg-muted/40 px-3 py-1.5 text-center">
+                  <span class="block font-mono text-lg font-semibold tabular-nums">{{ dcAccuracy }}%</span>
+                  <span class="block text-[10px] uppercase tracking-wider text-muted-foreground">{{ t('home.game.accuracy') }}</span>
+                </span>
+                <span class="rounded-md border border-border bg-muted/40 px-3 py-1.5 text-center">
+                  <span class="block font-mono text-lg font-semibold tabular-nums">{{ dcBestStreak }}</span>
+                  <span class="block text-[10px] uppercase tracking-wider text-muted-foreground">{{ t('home.game.best_streak') }}</span>
+                </span>
+                <span v-if="dcBestScore !== null" class="rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-center">
+                  <span class="block font-mono text-lg font-semibold tabular-nums text-primary">{{ dcBestScore }}</span>
+                  <span class="block text-[10px] uppercase tracking-wider text-muted-foreground">{{ t('home.game.best') }}</span>
+                </span>
               </div>
+              <Button class="h-9 text-sm" @click="dcStart">{{ t('home.game.play_again') }}</Button>
             </div>
-
-            <div class="flex flex-wrap gap-3">
-              <Link
-                href="/dashboard"
-                class="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary/90"
-              >
-                <LayoutDashboard class="size-4" />
-                {{ t('home.hero.open_dashboard') }}
-              </Link>
-              <Link
-                href="/reports"
-                class="inline-flex items-center gap-2 rounded-xl border border-border bg-background/90 px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-muted"
-              >
-                <FileText class="size-4" />
-                {{ t('home.hero.open_reports') }}
-              </Link>
-            </div>
-          </div>
-
-          <div class="rounded-[28px] border border-white/60 bg-background/85 p-5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-background/70">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-primary">
-                  {{ t('home.hero.workspace') }}
-                </p>
-                <h2 class="mt-1 text-xl font-semibold tracking-tight">{{ t('home.hero.live_snapshot') }}</h2>
-              </div>
-              <Badge variant="secondary" class="rounded-full px-3 py-1">
-                {{ calendarModeLabel }}
-              </Badge>
-            </div>
-
-            <div class="mt-5 grid gap-5 sm:grid-cols-[auto,1fr] sm:items-center">
-              <div class="mx-auto flex flex-col items-center gap-2">
-                <canvas ref="clockCanvas" width="200" height="200" class="rounded-full" />
-                <div class="text-center">
-                  <div class="flex items-end justify-center gap-2 font-mono text-foreground" dir="ltr">
-                    <p class="text-3xl font-semibold tracking-[0.18em]">
-                      {{ digitalTime || '--:--:--' }}
-                    </p>
-                    <span class="pb-0.5 text-xl font-semibold">{{ digitalMeridiem }}</span>
-                  </div>
-                  <p class="mt-1 text-sm font-medium text-muted-foreground">{{ dayName }}</p>
-                  <p class="mt-1 text-[11px] text-muted-foreground">{{ t('home.clock.timezone') }}</p>
-                </div>
-              </div>
-
-              <div
-                class="w-full space-y-4"
-                :class="isRTL ? '' : 'mx-auto max-w-[25rem]'"
-              >
-                <div class="grid grid-cols-3 gap-2">
-                  <div class="min-h-[9rem] rounded-2xl border border-border/70 bg-muted/35 px-2 py-3 text-center">
-                    <p class="text-base leading-none">{{ gregorianDisplay.icon }}</p>
-                    <p class="mt-1 text-[10px] text-muted-foreground">{{ gregorianDisplay.label }}</p>
-                    <p class="mt-2 text-xl font-semibold leading-none">{{ gregorianDisplay.day }}</p>
-                    <p class="mt-1 text-[11px] font-medium">{{ gregorianDisplay.monthName }}</p>
-                    <p class="mt-1 text-[10px] text-muted-foreground" dir="ltr">{{ gregorianDisplay.full }}</p>
-                  </div>
-                  <div class="min-h-[9rem] rounded-2xl border border-border/70 bg-muted/35 px-2 py-3 text-center">
-                    <p class="text-base leading-none">{{ hijriDisplay.icon }}</p>
-                    <p class="mt-1 text-[10px] text-muted-foreground">{{ hijriDisplay.label }}</p>
-                    <p class="mt-2 text-xl font-semibold leading-none">{{ hijriDisplay.day }}</p>
-                    <p class="mt-1 text-[11px] font-medium">{{ hijriDisplay.monthName }}</p>
-                    <p class="mt-1 text-[10px] text-muted-foreground" dir="ltr">{{ hijriDisplay.full }}</p>
-                  </div>
-                  <div class="min-h-[9rem] rounded-2xl border border-border/70 bg-muted/35 px-2 py-3 text-center">
-                    <p class="text-base leading-none">{{ jalaliDisplay.icon }}</p>
-                    <p class="mt-1 text-[10px] text-muted-foreground">{{ jalaliDisplay.label }}</p>
-                    <p class="mt-2 text-xl font-semibold leading-none">{{ jalaliDisplay.day }}</p>
-                    <p class="mt-1 text-[11px] font-medium">{{ jalaliDisplay.monthName }}</p>
-                    <p class="mt-1 text-[10px] text-muted-foreground" dir="ltr">{{ jalaliDisplay.full }}</p>
-                  </div>
-                </div>
-
-                <div class="grid gap-2 sm:grid-cols-3">
-                  <div
-                    v-for="item in heroPanelItems"
-                    :key="item.label"
-                    class="flex min-h-[7.25rem] flex-col items-center justify-center rounded-2xl border border-border/70 bg-background/70 p-3 text-center"
-                  >
-                    <div class="flex flex-col items-center gap-1 text-xs text-muted-foreground">
-                      <component :is="item.icon" class="size-3.5 text-primary" />
-                      <span>{{ item.label }}</span>
-                    </div>
-                    <p class="mt-2 text-sm font-medium leading-6 text-foreground">{{ item.value }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="grid gap-4 xl:grid-cols-[1.35fr_.95fr]">
-        <div class="space-y-4">
-          <Card class="overflow-hidden rounded-3xl border border-border/80 bg-card/95 shadow-sm">
-            <CardHeader class="border-b border-border/60 pb-4">
-              <div class="flex items-start gap-3">
-                <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <Sparkles class="size-5" />
-                </div>
-                <div class="space-y-1">
-                  <CardTitle class="text-base">{{ t('home.quick_links.title') }}</CardTitle>
-                  <CardDescription>{{ t('home.quick_links.description') }}</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent class="pt-6">
-              <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <Link
-                  v-for="link in quickLinks"
-                  :key="link.url"
-                  :href="link.url"
-                  class="group rounded-2xl border border-border/70 bg-background/70 p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-muted/60"
-                >
-                  <div class="flex items-start justify-between gap-3">
-                    <div class="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                      <component :is="link.icon" class="size-5" />
-                    </div>
-                    <ArrowUpRight class="size-4 text-muted-foreground transition group-hover:text-primary" />
-                  </div>
-                  <div class="mt-4">
-                    <p class="text-sm font-medium text-foreground">{{ link.label }}</p>
-                    <p class="mt-1 text-xs text-muted-foreground">{{ t('home.quick_links.open_module') }}</p>
-                  </div>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div class="grid gap-4 lg:grid-cols-2">
-            <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
-              <CardHeader class="pb-4">
-                <div class="flex items-start gap-3">
-                  <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                    <ArrowLeftRight class="size-5" />
-                  </div>
-                  <div class="space-y-1">
-                    <CardTitle class="text-base">{{ t('home.currency_exchange.title') }}</CardTitle>
-                    <CardDescription>{{ t('home.currency_exchange.description') }}</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent class="space-y-4">
-                <div>
-                  <label class="mb-1 block text-xs text-muted-foreground">{{ t('home.currency_exchange.amount') }}</label>
-                  <Input v-model.number="exchangeAmount" type="number" min="0" class="h-10 text-sm" />
-                </div>
-                <div class="grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
-                  <div>
-                    <label class="mb-1 block text-xs text-muted-foreground">{{ t('home.currency_exchange.from') }}</label>
-                    <Select v-model="exchangeFrom">
-                      <SelectTrigger class="h-10 text-sm">
-                        <SelectValue :placeholder="t('home.currency_exchange.select_currency')" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem v-for="cur in currencies" :key="cur.code" :value="cur.code">
-                          {{ cur.code }}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button variant="ghost" size="icon" class="h-10 w-10 shrink-0 rounded-xl border border-border" @click="swapCurrencies">
-                    <ArrowLeftRight class="size-4" />
-                  </Button>
-                  <div>
-                    <label class="mb-1 block text-xs text-muted-foreground">{{ t('home.currency_exchange.to') }}</label>
-                    <Select v-model="exchangeTo">
-                      <SelectTrigger class="h-10 text-sm">
-                        <SelectValue :placeholder="t('home.currency_exchange.select_currency')" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem v-for="cur in currencies" :key="cur.code" :value="cur.code">
-                          {{ cur.code }}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <Button class="h-10 w-full text-sm" :disabled="exchangeLoading" @click="doExchange">
-                  <Loader2 v-if="exchangeLoading" class="me-1 size-4 animate-spin" />
-                  {{ t('home.currency_exchange.convert') }}
-                </Button>
-                <div v-if="exchangeResult" class="rounded-2xl bg-muted px-3 py-3 text-center text-sm font-semibold">
-                  {{ exchangeResult }}
-                </div>
-                <p v-if="exchangeError" class="text-center text-xs text-destructive">{{ exchangeError }}</p>
-              </CardContent>
-            </Card>
-
-            <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
-              <CardHeader class="pb-4">
-                <div class="flex items-start gap-3">
-                  <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                    <Scale class="size-5" />
-                  </div>
-                  <div class="space-y-1">
-                    <CardTitle class="text-base">{{ t('home.unit_exchange.title') }}</CardTitle>
-                    <CardDescription>{{ t('home.unit_exchange.description') }}</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent class="space-y-4">
-                <div v-if="props.unitMeasures.length === 0" class="py-4 text-center text-sm text-muted-foreground">
-                  {{ t('home.unit_exchange.no_units') }}
-                </div>
-                <template v-else>
-                  <div>
-                    <label class="mb-1 block text-xs text-muted-foreground">{{ t('home.unit_exchange.type') }}</label>
-                    <Select v-model="selectedQuantityId">
-                      <SelectTrigger class="h-10 text-sm">
-                        <SelectValue :placeholder="t('home.unit_exchange.select_type')" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem v-for="(group, qid) in quantityGroups" :key="String(qid)" :value="String(qid)">
-                          {{ group.label }}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label class="mb-1 block text-xs text-muted-foreground">{{ t('home.unit_exchange.amount') }}</label>
-                    <Input v-model.number="unitAmount" type="number" class="h-10 text-sm" />
-                  </div>
-                  <div class="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <label class="mb-1 block text-xs text-muted-foreground">{{ t('home.unit_exchange.from') }}</label>
-                      <Select v-model="unitFromId">
-                        <SelectTrigger class="h-10 text-sm">
-                          <SelectValue :placeholder="t('home.unit_exchange.select_unit')" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem v-for="u in unitsForQuantity" :key="u.id" :value="u.id">
-                            {{ u.name }} ({{ u.symbol }})
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label class="mb-1 block text-xs text-muted-foreground">{{ t('home.unit_exchange.to') }}</label>
-                      <Select v-model="unitToId">
-                        <SelectTrigger class="h-10 text-sm">
-                          <SelectValue :placeholder="t('home.unit_exchange.select_unit')" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem v-for="u in unitsForQuantity" :key="u.id" :value="u.id">
-                            {{ u.name }} ({{ u.symbol }})
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <Button class="h-10 w-full text-sm" :disabled="unitLoading" @click="doUnitConvert">
-                    <Loader2 v-if="unitLoading" class="me-1 size-4 animate-spin" />
-                    {{ t('home.unit_exchange.convert') }}
-                  </Button>
-                  <div v-if="unitResult" class="rounded-2xl bg-muted px-3 py-3 text-center text-sm font-semibold font-mono">
-                    {{ unitResult }}
-                  </div>
-                  <p v-if="unitError" class="text-center text-xs text-destructive">{{ unitError }}</p>
-                </template>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card class="overflow-hidden rounded-3xl border border-border/80 bg-card/95 shadow-sm">
-            <CardHeader class="border-b border-border/60 pb-4">
-              <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div class="flex items-start gap-3">
-                  <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                    <CloudSun class="size-5" />
-                  </div>
-                  <div class="space-y-1">
-                    <CardTitle class="text-base">
-                      {{ weatherData ? `${weatherData.city}, ${weatherData.country}` : t('home.weather.title') }}
-                    </CardTitle>
-                    <CardDescription>{{ t('home.weather.description') }}</CardDescription>
-                  </div>
-                </div>
-
-                <div class="flex gap-2">
-                  <Select v-model="weatherSearch" class="w-40">
-                    <SelectTrigger class="h-9 min-w-[150px] text-xs">
-                      <SelectValue :placeholder="t('home.weather.city')" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="p in afghaniProvinces" :key="p" :value="p">{{ p }}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button size="icon" variant="outline" class="h-9 w-9 rounded-xl" :disabled="weatherLoading" @click="searchWeather">
-                    <Loader2 v-if="weatherLoading" class="size-4 animate-spin" />
-                    <Search v-else class="size-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent class="pt-5">
-              <div v-if="weatherError" class="text-sm text-destructive">{{ weatherError }}</div>
-
-              <div v-else-if="weatherLoading && !weatherData" class="text-sm text-muted-foreground">
-                {{ t('home.weather.loading') }}
-              </div>
-
-              <div v-else-if="weatherData" class="space-y-4">
-                <div class="rounded-[24px] bg-muted/50 p-4">
-                  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p class="text-4xl font-semibold tracking-tight">{{ weatherData.temp?.toFixed(1) }}°C</p>
-                      <span class="mt-2 inline-flex rounded-full bg-background px-3 py-1 text-xs font-medium text-muted-foreground">
-                        {{ wmoInfo(weatherData.code, weatherData.is_day).label }}
-                      </span>
-                    </div>
-                    <span class="text-6xl leading-none">{{ wmoInfo(weatherData.code, weatherData.is_day).emoji }}</span>
-                  </div>
-                  <div v-if="weatherData.forecast?.length" class="mt-4 flex flex-wrap gap-2">
-                    <span class="rounded-full bg-background px-3 py-1 text-xs">
-                      ↑ {{ weatherData.forecast[0].max?.toFixed(0) }}°
-                    </span>
-                    <span class="rounded-full bg-background px-3 py-1 text-xs">
-                      ↓ {{ weatherData.forecast[0].min?.toFixed(0) }}°
-                    </span>
-                  </div>
-                </div>
-
-                <div v-if="weatherData.forecast?.length">
-                  <p class="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                    {{ t('home.weather.forecast') }}
-                  </p>
-                  <div class="flex gap-2 overflow-x-auto pb-1">
-                    <div
-                      v-for="(day, idx) in weatherData.forecast"
-                      :key="day.date"
-                      class="flex min-w-[70px] flex-shrink-0 flex-col items-center gap-1 rounded-2xl border px-3 py-3 text-center text-xs"
-                      :class="idx === 0 ? 'border-primary bg-primary/10' : 'border-border bg-muted/40'"
-                    >
-                      <span class="font-semibold">{{ forecastDayLabel(day.date, Number(idx)) }}</span>
-                      <span class="text-[10px] text-muted-foreground">{{ forecastDateLabel(day.date) }}</span>
-                      <span class="text-2xl leading-none">{{ wmoInfo(day.code).emoji }}</span>
-                      <div class="flex gap-1 text-[11px]">
-                        <span class="font-bold">{{ day.max?.toFixed(0) }}°</span>
-                        <span class="text-muted-foreground">{{ day.min?.toFixed(0) }}°</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="grid gap-3 sm:grid-cols-3">
-                  <div class="rounded-2xl bg-muted/50 p-3 text-center text-xs">
-                    <p class="text-muted-foreground">{{ t('home.weather.feels_like') }}</p>
-                    <p class="mt-1 text-sm font-semibold">{{ weatherData.feels_like?.toFixed(0) }}°C</p>
-                  </div>
-                  <div class="rounded-2xl bg-muted/50 p-3 text-center text-xs">
-                    <p class="text-muted-foreground">{{ t('home.weather.humidity') }}</p>
-                    <p class="mt-1 text-sm font-semibold">{{ weatherData.humidity }}%</p>
-                  </div>
-                  <div class="rounded-2xl bg-muted/50 p-3 text-center text-xs">
-                    <p class="text-muted-foreground">{{ t('home.weather.wind') }}</p>
-                    <p class="mt-1 text-sm font-semibold">{{ weatherData.wind_speed?.toFixed(1) }} km/h</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
           </Card>
         </div>
-
-        <div class="space-y-4">
-          <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
-            <CardHeader class="pb-4">
-              <div class="flex items-start gap-3">
-                <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <CalendarDays class="size-5" />
-                </div>
-                <div class="space-y-1">
-                  <CardTitle class="text-base">{{ t('home.calendar.title') }}</CardTitle>
-                  <CardDescription>{{ t('home.calendar.description') }}</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent class="space-y-4">
-              <div class="flex items-center justify-between">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-8 w-8 rounded-full"
-                  :aria-label="t('home.calendar.prev')"
-                  @click="prevMonth"
-                >
-                  ‹
-                </Button>
-                <div class="text-center">
-                  <p class="text-sm font-medium">{{ calendarTitle }}</p>
-                  <p class="text-xs text-muted-foreground">{{ calendarModeLabel }}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-8 w-8 rounded-full"
-                  :aria-label="t('home.calendar.next')"
-                  @click="nextMonth"
-                >
-                  ›
-                </Button>
-              </div>
-
-              <div class="grid grid-cols-7 gap-y-1">
-                <div v-for="wd in weekDays" :key="wd" class="py-1 text-center text-xs font-medium text-muted-foreground">
-                  {{ wd }}
-                </div>
-                <div
-                  v-for="(cell, idx) in calendarDays"
-                  :key="idx"
-                  class="flex h-9 items-center justify-center rounded-xl text-xs transition-colors"
-                  :class="{
-                    'text-muted-foreground/30': !cell.currentMonth,
-                    'bg-primary text-primary-foreground font-bold shadow-sm': cell.isToday,
-                    'hover:bg-muted cursor-pointer': cell.currentMonth && !cell.isToday,
-                  }"
-                >
-                  {{ cell.day || '' }}
-                </div>
-              </div>
-
-              <Button variant="outline" size="sm" class="h-9 w-full rounded-xl text-sm" @click="goToday">
-                {{ t('home.calendar.today') }}
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
-            <CardHeader class="pb-4">
-              <div class="flex items-start gap-3">
-                <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <CircleDollarSign class="size-5" />
-                </div>
-                <div class="space-y-1">
-                  <CardTitle class="text-base">{{ t('home.currency_rates.title') }}</CardTitle>
-                  <CardDescription>{{ t('home.currency_rates.description') }}</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div v-if="currencies.length === 0" class="py-4 text-center text-sm text-muted-foreground">
-                {{ t('home.currency_rates.no_data') }}
-              </div>
-              <div v-else class="max-h-72 overflow-auto">
-                <table class="w-full text-xs">
-                  <thead>
-                    <tr class="border-b border-border">
-                      <th class="px-1 py-2 text-start font-medium text-muted-foreground">{{ t('home.currency_rates.code') }}</th>
-                      <th class="px-1 py-2 text-start font-medium text-muted-foreground">{{ t('home.currency_rates.name') }}</th>
-                      <th class="px-1 py-2 text-end font-medium text-muted-foreground">{{ t('home.currency_rates.rate') }}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="cur in currencies" :key="cur.id" class="border-b border-border/50 last:border-0 hover:bg-muted/40">
-                      <td class="px-1 py-2">
-                        <div class="flex items-center gap-1.5">
-                          <span class="font-mono font-semibold">{{ cur.code }}</span>
-                          <Badge v-if="cur.is_base_currency" variant="secondary" class="h-4 px-1 py-0 text-[10px]">
-                            {{ t('home.currency_rates.base') }}
-                          </Badge>
-                        </div>
-                      </td>
-                      <td class="px-1 py-2 text-muted-foreground">{{ cur.name }}</td>
-                      <td class="px-1 py-2 text-end font-mono">
-                        {{ cur.symbol }} {{ Number(cur.exchange_rate).toLocaleString(undefined, { maximumFractionDigits: 4 }) }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card class="rounded-3xl border border-border/80 bg-card/95 shadow-sm">
-            <CardHeader class="pb-4">
-              <div class="flex items-start gap-3">
-                <div class="flex size-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <NotebookText class="size-5" />
-                </div>
-                <div class="space-y-1">
-                  <CardTitle class="text-base">{{ t('home.date_conversion.title') }}</CardTitle>
-                  <CardDescription>{{ t('home.date_conversion.description') }}</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent class="space-y-4">
-              <div class="flex overflow-hidden rounded-xl border border-border text-xs">
-                <button
-                  v-for="option in dateConversionOptions"
-                  :key="option.key"
-                  class="flex flex-1 items-center justify-center gap-2 py-2 transition-colors"
-                  :class="dateConvMode === option.key ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
-                  @click="dateConvMode = option.key as 'to_jalali' | 'to_gregorian'; dateConvResult = ''; dateConvError = ''"
-                >
-                  <ArrowRight v-if="isRTL" class="size-3.5 shrink-0" />
-                  <span>{{ option.from }}</span>
-                  <ArrowRight v-if="!isRTL" class="size-3.5 shrink-0" />
-                  <span>{{ option.to }}</span>
-                </button>
-              </div>
-              <div>
-                <label class="mb-1 block text-xs text-muted-foreground">
-                  {{ dateConvMode === 'to_jalali' ? 'YYYY-MM-DD (Gregorian)' : 'YYYY/MM/DD (Jalali)' }}
-                </label>
-                <Input
-                  v-model="dateConvInput"
-                  :placeholder="dateConvMode === 'to_jalali' ? '2024-03-20' : '1402/12/29'"
-                  class="h-10 text-sm font-mono"
-                  @keyup.enter="convertDate"
-                />
-              </div>
-              <Button class="h-10 w-full text-sm" @click="convertDate">
-                {{ t('home.date_conversion.convert') }}
-              </Button>
-              <div v-if="dateConvResult" class="rounded-2xl bg-muted px-3 py-3 text-center font-mono text-sm font-semibold">
-                {{ dateConvResult }}
-              </div>
-              <p v-if="dateConvError" class="text-center text-xs text-destructive">{{ dateConvError }}</p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+      </div>
     </div>
   </AppLayout>
 </template>
