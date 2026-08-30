@@ -50,6 +50,61 @@
     "receipts": "رسیدها",
     "payments": "پرداخت‌ها"
   },
+  "tools": {
+    "swap": "جابه‌جایی"
+  },
+  "game": {
+    "title": "دیبت یا کریدیت؟",
+    "intro": "شصت ثانیه تمرین قید دوطرفه. نام حساب و جهت حرکت آن نشان داده می‌شود — طرف ثبت آن را انتخاب کنید.",
+    "rule_debit": "دارایی‌ها و مصارف در طرف دیبت افزایش می‌یابند",
+    "rule_credit": "بدهی‌ها، سرمایه و عواید در طرف کریدیت افزایش می‌یابند",
+    "start": "شروع دور",
+    "restart": "شروع دوباره",
+    "play_again": "بازی دوباره",
+    "prompt": "در کدام طرف ثبت می‌شود؟",
+    "debit": "دیبت",
+    "credit": "کریدیت",
+    "increase": "افزایش",
+    "decrease": "کاهش",
+    "moves": {
+      "increase": "افزایش می‌یابند",
+      "decrease": "کاهش می‌یابند"
+    },
+    "score": "امتیاز",
+    "accuracy": "دقت",
+    "streak": "{count} پیاپی",
+    "best_streak": "بهترین زنجیره",
+    "best": "بهترین این نشست",
+    "correct": "درست",
+    "wrong": "نادرست",
+    "because": "حساب‌های {category} در طرف {side} {movement}",
+    "time_up": "وقت تمام شد — نتیجه این دور.",
+    "categories": {
+      "asset": "دارایی",
+      "liability": "بدهی",
+      "equity": "سرمایه",
+      "income": "عواید",
+      "expense": "مصارف"
+    },
+    "accounts": {
+      "cash": "نقد",
+      "bank": "بانک",
+      "accounts_receivable": "حساب‌های دریافتنی",
+      "inventory": "موجودی اجناس",
+      "equipment": "تجهیزات",
+      "accounts_payable": "حساب‌های پرداختنی",
+      "loan_payable": "قرضه پرداختنی",
+      "salaries_payable": "معاشات پرداختنی",
+      "owner_capital": "سرمایه مالک",
+      "retained_earnings": "سود انباشته",
+      "sales_revenue": "عواید فروش",
+      "service_income": "عواید خدمات",
+      "rent_expense": "مصرف کرایه",
+      "salaries_expense": "مصرف معاشات",
+      "utilities_expense": "مصرف خدمات عامه",
+      "purchases": "خریداری"
+    }
+  },
   "currency_rates": {
     "title": "نرخ ارزها",
     "description": "نرخ‌های ثبت‌شده را ببینید و ارز پایه را سریع پیدا کنید.",

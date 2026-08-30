@@ -50,6 +50,61 @@
     "receipts": "رسیدونه",
     "payments": "پرېمینټونه"
   },
+  "tools": {
+    "swap": "بدلول"
+  },
+  "game": {
+    "title": "ډیبیټ که کریډیټ؟",
+    "intro": "شپېته ثانیې د دوه اړخیزې قیدونې تمرین. د حساب نوم او د هغه د حرکت لوری ښکاري — د ثبت اړخ وټاکئ.",
+    "rule_debit": "شتمنۍ او لګښتونه د ډیبیټ په اړخ کې زیاتیږي",
+    "rule_credit": "پورونه، پانګه او عواید د کریډیټ په اړخ کې زیاتیږي",
+    "start": "پیل",
+    "restart": "بیا پیل",
+    "play_again": "بیا لوبه",
+    "prompt": "په کوم اړخ کې ثبتیږي؟",
+    "debit": "ډیبیټ",
+    "credit": "کریډیټ",
+    "increase": "زیاتوالی",
+    "decrease": "کموالی",
+    "moves": {
+      "increase": "زیاتیږي",
+      "decrease": "کمیږي"
+    },
+    "score": "نمرې",
+    "accuracy": "دقت",
+    "streak": "{count} پرله پسې",
+    "best_streak": "غوره لړۍ",
+    "best": "د دې ناستې غوره",
+    "correct": "سم",
+    "wrong": "ناسم",
+    "because": "د {category} حسابونه د {side} په اړخ کې {movement}",
+    "time_up": "وخت پای ته ورسېد — د دور پایله.",
+    "categories": {
+      "asset": "شتمني",
+      "liability": "پور",
+      "equity": "پانګه",
+      "income": "عاید",
+      "expense": "لګښت"
+    },
+    "accounts": {
+      "cash": "نغدي",
+      "bank": "بانک",
+      "accounts_receivable": "د ترلاسه کولو حسابونه",
+      "inventory": "د توکو موجودي",
+      "equipment": "تجهیزات",
+      "accounts_payable": "د ورکړې حسابونه",
+      "loan_payable": "د پور ورکړه",
+      "salaries_payable": "د معاشونو ورکړه",
+      "owner_capital": "د مالک پانګه",
+      "retained_earnings": "ساتل شوې ګټه",
+      "sales_revenue": "د پلور عاید",
+      "service_income": "د خدماتو عاید",
+      "rent_expense": "د کرایې لګښت",
+      "salaries_expense": "د معاشونو لګښت",
+      "utilities_expense": "د اوبو او بریښنا لګښت",
+      "purchases": "پیرودنې"
+    }
+  },
   "currency_rates": {
     "title": "د اسعارو نرخونه",
     "description": "ثبت شوي نرخونه وڅارئ او بنسټیزه اسعار ژر وپېژنئ.",

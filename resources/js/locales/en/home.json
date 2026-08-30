@@ -50,6 +50,61 @@
     "receipts": "Receipts",
     "payments": "Payments"
   },
+  "tools": {
+    "swap": "Swap"
+  },
+  "game": {
+    "title": "Debit or Credit?",
+    "intro": "Sixty seconds of double-entry drill. An account and the way it moves appear — call the side it posts to.",
+    "rule_debit": "Assets & expenses rise on the debit side",
+    "rule_credit": "Liabilities, equity & income rise on the credit side",
+    "start": "Start round",
+    "restart": "Restart",
+    "play_again": "Play again",
+    "prompt": "Which side does it post to?",
+    "debit": "Debit",
+    "credit": "Credit",
+    "increase": "Increases",
+    "decrease": "Decreases",
+    "moves": {
+      "increase": "increase",
+      "decrease": "decrease"
+    },
+    "score": "Score",
+    "accuracy": "Accuracy",
+    "streak": "{count} in a row",
+    "best_streak": "Best streak",
+    "best": "Session best",
+    "correct": "Correct",
+    "wrong": "Not quite",
+    "because": "{category} accounts {movement} on the {side} side",
+    "time_up": "Time's up — here's the round.",
+    "categories": {
+      "asset": "Asset",
+      "liability": "Liability",
+      "equity": "Equity",
+      "income": "Income",
+      "expense": "Expense"
+    },
+    "accounts": {
+      "cash": "Cash",
+      "bank": "Bank",
+      "accounts_receivable": "Accounts Receivable",
+      "inventory": "Inventory",
+      "equipment": "Equipment",
+      "accounts_payable": "Accounts Payable",
+      "loan_payable": "Loan Payable",
+      "salaries_payable": "Salaries Payable",
+      "owner_capital": "Owner's Capital",
+      "retained_earnings": "Retained Earnings",
+      "sales_revenue": "Sales Revenue",
+      "service_income": "Service Income",
+      "rent_expense": "Rent Expense",
+      "salaries_expense": "Salaries Expense",
+      "utilities_expense": "Utilities Expense",
+      "purchases": "Purchases"
+    }
+  },
   "currency_rates": {
     "title": "Currency Rates",
     "description": "Monitor configured rates and identify the base currency.",
