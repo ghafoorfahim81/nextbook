@@ -44,6 +44,21 @@ const otherCurrentAssetsAccounts = computed(() => props.otherCurrentAssetsAccoun
 const incomeAccounts = computed(() => props.incomeAccounts?.data ?? props.incomeAccounts ?? [])
 const costAccounts = computed(() => props.costAccounts?.data ?? props.costAccounts ?? [])
 
+// A fresh opening is never locked — the lock only exists once stock has been
+// issued against the layer, which cannot have happened before it is saved.
+const blankOpening = () => ({
+    batch: '',
+    expire_date: '',
+    unit_price: 0,
+    quantity: 0,
+    warehouse_id: null,
+    selected_warehouse: null,
+    warehouse: null,
+    status: 'draft',
+    is_locked: false,
+    lock_reason: null,
+})
+
 const form = useForm({
     ...props.item.data,
     selected_unit_measure: props.item.data.unitMeasure,
@@ -61,9 +76,11 @@ const form = useForm({
             quantity: o.quantity,
             warehouse_id: o.warehouse_id,
             selected_warehouse: o.warehouse,
-            status: o.status
+            status: o.status,
+            is_locked: o.is_locked,
+            lock_reason: o.lock_reason,
         }))
-        : [{ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null, warehouse: null, status: null }],
+        : [blankOpening()],
 })
 
 
@@ -75,13 +92,14 @@ const onPhotoChange = (e) => {
 // Rows
 const addRow = (index) => {
     if (index === form.openings.length - 1) {
-        form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null, warehouse: null, status: null })
+        form.openings.push(blankOpening())
     }
 }
 const addOpeningRow = () => {
-    form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null, warehouse: null, status: 'draft' })
+    form.openings.push(blankOpening())
 }
 const removeRow = (idx) => {
+    if (form.openings[idx]?.is_locked) return
     if (form.openings.length > 1) form.openings.splice(idx, 1)
 }
 
@@ -225,10 +243,10 @@ watch(
         if (open) renderBarcode()
     }
 )
-const showOpeningWarning = computed(() => {
-    return props.item.data.openings.some(o => o.status === 'posted')
-})
-console.log('this is the showOpeningWarning', showOpeningWarning.value)
+// Locked openings have had stock issued against them, so the figure is already
+// carried into COGS and the GL and can no longer be restated.
+const hasLockedOpening = computed(() => form.openings.some(o => o.is_locked))
+const showOpeningWarning = hasLockedOpening
 </script>
 <template>
     <AppLayout :title="t('general.edit', { name: t('item.item') })">
@@ -265,7 +283,7 @@ console.log('this is the showOpeningWarning', showOpeningWarning.value)
                         @update:modelValue="(value) => handleSelectChange('unit_measure_id', value)"
                         label-key="name"
                         value-key="id"
-                        :disabled="form.openings.some(o => o.status === 'posted')"
+                        :disabled="hasLockedOpening"
                         id="measure"
                         :floating-text="t('admin.unit_measure.unit_measure')"
                         :searchable="true"
@@ -457,7 +475,7 @@ console.log('this is the showOpeningWarning', showOpeningWarning.value)
                 </div>
                 <div class="md:col-span-3 mt-4">
                     <div class="pt-2">
-                        <!-- <div class="flex items-center justify-between" >
+                        <div class="flex items-center justify-between">
                             <span class="font-bold">{{ t('item.opening') }}</span>
                             <button
                                 type="button"
@@ -466,24 +484,26 @@ console.log('this is the showOpeningWarning', showOpeningWarning.value)
                             >
                                 + {{ t('general.add', { title: t('item.opening') }) }}
                             </button>
-                        </div> -->
+                        </div>
                         <div
                             v-for="(opening, index) in form.openings"
-                            :key="index" 
+                            :key="index"
                             class="mt-3 grid grid-cols-1 md:grid-cols-6 gap-4 items-start"
-                            :class="{ 'opacity-50': opening.status === 'posted' }"
-                        > 
-                            <NextInput :label="t('item.batch')" v-show="form.is_batch_tracked" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" :disabled="opening.status === 'posted'" />
-                            <NextDatePicker v-show="form.is_expiry_tracked" :disabled="opening.status === 'posted'" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
-                            <NextInput :label="t('general.quantity')" :disabled="opening.status === 'posted'" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
-                            <NextInput :label="t('general.unit_price')" :disabled="opening.status === 'posted'" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
+                            :class="{ 'opacity-50': opening.is_locked }"
+                            :title="opening.is_locked ? t('item.opening_locked_cannot_update') : null"
+                        >
+                            <NextInput :label="t('item.batch')" v-show="form.is_batch_tracked" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" :disabled="opening.is_locked" />
+                            <NextDatePicker v-show="form.is_expiry_tracked" :disabled="opening.is_locked" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+                            <NextInput :label="t('general.quantity')" :disabled="opening.is_locked" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
+                            <NextInput :label="t('general.unit_price')" :disabled="opening.is_locked" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
                             <NextSelect
-                                v-model="opening.selected_warehouse" 
+                                v-model="opening.selected_warehouse"
                                 @update:modelValue="(value) => handleOpeningSelectChange(index, value)"
                                 :options="warehouses"
                                 label-key="name"
                                 value-key="id"
                                 :reduce="warehouse => warehouse"
+                                :disabled="opening.is_locked"
                                 id="warehouse"
                                 :floating-text="t('admin.warehouse.warehouse')"
                                 :error="form.errors[`openings.${index}.warehouse_id`]"
@@ -491,10 +511,9 @@ console.log('this is the showOpeningWarning', showOpeningWarning.value)
                                 resource-type="warehouses"
                                 :search-fields="['name', 'address']"
                             />
-                            <div  class="mt-2" v-if="form.openings.length > 1 && opening.status !== 'posted' ">
+                            <div  class="mt-2" v-if="form.openings.length > 1 && !opening.is_locked">
                                 <button
                                     type="button"
-                                    :disabled="opening.status === 'posted'"
                                     class="btn btn-sm btn-outline-danger px-3"
                                     @click="removeRow(index)"
                                 >
@@ -502,6 +521,7 @@ console.log('this is the showOpeningWarning', showOpeningWarning.value)
                                 </button>
                             </div>
                         </div>
+                        <p v-if="form.errors?.openings" class="mt-2 text-sm text-red-500">{{ form.errors.openings }}</p>
                     </div>
                 </div>
             </div>

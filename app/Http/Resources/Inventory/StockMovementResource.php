@@ -34,6 +34,10 @@ class StockMovementResource extends JsonResource
             'date' => $this->date ? $dateConversionService->toDisplay($this->date).' '.$this->created_at->format('H:i:s') : null,
             'bill_number' => $this->reference?->number ?? null,
             'ledger_name' => $this->ledgerName(),
+            // Set by ItemOpeningService::annotate() on the item edit screen; on
+            // every other listing the movement carries no lock and stays false.
+            'is_locked' => (bool) ($this->is_locked ?? false),
+            'lock_reason' => $this->lock_reason ?? null,
         ];
     }
 }

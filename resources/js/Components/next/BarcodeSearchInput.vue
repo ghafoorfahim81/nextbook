@@ -11,10 +11,11 @@
             @focusin="onFocus"
         />
 
-        <!-- Suggestion list: partial matches for whatever the user typed -->
+        <!-- Suggestion list: partial matches for whatever the user typed.
+             z-index clears the sticky line-table header (z-200) it overlaps on the cash forms. -->
         <div
             v-if="isOpen"
-            class="absolute start-0 top-full z-50 mt-1 w-full min-w-[22rem] max-w-[min(32rem,90vw)]
+            class="absolute start-0 top-full z-[300] mt-1 w-full min-w-[22rem] max-w-[min(32rem,90vw)]
                    overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-lg"
         >
             <div v-if="isLoading" class="flex items-center justify-center gap-2 py-3 text-sm text-muted-foreground">

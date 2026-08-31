@@ -85,6 +85,7 @@ return [
     'dependencies_found' => 'نمی‌توان این رکورد را حذف کنید چون در بخش های دیگر استفاده شده است.',
     'cannot_delete_item_with_posted_stock_movements' => 'نمی‌توان جنسی را حذف کنید که دارای حرکات انبار ثبت شده است.',
     'posted_stock_movements_found' => 'جنسی با حرکات انبار ثبت شده وجود دارد.',
+    'opening_locked_cannot_update' => 'این موجودی اولیه قابل تصحیح نیست، زیرا در معاملات استفاده شده است.',
     'owe_to' => 'طلبکار',
     'owe_you' => 'بدهکار',
     'cannot_delete_warehouse_with_stock_movements' => 'نمی‌توان انباری را حذف کنید که دارای حرکات انبار ثبت شده است.',
