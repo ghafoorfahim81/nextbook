@@ -62,14 +62,25 @@ return new class extends Migration
             $table->foreign('deleted_by')->references('id')->on('users');
         });
 
-        // NULLS NOT DISTINCT is genuinely required here, unlike on variants:
-        // two lots both with batch_no NULL and the same expiry ARE the same
-        // lot, so the NULLs must compare equal. Without it you would silently
+        // Two lots both with batch_no NULL and the same expiry ARE the same
+        // lot, so the NULLs must compare equal. Without that you would silently
         // get duplicate milk lots, each carrying its own price.
+        //
+        // Postgres 15+ expresses this as `NULLS NOT DISTINCT`, but the server
+        // may run an older version, so instead index COALESCE expressions that
+        // fold NULL to a sentinel that cannot occur in real data. A ULID is
+        // never all-zero, a batch_no is never the empty string, and no real
+        // expiry predates year 1.
         // Partial on deleted_at so soft-deleted lots don't block re-creation.
-        DB::statement('CREATE UNIQUE INDEX stock_lots_identity_unique
-            ON stock_lots (branch_id, item_id, variant_id, batch_no, expire_date)
-            NULLS NOT DISTINCT WHERE deleted_at IS NULL');
+        DB::statement("CREATE UNIQUE INDEX stock_lots_identity_unique
+            ON stock_lots (
+                branch_id,
+                item_id,
+                COALESCE(variant_id, '00000000000000000000000000'),
+                COALESCE(batch_no, ''),
+                COALESCE(expire_date, DATE '0001-01-01')
+            )
+            WHERE deleted_at IS NULL");
     }
 
     public function down(): void
