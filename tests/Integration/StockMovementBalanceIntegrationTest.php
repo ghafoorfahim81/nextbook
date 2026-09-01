@@ -109,7 +109,19 @@ class StockMovementBalanceIntegrationTest extends TestCase
         $this->assertEquals(1, $lowStock['summary']['total_items']);
     }
 
-    public function test_item_opening_update_reuses_existing_balance_row_when_batch_or_expiry_changes(): void
+    /**
+     * Re-batching an unused opening leaves exactly one balance bucket behind.
+     *
+     * This asserted the ORIGINAL balance row's id survived, written against a
+     * `replace_balance` flag StockService never grew. It cannot: a balance row
+     * is identified by (branch, item, warehouse, batch, expiry) — the same key
+     * StockService::increaseBalance() does firstOrCreate on — so changing the
+     * batch makes it a different bucket by definition, and mutating the old row
+     * in place would collide the moment LOT-OLD is received again. What has to
+     * hold is that the old bucket does not linger next to the new one, which is
+     * what the count and the values below check.
+     */
+    public function test_item_opening_update_moves_the_balance_when_batch_or_expiry_changes(): void
     {
         $stockService = app(StockService::class);
 
@@ -191,7 +203,7 @@ class StockMovementBalanceIntegrationTest extends TestCase
         $this->assertCount(1, $balances);
 
         $balance = $balances->first();
-        $this->assertSame($originalBalance->id, $balance->id);
+        $this->assertNotSame($originalBalance->id, $balance->id, 'LOT-OLD should be gone, not renamed.');
         $this->assertSame('LOT-NEW', $balance->batch);
         $this->assertSame('2027-02-01', $balance->expire_date?->toDateString());
         $this->assertSame('10.0000', (string) $balance->quantity);

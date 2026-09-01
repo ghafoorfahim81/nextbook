@@ -95,6 +95,10 @@
     "opening_lock_warning": "Opening Lock Warning",
     "opening_lock_warning_description": "Some of the openings of this item are locked. Because this records are already in use and you can't edit them.",
     "opening_warning": {
+    "opening_locked_cannot_update": "This opening balance cannot be updated because it has been used in transactions.",
+    "opening_locked_issued": "Stock has been issued from this opening.",
+    "opening_locked_posted": "This opening has already been posted.",
+    "opening_warning":{
         "title": "Opening Warning",
         "description": "Be careful to enter real opening quantities. If you enter wrong quantities, you can't edit them after they are used."
     },

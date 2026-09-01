@@ -31,6 +31,7 @@ use App\Models\Inventory\StockMovement;
 use App\Models\Inventory\StockBalance;
 use App\Models\Purchase\Purchase;
 use App\Models\Sale\Sale;
+use App\Services\ItemOpeningService;
 use App\Services\SpreadsheetExportService;
 use App\Services\AttachmentService;
 use App\Services\ItemVariantService;
@@ -501,6 +502,10 @@ class ItemController extends Controller
             'variants',
         )->find($item->id);
 
+        // Flag the openings the update path will refuse, so the form disables
+        // exactly those rows instead of guessing from the layer's status.
+        app(ItemOpeningService::class)->annotate($item->openings);
+
         $accountModel = new Account();
         $otherCurrentAssetsAccounts = $accountModel->getAccountsByAccountTypeSlug('other-current-asset');
         $incomeAccounts = $accountModel->getAccountsByAccountTypeSlug('income');
@@ -641,6 +646,11 @@ class ItemController extends Controller
                 //       );
                 // }
 
+            // 3) Replace the openings that are still free to change. Any opening
+            //    already issued against is refused inside the service rather
+            //    than here, so the API enforces the same rule the edit screen
+            //    shows — see ItemOpeningService::lockReason().
+            app(ItemOpeningService::class)->sync($item->refresh(), $validated['openings'] ?? []);
         });
 
         return redirect()->route('items.index')->with('success', __('general.updated_successfully', ['resource' => __('general.resource.item')]));

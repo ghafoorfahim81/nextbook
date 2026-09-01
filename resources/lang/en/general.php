@@ -104,6 +104,7 @@ return [
     'dependencies_found' => 'Cannot delete this record because it has dependencies. Please delete those records first.',
     'cannot_delete_item_with_posted_stock_movements' => 'Cannot delete item with posted stock movements.',
     'posted_stock_movements_found' => 'Posted stock movements found.',
+    'opening_locked_cannot_update' => 'This opening balance cannot be updated because it has been used in transactions.',
     'owe_to' => 'Owe to',
     'owe_you' => 'Owe you',
     'cannot_delete_warehouse_with_stock_movements' => 'Cannot delete warehouse with stock movements.',
