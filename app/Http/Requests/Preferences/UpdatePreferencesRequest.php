@@ -184,6 +184,13 @@ use Illuminate\Validation\Rule;
             'notifications.new_transaction_alert' => 'sometimes|boolean',
             'notifications.daily_summary_report' => 'sometimes|boolean',
             'notifications.weekly_financial_summary' => 'sometimes|boolean',
+            // HR keys existed in DEFAULT_PREFERENCES but were never validated,
+            // so they were silently dropped on save and could not be turned off.
+            'notifications.contract_expiry_alert' => 'sometimes|boolean',
+            'notifications.document_expiry_alert' => 'sometimes|boolean',
+            'notifications.probation_ending_alert' => 'sometimes|boolean',
+            'notifications.leave_request_alert' => 'sometimes|boolean',
+            'notifications.leave_status_alert' => 'sometimes|boolean',
 
             // Security Preferences
             'security' => 'sometimes|array',

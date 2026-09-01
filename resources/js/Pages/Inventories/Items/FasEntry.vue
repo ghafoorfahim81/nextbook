@@ -311,6 +311,7 @@ const handleSubmit = () => {
                             <td class="px-1 py-2 align-top">
                                 <NextDate
                                     v-model="item.expire_date"
+                                    :lock-future-dates="false"
                                     popover="top-left"
                                     :error="fieldError(index, 'expire_date')"
                                     :placeholder="t('general.enter', { text: t('item.expire_date') })"

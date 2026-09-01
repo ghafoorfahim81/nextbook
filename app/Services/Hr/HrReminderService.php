@@ -57,7 +57,10 @@ class HrReminderService
                         ]),
                         data: [
                             'employee_id' => $contract->employee_id,
+                            'employee' => $contract->employee?->full_name ?? '',
                             'contract_id' => $contract->id,
+                            'number' => $contract->contract_number,
+                            'date' => $this->dates->toDisplay($contract->end_date),
                             'branch_id' => $branchId,
                             'days_until_expiry' => $contract->daysUntilExpiry($asOf),
                         ],
@@ -111,7 +114,10 @@ class HrReminderService
                         ]),
                         data: [
                             'employee_id' => $document->employee_id,
+                            'employee' => $document->employee?->full_name ?? '',
                             'document_id' => $document->id,
+                            'document_type' => $document->document_type?->getLabel() ?? '',
+                            'date' => $this->dates->toDisplay($document->expiry_date),
                             'branch_id' => $branchId,
                             'days_until_expiry' => $document->daysUntilExpiry($asOf),
                         ],

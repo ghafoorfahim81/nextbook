@@ -560,6 +560,7 @@ useFormGuard(form)
               <td :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">
                 <NextDate
                   v-model="item.expire_date"
+                  :lock-future-dates="false"
                   :disabled="isOut"
                   :error="form.errors?.[`items.${index}.expire_date`]"
                 />

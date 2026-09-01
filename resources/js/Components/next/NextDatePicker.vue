@@ -80,6 +80,7 @@ const props = defineProps({
     popover: { type: String, default: 'bottom-left' },
     color: { type: String, default: 'hsl(var(--primary))' },
     disabled: { type: Boolean, default: false },
+    lockFutureDates: { type: Boolean, default: true },
 })
 const calendarType = computed(() => user.value?.calendar_type || 'gregorian')
 const emit = defineEmits(['update:modelValue', 'change'])
@@ -133,14 +134,14 @@ const shouldShowCurrentDate = computed(() => {
     return props.currentDate && (!props.modelValue || props.modelValue === '' || props.modelValue === null)
 })
 
-// Disallow future dates by default. Callers can still supply an explicit max
-// date for fields that legitimately need to accept a future value.
+// Disallow future dates by default. Set lock-future-dates to false for fields
+// such as expiration dates that legitimately need to accept a future value.
 const resolvedMaxDate = computed(() => {
     if (props.max !== null && props.max !== undefined && props.max !== '') {
         return props.max
     }
 
-    if (props.type !== 'date') {
+    if (props.type !== 'date' || !props.lockFutureDates) {
         return undefined
     }
 

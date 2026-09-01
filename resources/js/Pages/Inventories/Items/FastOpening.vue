@@ -250,6 +250,7 @@ const updateItemsPerPage = (value) => {
                             <td class="px-1 py-2 align-top">
                                 <NextDate
                                     v-model="form.items[rowIndex].expire_date"
+                                    :lock-future-dates="false"
                                     :error="fieldError(rowIndex, 'expire_date')"
                                     :disabled="form.items[rowIndex].is_expiry_tracked?false:true"
                                     :placeholder="t('general.enter', { text: t('item.expire_date') })"

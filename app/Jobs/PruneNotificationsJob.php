@@ -6,11 +6,7 @@ use App\Services\NotificationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
-/**
- * Retrying is safe: every notification carries a dedupe key, so rows already
- * written before a failure are not recreated and their emails are not resent.
- */
-class RunExpiryCheckJob implements ShouldQueue
+class PruneNotificationsJob implements ShouldQueue
 {
     use Queueable;
 
@@ -22,6 +18,6 @@ class RunExpiryCheckJob implements ShouldQueue
 
     public function handle(NotificationService $notificationService): void
     {
-        $notificationService->runExpiryCheck();
+        $notificationService->pruneOldNotifications();
     }
 }

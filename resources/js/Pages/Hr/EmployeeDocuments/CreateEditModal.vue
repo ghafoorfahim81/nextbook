@@ -134,7 +134,7 @@ const handleSubmit = async () => {
 
                 <NextInput :label="t('hr.issued_by')" v-model="form.issued_by" :error="form.errors?.issued_by" />
                 <NextDate v-model="form.issue_date" :label="t('hr.issue_date')" :error="form.errors?.issue_date" show-label />
-                <NextDate v-model="form.expiry_date" :label="t('hr.expiry_date')" :error="form.errors?.expiry_date" show-label />
+                <NextDate v-model="form.expiry_date" :lock-future-dates="false" :label="t('hr.expiry_date')" :error="form.errors?.expiry_date" show-label />
 
                 <NextInput :label="t('hr.reminder_days_before')" type="number" v-model="form.reminder_days_before" :error="form.errors?.reminder_days_before" />
                 <label class="flex items-center gap-2 text-sm">
