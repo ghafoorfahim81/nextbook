@@ -53,6 +53,23 @@ const otherCurrentAssetsAccounts = computed(() => props.otherCurrentAssetsAccoun
 const incomeAccounts = computed(() => props.incomeAccounts?.data ?? props.incomeAccounts ?? [])
 const costAccounts = computed(() => props.costAccounts?.data ?? props.costAccounts ?? [])
 
+// A fresh opening is never locked — the lock only exists once stock has been
+// issued against the layer, which cannot have happened before it is saved.
+const blankOpening = () => ({
+    batch: '',
+    expire_date: '',
+    unit_price: 0,
+    quantity: 0,
+    warehouse_id: null,
+    selected_warehouse: null,
+    warehouse: null,
+    color: null,
+    size_id: null,
+    status: 'draft',
+    is_locked: false,
+    lock_reason: null,
+})
+
 const form = useForm({
     ...props.item.data,
     colors: Array.isArray(props.item.data.colors) ? props.item.data.colors : [],
@@ -73,9 +90,11 @@ const form = useForm({
             selected_warehouse: o.warehouse,
             color: o.color ?? null,
             size_id: o.size_id ?? null,
-            status: o.status
+            status: o.status,
+            is_locked: o.is_locked,
+            lock_reason: o.lock_reason,
         }))
-        : [{ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null, warehouse: null, color: null, size_id: null, status: null }],
+        : [blankOpening()],
 
     // Variants come back from ItemResource; fall back to a single default row
     // for items created before the variant migration ran.
@@ -134,13 +153,14 @@ const onPhotoChange = (e) => {
 // Rows
 const addRow = (index) => {
     if (index === form.openings.length - 1) {
-        form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null, warehouse: null, color: null, size_id: null, status: null })
+        form.openings.push(blankOpening())
     }
 }
 const addOpeningRow = () => {
-    form.openings.push({ batch: '', expire_date: '', unit_price: 0, quantity: 0, warehouse_id: null, selected_warehouse: null, warehouse: null, color: null, size_id: null, status: 'draft' })
+    form.openings.push(blankOpening())
 }
 const removeRow = (idx) => {
+    if (form.openings[idx]?.is_locked) return
     if (form.openings.length > 1) form.openings.splice(idx, 1)
 }
 
@@ -291,13 +311,12 @@ watch(
         if (open) renderBarcode()
     }
 )
-const showOpeningWarning = computed(() => {
-    return props.item.data.openings.some(o => o.status === 'posted')
-})
-console.log('this is the showOpeningWarning', showOpeningWarning.value)
+// Locked openings have had stock issued against them, so the figure is already
+// carried into COGS and the GL and can no longer be restated.
+const hasLockedOpening = computed(() => form.openings.some(o => o.is_locked))
+const showOpeningWarning = hasLockedOpening
 
 useFormGuard(form)
-
 </script>
 <template>
     <AppLayout :title="t('general.edit', { name: t('item.item') })">
@@ -332,7 +351,7 @@ useFormGuard(form)
                         @update:modelValue="(value) => handleSelectChange('unit_measure_id', value)"
                         label-key="name"
                         value-key="id"
-                        :disabled="form.openings.some(o => o.status === 'posted')"
+                        :disabled="hasLockedOpening"
                         id="measure"
                         :floating-text="t('admin.unit_measure.unit_measure')"
                         is-required
@@ -423,23 +442,23 @@ useFormGuard(form)
                     <NextInput :label="t('item.cost')" type="number" v-model="form.cost" :error="form.errors?.cost" />
                     <div class="flex flex-row gap-4 w-full">
                         <div class="flex-1">
-                            <NextInput 
-                                :label="t('item.sale_price')" 
-                                type="number" 
-                                :placeholder="t('general.enter', { text: t('item.sale_price') })" 
-                                v-model="form.sale_price" 
-                                :error="form.errors?.sale_price" 
+                            <NextInput
+                                :label="t('item.sale_price')"
+                                type="number"
+                                :placeholder="t('general.enter', { text: t('item.sale_price') })"
+                                v-model="form.sale_price"
+                                :error="form.errors?.sale_price"
                             />
                         </div>
                         <div class="flex-1 flex items-center justify-between border rounded-md">
                             <div>
-                                <NextInput 
-                                :label="t('item.margin_percentage')" 
-                                type="number" 
-                                :placeholder="t('general.enter', { text: t('item.margin_percentage') })" 
-                                v-model="form.margin_percentage" 
-                                :error="form.errors?.margin_percentage" 
-                            /> 
+                                <NextInput
+                                :label="t('item.margin_percentage')"
+                                type="number"
+                                :placeholder="t('general.enter', { text: t('item.margin_percentage') })"
+                                v-model="form.margin_percentage"
+                                :error="form.errors?.margin_percentage"
+                            />
                             </div>
                         <div class="flex items-center justify-end px-2">
                             <Popover v-model:open="isMarginPercentagePopoverOpen">
@@ -566,7 +585,7 @@ useFormGuard(form)
                 </div>
                 <div class="md:col-span-3 mt-4">
                     <div class="pt-2">
-                        <!-- <div class="flex items-center justify-between" >
+                        <div class="flex items-center justify-between">
                             <span class="font-bold">{{ t('item.opening') }}</span>
                             <button
                                 type="button"
@@ -575,7 +594,7 @@ useFormGuard(form)
                             >
                                 + {{ t('general.add', { title: t('item.opening') }) }}
                             </button>
-                        </div> -->
+                        </div>
                         <div class="rounded-md border border-primary overflow-hidden overflow-x-auto">
                             <table class="w-full text-sm">
                                 <thead>
@@ -595,13 +614,14 @@ useFormGuard(form)
                                         v-for="(opening, index) in form.openings"
                                         :key="index"
                                         class="border-t border-border hover:bg-muted/50 align-top"
-                                        :class="{ 'opacity-50': opening.status === 'posted' }"
+                                        :class="{ 'opacity-50': opening.is_locked }"
+                                        :title="opening.is_locked ? t('item.opening_locked_cannot_update') : null"
                                     >
                                         <td v-show="form.is_batch_tracked" class="p-2 min-w-[140px]">
-                                            <NextInput label="" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" :disabled="opening.status === 'posted'" />
+                                            <NextInput label="" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" :disabled="opening.is_locked" />
                                         </td>
                                         <td v-show="form.is_expiry_tracked" class="p-2 min-w-[160px]">
-                                            <NextDatePicker :disabled="opening.status === 'posted'" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+                                            <NextDatePicker :disabled="opening.is_locked" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
                                         </td>
                                         <td v-show="form.is_color_tracked" class="p-2 min-w-[170px]">
                                             <NextSelect
@@ -611,7 +631,7 @@ useFormGuard(form)
                                                 value-key="id"
                                                 :reduce="o => o.id"
                                                 :id="`opening_color_${index}`"
-                                                :disabled="opening.status === 'posted'"
+                                                :disabled="opening.is_locked"
                                                 :error="form.errors?.[`openings.${index}.color`]"
                                                 :append-to-body="true"
                                             >
@@ -637,16 +657,16 @@ useFormGuard(form)
                                                 value-key="id"
                                                 :reduce="o => o.id"
                                                 :id="`opening_size_${index}`"
-                                                :disabled="opening.status === 'posted'"
+                                                :disabled="opening.is_locked"
                                                 :error="form.errors?.[`openings.${index}.size_id`]"
                                                 :append-to-body="true"
                                             />
                                         </td>
                                         <td class="p-2 min-w-[110px]">
-                                            <NextInput label="" :disabled="opening.status === 'posted'" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
+                                            <NextInput label="" :disabled="opening.is_locked" type="number" v-model="opening.quantity" :error="form.errors?.[`openings.${index}.quantity`]" />
                                         </td>
                                         <td class="p-2 min-w-[110px]">
-                                            <NextInput label="" :disabled="opening.status === 'posted'" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
+                                            <NextInput label="" :disabled="opening.is_locked" type="number" v-model="opening.unit_price" :error="form.errors?.[`openings.${index}.unit_price`]" />
                                         </td>
                                         <td class="p-2 min-w-[180px]">
                                             <NextSelect
@@ -657,7 +677,7 @@ useFormGuard(form)
                                                 value-key="id"
                                                 :reduce="warehouse => warehouse"
                                                 :id="`warehouse_${index}`"
-                                                :disabled="opening.status === 'posted'"
+                                                :disabled="opening.is_locked"
                                                 :error="form.errors[`openings.${index}.warehouse_id`]"
                                                 :searchable="true"
                                                 resource-type="warehouses"
@@ -668,7 +688,7 @@ useFormGuard(form)
                                         <td class="p-2 text-center">
                                             <button
                                                 type="button"
-                                                v-if="form.openings.length > 1 && opening.status !== 'posted'"
+                                                v-if="form.openings.length > 1 && !opening.is_locked"
                                                 class="btn btn-sm btn-outline-danger px-2"
                                                 @click="removeRow(index)"
                                             >
@@ -679,6 +699,7 @@ useFormGuard(form)
                                 </tbody>
                             </table>
                         </div>
+                        <p v-if="form.errors?.openings" class="mt-2 text-sm text-red-500">{{ form.errors.openings }}</p>
                     </div>
                 </div>
             </div>

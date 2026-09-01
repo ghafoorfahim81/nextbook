@@ -1,10 +1,15 @@
 {
   "permissions": {
+    "defaultMode": "acceptEdits",
     "allow": [
+      "Bash(php artisan *)",
+      "Bash(curl localhost:*)",
+      "Bash(curl 127.0.0.1:*)",
+      "Bash(npm *)",
+      "Bash(git *)",
       "Bash(Get-ChildItem -Path \"g:\\\\nextbook\" -Directory)",
       "Bash(Select-Object Name)",
       "PowerShell(dir \"G:\\\\nextbook\\\\database\\\\migrations\\\\\" | Where-Object {$_.Name -match \"\\(setting|print|invoice|format\\)\"})",
-      "Bash(php artisan *)",
       "Bash(findstr /I \"invoice\")",
       "Bash(Get-ChildItem -Path \"app\\\\Models\" -Directory -Recurse)",
       "PowerShell(npm run build 2>&1)",
@@ -31,7 +36,20 @@
       "Bash(rm -f \"/c/Users/Fahim-Pc/AppData/Local/Temp/claude/e--nextbook/1a3f5578-8f9e-4efd-853f-9b7711cc87d0/scratchpad/smoke.php\" \"/c/Users/Fahim-Pc/AppData/Local/Temp/claude/e--nextbook/1a3f5578-8f9e-4efd-853f-9b7711cc87d0/scratchpad/smoke2.php\" *)",
       "PowerShell(php artisan optimize:clear 2>&1)",
       "PowerShell(php artisan route:list --name=landed-costs 2>&1)",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(php -l app/Console/Commands/ApplyChanges.php)",
+      "PowerShell(php artisan apply:changes --dry-run)",
+      "PowerShell(php -l app/Services/ItemOpeningService.php)",
+      "PowerShell(php -l app/Http/Controllers/Inventory/ItemController.php)",
+      "PowerShell(php -l app/Http/Resources/Inventory/StockMovementResource.php)",
+      "PowerShell(php artisan test tests/Feature/Inventory/ItemOpeningUpdateTest.php 2>&1)",
+      "PowerShell($env:PGPASSWORD='next'; psql -h 127.0.0.1 -U postgres -lqt 2>&1 | Select-String \"nextbook_test\"; if \\(-not $?\\) { \"not found or psql missing\" })",
+      "PowerShell(php \"C:\\\\Users\\\\Fahim-Pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\e--nextbook\\\\b5b6d099-ad65-4b2c-9f3c-1373f5b32849\\\\scratchpad\\\\makedb.php\")",
+      "PowerShell(php artisan test tests/Feature/Inventory tests/Integration 2>&1)",
+      "PowerShell(git stash push --keep-index=false -- app resources)",
+      "PowerShell(git worktree add \"C:\\\\Users\\\\Fahim-Pc\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\e--nextbook\\\\b5b6d099-ad65-4b2c-9f3c-1373f5b32849\\\\scratchpad\\\\baseline\" HEAD 2>&1)",
+      "PowerShell(php artisan test tests/Integration/StockMovementBalanceIntegrationTest.php --filter=\"item_opening_update\" 2>&1)",
+      "PowerShell(php artisan test tests/Feature/Inventory/ItemOpeningUpdateTest.php --filter=\"an_unused_opening_can_be_updated\" 2>&1)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Fahim-Pc\\AppData\\Local\\Temp\\claude\\e--nextbook\\1a3f5578-8f9e-4efd-853f-9b7711cc87d0\\scratchpad"
