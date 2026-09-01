@@ -405,6 +405,8 @@ class User extends Authenticatable
             'contract_expiry_alert' => true,
             'document_expiry_alert' => true,
             'probation_ending_alert' => true,
+            'leave_request_alert' => true,
+            'leave_status_alert' => true,
         ],
         'security' => [
             'session_timeout' => 60,

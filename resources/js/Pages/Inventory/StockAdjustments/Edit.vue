@@ -521,6 +521,7 @@ useFormGuard(form)
               <td>
                 <NextDate
                   v-model="item.expire_date"
+                  :lock-future-dates="false"
                   :disabled="isOut"
                   :error="form.errors?.[`items.${index}.expire_date`]"
                 />

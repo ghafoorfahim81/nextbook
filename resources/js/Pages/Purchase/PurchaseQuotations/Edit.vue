@@ -307,7 +307,7 @@ useFormGuard(form)
                                 <NextInput v-model="item.batch" :disabled="!item?.selected_item" :error="form.errors?.[`item_list.${index}.batch`]" />
                             </td>
                             <td v-if="localColumns.expiry">
-                                <NextDate v-model="item.expire_date" popover="top-left" :error="form.errors?.[`item_list.${index}.expire_date`]" />
+                                <NextDate v-model="item.expire_date" :lock-future-dates="false" popover="top-left" :error="form.errors?.[`item_list.${index}.expire_date`]" />
                             </td>
                             <td>
                                 <NextInput v-model="item.quantity" :disabled="!item?.selected_item" type="number" step="any" inputmode="decimal" :error="form.errors?.[`item_list.${index}.quantity`]" />

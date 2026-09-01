@@ -13,7 +13,13 @@
       "Bash(perl -pi -e 's{^    \"tax_period\": \"دوره\",$}{    \"tax_period\": \"دوره\",\\\\n    \"tax_brackets\": \"بندها\",\\\\n    \"is_system\": \"جدول سیستمی\",}' resources/js/locales/fa/hr.json)",
       "Bash(perl -pi -e 's{^    \"tax_period\": \"دوره\",$}{    \"tax_period\": \"دوره\",\\\\n    \"tax_brackets\": \"بندونه\",\\\\n    \"is_system\": \"سیستمي جدول\",}' resources/js/locales/ps/hr.json)",
       "Bash(perl -pi -e 's{^    \"panelist\": \"Panelist\",$}{    \"panelist\": \"Panelist\",\\\\n    \"panelists\": \"Panel\",}' resources/js/locales/en/hr.json)",
-      "Bash(perl -pi -e 's{^    \"panelist\": \"عضو هیئت\",$}{    \"panelist\": \"عضو هیئت\",\\\\n    \"panelists\": \"هیئت\",}' resources/js/locales/fa/hr.json)"
+      "Bash(perl -pi -e 's{^    \"panelist\": \"عضو هیئت\",$}{    \"panelist\": \"عضو هیئت\",\\\\n    \"panelists\": \"هیئت\",}' resources/js/locales/fa/hr.json)",
+      "Bash(node -e \"const s=require\\('fs'\\).readFileSync\\('e:/nextbook/resources/js/locales/en/item.json','utf8'\\); console.log\\('len',s.length\\); console.log\\(JSON.stringify\\(s.slice\\(9700,9760\\)\\)\\);\")",
+      "PowerShell(\\(Get-Command php -ErrorAction SilentlyContinue\\).Source; php -v)",
+      "PowerShell(php artisan test tests/Feature/Notifications/ 2>&1)",
+      "PowerShell(git stash push -- app/Models/User.php)",
+      "PowerShell(php artisan test --filter=\"test_repeating_same_notification_payload_is_idempotent\" 2>&1)",
+      "PowerShell(git stash pop)"
     ],
     "defaultMode": "acceptEdits"
   }

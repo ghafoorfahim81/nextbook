@@ -1302,8 +1302,8 @@ useFormGuard(form)
                             </td>
                             <td :class="{ 'opacity-50 pointer-events-none select-none relative relative wq': !isRowEnabled(index) }" v-if="localColumns.expiry">
                                 <NextDate   v-model="item.expire_date"
+                                :lock-future-dates="false"
                                 popover="top-left"
-                                 disabled='true'
                                 :error="form.errors?.[`item_list.${index}.expire_date`]"   />
                             </td>
                             <td v-if="localColumns.colors" :class="{ 'opacity-50 pointer-events-none select-none': !isRowEnabled(index) }">

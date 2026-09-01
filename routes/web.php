@@ -68,8 +68,14 @@ Route::middleware([
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifications/feed', [NotificationController::class, 'feed'])->name('notifications.feed');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::post('/notifications/bulk', [NotificationController::class, 'bulk'])->name('notifications.bulk');
     Route::get('/whats-new', fn () => Inertia::render('WhatsNew'))->name('whats-new');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/{notification}/unread', [NotificationController::class, 'markAsUnread'])->name('notifications.unread');
+    Route::post('/notifications/{notification}/favorite', [NotificationController::class, 'toggleFavorite'])->name('notifications.favorite');
+    Route::post('/notifications/{notification}/archive', [NotificationController::class, 'archive'])->name('notifications.archive');
+    Route::post('/notifications/{notification}/unarchive', [NotificationController::class, 'unarchive'])->name('notifications.unarchive');
+    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
     Route::get('/deleted-records', [DeletedRecordController::class, 'index'])->name('deleted-records.index');

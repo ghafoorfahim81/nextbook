@@ -314,7 +314,12 @@ class LeaveRequestService
                 'employee' => $request->employee?->full_name ?? '',
                 'days' => (float) $request->days,
             ]),
-            data: ['leave_request_id' => $request->id, 'employee_id' => $request->employee_id],
+            data: [
+                'leave_request_id' => $request->id,
+                'employee_id' => $request->employee_id,
+                'employee' => $request->employee?->full_name ?? '',
+                'days' => (float) $request->days,
+            ],
             dedupeKey: 'leave-pending:'.$request->id,
         );
     }
@@ -337,7 +342,11 @@ class LeaveRequestService
                 'from' => $request->from_date?->toDateString() ?? '',
                 'to' => $request->to_date?->toDateString() ?? '',
             ]),
-            data: ['leave_request_id' => $request->id],
+            data: [
+                'leave_request_id' => $request->id,
+                'from' => (string) ($request->from_date ?? ''),
+                'to' => (string) ($request->to_date ?? ''),
+            ],
             dedupeKey: $key.':'.$request->id,
         );
     }

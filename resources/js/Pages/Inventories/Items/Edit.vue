@@ -621,7 +621,7 @@ useFormGuard(form)
                                             <NextInput label="" v-model="opening.batch" :error="form.errors?.[`openings.${index}.batch`]" :disabled="opening.is_locked" />
                                         </td>
                                         <td v-show="form.is_expiry_tracked" class="p-2 min-w-[160px]">
-                                            <NextDatePicker :disabled="opening.is_locked" v-model="opening.expire_date" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
+                                            <NextDatePicker :disabled="opening.is_locked" v-model="opening.expire_date" :lock-future-dates="false" :error="form.errors?.[`openings.${index}.expire_date`]" :placeholder="t('general.enter', { text: t('item.expire_date') })" />
                                         </td>
                                         <td v-show="form.is_color_tracked" class="p-2 min-w-[170px]">
                                             <NextSelect
