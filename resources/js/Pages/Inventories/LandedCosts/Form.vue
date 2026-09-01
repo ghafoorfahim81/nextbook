@@ -12,9 +12,8 @@ import { useForm, router, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
 import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
-import { Plus, Trash2 } from 'lucide-vue-next';
+import { Plus, Trash2, AlertCircle } from 'lucide-vue-next';
 import AttachmentUploader from '@/Components/AttachmentUploader.vue';
-import { AlertCircle, Trash2 } from 'lucide-vue-next';
 import { todayValueForCalendar } from '@/utils/dateDefaults';
 import { useSidebar } from '@/Components/ui/sidebar/utils';
 
@@ -133,9 +132,6 @@ const removeExistingAttachment = (id) => {
     onSuccess: () => { existingAttachments.value = existingAttachments.value.filter(a => a.id !== id); },
   });
 };
-
-  items: (currentRecord.value?.items || []).map(normalizeItem),
-});
 
 const handleSelectChange = (field, value) => {
   form[field] = value;
@@ -907,6 +903,7 @@ onUnmounted(() => {
         >
           {{ t('landed_cost.post') }}
         </button>
+      </div>
       </div>
     </form>
   </AppLayout>
