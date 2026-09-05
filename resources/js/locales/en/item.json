@@ -63,6 +63,7 @@
     "current_stock": "Current Stock",
     "in_records": "In Records",
     "out_records": "Out Records",
+    "in_vs_out": "In vs Out",
     "export_in_records": "Export In Records",
     "export_out_records": "Export Out Records",
     "search_item": "Search Item",

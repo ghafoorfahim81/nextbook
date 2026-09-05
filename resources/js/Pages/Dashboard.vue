@@ -28,6 +28,7 @@ import {
   RefreshCw,
   ShoppingCart,
   Truck,
+  TrendingUp,
   Wallet,
 } from 'lucide-vue-next'
 
@@ -169,6 +170,15 @@ const kpiCards = computed(() => ([
     tone: 'out',
     goodDirection: 'neutral',
   },
+  {
+    key: 'today_net_profit',
+    href: todayReportLink('income_statement'),
+    label: t('dashboard.kpis.todays_net_profit'),
+    help: t('dashboard.kpis.todays_net_profit_help'),
+    icon: TrendingUp,
+    tone: 'in',
+    goodDirection: 'up',
+  },
 ]).map((card) => ({
   ...card,
   value: state.value?.kpis?.[card.key],
@@ -236,6 +246,8 @@ const saleHref = (row) => route('sales.show', row.id)
 const purchaseHref = (row) => route('purchases.show', row.id)
 // A stock movement row opens the item it moved, not the movement itself.
 const stockItemHref = (row) => route('items.show', row.item_id)
+const topSellingItemHref = (row) => route('items.show', row.id)
+const topPurchasingItemHref = (row) => route('items.show', row.id)
 
 const chartTotals = computed(() => state.value?.sales_purchase_chart?.totals || {})
 
@@ -406,7 +418,7 @@ const generatedAt = computed(() => {
         </div>
       </section>
 
-      <section class="grid items-start gap-4 xl:grid-cols-2">
+      <section class="grid items-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <MetricListCard
           :title="t('dashboard.top_lists.top_customers_title')"
           :description="t('dashboard.top_lists.top_customers_description')"
@@ -415,11 +427,27 @@ const generatedAt = computed(() => {
           :item-href="customerHref"
         />
         <MetricListCard
+          :title="t('dashboard.top_lists.top_selling_items_title')"
+          :description="t('dashboard.top_lists.top_selling_items_description')"
+          :items="state.top_lists?.top_selling_items || []"
+          tone="in"
+          :item-href="topSellingItemHref"
+          :count-label="t('dashboard.top_lists.units_sold')"
+        />
+        <MetricListCard
           :title="t('dashboard.top_lists.top_suppliers_title')"
           :description="t('dashboard.top_lists.top_suppliers_description')"
           :items="state.top_lists?.suppliers_by_purchases || []"
           tone="out"
           :item-href="supplierHref"
+        />
+        <MetricListCard
+          :title="t('dashboard.top_lists.top_purchasing_items_title')"
+          :description="t('dashboard.top_lists.top_purchasing_items_description')"
+          :items="state.top_lists?.top_purchasing_items || []"
+          tone="out"
+          :item-href="topPurchasingItemHref"
+          :count-label="t('dashboard.top_lists.units_purchased')"
         />
         <MetricListCard
           :title="t('dashboard.top_lists.receivables_title')"
