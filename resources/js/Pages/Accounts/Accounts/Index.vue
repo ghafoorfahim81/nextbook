@@ -5,6 +5,8 @@ import { computed } from 'vue';
 import { useDeleteResource } from '@/composables/useDeleteResource';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3';
+import { toast } from 'vue-sonner';
+import { useSoundPreferences } from '@/composables/useSoundPreferences';
 const props = defineProps({
     accounts: Object,
     user: Object,
@@ -23,6 +25,14 @@ const columns = computed(() => ([
     // { key: 'remark', label: t('general.remark') },
     { key: 'parent.name', label: t('account.parent') },
     { key: 'account_type.name', label: t('account.account_type') },
+    {
+        key: 'is_main',
+        label: t('account.account_scope'),
+        badge: (item) => item.is_main
+            ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400'
+            : 'bg-muted text-muted-foreground',
+        render: (item) => item.is_main ? t('account.main_account') : t('account.custom_account'),
+    },
     { key: 'actions', label: t('general.actions') },
 ]));
 
@@ -51,7 +61,23 @@ const filterFields = computed(() => ([
     },
 ]));
 const { deleteResource } = useDeleteResource();
+const { play } = useSoundPreferences();
 const deleteItem = (id) => {
+    // Main accounts are protected server-side too, but warning before the confirm
+    // dialog even opens is clearer than letting the user confirm and only then
+    // learn (via a post-submit toast) that nothing happened.
+    const item = props.accounts?.data?.find((account) => account.id === id);
+
+    if (item?.is_main) {
+        play('warning');
+        toast.error(t('account.cannot_delete_main_account_title'), {
+            description: t('account.cannot_delete_main_account_desc'),
+            class: 'bg-pink-600 text-white',
+            duration: 8000,
+        });
+        return;
+    }
+
     deleteResource('chart-of-accounts.destroy', id, {
         title: t('general.delete', { name: t('account.account') }),
         description: t('general.delete_description', { name: t('account.account') }),

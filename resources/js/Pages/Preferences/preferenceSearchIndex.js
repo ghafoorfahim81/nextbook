@@ -211,6 +211,11 @@ export const PREFERENCE_TAB_I18N_KEYS = {
         'preferences.notifications.daily_summary_report_desc',
         'preferences.notifications.weekly_financial_summary',
         'preferences.notifications.weekly_financial_summary_desc',
+        'preferences.notifications.sound.title',
+        'preferences.notifications.sound.description',
+        'preferences.notifications.sound.categories.notification',
+        'preferences.notifications.sound.categories.warning',
+        'preferences.notifications.sound.categories.login',
     ],
     security: [
         'preferences.tabs.security',

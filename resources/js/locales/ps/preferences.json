@@ -418,7 +418,35 @@
         "daily_summary_report": "ورځنی لنډیز راپور",
         "daily_summary_report_desc": "ورځنی معاملو لنډیز ترلاسه کړئ",
         "weekly_financial_summary": "اونیز مالي لنډیز",
-        "weekly_financial_summary_desc": "اونیز مالي کتنه ترلاسه کړئ"
+        "weekly_financial_summary_desc": "اونیز مالي کتنه ترلاسه کړئ",
+        "sound": {
+            "title": "غږونه",
+            "description": "د خبرتیا، خبرداری او ننوتلو لپاره غږ وټاکئ، یا خپل غږ اپلوډ کړئ",
+            "categories": {
+                "notification": "د خبرتیا غږ",
+                "notification_desc": "کله چې نوې خبرتیا راشي غږیږي",
+                "warning": "د خبرداری غږ",
+                "warning_desc": "د خبرداریو لپاره غږیږي",
+                "login": "د ننوتلو غږ",
+                "login_desc": "د بریالي ننوتلو وروسته غږیږي"
+            },
+            "choose_sound": "یو غږ وټاکئ",
+            "preview": "مخکتنه",
+            "upload": "اپلوډ",
+            "uploading": "اپلوډ کیږي...",
+            "remove_custom": "اپلوډ شوی غږ لرې کړئ",
+            "custom_option": "دودیز (ستاسو اپلوډ)",
+            "upload_error": "دا غږ اپلوډ نشو. د ۲ میگابایټ څخه کم MP3، WAV یا OGG فایل وکاروئ.",
+            "options": {
+                "notification1": "Chime",
+                "notification2": "Ping",
+                "notification3": "Bell",
+                "warning1": "Alert",
+                "windowsxp_warning2": "Classic Warning",
+                "login1": "Welcome",
+                "login2": "Greeting"
+            }
+        }
     },
     "security": {
         "description": "امنیت او لاسرسي ترتیبات تنظیم کړئ",

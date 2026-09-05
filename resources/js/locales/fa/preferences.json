@@ -415,7 +415,35 @@
         "daily_summary_report": "گزارش خلاصه روزانه",
         "daily_summary_report_desc": "دریافت خلاصه تراکنش‌های روزانه",
         "weekly_financial_summary": "خلاصه مالی هفتگی",
-        "weekly_financial_summary_desc": "دریافت نمای کلی مالی هفتگی"
+        "weekly_financial_summary_desc": "دریافت نمای کلی مالی هفتگی",
+        "sound": {
+            "title": "صداها",
+            "description": "صدای اطلاعیه، هشدار و ورود به سیستم را انتخاب کنید یا صدای خود را بارگذاری کنید",
+            "categories": {
+                "notification": "صدای اطلاعیه",
+                "notification_desc": "هنگام رسیدن اطلاعیه جدید پخش می‌شود",
+                "warning": "صدای هشدار",
+                "warning_desc": "برای هشدارها پخش می‌شود",
+                "login": "صدای ورود",
+                "login_desc": "پس از ورود موفق پخش می‌شود"
+            },
+            "choose_sound": "یک صدا انتخاب کنید",
+            "preview": "پیش‌نمایش",
+            "upload": "بارگذاری",
+            "uploading": "در حال بارگذاری...",
+            "remove_custom": "حذف فایل بارگذاری‌شده",
+            "custom_option": "سفارشی (بارگذاری شما)",
+            "upload_error": "بارگذاری صدا ناموفق بود. از فایل MP3، WAV یا OGG کمتر از ۲ مگابایت استفاده کنید.",
+            "options": {
+                "notification1": "زنگوله",
+                "notification2": "بیپ",
+                "notification3": "ناقوس",
+                "warning1": "هشدار",
+                "windowsxp_warning2": "هشدار کلاسیک",
+                "login1": "خوش‌آمد",
+                "login2": "احوال‌پرسی"
+            }
+        }
     },
     "security": {
         "description": "پیکربندی تنظیمات امنیت و دسترسی",

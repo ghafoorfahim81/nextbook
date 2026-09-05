@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Preferences;
 
 use App\Support\Preferences\InvoiceThemeOptions;
+use App\Support\Preferences\SoundOptions;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -191,6 +192,15 @@ use Illuminate\Validation\Rule;
             'notifications.probation_ending_alert' => 'sometimes|boolean',
             'notifications.leave_request_alert' => 'sometimes|boolean',
             'notifications.leave_status_alert' => 'sometimes|boolean',
+
+            // Notification/warning/login sound preferences
+            'notifications.sound' => 'sometimes|array',
+            'notifications.sound.notification_enabled' => 'sometimes|boolean',
+            'notifications.sound.notification_choice' => ['sometimes', Rule::in([...SoundOptions::ids('notification'), 'custom'])],
+            'notifications.sound.warning_enabled' => 'sometimes|boolean',
+            'notifications.sound.warning_choice' => ['sometimes', Rule::in([...SoundOptions::ids('warning'), 'custom'])],
+            'notifications.sound.login_enabled' => 'sometimes|boolean',
+            'notifications.sound.login_choice' => ['sometimes', Rule::in([...SoundOptions::ids('login'), 'custom'])],
 
             // Security Preferences
             'security' => 'sometimes|array',

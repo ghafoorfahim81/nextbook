@@ -418,7 +418,35 @@
         "daily_summary_report": "Daily Summary Report",
         "daily_summary_report_desc": "Receive daily transaction summary",
         "weekly_financial_summary": "Weekly Financial Summary",
-        "weekly_financial_summary_desc": "Receive weekly financial overview"
+        "weekly_financial_summary_desc": "Receive weekly financial overview",
+        "sound": {
+            "title": "Sounds",
+            "description": "Choose which sound plays for notifications, warnings and sign-in, or upload your own",
+            "categories": {
+                "notification": "Notification Sound",
+                "notification_desc": "Plays when a new notification arrives",
+                "warning": "Warning Sound",
+                "warning_desc": "Plays for warning alerts",
+                "login": "Sign-in Sound",
+                "login_desc": "Plays after you sign in successfully"
+            },
+            "choose_sound": "Choose a sound",
+            "preview": "Preview",
+            "upload": "Upload",
+            "uploading": "Uploading...",
+            "remove_custom": "Remove upload",
+            "custom_option": "Custom (your upload)",
+            "upload_error": "Couldn't upload that sound. Use an MP3, WAV or OGG file under 2 MB.",
+            "options": {
+                "notification1": "Chime",
+                "notification2": "Ping",
+                "notification3": "Bell",
+                "warning1": "Alert",
+                "windowsxp_warning2": "Classic Warning",
+                "login1": "Welcome",
+                "login2": "Greeting"
+            }
+        }
     },
     "security": {
         "description": "Configure security and access preferences",

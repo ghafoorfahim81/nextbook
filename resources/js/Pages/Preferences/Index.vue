@@ -42,6 +42,7 @@ const props = defineProps({
     invoiceThemes:         { type: Array,  required: true },
     invoiceFormats:        { type: Array,  default: () => [] },
     invoiceFormatDefaults: { type: Object, default: () => ({}) },
+    soundOptions:          { type: Object, default: () => ({}) },
 })
 
 const { t, locale } = useI18n()
@@ -431,6 +432,76 @@ const savePlugins = () => {
                 description: t('preferences.install_plugins.saved_description'),
                 class: 'bg-green-600',
             });
+        },
+    })
+}
+
+const soundCategories = ['notification', 'warning', 'login']
+const soundUploading = ref('')
+const soundRemoving = ref('')
+const soundFileInputs = {}
+
+if (!form.notifications) form.notifications = {}
+if (!form.notifications.sound) {
+    form.notifications.sound = { ...(props.defaultPreferences?.notifications?.sound ?? {}) }
+}
+
+const soundOptionsFor = (category) => {
+    const builtins = props.soundOptions?.[category] || []
+    const customUrl = form.notifications.sound[`${category}_custom_url`]
+    if (!customUrl) return builtins
+    return [...builtins, { id: 'custom', name: null, url: customUrl }]
+}
+
+const previewSound = (category) => {
+    const choice = form.notifications.sound[`${category}_choice`]
+    const customUrl = form.notifications.sound[`${category}_custom_url`]
+    const url = choice === 'custom' && customUrl ? customUrl : (choice ? `/sounds/${choice}.mp3` : null)
+    if (!url) return
+    new Audio(url).play().catch(() => {})
+}
+
+const triggerSoundUpload = (category) => {
+    soundFileInputs[category]?.click()
+}
+
+const handleSoundUpload = (category, event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append('file', file)
+    soundUploading.value = category
+
+    router.post(route('preferences.sounds.store', category), formData, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: (page) => {
+            const updated = page.props.preferences?.notifications?.sound
+            if (updated) form.notifications.sound = { ...updated }
+            toast.success(t('preferences.saved'), { class: 'bg-green-600' })
+        },
+        onError: () => {
+            toast.error(t('preferences.notifications.sound.upload_error'))
+        },
+        onFinish: () => {
+            soundUploading.value = ''
+            event.target.value = ''
+        },
+    })
+}
+
+const removeSoundUpload = (category) => {
+    soundRemoving.value = category
+    router.delete(route('preferences.sounds.destroy', category), {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: (page) => {
+            const updated = page.props.preferences?.notifications?.sound
+            if (updated) form.notifications.sound = { ...updated }
+        },
+        onFinish: () => {
+            soundRemoving.value = ''
         },
     })
 }
@@ -1906,6 +1977,82 @@ watch(normalizedMenuSearch, (query) => {
                                         :model-value="form.notifications.weekly_financial_summary"
                                         @update:model-value="(v) => form.notifications.weekly_financial_summary = v"
                                     />
+                                </div>
+                            </div>
+
+                            <div class="pt-4 mt-2 space-y-4 border-t">
+                                <div>
+                                    <Label class="text-base font-semibold">{{ t('preferences.notifications.sound.title') }}</Label>
+                                    <p class="text-sm text-muted-foreground">{{ t('preferences.notifications.sound.description') }}</p>
+                                </div>
+
+                                <div
+                                    v-for="category in soundCategories"
+                                    :key="category"
+                                    class="p-4 space-y-3 border rounded-lg"
+                                >
+                                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div>
+                                            <Label class="text-base">{{ t(`preferences.notifications.sound.categories.${category}`) }}</Label>
+                                            <p class="text-sm text-muted-foreground">{{ t(`preferences.notifications.sound.categories.${category}_desc`) }}</p>
+                                        </div>
+                                        <Switch
+                                            :model-value="form.notifications.sound[`${category}_enabled`]"
+                                            @update:model-value="(v) => form.notifications.sound[`${category}_enabled`] = v"
+                                        />
+                                    </div>
+
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <Select
+                                            :model-value="form.notifications.sound[`${category}_choice`]"
+                                            @update:model-value="(v) => form.notifications.sound[`${category}_choice`] = v"
+                                        >
+                                            <SelectTrigger class="w-full sm:w-64">
+                                                <SelectValue :placeholder="t('preferences.notifications.sound.choose_sound')" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem
+                                                    v-for="option in soundOptionsFor(category)"
+                                                    :key="option.id"
+                                                    :value="option.id"
+                                                >
+                                                    {{ option.id === 'custom' ? t('preferences.notifications.sound.custom_option') : t(option.name) }}
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+
+                                        <Button type="button" variant="outline" size="sm" @click="previewSound(category)">
+                                            {{ t('preferences.notifications.sound.preview') }}
+                                        </Button>
+
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            :disabled="soundUploading === category"
+                                            @click="triggerSoundUpload(category)"
+                                        >
+                                            {{ soundUploading === category ? t('preferences.notifications.sound.uploading') : t('preferences.notifications.sound.upload') }}
+                                        </Button>
+                                        <input
+                                            :ref="(el) => { soundFileInputs[category] = el }"
+                                            type="file"
+                                            accept="audio/*"
+                                            class="hidden"
+                                            @change="(e) => handleSoundUpload(category, e)"
+                                        >
+
+                                        <Button
+                                            v-if="form.notifications.sound[`${category}_custom_url`]"
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            :disabled="soundRemoving === category"
+                                            @click="removeSoundUpload(category)"
+                                        >
+                                            {{ t('preferences.notifications.sound.remove_custom') }}
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>

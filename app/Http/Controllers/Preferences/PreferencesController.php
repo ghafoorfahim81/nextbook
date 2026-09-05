@@ -24,6 +24,7 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Resources\Administration\UnitMeasureResource;
 use App\Http\Resources\Ledger\LedgerResource;
 use App\Support\Preferences\InvoiceThemeOptions;
+use App\Support\Preferences\SoundOptions;
 use App\Services\ActivityLogService;
 use App\Models\Sale\InvoiceFormat;
 
@@ -83,6 +84,7 @@ class PreferencesController extends Controller
             'invoiceThemes' => InvoiceThemeOptions::all(),
             'invoiceFormats' => $invoiceFormats,
             'invoiceFormatDefaults' => InvoiceFormat::defaultConfig(),
+            'soundOptions' => SoundOptions::grouped(),
         ]);
     }
 

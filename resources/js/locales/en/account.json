@@ -10,5 +10,10 @@
     "equality_error": "Equality error", 
     "parent_account": "Parent Account",
     "parent": "Parent",
-    "local_name": "Local Name"
+    "local_name": "Local Name",
+    "account_scope": "Scope",
+    "main_account": "Main",
+    "custom_account": "Custom",
+    "cannot_delete_main_account_title": "This is a main account",
+    "cannot_delete_main_account_desc": "Main accounts are part of the core chart of accounts and cannot be deleted. You can still edit its name or deactivate it if you no longer use it."
 }
