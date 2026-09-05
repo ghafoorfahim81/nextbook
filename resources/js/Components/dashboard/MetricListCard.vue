@@ -13,6 +13,9 @@ const props = defineProps({
   tone: { type: String, default: 'in' },
   // Given a row, returns where it should link to. Rows stay inert without it.
   itemHref: { type: Function, default: null },
+  // Unit shown after `row.count` — defaults to the transaction-count lists'
+  // "records"; item-quantity lists (e.g. top selling items) pass their own.
+  countLabel: { type: String, default: '' },
 })
 
 const { t } = useI18n()
@@ -75,7 +78,7 @@ const rows = computed(() => props.items.map((item, index) => {
               <span class="w-4 shrink-0 text-xs font-semibold text-muted-foreground [font-variant-numeric:tabular-nums]">{{ row.rank }}</span>
               <span class="truncate text-sm font-medium text-card-foreground" :title="row.name">{{ row.name }}</span>
               <span v-if="row.count !== undefined" class="shrink-0 text-xs text-muted-foreground">
-                {{ formatNumber(row.count, 'count') }} {{ t('dashboard.records') }}
+                {{ formatNumber(row.count, 'count') }} {{ countLabel || t('dashboard.records') }}
               </span>
             </div>
             <span class="shrink-0 text-sm font-semibold text-card-foreground [font-variant-numeric:tabular-nums]">

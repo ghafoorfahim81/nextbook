@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import { router, usePage } from '@inertiajs/vue3';
 import { Button } from '@/Components/ui/button';
 import LedgerListTable from '@/Components/reports/LedgerListTable.vue';
+import TimeSeriesChart from '@/Components/charts/TimeSeriesChart.vue';
 import { ArrowLeft, SquarePen } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 
@@ -129,6 +130,33 @@ const convertedTotalDisplay = computed(() => (convertedTotal.value
     ? balanceDisplay({ balance: convertedTotal.value.amount, balance_nature: convertedTotal.value.balance_nature })
     : ''));
 
+const debitCreditSeries = computed(() => [
+    { key: 'debit', label: t('general.debit') },
+    { key: 'credit', label: t('general.credit') },
+]);
+
+// Daily totals across every currency the account moved in, same amounts the
+// transactions table shows (no cross-currency conversion).
+const debitCreditPoints = computed(() => {
+    const byDate = new Map();
+    transactionTableRows.value.forEach((row) => {
+        const date = row.date || '';
+        if (!byDate.has(date)) byDate.set(date, { date, values: { debit: 0, credit: 0 } });
+        const entry = byDate.get(date);
+        entry.values.debit += Number(row.debit || 0);
+        entry.values.credit += Number(row.credit || 0);
+    });
+    return Array.from(byDate.values()).sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0));
+});
+
+const debitCreditSubtitle = computed(() => {
+    const points = debitCreditPoints.value;
+    if (!points.length) return '';
+    return points.length > 1
+        ? `${points[0].date} – ${points[points.length - 1].date}`
+        : points[0].date;
+});
+
 const exportUrl = computed(() =>
     accountData.value?.id
         ? route('chart-of-accounts.export-transactions', { chart_of_account: accountData.value.id })
@@ -249,6 +277,17 @@ const exportUrl = computed(() =>
                             <div><div class="text-xs text-muted-foreground">{{ t('general.updated_by') }}</div><div class="font-medium">{{ accountData.updated_by?.name || '' }}</div></div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Debit vs credit chart -->
+                <div class="bg-card text-card-foreground rounded-xl shadow-sm border border-border p-4">
+                    <TimeSeriesChart
+                        :title="t('general.debit_vs_credit')"
+                        :subtitle="debitCreditSubtitle || t('general.posted_totals_over_time')"
+                        :series="debitCreditSeries"
+                        :points="debitCreditPoints"
+                        :format-value="formatAmount"
+                    />
                 </div>
 
                 <!-- Transactions table -->

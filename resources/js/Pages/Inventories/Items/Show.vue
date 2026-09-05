@@ -1,6 +1,7 @@
 <script setup>
 import AppLayout from '@/Layouts/Layout.vue'
 import AttachmentList from '@/Components/AttachmentList.vue';
+import TimeSeriesChart from '@/Components/charts/TimeSeriesChart.vue';
 import { ref, computed, onMounted, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3';
@@ -122,6 +123,43 @@ const resolveColor = (value) => {
     };
 };
 
+const inOutSeries = computed(() => [
+    { key: 'in', label: t('item.in_records') },
+    { key: 'out', label: t('item.out_records') },
+]);
+
+const inOutPoints = ref([]);
+const inOutSubtitle = computed(() => {
+    const points = inOutPoints.value;
+    if (!points.length) return '';
+    return points.length > 1
+        ? `${points[0].date} – ${points[points.length - 1].date}`
+        : points[0].date;
+});
+
+// Full history (not the paginated table's page-at-a-time slice), aggregated
+// per day, so the chart's totals always agree with stock_count/stock_out_count.
+const loadInOutChart = async () => {
+    if (!itemData.value.id) return;
+    const [inRes, outRes] = await Promise.all([
+        axios.get(route('items.in-records', itemData.value.id), { params: { per_page: 5000 } }),
+        axios.get(route('items.out-records', itemData.value.id), { params: { per_page: 5000 } }),
+    ]);
+
+    const byDate = new Map();
+    const addRows = (rows, key) => {
+        (rows || []).forEach((row) => {
+            const date = String(row.date || '').split(' ')[0];
+            if (!byDate.has(date)) byDate.set(date, { date, values: { in: 0, out: 0 } });
+            byDate.get(date).values[key] += Number(row.quantity || 0);
+        });
+    };
+    addRows(inRes.data.data, 'in');
+    addRows(outRes.data.data, 'out');
+
+    inOutPoints.value = Array.from(byDate.values()).sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : 0));
+};
+
 const fetchRecords = async (type, page) => {
     const res = await axios.get(route(`items.${type}-records`, itemData.value.id), {
         params: { page, per_page: 10 },
@@ -187,6 +225,7 @@ const renderBarcode = async (retries = 4) => {
 
 onMounted(() => {
     loadMore();
+    loadInOutChart();
     renderBarcode();
 });
 </script>
@@ -376,6 +415,17 @@ onMounted(() => {
                 </template>
             </fieldset>
 
+            <!-- In vs out chart -->
+            <div class="rounded-xl border border-border bg-card p-4">
+                <TimeSeriesChart
+                    :title="t('item.in_vs_out')"
+                    :subtitle="inOutSubtitle || t('general.posted_totals_over_time')"
+                    :series="inOutSeries"
+                    :points="inOutPoints"
+                    :format-value="formatQty"
+                />
+            </div>
+
             <!-- Records table -->
             <div class="rounded-xl border border-border bg-card overflow-hidden">
                 <!-- Tabs + export -->
@@ -397,10 +447,10 @@ onMounted(() => {
                         :disabled="loading || !itemData.id"
                         variant="outline"
                         size="sm"
-                        @click="  ">
+                        @click="exportCurrentRecords">
                         <Download class="h-3.5 w-3.5" />
                         {{ activeTab === 'in' ? t('item.export_in_records') : t('item.export_out_records') }}
-                    </button>
+                    </Button>
                 </div>
 
                 <!-- Scrollable table -->

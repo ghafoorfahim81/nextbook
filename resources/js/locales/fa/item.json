@@ -63,6 +63,7 @@
     "current_stock": "موجودی فعلی",
     "in_records": "ریکارد های ورودی",
     "out_records": "ریکارد های خروجی",
+    "in_vs_out": "ورودی در مقابل خروجی",
     "export_in_records": "خروجی اکسل ورودی‌ها",
     "export_out_records": "خروجی اکسل خروجی‌ها",
     "search_item": "جستجوی کالا",

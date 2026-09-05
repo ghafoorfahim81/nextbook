@@ -43,7 +43,9 @@
     "todays_cash_received": "دریافتی نقد امروز",
     "todays_cash_received_help": "تمام دریافت نقدی ثبت شده امروز از مشتریان و سایرین.",
     "todays_cash_paid": "پرداخت نقد امروز",
-    "todays_cash_paid_help": "تمام پرداخت نقدی ثبت شده امروز به تأمین‌کنندگان و سایرین."
+    "todays_cash_paid_help": "تمام پرداخت نقدی ثبت شده امروز به تأمین‌کنندگان و سایرین.",
+    "todays_net_profit": "سود خالص امروز",
+    "todays_net_profit_help": "درآمد ثبت شده امروز منهای بهای تمام‌شده کالا و مصارف."
   },
   "inventory": {
     "total_inventory_quantity": "موجودی کل",
@@ -57,6 +59,12 @@
     "top_customers_description": "مشتریانی که بیشترین خرید را داشته‌اند.",
     "top_suppliers_title": "۵ تأمین‌کننده برتر اخیر",
     "top_suppliers_description": "تأمین‌کنندگانی که بیشترین خرید از آن‌ها انجام شده است.",
+    "top_selling_items_title": "۵ کالای پرفروش برتر",
+    "top_selling_items_description": "کالاهایی که بیشترین درآمد فروش را داشته‌اند.",
+    "units_sold": "فروخته شده",
+    "top_purchasing_items_title": "۵ کالای پرخرید برتر",
+    "top_purchasing_items_description": "کالاهایی که بیشترین هزینه خرید را داشته‌اند.",
+    "units_purchased": "خریداری شده",
     "receivables_title": "بزرگترین حساب‌های دریافتنی",
     "receivables_description": "بزرگترین میزان مطالبات از مشتریان.",
     "payables_title": "بزرگترین حساب‌های پرداختنی",

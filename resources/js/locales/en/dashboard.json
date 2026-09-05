@@ -43,7 +43,9 @@
     "todays_cash_received": "Today's Cash Received",
     "todays_cash_received_help": "External cash inflow only; internal transfers excluded.",
     "todays_cash_paid": "Today's Cash Paid",
-    "todays_cash_paid_help": "External cash outflow only; internal transfers excluded."
+    "todays_cash_paid_help": "External cash outflow only; internal transfers excluded.",
+    "todays_net_profit": "Today's Net Profit",
+    "todays_net_profit_help": "Posted revenue minus cost of goods sold and expenses for today."
   },
   "inventory": {
     "total_inventory_quantity": "Total Inventory Quantity",
@@ -57,6 +59,12 @@
     "top_customers_description": "Posted sales totals grouped by customer.",
     "top_suppliers_title": "Top 5 suppliers by purchases",
     "top_suppliers_description": "Posted purchase totals grouped by supplier.",
+    "top_selling_items_title": "Top 5 selling items",
+    "top_selling_items_description": "Posted sales revenue grouped by item.",
+    "units_sold": "sold",
+    "top_purchasing_items_title": "Top 5 purchasing items",
+    "top_purchasing_items_description": "Posted purchase cost grouped by item.",
+    "units_purchased": "purchased",
     "receivables_title": "Top 10 receivable balances",
     "receivables_description": "Customers with the highest debit balances.",
     "payables_title": "Top 10 payable balances",
