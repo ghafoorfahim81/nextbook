@@ -2,11 +2,13 @@
 import { createApp, h, ref } from 'vue'
 import ConfirmDeleteDialog from '@/Components/next/ConfirmDeleteDialog.vue'
 import { router } from '@inertiajs/vue3'
-import { useI18n } from 'vue-i18n' 
+import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
+import { useSoundPreferences } from '@/composables/useSoundPreferences'
 
 export function useDeleteResource() {
     const { t } = useI18n()
+    const { play } = useSoundPreferences()
 
     const deleteResource = (routeName, id, options = {}) => {
         console.log(routeName, id, options)
@@ -22,6 +24,7 @@ export function useDeleteResource() {
                             // Check server flashed error (e.g., main branch or dependency)
                             const flashedError = page?.props?.flash?.error || page?.props?.error
                             if (flashedError) {
+                                play('warning')
                                 toast.error(flashedError, {
                                     description: flashedError,
                                     class: 'bg-pink-600 text-white',
@@ -98,6 +101,8 @@ export function useDeleteResource() {
                                     errorMessage.includes('dependencies') ||
                                     errorMessage.includes('used in')
                             }
+
+                            if (isDependencyError) play('warning')
 
                             toast.error(errorMessage?.title ? errorMessage.title : errorMessage, {
                                 description: errorMessage,

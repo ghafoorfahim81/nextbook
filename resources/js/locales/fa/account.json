@@ -10,5 +10,10 @@
     "equality_error": "خصای مساوات",
     "parent_account": "حساب والد",
     "parent": "والد",
-    "local_name": "نام محلی"
+    "local_name": "نام محلی",
+    "account_scope": "نوعیت",
+    "main_account": "اصلی",
+    "custom_account": "سفارشی",
+    "cannot_delete_main_account_title": "این یک حساب اصلی است",
+    "cannot_delete_main_account_desc": "حساب‌های اصلی بخشی از چارت حساب‌های اساسی هستند و قابل حذف نیستند. می‌توانید نام آن را ویرایش کنید یا در صورت عدم استفاده آن را غیرفعال کنید."
 }

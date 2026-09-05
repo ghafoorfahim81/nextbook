@@ -5,6 +5,7 @@ import { Link, usePage } from '@inertiajs/vue3'
 import { Bell, Search } from 'lucide-vue-next'
 import { Button } from '@/Components/ui/button'
 import { useNotificationPresentation } from '@/composables/useNotificationPresentation'
+import { useSoundPreferences } from '@/composables/useSoundPreferences'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -16,6 +17,7 @@ import {
 const page = usePage()
 const { t, locale } = useI18n()
 const { present, relativeTime } = useNotificationPresentation()
+const { play } = useSoundPreferences()
 
 const POLL_INTERVAL = 60000
 const MAX_POLL_INTERVAL = 15 * 60 * 1000
@@ -81,6 +83,12 @@ watch(
 watch(isOpen, (open) => {
     if (open) refreshFeed()
     else searchQuery.value = ''
+})
+
+// Only chime when the unread count actually grows (a new notification arrived),
+// never on the initial mount or when it drops from marking items read.
+watch(unreadCount, (newValue, oldValue) => {
+    if (newValue > oldValue) play('notification')
 })
 
 async function refreshFeed() {

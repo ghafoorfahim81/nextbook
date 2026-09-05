@@ -3,8 +3,10 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { computed, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import LanguageSwitcher from '@/Components/LanguageSwitcher.vue';
+import { useSoundPreferences } from '@/composables/useSoundPreferences';
 
 const { t } = useI18n();
+const { play } = useSoundPreferences();
 
 defineProps({
     canResetPassword: Boolean,
@@ -50,6 +52,9 @@ const submit = () => {
         remember: form.remember ? 'on' : '',
     })).post(route('login'), {
         onFinish: () => form.reset('password'),
+        // Fires after the post-login page's props (including the user's sound
+        // preference) have landed, so the right choice plays for that user.
+        onSuccess: () => play('login'),
     });
 };
 </script>

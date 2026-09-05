@@ -387,6 +387,12 @@ Route::middleware([
     Route::get('/preferences/export', [\App\Http\Controllers\Preferences\PreferencesController::class, 'exportPreferences'])->name('preferences.export');
     Route::post('/preferences/import', [\App\Http\Controllers\Preferences\PreferencesController::class, 'importPreferences'])->name('preferences.import');
     Route::put('/preferences/install-plugins', [\App\Http\Controllers\Preferences\PreferencesController::class, 'updateInstallPlugins'])->name('preferences.install-plugins.update');
+    Route::post('/preferences/sounds/{category}', [\App\Http\Controllers\Preferences\PreferencesSoundController::class, 'store'])
+        ->where('category', 'notification|warning|login')
+        ->name('preferences.sounds.store');
+    Route::delete('/preferences/sounds/{category}', [\App\Http\Controllers\Preferences\PreferencesSoundController::class, 'destroy'])
+        ->where('category', 'notification|warning|login')
+        ->name('preferences.sounds.destroy');
 
     // Invoice Formats (custom designer)
     Route::get('/invoice-formats', [\App\Http\Controllers\Sale\InvoiceFormatController::class, 'index'])->name('invoice-formats.index');

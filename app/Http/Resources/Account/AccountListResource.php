@@ -21,6 +21,7 @@ class AccountListResource extends JsonResource
             'local_name' => $this->local_name,
             'name' => $locale === 'en' ? $this->name : $this->local_name,
             'number' => $this->number,
+            'is_main' => (bool) $this->is_main,
             'balance' => $this->statement['balance'],
             'balance_amount' => $this->statement['balance_amount'],
             'balance_nature' => $this->statement['balance_nature'],
