@@ -19,7 +19,8 @@
       "PowerShell(php artisan test tests/Feature/Notifications/ 2>&1)",
       "PowerShell(git stash push -- app/Models/User.php)",
       "PowerShell(php artisan test --filter=\"test_repeating_same_notification_payload_is_idempotent\" 2>&1)",
-      "PowerShell(git stash pop)"
+      "PowerShell(git stash pop)",
+      "Bash(git commit *)"
     ],
     "defaultMode": "acceptEdits"
   }
