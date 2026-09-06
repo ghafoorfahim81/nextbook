@@ -4,7 +4,6 @@ import { Head, Link, usePage } from '@inertiajs/vue3'
 import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 import AppLayout from '@/Layouts/Layout.vue'
-import { Card } from '@/Components/ui/card'
 import { Button } from '@/Components/ui/button'
 import { Input } from '@/Components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/select'
@@ -16,6 +15,7 @@ import {
   CircleDollarSign, Scale, CalendarDays,
   ChevronLeft, ChevronRight, ArrowRight, Clock3,
   Coins, RotateCcw, ArrowUp, ArrowDown,
+  Calculator, Percent, Tags, GraduationCap, Table2, Plus, X, Check,
 } from 'lucide-vue-next'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -34,10 +34,6 @@ const props = defineProps<{
 const { t, locale } = useI18n()
 const page = usePage<any>()
 
-// Shared card elevation — rests low, lifts on hover. Dark mode needs an
-// explicit shadow colour, otherwise the default black shadow is invisible
-// against the dark surface.
-const panel = 'shadow-sm transition-shadow duration-200 hover:shadow-md dark:shadow-black/50 dark:hover:shadow-black/70'
 const isRTL = computed(() => ['fa', 'ps', 'pa'].includes(locale.value) || page.props.direction === 'rtl')
 
 // calendar_type comes from company settings (auth.user.calendar_type).
@@ -831,30 +827,186 @@ function dcAnswer(side: DcSide) {
 }
 
 onBeforeUnmount(dcClearTimers)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── 9. ACCOUNTING TOOLKIT ─────────────────────────────────────────────────────
+// A cluster of client-side calculators — none of them touch the ledger, they are
+// scratch tools for the figures a bookkeeper works out on paper next to it.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Shared: compact number formatting for results
+function fmt(n: number): string {
+  if (!Number.isFinite(n)) return '—'
+  return n.toLocaleString(undefined, { maximumFractionDigits: 2 })
+}
+
+// ── 9a. Journal entry scratchpad ──────────────────────────────────────────────
+interface JournalLine { account: string; debit: number | null; credit: number | null }
+
+function blankJournal(): JournalLine[] {
+  return [
+    { account: '', debit: null, credit: null },
+    { account: '', debit: null, credit: null },
+  ]
+}
+
+const journalLines = ref<JournalLine[]>(blankJournal())
+
+function addJournalLine() {
+  journalLines.value.push({ account: '', debit: null, credit: null })
+}
+function removeJournalLine(index: number) {
+  if (journalLines.value.length > 2) journalLines.value.splice(index, 1)
+}
+function resetJournal() {
+  journalLines.value = blankJournal()
+}
+
+const journalTotalDebit = computed(() =>
+  journalLines.value.reduce((sum, line) => sum + (Number(line.debit) || 0), 0),
+)
+const journalTotalCredit = computed(() =>
+  journalLines.value.reduce((sum, line) => sum + (Number(line.credit) || 0), 0),
+)
+const journalDifference = computed(() => journalTotalDebit.value - journalTotalCredit.value)
+const journalBalanced = computed(() =>
+  journalDifference.value === 0 && journalTotalDebit.value > 0,
+)
+
+// ── 9b. Depreciation calculator ───────────────────────────────────────────────
+const depCost = ref<number>(100000)
+const depSalvage = ref<number>(10000)
+const depLife = ref<number>(5)
+const depMethod = ref<'straight_line' | 'declining_balance'>('straight_line')
+
+interface DepRow { year: number; expense: number; accumulated: number; book: number }
+
+const depSchedule = computed<DepRow[]>(() => {
+  const cost = Number(depCost.value) || 0
+  const salvage = Math.max(0, Number(depSalvage.value) || 0)
+  const life = Math.max(1, Math.floor(Number(depLife.value) || 0))
+  if (cost <= 0 || salvage >= cost) return []
+
+  const rows: DepRow[] = []
+  let book = cost
+  let accumulated = 0
+
+  if (depMethod.value === 'straight_line') {
+    const annual = (cost - salvage) / life
+    for (let year = 1; year <= life; year++) {
+      // Absorb any rounding drift into the final year so book value lands on salvage
+      const expense = year === life ? book - salvage : annual
+      accumulated += expense
+      book -= expense
+      rows.push({ year, expense, accumulated, book })
+    }
+  } else {
+    // Double-declining balance, floored at salvage value
+    const rate = 2 / life
+    for (let year = 1; year <= life; year++) {
+      let expense = book * rate
+      if (book - expense < salvage) expense = book - salvage
+      if (expense < 0) expense = 0
+      accumulated += expense
+      book -= expense
+      rows.push({ year, expense, accumulated, book })
+    }
+  }
+  return rows
+})
+
+// ── 9c. Tax (BRT / VAT) quick calculator ──────────────────────────────────────
+const TAX_RATE_PRESETS = [2, 4, 10]
+
+const taxAmount = ref<number>(1000)
+const taxRate = ref<number>(10)
+const taxMode = ref<'add' | 'extract'>('add')
+
+const taxBreakdown = computed(() => {
+  const amount = Number(taxAmount.value) || 0
+  const rate = Number(taxRate.value) || 0
+  if (taxMode.value === 'add') {
+    const tax = (amount * rate) / 100
+    return { net: amount, tax, gross: amount + tax }
+  }
+  // amount already includes tax — peel it back out
+  const net = amount / (1 + rate / 100)
+  return { net, tax: amount - net, gross: amount }
+})
+
+// ── 9d. Markup ↔ margin calculator ────────────────────────────────────────────
+const mmCost = ref<number>(80)
+const mmMode = ref<'from_margin' | 'from_price'>('from_margin')
+const mmMargin = ref<number>(20)
+const mmPrice = ref<number>(100)
+
+const mmResult = computed(() => {
+  const cost = Number(mmCost.value) || 0
+  if (cost <= 0) return null
+
+  let price: number
+  if (mmMode.value === 'from_margin') {
+    const margin = Number(mmMargin.value) || 0
+    if (margin >= 100) return null
+    price = cost / (1 - margin / 100)
+  } else {
+    price = Number(mmPrice.value) || 0
+    if (price <= 0) return null
+  }
+
+  const profit = price - cost
+  return {
+    price,
+    profit,
+    margin: price > 0 ? (profit / price) * 100 : 0,
+    markup: cost > 0 ? (profit / cost) * 100 : 0,
+  }
+})
+
+// ── 9e. Accounting term of the day ────────────────────────────────────────────
+const ACCOUNTING_TERMS = [
+  'accrual', 'deferral', 'contra_account', 'double_entry',
+  'trial_balance', 'depreciation', 'working_capital', 'fifo',
+]
+
+function dayOfYear(date = new Date()): number {
+  const start = new Date(date.getFullYear(), 0, 0)
+  return Math.floor((date.getTime() - start.getTime()) / 86_400_000)
+}
+
+const termIndex = ref(dayOfYear() % ACCOUNTING_TERMS.length)
+const currentTerm = computed(() => ACCOUNTING_TERMS[termIndex.value])
+
+function nextTerm() {
+  termIndex.value = (termIndex.value + 1) % ACCOUNTING_TERMS.length
+}
 </script>
 
 <template>
   <AppLayout>
     <Head :title="t('home.title')" />
 
-    <div class="space-y-3 text-foreground">
-      <!-- ── Header bar ─────────────────────────────────────────────────── -->
-      <Card :class="[panel, 'flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-s-4 border-s-primary bg-gradient-to-r from-primary/[0.06] to-card px-4 py-3']">
+    <div class="space-y-6 text-foreground">
+      <!-- ── Header ────────────────────────────────────────────────────── -->
+      <header class="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
         <div class="min-w-0">
-          <h1 class="truncate text-lg font-semibold tracking-tight">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            {{ t('home.hero.eyebrow') }}
+          </p>
+          <h1 class="mt-1 truncate text-2xl font-semibold tracking-tight text-foreground">
             {{ t('home.hero.greeting', { name: firstName }) }}
           </h1>
-          <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-            <span class="truncate font-medium text-foreground/80">{{ activeBranchName }}</span>
+          <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            <span class="font-medium text-foreground/80">{{ activeBranchName }}</span>
             <span class="text-border">•</span>
             <span>{{ calendarModeLabel }}</span>
             <span class="text-border">•</span>
-            <span class="truncate">{{ gregorianDisplay.weekDay }}, {{ gregorianDisplay.day }} {{ gregorianDisplay.monthName }}</span>
+            <span>{{ gregorianDisplay.weekDay }}, {{ gregorianDisplay.day }} {{ gregorianDisplay.monthName }}</span>
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3">
-          <div class="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-1.5">
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5">
             <Clock3 class="size-4 shrink-0 text-muted-foreground" />
             <div class="flex items-baseline gap-1 font-mono text-sm font-semibold tabular-nums" dir="ltr">
               <span>{{ digitalTime || '--:--:--' }}</span>
@@ -862,51 +1014,53 @@ onBeforeUnmount(dcClearTimers)
             </div>
           </div>
 
-          <div class="flex items-center gap-2">
-            <Button as-child size="sm" class="h-8 text-xs">
-              <Link href="/dashboard">
-                <LayoutDashboard class="me-1.5 size-3.5" />
-                {{ t('home.hero.open_dashboard') }}
-              </Link>
-            </Button>
-            <Button as-child size="sm" variant="outline" class="h-8 text-xs">
-              <Link href="/reports">
-                <FileText class="me-1.5 size-3.5" />
-                {{ t('home.hero.open_reports') }}
-              </Link>
-            </Button>
-          </div>
+          <Button as-child size="sm">
+            <Link href="/dashboard">
+              <LayoutDashboard class="h-4 w-4" />
+              {{ t('home.hero.open_dashboard') }}
+            </Link>
+          </Button>
+          <Button as-child size="sm" variant="outline">
+            <Link href="/reports">
+              <FileText class="h-4 w-4" />
+              {{ t('home.hero.open_reports') }}
+            </Link>
+          </Button>
         </div>
-      </Card>
+      </header>
 
       <!-- ── Quick links ────────────────────────────────────────────────── -->
-      <Card :class="[panel, 'p-3']">
-        <p class="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {{ t('home.quick_links.title') }}
-        </p>
-        <div class="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+      <section class="rounded-2xl border border-border bg-card p-5 shadow-sm">
+        <div>
+          <h2 class="text-base font-semibold text-card-foreground">{{ t('home.quick_links.title') }}</h2>
+          <p class="mt-0.5 text-xs text-muted-foreground">{{ t('home.quick_links.description') }}</p>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8">
           <Link
             v-for="link in quickLinks"
             :key="link.url"
             :href="link.url"
-            class="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-2 text-xs font-medium shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/50 hover:bg-muted hover:shadow-md dark:shadow-black/40"
+            class="flex flex-col items-start gap-2 rounded-xl border border-border bg-background px-3 py-3 transition-colors hover:border-primary/40 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <component :is="link.icon" class="size-4 shrink-0 text-primary" />
-            <span class="truncate">{{ link.label }}</span>
+            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <component :is="link.icon" class="h-[18px] w-[18px]" />
+            </span>
+            <span class="w-full truncate text-xs font-medium text-card-foreground">{{ link.label }}</span>
           </Link>
         </div>
-      </Card>
+      </section>
 
       <!-- ── Main grid ──────────────────────────────────────────────────── -->
-      <div class="grid gap-3 xl:grid-cols-3">
+      <div class="grid gap-4 xl:grid-cols-3">
         <!-- Left column: weather + rates -->
-        <div class="space-y-3 xl:col-span-2">
+        <div class="space-y-4 xl:col-span-2">
           <!-- Weather -->
-          <Card :class="panel">
-            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
-              <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {{ t('home.weather.title') }}
-              </p>
+          <div class="rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h2 class="text-base font-semibold text-card-foreground">{{ t('home.weather.title') }}</h2>
+                <p class="mt-0.5 text-xs text-muted-foreground">{{ t('home.weather.description') }}</p>
+              </div>
               <div class="flex items-center gap-1.5">
                 <Select v-model="weatherSearch">
                   <SelectTrigger class="h-8 min-w-[140px] text-xs">
@@ -930,7 +1084,7 @@ onBeforeUnmount(dcClearTimers)
               </div>
             </div>
 
-            <div class="p-3">
+            <div class="mt-4">
               <p v-if="weatherError" class="py-4 text-center text-sm text-destructive">{{ weatherError }}</p>
 
               <p v-else-if="weatherLoading && !weatherData" class="py-4 text-center text-sm text-muted-foreground">
@@ -939,7 +1093,7 @@ onBeforeUnmount(dcClearTimers)
 
               <div v-else-if="weatherData" class="flex flex-col gap-3 lg:flex-row lg:items-center">
                 <!-- Current conditions -->
-                <div class="flex shrink-0 items-center gap-3 lg:w-56">
+                <div class="flex shrink-0 items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 lg:w-56">
                   <span class="text-4xl leading-none">{{ wmoInfo(weatherData.code, weatherData.is_day).emoji }}</span>
                   <div class="min-w-0">
                     <p class="text-2xl font-semibold leading-none tabular-nums">{{ weatherData.temp?.toFixed(0) }}°C</p>
@@ -959,8 +1113,8 @@ onBeforeUnmount(dcClearTimers)
                   <div
                     v-for="(day, idx) in weatherData.forecast"
                     :key="day.date"
-                    class="flex min-w-[62px] flex-1 flex-shrink-0 flex-col items-center gap-0.5 rounded-md border px-1.5 py-2 text-center shadow-sm transition-shadow duration-200 hover:shadow-md dark:shadow-black/40"
-                    :class="idx === 0 ? 'border-primary/50 bg-primary/5' : 'border-border'"
+                    class="flex min-w-[62px] flex-1 flex-shrink-0 flex-col items-center gap-0.5 rounded-xl border px-1.5 py-2 text-center transition-colors"
+                    :class="idx === 0 ? 'border-primary/50 bg-primary/5' : 'border-border bg-background'"
                   >
                     <span class="text-[11px] font-semibold">{{ forecastDayLabel(day.date, Number(idx)) }}</span>
                     <span class="text-[10px] text-muted-foreground">{{ forecastDateLabel(day.date) }}</span>
@@ -973,20 +1127,23 @@ onBeforeUnmount(dcClearTimers)
                 </div>
               </div>
             </div>
-          </Card>
+          </div>
 
           <!-- Currency rates -->
-          <Card :class="panel">
-            <div class="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
-              <p class="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {{ t('home.currency_rates.title') }}
-              </p>
-              <CircleDollarSign class="size-4 text-muted-foreground" />
+          <div class="rounded-2xl border border-border bg-card shadow-sm">
+            <div class="flex items-start justify-between gap-4 p-5 pb-4">
+              <div>
+                <h2 class="text-base font-semibold text-card-foreground">{{ t('home.currency_rates.title') }}</h2>
+                <p class="mt-0.5 text-xs text-muted-foreground">{{ t('home.currency_rates.description') }}</p>
+              </div>
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <CircleDollarSign class="h-[18px] w-[18px]" />
+              </span>
             </div>
-            <div v-if="currencies.length === 0" class="px-3 py-6 text-center text-sm text-muted-foreground">
+            <div v-if="currencies.length === 0" class="px-5 pb-6 text-center text-sm text-muted-foreground">
               {{ t('home.currency_rates.no_data') }}
             </div>
-            <div v-else class="max-h-64 overflow-auto">
+            <div v-else class="max-h-64 overflow-auto border-t border-border">
               <table class="w-full text-xs">
                 <thead class="sticky top-0 bg-card">
                   <tr class="border-b border-border">
@@ -1013,20 +1170,24 @@ onBeforeUnmount(dcClearTimers)
                 </tbody>
               </table>
             </div>
-          </Card>
+          </div>
         </div>
 
         <!-- Right column: clock + calendar -->
-        <div class="space-y-3">
+        <div class="space-y-4">
           <!-- Clock & dates -->
-          <Card :class="[panel, 'p-3']">
-            <div class="flex items-center gap-3">
+          <div class="rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <div>
+              <h2 class="text-base font-semibold text-card-foreground">{{ t('home.clock.title') }}</h2>
+              <p class="mt-0.5 text-xs text-muted-foreground">{{ t('home.clock.description') }}</p>
+            </div>
+            <div class="mt-4 flex items-center gap-3">
               <canvas ref="clockCanvas" width="112" height="112" class="shrink-0 rounded-full" />
               <div class="min-w-0 flex-1 space-y-1">
                 <div
                   v-for="d in dateStrip"
                   :key="d.label"
-                  class="flex items-center justify-between gap-2 rounded-md bg-muted/40 px-2 py-1.5 text-xs"
+                  class="flex items-center justify-between gap-2 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs"
                 >
                   <span class="flex items-center gap-1.5 text-muted-foreground">
                     <span class="text-[13px] leading-none">{{ d.icon }}</span>
@@ -1038,11 +1199,15 @@ onBeforeUnmount(dcClearTimers)
                 </div>
               </div>
             </div>
-            <p class="mt-2 text-center text-[11px] text-muted-foreground">{{ t('home.clock.timezone') }}</p>
-          </Card>
+            <p class="mt-3 text-center text-[11px] text-muted-foreground">{{ t('home.clock.timezone') }}</p>
+          </div>
 
           <!-- Calendar -->
-          <Card :class="[panel, 'p-3']">
+          <div class="rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <div class="mb-3">
+              <h2 class="text-base font-semibold text-card-foreground">{{ t('home.calendar.title') }}</h2>
+              <p class="mt-0.5 text-xs text-muted-foreground">{{ t('home.calendar.description') }}</p>
+            </div>
             <div class="mb-2 flex items-center justify-between gap-2">
               <Button
                 variant="ghost"
@@ -1088,22 +1253,27 @@ onBeforeUnmount(dcClearTimers)
               </div>
             </div>
 
-            <Button variant="outline" size="sm" class="mt-2 h-7 w-full text-xs" @click="goToday">
+            <Button variant="outline" size="sm" class="mt-3 h-8 w-full text-xs" @click="goToday">
               {{ t('home.calendar.today') }}
             </Button>
-          </Card>
+          </div>
         </div>
       </div>
 
       <!-- ── Converters: all three visible side by side ──────────────────── -->
-      <div class="grid gap-3 lg:grid-cols-3">
+      <div class="grid gap-4 lg:grid-cols-3">
         <!-- Currency exchange -->
-        <Card :class="panel">
-          <div class="flex items-center gap-2 border-b border-border px-3 py-2">
-            <ArrowLeftRight class="size-4 shrink-0 text-primary" />
-            <p class="text-xs font-semibold">{{ t('home.currency_exchange.title') }}</p>
+        <div class="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <ArrowLeftRight class="h-[18px] w-[18px]" />
+            </span>
+            <div>
+              <h2 class="text-base font-semibold text-card-foreground">{{ t('home.currency_exchange.title') }}</h2>
+              <p class="mt-0.5 text-xs text-muted-foreground">{{ t('home.currency_exchange.description') }}</p>
+            </div>
           </div>
-          <div class="space-y-2 p-3">
+          <div class="mt-4 space-y-2">
             <div>
               <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.currency_exchange.amount') }}</label>
               <Input v-model.number="exchangeAmount" type="number" min="0" class="h-9 text-sm" />
@@ -1156,15 +1326,20 @@ onBeforeUnmount(dcClearTimers)
               </div>
             </div>
           </div>
-        </Card>
+        </div>
 
         <!-- Unit converter -->
-        <Card :class="panel">
-          <div class="flex items-center gap-2 border-b border-border px-3 py-2">
-            <Scale class="size-4 shrink-0 text-primary" />
-            <p class="text-xs font-semibold">{{ t('home.unit_exchange.title') }}</p>
+        <div class="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Scale class="h-[18px] w-[18px]" />
+            </span>
+            <div>
+              <h2 class="text-base font-semibold text-card-foreground">{{ t('home.unit_exchange.title') }}</h2>
+              <p class="mt-0.5 text-xs text-muted-foreground">{{ t('home.unit_exchange.description') }}</p>
+            </div>
           </div>
-          <div class="space-y-2 p-3">
+          <div class="mt-4 space-y-2">
             <p v-if="props.unitMeasures.length === 0" class="py-10 text-center text-sm text-muted-foreground">
               {{ t('home.unit_exchange.no_units') }}
             </p>
@@ -1228,16 +1403,21 @@ onBeforeUnmount(dcClearTimers)
               </div>
             </template>
           </div>
-        </Card>
+        </div>
 
         <!-- Date conversion -->
-        <Card :class="panel">
-          <div class="flex items-center gap-2 border-b border-border px-3 py-2">
-            <CalendarDays class="size-4 shrink-0 text-primary" />
-            <p class="text-xs font-semibold">{{ t('home.date_conversion.title') }}</p>
+        <div class="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <CalendarDays class="h-[18px] w-[18px]" />
+            </span>
+            <div>
+              <h2 class="text-base font-semibold text-card-foreground">{{ t('home.date_conversion.title') }}</h2>
+              <p class="mt-0.5 text-xs text-muted-foreground">{{ t('home.date_conversion.description') }}</p>
+            </div>
           </div>
-          <div class="space-y-2 p-3">
-            <div class="flex h-9 overflow-hidden rounded-md border border-border text-xs">
+          <div class="mt-4 space-y-2">
+            <div class="flex h-9 overflow-hidden rounded-lg border border-border text-xs">
               <button
                 v-for="option in dateConversionOptions"
                 :key="option.key"
@@ -1273,19 +1453,314 @@ onBeforeUnmount(dcClearTimers)
               </div>
             </div>
           </div>
-        </Card>
+        </div>
+      </div>
+
+      <!-- ── Accounting toolkit ──────────────────────────────────────────── -->
+      <div class="grid gap-4 xl:grid-cols-3">
+        <!-- Journal entry scratchpad -->
+        <div class="rounded-2xl border border-border bg-card p-5 shadow-sm xl:col-span-2">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Table2 class="h-[18px] w-[18px]" />
+              </span>
+              <div>
+                <h2 class="text-base font-semibold text-card-foreground">{{ t('home.journal.title') }}</h2>
+                <p class="mt-0.5 text-xs text-muted-foreground">{{ t('home.journal.description') }}</p>
+              </div>
+            </div>
+            <Button size="sm" variant="outline" class="h-8 gap-1.5 text-xs" @click="resetJournal">
+              <RotateCcw class="size-3.5" />
+              {{ t('home.journal.reset') }}
+            </Button>
+          </div>
+
+          <div class="mt-4 space-y-2">
+            <div class="hidden grid-cols-[minmax(0,1fr)_120px_120px_32px] gap-2 px-1 text-[11px] font-medium text-muted-foreground sm:grid">
+              <span>{{ t('home.journal.account') }}</span>
+              <span class="text-end">{{ t('home.journal.debit') }}</span>
+              <span class="text-end">{{ t('home.journal.credit') }}</span>
+              <span></span>
+            </div>
+            <div
+              v-for="(line, index) in journalLines"
+              :key="index"
+              class="grid grid-cols-[minmax(0,1fr)_1fr_1fr_32px] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_120px_120px_32px]"
+            >
+              <Input v-model="line.account" :placeholder="t('home.journal.account')" class="h-9 text-sm" />
+              <Input v-model.number="line.debit" type="number" min="0" placeholder="0" class="h-9 text-end text-sm" />
+              <Input v-model.number="line.credit" type="number" min="0" placeholder="0" class="h-9 text-end text-sm" />
+              <Button
+                size="icon"
+                variant="ghost"
+                class="size-8 shrink-0 text-muted-foreground"
+                :disabled="journalLines.length <= 2"
+                :aria-label="t('home.journal.remove_line')"
+                @click="removeJournalLine(index)"
+              >
+                <X class="size-4" />
+              </Button>
+            </div>
+
+            <Button size="sm" variant="ghost" class="h-8 gap-1.5 text-xs text-primary" @click="addJournalLine">
+              <Plus class="size-3.5" />
+              {{ t('home.journal.add_line') }}
+            </Button>
+
+            <div class="mt-1 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-background px-4 py-3">
+              <div class="flex gap-4 font-mono text-sm tabular-nums">
+                <span class="flex flex-col">
+                  <span class="text-[10px] uppercase tracking-wider text-muted-foreground">{{ t('home.journal.total_debit') }}</span>
+                  <span class="font-semibold">{{ fmt(journalTotalDebit) }}</span>
+                </span>
+                <span class="flex flex-col">
+                  <span class="text-[10px] uppercase tracking-wider text-muted-foreground">{{ t('home.journal.total_credit') }}</span>
+                  <span class="font-semibold">{{ fmt(journalTotalCredit) }}</span>
+                </span>
+              </div>
+              <span
+                class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
+                :class="journalBalanced
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-amber-500/10 text-amber-600 dark:text-amber-500'"
+              >
+                <Check v-if="journalBalanced" class="size-3.5" />
+                <template v-if="journalBalanced">{{ t('home.journal.balanced') }}</template>
+                <template v-else>{{ t('home.journal.out_by', { amount: fmt(Math.abs(journalDifference)) }) }}</template>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accounting term of the day -->
+        <div class="flex flex-col rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <GraduationCap class="h-[18px] w-[18px]" />
+            </span>
+            <div>
+              <h2 class="text-base font-semibold text-card-foreground">{{ t('home.term.title') }}</h2>
+              <p class="mt-0.5 text-xs text-muted-foreground">{{ t('home.term.description') }}</p>
+            </div>
+          </div>
+          <div class="mt-4 flex flex-1 flex-col rounded-xl border border-border bg-background px-4 py-4">
+            <p class="text-sm font-semibold text-card-foreground">{{ t(`home.term.terms.${currentTerm}.name`) }}</p>
+            <p class="mt-1.5 flex-1 text-xs leading-6 text-muted-foreground">{{ t(`home.term.terms.${currentTerm}.definition`) }}</p>
+            <Button size="sm" variant="outline" class="mt-3 h-8 w-full gap-1.5 text-xs" @click="nextTerm">
+              <RefreshCw class="size-3.5" />
+              {{ t('home.term.another') }}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Accounting calculators ──────────────────────────────────────── -->
+      <div class="grid gap-4 lg:grid-cols-3">
+        <!-- Depreciation -->
+        <div class="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Calculator class="h-[18px] w-[18px]" />
+            </span>
+            <div>
+              <h2 class="text-base font-semibold text-card-foreground">{{ t('home.depreciation.title') }}</h2>
+              <p class="mt-0.5 text-xs text-muted-foreground">{{ t('home.depreciation.description') }}</p>
+            </div>
+          </div>
+          <div class="mt-4 space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.depreciation.cost') }}</label>
+                <Input v-model.number="depCost" type="number" min="0" class="h-9 text-sm" />
+              </div>
+              <div>
+                <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.depreciation.salvage') }}</label>
+                <Input v-model.number="depSalvage" type="number" min="0" class="h-9 text-sm" />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.depreciation.life') }}</label>
+                <Input v-model.number="depLife" type="number" min="1" class="h-9 text-sm" />
+              </div>
+              <div>
+                <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.depreciation.method') }}</label>
+                <Select v-model="depMethod">
+                  <SelectTrigger class="h-9 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="straight_line">{{ t('home.depreciation.straight_line') }}</SelectItem>
+                    <SelectItem value="declining_balance">{{ t('home.depreciation.declining_balance') }}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div v-if="depSchedule.length" class="mt-1 max-h-48 overflow-auto rounded-xl border border-border">
+              <table class="w-full text-xs">
+                <thead class="sticky top-0 bg-card">
+                  <tr class="border-b border-border text-muted-foreground">
+                    <th class="px-2 py-1.5 text-start font-medium">{{ t('home.depreciation.year') }}</th>
+                    <th class="px-2 py-1.5 text-end font-medium">{{ t('home.depreciation.expense') }}</th>
+                    <th class="px-2 py-1.5 text-end font-medium">{{ t('home.depreciation.book_value') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in depSchedule" :key="row.year" class="border-b border-border/50 last:border-0">
+                    <td class="px-2 py-1.5 tabular-nums">{{ row.year }}</td>
+                    <td class="px-2 py-1.5 text-end font-mono tabular-nums">{{ fmt(row.expense) }}</td>
+                    <td class="px-2 py-1.5 text-end font-mono tabular-nums">{{ fmt(row.book) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p v-else class="rounded-xl border border-border bg-background px-3 py-4 text-center text-xs text-muted-foreground">
+              {{ t('home.depreciation.hint') }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Tax / BRT -->
+        <div class="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Percent class="h-[18px] w-[18px]" />
+            </span>
+            <div>
+              <h2 class="text-base font-semibold text-card-foreground">{{ t('home.tax.title') }}</h2>
+              <p class="mt-0.5 text-xs text-muted-foreground">{{ t('home.tax.description') }}</p>
+            </div>
+          </div>
+          <div class="mt-4 space-y-2">
+            <div class="flex h-9 overflow-hidden rounded-lg border border-border text-xs">
+              <button
+                v-for="mode in (['add', 'extract'] as const)"
+                :key="mode"
+                type="button"
+                class="flex-1 px-2 transition-colors"
+                :class="taxMode === mode ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
+                @click="taxMode = mode"
+              >
+                {{ t(`home.tax.mode_${mode}`) }}
+              </button>
+            </div>
+            <div>
+              <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.tax.amount') }}</label>
+              <Input v-model.number="taxAmount" type="number" min="0" class="h-9 text-sm" />
+            </div>
+            <div>
+              <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.tax.rate') }}</label>
+              <div class="flex items-center gap-1.5">
+                <Input v-model.number="taxRate" type="number" min="0" class="h-9 w-20 text-sm" />
+                <button
+                  v-for="preset in TAX_RATE_PRESETS"
+                  :key="preset"
+                  type="button"
+                  class="h-9 flex-1 rounded-lg border text-xs font-medium transition-colors"
+                  :class="Number(taxRate) === preset ? 'border-primary/50 bg-primary/10 text-primary' : 'border-border hover:bg-muted'"
+                  @click="taxRate = preset"
+                >
+                  {{ preset }}%
+                </button>
+              </div>
+            </div>
+            <div class="mt-1 space-y-1 rounded-xl border border-border bg-background px-4 py-3 font-mono text-sm tabular-nums">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-muted-foreground">{{ t('home.tax.net') }}</span>
+                <span>{{ fmt(taxBreakdown.net) }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-muted-foreground">{{ t('home.tax.tax') }}</span>
+                <span>{{ fmt(taxBreakdown.tax) }}</span>
+              </div>
+              <div class="flex items-center justify-between border-t border-border pt-1 font-semibold">
+                <span class="text-xs text-muted-foreground">{{ t('home.tax.gross') }}</span>
+                <span>{{ fmt(taxBreakdown.gross) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Markup / margin -->
+        <div class="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Tags class="h-[18px] w-[18px]" />
+            </span>
+            <div>
+              <h2 class="text-base font-semibold text-card-foreground">{{ t('home.markup.title') }}</h2>
+              <p class="mt-0.5 text-xs text-muted-foreground">{{ t('home.markup.description') }}</p>
+            </div>
+          </div>
+          <div class="mt-4 space-y-2">
+            <div class="flex h-9 overflow-hidden rounded-lg border border-border text-xs">
+              <button
+                v-for="mode in (['from_margin', 'from_price'] as const)"
+                :key="mode"
+                type="button"
+                class="flex-1 px-2 transition-colors"
+                :class="mmMode === mode ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'"
+                @click="mmMode = mode"
+              >
+                {{ t(`home.markup.${mode}`) }}
+              </button>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.markup.cost') }}</label>
+                <Input v-model.number="mmCost" type="number" min="0" class="h-9 text-sm" />
+              </div>
+              <div v-if="mmMode === 'from_margin'">
+                <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.markup.margin_pct') }}</label>
+                <Input v-model.number="mmMargin" type="number" min="0" max="99" class="h-9 text-sm" />
+              </div>
+              <div v-else>
+                <label class="mb-1 block text-[11px] text-muted-foreground">{{ t('home.markup.price') }}</label>
+                <Input v-model.number="mmPrice" type="number" min="0" class="h-9 text-sm" />
+              </div>
+            </div>
+            <div v-if="mmResult" class="mt-1 space-y-1 rounded-xl border border-border bg-background px-4 py-3 font-mono text-sm tabular-nums">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-muted-foreground">{{ t('home.markup.price') }}</span>
+                <span class="font-semibold">{{ fmt(mmResult.price) }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-muted-foreground">{{ t('home.markup.profit') }}</span>
+                <span>{{ fmt(mmResult.profit) }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-muted-foreground">{{ t('home.markup.margin') }}</span>
+                <span>{{ fmt(mmResult.margin) }}%</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-muted-foreground">{{ t('home.markup.markup') }}</span>
+                <span>{{ fmt(mmResult.markup) }}%</span>
+              </div>
+            </div>
+            <p v-else class="rounded-xl border border-border bg-background px-3 py-4 text-center text-xs text-muted-foreground">
+              {{ t('home.markup.hint') }}
+            </p>
+          </div>
+        </div>
       </div>
 
       <!-- ── Coffee break ──────────────────────────────────────────────── -->
-      <div class="grid gap-3 xl:grid-cols-3">
+      <div class="grid gap-4 xl:grid-cols-3">
         <div class="xl:col-span-2">
           <!-- Debit or Credit? — a short drill between tasks -->
-          <Card :class="panel">
-            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
-              <p class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                <Coins class="size-4 text-primary" />
-                {{ t('home.game.title') }}
-              </p>
+          <div class="rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+              <div class="flex items-center gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Coins class="h-[18px] w-[18px]" />
+                </span>
+                <div>
+                  <h2 class="text-base font-semibold text-card-foreground">{{ t('home.game.title') }}</h2>
+                  <p class="mt-0.5 text-xs text-muted-foreground">{{ t('home.game.intro') }}</p>
+                </div>
+              </div>
               <Button
                 v-if="dcStatus !== 'idle'"
                 size="sm"
@@ -1299,17 +1774,16 @@ onBeforeUnmount(dcClearTimers)
             </div>
 
             <!-- Idle: what the drill is, and how to start -->
-            <div v-if="dcStatus === 'idle'" class="flex flex-col items-center gap-3 px-3 py-6 text-center">
-              <p class="max-w-md text-sm text-muted-foreground">{{ t('home.game.intro') }}</p>
+            <div v-if="dcStatus === 'idle'" class="mt-4 flex flex-col items-center gap-3 rounded-xl border border-border bg-background px-4 py-6 text-center">
               <div class="flex flex-wrap items-center justify-center gap-2 text-[11px]">
-                <span class="rounded-md border border-border bg-muted/40 px-2 py-1">{{ t('home.game.rule_debit') }}</span>
-                <span class="rounded-md border border-border bg-muted/40 px-2 py-1">{{ t('home.game.rule_credit') }}</span>
+                <span class="rounded-lg border border-border bg-muted/40 px-2.5 py-1">{{ t('home.game.rule_debit') }}</span>
+                <span class="rounded-lg border border-border bg-muted/40 px-2.5 py-1">{{ t('home.game.rule_credit') }}</span>
               </div>
               <Button class="h-9 text-sm" @click="dcStart">{{ t('home.game.start') }}</Button>
             </div>
 
             <!-- Playing -->
-            <div v-else-if="dcStatus === 'playing'" class="space-y-3 p-3">
+            <div v-else-if="dcStatus === 'playing'" class="mt-4 space-y-3">
               <!-- Scoreboard -->
               <div class="flex items-center justify-between gap-3 text-xs">
                 <span class="flex items-center gap-1.5">
@@ -1335,7 +1809,7 @@ onBeforeUnmount(dcClearTimers)
               </div>
 
               <!-- Prompt -->
-              <div class="rounded-md border border-border bg-muted/30 px-3 py-4 text-center">
+              <div class="rounded-xl border border-border bg-background px-3 py-4 text-center">
                 <p class="text-[11px] uppercase tracking-wider text-muted-foreground">
                   {{ t(`home.game.categories.${dcCurrent?.category}`) }}
                 </p>
@@ -1358,7 +1832,7 @@ onBeforeUnmount(dcClearTimers)
                   v-for="side in (['debit', 'credit'] as const)"
                   :key="side"
                   type="button"
-                  class="rounded-md border py-2.5 text-sm font-semibold shadow-sm transition-all duration-150 disabled:cursor-default"
+                  class="rounded-xl border py-2.5 text-sm font-semibold transition-all duration-150 disabled:cursor-default"
                   :class="dcAnswered
                     ? (side === dcCorrectForCurrent
                       ? 'border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
@@ -1394,29 +1868,29 @@ onBeforeUnmount(dcClearTimers)
             </div>
 
             <!-- Round over -->
-            <div v-else class="flex flex-col items-center gap-3 px-3 py-6 text-center">
+            <div v-else class="mt-4 flex flex-col items-center gap-3 rounded-xl border border-border bg-background px-4 py-6 text-center">
               <p class="text-sm text-muted-foreground">{{ t('home.game.time_up') }}</p>
               <div class="flex flex-wrap items-center justify-center gap-2">
-                <span class="rounded-md border border-border bg-muted/40 px-3 py-1.5 text-center">
+                <span class="rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-center">
                   <span class="block font-mono text-lg font-semibold tabular-nums">{{ dcScore }}/{{ dcAsked }}</span>
                   <span class="block text-[10px] uppercase tracking-wider text-muted-foreground">{{ t('home.game.score') }}</span>
                 </span>
-                <span class="rounded-md border border-border bg-muted/40 px-3 py-1.5 text-center">
+                <span class="rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-center">
                   <span class="block font-mono text-lg font-semibold tabular-nums">{{ dcAccuracy }}%</span>
                   <span class="block text-[10px] uppercase tracking-wider text-muted-foreground">{{ t('home.game.accuracy') }}</span>
                 </span>
-                <span class="rounded-md border border-border bg-muted/40 px-3 py-1.5 text-center">
+                <span class="rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-center">
                   <span class="block font-mono text-lg font-semibold tabular-nums">{{ dcBestStreak }}</span>
                   <span class="block text-[10px] uppercase tracking-wider text-muted-foreground">{{ t('home.game.best_streak') }}</span>
                 </span>
-                <span v-if="dcBestScore !== null" class="rounded-md border border-primary/40 bg-primary/10 px-3 py-1.5 text-center">
+                <span v-if="dcBestScore !== null" class="rounded-lg border border-primary/40 bg-primary/10 px-3 py-1.5 text-center">
                   <span class="block font-mono text-lg font-semibold tabular-nums text-primary">{{ dcBestScore }}</span>
                   <span class="block text-[10px] uppercase tracking-wider text-muted-foreground">{{ t('home.game.best') }}</span>
                 </span>
               </div>
               <Button class="h-9 text-sm" @click="dcStart">{{ t('home.game.play_again') }}</Button>
             </div>
-          </Card>
+          </div>
         </div>
       </div>
     </div>
