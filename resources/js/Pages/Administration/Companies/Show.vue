@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
 import { useForm } from '@inertiajs/vue3';
+import axios from 'axios';
 import AppLayout from '@/Layouts/Layout.vue';
 import { Button } from '@/Components/ui/button';
 import NextInput from '@/Components/next/NextInput.vue';
@@ -10,6 +11,7 @@ import { Edit, Save, X, Building2, Upload } from 'lucide-vue-next';
 import { useToast } from '@/Components/ui/toast/use-toast';
 import { useI18n } from 'vue-i18n';
 import { useAuth } from '@/composables/useAuth';
+import InvoiceDesigner from '@/Pages/Preferences/InvoiceDesigner.vue';
 const { toast } = useToast();
 const { t } = useI18n();
 const { can } = useAuth();
@@ -22,6 +24,9 @@ const props = defineProps({
     workingStyles: Object,
     errors: Object,
     costingMethods: Object,
+    invoiceThemes: { type: Array, default: () => [] },
+    invoiceFormats: { type: Array, default: () => [] },
+    invoiceFormatDefaults: { type: Object, default: () => ({}) },
 });
 
 const isEditing = ref(false);
@@ -29,6 +34,7 @@ const originalData = ref({});
 const logoPreview = ref(null);
 const fileInput = ref(null);
 const existingLogo = ref(null);
+const currentInvoiceTheme = ref('');
 
 
 
@@ -88,6 +94,7 @@ watch(() => props.company, (company) => {
         form.email = company.email || '';
         form.website = company.website || '';
         form.invoice_description = company.invoice_description || '';
+        currentInvoiceTheme.value = company.invoice_theme || 'format1';
 
         // Initialize logo state
         existingLogo.value = company.logo || null;
@@ -166,6 +173,24 @@ const saveChanges = () => {
             // Errors will be handled by the form
         }
     });
+};
+
+const selectInvoiceTheme = async (theme) => {
+    try {
+        await axios.patch('/company/invoice-theme', { theme });
+        currentInvoiceTheme.value = theme;
+        toast({
+            title: t('general.success'),
+            description: t('preferences.preferences_saved'),
+            class: 'bg-green-600 text-white',
+        });
+    } catch (error) {
+        toast({
+            title: t('general.error'),
+            description: error?.response?.data?.message || t('preferences.invoice_designer.save_error'),
+            variant: 'destructive',
+        });
+    }
 };
 
 const handleFileChange = (event) => {
@@ -733,6 +758,22 @@ const setCalendarLocaleStorage = (selected) => {
                     </form>
                 </div>
             </div>
+
+            <section v-if="can('companies.update')" class="mt-6 rounded-lg border border-border bg-card shadow-sm">
+                <div class="border-b border-border p-6">
+                    <h2 class="text-lg font-semibold text-foreground">{{ t('preferences.tabs.invoice_designer') }}</h2>
+                    <p class="mt-1 text-sm text-muted-foreground">{{ t('preferences.invoice_designer.select_help') }}</p>
+                </div>
+                <div class="p-6">
+                    <InvoiceDesigner
+                        :invoice-themes="invoiceThemes"
+                        :invoice-formats="invoiceFormats"
+                        :invoice-format-defaults="invoiceFormatDefaults"
+                        :current-theme="currentInvoiceTheme"
+                        @select-theme="selectInvoiceTheme"
+                    />
+                </div>
+            </section>
         </div>
     </AppLayout>
 </template>

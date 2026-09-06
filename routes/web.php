@@ -396,6 +396,7 @@ Route::middleware([
 
     // Invoice Formats (custom designer)
     Route::get('/invoice-formats', [\App\Http\Controllers\Sale\InvoiceFormatController::class, 'index'])->name('invoice-formats.index');
+    Route::patch('/company/invoice-theme', [\App\Http\Controllers\Sale\InvoiceFormatController::class, 'selectTheme'])->name('company.invoice-theme.update');
     Route::post('/invoice-formats', [\App\Http\Controllers\Sale\InvoiceFormatController::class, 'store'])->name('invoice-formats.store');
     Route::put('/invoice-formats/{invoiceFormat}', [\App\Http\Controllers\Sale\InvoiceFormatController::class, 'update'])->name('invoice-formats.update');
     Route::delete('/invoice-formats/{invoiceFormat}', [\App\Http\Controllers\Sale\InvoiceFormatController::class, 'destroy'])->name('invoice-formats.destroy');
