@@ -212,7 +212,10 @@ const sidebarSide = computed(() => isRTL.value ? 'right' : 'left')
 const chevronIcon = computed(() => isRTL.value ? ChevronLeft : ChevronRight)
 
 // Allow parent pages to control initial sidebar state
-const props = withDefaults(defineProps<{ sidebarCollapsed?: boolean }>(), { sidebarCollapsed: false })
+const props = withDefaults(defineProps<{ sidebarCollapsed?: boolean; flush?: boolean }>(), {
+    sidebarCollapsed: false,
+    flush: false,
+})
 
 const { can, isSuperAdmin } = useAuth()
 
@@ -1173,6 +1176,12 @@ function logout() {
                                             {{ t('layout.notifications') }}
                                         </Link>
                                     </DropdownMenuItem>
+                                    <DropdownMenuItem as-child>
+                                        <Link :href="route('user-manual')" class="flex w-full items-center">
+                                            <BookOpen class="text-primary hover:text-white" />
+                                            {{ t('layout.user_manual') }}
+                                        </Link>
+                                    </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem @click="logout" class="cursor-pointer">
@@ -1254,7 +1263,11 @@ function logout() {
                 </div>
 <!--                </div>-->
             </header>
-            <div data-scroll-region class="flex flex-1 min-h-0 flex-col gap-4 overflow-y-auto p-4 pt-4 min-w-0">
+            <div
+                data-scroll-region
+                class="flex min-h-0 min-w-0 flex-1 flex-col"
+                :class="flush ? 'overflow-hidden' : 'gap-4 overflow-y-auto p-4 pt-4'"
+            >
                 <slot/>
             </div>
             <footer class="border-t border-border/60 bg-[hsl(var(--app-chrome-background))] px-4 py-2 text-center text-[11px] text-[hsl(var(--app-chrome-foreground))]">
