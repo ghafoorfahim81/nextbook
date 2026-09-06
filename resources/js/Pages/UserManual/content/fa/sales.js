@@ -150,6 +150,7 @@ export default {
                 },
                 {
                     type: 'figure',
+                    src: '/images/user-manual/sales/field-reference.png',
                     caption: 'فرم ثبت فاکتور فروش — سربرگ، جدول اجناس و پاورقی محاسبات',
                     hint: 'اسکرین‌شات صفحهٔ ساختن فروش',
                 },
@@ -243,6 +244,7 @@ export default {
                 },
                 {
                     type: 'figure',
+                    src: '/images/user-manual/sales/printing.png',
                     caption: 'پیش‌نمایش چاپ فاکتور فروش با قالب شرکت',
                     hint: 'اسکرین‌شات پنجرهٔ چاپ فاکتور',
                 },

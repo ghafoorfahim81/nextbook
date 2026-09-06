@@ -51,8 +51,14 @@ export default {
                 },
                 {
                     type: 'figure',
-                    caption: 'نوار بالای صفحه: انتخابگر شعبه، جستجوی سراسری، انتخابگر زبان و منوی پروفایل',
-                    hint: 'اسکرین‌شات نوار بالای برنامه',
+                    src: '/images/user-manual/overview/sign-in.png',
+                    caption: 'صفحهٔ ورود — ایمیل کاری، رمز عبور و انتخابگر زبان',
+                },
+                {
+                    type: 'figure',
+                    src: '/images/user-manual/overview/application-header.png',
+                    caption: 'نوار بالای صفحه پس از ورود: انتخابگر شعبه، جستجوی سراسری، انتخابگر زبان و منوی پروفایل',
+                    hint: 'اسکرین‌شات نوار بالای برنامه (صفحهٔ خانه)',
                 },
                 { type: 'h3', text: 'خانه و داشبورد' },
                 {
@@ -205,6 +211,7 @@ export default {
                 },
                 {
                     type: 'figure',
+                    src: '/images/user-manual/overview/trash-and-activity.png',
                     caption: 'سطل زباله: فهرست رکوردهای حذف‌شده به تفکیک ماژول با دکمهٔ بازیابی',
                     hint: 'اسکرین‌شات صفحهٔ سوابق حذف‌شده',
                 },

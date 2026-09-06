@@ -5,10 +5,10 @@ import { MANUAL_LOCALES } from './content'
 
 defineProps({
     t: { type: Function, required: true },
-    manual: { type: Object, required: true },
+    guide: { type: Object, required: true },
     manualLocale: { type: String, required: true },
     query: { type: String, required: true },
-    activeId: { type: String, required: true },
+    activeId: { type: String, default: 'guide-top' },
     filteredChapters: { type: Array, required: true },
 })
 
@@ -50,30 +50,29 @@ const emit = defineEmits(['update:query', 'set-locale', 'go'])
         <nav class="space-y-0.5 text-sm">
             <button
                 type="button"
-                data-toc-id="cover"
                 class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-start transition"
-                :class="activeId === 'cover'
+                :class="activeId === 'guide-top'
                     ? 'bg-primary font-semibold text-primary-foreground'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
-                @click="emit('go', 'cover')"
+                @click="emit('go', 'guide-top')"
             >
                 <BookOpen class="size-3.5 shrink-0" />
-                <span>{{ manual.title }}</span>
+                <span class="truncate">{{ guide.title }}</span>
             </button>
             <button
                 v-for="chapter in filteredChapters"
                 :key="chapter.id"
                 type="button"
-                :data-toc-id="chapter.id"
+                :data-toc-id="`ch-${chapter.id}`"
                 class="flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-start transition"
-                :class="activeId === chapter.id
+                :class="activeId === `ch-${chapter.id}`
                     ? 'bg-primary font-semibold text-primary-foreground'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'"
-                @click="emit('go', chapter.id)"
+                @click="emit('go', `ch-${chapter.id}`)"
             >
                 <span
                     class="mt-0.5 w-5 shrink-0 text-xs font-bold"
-                    :class="activeId === chapter.id ? 'text-primary-foreground' : 'text-primary'"
+                    :class="activeId === `ch-${chapter.id}` ? 'text-primary-foreground' : 'text-primary'"
                 >{{ chapter.number }}</span>
                 <span>{{ chapter.title }}</span>
             </button>
