@@ -642,18 +642,14 @@ const navMain = computed(() => [
     },
 
     {
-        key: 'receipt',
-        title: t('sidebar.main.receipt'),
-        url: '/receipts',
+        key: 'cash_transactions',
+        title: t('sidebar.main.cash_transactions'),
+        url: '#',
         icon: ReceiptIcon,
-        permission: 'receipts.view_any',
-    },
-    {
-        key: 'payment',
-        title: t('sidebar.main.payment'),
-        url: '/payments',
-        icon: CreditCard,
-        permission: 'payments.view_any',
+        items: [
+            { title: t('sidebar.main.receipt'), url: '/receipts', permission: 'receipts.view_any' },
+            { title: t('sidebar.main.payment'), url: '/payments', permission: 'payments.view_any' },
+        ],
     },
 
     {
@@ -718,7 +714,13 @@ const selectedSidebarMenus = computed<Set<string> | null>(() => {
         return null
     }
 
-    return new Set(menus)
+    const normalized = new Set(menus)
+    // Legacy: 'receipt' / 'payment' were merged into the 'cash_transactions' group.
+    if (normalized.has('receipt') || normalized.has('payment')) {
+        normalized.add('cash_transactions')
+    }
+
+    return normalized
 })
 
 const filteredNavMain = computed(() => {
@@ -1233,7 +1235,7 @@ function logout() {
                         </label> -->
 
                         <Select v-model="selectedBranchId" :dir="selectDir" @update:modelValue="switchBranch">
-                            <SelectTrigger class="h-7 w-[110px] text-xs border-input md:w-[130px]">
+                            <SelectTrigger class="h-7 w-auto min-w-[110px] max-w-[240px] text-xs border-input [&>span]:!overflow-visible">
                                 <SelectValue :placeholder="t('layout.branch')" />
                             </SelectTrigger>
                             <SelectContent>
